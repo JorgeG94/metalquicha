@@ -54,6 +54,7 @@ module mqc_libcint_cphf
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_nosym, &
+                                 build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
    implicit none
    private
@@ -434,8 +435,13 @@ contains
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
       real(dp), allocatable :: eri0(:, :, :, :), work(:, :)
       logical :: direct
-      real(dp), allocatable :: s_vec(:, :), rhs(:, :), r(:, :), z(:, :), p(:, :)
-      real(dp), allocatable :: ap(:, :), inner(:, :)
+      ! Every system's vectors carry a batch index: all frequencies and all
+      ! perturbations are in flight together.
+      real(dp), allocatable :: s_vec(:, :, :), rhs(:, :, :), r(:, :, :)
+      real(dp), allocatable :: z(:, :, :), p(:, :, :), ap(:, :, :)
+      real(dp), allocatable :: nu_of(:), rz_of(:), target_of(:)
+      integer, allocatable :: active(:)
+      integer :: nb, nact, kept, j, m
       real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
@@ -507,59 +513,247 @@ contains
       if (present(response)) then
          allocate (response(n_vir, n_occ, n_pert, size(frequencies)))
       end if
-      allocate (s_vec(n_vir, n_occ), rhs(n_vir, n_occ), r(n_vir, n_occ))
-      allocate (z(n_vir, n_occ), p(n_vir, n_occ), ap(n_vir, n_occ))
-      allocate (inner(n_vir, n_occ))
+      ! Every frequency and every perturbation is solved at once, in lockstep, so a
+      ! single pass over the integrals serves all of them. They are independent
+      ! systems sharing one operator; only the right-hand side and the frequency
+      ! shift differ. Solved one at a time this is the same arithmetic and two orders
+      ! of magnitude more integral passes.
+      nb = n_pert*size(frequencies)
+      allocate (s_vec(n_vir, n_occ, nb), rhs(n_vir, n_occ, nb), r(n_vir, n_occ, nb))
+      allocate (z(n_vir, n_occ, nb), p(n_vir, n_occ, nb), ap(n_vir, n_occ, nb))
+      allocate (nu_of(nb), rz_of(nb), target_of(nb), active(nb))
 
       do ifreq = 1, size(frequencies)
-         nu = frequencies(ifreq)
          do l = 1, n_pert
-            rhs = -2.0_dp*h(:, :, l)
-            target_norm = sqrt(sum(rhs*rhs))*use_tol
+            j = (ifreq - 1)*n_pert + l
+            nu_of(j) = frequencies(ifreq)
+            rhs(:, :, j) = -2.0_dp*h(:, :, l)
+            target_of(j) = sqrt(sum(rhs(:, :, j)**2))*use_tol
+            s_vec(:, :, j) = 0.0_dp
+            r(:, :, j) = rhs(:, :, j)
+            z(:, :, j) = r(:, :, j)/gaps
+            p(:, :, j) = z(:, :, j)
+            rz_of(j) = sum(r(:, :, j)*z(:, :, j))
+            active(j) = j
+         end do
+      end do
+      nact = nb
 
-            s_vec = 0.0_dp
-            r = rhs
-            z = r/gaps
-            p = z
-            rz = sum(r*z)
-            do iter = 1, limit
-               call apply_dynamic(mol, direct, bounds, zero_h, eri0, c_occ, c_vir, gaps, &
-                                  nu, p, ap, inner, limit, use_tol, error)
-               if (error%has_error()) return
-               pap = sum(p*ap)
-               if (pap <= 0.0_dp) then
-                  call error%set(ERROR_VALIDATION, "dynamic response operator is "// &
-                                 "not positive definite, which it must be on the "// &
-                                 "imaginary axis")
-                  return
-               end if
-               step = rz/pap
-               s_vec = s_vec + step*p
-               r = r - step*ap
-               if (sqrt(sum(r*r)) <= target_norm) exit
-               z = r/gaps
-               rz_new = sum(r*z)
-               p = z + (rz_new/rz)*p
-               rz = rz_new
-            end do
-            if (sqrt(sum(r*r)) > target_norm) then
-               write (text, "(f0.4)") nu
-               call error%set(ERROR_GENERIC, "dynamic response did not converge at "// &
-                              "nu = "//trim(text))
+      do iter = 1, limit
+         if (nact == 0) exit
+         call apply_dynamic_batch(mol, direct, bounds, zero_h, eri0, c_occ, c_vir, &
+                                  gaps, nu_of, p, active, nact, ap, limit, use_tol, &
+                                  error)
+         if (error%has_error()) return
+         kept = 0
+         do m = 1, nact
+            j = active(m)
+            pap = sum(p(:, :, j)*ap(:, :, j))
+            if (pap <= 0.0_dp) then
+               call error%set(ERROR_VALIDATION, "dynamic response operator is "// &
+                              "not positive definite, which it must be on the "// &
+                              "imaginary axis")
                return
             end if
+            step = rz_of(j)/pap
+            s_vec(:, :, j) = s_vec(:, :, j) + step*p(:, :, j)
+            r(:, :, j) = r(:, :, j) - step*ap(:, :, j)
+            if (sqrt(sum(r(:, :, j)**2)) > target_of(j)) then
+               z(:, :, j) = r(:, :, j)/gaps
+               rz_new = sum(r(:, :, j)*z(:, :, j))
+               p(:, :, j) = z(:, :, j) + (rz_new/rz_of(j))*p(:, :, j)
+               rz_of(j) = rz_new
+               kept = kept + 1
+               active(kept) = j
+            end if
+         end do
+         nact = kept
+      end do
+      if (nact > 0) then
+         write (text, "(f0.4)") nu_of(active(1))
+         call error%set(ERROR_GENERIC, "dynamic response did not converge at "// &
+                        "nu = "//trim(text))
+         return
+      end if
 
+      do ifreq = 1, size(frequencies)
+         do l = 1, n_pert
+            j = (ifreq - 1)*n_pert + l
             do k = 1, n_pert
-               alpha(k, l, ifreq) = -2.0_dp*sum(h(:, :, k)*s_vec)
+               alpha(k, l, ifreq) = -2.0_dp*sum(h(:, :, k)*s_vec(:, :, j))
             end do
-            if (present(response)) response(:, :, l, ifreq) = s_vec
+            if (present(response)) response(:, :, l, ifreq) = s_vec(:, :, j)
          end do
       end do
 
       deallocate (bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0, operators)
       if (allocated(dip)) deallocate (dip)
-      deallocate (s_vec, rhs, r, z, p, ap, inner)
+      deallocate (s_vec, rhs, r, z, p, ap)
+      deallocate (nu_of, rz_of, target_of, active)
    end subroutine dynamic_polarizability
+
+   subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             u, idx, nact, minus, au, error)
+      !! `(A+B)u` or `(A-B)u` for many vectors in **one** integral pass
+      !!
+      !! The reason this exists. Every right-hand side of the dynamic response shares
+      !! one operator and differs only in the frequency shift, so the integrals a
+      !! direct build recomputes are the same integrals for all of them. Contracting
+      !! a batch of densities in a single pass over the quartets amortizes that cost
+      !! across the batch -- with twelve frequencies and nine perturbations the pass
+      !! count drops by two orders of magnitude, without storing anything.
+      !!
+      !! `idx(1:nact)` selects which of the vectors are still wanted, so a converged
+      !! system stops costing anything rather than riding along.
+      !!
+      !! `minus` picks the antisymmetric combination and the build that does not fold
+      !! permutations, which is what `A - B` needs; otherwise the symmetric one.
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), intent(in) :: u(:, :, :)
+      integer, intent(in) :: idx(:), nact
+      logical, intent(in) :: minus
+      real(dp), intent(inout) :: au(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), work(:, :)
+      type(direct_stats_t) :: stats
+      integer :: n_ao, n_occ, m, j
+
+      if (nact <= 0) return
+      n_ao = size(c_occ, 1)
+      n_occ = size(c_occ, 2)
+      allocate (dens(n_ao, n_ao, nact), half(n_ao, n_occ), work(n_ao, n_occ))
+
+      do m = 1, nact
+         j = idx(m)
+         call pic_gemm(c_vir, u(:, :, j), half)
+         call pic_gemm(half, c_occ, dens(:, :, m), transb="T")
+         if (minus) then
+            dens(:, :, m) = dens(:, :, m) - transpose(dens(:, :, m))
+         else
+            dens(:, :, m) = dens(:, :, m) + transpose(dens(:, :, m))
+         end if
+      end do
+
+      if (direct) then
+         if (minus) then
+            call build_fock_direct_nosym(mol, zero_h, dens, bounds, g, stats, error)
+         else
+            call build_fock_direct_many(mol, zero_h, dens, bounds, g, stats, error)
+         end if
+         if (error%has_error()) return
+      else
+         allocate (g(n_ao, n_ao, nact))
+         do m = 1, nact
+            call build_fock(zero_h, eri, dens(:, :, m), g(:, :, m))
+         end do
+      end if
+
+      do m = 1, nact
+         j = idx(m)
+         call pic_gemm(g(:, :, m), c_occ, work)
+         call pic_gemm(c_vir, work, au(:, :, j), transa="T")
+         au(:, :, j) = gaps*u(:, :, j) + 2.0_dp*au(:, :, j)
+      end do
+
+      deallocate (dens, g, half, work)
+   end subroutine response_batch
+
+   subroutine apply_dynamic_batch(mol, direct, bounds, zero_h, eri, c_occ, c_vir, &
+                                  gaps, nu, u, idx, nact, au, limit, tol, error)
+      !! `[(A+B) + nu^2 (A-B)^-1] u` for many vectors, each with its own frequency
+      !!
+      !! The inner solves run in lockstep for the same reason the outer one does:
+      !! their operator is shared, so one pass serves every system still iterating.
+      !! They converge at different rates, and a system that has converged drops out
+      !! of the batch instead of being carried.
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), intent(in) :: nu(:)
+      real(dp), intent(in) :: u(:, :, :)
+      integer, intent(in) :: idx(:), nact
+      real(dp), intent(inout) :: au(:, :, :)
+      integer, intent(in) :: limit
+      real(dp), intent(in) :: tol
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: x(:, :, :), r(:, :, :), z(:, :, :), pv(:, :, :), ap(:, :, :)
+      real(dp), allocatable :: rz(:), target_norm(:)
+      integer, allocatable :: inner_idx(:)
+      integer :: n_vir, n_occ, nb, m, j, iter, ninner
+      real(dp) :: pap, step, rz_new
+
+      call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                          u, idx, nact, .false., au, error)
+      if (error%has_error()) return
+
+      nb = size(u, 3)
+      if (all(nu == 0.0_dp)) return
+      n_vir = size(u, 1)
+      n_occ = size(u, 2)
+      allocate (x(n_vir, n_occ, nb), r(n_vir, n_occ, nb), z(n_vir, n_occ, nb))
+      allocate (pv(n_vir, n_occ, nb), ap(n_vir, n_occ, nb))
+      allocate (rz(nb), target_norm(nb), inner_idx(nb))
+
+      ninner = 0
+      do m = 1, nact
+         j = idx(m)
+         if (nu(j) == 0.0_dp) cycle
+         ninner = ninner + 1
+         inner_idx(ninner) = j
+         x(:, :, j) = 0.0_dp
+         r(:, :, j) = u(:, :, j)
+         z(:, :, j) = r(:, :, j)/gaps
+         pv(:, :, j) = z(:, :, j)
+         rz(j) = sum(r(:, :, j)*z(:, :, j))
+         target_norm(j) = sqrt(sum(u(:, :, j)**2))*min(tol, 1.0e-13_dp)
+      end do
+
+      do iter = 1, limit
+         if (ninner == 0) exit
+         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             pv, inner_idx, ninner, .true., ap, error)
+         if (error%has_error()) return
+         m = 0
+         do j = 1, ninner
+            associate (jj => inner_idx(j))
+               pap = sum(pv(:, :, jj)*ap(:, :, jj))
+               if (pap <= 0.0_dp) then
+                  call error%set(ERROR_VALIDATION, "A - B is not positive definite, "// &
+                                 "so the reference is not a minimum")
+                  return
+               end if
+               step = rz(jj)/pap
+               x(:, :, jj) = x(:, :, jj) + step*pv(:, :, jj)
+               r(:, :, jj) = r(:, :, jj) - step*ap(:, :, jj)
+               if (sqrt(sum(r(:, :, jj)**2)) > target_norm(jj)) then
+                  z(:, :, jj) = r(:, :, jj)/gaps
+                  rz_new = sum(r(:, :, jj)*z(:, :, jj))
+                  pv(:, :, jj) = z(:, :, jj) + (rz_new/rz(jj))*pv(:, :, jj)
+                  rz(jj) = rz_new
+                  m = m + 1
+                  inner_idx(m) = jj
+               end if
+            end associate
+         end do
+         ninner = m
+      end do
+
+      do m = 1, nact
+         j = idx(m)
+         if (nu(j) == 0.0_dp) cycle
+         au(:, :, j) = au(:, :, j) + nu(j)*nu(j)*x(:, :, j)
+      end do
+
+      deallocate (x, r, z, pv, ap, rz, target_norm, inner_idx)
+   end subroutine apply_dynamic_batch
 
    subroutine apply_dynamic(mol, direct, bounds, zero_h, eri0, c_occ, c_vir, gaps, nu, u, au, &
                             scratch, limit, tol, error)
