@@ -27,116 +27,52 @@ module mqc_efp_potential
    !! a plausible guess: a wrong dispersion tensor in a file someone runs is worse
    !! than an absent one, and their absence is legible to a reader of the file.
    !!
-   !! **Where `LMOQQPOL` stands**, since it is now the only dispersion block
-   !! missing and it is much closer than it was. Its 81 values are
-   !! `QQL_SFT(3,3,3,3)` written with the last index fastest, and its write-time
-   !! translation `QQSHIFT` (`efinp.src:13275`) takes the dipole-dipole *and*
-   !! pre-shift dipole-quadrupole tensors as inputs -- both of which this module
-   !! computes. Subtracting that shift from GAMESS's values recovers a tensor
-   !! symmetric in both index pairs to 4.4e-16, which validates the formula and the
-   !! index reading, and the recovered tensor is our quadrupole-quadrupole response
-   !! times roughly 1/3.
+   !! **Where `LMOQQPOL` stands.** Its 81 values are `QQL_SFT(3,3,3,3)` written with
+   !! the last index fastest, and its write-time translation `QQSHIFT`
+   !! (`efinp.src:13275`) takes the dipole-dipole and pre-shift dipole-quadrupole
+   !! tensors as inputs, both of which this module computes.
    !!
-   !! **The 1/3 is exact, and it is in GAMESS's source rather than fitted.**
-   !! `LQQPOL` (`locpol.src:5387`) contracts
+   !! **The response itself is confirmed correct, against GAMESS rather than against
+   !! a fit.** `$MAKEFP MOLPOL=.TRUE.` makes GAMESS write its *molecular*
+   !! `QUAD-QUAD POLARIZABILITY` -- the total at the centre of mass, with no
+   !! `QQSHIFT` applied to it at all. Our response summed over the localized orbitals
+   !! and divided by three reproduces it to **1.46e-05** relative, 1.2e-04 absolute,
+   !! at a fitted scale of 0.999994. So the operator is the traceless Buckingham
+   !! form, the factor is exactly the 1/3 that `LQQPOL` gets from its `/THREE`
    !!
    !!     TPOL(KL) = TPOL(KL) - TWO * U(IOCC,IVIR,K) * HF(IJ,L) / THREE
    !!
-   !! so the quadrupole-quadrupole case carries a `/THREE` that the
-   !! dipole-quadrupole case does not -- `LDQPOL` has the same line without it,
-   !! which is why that block needed no factor and this one needs exactly this one.
-   !! Its per-orbital branch puts the same `/THREE` on the `HFL` transform and
-   !! contracts `-TWO*UL*HFL` for the dynamic case, both factors carried into the
-   !! localized basis by `TRAN` -- the same shape this module uses.
+   !! and nothing about the quantity is in doubt. That is worth having on its own:
+   !! it is a molecular dispersion coefficient validated against GAMESS.
    !!
-   !! This corrects an over-correction. A previous version of this comment said the
-   !! factor was exactly 1/3 on the strength of a median, which was not evidence;
-   !! the version after that said it was only approximate, on the strength of a 5.8%
-   !! per-orbital scatter. The factor is exact. What the scatter measures is a
-   !! *different* disagreement sitting on top of it, and attributing it to the
-   !! factor was wrong in both directions. The summed comparison is what separates
-   !! them: it gives 0.333336, five digits, because summing removes the
-   !! per-orbital part.
+   !! **`QQSHIFT` is also right in the sum.** Summed over orbitals its trace comes
+   !! out at 0.0000 where the reference needs 0.0001 -- they agree. An earlier note
+   !! here said the observed trace was orthogonal to the span of every term that
+   !! could produce it; that measurement was on the *per-orbital* traces, where it
+   !! holds, and stating it without that qualifier made the problem sound larger than
+   !! it is.
    !!
-   !! **Summed over the orbitals the factor is clean and the gap shrinks.** The same
-   !! move that cracked the dipole-quadrupole block -- summing to remove the
-   !! projection -- gives a best scale of 0.333336, 1/3 to five digits, with the
-   !! residual down to 2.0e-02 from 5.8e-02 per orbital. So 1/3 is real, and part of
-   !! what is left is the per-orbital decomposition rather than the quantity.
+   !! **So what is left is the per-orbital distribution, and only that.** The sum is
+   !! right to 1.5e-05 and the split across orbitals is wrong by 5.8% pre-shift,
+   !! 1.3e-01 after the shift, with the per-orbital traces off by 0.176. This is
+   !! exactly the position the dipole-quadrupole block was in before its transposed
+   !! `alpha` was found -- quantity right, distribution wrong -- which is the reason
+   !! to think it is findable and the reason not to guess at it.
    !!
-   !! **And there is one concrete inconsistency to chase.** A summed response tensor
-   !! must be symmetric under exchanging its two index pairs, because summed over
-   !! every orbital the projector is the identity and the response function is
-   !! symmetric in measure and respond. Ours is, to 1.1e-04. The tensor recovered
-   !! from GAMESS by subtracting `QQSHIFT` is *not*: 2.2e-01. So the shift being
-   !! subtracted carries a pair-asymmetric error, and the formula shows where it can
-   !! come from -- `RRalphdel1` contracts the dipole-dipole tensor on its first index
-   !! (`DD(i,e)`) while its mirror `RRalphdel2` contracts on the second (`DD(b,i)`),
-   !! so the two are mirror images only if `DD` is symmetric, and per orbital it is
-   !! not. That is the thread, and it is the same class of thing as the transposed
-   !! `alpha` that closed `DQSHIFT` -- but transposing these two terms was tried and
-   !! makes it worse, so it is not the same fix.
-   !!
-   !! **The structural anchor that worked for `DQSHIFT` is unavailable here, and
-   !! that is a measured fact rather than a guess.** For the dipole-quadrupole block
-   !! the pre-shift tensor had to be symmetric in its quadrupole pair, and requiring
-   !! that pinned three conventions at once. The analogue here is tracelessness:
-   !! `LQQPOL` reads its integrals from DAF 806+K for K = 1..6, which are the
-   !! traceless components, so the pre-shift tensor ought to be traceless in each
-   !! pair. GAMESS's recovered tensor is not -- 0.176 -- and no combination of
-   !! `QQSHIFT`'s five terms can account for it: solving for the coefficients that
-   !! null both pair traces, 864 equations in five unknowns, returns every
-   !! coefficient at zero to six decimals with the residual still at 1.000. The
-   !! observed trace is orthogonal to the span of the terms that could produce it.
-   !!
-   !! Three things could explain that, and the first is now eliminated. The operator
-   !! does **not** carry a trace: computing the response with the raw second moment
-   !! on both sides -- which `check_dipquad_sumrule` now does, so the comparison is
-   !! reproducible -- is far worse, 8.0e-01 against 5.8e-02 pre-shift and 1.8e+00
-   !! against 1.3e-01 forward. It is the traceless Buckingham form, as `LQQPOL`'s
-   !! DAF records say. So either a `delta`-term contraction differs from the
-   !! transcription here, which matches the source line for line, or an input is not
-   !! what `QQSHIFT` receives. Nothing in this module can currently distinguish
-   !! those two.
-   !!
-   !! **The shift's inputs are not the problem either.** GAMESS's own dipole-dipole
-   !! tensors, and its own pre-shift dipole-quadrupole tensor recovered from the
-   !! block above, give bit-for-bit the same 1.317e-01 as ours in all four
-   !! combinations -- and our pre-shift dipole-quadrupole agrees with its recovered
-   !! one to 1.8e-04, which independently confirms both. So what differs is the
-   !! quadrupole-quadrupole response itself, or this transcription of `QQSHIFT`.
-   !!
-   !! **And there is no index freedom left.** `QQSHIFT` preserves symmetry within
-   !! each index pair -- every one of its terms is symmetric in `(a,b)` and in
-   !! `(c,d)` -- so unlike `DQSHIFT`, whose asymmetric terms are exactly what forced
-   !! the transposed slot order there, the written values here are within-pair
-   !! symmetric and all four within-pair readings give the identical 1.317e-01. The
-   !! trick that closed the dipole-quadrupole block cannot even be applied.
-   !!
-   !! **What has been eliminated, so the next attempt need not repeat it:** all eight
+   !! **Eliminated, so the next attempt need not repeat any of it:** all eight
    !! transposes of the dipole-dipole tensor across the three `delta`-bearing terms;
    !! the pair-swapped orientation the source's `DLPOL(K,L)` indexing implies, and
-   !! every within-pair and cross-pair index permutation; raw second moments on
-   !! either or both sides, and both mixed combinations, all four constructed
-   !! algebraically from one raw response so the comparison needs no extra run
-   !! (`1.5 Q - 0.5 delta tr Q` per index pair, checked against the directly
-   !! computed traceless response to 1.6e-11); a free least-squares fit of all six
-   !! term coefficients; the trace-nulling fit above; and GAMESS's own shift inputs.
+   !! every within-pair and cross-pair index permutation -- `QQSHIFT` preserves
+   !! within-pair symmetry, so unlike `DQSHIFT` there is no slot-order freedom to
+   !! exploit; raw second moments on either or both sides and both mixed
+   !! combinations, all four built algebraically from one raw response
+   !! (`1.5 Q - 0.5 delta tr Q` per pair, checked against the directly computed
+   !! traceless response to 1.6e-11); passing the *shifted* dipole-quadrupole tensor
+   !! instead of the pre-shift one; GAMESS's own dipole-dipole and recovered
+   !! pre-shift dipole-quadrupole as the shift inputs, which change nothing; a free
+   !! least-squares fit of all six term coefficients; and the trace-nulling fit.
    !!
-   !! Six independent hypothesis classes, all closed, and the residual does not move
-   !! off 1.3e-01. Unlike the dipole-quadrupole case there is no structural identity
-   !! left to anchor a search, which is why this is recorded rather than guessed at.
-   !!
-   !! With the factor the forward recipe reaches 1.3e-01 relative, and the residual
-   !! sits on the components the `delta` terms touch: 1.6e-01 where both index pairs
-   !! are diagonal against 2.6e-02 where neither is. Transposing the dipole-dipole
-   !! tensor in any combination of those terms makes it worse, which is the fix that
-   !! worked for `DQSHIFT`. And a least-squares fit of all six term coefficients over
-   !! all 3888 values returns no clean fraction and only improves to 1.28e-01, so the
-   !! reference is not in the span of our tensor plus the five shift terms -- the
-   !! quadrupole-quadrupole response itself still differs, as the dipole-quadrupole
-   !! one appeared to before its operator convention was found. Not written until
-   !! that closes.
+   !! Not written until the distribution is closed.
    !!
    !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
    !! subsection of `CTVEC`, accepted only directly behind one, so it goes when
