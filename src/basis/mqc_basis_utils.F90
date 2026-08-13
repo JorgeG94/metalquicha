@@ -160,14 +160,14 @@ contains
       logical :: exists
       integer :: idir
 
-      allocate (normalized, source=normalize_basis_name(basis_name))
+      normalized = normalize_basis_name(basis_name)
       if (len(normalized) == 0) then
          call error%set(ERROR_IO, "Empty basis set name")
          return
       end if
 
-      allocate (directories, source=basis_search_path())
-      allocate (character(len=0) :: tried)
+      directories = basis_search_path()
+      tried = ""
 
       do idir = 1, size(directories)
          candidate = trim(directories(idir))//"/"//normalized//".json"
