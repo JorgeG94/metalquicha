@@ -52,12 +52,30 @@ module mqc_efp_potential
    !! holds, and stating it without that qualifier made the problem sound larger than
    !! it is.
    !!
-   !! **So what is left is the per-orbital distribution, and only that.** The sum is
-   !! right to 1.5e-05 and the split across orbitals is wrong by 5.8% pre-shift,
-   !! 1.3e-01 after the shift, with the per-orbital traces off by 0.176. This is
-   !! exactly the position the dipole-quadrupole block was in before its transposed
-   !! `alpha` was found -- quantity right, distribution wrong -- which is the reason
-   !! to think it is findable and the reason not to guess at it.
+   !! **So what is left is the per-orbital distribution, and only that** -- the sum is
+   !! right to 1.5e-05 while the split is wrong by 5.8% pre-shift and 1.3e-01 after.
+   !! Splitting the per-orbital tensor by symmetry under exchanging its two index
+   !! pairs localizes it further, and this is the sharpest statement available:
+   !!
+   !!   * the **pair-symmetric** part agrees, at scale 0.3314 with a 3.8e-02
+   !!     residual;
+   !!   * the **pair-antisymmetric** part does not, at scale 0.232 with a 8.4e-01
+   !!     residual -- it is not our antisymmetric part at any scale, either sign.
+   !!
+   !! That is a consistent picture. The antisymmetric part is exactly what the
+   !! assignment of measure and respond controls per orbital -- one ordering gives
+   !! `h P M^-1 h`, the other `h M^-1 P h`, and `P` does not commute with `M^-1` --
+   !! and it cancels when summed, which is why the sum agrees to 1.5e-05 while the
+   !! split does not. So GAMESS forms that part differently, and neither ordering nor
+   !! their average reproduces it (5.8e-02, 8.7e-02, 6.3e-02).
+   !!
+   !! This is the position the dipole-quadrupole block was in before its transposed
+   !! `alpha` turned up: quantity right, distribution wrong. The difference is that
+   !! there a structural identity -- symmetry the pre-shift tensor had to have --
+   !! picked the answer out. Here the two candidate anchors are both unavailable:
+   !! per-orbital tracelessness is orthogonal to every term that could produce it,
+   !! and `QQSHIFT` preserves within-pair symmetry so there is no slot-order freedom.
+   !! Which is why this is left documented rather than guessed at.
    !!
    !! **Eliminated, so the next attempt need not repeat any of it:** all eight
    !! transposes of the dipole-dipole tensor across the three `delta`-bearing terms;
