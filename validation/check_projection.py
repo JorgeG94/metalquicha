@@ -169,12 +169,24 @@ def check_charge_transfer(orbital_energies):
     anything charge-transfer specific. So one of the two charge-transfer sections
     needs no new physics at all -- it is the SCF's own output, serialized.
 
-    `CTVEC` is not settled. It holds seven vectors of nineteen AO coefficients under
-    a header reading `5 7`, and its first vector is within 3e-3 of our canonical
-    oxygen 1s -- close enough to suggest it is built from the occupied orbitals,
-    far too loose to be them, since the basis-table difference between the two codes
-    shows up at 1e-7 in the eigenvalues above. Seven against five occupied suggests
-    a couple of virtuals join them, which is what a charge-transfer term would want.
+    `CTVEC` is traced to its source but not reproduced. `efinp.src:8105` writes it as
+
+        WRITE(NFTEFP,*) 'CTVEC   ', NA, ' ', NLMO
+        CALL PUSQLF(NFTEFP, CTVEC, NLMO, L1, L1, 0)
+
+    after `DAREAD(IDAF, IODA, CTVEC, L3, 15, 0)` and `STFASE(CTVEC, L1, L1, L1)`. So
+    the header is (alpha electrons, orbital count) -- 5 and 7 for water, and the 5 is
+    confirmed -- the data is DAF record 15, and `STFASE` (`symorb.src:761`) is a pure
+    sign convention: make the largest element of each column positive.
+
+    **What does not add up.** A sign convention cannot explain a mismatch, since the
+    comparison below aligns each vector's phase anyway, and seven columns is neither
+    our five occupied orbitals nor our four valence LMOs. Only the first of the seven
+    is close to a canonical orbital of ours (3e-3 against our oxygen 1s); the rest are
+    0.38 to 0.58 away, which is not a convention difference. So DAF 15 holds something
+    other than the canonical orbitals of this SCF at the point it is read -- the
+    localization writes back to it, and a run with a second exchange-repulsion basis
+    would have more orbitals than this one does. That is the thread to pull.
     """
     s = parse_efp(REFERENCE.read_text())["sections"]
     values = _numbers(" ".join(s["CTFOK"]["raw"]).replace(">", " "))
