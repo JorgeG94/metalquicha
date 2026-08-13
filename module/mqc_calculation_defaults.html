@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for modules and submodules.">23 statements</a>
+                 title=" 0.2% of total for modules and submodules.">26 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -144,10 +144,13 @@
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_displacement">DEFAULT_DISPLACEMENT</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_frag_level">DEFAULT_FRAG_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_max_intersection">DEFAULT_MAX_INTERSECTION</a>
-            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_pressure~2">DEFAULT_PRESSURE</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_pcm_nang">DEFAULT_PCM_NANG</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_pcm_rscale">DEFAULT_PCM_RSCALE</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_pcm_zeta">DEFAULT_PCM_ZETA</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_pressure">DEFAULT_PRESSURE</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_scf_conv">DEFAULT_SCF_CONV</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_scf_maxiter">DEFAULT_SCF_MAXITER</a>
-            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_temperature~2">DEFAULT_TEMPERATURE</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_temperature">DEFAULT_TEMPERATURE</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_use_diis">DEFAULT_USE_DIIS</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_xtb_accuracy">DEFAULT_XTB_ACCURACY</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-disp_whole_fragment">DISP_WHOLE_FRAGMENT</a>
@@ -1520,7 +1523,78 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-default_pressure~2"></span>
+              <span class="anchor" id="variable-default_pcm_nang"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_PCM_NANG</strong></td>
+<td> =</td>
+                <td>302</td>
+            <td>
+                <p>Angular points per atom on a continuum cavity, for the ab initio PCM.</p>
+<p>302, matching what PySCF and most codes use for a cavity. This was 110 on
+the assumption that a cavity needs far fewer points than an
+exchange-correlation grid, and that was measured to be wrong: on water in
+water, 110 points per atom gave a dielectric energy 21% short of the
+converged value (-8.07 mHartree against -10.21), while 302 agrees with
+PySCF&rsquo;s C-PCM to 1.5% and reproduces its solvated dipole to 0.0013 D. A
+continuum surface is a two-dimensional integral of a function with a cusp
+where spheres intersect, so it is not the easy quadrature it looks like.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_pcm_rscale"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_PCM_RSCALE</strong></td>
+<td> =</td>
+                <td>1.2_dp</td>
+            <td>
+                <p>Cavity radius scaling. See <code>mqc_pcm_radii</code> for why 1.2 and not 1.0.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_pcm_zeta"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_PCM_ZETA</strong></td>
+<td> =</td>
+                <td>2.0_dp</td>
+            <td>
+                <p>Prefactor of the Gaussian switching exponent on a smooth cavity.</p>
+<p>Used as zeta_i = zeta * sqrt(n_angular) / R_i, since the exponent has to
+scale with the spacing between surface points, which on a sphere of radius
+R carrying n points goes as R/sqrt(n).</p>
+<p><strong>Calibrated, not derived, and that is worth stating.</strong> Lange and Herbert
+[JCP 133, 244111 (2010)] fit 4.9 for Lebedev cavities, but cuEST takes the
+exponents themselves rather than a prefactor and its convention is not
+documented in the bindings &ndash; so 4.9 here is not necessarily 4.9 there. Two
+is the value that reproduces PySCF&rsquo;s C-PCM on water in water; at 4.9 the
+dielectric energy came out half. What that means is that this number
+absorbs whatever cuEST&rsquo;s definition actually is, so it should be treated as
+an empirical constant of this interface rather than a physical one, and it
+is a keyword so it can be revisited.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_pressure"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1571,7 +1645,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-default_temperature~2"></span>
+              <span class="anchor" id="variable-default_temperature"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1709,7 +1783,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-13 02:24 +0000             </p>
+ on 2026-08-13 03:52 +0000             </p>
           </div>
         </div>
         <br>

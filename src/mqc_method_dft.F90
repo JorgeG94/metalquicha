@@ -15,12 +15,14 @@ module mqc_method_dft
    !! it is queried from cuEST's XC plan and handed to the DF plan, so a hybrid
    !! cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
+   use mqc_method_config, only: pcm_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t, parse_backend_name, &
+                              BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
    implicit none
@@ -84,6 +86,11 @@ module mqc_method_dft
          !! Use DIIS for SCF convergence
       integer :: diis_size = 8
          !! Number of Fock matrices in DIIS
+      type(pcm_config_t) :: pcm
+         !! Continuum solvation. Only the cuEST path implements it; the CPU
+         !! backend ignores it, which `run_cuest_scf`'s stub makes visible.
+      character(len=16) :: backend = "auto"
+         !! Integral backend request: "auto", "cuest"/"gpu", "libcint"/"cpu".
    end type dft_options_t
 
    type, extends(qc_method_t) :: dft_method_t
@@ -117,6 +124,7 @@ contains
       logical, intent(in) :: want_gradient
 
       type(cuest_scf_settings_t) :: settings
+      type(error_t) :: backend_error
 
       if (this%options%use_dispersion) then
          ! Silently dropping a dispersion correction would bias every fragment
@@ -135,6 +143,14 @@ contains
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
       settings%device_rank = this%options%device_rank
+      ! Resolved here rather than carried as a string, so an unknown name fails
+      ! once, before any integrals, instead of at each dispatch.
+      call parse_backend_name(this%options%backend, settings%backend, backend_error)
+      if (backend_error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, backend_error%get_message())
+         result%has_error = .true.
+         return
+      end if
       settings%unrestricted = this%options%unrestricted
       settings%guess = this%options%guess
       settings%max_iter = this%options%max_iter
@@ -145,6 +161,7 @@ contains
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
+      settings%pcm = this%options%pcm
 
       ! The same choice Hartree-Fock makes, and made the same way rather than a
       ! second time: cuEST when this build has it, because that is the production
@@ -156,11 +173,33 @@ contains
       ! routine of its own. That is deliberate: on that side a functional is one
       ! optional argument to the same SCF, so a separate entry point would be two
       ! names for one code path and two places to keep the settings in step.
+      ! Which backend, and refuse a request that cannot be honoured.
+      !
+      ! `run_cuest_scf` exists either way -- the stub compiled without the
+      ! backend reports the missing build and computes nothing -- so asking for
+      ! cuEST on a CPU-only build produces that message rather than silently
+      ! running on the CPU. That is the point of naming a backend: a deck that
+      ! said `cuest` and got libcint would report a provenance that was not true.
+      select case (settings%backend)
+      case (BACKEND_CUEST)
+         if (settings%run_mp2 .or. settings%run_cc) then
+            call result%error%set(ERROR_VALIDATION, "backend 'cuest' was asked for, but "// &
+                                  "MP2 and coupled cluster have no GPU implementation "// &
+                                  "here -- they run through the CPU backend. Ask for "// &
+                                  "'auto', or drop the correlated method.")
+            result%has_error = .true.
+            return
+         end if
+         call run_cuest_scf(settings, fragment, result, want_gradient)
+      case (BACKEND_LIBCINT)
+         call run_libcint_hf(settings, fragment, result, want_gradient)
+      case default
 #ifdef MQC_WITH_CUEST
-      call run_cuest_scf(settings, fragment, result, want_gradient)
+         call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
-      call run_libcint_hf(settings, fragment, result, want_gradient)
+         call run_libcint_hf(settings, fragment, result, want_gradient)
 #endif
+      end select
    end subroutine dft_run
 
    subroutine dft_calc_gradient(this, fragment, result)

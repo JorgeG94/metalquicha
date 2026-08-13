@@ -11,10 +11,24 @@ module mqc_cuest_iface
    !! which has a stub form fpm compiles and a real form CMake compiles -- lets
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
+   use mqc_method_config, only: pcm_config_t
    implicit none
    private
 
    public :: cuest_scf_settings_t
+   public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_LIBCINT
+   public :: parse_backend_name
+
+   !> Which integral backend a deck asked for.
+   !>
+   !> `auto` is the historical behaviour and the default: cuEST when the build
+   !> has it, the CPU path otherwise. The other two are requests, and a request
+   !> that cannot be honoured is refused rather than quietly substituted -- which
+   !> is the whole reason for naming one. A deck that says `cuest` and silently
+   !> got the CPU path would report timings and a provenance that were not true.
+   integer, parameter :: BACKEND_AUTO = 0
+   integer, parameter :: BACKEND_CUEST = 1
+   integer, parameter :: BACKEND_LIBCINT = 2
 
    type :: cuest_scf_settings_t
       !! Method-independent description of one cuEST SCF calculation
@@ -44,6 +58,13 @@ module mqc_cuest_iface
       ! from the standard tables; radial_points/angular_points override it for
       ! every atom, which is what a convergence study wants.
       integer :: grid_level = 3
+      integer :: backend = BACKEND_AUTO
+         !! One of BACKEND_*. Resolved from the deck's `backend` key.
+
+      ! A polarizable continuum, when one was asked for. Carried whole rather
+      ! than field by field: the cavity, the solvent and the charge solve travel
+      ! together, and a backend either builds a continuum or does not.
+      type(pcm_config_t) :: pcm
          !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""
@@ -77,5 +98,43 @@ module mqc_cuest_iface
       integer :: radial_points = 75    !! XC grid radial points per atom
       integer :: angular_points = 302  !! XC grid Lebedev order
    end type cuest_scf_settings_t
+
+contains
+
+   subroutine parse_backend_name(name, kind, error)
+      !! A deck's backend name to one of BACKEND_*
+      !!
+      !! Spelled by what the thing is rather than where it runs, with `gpu` and
+      !! `cpu` accepted because that is how people say it. An unknown name is
+      !! refused rather than treated as `auto`: a typo that fell back to the
+      !! default would be a deck asking for one backend and getting another.
+      use mqc_error, only: error_t, ERROR_VALIDATION
+      character(len=*), intent(in) :: name
+      integer, intent(out) :: kind
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: lower
+      integer :: i
+
+      lower = trim(adjustl(name))
+      do i = 1, len(lower)
+         if (lower(i:i) >= "A" .and. lower(i:i) <= "Z") then
+            lower(i:i) = achar(iachar(lower(i:i)) + 32)
+         end if
+      end do
+
+      kind = BACKEND_AUTO
+      select case (lower)
+      case ("", "auto")
+         kind = BACKEND_AUTO
+      case ("cuest", "gpu")
+         kind = BACKEND_CUEST
+      case ("libcint", "cpu")
+         kind = BACKEND_LIBCINT
+      case default
+         call error%set(ERROR_VALIDATION, "unknown backend '"//lower//"'; expected "// &
+                        "'auto', 'cuest' (or 'gpu'), or 'libcint' (or 'cpu')")
+      end select
+   end subroutine parse_backend_name
 
 end module mqc_cuest_iface

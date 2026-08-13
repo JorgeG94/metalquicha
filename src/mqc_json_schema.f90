@@ -99,6 +99,8 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "dft", dft_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "pcm", pcm_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "cc", cc_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
@@ -130,6 +132,7 @@ contains
       call allow(keys, "schema")
       call allow(keys, "model")
       call allow(keys, "driver")
+      call allow(keys, "backend")
       call allow(keys, "molecules")
       call allow(keys, "keywords")
       call allow(keys, "system")
@@ -186,6 +189,7 @@ contains
       call allow(keys, "correlation")
       call allow(keys, "cc")
       call allow(keys, "dft")
+      call allow(keys, "pcm")
    end function keywords_keys
 
    function scf_keys() result(keys)
@@ -229,6 +233,20 @@ contains
       call allow(keys, "radial_points")
       call allow(keys, "angular_points")
    end function dft_keys
+
+   function pcm_keys() result(keys)
+      !! The polarizable continuum: the cavity, the solvent, and the charge solve
+      !!
+      !! Separate from `xtb`, which configures tblite's own CPCM. Two continuum
+      !! implementations with different cavities should not share one keyword.
+      type(key_set_t) :: keys
+      call allow(keys, "dielectric")
+      call allow(keys, "angular_points")
+      call allow(keys, "radii_scale")
+      call allow(keys, "zeta")
+      call allow(keys, "tolerance")
+      call allow(keys, "max_iter")
+   end function pcm_keys
 
    function cc_keys() result(keys)
       !! Coupled-cluster settings, separate from "correlation"

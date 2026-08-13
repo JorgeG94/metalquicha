@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for modules and submodules.">156 statements</a>
+                 title=" 1.0% of total for modules and submodules.">164 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -201,12 +201,12 @@ Re-exported so consumers need only this module</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1398,7 +1398,7 @@ This is the parsed representation from the input file, not the computational fra
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~8"></span>
+              <span class="anchor" id="variable-charge~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -1415,7 +1415,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~9"></span>
+              <span class="anchor" id="variable-indices~6"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1458,7 +1458,7 @@ This is the parsed representation from the input file, not the computational fra
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~19'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
+  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~14'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1491,7 +1491,7 @@ This is the parsed representation from the input file, not the computational fra
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~16"></span>
+              <span class="anchor" id="variable-bonds~11"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -1508,7 +1508,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~9"></span>
+              <span class="anchor" id="variable-charge~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -1542,7 +1542,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry"></span>
+              <span class="anchor" id="variable-geometry~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -1576,7 +1576,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~15"></span>
+              <span class="anchor" id="variable-name~19"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1653,7 +1653,7 @@ This is the parsed representation from the input file, not the computational fra
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~20'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
+  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1754,7 +1754,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -1771,7 +1771,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments~3"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1805,6 +1805,23 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-backend~5"></span>
+              character(len=16),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>backend</strong></td>
+<td> =</td>
+                <td>&#34;auto&#34;</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-basis~3"></span>
               character(len=:),
             </td>
@@ -1822,7 +1839,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~17"></span>
+              <span class="anchor" id="variable-bonds~12"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -1839,7 +1856,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~14"></span>
+              <span class="anchor" id="variable-calc_type~10"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -1873,7 +1890,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size~2"></span>
+              <span class="anchor" id="variable-cc_diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1907,7 +1924,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance~2"></span>
+              <span class="anchor" id="variable-cc_tolerance~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1924,7 +1941,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples~2"></span>
+              <span class="anchor" id="variable-cc_triples~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1961,7 +1978,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~10"></span>
+              <span class="anchor" id="variable-charge~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -1997,7 +2014,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting~2"></span>
+              <span class="anchor" id="variable-corr_density_fitting~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2099,7 +2116,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~3"></span>
+              <span class="anchor" id="variable-cpcm_nang~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2116,7 +2133,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~3"></span>
+              <span class="anchor" id="variable-cpcm_rscale~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2208,7 +2225,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~3"></span>
+              <span class="anchor" id="variable-dielectric~6"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2293,7 +2310,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown~3"></span>
+              <span class="anchor" id="variable-fragment_breakdown~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2344,7 +2361,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2361,7 +2378,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~2"></span>
+              <span class="anchor" id="variable-geometry~3"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -2378,7 +2395,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~5"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2480,7 +2497,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~3"></span>
+              <span class="anchor" id="variable-max_intersection_level~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2616,7 +2633,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~4"></span>
+              <span class="anchor" id="variable-nodes_per_group~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2627,6 +2644,127 @@ XC functional name, only meaningful when method = dft</p>
             <td><strong>nodes_per_group</strong></td>
 <td> =</td>
                 <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_angular_points"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_angular_points</strong></td>
+<td> =</td>
+                <td>DEFAULT_PCM_NANG</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_dielectric"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_dielectric</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+<p>Solvent dielectric constant. Required: there is no solvent-name
+table on this path, because inventing one that disagreed with
+tblite&rsquo;s would make the same deck mean two things.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_enabled"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_enabled</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_max_iter"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_max_iter</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_radii_scale"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_radii_scale</strong></td>
+<td> =</td>
+                <td>DEFAULT_PCM_RSCALE</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_tolerance"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_tolerance</strong></td>
+<td> =</td>
+                <td>1.0e-8_dp</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pcm_zeta"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pcm_zeta</strong></td>
+<td> =</td>
+                <td>DEFAULT_PCM_ZETA</td>
             <td>
 
             </td>
@@ -2769,7 +2907,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~3"></span>
+              <span class="anchor" id="variable-solvation_model~5"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2786,7 +2924,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~3"></span>
+              <span class="anchor" id="variable-solvent~5"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2837,7 +2975,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~3"></span>
+              <span class="anchor" id="variable-use_cds~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2854,7 +2992,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~3"></span>
+              <span class="anchor" id="variable-use_shift~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2880,7 +3018,7 @@ XC functional name, only meaningful when method = dft</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~21'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2914,7 +3052,7 @@ XC functional name, only meaningful when method = dft</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~113"></span>
+              <span class="anchor" id="variable-this~83"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2954,7 +3092,7 @@ XC functional name, only meaningful when method = dft</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~114"></span>
+              <span class="anchor" id="variable-this~84"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2994,7 +3132,7 @@ XC functional name, only meaningful when method = dft</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~112"></span>
+              <span class="anchor" id="variable-this~82"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3037,7 +3175,7 @@ XC functional name, only meaningful when method = dft</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-13 02:24 +0000             </p>
+ on 2026-08-13 03:52 +0000             </p>
           </div>
         </div>
         <br>
