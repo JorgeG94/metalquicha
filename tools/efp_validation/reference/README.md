@@ -182,3 +182,41 @@ above this floor. It is the per-orbital pair-antisymmetric difference in `LMOQQP
 described in `backends/libcint/mqc_efp_potential.f90`, which is structural rather
 than numerical -- worth keeping distinct, because "it is just the basis" is a
 comfortable and wrong explanation for it.
+
+
+## Does it describe the same *surface*
+
+`../hexamer_optimize.py` relaxes a water hexamer -- the prism from
+`validation/inputs/sample_inputs/` -- as six rigid EFP fragments, once from our
+potential and once from GAMESS's, and compares where they settle:
+
+```bash
+./build/check_makefp
+python3 tools/efp_validation/hexamer_optimize.py --screen-from-gamess
+```
+
+A single-point comparison tests the parameters; it cannot tell whether they describe
+a surface, because a potential can have the right energy at one geometry and the
+wrong gradient. Thirty-six degrees of freedom over about thirty-four steps does test
+that, and the answer is the structure.
+
+| | with the reference's screening | with our own fit |
+|---|---|---|
+| final energy | 1.3e-06 Hartree | 1.2e-03 Hartree |
+| 15 oxygen-oxygen distances | 4.7e-05 Angstrom | 1.2e-02 Angstrom |
+| optimization steps | 34 against 34 | 37 against 34 |
+
+So the surface is right, and the charge-penetration screening is the one thing that
+differs -- the same conclusion the dimer single point reaches, now with a physical
+size attached. **The screening fit is worth 0.74 kcal/mol and 0.012 Angstrom on a
+water hexamer**, which is not negligible for fragment work, and it is worth
+remembering that ours finds a genuine minimum where GAMESS's search reaches its
+`alpha = 10` "off" bound on one bond midpoint. Neither is obviously the better fit;
+they are different fits, and only one of them reproduces GAMESS.
+
+**Basis.** This runs in 6-31G*, not the 6-311++G(3df,2p) usually recommended for
+EFP2, for two reasons. That set is not in the Basis Set Exchange bundle at all -- it
+carries `6-311++g`, `(2d,2p)`, `(3df,3pd)` and `**` -- and any basis with f functions
+cannot be emitted yet, because the AO-ordering map in `mqc_efp_potential` handles
+Cartesian d and stops there. `6-311++G**` is d-only and would work once added to
+`MQC_BASIS_SETS`.
