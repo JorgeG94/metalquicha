@@ -37,16 +37,26 @@ module mqc_efp_potential
    !! index reading, and the recovered tensor is our quadrupole-quadrupole response
    !! times roughly 1/3.
    !!
-   !! **That factor is not exact, and an earlier version of this comment said it
-   !! was.** The median ratio is 0.3333 in every one of the four index-pattern
-   !! groups, which is what made it look like a clean constant, but the best single
-   !! scale is 0.3312 and the ratio scatters over [0.312, 0.354] between the 16th
-   !! and 84th percentiles -- 5.8% residual, far above the 1.7e-04 this block's
-   !! numbers are printed to. So 1/3 is the leading behaviour and something
-   !! structural sits on top of it. Quoting the median as the relation was the same
-   !! error as reading a global scale fit off a tensor whose components follow
-   !! different conventions, which is what a scale fit did on the dipole-quadrupole
-   !! block before the index order was pinned.
+   !! **The 1/3 is exact, and it is in GAMESS's source rather than fitted.**
+   !! `LQQPOL` (`locpol.src:5387`) contracts
+   !!
+   !!     TPOL(KL) = TPOL(KL) - TWO * U(IOCC,IVIR,K) * HF(IJ,L) / THREE
+   !!
+   !! so the quadrupole-quadrupole case carries a `/THREE` that the
+   !! dipole-quadrupole case does not -- `LDQPOL` has the same line without it,
+   !! which is why that block needed no factor and this one needs exactly this one.
+   !! Its per-orbital branch puts the same `/THREE` on the `HFL` transform and
+   !! contracts `-TWO*UL*HFL` for the dynamic case, both factors carried into the
+   !! localized basis by `TRAN` -- the same shape this module uses.
+   !!
+   !! This corrects an over-correction. A previous version of this comment said the
+   !! factor was exactly 1/3 on the strength of a median, which was not evidence;
+   !! the version after that said it was only approximate, on the strength of a 5.8%
+   !! per-orbital scatter. The factor is exact. What the scatter measures is a
+   !! *different* disagreement sitting on top of it, and attributing it to the
+   !! factor was wrong in both directions. The summed comparison is what separates
+   !! them: it gives 0.333336, five digits, because summing removes the
+   !! per-orbital part.
    !!
    !! **Summed over the orbitals the factor is clean and the gap shrinks.** The same
    !! move that cracked the dipole-quadrupole block -- summing to remove the
