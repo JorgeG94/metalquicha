@@ -98,6 +98,26 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
   set(FLAGS_WARNINGS "")
   set(FLAGS_COVERAGE "")
 
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
+  # CrayPE's ftn wrapper driving the Cray Fortran compiler (CCE). CMake already
+  # supplies the module flags (-em -J) and, for a PIC build, -h PIC.
+  # Architecture tuning is the job of the loaded craype-x86-* target module
+  # rather than a -march flag, so RELEASE carries none and Cray's own -O2
+  # default stands.
+  #
+  # -homp is set here rather than left to find_package(OpenMP): CMake's
+  # FindOpenMP detects the Cray compiler as OpenMP-capable with an *empty* flag
+  # (older PrgEnv turned OpenMP on by default), so OpenMP_Fortran_FLAGS comes
+  # back blank, the !$omp directives are ignored and the OpenMP runtime is never
+  # linked. Keeping it in the standard set applies it to every compile, and
+  # because CMAKE_Fortran_FLAGS also reaches the Cray link line the runtime is
+  # pulled in.
+  set(FLAGS_STANDARD "-homp")
+  set(FLAGS_DEBUG "-g -Rbcps")
+  set(FLAGS_RELEASE "")
+  set(FLAGS_WARNINGS "")
+  set(FLAGS_COVERAGE "")
+
 else()
   message(WARNING "Unknown Fortran compiler: ${CMAKE_Fortran_COMPILER_ID}")
   set(FLAGS_STANDARD "")
