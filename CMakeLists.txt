@@ -120,7 +120,7 @@ set(MQC_BASIS_BUNDLE
     CACHE STRING "Basis Set Exchange bundle under basis_sets/")
 set(MQC_BASIS_SETS
     # Pople, Dunning, and the auxiliaries the validation inputs name
-    "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
+    "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;cc-pvqz;aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
     # every def2 the bundle carries: orbital, diffuse, RI/JK auxiliaries, ECP
     "def2-sv(p);def2-sv(p)-jkfit;def2-sv(p)-rifit;def2-svp;def2-svp-rifit;def2-svpd;def2-svpd-rifit"
     "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
@@ -511,6 +511,14 @@ if(MQC_ENABLE_LIBCINT)
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_dipquad_sumrule PRIVATE ${main_lib} cint_fortran
                                                       cint)
+
+  # Does the response machinery hold up as the basis grows, with the writing left
+  # out so a Dunning set is not refused before any of the physics runs.
+  add_executable(check_makefp_scaling
+                 ${PROJECT_SOURCE_DIR}/validation/check_makefp_scaling.f90)
+  target_include_directories(check_makefp_scaling
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_makefp_scaling PRIVATE ${main_lib} cint_fortran cint)
 
   # The whole of MAKEFP: a geometry in, a .efp out. Not one parameter block
   # against a reference but every block we can compute, assembled into a file.
