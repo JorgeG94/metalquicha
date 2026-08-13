@@ -13,7 +13,36 @@ module mqc_version
 contains
 
    subroutine print_version()
+      !! Version, and which optional backends this binary actually has
+      !!
+      !! The feature list is here so that something outside the program can
+      !! find out what this build can do without trying it and reading the
+      !! failure. `run_validation.py` gates on it: a deck needing an optional
+      !! backend is skipped rather than failed on a build configured without
+      !! one, which is the difference between "not tested here" and "broken".
+      !!
+      !! Asked of the backends themselves rather than of preprocessor symbols.
+      !! Each of these resolves to a real module or to its stub at link time,
+      !! so the answer is a property of the binary that exists rather than of
+      !! the flags somebody believes they configured with.
+      use mqc_libcint_bridge, only: libcint_backend_available
+      use mqc_dlfind_bridge, only: dlfind_available
+
       call logger%info("metalquicha version "//MQC_VERSION_STR)
+      call logger%info("features: libcint="//available(libcint_backend_available())// &
+                       " dlfind="//available(dlfind_available()))
    end subroutine print_version
+
+   pure function available(is_available) result(text)
+      !! "yes" or "no", in the shape a script can split on
+      logical, intent(in) :: is_available
+      character(len=:), allocatable :: text
+
+      if (is_available) then
+         text = "yes"
+      else
+         text = "no"
+      end if
+   end function available
 
 end module mqc_version

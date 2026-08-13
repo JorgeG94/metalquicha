@@ -98,6 +98,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   message(STATUS "Coverage-mqc build: libxc and libcint disabled")
 endif()
 
+# Off by default: DL-FIND is LGPL-3 and this program is MIT, so linking it is a
+# choice the person building makes rather than one made for them. See the
+# FetchContent block below for how the two licenses are kept separable.
+option(MQC_ENABLE_DLFIND "Fetch libdlfind (DL-FIND) for geometry optimization"
+       OFF)
+
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
@@ -373,6 +379,38 @@ if(MQC_ENABLE_HDF5)
   target_link_libraries(${main_lib} PUBLIC ${HDF5_C_LIBRARIES})
   add_subdirectory(backends/hdf5)
   message(STATUS "HDF5 checkpoints enabled: ${HDF5_C_LIBRARIES}")
+endif()
+
+# DL-FIND, behind libdlfind, for geometry optimization.
+#
+# Off by default, and the reason is licensing rather than size: DL-FIND is
+# LGPL-3 and this program is MIT. libdlfind builds it as a shared library, which
+# is what keeps the two separable -- the .so stays LGPL, mqc stays MIT, and a
+# user retains the right to relink. Compiling those sources into libmqc.a
+# instead would pull the relink obligation onto every binary shipped from here,
+# so this deliberately does not add_subdirectory the DL-FIND sources.
+#
+# The interface is C, not Fortran: `api_dl_find` is bind(c) and takes the seven
+# callbacks as function pointers, so nothing here needs libdlfind's .mod files
+# and the two projects can be built by different compilers. That is also why
+# there is no include-directory line below -- backends/dlfind declares the
+# interface itself.
+#
+# A commit, not a branch, for the same reason libcint is pinned: what this
+# program builds against should not change because somebody pushed to main.
+if(MQC_ENABLE_DLFIND)
+  include(FetchContent)
+  FetchContent_Declare(
+    libdlfind
+    GIT_REPOSITORY https://github.com/JorgeG94/libdlfind.git
+    GIT_TAG 4167998d16d8dac4a484ba9305f27d6325a7a28d)
+  # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBDLFIND at a local clone, as
+  # with libcint above. Compute nodes on most clusters have no network.
+  FetchContent_MakeAvailable(libdlfind)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_DLFIND)
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:dlfind>)
+  add_subdirectory(backends/dlfind)
+  message(STATUS "DL-FIND enabled: geometry optimization via libdlfind")
 endif()
 
 target_link_libraries(${main_lib} PUBLIC ${libraries_to_link})

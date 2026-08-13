@@ -107,6 +107,9 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "aimd", aimd_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "optimization", &
+                                   optimization_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "xtb", xtb_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "fragmentation", &
@@ -184,6 +187,7 @@ contains
       call allow(keys, "scf")
       call allow(keys, "hessian")
       call allow(keys, "aimd")
+      call allow(keys, "optimization")
       call allow(keys, "fragmentation")
       call allow(keys, "xtb")
       call allow(keys, "correlation")
@@ -286,6 +290,24 @@ contains
       call allow(keys, "output_frequency")
       call allow(keys, "output_freq")
    end function aimd_keys
+
+   function optimization_keys() result(keys)
+      type(key_set_t) :: keys
+      call allow(keys, "max_steps")
+      call allow(keys, "steps")
+      call allow(keys, "gradient_tolerance")
+      call allow(keys, "tolerance")
+      call allow(keys, "energy_tolerance")
+      call allow(keys, "max_step")
+      call allow(keys, "coordinates")
+      call allow(keys, "coordinate_system")
+      call allow(keys, "algorithm")
+      call allow(keys, "optimizer")
+      call allow(keys, "lbfgs_memory")
+      call allow(keys, "print_level")
+      call allow(keys, "trajectory")
+      call allow(keys, "freeze_terms")
+   end function optimization_keys
 
    function xtb_keys() result(keys)
       type(key_set_t) :: keys

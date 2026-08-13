@@ -11,6 +11,8 @@ program main
    use pic_mpi_lib, only: pic_mpi_init, comm_world, abort_comm, pic_mpi_finalize
    use mqc_resources, only: resources_t
    use mqc_driver, only: run_calculation, run_multi_molecule_calculations
+   use mqc_geometry_optimizer, only: run_geometry_optimization
+   use mqc_calc_types, only: CALC_TYPE_OPTIMIZE
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
@@ -21,6 +23,7 @@ program main
    use pic_timer, only: timer_type
    use mqc_error, only: error_t
    use pic_knowledge, only: get_knowledge
+   use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
    type(timer_type) :: my_timer      !! Execution timing
@@ -112,7 +115,14 @@ program main
    if (mqc_config%nmol == 0) then
       ! Single molecule mode (backward compatible)
       call config_to_driver(mqc_config, config, &
-                            node_rank=resources%mpi_comms%node_comm%rank())
+                            node_rank=resources%mpi_comms%node_comm%rank(), &
+                            error=error)
+      if (error%has_error()) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            call logger%error("Error reading settings: "//error%get_message())
+         end if
+         call abort_comm(resources%mpi_comms%world_comm, 1)
+      end if
       call config_to_system_geometry(mqc_config, sys_geom, error)
       if (error%has_error()) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -121,7 +131,27 @@ program main
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
 
-      call run_calculation(resources, config, sys_geom, mqc_config%bonds)
+      ! An optimization is a loop over calculations rather than one of them, so
+      ! it dispatches here rather than inside `run_calculation` -- which it
+      ! calls, and which therefore cannot call it.
+      if (config%calc_type == CALC_TYPE_OPTIMIZE) then
+         call run_geometry_optimization(resources, config, sys_geom, mqc_config%bonds, error)
+         if (error%has_error()) then
+            if (resources%mpi_comms%world_comm%rank() == 0) then
+               call logger%error("Geometry optimization failed: "//error%get_message())
+            end if
+            ! Before the abort, not after. `abort_comm` reaches MPI_ABORT,
+            ! which kills the process without unwinding -- whatever is sitting
+            ! in the stdout buffer is discarded with it. An optimization that
+            ! ran out of steps was exiting 1 having printed its diagnosis into
+            ! a buffer nobody ever read, which from the outside is an exit code
+            ! and silence.
+            flush (output_unit)
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      else
+         call run_calculation(resources, config, sys_geom, mqc_config%bonds)
+      end if
       call sys_geom%destroy()
    else
       ! Multi-molecule mode: loop over all molecules
