@@ -760,17 +760,23 @@ contains
       !!
       !! So the reference genuinely carries information a dip-quad contraction alone
       !! does not, which is exactly what the rank-18 fit was reporting, and no
-      !! rearrangement of our components could ever have reproduced it. Applying the
-      !! formula above with our own dip-dip tensors drops the residual from 1.0 to
-      !! 0.88, so the mechanism is right and something in the pre-shift tensor is not
-      !! -- most likely its reference point, since `DQSHIFT` assumes its input is
-      !! expanded about the centre of mass while `multipole_matrices` here is called
-      !! about the origin.
+      !! rearrangement of our components could ever have reproduced it. That much is
+      !! settled, and it explains every failed enumeration above at once.
       !!
-      !! That is the remaining gap, and it is now a bookkeeping question rather than an
-      !! unknown quantity. Everything else is confirmed: operator, order, frequency,
-      !! right-hand side, drive, measure, contraction, factor, nesting, sample
-      !! ordering, and now the translation.
+      !! **The reference point is not the remaining gap, though.** Applying the shift
+      !! with the quadrupole measure referenced to the centre of mass and shifting
+      !! from there, referenced to the origin and shifting from there, and the mixed
+      !! pairings, all leave a relative residual near 0.95. The 0.88 seen with one
+      !! combination was an inconsistent pairing rather than a near miss. So our
+      !! pre-shift tensor is itself not GAMESS's, and the translation being confirmed
+      !! from source does not localise what differs.
+      !!
+      !! Confirmed against GAMESS's source: the operator, its order, the frequency, the
+      !! right-hand side, the drive, the measure, the contraction, its factor, the
+      !! nesting, the sample ordering, and the translation applied at write time.
+      !! Something remains different in what `LDQPOL` receives as `U` or in what its
+      !! `HF` holds, and this reading has not found it. The rank result is the fact to
+      !! hold on to: whatever it is, it is not a rearrangement.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
