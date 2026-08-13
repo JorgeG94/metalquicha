@@ -658,12 +658,29 @@ contains
       !! 1.0, under either candidate expansion of the six unique components into the
       !! nine slots the file carries.
       !!
-      !! So five operators, two nestings and the factor have been eliminated with the
-      !! definition confirmed from GAMESS's own source at every step. What has *not*
-      !! been read is the per-orbital decomposition: `LDQPOL` as cited computes the
-      !! molecular total, and the localized tensors come from a further transform
-      !! through its `TRAN` argument. That is the only remaining place for the
-      !! difference, and it is where the next attempt should start.
+      !! The per-orbital decomposition has been read too (`locpol.src:5326`): GAMESS
+      !! transforms *both* factors into the localized basis and then contracts over
+      !! virtuals, which is the same shape this routine uses.
+      !!
+      !! **One real asymmetry came out of that read, and it is worth keeping even
+      !! though it did not resolve the discrepancy.** GAMESS contracts the
+      !! *dipole-driven response* against the *quadrupole integral*; this routine as
+      !! called for the earlier tests did the reverse. Those are not equivalent per
+      !! orbital: writing `M` for the response operator and `P` for the projector
+      !! onto the localized set, one is `h^A P M^-1 h^B` and the other
+      !! `h^A M^-1 P h^B`, and `P` does not commute with `M^-1`. They agree only when
+      !! summed over every orbital, where `P` is the identity. That is also why the
+      !! per-orbital dipole-dipole tensors are asymmetric at all. Swapping to
+      !! GAMESS's order was tested and does not close the gap either.
+      !!
+      !! So: five operators, two nestings, the factor, the sample ordering, the
+      !! decomposition and the drive/measure order have all been checked, most of
+      !! them confirmed directly from GAMESS's source, and a single-scale fit still
+      !! leaves a relative residual of 1.0. The remaining candidate is the
+      !! normalisation of the dynamic response itself -- `POLDB` forms its
+      !! right-hand side as `8 * H2^T h` and `SOLVCPDYN` solves with it, so their `U`
+      !! is not this routine's `S` -- but that is a scale, which the fit already
+      !! allows and rejects. Something structural remains unidentified.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
