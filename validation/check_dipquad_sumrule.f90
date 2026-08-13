@@ -62,6 +62,7 @@ program check_dipquad_sumrule
    real(dp), allocatable :: buckingham(:, :, :)
    real(dp), allocatable :: tensors(:, :, :, :), centroids(:, :)
    real(dp), allocatable :: dq_dr(:, :, :, :), dq_rd(:, :, :, :), dd(:, :, :, :)
+   real(dp), allocatable :: qq(:, :, :, :)
    real(dp), allocatable :: total(:, :, :), buck_total(:, :, :)
    real(dp) :: c(3, 3), com(3), mass_total
    real(dp) :: nu(N_CASIMIR_POLDER)
@@ -151,6 +152,12 @@ program check_dipquad_sumrule
                                   scf%n_occupied, nu, dip, dip, dd, centroids, &
                                   err, n_core=1)
    if (err%has_error()) error stop "dipole-dipole"
+   ! And the quadrupole-quadrupole response, which `LMOQQPOL` carries and whose
+   ! write-time shift `QQSHIFT` takes the two tensors above as inputs.
+   call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                  scf%n_occupied, nu, buckingham, buckingham, qq, &
+                                  centroids, err, n_core=1)
+   if (err%has_error()) error stop "quadrupole-quadrupole"
 
    open (newunit=unit, file="/tmp/mqc_dqsum.txt", status="replace", action="write")
    write (unit, "(I0,1X,I0)") N_CASIMIR_POLDER, n_lmo
@@ -162,6 +169,7 @@ program check_dipquad_sumrule
    write (unit, "(es25.16e3)") dq_dr
    write (unit, "(es25.16e3)") dq_rd
    write (unit, "(es25.16e3)") dd
+   write (unit, "(es25.16e3)") qq
    close (unit)
 
    write (*, "(A,I0,A,I0,A)") "  ", n_lmo, " localized orbitals, ", &

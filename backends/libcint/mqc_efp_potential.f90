@@ -27,6 +27,23 @@ module mqc_efp_potential
    !! a plausible guess: a wrong dispersion tensor in a file someone runs is worse
    !! than an absent one, and their absence is legible to a reader of the file.
    !!
+   !! **Where `LMOQQPOL` stands**, since it is now the only dispersion block
+   !! missing and it is much closer than it was. Its 81 values are
+   !! `QQL_SFT(3,3,3,3)` written with the last index fastest, and its write-time
+   !! translation `QQSHIFT` (`efinp.src:13275`) takes the dipole-dipole *and*
+   !! pre-shift dipole-quadrupole tensors as inputs -- both of which this module
+   !! computes. Subtracting that shift from GAMESS's values recovers a tensor
+   !! symmetric in both index pairs to 4.4e-16, which validates the formula and the
+   !! index reading, and the recovered tensor is our quadrupole-quadrupole response
+   !! times **exactly 1/3** -- median ratio 0.333333 in all four index-pattern
+   !! groups, so a constant rather than a component-dependent convention.
+   !!
+   !! With that factor the forward recipe reaches 1.3e-01 relative at scale 0.987,
+   !! down from nothing. What is *not* yet explained: unlike the
+   !! dipole-quadrupole case, the residual is not purely a trace -- removing the
+   !! traces in both pairs leaves 1.0e-01 -- so a further operator convention
+   !! differs, not just a `delta` term. It is not written until that is closed.
+   !!
    !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
    !! subsection of `CTVEC`, accepted only directly behind one, so it goes when
    !! `CTVEC` goes -- see the comment where it would have been written. That was
