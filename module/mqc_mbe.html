@@ -197,21 +197,21 @@ GMBE energy with optional gradient and hessian</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1375,7 +1375,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~9"></span>
+              <span class="anchor" id="variable-fragment_idx~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1390,7 +1390,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~28"></span>
+              <span class="anchor" id="variable-fragment~29"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1405,7 +1405,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~2"></span>
+              <span class="anchor" id="variable-lookup~3"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1435,7 +1435,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~2"></span>
+              <span class="anchor" id="variable-delta_energies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1450,7 +1450,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~35"></span>
+              <span class="anchor" id="variable-n~38"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1465,7 +1465,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~19"></span>
+              <span class="anchor" id="variable-world_comm~23"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1620,7 +1620,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1635,7 +1635,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~59"></span>
+              <span class="anchor" id="variable-sys_geom~64"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1695,7 +1695,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~23"></span>
+              <span class="anchor" id="variable-world_comm~27"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1735,7 +1735,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~16"></span>
+              <span class="anchor" id="variable-polymers~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1750,7 +1750,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~6"></span>
+              <span class="anchor" id="variable-fragment_count~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1765,7 +1765,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~24"></span>
+              <span class="anchor" id="variable-max_level~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1810,7 +1810,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~58"></span>
+              <span class="anchor" id="variable-sys_geom~63"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1825,7 +1825,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~22"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1840,7 +1840,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~21"></span>
+              <span class="anchor" id="variable-json_data~26"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1910,7 +1910,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~55"></span>
+              <span class="anchor" id="variable-sys_geom~60"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2000,7 +2000,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~20"></span>
+              <span class="anchor" id="variable-world_comm~24"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2070,7 +2070,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~56"></span>
+              <span class="anchor" id="variable-sys_geom~61"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2185,7 +2185,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~15"></span>
+              <span class="anchor" id="variable-polymers~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2200,7 +2200,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2215,7 +2215,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~22"></span>
+              <span class="anchor" id="variable-max_level~25"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2230,7 +2230,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~5"></span>
+              <span class="anchor" id="variable-lookup~6"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2245,7 +2245,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~93"></span>
+              <span class="anchor" id="variable-error~96"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2285,7 +2285,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2300,7 +2300,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2315,7 +2315,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~21"></span>
+              <span class="anchor" id="variable-max_level~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2330,7 +2330,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~3"></span>
+              <span class="anchor" id="variable-lookup~4"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2387,7 +2387,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~10"></span>
+              <span class="anchor" id="variable-fragment_idx~11"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2402,7 +2402,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~30"></span>
+              <span class="anchor" id="variable-fragment~31"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2417,7 +2417,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~4"></span>
+              <span class="anchor" id="variable-lookup~5"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2462,7 +2462,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~36"></span>
+              <span class="anchor" id="variable-n~39"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2477,7 +2477,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~21"></span>
+              <span class="anchor" id="variable-world_comm~25"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2517,7 +2517,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~61"></span>
+              <span class="anchor" id="variable-sys_geom~66"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2562,7 +2562,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~34"></span>
+              <span class="anchor" id="variable-n_atoms~38"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2602,7 +2602,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level"></span>
+              <span class="anchor" id="variable-sum_by_level~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2617,7 +2617,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~23"></span>
+              <span class="anchor" id="variable-max_level~26"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2632,7 +2632,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2687,7 +2687,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~57"></span>
+              <span class="anchor" id="variable-sys_geom~62"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2757,7 +2757,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~29"></span>
+              <span class="anchor" id="variable-k~30"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2817,7 +2817,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~60"></span>
+              <span class="anchor" id="variable-sys_geom~65"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2922,7 +2922,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~24"></span>
+              <span class="anchor" id="variable-world_comm~28"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2962,7 +2962,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~5"></span>
+              <span class="anchor" id="variable-scf_status~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2977,7 +2977,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~5"></span>
+              <span class="anchor" id="variable-fragment_count~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3020,7 +3020,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-13 03:52 +0000             </p>
+ on 2026-08-13 12:53 +0000             </p>
           </div>
         </div>
         <br>

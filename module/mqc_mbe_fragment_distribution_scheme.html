@@ -181,28 +181,28 @@ calculations with MPI parallelization and energy/gradient computation.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_factory.html'>mqc_method_factory</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_mbe.html'>mqc_mbe</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
                   <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_factory.html'>mqc_method_factory</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2351,7 +2351,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~26"></span>
+              <span class="anchor" id="variable-world_comm~16"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2366,7 +2366,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~64"></span>
+              <span class="anchor" id="variable-sys_geom~46"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2396,7 +2396,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~25"></span>
+              <span class="anchor" id="variable-json_data~22"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2445,7 +2445,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~11"></span>
+              <span class="anchor" id="variable-fragment_idx~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2460,7 +2460,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~40"></span>
+              <span class="anchor" id="variable-result~29"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2475,7 +2475,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~9"></span>
+              <span class="anchor" id="variable-method_config~7"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2490,7 +2490,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag~6"></span>
+              <span class="anchor" id="variable-phys_frag~4"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2505,7 +2505,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~13"></span>
+              <span class="anchor" id="variable-calc_type~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2520,7 +2520,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~25"></span>
+              <span class="anchor" id="variable-world_comm~15"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2535,7 +2535,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-print_geometry~2"></span>
+              <span class="anchor" id="variable-print_geometry"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2584,7 +2584,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~17"></span>
+              <span class="anchor" id="variable-ctx~4"></span>
               class(*),
             </td>
 <td>intent(inout)</td>
@@ -2599,7 +2599,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~22"></span>
+              <span class="anchor" id="variable-json_data~19"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2648,7 +2648,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~18"></span>
+              <span class="anchor" id="variable-ctx~5"></span>
               class(*),
             </td>
 <td>intent(in)</td>
@@ -2697,7 +2697,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~19"></span>
+              <span class="anchor" id="variable-ctx~6"></span>
               class(*),
             </td>
 <td>intent(in)</td>
@@ -2746,7 +2746,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~8"></span>
+              <span class="anchor" id="variable-total_fragments~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2761,7 +2761,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~18"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2776,7 +2776,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~28"></span>
+              <span class="anchor" id="variable-max_level~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2791,7 +2791,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~62"></span>
+              <span class="anchor" id="variable-sys_geom~44"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2806,7 +2806,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~10"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2821,7 +2821,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~14"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2836,7 +2836,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~23"></span>
+              <span class="anchor" id="variable-json_data~20"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2900,7 +2900,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~63"></span>
+              <span class="anchor" id="variable-sys_geom~45"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2945,7 +2945,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~24"></span>
+              <span class="anchor" id="variable-json_data~21"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2994,7 +2994,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~27"></span>
+              <span class="anchor" id="variable-world_comm~17"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3009,7 +3009,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~65"></span>
+              <span class="anchor" id="variable-sys_geom~47"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3039,7 +3039,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~26"></span>
+              <span class="anchor" id="variable-json_data~23"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3088,7 +3088,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~28"></span>
+              <span class="anchor" id="variable-world_comm~18"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3103,7 +3103,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~66"></span>
+              <span class="anchor" id="variable-sys_geom~48"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3166,7 +3166,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-13 03:52 +0000             </p>
+ on 2026-08-13 12:53 +0000             </p>
           </div>
         </div>
         <br>

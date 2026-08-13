@@ -35,7 +35,7 @@ module mqc_capi_session
    public :: current_session
 
    integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
 
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
@@ -65,7 +65,7 @@ contains
       call the_session%begin(error)
       if (error%has_error()) then
          last_message = error%get_message()
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       status = MQC_OK
@@ -85,7 +85,7 @@ contains
       call the_session%end_session(error)
       if (error%has_error()) then
          last_message = error%get_message()
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       status = MQC_OK

@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-h~10">h</a>
-            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-ibond~5">ibond</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-h~5">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-ibond~7">ibond</a>
         </div>
       </div>
     </div>
@@ -227,7 +227,7 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i~2"></span>
+              <span class="anchor" id="variable-atom_i~4"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -242,7 +242,7 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_j~2"></span>
+              <span class="anchor" id="variable-atom_j~4"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -257,7 +257,7 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-order~3"></span>
+              <span class="anchor" id="variable-order~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -272,7 +272,7 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_broken"></span>
+              <span class="anchor" id="variable-is_broken~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -290,7 +290,7 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~23"></span>
+          <span class="anchor" id="variable-status~15"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -448,7 +448,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~10"></span>
+              <span class="anchor" id="variable-h~5"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -465,7 +465,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ibond~5"></span>
+              <span class="anchor" id="variable-ibond~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -524,19 +524,19 @@ large graphs.</div>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_set_bonds: set the geometry first&quot;</span>
-<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! The partition is what decides which bonds are cut, so it has to</span>
 <span class="w">         </span><span class="c">! exist before the claim about them can be checked.</span>
 <span class="w">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_set_bonds: set the monomers first&quot;</span>
-<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_bonds</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_set_bonds: bond count cannot be negative&quot;</span>
-<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -545,17 +545,17 @@ large graphs.</div>
 <span class="w">             </span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_set_bonds: an atom index is out of range &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">&quot;(indices are 0-based)&quot;</span>
-<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_i</span><span class="p">(</span><span class="n">ibond</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_set_bonds: a bond joins an atom to itself&quot;</span>
-<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">order</span><span class="p">(</span><span class="n">ibond</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_set_bonds: bond order must be positive&quot;</span>
-<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
@@ -572,7 +572,7 @@ large graphs.</div>
 <span class="w">                           </span><span class="n">int_text</span><span class="p">(</span><span class="n">atom_i</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot; and &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">&quot; crosses a monomer boundary but is not marked broken; &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">&quot;fragmenting it would leave an uncapped valence&quot;</span>
-<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
@@ -613,7 +613,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-13 03:52 +0000             </p>
+ on 2026-08-13 12:53 +0000             </p>
           </div>
         </div>
         <br>

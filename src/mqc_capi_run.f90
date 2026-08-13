@@ -39,7 +39,7 @@ module mqc_capi_run
    public :: mqc_run, mqc_run_last_error
 
    integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
    integer(c_int), parameter :: MQC_BAD_HANDLE = 2
 
    integer, parameter :: MESSAGE_LEN = 512
@@ -100,7 +100,7 @@ contains
       session => current_session()
       if (.not. session%active) then
          last_message = "mqc_run: no session; call mqc_session_begin first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -128,7 +128,7 @@ contains
 
       if (error%has_error()) then
          last_message = error%get_message()
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -140,7 +140,7 @@ contains
       ! is the worst shape a failure can take.
       if (result%has_error) then
          last_message = result%error%get_message()
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -191,7 +191,7 @@ contains
          "starting with atoms ", missing_i(1), " and ", missing_j(1), &
          "; declare them with mqc_system_set_bonds so the fragments are capped, "// &
          "or set unchecked_input if the partition is deliberate"
-      status = MQC_ERROR
+      status = MQC_FAIL
    end subroutine refuse_undeclared_cuts
 
    pure function chars_to_string(n, chars) result(text)

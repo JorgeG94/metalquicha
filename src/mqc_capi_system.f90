@@ -51,7 +51,7 @@ module mqc_capi_system
       !! the rest of the code works in `system_geometry_t`.
 
    integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
    integer(c_int), parameter :: MQC_BAD_HANDLE = 2
 
    integer, parameter :: MESSAGE_LEN = 512
@@ -123,12 +123,12 @@ contains
 
       if (n_atoms <= 0) then
          last_message = "mqc_system_set_geometry: a system needs at least one atom"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       if (multiplicity < 1) then
          last_message = "mqc_system_set_geometry: multiplicity must be at least 1"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -181,18 +181,18 @@ contains
 
       if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_set_monomers: set the geometry first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       if (n_monomers <= 0 .or. max_size <= 0) then
          last_message = "mqc_system_set_monomers: monomer count and size must be positive"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       do imon = 1, n_monomers
          if (sizes(imon) < 1 .or. sizes(imon) > max_size) then
             last_message = "mqc_system_set_monomers: a monomer size is outside 1..max_size"
-            status = MQC_ERROR
+            status = MQC_FAIL
             return
          end if
       end do
@@ -213,7 +213,7 @@ contains
             if (atoms(base + iatom) < 0 .or. atoms(base + iatom) >= h%geom%total_atoms) then
                last_message = "mqc_system_set_monomers: an atom index is out of range "// &
                               "(indices are 0-based)"
-               status = MQC_ERROR
+               status = MQC_FAIL
                return
             end if
             h%geom%fragment_atoms(iatom, imon) = atoms(base + iatom)
@@ -263,19 +263,19 @@ contains
 
       if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_set_bonds: set the geometry first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       if (h%geom%n_monomers <= 0) then
          ! The partition is what decides which bonds are cut, so it has to
          ! exist before the claim about them can be checked.
          last_message = "mqc_system_set_bonds: set the monomers first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       if (n_bonds < 0) then
          last_message = "mqc_system_set_bonds: bond count cannot be negative"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -284,17 +284,17 @@ contains
              atom_j(ibond) < 0 .or. atom_j(ibond) >= h%geom%total_atoms) then
             last_message = "mqc_system_set_bonds: an atom index is out of range "// &
                            "(indices are 0-based)"
-            status = MQC_ERROR
+            status = MQC_FAIL
             return
          end if
          if (atom_i(ibond) == atom_j(ibond)) then
             last_message = "mqc_system_set_bonds: a bond joins an atom to itself"
-            status = MQC_ERROR
+            status = MQC_FAIL
             return
          end if
          if (order(ibond) < 1) then
             last_message = "mqc_system_set_bonds: bond order must be positive"
-            status = MQC_ERROR
+            status = MQC_FAIL
             return
          end if
       end do
@@ -311,7 +311,7 @@ contains
                            int_text(atom_i(ibond))//" and "//int_text(atom_j(ibond))// &
                            " crosses a monomer boundary but is not marked broken; "// &
                            "fragmenting it would leave an uncapped valence"
-            status = MQC_ERROR
+            status = MQC_FAIL
             return
          end if
       end do
@@ -377,7 +377,7 @@ contains
 
       if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_auto_monomers: set the geometry first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -387,7 +387,7 @@ contains
       call auto_monomers(h%geom, error, tol)
       if (error%has_error()) then
          last_message = error%get_message()
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       status = MQC_OK
@@ -422,12 +422,12 @@ contains
 
       if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_perceive_bonds: set the geometry first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
       if (h%geom%n_monomers <= 0) then
          last_message = "mqc_system_perceive_bonds: set the monomers first"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
