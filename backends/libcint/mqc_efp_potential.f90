@@ -40,7 +40,7 @@ module mqc_efp_potential
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_dma, only: dma_result_t, distributed_multipoles
-   use mqc_libcint_cphf, only: distributed_polarizability, &
+   use mqc_libcint_cphf, only: response_hessian_t, distributed_polarizability, &
                                distributed_dynamic_polarizability, &
                                distributed_dynamic_cross, &
                                casimir_polder_frequencies, N_CASIMIR_POLDER
@@ -187,6 +187,7 @@ contains
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(dma_result_t) :: dma
+      type(response_hessian_t) :: shared_hessian
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
       integer :: natm, core, i, j, k, n_valence
@@ -299,10 +300,14 @@ contains
 
       allocate (pot%frequencies(N_CASIMIR_POLDER))
       pot%frequencies = casimir_polder_frequencies()
+      ! One Hessian for all three dynamic blocks. It depends on the reference alone,
+      ! so rebuilding it per block is three identical builds -- 55 seconds each at 115
+      ! orbitals, which was most of the potential's cost.
       call distributed_dynamic_polarizability(mol, scf%orbitals, &
                                               scf%orbital_energies, pot%n_occ, &
                                               pot%frequencies, pot%dynamic_pol, &
-                                              pot%centroids, error, n_core=core)
+                                              pot%centroids, error, n_core=core, &
+                                              hessian=shared_hessian)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -311,7 +316,7 @@ contains
          " imaginary frequencies"
 
       call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
-                                   error)
+                                   shared_hessian, error)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -382,12 +387,13 @@ contains
       deallocate (alpha)
       if (talk) write (*, "(A)") "  screening fitted for both damping forms"
 
+      call shared_hessian%destroy()
       call mol%destroy()
       deallocate (loc, ovl, sc, w, scaled)
    end subroutine make_efp_potential
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
-                                      pot, error)
+                                      pot, hessian, error)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -415,6 +421,7 @@ contains
       integer, intent(in) :: atomic_numbers(:)
       integer, intent(in) :: core
       type(efp_potential_t), intent(inout) :: pot
+      type(response_hessian_t), intent(inout) :: hessian
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
@@ -454,7 +461,7 @@ contains
 
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      pot%n_occ, pot%frequencies, buck, dip, raw, &
-                                     centroids, error, n_core=core)
+                                     centroids, error, n_core=core, hessian=hessian)
       if (error%has_error()) return
 
       n_freq = size(pot%frequencies)
@@ -496,7 +503,7 @@ contains
       ! summed over the orbitals and divided by three reproduces it to 1.5e-05.
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      pot%n_occ, pot%frequencies, buck, buck, qq, &
-                                     centroids, error, n_core=core)
+                                     centroids, error, n_core=core, hessian=hessian)
       if (error%has_error()) return
 
       allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))

@@ -38,7 +38,7 @@ module mqc_libcint_screening
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t
-   use mqc_libcint_esp, only: esp_matrices
+   use mqc_libcint_esp, only: esp_contract
    use mqc_libcint_dma, only: dma_result_t, N_QUAD
    implicit none
    private
@@ -294,13 +294,11 @@ contains
 
       ! The quantum target: the electronic potential, nuclei excluded, because the
       ! classical side above carries the electronic monopoles alone.
-      call esp_matrices(mol, grid, potential, error)
+      ! Contracted inside the integral loop. Holding the whole
+      ! `(n_ao, n_ao, n_grid)` tensor to form this one vector is 786 MB at 58
+      ! orbitals and 3.1 GB at 115, for a grid of about thirty thousand points.
+      call esp_contract(mol, grid, density, quantum, error)
       if (error%has_error()) return
-      allocate (quantum(size(grid, 2)))
-      do g = 1, size(grid, 2)
-         quantum(g) = -sum(density*potential(:, :, g))
-      end do
-      deallocate (potential)
 
       n_centre = size(dma%points, 2)
       allocate (alpha(n_centre))

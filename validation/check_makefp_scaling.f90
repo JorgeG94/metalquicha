@@ -39,13 +39,13 @@
 !! polarizabilities should fall smoothly towards a limit and the run should finish,
 !! which is what a convergence check is.
 program check_makefp_scaling
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_dma, only: dma_result_t, distributed_multipoles
-   use mqc_libcint_cphf, only: distributed_polarizability, &
+   use mqc_libcint_cphf, only: response_hessian_t, distributed_polarizability, &
                                distributed_dynamic_polarizability, &
                                distributed_dynamic_cross, &
                                casimir_polder_frequencies, N_CASIMIR_POLDER
@@ -96,20 +96,26 @@ contains
       type(rhf_result_t) :: scf
       type(dma_result_t) :: dma
       type(error_t) :: err
+      ! One Hessian across the three dynamic blocks, as the emitter does it. Built
+      ! per block instead, the same matrices are formed three times.
+      type(response_hessian_t) :: shared
       real(dp), allocatable :: loc(:, :), cen(:, :), stat_pol(:, :, :)
       real(dp), allocatable :: dyn(:, :, :, :), cross(:, :, :, :)
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
       real(dp), allocatable :: alpha_scr(:)
       real(dp) :: nu(N_CASIMIR_POLDER), com(3), mass_total
       real(dp) :: iso0, isomax, t0, t1
+      real(dp) :: t_scf, t_loc, t_dma, t_stat, t_dyn, t_dq, t_qq, t_scr, mark
       integer :: n_lmo, k, i
 
       call cpu_time(t0)
+      call wall(mark)
       call build_libcint_molecule(z, symbols, c, basis, mol, err)
       if (bail(err, basis, "basis")) return
 
       call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       if (bail(err, basis, "SCF")) return
+      call lap(mark, t_scf)
       if (.not. scf%converged) then
          write (*, "(A8,A)") basis, "   SCF did not converge"
          failures = failures + 1
@@ -120,19 +126,23 @@ contains
       n_lmo = scf%n_occupied - 1
       call boys_localize(mol, scf%orbitals(:, 2:scf%n_occupied), n_lmo, loc, cen, err)
       if (bail(err, basis, "localization")) return
+      call lap(mark, t_loc)
 
       call distributed_multipoles(mol, scf%density, z, dma, err)
       if (bail(err, basis, "distributed multipoles")) return
+      call lap(mark, t_dma)
 
       call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
                                       scf%n_occupied, stat_pol, cen, err, n_core=1)
       if (bail(err, basis, "static polarizability")) return
+      call lap(mark, t_stat)
 
       nu = casimir_polder_frequencies()
       call distributed_dynamic_polarizability(mol, scf%orbitals, scf%orbital_energies, &
                                               scf%n_occupied, nu, dyn, cen, err, &
-                                              n_core=1)
+                                              n_core=1, hessian=shared)
       if (bail(err, basis, "dynamic dipole polarizability")) return
+      call lap(mark, t_dyn)
 
       ! The mixed and quadrupole-quadrupole blocks, which are the expensive ones:
       ! nine driving operators rather than three, at every frequency.
@@ -160,16 +170,19 @@ contains
 
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      scf%n_occupied, nu, buck, dip, cross, cen, err, &
-                                     n_core=1)
+                                     n_core=1, hessian=shared)
       if (bail(err, basis, "dipole-quadrupole response")) return
+      call lap(mark, t_dq)
       deallocate (cross)
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      scf%n_occupied, nu, buck, buck, cross, cen, err, &
-                                     n_core=1)
+                                     n_core=1, hessian=shared)
       if (bail(err, basis, "quadrupole-quadrupole response")) return
+      call lap(mark, t_qq)
 
       call fit_screening(mol, scf%density, dma, z, SCREEN_EXPONENTIAL, alpha_scr, err)
       if (bail(err, basis, "screening fit")) return
+      call lap(mark, t_scr)
 
       iso0 = 0.0_dp
       isomax = 0.0_dp
@@ -183,11 +196,36 @@ contains
 
       write (*, "(A8,I6,F18.8,F13.6,F13.6,F9.1)") basis, mol%nao, scf%energy, &
          iso0, isomax, t1 - t0
+      ! Wall seconds per stage. Which stage dominates decides where optimisation is
+      ! worth anything, and it moves with basis size -- the response is nearly
+      ! everything at a small basis and stops being so once the integrals grow.
+      write (*, "(A,8(A,F7.1))") "          ", &
+         " scf", t_scf, " loc", t_loc, " dma", t_dma, " stat", t_stat, &
+         " dyn", t_dyn, " dipquad", t_dq, " quadquad", t_qq, " screen", t_scr
       flush (6)
 
+      call shared%destroy()
       call mol%destroy()
       deallocate (loc, cen, stat_pol, dyn, cross, dip, quad, buck, alpha_scr)
    end subroutine one_basis
+
+   subroutine wall(t)
+      !! Wall clock now, which is what a user waits on
+      real(dp), intent(out) :: t
+      integer(int64) :: count, rate
+      call system_clock(count, rate)
+      t = real(count, dp)/real(rate, dp)
+   end subroutine wall
+
+   subroutine lap(mark, out)
+      !! Seconds since `mark`, and move it forward
+      real(dp), intent(inout) :: mark
+      real(dp), intent(out) :: out
+      real(dp) :: now
+      call wall(now)
+      out = now - mark
+      mark = now
+   end subroutine lap
 
    logical function bail(err, basis, stage)
       type(error_t), intent(inout) :: err

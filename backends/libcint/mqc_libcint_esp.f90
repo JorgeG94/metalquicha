@@ -36,6 +36,7 @@ module mqc_libcint_esp
    private
 
    public :: esp_matrices
+   public :: esp_contract
 
    !> `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
    !> and 0-based like every other `PTR_*`, so it is used as `+ 1`.
@@ -68,6 +69,116 @@ module mqc_libcint_esp
    end interface
 
 contains
+
+   subroutine esp_contract(mol, grids, density, values, error)
+      !! The electronic potential a density produces at each point
+      !!
+      !! `values(g) = -sum_uv D_uv <chi_u| 1/|r - R_g| |chi_v>`, contracted inside the
+      !! integral loop rather than after it.
+      !!
+      !! **Why this exists next to `esp_matrices`.** That one returns the whole
+      !! `(n_ao, n_ao, n_grid)` tensor, and a screening fit uses it once, to form
+      !! exactly this vector. The tensor is the problem: a charge-penetration grid
+      !! runs to about thirty thousand points, so at 58 orbitals it is 786 MB and at
+      !! 115 it is 3.1 GB -- allocated, filled, read once and thrown away. Contracting
+      !! as the blocks come out needs the grid vector and nothing else.
+      !!
+      !! The matrices are still worth having for anything that needs them more than
+      !! once, or that needs them separately -- a continuum model, for instance -- so
+      !! both are kept.
+      use omp_lib, only: omp_get_max_threads
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: grids(:, :)          !! (3, n_points), Bohr
+      real(dp), intent(in) :: density(:, :)        !! AO density
+      real(dp), allocatable, intent(out) :: values(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable, target :: env_local(:), buf(:)
+      real(dp), allocatable :: local(:)
+      integer, target :: shls(4)
+      integer :: ish, jsh, di, dj, i, j, g, ret, io, jo, block_max, n_grid
+      integer :: grid_offset
+      real(dp) :: dij
+
+      if (size(grids, 1) /= 3) then
+         call error%set(ERROR_VALIDATION, "ESP contraction: grid points must be (3, n)")
+         return
+      end if
+      n_grid = size(grids, 2)
+      if (n_grid < 1) then
+         call error%set(ERROR_VALIDATION, "ESP contraction: no grid points")
+         return
+      end if
+
+      grid_offset = size(mol%env)
+      allocate (env_local(grid_offset + 3*n_grid))
+      env_local(1:grid_offset) = mol%env
+      do g = 1, n_grid
+         env_local(grid_offset + 3*(g - 1) + 1:grid_offset + 3*g) = grids(:, g)
+      end do
+      env_local(LIBCINT_PTR_GRIDS + 1) = real(grid_offset, dp)
+
+      block_max = 1
+      do ish = 1, mol%nbas
+         block_max = max(block_max, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+
+      allocate (values(n_grid))
+      values = 0.0_dp
+
+      ! Threaded over bra shells, each thread accumulating its own grid vector. The
+      ! vector is small -- a few hundred kilobytes -- so a private copy per thread
+      ! costs nothing next to what the tensor cost.
+      !$omp parallel default(none) &
+      !$omp    shared(mol, env_local, density, values, n_grid, block_max) &
+      !$omp    private(ish, jsh, di, dj, i, j, g, ret, io, jo, shls, buf, local, dij)
+      allocate (buf(block_max*block_max*n_grid), local(n_grid))
+      local = 0.0_dp
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1, 0, n_grid]
+
+            if (mol%cartesian) then
+               ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
+                                       c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                       mol%nbas, c_loc(env_local), c_null_ptr, &
+                                       c_null_ptr)
+            else
+               ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
+                                      c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                      mol%nbas, c_loc(env_local), c_null_ptr, &
+                                      c_null_ptr)
+            end if
+            if (ret == 0) cycle
+
+            do j = 1, dj
+               do i = 1, di
+                  dij = density(io + i, jo + j)
+                  if (dij == 0.0_dp) cycle
+                  do g = 1, n_grid
+                     local(g) = local(g) &
+                                + dij*buf(g + (i - 1)*n_grid + (j - 1)*n_grid*di)
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      !$omp critical(mqc_esp_contract_accumulate)
+      values = values + local
+      !$omp end critical(mqc_esp_contract_accumulate)
+      deallocate (buf, local)
+      !$omp end parallel
+
+      ! The electronic potential is negative where the density is positive.
+      values = -values
+      deallocate (env_local)
+   end subroutine esp_contract
 
    subroutine esp_matrices(mol, grids, matrices, error)
       !! `1/|r - R_g|` over every shell pair, for each point

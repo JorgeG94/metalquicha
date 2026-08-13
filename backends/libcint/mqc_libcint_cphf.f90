@@ -60,6 +60,7 @@ module mqc_libcint_cphf
    implicit none
    private
 
+   public :: response_hessian_t
    public :: cphf_solve
    public :: static_polarizability
    public :: distributed_polarizability
@@ -69,6 +70,18 @@ module mqc_libcint_cphf
    public :: casimir_polder_frequencies
 
    !> CG iterations before giving up.
+   type :: response_hessian_t
+      !! A built response Hessian, so several blocks can share one build
+      !!
+      !! Only `(A-B)` and the product `(A-B)(A+B)` are kept: those are all the solve
+      !! needs, and `(A+B)` on its own is not wanted again.
+      logical :: ready = .false.
+      real(dp), allocatable :: aminus(:, :)
+      real(dp), allocatable :: product(:, :)
+   contains
+      procedure :: destroy => hessian_destroy
+   end type response_hessian_t
+
    integer, parameter :: DEFAULT_MAX_ITER = 200
 
    !> Columns of the Hessian built per pass over the integrals. Large enough that
@@ -106,6 +119,14 @@ module mqc_libcint_cphf
    integer, parameter, public :: N_CASIMIR_POLDER = 12
 
 contains
+
+   subroutine hessian_destroy(self)
+      !! Release a built Hessian
+      class(response_hessian_t), intent(inout) :: self
+      if (allocated(self%aminus)) deallocate (self%aminus)
+      if (allocated(self%product)) deallocate (self%product)
+      self%ready = .false.
+   end subroutine hessian_destroy
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
                          response, error, max_iter, tol, iterations, in_core)
@@ -399,7 +420,7 @@ contains
 
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
-                                     response, perturbations, in_core)
+                                     response, perturbations, in_core, hessian)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -439,6 +460,11 @@ contains
          !! `S_ai` per perturbation per frequency, `(n_vir, n_occ, n_pert, n_freq)`,
          !! for a caller that wants to distribute it over localized orbitals rather
          !! than only take the total.
+      type(response_hessian_t), intent(inout), optional :: hessian
+         !! Reuse a built Hessian, or take one back to reuse. It depends only on the
+         !! reference -- not on the perturbations or the frequencies -- so the three
+         !! blocks of a potential can share one build. Without this each of them
+         !! rebuilds the same matrices: 55 seconds apiece at 115 orbitals.
       logical, intent(in), optional :: in_core
          !! Store the two-electron integrals instead of recomputing them each time
          !! the response operator is applied. Defaults to storing them whenever the
@@ -460,6 +486,7 @@ contains
       logical :: direct
       ! Every system's vectors carry a batch index: all frequencies and all
       ! perturbations are in flight together.
+      logical :: reuse
       real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
       real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
       integer, allocatable :: ipiv(:)
@@ -549,26 +576,47 @@ contains
       ! twelve frequencies by nine operators by however many iterations each needed
       ! was thousands of builds; here it is `n_ov` of them and some BLAS.
       n_ov = n_vir*n_occ
-      call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
-                         aplus, aminus, HESSIAN_CHUNK, error)
-      if (error%has_error()) return
+      reuse = .false.
+      if (present(hessian)) reuse = hessian%ready
+      if (reuse) then
+         if (size(hessian%product, 1) /= n_ov) then
+            call error%set(ERROR_VALIDATION, "dynamic response: the supplied Hessian "// &
+                           "is the wrong size for this reference")
+            return
+         end if
+      else
+         call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
+                            aplus, aminus, HESSIAN_CHUNK, error)
+         if (error%has_error()) return
+      end if
 
-      allocate (product(n_ov, n_ov), lu(n_ov, n_ov), ipiv(n_ov))
+      allocate (lu(n_ov, n_ov), ipiv(n_ov))
       allocate (rhs_flat(n_ov, n_pert), h_flat(n_ov, n_pert))
-      call pic_gemm(aminus, aplus, product)
+      if (.not. reuse) then
+         allocate (product(n_ov, n_ov))
+         call pic_gemm(aminus, aplus, product)
+      end if
 
       do l = 1, n_pert
          h_flat(:, l) = reshape(h(:, :, l), [n_ov])
       end do
       ! The right-hand side is `-2 (A-B) h`, which the multiplication through by
       ! `(A-B)` leaves behind.
-      call pic_gemm(aminus, h_flat, rhs_flat)
+      if (reuse) then
+         call pic_gemm(hessian%aminus, h_flat, rhs_flat)
+      else
+         call pic_gemm(aminus, h_flat, rhs_flat)
+      end if
       rhs_flat = -2.0_dp*rhs_flat
 
       allocate (solution(n_ov, n_pert))
 
       do ifreq = 1, size(frequencies)
-         lu = product
+         if (reuse) then
+            lu = hessian%product
+         else
+            lu = product
+         end if
          do j = 1, n_ov
             lu(j, j) = lu(j, j) + frequencies(ifreq)**2
          end do
@@ -594,7 +642,16 @@ contains
          end do
       end do
 
-      deallocate (aplus, aminus, product, lu, ipiv, rhs_flat, h_flat, solution)
+      ! Hand the build back if the caller wants it, rather than freeing it.
+      if (present(hessian) .and. .not. reuse) then
+         call move_alloc(aminus, hessian%aminus)
+         call move_alloc(product, hessian%product)
+         hessian%ready = .true.
+         if (allocated(aplus)) deallocate (aplus)
+      else if (.not. reuse) then
+         deallocate (aplus, aminus, product)
+      end if
+      deallocate (lu, ipiv, rhs_flat, h_flat, solution)
 
       deallocate (bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0, operators)
       if (allocated(dip)) deallocate (dip)
@@ -902,7 +959,7 @@ contains
 
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
-                                        centroids, error, n_core, max_iter, tol)
+                                        centroids, error, n_core, max_iter, tol, hessian)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -948,6 +1005,8 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_core, max_iter
       real(dp), intent(in), optional :: tol
+      type(response_hessian_t), intent(inout), optional :: hessian
+         !! Passed straight through, so the blocks of one potential share a build.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
@@ -971,7 +1030,8 @@ contains
 
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
-                                  response=s_all, perturbations=respond)
+                                  response=s_all, perturbations=respond, &
+                                  hessian=hessian)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
@@ -1011,7 +1071,7 @@ contains
    subroutine distributed_dynamic_polarizability(mol, orbitals, orbital_energies, &
                                                  n_occ, frequencies, tensors, &
                                                  centroids, error, n_core, max_iter, &
-                                                 tol)
+                                                 tol, hessian)
       !! One tensor per localized orbital at each imaginary frequency
       !!
       !! What `DYNAMIC POLARIZABLE POINTS` carries, and what dispersion is built
@@ -1035,6 +1095,8 @@ contains
       integer, intent(in), optional :: n_core
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      type(response_hessian_t), intent(inout), optional :: hessian
+         !! Passed straight through, so the blocks of one potential share a build.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: dip(:, :, :), s(:, :), sc(:, :), w(:, :)
@@ -1059,7 +1121,7 @@ contains
 
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
-                                  response=s_all)
+                                  response=s_all, hessian=hessian)
       if (error%has_error()) return
 
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
