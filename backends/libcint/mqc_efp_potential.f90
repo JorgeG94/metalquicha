@@ -89,12 +89,21 @@ module mqc_efp_potential
    !! coefficient at zero to six decimals with the residual still at 1.000. The
    !! observed trace is orthogonal to the span of the terms that could produce it.
    !!
-   !! So one of three things is true, and this module cannot yet say which: the
-   !! operator carries a trace after all, some `delta`-term contraction differs from
-   !! the transcription here (which matches the source line for line), or an input
-   !! to the shift is not what `QQSHIFT` receives. The first is testable and the
-   !! test is wired up -- `check_dipquad_sumrule` now also computes the response with
-   !! the raw second moment on both sides.
+   !! Three things could explain that, and the first is now eliminated. The operator
+   !! does **not** carry a trace: computing the response with the raw second moment
+   !! on both sides -- which `check_dipquad_sumrule` now does, so the comparison is
+   !! reproducible -- is far worse, 8.0e-01 against 5.8e-02 pre-shift and 1.8e+00
+   !! against 1.3e-01 forward. It is the traceless Buckingham form, as `LQQPOL`'s
+   !! DAF records say. So either a `delta`-term contraction differs from the
+   !! transcription here, which matches the source line for line, or an input is not
+   !! what `QQSHIFT` receives. Nothing in this module can currently distinguish
+   !! those two.
+   !!
+   !! **What has been eliminated, so the next attempt need not repeat it:** all eight
+   !! transposes of the dipole-dipole tensor across the three `delta`-bearing terms;
+   !! the pair-swapped orientation the source's `DLPOL(K,L)` indexing implies; raw
+   !! second moments on either or both sides; a free least-squares fit of all six
+   !! term coefficients; and the trace-nulling fit above.
    !!
    !! With the factor the forward recipe reaches 1.3e-01 relative, and the residual
    !! sits on the components the `delta` terms touch: 1.6e-01 where both index pairs
