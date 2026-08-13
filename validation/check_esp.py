@@ -24,6 +24,19 @@ ATOMS = [("O", (0.0, 0.0, 0.0)),
          ("H", (0.0, 0.0, 0.9584)),
          ("H", (0.9268, 0.0, -0.2400))]
 
+#: **Do not add a Pople basis with sp shells to this comparison without permuting.**
+#: PySCF orders a Cartesian 6-31G* oxygen as `1s 2s 3s 2px..2pz 3px..3pz d`, grouping
+#: all s functions then all p. Our reader hands libcint the s and p of each shared-
+#: exponent group adjacently, giving `1s 2s 2px..2pz 3s 3px..3pz d`, which is also
+#: GAMESS's order. So an elementwise comparison of AO-indexed matrices against PySCF
+#: is only valid for a basis without sp shells -- the cases here are all like that,
+#: which is why they pass.
+#:
+#: This was found the hard way: using PySCF's overlap with our own localized orbitals
+#: reported them as non-orthonormal (`c^T S c` = 0.97, 0.75, 0.74, 0.43) when
+#: `check_localize` verifies orthonormality to 2e-15 against our own overlap. The
+#: metric was in the wrong order, not the orbitals.
+
 #: Both codes call the same libcint routine on the same basis, so this is the
 #: floor set by our BSE table against PySCF's own, not a physics tolerance.
 TOL = 1e-8

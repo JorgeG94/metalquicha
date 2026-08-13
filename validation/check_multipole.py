@@ -33,6 +33,19 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools" / "cpu_validation"))
 from gen_cpu_validation import bse_to_pyscf, molecule_form, CARTESIAN  # noqa: E402
 
+#: **Do not add a Pople basis with sp shells to this comparison without permuting.**
+#: PySCF orders a Cartesian 6-31G* oxygen as `1s 2s 3s 2px..2pz 3px..3pz d`, grouping
+#: all s functions then all p. Our reader hands libcint the s and p of each shared-
+#: exponent group adjacently, giving `1s 2s 2px..2pz 3s 3px..3pz d`, which is also
+#: GAMESS's order. So an elementwise comparison of AO-indexed matrices against PySCF
+#: is only valid for a basis without sp shells -- the cases here are all like that,
+#: which is why they pass.
+#:
+#: This was found the hard way: using PySCF's overlap with our own localized orbitals
+#: reported them as non-orthonormal (`c^T S c` = 0.97, 0.75, 0.74, 0.43) when
+#: `check_localize` verifies orthonormality to 2e-15 against our own overlap. The
+#: metric was in the wrong order, not the orbitals.
+
 ATOMS = [("O", (0.0, 0.0, 0.0)),
          ("H", (0.0, 0.0, 0.9584)),
          ("H", (0.9268, 0.0, -0.2400))]
