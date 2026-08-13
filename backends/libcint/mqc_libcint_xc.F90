@@ -20,9 +20,15 @@ module mqc_libcint_xc
    !! work already paid once for retrofitting blocking onto something that assumed
    !! it could hold everything.
    !!
-   !! Only LDA is evaluated so far. GGA needs the AO gradients and a second term in
-   !! the potential; the block loop below is where both go, and nothing about the
-   !! interface changes when they arrive.
+   !! LDA, GGA and meta-GGA are all evaluated, restricted and spin-polarised, and
+   !! each rung was added inside the same block loop without the interface moving --
+   !! which was the bet this shape was making. There are two evaluators rather than
+   !! one, `xc_add_potential` and `xc_add_potential_uks`, because libxc fixes the
+   !! spin channel when a functional is initialised and the polarised arrays are
+   !! spin-interleaved: the two cases genuinely take different array shapes. What
+   !! they do share -- the three terms that turn a pointwise potential into a matrix
+   !! -- is factored into `accumulate_xc_matrix`, since that is the arithmetic worth
+   !! having exactly one copy of.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -38,7 +44,8 @@ module mqc_libcint_xc
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
                            xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
-                           XC_UNPOLARIZED, XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
+                           XC_UNPOLARIZED, XC_POLARIZED, &
+                           XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
                            XC_FAMILY_GGA, XC_FAMILY_HYB_GGA, &
                            XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA
 #endif
@@ -48,6 +55,7 @@ module mqc_libcint_xc
    public :: xc_context_t
    public :: xc_context_create
    public :: xc_add_potential
+   public :: xc_add_potential_uks
    public :: xc_available
 
    type :: xc_context_t
@@ -77,6 +85,16 @@ module mqc_libcint_xc
          !! MP2 correlation fraction, for a double hybrid. Carried here so the
          !! caller can see it without re-parsing the name; nothing in this module
          !! acts on it, because perturbative correlation is not a grid quantity.
+      logical :: polarized = .false.
+         !! Whether the functionals were initialised spin-polarised.
+         !!
+         !! Not a detail a caller can be indifferent to: libxc fixes this when a
+         !! functional is initialised, and the two cases take different array
+         !! shapes and return a different number of potential components. So a
+         !! context belongs to a restricted calculation or to an unrestricted one,
+         !! and `xc_add_potential` and `xc_add_potential_uks` each refuse the other
+         !! kind rather than reinterpreting the arrays -- which would be a silent
+         !! read of the wrong element, not a crash.
       type(dft_grid_t) :: grid
       integer :: n_func = 0
       integer :: family(MAX_XC_COMPONENTS) = 0
@@ -110,13 +128,17 @@ contains
 #endif
    end function xc_available
 
-   subroutine xc_context_create(mol, functional, ctx, error, level)
+   subroutine xc_context_create(mol, functional, ctx, error, level, polarized)
       !! Resolve a functional name and build the grid it will be integrated on
       type(libcint_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
       type(xc_context_t), intent(out) :: ctx
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: level
+      logical, intent(in), optional :: polarized
+         !! Initialise the functionals spin-polarised, for an unrestricted
+         !! calculation. Default restricted. Fixed here because libxc fixes it at
+         !! initialisation, so it cannot be decided later by whoever evaluates.
 
       type(xc_spec_t) :: spec
       integer :: grid_level, i, id, family
@@ -148,6 +170,7 @@ contains
       ctx%n_func = spec%n_components
       ctx%pt2_fraction = spec%pt2_fraction
       ctx%exx_fraction = spec%exx_fraction
+      if (present(polarized)) ctx%polarized = polarized
 
 #ifdef MQC_WITH_LIBXC
       do i = 1, spec%n_components
@@ -158,7 +181,11 @@ contains
                            trim(spec%component(i)%name)//"'")
             return
          end if
-         call xc_f03_func_init(ctx%func(i), id, XC_UNPOLARIZED)
+         if (ctx%polarized) then
+            call xc_f03_func_init(ctx%func(i), id, XC_POLARIZED)
+         else
+            call xc_f03_func_init(ctx%func(i), id, XC_UNPOLARIZED)
+         end if
 
          info = xc_f03_func_get_info(ctx%func(i))
          family = xc_f03_func_info_get_family(info)
@@ -289,12 +316,12 @@ contains
       real(dp), intent(out) :: n_elec
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: ao(:, :), rho(:), exc(:), vrho(:), scaled(:, :)
-      real(dp), allocatable :: exc_i(:), vrho_i(:)
+      real(dp), allocatable :: ao(:, :), rho(:), exc(:), vrho(:)
+      real(dp), allocatable :: exc_i(:), vrho_i(:), grad_coeff(:, :)
       real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
       real(dp), allocatable :: vsigma(:), vsigma_i(:)
       real(dp), allocatable :: tau(:), vtau(:), vtau_i(:), lapl(:), vlapl(:)
-      integer :: g0, g1, nb, i, mu, ig, id
+      integer :: g0, g1, nb, i, ig, id
 
       v_xc = 0.0_dp
       e_xc = 0.0_dp
@@ -303,6 +330,12 @@ contains
       if (.not. ctx%active) return
       if (.not. xc_available()) then
          call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "this exchange-correlation context was built "// &
+                        "spin-polarised and cannot be evaluated on a single density; "// &
+                        "the unrestricted path wants xc_add_potential_uks")
          return
       end if
 
@@ -371,61 +404,296 @@ contains
          n_elec = n_elec + sum(ctx%grid%weights(g0:g1)*rho)
          e_xc = e_xc + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
-         ! V += (w v_xc chi)^T chi, as a gemm. Scaling the left factor rather than
-         ! forming a diagonal matrix keeps this one multiply per element.
-         allocate (scaled(nb, mol%nao))
-         do mu = 1, mol%nao
-            do ig = 1, nb
-               scaled(ig, mu) = ctx%grid%weights(g0 + ig - 1)*vrho(ig)*ao(ig, mu)
-            end do
-         end do
-         call pic_gemm(scaled, ao, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
-
-         ! The gradient term. From differentiating sigma = |grad rho|^2 with
-         ! grad rho = 2 sum_uv D_uv chi_v grad chi_u,
-         !
-         !     V_uv += sum_g w_g 2 vsigma_g grad rho_g . (grad chi_u chi_v
-         !                                                + chi_u grad chi_v)
-         !
-         ! and the two halves are transposes of each other, so one gemm plus a
-         ! symmetrisation does both. The factor of two and that symmetrisation are
-         ! the usual place a GGA is wrong by millihartree while converging
-         ! perfectly, which is why the finite-difference test on the gradients
-         ! exists separately from any energy.
+         ! The gradient coefficient is dE/d(grad rho). Differentiating
+         ! sigma = |grad rho|^2 gives 2 vsigma grad rho; the unrestricted case has
+         ! a cross-spin term as well, which is the only difference between the two
+         ! and the reason this is assembled by the caller rather than inside.
          if (ctx%any_gga) then
-            do mu = 1, mol%nao
+            if (allocated(grad_coeff)) deallocate (grad_coeff)
+            allocate (grad_coeff(nb, 3))
+            do id = 1, 3
                do ig = 1, nb
-                  scaled(ig, mu) = 0.0_dp
-                  do id = 1, 3
-                     scaled(ig, mu) = scaled(ig, mu) &
-                                      + 2.0_dp*ctx%grid%weights(g0 + ig - 1) &
-                                      *vsigma(ig)*rho_grad(ig, id)*ao_grad(ig, mu, id)
-                  end do
+                  grad_coeff(ig, id) = 2.0_dp*vsigma(ig)*rho_grad(ig, id)
                end do
             end do
-            ! scaled^T ao gives one half; adding its transpose gives the other.
-            call pic_gemm(scaled, ao, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
-            call pic_gemm(ao, scaled, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
          end if
 
-         ! The kinetic-energy-density term. d tau / d D_uv is half the sum over
-         ! directions of grad chi_u grad chi_v, which is already symmetric in u and
-         ! v -- so unlike the sigma term this one needs no transpose added.
-         if (ctx%any_mgga) then
-            do id = 1, 3
-               do mu = 1, mol%nao
-                  do ig = 1, nb
-                     scaled(ig, mu) = 0.5_dp*ctx%grid%weights(g0 + ig - 1) &
-                                      *vtau(ig)*ao_grad(ig, mu, id)
-                  end do
-               end do
-               call pic_gemm(scaled, ao_grad(:, :, id), v_xc, transa="T", &
-                             alpha=1.0_dp, beta=1.0_dp)
-            end do
-         end if
-         deallocate (scaled)
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho, v_xc, &
+                                   ao_grad=ao_grad, grad_coeff=grad_coeff, &
+                                   vtau=vtau, any_gga=ctx%any_gga, &
+                                   any_mgga=ctx%any_mgga)
       end do
 #endif
    end subroutine xc_add_potential
+
+   subroutine xc_add_potential_uks(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, &
+                                   e_xc, n_elec, error)
+      !! The exchange-correlation potential and energy for a pair of spin densities
+      !!
+      !! The unrestricted counterpart of `xc_add_potential`, and the same structure:
+      !! one pass over blocks of grid points, libxc per component, one matrix
+      !! assembled per spin. Two things are genuinely different, and they are the
+      !! two places an unrestricted functional goes wrong.
+      !!
+      !! **libxc's arrays are spin-interleaved.** A polarised functional takes
+      !! `rho` as (rho_a, rho_b) per point, `sigma` as (sigma_aa, sigma_ab,
+      !! sigma_bb) and `tau` as (tau_a, tau_b), all with spin as the fastest index,
+      !! and returns `vrho` and `vtau` in the same layout with `vsigma` in three
+      !! components. Nothing in the interface enforces that -- the F03 bindings take
+      !! bare arrays -- so a wrong stride here is a silent misread, which is why the
+      !! closed-shell-equals-restricted test exists.
+      !!
+      !! **The gradient term couples the spins.** sigma_ab = grad rho_a . grad rho_b
+      !! belongs to both, so
+      !!
+      !!     dE/dgrad rho_a = 2 vsigma_aa grad rho_a + vsigma_ab grad rho_b
+      !!
+      !! and dropping that cross term leaves a GGA that converges and is wrong.
+      !!
+      !! The spin densities are the true ones, not doubled: `d_alpha` holds
+      !! C_a C_a^T, so rho_a integrates to the number of alpha electrons and the two
+      !! together to the total. `n_elec` is that total.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: d_alpha(:, :), d_beta(:, :)
+      real(dp), intent(out) :: v_alpha(:, :), v_beta(:, :)
+      real(dp), intent(out) :: e_xc
+      real(dp), intent(out) :: n_elec
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho_a(:), rho_b(:), grad_a(:, :), grad_b(:, :)
+      real(dp), allocatable :: tau_a(:), tau_b(:)
+      real(dp), allocatable :: rho(:), sigma(:), tau(:), lapl(:)
+      real(dp), allocatable :: exc(:), vrho(:), vsigma(:), vtau(:)
+      real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:), vtau_i(:), vlapl(:)
+      real(dp), allocatable :: vrho_s(:), vtau_s(:), grad_coeff(:, :)
+      integer :: g0, g1, nb, i, ig, id
+
+      v_alpha = 0.0_dp
+      v_beta = 0.0_dp
+      e_xc = 0.0_dp
+      n_elec = 0.0_dp
+
+      if (.not. ctx%active) return
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (.not. ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "this exchange-correlation context was built "// &
+                        "spin-restricted and would return a restricted potential for "// &
+                        "two spin densities; build it with polarized=.true.")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      do g0 = 1, ctx%grid%n_points, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
+         nb = g1 - g0 + 1
+
+         ! One AO evaluation for both spins -- the expensive part -- and then the
+         ! density contraction once per spin. `eval_rho` takes a density matrix and
+         ! asks nothing about whose it is, so a spin density needs no new code.
+         if (ctx%any_mgga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            call eval_rho(ao, d_alpha, rho_a, ao_grad=ao_grad, rho_grad=grad_a, tau=tau_a)
+            call eval_rho(ao, d_beta, rho_b, ao_grad=ao_grad, rho_grad=grad_b, tau=tau_b)
+         else if (ctx%any_gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            call eval_rho(ao, d_alpha, rho_a, ao_grad=ao_grad, rho_grad=grad_a)
+            call eval_rho(ao, d_beta, rho_b, ao_grad=ao_grad, rho_grad=grad_b)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
+            if (error%has_error()) return
+            call eval_rho(ao, d_alpha, rho_a)
+            call eval_rho(ao, d_beta, rho_b)
+         end if
+
+         if (allocated(rho)) deallocate (rho, exc, vrho, exc_i, vrho_i, vrho_s)
+         allocate (rho(2*nb), exc(nb), vrho(2*nb), exc_i(nb), vrho_i(2*nb), vrho_s(nb))
+         exc = 0.0_dp
+         vrho = 0.0_dp
+         do ig = 1, nb
+            rho(2*ig - 1) = rho_a(ig)
+            rho(2*ig) = rho_b(ig)
+         end do
+
+         if (ctx%any_gga) then
+            if (allocated(sigma)) deallocate (sigma, vsigma, vsigma_i)
+            allocate (sigma(3*nb), vsigma(3*nb), vsigma_i(3*nb))
+            vsigma = 0.0_dp
+            do ig = 1, nb
+               sigma(3*ig - 2) = dot_product(grad_a(ig, :), grad_a(ig, :))
+               sigma(3*ig - 1) = dot_product(grad_a(ig, :), grad_b(ig, :))
+               sigma(3*ig) = dot_product(grad_b(ig, :), grad_b(ig, :))
+            end do
+         end if
+         if (ctx%any_mgga) then
+            if (allocated(tau)) deallocate (tau, vtau, vtau_i, vtau_s, lapl, vlapl)
+            allocate (tau(2*nb), vtau(2*nb), vtau_i(2*nb), vtau_s(nb), &
+                      lapl(2*nb), vlapl(2*nb))
+            vtau = 0.0_dp
+            ! Zero, and only read by functionals that do not need it -- the ones
+            ! that do were refused at construction.
+            lapl = 0.0_dp
+            do ig = 1, nb
+               tau(2*ig - 1) = tau_a(ig)
+               tau(2*ig) = tau_b(ig)
+            end do
+         end if
+
+         do i = 1, ctx%n_func
+            select case (ctx%family(i))
+            case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+               call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
+                                        exc_i, vrho_i, vsigma_i, vlapl, vtau_i)
+               vsigma = vsigma + ctx%weight(i)*vsigma_i
+               vtau = vtau + ctx%weight(i)*vtau_i
+            case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+               call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                       exc_i, vrho_i, vsigma_i)
+               vsigma = vsigma + ctx%weight(i)*vsigma_i
+            case default
+               call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho, exc_i, vrho_i)
+            end select
+            exc = exc + ctx%weight(i)*exc_i
+            vrho = vrho + ctx%weight(i)*vrho_i
+         end do
+
+         ! exc is per particle, so the energy density is the *total* density times
+         ! it -- one of the two places a polarised functional is silently halved.
+         n_elec = n_elec + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b))
+         e_xc = e_xc + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b)*exc)
+
+         ! Alpha, then beta: the same assembly with that spin's derivatives, and
+         ! the cross-spin gradient term pointing at the other spin's gradient.
+         if (allocated(grad_coeff)) deallocate (grad_coeff)
+         if (ctx%any_gga) allocate (grad_coeff(nb, 3))
+
+         do ig = 1, nb
+            vrho_s(ig) = vrho(2*ig - 1)
+         end do
+         if (ctx%any_gga) then
+            do id = 1, 3
+               do ig = 1, nb
+                  grad_coeff(ig, id) = 2.0_dp*vsigma(3*ig - 2)*grad_a(ig, id) &
+                                       + vsigma(3*ig - 1)*grad_b(ig, id)
+               end do
+            end do
+         end if
+         if (ctx%any_mgga) then
+            do ig = 1, nb
+               vtau_s(ig) = vtau(2*ig - 1)
+            end do
+         end if
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho_s, v_alpha, &
+                                   ao_grad=ao_grad, grad_coeff=grad_coeff, &
+                                   vtau=vtau_s, any_gga=ctx%any_gga, &
+                                   any_mgga=ctx%any_mgga)
+
+         do ig = 1, nb
+            vrho_s(ig) = vrho(2*ig)
+         end do
+         if (ctx%any_gga) then
+            do id = 1, 3
+               do ig = 1, nb
+                  grad_coeff(ig, id) = 2.0_dp*vsigma(3*ig)*grad_b(ig, id) &
+                                       + vsigma(3*ig - 1)*grad_a(ig, id)
+               end do
+            end do
+         end if
+         if (ctx%any_mgga) then
+            do ig = 1, nb
+               vtau_s(ig) = vtau(2*ig)
+            end do
+         end if
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho_s, v_beta, &
+                                   ao_grad=ao_grad, grad_coeff=grad_coeff, &
+                                   vtau=vtau_s, any_gga=ctx%any_gga, &
+                                   any_mgga=ctx%any_mgga)
+      end do
+#endif
+   end subroutine xc_add_potential_uks
+
+   subroutine accumulate_xc_matrix(weights, ao, vrho, v, ao_grad, grad_coeff, vtau, &
+                                   any_gga, any_mgga)
+      !! One spin's exchange-correlation matrix, over one block of grid points
+      !!
+      !! Shared by the restricted and unrestricted paths, which is the whole point:
+      !! the three terms below are where a functional is wrong by millihartree
+      !! while converging perfectly, and there should be one copy of them. What
+      !! differs between the two callers is not this arithmetic but what goes into
+      !! `vrho`, `grad_coeff` and `vtau` -- for a spin-polarised functional those
+      !! are that spin's derivatives, including the cross-spin gradient term, and
+      !! this routine neither knows nor needs to.
+      !!
+      !! Accumulates into `v` rather than returning, so the caller's matrix is the
+      !! sum over blocks.
+      real(dp), intent(in) :: weights(:)      !! Grid weights for this block
+      real(dp), intent(in) :: ao(:, :)        !! (n_points, n_ao)
+      real(dp), intent(in) :: vrho(:)         !! dE/drho at each point
+      real(dp), intent(inout) :: v(:, :)
+      real(dp), allocatable, intent(in) :: ao_grad(:, :, :)   !! (n_points, n_ao, 3)
+      real(dp), allocatable, intent(in) :: grad_coeff(:, :)   !! dE/d(grad rho), (n_points, 3)
+      real(dp), allocatable, intent(in) :: vtau(:)            !! dE/dtau at each point
+      logical, intent(in) :: any_gga, any_mgga
+
+      real(dp), allocatable :: scaled(:, :)
+      integer :: nb, nao, mu, ig, id
+
+      nb = size(ao, 1)
+      nao = size(ao, 2)
+      allocate (scaled(nb, nao))
+
+      ! V += (w v_rho chi)^T chi, as a gemm. Scaling the left factor rather than
+      ! forming a diagonal matrix keeps this one multiply per element.
+      do mu = 1, nao
+         do ig = 1, nb
+            scaled(ig, mu) = weights(ig)*vrho(ig)*ao(ig, mu)
+         end do
+      end do
+      call pic_gemm(scaled, ao, v, transa="T", alpha=1.0_dp, beta=1.0_dp)
+
+      ! The gradient term,
+      !
+      !     V_uv += sum_g w_g dE/dgrad rho . (grad chi_u chi_v + chi_u grad chi_v)
+      !
+      ! whose two halves are transposes of each other, so one gemm plus a
+      ! symmetrisation does both.
+      if (any_gga) then
+         do mu = 1, nao
+            do ig = 1, nb
+               scaled(ig, mu) = 0.0_dp
+               do id = 1, 3
+                  scaled(ig, mu) = scaled(ig, mu) &
+                                   + weights(ig)*grad_coeff(ig, id)*ao_grad(ig, mu, id)
+               end do
+            end do
+         end do
+         ! scaled^T ao gives one half; adding its transpose gives the other.
+         call pic_gemm(scaled, ao, v, transa="T", alpha=1.0_dp, beta=1.0_dp)
+         call pic_gemm(ao, scaled, v, transa="T", alpha=1.0_dp, beta=1.0_dp)
+      end if
+
+      ! The kinetic-energy-density term. d tau / d D_uv is half the sum over
+      ! directions of grad chi_u grad chi_v, which is already symmetric in u and
+      ! v -- so unlike the sigma term this one needs no transpose added.
+      if (any_mgga) then
+         do id = 1, 3
+            do mu = 1, nao
+               do ig = 1, nb
+                  scaled(ig, mu) = 0.5_dp*weights(ig)*vtau(ig)*ao_grad(ig, mu, id)
+               end do
+            end do
+            call pic_gemm(scaled, ao_grad(:, :, id), v, transa="T", &
+                          alpha=1.0_dp, beta=1.0_dp)
+         end do
+      end if
+
+      deallocate (scaled)
+   end subroutine accumulate_xc_matrix
 
 end module mqc_libcint_xc

@@ -23,7 +23,7 @@
 program check_dft
    use pic_types, only: dp
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
    use mqc_libcint_ao, only: eval_ao_block, eval_rho
    use mqc_libcint_xc, only: xc_context_t, xc_context_create
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_ri_mp2, run_libcint_mp2
@@ -55,6 +55,16 @@ program check_dft
    ! which only the direct build can produce.
    call scf_case("cc-pvdz", "wb97x", 3, direct=.true.)
    call scf_case("cc-pvdz", "cam-b3lyp", 3, direct=.true.)
+   ! Unrestricted Kohn-Sham, across the ladder. The radical is the case that needs
+   ! two spin densities; closed-shell water must come back to the restricted
+   ! number, which is the sharper check and the one the unit test asserts.
+   call uks_case("cc-pvdz", "svwn", 3, "ch3")
+   call uks_case("cc-pvdz", "pbe", 3, "ch3")
+   call uks_case("cc-pvdz", "b3lyp", 3, "ch3")
+   call uks_case("cc-pvdz", "tpss", 3, "ch3")
+   call uks_case("cc-pvdz", "wb97x", 3, "ch3")
+   call uks_case("cc-pvdz", "pbe", 3, "water")
+   call uks_case("cc-pvdz", "b3lyp", 3, "water")
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2gp-plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "mpw2plyp", 3)
@@ -248,6 +258,100 @@ contains
       call xc%destroy()
       call mol%destroy()
    end subroutine scf_case
+
+   subroutine uks_case(basis, functional, level, molecule)
+      !! An unrestricted Kohn-Sham energy, against PySCF's `dft.UKS`
+      !!
+      !! Two molecules, and the pair is the point. The radical is the case that
+      !! needs the machinery -- two different spin densities, a cross-spin gradient
+      !! term, and libxc's interleaved arrays. Closed-shell water is the case that
+      !! must reproduce the *restricted* answer exactly, and it is the sharper test
+      !! of the two: alpha and beta densities are then equal, so every polarised
+      !! quantity has a known restricted counterpart, and a wrong stride or a
+      !! dropped cross term shows up as a disagreement with a number already
+      !! validated against PySCF. That comparison is asserted in
+      !! test_mqc_libcint_uks rather than only printed here.
+      character(len=*), intent(in) :: basis, functional
+      integer, intent(in) :: level
+      character(len=*), intent(in) :: molecule   !! "ch3" or "water"
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
+      type(error_t) :: err
+      real(dp), allocatable :: c(:, :)
+      integer, allocatable :: z(:)
+      character(len=2), allocatable :: sym(:)
+      integer :: unit, nelec, mult
+      character(len=8) :: lvl
+
+      select case (molecule)
+      case ("ch3")
+         ! Planar D3h methyl radical, C-H 1.079 A. A doublet whose ground state is
+         ! unambiguous -- the unpaired electron sits in the out-of-plane orbital and
+         ! there is no competing solution for the SCF to fall into, which is what
+         ! makes it comparable against another code's UKS at all.
+         allocate (c(3, 4), z(4), sym(4))
+         z = [6, 1, 1, 1]
+         sym = ["C ", "H ", "H ", "H "]
+         c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                      1.079_dp*ANG, 0.0_dp, 0.0_dp, &
+                      -0.5395_dp*ANG, 0.93444_dp*ANG, 0.0_dp, &
+                      -0.5395_dp*ANG, -0.93444_dp*ANG, 0.0_dp], [3, 4])
+         nelec = 9
+         mult = 2
+      case default
+         allocate (c(3, 3), z(3), sym(3))
+         z = [8, 1, 1]
+         sym = ["O ", "H ", "H "]
+         c = reshape([0.0_dp, 0.00000000009155_dp*ANG, 0.10077199490609_dp*ANG, &
+                      0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
+                      0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
+         nelec = 10
+         mult = 1
+      end select
+
+      call build_libcint_molecule(z, sym, c, basis, mol, err)
+      if (err%has_error()) then
+         write (*, "(A,A)") "[dft] basis failed: ", err%get_message()
+         failures = failures + 1
+         return
+      end if
+
+      ! Polarised, and that is not optional: libxc fixes the spin channel when a
+      ! functional is initialised.
+      call xc_context_create(mol, functional, xc, err, level=level, polarized=.true.)
+      if (err%has_error()) then
+         write (*, "(A,A,A,A)") "[dft] ", functional, " context failed: ", err%get_message()
+         failures = failures + 1
+         call mol%destroy()
+         return
+      end if
+
+      call run_libcint_uhf(mol, nelec, mult, 200, 1.0e-10_dp, 1.0e-8_dp, .false., &
+                           scf, err, xc=xc)
+      if (err%has_error() .or. .not. scf%converged) then
+         write (*, "(A,A,A,A)") "[dft] ", functional, " UKS failed: ", err%get_message()
+         failures = failures + 1
+         call xc%destroy()
+         call mol%destroy()
+         return
+      end if
+
+      write (lvl, "(I0)") level
+      open (newunit=unit, file="/tmp/mqc_uks_"//trim(molecule)//"_"//functional//"_"// &
+            basis//"_L"//trim(lvl)//".txt", status="replace", action="write")
+      write (unit, "(es25.16e3)") scf%energy
+      write (unit, "(I0)") scf%iterations
+      write (unit, "(es25.16e3)") scf%spin_squared
+      close (unit)
+
+      write (*, "(A,A,A,A,A,A,A,F18.10,A,I0,A,F8.5)") "  UKS ", trim(molecule), " ", &
+         functional, "/", basis, ": E = ", scf%energy, "  iterations ", scf%iterations, &
+         "  <S^2> = ", scf%spin_squared
+      call xc%destroy()
+      call mol%destroy()
+   end subroutine uks_case
 
    subroutine one_case(basis, level)
       character(len=*), intent(in) :: basis

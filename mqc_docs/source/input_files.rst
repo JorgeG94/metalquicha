@@ -225,9 +225,15 @@ Kohn-Sham DFT, on the CPU through libcint and libxc:
   solved in.
 
 **Not yet reachable**: ``MCSCF`` and the F12 variants parse but have no
-implementation. Unrestricted coupled cluster and unrestricted Kohn-Sham are both
-refused rather than quietly run restricted -- the first needs its own alpha and
-beta transform, the second a spin-polarised functional evaluation.
+implementation. Unrestricted MP2 and unrestricted coupled cluster are refused
+rather than quietly run restricted: both transforms take one set of orbitals and
+an occupied count, so an open-shell reference needs separate alpha and beta
+transforms. That also rules out the double hybrids on an open shell, since their
+perturbative term is an MP2.
+
+Unrestricted **Kohn-Sham** does work, over a spin-polarised functional
+evaluation, and needs nothing said in the deck: a multiplicity above one or an
+odd electron count selects it.
 
 Functionals
 ^^^^^^^^^^^

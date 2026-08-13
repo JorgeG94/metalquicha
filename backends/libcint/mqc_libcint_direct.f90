@@ -368,7 +368,8 @@ contains
       deallocate (g, d_half, dims, offs, pair_i, pair_j, env_local)
    end subroutine build_fock_direct
 
-   subroutine build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, stats, error, screen_tol)
+   subroutine build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, stats, error, &
+                                    screen_tol, k_scale, j_scale, omega)
       !! F_sigma = H + J(D_alpha + D_beta) - K(D_sigma), without the tensor
       !!
       !! The same quartet loop as the closed-shell build, differing only in what
@@ -390,9 +391,21 @@ contains
       type(direct_stats_t), intent(out) :: stats
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange to keep, as in the closed-shell build. One
+         !! is Hartree-Fock and the default; a hybrid Kohn-Sham build wants less.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of the Coulomb term, default one. Zero is what the second
+         !! pass of a range-separated build wants.
+      real(dp), intent(in), optional :: omega
+         !! Range-separation parameter, through `env(PTR_RANGE_OMEGA)`. Zero, the
+         !! default, is the full Coulomb kernel. See the closed-shell build for
+         !! why the Schwarz bounds need no rebuilding for an attenuated pass.
 
       real(dp), allocatable :: buf(:), ga(:, :), gb(:, :), ga_local(:, :), gb_local(:, :)
       real(dp), allocatable :: d_coul(:, :)
+      real(dp), allocatable :: env_local(:)
+      real(dp) :: kq, jf
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
@@ -446,17 +459,33 @@ contains
       ga = 0.0_dp
       gb = 0.0_dp
 
+      ! The eight exchange updates below carry a quarter each, so the exchange
+      ! fraction folds in here and scales all eight at no per-quartet cost.
+      kq = 0.25_dp
+      if (present(k_scale)) kq = 0.25_dp*k_scale
+      jf = 1.0_dp
+      if (present(j_scale)) jf = j_scale
+
       ! Coulomb sees half the total density, exchange sees the same-spin one.
       !
       ! The closed-shell build passes D/2 to both, and that is not a coincidence
       ! worth losing: there D_alpha = D_beta = D/2, so half the total density is
       ! D/2 and the same-spin density is D/2. The two forms are one form.
-      d_coul = 0.5_dp*(d_alpha + d_beta)
+      !
+      ! `j_scale` rides on this matrix rather than on the two Coulomb updates,
+      ! which is the same arithmetic one level out.
+      d_coul = jf*0.5_dp*(d_alpha + d_beta)
+
+      ! A copy, because the range-separation parameter lives in `env` and the
+      ! molecule is read-only here. See the closed-shell build for why the slot
+      ! index carries a `+ 1`.
+      env_local = mol%env
+      if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
-                                  mol%nbas, mol%env)
+                                  mol%nbas, env_local)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -484,7 +513,7 @@ contains
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
       !$omp    shared(mol, bounds, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
-      !$omp            npair, tol, opt, n, block_max) &
+      !$omp            npair, tol, opt, n, block_max, kq, env_local) &
       !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
       !$omp            buf, ga_local, gb_local) &
@@ -520,7 +549,7 @@ contains
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     mol%bas, mol%nbas, mol%env, opt)
+                                     mol%bas, mol%nbas, env_local, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -553,17 +582,17 @@ contains
                         ! the full sum over all eight permutations.
                         ga_local(b1, b2) = ga_local(b1, b2) + d_coul(b3, b4)*scaled
                         ga_local(b3, b4) = ga_local(b3, b4) + d_coul(b1, b2)*scaled
-                        ga_local(b1, b3) = ga_local(b1, b3) - 0.25_dp*d_alpha(b2, b4)*scaled
-                        ga_local(b2, b4) = ga_local(b2, b4) - 0.25_dp*d_alpha(b1, b3)*scaled
-                        ga_local(b1, b4) = ga_local(b1, b4) - 0.25_dp*d_alpha(b2, b3)*scaled
-                        ga_local(b2, b3) = ga_local(b2, b3) - 0.25_dp*d_alpha(b1, b4)*scaled
+                        ga_local(b1, b3) = ga_local(b1, b3) - kq*d_alpha(b2, b4)*scaled
+                        ga_local(b2, b4) = ga_local(b2, b4) - kq*d_alpha(b1, b3)*scaled
+                        ga_local(b1, b4) = ga_local(b1, b4) - kq*d_alpha(b2, b3)*scaled
+                        ga_local(b2, b3) = ga_local(b2, b3) - kq*d_alpha(b1, b4)*scaled
 
                         gb_local(b1, b2) = gb_local(b1, b2) + d_coul(b3, b4)*scaled
                         gb_local(b3, b4) = gb_local(b3, b4) + d_coul(b1, b2)*scaled
-                        gb_local(b1, b3) = gb_local(b1, b3) - 0.25_dp*d_beta(b2, b4)*scaled
-                        gb_local(b2, b4) = gb_local(b2, b4) - 0.25_dp*d_beta(b1, b3)*scaled
-                        gb_local(b1, b4) = gb_local(b1, b4) - 0.25_dp*d_beta(b2, b3)*scaled
-                        gb_local(b2, b3) = gb_local(b2, b3) - 0.25_dp*d_beta(b1, b4)*scaled
+                        gb_local(b1, b3) = gb_local(b1, b3) - kq*d_beta(b2, b4)*scaled
+                        gb_local(b2, b4) = gb_local(b2, b4) - kq*d_beta(b1, b3)*scaled
+                        gb_local(b1, b4) = gb_local(b1, b4) - kq*d_beta(b2, b3)*scaled
+                        gb_local(b2, b3) = gb_local(b2, b3) - kq*d_beta(b1, b4)*scaled
                      end do
                   end do
                end do
@@ -589,7 +618,7 @@ contains
       fock_a = h + 0.5_dp*(ga + transpose(ga))
       fock_b = h + 0.5_dp*(gb + transpose(gb))
 
-      deallocate (ga, gb, d_coul, dims, offs, pair_i, pair_j)
+      deallocate (ga, gb, d_coul, dims, offs, pair_i, pair_j, env_local)
    end subroutine build_fock_direct_uhf
 
 end module mqc_libcint_direct

@@ -148,13 +148,17 @@ MOLECULES = {
     # Open-shell species. Geometries already in the tree, so they are read
     # rather than written; both are radicals and appear only in OPEN_SHELL.
     "oh": Molecule(label="OH", element="O", xyz="sample_inputs/oh.xyz"),
+    # The methyl radical, for unrestricted Kohn-Sham. A doublet whose ground state
+    # is unambiguous, which OH's is not -- and comparing two codes' unrestricted
+    # answers is only meaningful if both land on the same state.
+    "ch3": _mol("CH3", "C", planar_ah3("C", "H", 1.0790)),
     # Two of prism's waters, for the fragmented cases below.
     "w2dimer": Molecule(label="(H2O)2", element="O", xyz="sample_inputs/w2_dimer.xyz"),
     "o2": Molecule(label="O2", element="O", xyz="sample_inputs/o2.xyz"),
     "ar": _mol("Ar", "Ar", atom("Ar")),
 }
 
-ALL = [m for m in MOLECULES if m not in ("oh", "o2", "w2dimer")]
+ALL = [m for m in MOLECULES if m not in ("oh", "o2", "ch3", "w2dimer")]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -313,6 +317,25 @@ DFT_CASES = [
     # Hartree low, converged and unflagged.
     ("water", "cc-pvdz", "wb97x", 3),
     ("water", "cc-pvdz", "cam-b3lyp", 3),
+]
+
+# Unrestricted Kohn-Sham, as (molecule, basis, functional, level, multiplicity).
+# One per rung plus a range-separated hybrid, because each adds something the
+# previous does not: LDA the interleaved rho, GGA the three sigma components and
+# the cross-spin gradient term, the hybrid a same-spin exchange scaling, the
+# meta-GGA an interleaved tau, and the range-separated one a second attenuated
+# exchange pass per spin.
+#
+# A closed-shell system run unrestricted is deliberately not here: it converges to
+# the restricted answer, which makes it the sharpest test of all -- and therefore
+# one that belongs in test_mqc_libcint_uks, where it needs no external reference.
+UDFT_CASES = [
+    ("ch3", "cc-pvdz", "svwn", 3, 2),
+    ("ch3", "cc-pvdz", "pbe", 3, 2),
+    ("ch3", "cc-pvdz", "b3lyp", 3, 2),
+    ("ch3", "cc-pvdz", "tpss", 3, 2),
+    ("ch3", "cc-pvdz", "wb97x", 3, 2),
+    ("o2", "cc-pvdz", "pbe", 3, 3),
 ]
 
 # Double hybrids. References come from pyscf-forge's `pyscf.dh.DFDH`, and carry a
@@ -653,6 +676,32 @@ def pyscf_dh(atoms, basis, aux, functional):
     return float(mf.e_tot), mol.nao
 
 
+def pyscf_uks(atoms, basis, functional, level, multiplicity):
+    """Reference unrestricted Kohn-Sham total energy, on the same grid level.
+
+    PySCF counts unpaired electrons where a deck states 2S+1, so the multiplicity
+    is converted here rather than in the table -- the table should read the way the
+    input file does.
+    """
+    from pyscf import dft, gto
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = multiplicity - 1
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = dft.UKS(mol)
+    mf.xc = functional
+    mf.grids.level = level
+    mf.conv_tol = 1e-11
+    return mf.kernel(), mol.nao_nr()
+
+
 def pyscf_rks(atoms, basis, functional, level):
     """Reference Kohn-Sham total energy, on the same grid level.
 
@@ -922,6 +971,26 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {functional:8s} grid={level}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, level, mult in UDFT_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_uks(mol.atoms, basis, functional, level, mult)
+        tag = functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/udft", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft", multiplicity=mult)
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": level}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"UKS {functional.upper()} {mol.label} {basis} grid {level} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:8s} grid={level} mult={mult} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, aux, method, frozen in RI_CC_CASES:
         mol = MOLECULES[name]
