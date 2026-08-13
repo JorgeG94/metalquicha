@@ -1,7 +1,7 @@
 set(_lib "jsonfortran")
 set(_pkg "JSONFORTRAN")
 set(_url "https://github.com/jacobwilliams/json-fortran.git")
-set(_rev "9.2.0")
+set(_rev "9.3.1")
 
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
