@@ -295,6 +295,43 @@ CC_CASES = [
 # builds oooo, ovov, ovvo, oovv and ovvv from the fitted tensor -- so ours does
 # too, and the (T) is fitted along with the rest because ccsd_t consumes that same
 # object. Fitting a different set would leave us ~1e-5 away permanently.
+# Kohn-Sham DFT, one per rung of the ladder plus a second in each family that
+# exercises a different path: SVWN and PBE are compositions of libxc halves, B3LYP
+# and PBE0 are libxc-owned hybrids where libxc reports the exchange fraction, and
+# TPSS and M06-L need the kinetic energy density. grid_level 3 on both sides.
+DFT_CASES = [
+    ("water", "cc-pvdz", "svwn", 3),
+    ("water", "cc-pvdz", "pbe", 3),
+    ("water", "cc-pvdz", "b3lyp", 3),
+    ("water", "cc-pvdz", "pbe0", 3),
+    ("water", "cc-pvdz", "tpss", 3),
+    ("water", "cc-pvdz", "m06-l", 3),
+    ("ch4", "cc-pvdz", "pbe", 3),
+    # Range-separated hybrids, which reach their exchange by a path nothing else
+    # uses: a second, erf-attenuated quartet loop. Losing it is not a small
+    # error -- omega written into the wrong `env` slot left both of these several
+    # Hartree low, converged and unflagged.
+    ("water", "cc-pvdz", "wb97x", 3),
+    ("water", "cc-pvdz", "cam-b3lyp", 3),
+]
+
+# Double hybrids. References come from pyscf-forge's `pyscf.dh.DFDH`, and carry a
+# per-case tolerance because that reference is itself density-fitted: its SCF fits J
+# and K with an auto-generated auxiliary basis where ours computes them exactly,
+# which is worth ~2e-5 on a total energy. Tightening it would mean reproducing an
+# approximation rather than an answer, and loosening the whole suite to 5e-5 would
+# blind the other 180 cases.
+#
+# The point of having them here at all is structural: a double hybrid whose
+# perturbative term went missing would be ~65 mHartree out, which no tolerance in
+# this range would let through. That is exactly the bug these were added after.
+DH_CASES = [
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "b2plyp"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "b2gp-plyp"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "mpw2plyp"),
+]
+DH_TOLERANCE = 5.0e-5
+
 RI_CC_CASES = [
     ("water", "sto-3g", "cc-pvdz-rifit", "ccsd", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", "ccsd", 1),
@@ -473,7 +510,7 @@ def write_xyz(path, mol):
 
 
 def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None,
-              cc=None):
+              cc=None, aux_only=False):
     model = {"method": method, "basis": basis}
     if aux:
         model["aux_basis"] = aux
@@ -488,7 +525,11 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
         "system": {"logger": {"level": "Verbose"}},
         "driver": "Energy",
     }
-    if aux:
+    # `aux_only` names an auxiliary basis without asking the *reference* to be
+    # fitted. That combination is the ordinary one for RI correlation over an exact
+    # Hartree-Fock, and since model.aux_basis is now the single place an auxiliary
+    # is named, it has to be expressible without implying a fitted SCF.
+    if aux and not aux_only:
         deck["keywords"]["scf"]["density_fitting"] = True
     if correlation:
         deck["keywords"]["correlation"] = correlation
@@ -585,6 +626,58 @@ def pyscf_cc(atoms, basis, method, frozen):
     if method == "ccsd(t)":
         ecorr += mycc.ccsd_t()
     return float(escf + ecorr), mol.nao
+
+
+def pyscf_dh(atoms, basis, aux, functional):
+    """Reference double-hybrid total energy, from pyscf-forge's DFDH.
+
+    Needs `pyscf-dispersion` and pyscf-forge from git -- `pyscf.dh` is not in the
+    released wheel. If the import fails the case is skipped rather than failing the
+    generator, because the reference is an optional extra and everything else here
+    depends only on PySCF itself.
+    """
+    from pyscf import gto
+    from pyscf.dh import DFDH
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = DFDH(mol, xc=functional.replace("-", "").upper()).run()
+    return float(mf.e_tot), mol.nao
+
+
+def pyscf_rks(atoms, basis, functional, level):
+    """Reference Kohn-Sham total energy, on the same grid level.
+
+    `dft.RKS` builds its own grid from the same tables ours does, which is what
+    makes a level-for-level comparison meaningful -- the grids do not cancel here
+    the way they do when one code evaluates on the other's points.
+    """
+    from pyscf import dft, gto
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = dft.RKS(mol)
+    mf.xc = functional
+    mf.grids.level = level
+    mf.conv_tol = 1e-11
+    energy = mf.kernel()
+    return float(energy), mol.nao
 
 
 def pyscf_ri_cc(atoms, basis, aux, method, frozen):
@@ -786,6 +879,50 @@ def main():
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
 
+    for name, basis, aux, functional in DH_CASES:
+        mol = MOLECULES[name]
+        try:
+            energy, nao = pyscf_dh(mol.atoms, basis, aux, functional)
+        except ImportError as exc:
+            print(f"skipping double hybrids: {exc}", flush=True)
+            break
+        tag = functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/dh", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft", aux=aux, aux_only=True,
+                          correlation={"freeze_core": False})
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": 3}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"DH {functional.upper()} {mol.label} {basis}/{aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "tolerance": DH_TOLERANCE,
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:10s} nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, level in DFT_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rks(mol.atoms, basis, functional, level)
+        tag = functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/dft", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft")
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": level}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"KS {functional.upper()} {mol.label} {basis} grid {level} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:8s} grid={level}  nao={nao:4d} E={energy:.12f}", flush=True)
+
     for name, basis, aux, method, frozen in RI_CC_CASES:
         mol = MOLECULES[name]
         energy, nao = pyscf_ri_cc(mol.atoms, basis, aux, method, frozen)
@@ -796,9 +933,9 @@ def main():
         if not args.dry_run:
             _write_deck(VALIDATION / deck,
                 json.dumps(deck_json(xyz_for(mol), basis, method="ri-" + method,
+                                     aux=aux, aux_only=True,
                                      correlation={"freeze_core": frozen > 0,
-                                                  "n_frozen_core": frozen,
-                                                  "aux_basis": aux},
+                                                  "n_frozen_core": frozen},
                                      cc={"tolerance": 1e-10}), indent=4) + "\n"
             )
         tests.append({
@@ -817,9 +954,9 @@ def main():
         if not args.dry_run:
             _write_deck(VALIDATION / deck,
                 json.dumps(deck_json(xyz_for(mol), basis, method="ri-mp2",
+                                     aux=aux, aux_only=True,
                                      correlation={"freeze_core": frozen > 0,
-                                                  "n_frozen_core": frozen,
-                                                  "aux_basis": aux}), indent=4) + "\n"
+                                                  "n_frozen_core": frozen}), indent=4) + "\n"
             )
         tests.append({
             "name": f"RI-MP2 {mol.label} {basis}/{aux} frozen {frozen} (CPU)",

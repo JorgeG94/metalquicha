@@ -201,14 +201,136 @@ Ab initio, on the CPU through libcint:
   ``RI-MP2``, ``RI-CCSD``, ``RI-CCSD(T)``
 
 **Basis sets.** ``basis`` is required by every ab initio method and ignored by the
-semi-empirical ones, which carry their own parameters. ``aux_basis`` is the
-auxiliary set for a density-fitted *reference*; the auxiliary set for a fitted
-*correlation* treatment is ``keywords.correlation.aux_basis``, which is separate
-because the two can legitimately differ.
+semi-empirical ones, which carry their own parameters.
 
-**Not yet reachable**: ``DFT``, ``MCSCF`` and the F12 variants parse but have no
-CPU implementation. ``RI-CCSD`` needs a restricted reference; unrestricted
-coupled cluster is refused rather than quietly run restricted.
+``aux_basis`` is the **only** place an auxiliary basis is named, and it serves both
+a density-fitted reference and a density-fitted correlation treatment. A basis set
+belongs beside the orbital basis it fits; having two places to name one meant a
+deck could set both and silently prefer one.
+
+One set therefore covers both fits when a run does both. That is fine in the
+direction it usually runs -- a RIFIT set fitting J and K is ordinary practice,
+worth about 1.7 mHartree on a total energy against exact J and K and largely
+cancelling in anything relative. The reverse is worth a warning and gets one: a
+JKFIT set fitting a ``(ia|jb)`` block gives a correlation energy whose error is not
+the RI error it is meant to be. Naming an auxiliary basis does **not** by itself
+density-fit the reference -- that is ``keywords.scf.density_fitting``, asked for
+rather than inferred.
+
+Kohn-Sham DFT, on the CPU through libcint and libxc:
+
+- ``DFT`` (also ``KS``, ``Kohn-Sham``) selects the method; **which** functional is
+  ``model.functional``, not part of the method name. The two are separate fields
+  because a functional names the theory the way a basis names the space it is
+  solved in.
+
+**Not yet reachable**: ``MCSCF`` and the F12 variants parse but have no
+implementation. Unrestricted coupled cluster and unrestricted Kohn-Sham are both
+refused rather than quietly run restricted -- the first needs its own alpha and
+beta transform, the second a spin-polarised functional evaluation.
+
+Functionals
+^^^^^^^^^^^
+
+Named to `libxc <https://libxc.gitlab.io/>`_, so a functional is available by its
+libxc name -- ``gga_x_pbe``, ``hyb_gga_xc_b3lyp``, ``mgga_c_tpss`` and most of the
+several thousand others. Nothing here shadows that list.
+
+**Range-separated hybrids are supported** -- CAM-B3LYP and the ωB97 family split
+their exchange into short and long range over an erf-attenuated kernel, and libcint
+computes those integrals from the same entry points with a range parameter set. So
+the long-range part is a second exchange pass rather than new integral code, and
+the two are combined on the coefficients libxc reports for the functional itself.
+One consequence is worth knowing: **a range-separated functional requires the
+direct Fock build**, which is the default. Asking for one together with in-core or
+density-fitted integrals is refused rather than run, because those tensors are
+built for the full Coulomb kernel and the long-range exchange would simply be
+absent.
+
+**Two families are refused rather than approximated**, each checked on libxc's own
+report of the functional rather than a list of names kept here:
+
+- **functionals carrying non-local correlation** (VV10, so ωB97M-V and relatives) --
+  that term is a double integral over the density, not a functional of it at a
+  point. Detected by ``xc_nlc_coef``.
+- **meta-GGAs needing the density Laplacian**, which is a second derivative of every
+  basis function. Detected by the ``XC_FLAGS_NEEDS_LAPLACIAN`` flag.
+
+Each refusal names what is missing. Why they are refusals rather than
+approximations is worth stating: a functional whose exchange coefficient is taken
+at face value when it does not mean what a global hybrid's means returns a
+converged energy several Hartree out -- 3.4 for CAM-B3LYP, 6.4 for ωB97X, before
+range separation was handled -- and nothing about either run looks wrong.
+
+What metalquicha adds on top is friendly names for combinations libxc has the
+parts for but not a name for the pair, plus double hybrids, which libxc does not
+carry at all:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Name
+     - Rung
+     - Composition
+   * - ``svwn``, ``lda``, ``lsda``
+     - LDA
+     - ``lda_x`` + ``lda_c_vwn``
+   * - ``pbe``
+     - GGA
+     - ``gga_x_pbe`` + ``gga_c_pbe``
+   * - ``b3lyp``
+     - hybrid
+     - ``hyb_gga_xc_b3lyp`` (libxc reports its own exchange fraction)
+   * - ``pbe0``, ``pbeh``
+     - hybrid
+     - ``hyb_gga_xc_pbeh``
+   * - ``tpss``
+     - meta-GGA
+     - ``mgga_x_tpss`` + ``mgga_c_tpss``
+   * - ``m06-l``, ``m06l``
+     - meta-GGA
+     - ``mgga_x_m06_l`` + ``mgga_c_m06_l``
+   * - ``wb97x``
+     - range-separated hybrid
+     - ``hyb_gga_xc_wb97x`` (ω = 0.3)
+   * - ``cam-b3lyp``, ``camb3lyp``
+     - range-separated hybrid
+     - ``hyb_gga_xc_cam_b3lyp`` (ω = 0.33)
+   * - ``b2plyp``
+     - double hybrid
+     - 0.53 exact exchange, 0.47 B88; 0.27 MP2, 0.73 LYP
+   * - ``b2gp-plyp``
+     - double hybrid
+     - 0.65 / 0.36
+   * - ``mpw2plyp``
+     - double hybrid
+     - 0.55 / 0.25 over mPW91
+
+Every one of these is validated against a reference: the first eight against
+``pyscf.dft.RKS`` at the same grid level, agreeing to 7.7e-11 or better; the three
+double hybrids against ``pyscf.dh.DFDH``, whose reported coefficients match the
+table above exactly.
+
+Anything beyond meta-GGA is refused, as is a functional needing the density
+Laplacian -- on libxc's own say-so rather than a guess about which ones are safe.
+
+DFT Options
+^^^^^^^^^^^
+
+The integration grid, which is all DFT adds to an SCF:
+
+.. code-block:: json
+
+   "dft": {
+     "grid_level": 3
+   }
+
+- ``grid_level``: 0 to 9, from the standard per-element tables -- the same tables
+  PySCF uses, which is what makes a level-for-level comparison meaningful. Default
+  3, and where a production calculation should start.
+- ``radial_points`` / ``angular_points``: override the level for every atom, which
+  is what a convergence study wants. Supplying these takes the level out of
+  charge; supplying one without the other is refused rather than half-applied.
 
 Driver Section
 --------------
@@ -280,7 +402,6 @@ combination someone will ask for, and one shared flag could not express it.
      "freeze_core": true,
      "n_frozen_core": -1,
      "density_fitting": false,
-     "aux_basis": "cc-pVDZ-RIFIT",
      "scs": false
    }
 
@@ -288,7 +409,6 @@ combination someone will ask for, and one shared flag could not express it.
 - ``n_frozen_core``: How many to freeze (default: -1, counted from the elements)
 - ``density_fitting``: Fit the correlation integrals (default: false, or true if
   the method name carries an ``RI-``/``DF-`` prefix -- an explicit keyword wins)
-- ``aux_basis``: Auxiliary set for the fit; falls back to ``model.aux_basis``
 - ``scs``, ``scs_ss``, ``scs_os``: Spin-component scaling and its factors
   (defaults 1/3 and 1.2, applied only when ``scs`` is on or the method name asks)
 

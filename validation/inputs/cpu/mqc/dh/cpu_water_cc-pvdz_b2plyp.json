@@ -11,9 +11,10 @@
         }
     ],
     "model": {
-        "method": "ri-mp2",
+        "method": "dft",
         "basis": "cc-pvdz",
-        "aux_basis": "cc-pvdz-rifit"
+        "aux_basis": "cc-pvdz-rifit",
+        "functional": "b2plyp"
     },
     "keywords": {
         "scf": {
@@ -21,8 +22,10 @@
             "tolerance": 1e-08
         },
         "correlation": {
-            "freeze_core": false,
-            "n_frozen_core": 0
+            "freeze_core": false
+        },
+        "dft": {
+            "grid_level": 3
         }
     },
     "system": {

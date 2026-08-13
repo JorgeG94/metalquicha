@@ -52,6 +52,7 @@ contains
                   new_unittest("error_missing_schema", test_missing_schema), &
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
+                  new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -474,6 +475,40 @@ contains
       if (allocated(error)) return
       call check(error, config%nodes_per_group, 4)
    end subroutine test_nodes_per_group
+
+   subroutine test_dft_keywords(error)
+      !! keywords.dft, and that explicit counts take the level out of charge
+      !!
+      !! The two ways of asking for a grid are exclusive: a level picks per-element
+      !! counts from the standard tables, and explicit counts override it for every
+      !! atom. Supplying counts has to switch the level off, or a run would report
+      !! one grid and integrate on another -- which is what it used to do.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"grid_level": 5}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%dft_grid_level, 5)
+      if (allocated(error)) return
+      ! Absent counts stay negative, which is how the adapter knows the level is
+      ! the thing that was asked for.
+      call check(error, config%dft_radial_points < 0, "absent radial_points stays unset")
+      if (allocated(error)) return
+
+      call write_deck('"method": "dft", "functional": "pbe", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"radial_points": 99, "angular_points": 590}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%dft_radial_points, 99)
+      if (allocated(error)) return
+      call check(error, config%dft_angular_points, 590)
+   end subroutine test_dft_keywords
 
    subroutine test_cc_keywords(error)
       !! keywords.cc, and that "triples" records whether it was named

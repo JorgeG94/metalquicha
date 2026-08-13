@@ -182,6 +182,17 @@ contains
          spec%n_components = 1
          spec%component(1) = xc_component_t("hyb_gga_xc_b3lyp", 1.0_dp)
 
+         ! Range-separated hybrids, by their libxc names.
+      case ("wb97x")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_gga_xc_wb97x", 1.0_dp)
+
+      case ("cam-b3lyp", "camb3lyp")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_gga_xc_cam_b3lyp", 1.0_dp)
+
       case ("pbe0", "pbeh")
          spec%from_libxc = .true.
          spec%n_components = 1

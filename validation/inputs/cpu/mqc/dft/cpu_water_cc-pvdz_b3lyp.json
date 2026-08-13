@@ -11,18 +11,17 @@
         }
     ],
     "model": {
-        "method": "ri-mp2",
+        "method": "dft",
         "basis": "cc-pvdz",
-        "aux_basis": "cc-pvdz-rifit"
+        "functional": "b3lyp"
     },
     "keywords": {
         "scf": {
             "maxiter": 100,
             "tolerance": 1e-08
         },
-        "correlation": {
-            "freeze_core": false,
-            "n_frozen_core": 0
+        "dft": {
+            "grid_level": 3
         }
     },
     "system": {

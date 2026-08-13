@@ -589,6 +589,26 @@ contains
          end if
       end if
 
+      ! A range-separated functional needs a second exchange matrix, over the
+      ! erf-attenuated kernel, and the two are combined as
+      !
+      !     K_eff = exx_fraction * K_full + rs_k_lr * K_lr(omega)
+      !
+      ! Only the direct build can produce the second one: libcint switches kernels
+      ! through `env`, so an omega pass is the same quartet loop, while the in-core
+      ! tensor and the fitted tensor are both built for the full Coulomb kernel and
+      ! would need a second one of their own. Refused rather than approximated.
+      if (present(xc)) then
+         if (xc%range_separated .and. (allocated(bmat) .or. allocated(eri))) then
+            call error%set(ERROR_VALIDATION, "a range-separated functional needs the "// &
+                           "direct Fock build: the in-core and density-fitted "// &
+                           "integrals are built for the full Coulomb kernel, and the "// &
+                           "long-range exchange would be missing. Run without "// &
+                           "in_core and without an auxiliary basis for the reference.")
+            return
+         end if
+      end if
+
       if (allocated(bmat)) then
          call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=k_scale)
       else if (allocated(eri)) then
@@ -597,6 +617,25 @@ contains
          call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
                                 k_scale=k_scale)
          if (error%has_error()) return
+         if (kohn_sham) then
+            if (xc%range_separated) then
+               block
+                  real(dp), allocatable :: k_lr(:, :)
+                  real(dp), allocatable :: h_zero(:, :)
+                  ! Zero in place of the core Hamiltonian and no Coulomb term, so
+                  ! this pass returns the long-range exchange alone and nothing has
+                  ! to be subtracted back out afterwards.
+                  allocate (k_lr(size(h, 1), size(h, 2)), h_zero(size(h, 1), size(h, 2)))
+                  h_zero = 0.0_dp
+                  call build_fock_direct(mol, h_zero, density, bounds, k_lr, stats, &
+                                         error, k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                         omega=xc%rs_omega)
+                  if (error%has_error()) return
+                  fock = fock + k_lr
+                  deallocate (k_lr, h_zero)
+               end block
+            end if
+         end if
       end if
 
       ! Taken here, from the Fock matrix that is still a mean field.

@@ -79,6 +79,15 @@ against PySCF on the same geometries and the same basis data.
   reported from separately-kept same- and opposite-spin components.
 - **Coupled cluster**: CCSD and CCSD(T), conventional and density-fitted, in the
   spin-orbital basis over a restricted reference.
+- **Kohn-Sham DFT**: the whole ladder -- LDA, GGA, hybrid, meta-GGA,
+  range-separated hybrid and double hybrid -- over
+  `libxc <https://libxc.gitlab.io/>`_, so most of what libxc carries is available
+  by name, with friendly names and double-hybrid compositions layered on top.
+  Range separation uses libcint's erf-attenuated integrals, which puts ωB97X and
+  CAM-B3LYP in reach. Non-local correlation (VV10) and Laplacian-dependent
+  meta-GGAs are refused rather than approximated. Grids are Treutler-Ahlrichs
+  radial times Lebedev angular with a Becke partition, from the same level tables
+  PySCF uses.
 
 Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
 whether a set is Cartesian or spherical is taken from the file rather than assumed.
@@ -394,8 +403,8 @@ Planned Features
 
 1. **Additional QC methods**:
 
-   - DFT functionals on the CPU path (via libxc); DFT currently runs on the GPU
-     backend only
+   - Unrestricted Kohn-Sham on the CPU path, which needs a spin-polarised
+     functional evaluation and paired densities
    - Unrestricted coupled cluster, which needs its own alpha and beta transform
      and is refused rather than approximated today
    - F12 variants, and MCSCF: these parse but have no implementation

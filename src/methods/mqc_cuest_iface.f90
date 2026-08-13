@@ -30,7 +30,6 @@ module mqc_cuest_iface
       logical :: freeze_core = .false.
       integer :: n_frozen_core = -1     !! -1 means count it from the elements
       logical :: corr_density_fitting = .false.  !! RI for the correlation step
-      character(len=256) :: corr_aux_basis = ""
       real(dp) :: scs_ss = 1.0_dp       !! Spin-component scaling, one for plain MP2
       real(dp) :: scs_os = 1.0_dp
       ! Coupled cluster. CPU backend only -- cuEST has no CC -- and refused
@@ -41,6 +40,10 @@ module mqc_cuest_iface
       integer :: cc_max_iter = 100
       real(dp) :: cc_tolerance = 1.0e-8_dp
       integer :: cc_diis_size = 8
+      ! Kohn-Sham grid. `grid_level` picks per-element radial and angular counts
+      ! from the standard tables; radial_points/angular_points override it for
+      ! every atom, which is what a convergence study wants.
+      integer :: grid_level = 3
          !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""

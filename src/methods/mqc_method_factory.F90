@@ -185,7 +185,6 @@ contains
       m%options%freeze_core = config%corr%freeze_core
       m%options%n_frozen_core = config%corr%n_frozen_core
       m%options%corr_density_fitting = config%corr%use_df
-      m%options%corr_aux_basis = config%corr%aux_basis
       ! One and one unless scaling was asked for, so an unscaled run cannot
       ! pick up factors that happen to be sitting in the config.
       if (config%corr%use_scs) then
@@ -228,6 +227,7 @@ contains
       ! DFT-specific from config%dft
       m%options%functional = config%dft%functional
       m%options%grid_type = config%dft%grid_type
+      m%options%grid_level = config%dft%grid_level
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points
 

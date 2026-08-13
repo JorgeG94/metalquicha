@@ -12,7 +12,8 @@
     ],
     "model": {
         "method": "ri-mp2",
-        "basis": "def2-svp"
+        "basis": "def2-svp",
+        "aux_basis": "def2-svp-rifit"
     },
     "keywords": {
         "scf": {
@@ -21,8 +22,7 @@
         },
         "correlation": {
             "freeze_core": true,
-            "n_frozen_core": 1,
-            "aux_basis": "def2-svp-rifit"
+            "n_frozen_core": 1
         }
     },
     "system": {
