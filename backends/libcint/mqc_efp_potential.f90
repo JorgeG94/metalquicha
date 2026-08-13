@@ -589,6 +589,26 @@ contains
       integer :: ish, l, off, dim, slot
       real(dp) :: scale
 
+      ! **The map below is Cartesian s, p and d, and the two codes have to agree on
+      ! that.** GAMESS defaults ISPHER = -1, which is Cartesian, and that is what a
+      ! Pople set wants -- 6-31G* is the validated path and the Basis Set Exchange
+      ! declares its d Cartesian, so both sides line up without either being asked.
+      !
+      ! A Dunning or def2 set is a different matter and not simply unsupported: BSE
+      ! declares those spherical, and GAMESS will not run them Cartesian, so both
+      ! sides would agree on spherical too. What is missing there is the spherical
+      ! ordering map and `ISPHER=1` in the deck, not the possibility. Refused here
+      ! rather than in the shell loop below, which would blame a missing angular
+      ! momentum for what is really a difference in the angular form.
+      if (.not. mol%cartesian) then
+         call error%set(ERROR_VALIDATION, &
+                        "makefp: this basis is spherical and only Cartesian s, p "// &
+                        "and d are mapped to GAMESS's ordering. GAMESS reads a "// &
+                        "spherical potential with ISPHER=1, so this needs a "// &
+                        "spherical ordering map rather than a Cartesian basis.")
+         return
+      end if
+
       allocate (mapped(size(coefficients, 1), size(coefficients, 2)))
       mapped = coefficients
       do ish = 1, mol%nbas
@@ -602,8 +622,13 @@ contains
                mapped(off + slot, :) = coefficients(off + D_FROM_LIBCINT(slot), :)*scale
             end do
          else if (l >= 2) then
+            ! f and up need their own permutation and normalizations against
+            ! GAMESS's ordering, derived the way the d ones were: read off its own
+            ! printed coefficients for a basis that has them.
             call error%set(ERROR_VALIDATION, &
-                           "makefp: no basis function map for l > 1 beyond Cartesian d")
+                           "makefp: this basis has f functions or higher, and only "// &
+                           "Cartesian s, p and d are mapped to GAMESS's ordering "// &
+                           "so far")
             return
          end if
       end do

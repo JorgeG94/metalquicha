@@ -442,6 +442,7 @@ contains
       real(dp), allocatable :: nu_of(:), rz_of(:), target_of(:)
       integer, allocatable :: active(:)
       integer :: nb, nact, kept, j, m
+      real(dp), allocatable :: precond(:, :)
       real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
@@ -522,6 +523,7 @@ contains
       allocate (s_vec(n_vir, n_occ, nb), rhs(n_vir, n_occ, nb), r(n_vir, n_occ, nb))
       allocate (z(n_vir, n_occ, nb), p(n_vir, n_occ, nb), ap(n_vir, n_occ, nb))
       allocate (nu_of(nb), rz_of(nb), target_of(nb), active(nb))
+      allocate (precond(n_vir, n_occ))
 
       do ifreq = 1, size(frequencies)
          do l = 1, n_pert
@@ -531,7 +533,15 @@ contains
             target_of(j) = sqrt(sum(rhs(:, :, j)**2))*use_tol
             s_vec(:, :, j) = 0.0_dp
             r(:, :, j) = rhs(:, :, j)
-            z(:, :, j) = r(:, :, j)/gaps
+            ! Preconditioned with the diagonal of the operator actually being
+            ! solved, not with `gaps` alone. `(A+B)` has `gaps` on its diagonal but
+            ! `nu^2 (A-B)^-1` has `nu^2/gaps`, so at the top of the Casimir-Polder
+            ! range -- nu = 32, nu^2 = 1039 -- preconditioning on `gaps` is wrong by
+            ! three orders of magnitude, and the mismatch grows with the spread of
+            ! the gaps, which is why it survived a small basis and failed a larger
+            ! one at the highest frequency only.
+            precond = gaps + nu_of(j)*nu_of(j)/gaps
+            z(:, :, j) = r(:, :, j)/precond
             p(:, :, j) = z(:, :, j)
             rz_of(j) = sum(r(:, :, j)*z(:, :, j))
             active(j) = j
@@ -559,7 +569,8 @@ contains
             s_vec(:, :, j) = s_vec(:, :, j) + step*p(:, :, j)
             r(:, :, j) = r(:, :, j) - step*ap(:, :, j)
             if (sqrt(sum(r(:, :, j)**2)) > target_of(j)) then
-               z(:, :, j) = r(:, :, j)/gaps
+               precond = gaps + nu_of(j)*nu_of(j)/gaps
+               z(:, :, j) = r(:, :, j)/precond
                rz_new = sum(r(:, :, j)*z(:, :, j))
                p(:, :, j) = z(:, :, j) + (rz_new/rz_of(j))*p(:, :, j)
                rz_of(j) = rz_new
@@ -589,7 +600,7 @@ contains
       deallocate (bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0, operators)
       if (allocated(dip)) deallocate (dip)
       deallocate (s_vec, rhs, r, z, p, ap)
-      deallocate (nu_of, rz_of, target_of, active)
+      deallocate (nu_of, rz_of, target_of, active, precond)
    end subroutine dynamic_polarizability
 
    subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
