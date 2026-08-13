@@ -48,6 +48,25 @@ module mqc_efp_potential
    !! different conventions, which is what a scale fit did on the dipole-quadrupole
    !! block before the index order was pinned.
    !!
+   !! **Summed over the orbitals the factor is clean and the gap shrinks.** The same
+   !! move that cracked the dipole-quadrupole block -- summing to remove the
+   !! projection -- gives a best scale of 0.333336, 1/3 to five digits, with the
+   !! residual down to 2.0e-02 from 5.8e-02 per orbital. So 1/3 is real, and part of
+   !! what is left is the per-orbital decomposition rather than the quantity.
+   !!
+   !! **And there is one concrete inconsistency to chase.** A summed response tensor
+   !! must be symmetric under exchanging its two index pairs, because summed over
+   !! every orbital the projector is the identity and the response function is
+   !! symmetric in measure and respond. Ours is, to 1.1e-04. The tensor recovered
+   !! from GAMESS by subtracting `QQSHIFT` is *not*: 2.2e-01. So the shift being
+   !! subtracted carries a pair-asymmetric error, and the formula shows where it can
+   !! come from -- `RRalphdel1` contracts the dipole-dipole tensor on its first index
+   !! (`DD(i,e)`) while its mirror `RRalphdel2` contracts on the second (`DD(b,i)`),
+   !! so the two are mirror images only if `DD` is symmetric, and per orbital it is
+   !! not. That is the thread, and it is the same class of thing as the transposed
+   !! `alpha` that closed `DQSHIFT` -- but transposing these two terms was tried and
+   !! makes it worse, so it is not the same fix.
+   !!
    !! With the factor the forward recipe reaches 1.3e-01 relative, and the residual
    !! sits on the components the `delta` terms touch: 1.6e-01 where both index pairs
    !! are diagonal against 2.6e-02 where neither is. Transposing the dipole-dipole
