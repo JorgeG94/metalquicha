@@ -771,12 +771,25 @@ contains
       !! pre-shift tensor is itself not GAMESS's, and the translation being confirmed
       !! from source does not localise what differs.
       !!
+      !! **Nor is the shift the remaining difference.** Fitting the reference against
+      !! our tensor *augmented* with the three shift terms -- four free coefficients
+      !! over all 1296 values, so the formula's own factors are not assumed -- leaves a
+      !! relative residual of 0.88. So the reference is not in the span of our
+      !! dipole-quadrupole components together with the dipole-dipole terms that
+      !! `DQSHIFT` mixes into them. The pre-shift tensor itself differs.
+      !!
       !! Confirmed against GAMESS's source: the operator, its order, the frequency, the
       !! right-hand side, the drive, the measure, the contraction, its factor, the
-      !! nesting, the sample ordering, and the translation applied at write time.
-      !! Something remains different in what `LDQPOL` receives as `U` or in what its
-      !! `HF` holds, and this reading has not found it. The rank result is the fact to
-      !! hold on to: whatever it is, it is not a rearrangement.
+      !! nesting, the sample ordering, and the translation applied at write time. All
+      !! of it agrees with what this routine computes, and the numbers do not. Something
+      !! differs in what `LDQPOL` receives as `U` or in what its `HF` holds, upstream of
+      !! everything that has been read.
+      !!
+      !! The two facts to keep: it is not a rearrangement of our components (rank 18),
+      !! and it is not a translation of them either (the augmented fit above). Both are
+      !! span arguments, so they hold regardless of what any particular convention turns
+      !! out to be, and between them they rule out every hypothesis of the shape that
+      !! settled every other convention in this project.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
