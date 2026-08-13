@@ -46,6 +46,7 @@ module mqc_efp_potential
                                casimir_polder_frequencies, N_CASIMIR_POLDER
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_screening, only: fit_screening, SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
+   use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
    implicit none
    private
@@ -195,10 +196,12 @@ contains
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
       integer :: natm, core, i, j, k, n_valence, n_electrons
+      type(timer_type) :: stage
       logical :: talk
 
       talk = .false.
       if (present(verbose)) talk = verbose
+      if (talk) call stage%start()
       natm = size(atomic_numbers)
       n_electrons = sum(atomic_numbers)
       if (present(charge)) n_electrons = n_electrons - charge
@@ -241,6 +244,7 @@ contains
          return
       end if
       pot%n_occ = scf%n_occupied
+      if (talk) call report(stage, "SCF", talk)
       if (talk) write (*, "(A,F18.10)") "  RHF energy ", scf%energy
 
       core = frozen_core(atomic_numbers)
@@ -265,6 +269,7 @@ contains
       end if
       if (talk) write (*, "(A,I0,A,I0,A)") "  localized ", n_valence, " of ", &
          pot%n_occ, " occupied orbitals"
+      if (talk) call report(stage, "localization", talk)
 
       ! --- electrostatics -------------------------------------------------------
       call distributed_multipoles(mol, scf%density, atomic_numbers, dma, error)
@@ -296,6 +301,7 @@ contains
       end do
 
       ! --- polarization ---------------------------------------------------------
+      if (talk) call report(stage, "distributed multipoles", talk)
       call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
                                       pot%n_occ, pot%static_pol, pot%centroids, &
                                       error, n_core=core)
@@ -303,6 +309,8 @@ contains
          call mol%destroy()
          return
       end if
+
+      if (talk) call report(stage, "static polarizability", talk)
 
       allocate (pot%frequencies(N_CASIMIR_POLDER))
       pot%frequencies = casimir_polder_frequencies()
@@ -318,6 +326,7 @@ contains
          call mol%destroy()
          return
       end if
+      if (talk) call report(stage, "dynamic dipole response, with the Hessian build", talk)
       if (talk) write (*, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, &
          " imaginary frequencies"
 
@@ -328,6 +337,7 @@ contains
          return
       end if
       if (talk) write (*, "(A)") "  dipole-quadrupole dispersion tensors"
+      if (talk) call report(stage, "the mixed and quadrupole blocks", talk)
 
       ! --- exchange repulsion: the LMO Fock matrix and the orbitals themselves --
       ! F in the LMO basis is W^T diag(eps) W with W = C_occ^T S C_loc, so no AO
@@ -392,6 +402,7 @@ contains
       pot%screen = alpha
       deallocate (alpha)
       if (talk) write (*, "(A)") "  screening fitted for both damping forms"
+      if (talk) call report(stage, "charge-penetration screening", talk)
 
       call shared_hessian%destroy()
       call mol%destroy()
@@ -596,6 +607,31 @@ contains
          end if
       end do
    end function frozen_core
+
+   subroutine report(stage, what, talk)
+      !! Seconds for the stage just finished, then restart the clock
+      !!
+      !! Printed by the emitter rather than only by a test harness: a fragment of any
+      !! size takes long enough that "where did that go" is a question the program
+      !! should answer without being rebuilt. At 115 orbitals the dynamic response is
+      !! 88% of the run and everything else is under four seconds, but that split
+      !! moves with the fragment -- the localization is quadratic in the occupied
+      !! count and the multipoles work over primitive pairs, so neither can be
+      !! assumed small for something larger.
+      !!
+      !! `pic_timer` rather than `system_clock` directly: it uses the OpenMP clock
+      !! when PIC is built with OpenMP, which is what a threaded stage wants, and it
+      !! is what the rest of this codebase already times with.
+      type(timer_type), intent(inout) :: stage
+      character(len=*), intent(in) :: what
+      logical, intent(in) :: talk
+
+      if (.not. talk) return
+      call stage%stop()
+      write (*, "(A,F9.1,A,A)") "      ", stage%get_elapsed_time(), " s  ", what
+      flush (6)
+      call stage%start()
+   end subroutine report
 
    subroutine check_angular_form(mol, error)
       !! Refuse a basis whose angular form this cannot write
