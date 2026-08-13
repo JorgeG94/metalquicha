@@ -512,13 +512,14 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_dipquad_sumrule PRIVATE ${main_lib} cint_fortran
                                                       cint)
 
-  # Does the response machinery hold up as the basis grows, with the writing left
-  # out so a Dunning set is not refused before any of the physics runs.
+  # Does the response machinery hold up as the basis grows, with the writing
+  # left out so a Dunning set is not refused before any of the physics runs.
   add_executable(check_makefp_scaling
                  ${PROJECT_SOURCE_DIR}/validation/check_makefp_scaling.f90)
   target_include_directories(check_makefp_scaling
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_makefp_scaling PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_makefp_scaling PRIVATE ${main_lib} cint_fortran
+                                                     cint)
 
   # The whole of MAKEFP: a geometry in, a .efp out. Not one parameter block
   # against a reference but every block we can compute, assembled into a file.
