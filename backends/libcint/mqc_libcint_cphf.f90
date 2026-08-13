@@ -632,11 +632,20 @@ contains
       !!     combination `S_quad - R_l S_dip,m - R_m S_dip,l` and it does not match
       !!     either.
       !!
-      !! So GAMESS defines that block over some other operator -- a traceless
-      !! quadrupole, or a field *gradient* rather than a quadrupole moment, are the
-      !! next candidates. Until it is identified this routine should be used with
-      !! dipole operators only, and the two quadrupole blocks of a potential cannot
-      !! be emitted.
+      !!   * the **traceless** Buckingham quadrupole, which is what GAMESS actually
+      !!     uses -- `prpel.src:5625` builds it as
+      !!     `QXX = (2 QMXX - QMYY - QMZZ)/2` and `QXY = 3 QMXY / 2` from the raw
+      !!     second moments, and stores the six unique components in
+      !!     `XX YY ZZ XY XZ YZ` order. Read from its source rather than guessed,
+      !!     applied as the exact linear combination of the responses -- and it does
+      !!     not match either.
+      !!
+      !! So the operator is now known and the discrepancy is elsewhere: in how the
+      !! tensor is assembled from the responses rather than in what drives them.
+      !! `POLDB` and `SOLVCPDYN` in `locpol.src` are what build the record that
+      !! reaches DAF 816, and that is where to look next. Until it is identified this
+      !! routine should be used with dipole operators only, and the two quadrupole
+      !! blocks of a potential cannot be emitted.
       !!
       !! **No phase ambiguity here, unlike the Fock matrix.** Each tensor is
       !! quadratic in its localized orbital -- the orbital appears once in `h` and
