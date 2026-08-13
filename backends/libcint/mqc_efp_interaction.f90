@@ -36,6 +36,7 @@ module mqc_efp_interaction
    public :: build_efp_system
    public :: electrostatic_energy
    public :: dispersion_energy_e6
+   public :: polarization_energy
 
    !> Components of each stored multipole, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
@@ -372,6 +373,146 @@ contains
           *(-qa*(15.0_dp*ob_rrr - 9.0_dp*r2*dot_product(r, ob_tr)) &
             + qb*(15.0_dp*oa_rrr - 9.0_dp*r2*dot_product(r, oa_tr)))*inv7
    end function pair_energy
+
+   function polarization_energy(system, fragments, error, max_iter, tol) result(energy)
+      !! Polarization: induced dipoles at the orbital centroids, solved together
+      !!
+      !! Each polarizable point carries a static polarizability tensor and sits in
+      !! the field of every *other* fragment's multipoles. Its induced dipole is
+      !! `mu = alpha F`, and because each induced dipole adds to the field the others
+      !! see, the set is solved self-consistently. The energy is
+      !!
+      !!     E = -(1/2) sum_k mu_k . F_k
+      !!
+      !! against the **static** field -- the field from the permanent multipoles
+      !! only, not including the induced dipoles' own contribution. That is what
+      !! makes the half correct rather than double counting.
+      !!
+      !! **The field runs to the quadrupole and stops.** Charges, dipoles and
+      !! quadrupoles contribute; octupoles do not. That is not an omission --
+      !! GAMESS's polarization energy is identical for a potential with octupoles
+      !! and one with them zeroed, while every lower rank changes it.
+      !!
+      !! Each term was pinned on the same ladder the electrostatics used, and two of
+      !! the three were confirmed rather than guessed: charges alone reproduce
+      !! GAMESS's monopole-only number to 1e-9, charges and dipoles its
+      !! monopole-plus-dipole number exactly, and the quadrupole field then needed
+      !! only its sign settling -- the two choices differ by 1.3e-04 Hartree.
+      !!
+      !! The tensor is not symmetric. A localized-orbital polarizability has an
+      !! antisymmetric part, so `alpha F` is a genuine matrix-vector product and the
+      !! order matters.
+      type(efp_system_t), intent(in) :: system
+      type(efp_fragment_t), intent(in) :: fragments(:)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+      real(dp) :: energy
+
+      integer, parameter :: DEFAULT_ITER = 200
+      real(dp), parameter :: DEFAULT_TOL = 1.0e-12_dp
+      real(dp), allocatable :: centres(:, :), pol(:, :, :), fstat(:, :)
+      real(dp), allocatable :: mu(:, :), mu_new(:, :), field(:)
+      integer, allocatable :: owner(:)
+      real(dp) :: r(3)
+      real(dp) :: dist, inv3, inv5, change
+      integer :: n_pol, f, i, k, at, iter, limit, j
+      real(dp) :: use_tol
+
+      energy = 0.0_dp
+      limit = DEFAULT_ITER
+      if (present(max_iter)) limit = max_iter
+      use_tol = DEFAULT_TOL
+      if (present(tol)) use_tol = tol
+
+      n_pol = 0
+      do f = 1, size(fragments)
+         if (fragments(f)%has_static_pol) n_pol = n_pol + fragments(f)%n_pol
+      end do
+      if (n_pol == 0) return
+
+      ! Flattened exactly as the multipole points are, and for the same reason: the
+      ! induction loop is then over pairs of polarizable points with a fragment
+      ! index to skip on, which threads without restructuring.
+      allocate (centres(3, n_pol), pol(3, 3, n_pol), owner(n_pol))
+      allocate (fstat(3, n_pol), mu(3, n_pol), mu_new(3, n_pol), field(3))
+      at = 0
+      do f = 1, size(fragments)
+         if (.not. fragments(f)%has_static_pol) cycle
+         do i = 1, fragments(f)%n_pol
+            at = at + 1
+            centres(:, at) = fragments(f)%pol_points(:, i) + system%offset(:, f)
+            pol(:, :, at) = fragments(f)%static_pol(:, :, i)
+            owner(at) = f
+         end do
+      end do
+
+      ! The static field, from the permanent multipoles of the other fragments.
+      fstat = 0.0_dp
+      do i = 1, n_pol
+         do k = 1, system%n_points
+            if (system%fragment_of(k) == owner(i)) cycle
+            r = centres(:, i) - system%points(:, k)
+            dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
+            inv3 = 1.0_dp/(dist*dist*dist)
+            inv5 = inv3/(dist*dist)
+            ! charge, then dipole, then quadrupole -- the quadrupole carrying the
+            ! same half the charge-quadrupole energy does, with the sign that
+            ! GAMESS's own polarization energy picks out.
+            fstat(:, i) = fstat(:, i) + system%charge(k)*r*inv3 &
+                          + 3.0_dp*r*dot_product(system%dipole(:, k), r)*inv5 &
+                          - system%dipole(:, k)*inv3 &
+                          - 0.5_dp*quadrupole_field(system%quad(:, :, k), r)
+         end do
+      end do
+
+      mu = 0.0_dp
+      do iter = 1, limit
+         do i = 1, n_pol
+            field = fstat(:, i)
+            do j = 1, n_pol
+               if (owner(j) == owner(i)) cycle
+               r = centres(:, i) - centres(:, j)
+               dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
+               inv3 = 1.0_dp/(dist*dist*dist)
+               inv5 = inv3/(dist*dist)
+               field = field + 3.0_dp*r*dot_product(mu(:, j), r)*inv5 &
+                       - mu(:, j)*inv3
+            end do
+            mu_new(:, i) = matmul(pol(:, :, i), field)
+         end do
+         change = maxval(abs(mu_new - mu))
+         mu = mu_new
+         if (change < use_tol) exit
+      end do
+      if (change >= use_tol) then
+         call error%set(ERROR_VALIDATION, "efp: the induced dipoles did not converge")
+         return
+      end if
+
+      do i = 1, n_pol
+         energy = energy - 0.5_dp*dot_product(mu(:, i), fstat(:, i))
+      end do
+
+      deallocate (centres, pol, owner, fstat, mu, mu_new, field)
+   end function polarization_energy
+
+   pure function quadrupole_field(quad, r) result(f)
+      !! `Q_jk T3_ijk`, the shape the quadrupole's field takes
+      real(dp), intent(in) :: quad(3, 3), r(3)
+      real(dp) :: f(3)
+
+      real(dp) :: qr(3)
+      real(dp) :: dist, r2, r_q_r, tr_q, inv7
+
+      dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
+      r2 = dist*dist
+      inv7 = 1.0_dp/(r2*r2*r2*dist)
+      qr = matmul(quad, r)
+      r_q_r = dot_product(r, qr)
+      tr_q = quad(1, 1) + quad(2, 2) + quad(3, 3)
+      f = -(15.0_dp*r*r_q_r - 3.0_dp*r2*(r*tr_q + 2.0_dp*qr))*inv7
+   end function quadrupole_field
 
    function dispersion_energy_e6(system, fragments) result(energy)
       !! The `E6` dispersion energy, undamped

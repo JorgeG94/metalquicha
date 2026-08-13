@@ -33,7 +33,8 @@ module test_mqc_efp_interaction
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_interaction, only: efp_system_t, build_efp_system, &
-                                  electrostatic_energy, dispersion_energy_e6
+                                  electrostatic_energy, dispersion_energy_e6, &
+                                  polarization_energy
    use mqc_error, only: error_t
    implicit none
    private
@@ -59,6 +60,9 @@ module test_mqc_efp_interaction
    real(dp), parameter :: E6_GAMESS_DAMPED = -0.0005163981_dp
    real(dp), parameter :: E6_UNDAMPED = -5.173790776e-4_dp
 
+   !> GAMESS's polarization energy for this dimer, which needs no damping.
+   real(dp), parameter :: E_POL = -0.000218123_dp
+
    !> The references carry nine decimals.
    real(dp), parameter :: REF_TOL = 1.0e-9_dp
 
@@ -77,6 +81,7 @@ contains
                   new_unittest("efp_through_octupole_vs_gamess", test_rank3), &
                   new_unittest("efp_screened_vs_gamess", test_screened), &
                   new_unittest("efp_dispersion_e6", test_e6), &
+                  new_unittest("efp_polarization_vs_gamess", test_polarization), &
                   new_unittest("efp_translation_invariance", test_translation), &
                   new_unittest("efp_no_self_interaction", test_no_self) &
                   ]
@@ -260,6 +265,33 @@ contains
       call frags(2)%destroy()
       call system%destroy()
    end subroutine test_e6
+
+   subroutine test_polarization(error)
+      !! The induced-dipole energy against GAMESS's own, which needs no damping
+      !!
+      !! Unlike dispersion there is nothing missing here, so this is an equality and
+      !! not a closeness check.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_system_t) :: system
+      type(efp_fragment_t) :: frags(2)
+      type(error_t) :: err
+
+      call dimer_with_fragments(system, frags, err)
+      call check(error,.not. err%has_error(), "building the dimer failed")
+      if (allocated(error)) return
+      call check(error, frags(1)%has_static_pol, "no static polarizabilities")
+      if (allocated(error)) return
+
+      call check(error, polarization_energy(system, frags, err), E_POL, thr=REF_TOL, &
+                 message="the polarization energy disagrees with GAMESS")
+      if (allocated(error)) return
+      call check(error,.not. err%has_error(), "the induced dipoles did not converge")
+
+      call frags(1)%destroy()
+      call frags(2)%destroy()
+      call system%destroy()
+   end subroutine test_polarization
 
    subroutine dimer_with_fragments(system, frags, err)
       !! As `dimer`, but handing the fragments back: dispersion sits on the orbital
