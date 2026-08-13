@@ -44,6 +44,7 @@ contains
       testsuite = [ &
                   new_unittest("efp_round_trip", test_round_trip), &
                   new_unittest("efp_net_charge", test_net_charge), &
+                  new_unittest("efp_polarizabilities", test_polarizabilities), &
                   new_unittest("efp_missing_file", test_missing_file) &
                   ]
    end subroutine collect_mqc_efp_read_tests
@@ -174,6 +175,68 @@ contains
       call pot%destroy()
       call delete(path)
    end subroutine test_net_charge
+
+   subroutine test_polarizabilities(error)
+      !! The static and dynamic polarizabilities, checked against each other
+      !!
+      !! The lowest tabulated frequency is 0.0028 a.u., which is nearly zero, so the
+      !! dynamic tensor there must nearly equal the static one. That is the check
+      !! that both sections were read into the same slots -- and they are read by
+      !! separate code, because their records differ: the static labels are one token
+      !! and the dynamic two, and the nine tensor numbers are not row-major but
+      !! GAMESS's own slot order, diagonal first with the off-diagonals transposed.
+      !!
+      !! Reading either wrongly gives a tensor whose trace is negative, so the trace
+      !! is asserted positive as well: a polarizability cannot be.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_potential_t) :: pot
+      type(efp_fragment_t) :: frag
+      type(error_t) :: err
+      character(len=*), parameter :: path = "test_efp_pol.efp"
+      real(dp) :: static_iso, dynamic_iso
+      integer :: i
+
+      call water(pot, err)
+      call check(error,.not. err%has_error(), "building the potential failed")
+      if (allocated(error)) return
+      call write_efp_potential(pot, path, err)
+      call read_efp_potential(path, frag, err)
+      call check(error,.not. err%has_error(), "reading the potential failed")
+      if (allocated(error)) return
+
+      call check(error, frag%has_static_pol, "the static polarizabilities were not read")
+      if (allocated(error)) return
+      call check(error, frag%has_dynamic, "the dynamic polarizabilities were not read")
+      if (allocated(error)) return
+      call check(error, frag%n_pol == frag%n_lmo, &
+                 "the two polarizability sections disagree on the orbital count")
+      if (allocated(error)) return
+      call check(error, frag%n_freq == 12, "expected twelve frequencies")
+      if (allocated(error)) return
+
+      do i = 1, frag%n_pol
+         static_iso = (frag%static_pol(1, 1, i) + frag%static_pol(2, 2, i) &
+                       + frag%static_pol(3, 3, i))/3.0_dp
+         dynamic_iso = (frag%dyn_pol(1, 1, i, 1) + frag%dyn_pol(2, 2, i, 1) &
+                        + frag%dyn_pol(3, 3, i, 1))/3.0_dp
+         call check(error, static_iso > 0.0_dp, &
+                    "a static polarizability came back with a negative trace")
+         if (allocated(error)) return
+         call check(error, dynamic_iso, static_iso, thr=1.0e-3_dp, &
+                    message="the dynamic polarizability at the lowest frequency "// &
+                    "does not match the static one")
+         if (allocated(error)) return
+         ! And the centroids the two sections carry are the same points.
+         call check(error, maxval(abs(frag%pol_points(:, i) - frag%centroids(:, i))) &
+                    < 1.0e-9_dp, "the two sections disagree on a centroid")
+         if (allocated(error)) return
+      end do
+
+      call frag%destroy()
+      call pot%destroy()
+      call delete(path)
+   end subroutine test_polarizabilities
 
    subroutine test_missing_file(error)
       !! A path that is not there is an error, not a fragment full of zeros

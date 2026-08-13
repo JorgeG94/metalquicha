@@ -79,6 +79,11 @@ module mqc_efp_read
       real(dp), allocatable :: centroids(:, :)     !! (3, n_lmo), Bohr
       real(dp), allocatable :: frequencies(:)      !! Imaginary, a.u.
       logical :: has_dynamic = .false.
+      !> Static polarizabilities at the same centroids, for polarization.
+      integer :: n_pol = 0
+      real(dp), allocatable :: static_pol(:, :, :)  !! (3, 3, n_pol)
+      real(dp), allocatable :: pol_points(:, :)     !! (3, n_pol), Bohr
+      logical :: has_static_pol = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -107,6 +112,10 @@ contains
       self%n_lmo = 0
       self%n_freq = 0
       self%has_dynamic = .false.
+      if (allocated(self%static_pol)) deallocate (self%static_pol)
+      if (allocated(self%pol_points)) deallocate (self%pol_points)
+      self%n_pol = 0
+      self%has_static_pol = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -212,6 +221,9 @@ contains
          frag%has_screen = .true.
       end if
 
+      call read_static_pol(lines, n_lines, frag, error)
+      if (error%has_error()) return
+
       call read_dynamic(lines, n_lines, frag, error)
       if (error%has_error()) return
 
@@ -220,6 +232,77 @@ contains
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_static_pol(lines, n_lines, frag, error)
+      !! `POLARIZABLE POINTS`: the static polarizability at each orbital centroid
+      !!
+      !! The same record shape as the dynamic section -- a label, a centroid, nine
+      !! tensor components in GAMESS's slot order -- with one block rather than
+      !! twelve, and **one** label token rather than two: `CT1` here against `CT  1`
+      !! there. Taking the wrong number of tokens off the front shifts every value
+      !! by one and reads the tensor into the centroid, so the count is per section
+      !! rather than shared.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      type(efp_fragment_t), intent(inout) :: frag
+      type(error_t), intent(inout) :: error
+
+      integer :: start, finish, i, k, n_rec, at, stat
+      character(len=:), allocatable :: joined, rest
+      character(len=MAX_LINE) :: text
+      real(dp) :: values(N_DYNAMIC_RECORD)
+
+      start = 0
+      do i = 1, n_lines
+         text = adjustl(lines(i))
+         ! Matched exactly: `DYNAMIC POLARIZABLE POINTS` and
+         ! `LMOQQPOL DYNAMIC POLARIZABLE POINTS` both contain this name.
+         if (trim(text) == "POLARIZABLE POINTS") then
+            start = i + 1
+            exit
+         end if
+      end do
+      if (start == 0) return
+
+      finish = start - 1
+      do i = start, n_lines
+         if (trim(adjustl(lines(i))) == "STOP") exit
+         finish = i
+      end do
+
+      n_rec = 0
+      i = start
+      do while (i <= finish)
+         call join_dynamic(lines, i, finish, joined)
+         if (len_trim(joined) > 0) n_rec = n_rec + 1
+      end do
+      if (n_rec == 0) return
+
+      frag%n_pol = n_rec
+      allocate (frag%static_pol(3, 3, n_rec), frag%pol_points(3, n_rec))
+      frag%static_pol = 0.0_dp
+      i = start
+      at = 0
+      do while (i <= finish)
+         call join_dynamic(lines, i, finish, joined)
+         if (len_trim(joined) == 0) cycle
+         at = at + 1
+         rest = strip_tokens(joined, 1)
+         do k = 1, N_DYNAMIC_RECORD
+            call next_number(rest, values(k), stat)
+            if (stat /= 0) then
+               call error%set(ERROR_VALIDATION, "efp: a polarizable point is short "// &
+                              "of its twelve numbers")
+               return
+            end if
+         end do
+         frag%pol_points(:, at) = values(1:3)
+         do k = 1, N_POL_SLOTS
+            frag%static_pol(POL_ROW(k), POL_COL(k), at) = values(3 + k)
+         end do
+      end do
+      frag%has_static_pol = .true.
+   end subroutine read_static_pol
 
    subroutine read_dynamic(lines, n_lines, frag, error)
       !! `DYNAMIC POLARIZABLE POINTS`: a 3x3 tensor per localized orbital per
