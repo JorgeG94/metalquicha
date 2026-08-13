@@ -266,12 +266,20 @@ contains
       end do
 
       ! Offsets and the AO count, in the same convention the original uses.
-      allocate (unc%shell_offset(n_unc))
+      ! `n_unc + 1`, not `n_unc`: the convention `build_libcint_molecule` uses is that
+      ! the array carries one entry per shell plus the running total, and `max_block`
+      ! reads `shell_offset(ish + 1)` for every shell including the last. Allocating
+      ! only `n_unc` left that read one past the end -- which for water happened to
+      ! land on something harmless and for neon read about 47000, so the buffer it
+      ! sizes came out negative and the allocation failed. It had been wrong for every
+      ! molecule; only the value found there differed.
+      allocate (unc%shell_offset(n_unc + 1))
       unc%nao = 0
       do ish = 1, n_unc
          unc%shell_offset(ish) = unc%nao
          unc%nao = unc%nao + shell_dim(unc%cartesian, ish - 1, unc%bas)
       end do
+      unc%shell_offset(n_unc + 1) = unc%nao
 
       ! The map. Contracted AO (shell, column, component) draws on primitive AO
       ! (shell-primitive, same component) with the stored contraction coefficient.
