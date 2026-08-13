@@ -204,7 +204,6 @@ contains
       ! After the method name, so an explicit keyword wins over the spelling.
       call optional_logical(json, "keywords.correlation.density_fitting", &
                             config%corr_density_fitting)
-      call optional_string(json, "keywords.correlation.aux_basis", config%corr_aux_basis)
       call optional_logical(json, "keywords.correlation.scs", config%corr_scs)
       call optional_real(json, "keywords.correlation.scs_ss", config%corr_scs_ss)
       call optional_real(json, "keywords.correlation.scs_os", config%corr_scs_os)
@@ -218,6 +217,9 @@ contains
       ! absent, which cannot distinguish absent from false on its own.
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
+      call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
+      call optional_int(json, "keywords.dft.radial_points", config%dft_radial_points)
+      call optional_int(json, "keywords.dft.angular_points", config%dft_angular_points)
 
       ! Both spellings of the displacement key are accepted, as the JSON
       ! generator used to allow.

@@ -89,7 +89,6 @@ module mqc_config_types
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements
       logical :: corr_density_fitting = .false.  !! RI for the correlation step
-      character(len=:), allocatable :: corr_aux_basis
       logical :: corr_scs = .false.        !! Spin-component scaling
       real(dp) :: corr_scs_ss = 1.0_dp/3.0_dp
       real(dp) :: corr_scs_os = 1.2_dp
@@ -104,6 +103,10 @@ module mqc_config_types
       logical :: cc_triples = .false.
       logical :: cc_diis = .true.
       integer :: cc_diis_size = 8
+      ! keywords.dft -- the quadrature, not the functional
+      integer :: dft_grid_level = 3
+      integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge
+      integer :: dft_angular_points = -1
          !! Fit J and K against the auxiliary basis, on the CPU backend
          !! Let a non-converged SCF into the expansion instead of stopping.
          !! Off by default: the energy of an SCF that ran out of iterations is

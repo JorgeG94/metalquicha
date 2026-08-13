@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.8% of total for modules and submodules.">476 statements</a>
+                 title=" 2.9% of total for modules and submodules.">484 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -172,6 +172,7 @@
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-cc_keys">cc_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-child_count">child_count</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-correlation_keys">correlation_keys</a>
+            <a class="list-group-item" href="../module/mqc_json_schema.html#proc-dft_keys">dft_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-fragmentation_keys">fragmentation_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-has_key">has_key</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-hessian_keys">hessian_keys</a>
@@ -260,8 +261,8 @@ Reject a deck the schema does not describe</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">json_module</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -760,7 +761,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~21"></span>
+              <span class="anchor" id="variable-keys~22"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -853,7 +854,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~10"></span>
+              <span class="anchor" id="variable-name~15"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -884,6 +885,24 @@ parameter
     <div class="card-body">
           
   <p>Post-Hartree-Fock settings, deliberately not under &ldquo;scf&rdquo;</p><a href="../proc/correlation_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+    <h4>
+    Return Value
+    <small>type(<a href='../type/key_set_t.html'>key_set_t</a>)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dft_keys"></span> <h3>private  function <a href='../proc/dft_keys.html'>dft_keys</a>() result(keys)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The integration grid, which is the only thing DFT adds to an SCF</p><a href="../proc/dft_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
     <em>None</em>
@@ -964,7 +983,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~9"></span>
+              <span class="anchor" id="variable-name~14"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1027,7 +1046,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~2"></span>
+              <span class="anchor" id="variable-value~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1072,7 +1091,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~20"></span>
+              <span class="anchor" id="variable-keys~21"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1087,7 +1106,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~7"></span>
+              <span class="anchor" id="variable-name~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1204,7 +1223,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~4"></span>
+              <span class="anchor" id="variable-imol~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1249,7 +1268,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~11"></span>
+              <span class="anchor" id="variable-name~16"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1294,7 +1313,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~2"></span>
+              <span class="anchor" id="variable-path~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1309,7 +1328,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~8"></span>
+              <span class="anchor" id="variable-name~13"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1450,7 +1469,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-array"></span>
+              <span class="anchor" id="variable-array~4"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1465,7 +1484,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~2"></span>
+              <span class="anchor" id="variable-n~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1551,7 +1570,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json"></span>
+              <span class="anchor" id="variable-json~5"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1566,7 +1585,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error"></span>
+              <span class="anchor" id="variable-error~38"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1621,7 +1640,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~18"></span>
+              <span class="anchor" id="variable-keys~19"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1636,7 +1655,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~5"></span>
+              <span class="anchor" id="variable-name~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1706,7 +1725,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~2"></span>
+              <span class="anchor" id="variable-name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1721,7 +1740,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~16"></span>
+              <span class="anchor" id="variable-keys~17"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1736,7 +1755,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~3"></span>
+              <span class="anchor" id="variable-error~40"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1791,7 +1810,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~3"></span>
+              <span class="anchor" id="variable-root~14"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1806,7 +1825,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~5"></span>
+              <span class="anchor" id="variable-error~42"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1861,7 +1880,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~2"></span>
+              <span class="anchor" id="variable-root~13"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1891,7 +1910,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~3"></span>
+              <span class="anchor" id="variable-name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1906,7 +1925,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~17"></span>
+              <span class="anchor" id="variable-keys~18"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1921,7 +1940,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~4"></span>
+              <span class="anchor" id="variable-error~41"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1991,7 +2010,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~3"></span>
+              <span class="anchor" id="variable-imol~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2006,7 +2025,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~8"></span>
+              <span class="anchor" id="variable-error~45"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2076,7 +2095,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~2"></span>
+              <span class="anchor" id="variable-imol~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2091,7 +2110,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~7"></span>
+              <span class="anchor" id="variable-error~44"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2146,7 +2165,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~4"></span>
+              <span class="anchor" id="variable-root~15"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -2161,7 +2180,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~6"></span>
+              <span class="anchor" id="variable-error~43"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2231,7 +2250,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path"></span>
+              <span class="anchor" id="variable-path~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2246,7 +2265,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~15"></span>
+              <span class="anchor" id="variable-keys~16"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2261,7 +2280,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~2"></span>
+              <span class="anchor" id="variable-error~39"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2301,7 +2320,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~19"></span>
+              <span class="anchor" id="variable-keys~20"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2316,7 +2335,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~6"></span>
+              <span class="anchor" id="variable-name~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2359,7 +2378,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-12 11:39 +0000             </p>
+ on 2026-08-13 01:53 +0000             </p>
           </div>
         </div>
         <br>
