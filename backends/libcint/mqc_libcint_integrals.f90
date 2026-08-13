@@ -203,7 +203,8 @@ contains
    end subroutine two_electron_optimizer
 
    subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
-                                     basis_name, mol, error, normalize_contractions)
+                                     basis_name, mol, error, normalize_contractions, &
+                                     force_cartesian)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
       !! This is what makes the backend general rather than a demonstration:
@@ -236,6 +237,10 @@ contains
       character(len=*), intent(in) :: basis_name
       type(libcint_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: force_cartesian
+         !! Read the basis in Cartesian form whatever the file declares. See the note
+         !! in `build`: BSE is inconsistent about Pople sets and GAMESS assumes
+         !! Cartesian for them.
       logical, intent(in), optional :: normalize_contractions
          !! Scale each contracted shell so `<chi|chi>` is exactly one. Default
          !! true, which is both physically right and what PySCF does. False
@@ -262,7 +267,8 @@ contains
       end if
 
       call mol%build(atomic_numbers, coordinates, basis, error, &
-                     normalize_contractions=normalize_contractions)
+                     normalize_contractions=normalize_contractions, &
+                     force_cartesian=force_cartesian)
       call basis%destroy()
    end subroutine build_libcint_molecule
 
@@ -305,13 +311,14 @@ contains
    end function contraction_group_size
 
    subroutine molecule_build(this, atomic_numbers, coordinates, basis, error, &
-                             normalize_contractions)
+                             normalize_contractions, force_cartesian)
       !! Pack atoms and shells into libcint's atm/bas/env
       class(libcint_molecule_t), intent(inout) :: this
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)   !! (3, natm), Bohr
       type(molecular_basis_type), intent(in) :: basis
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: force_cartesian  !! See the note below
       logical, intent(in), optional :: normalize_contractions
          !! See `build_libcint_molecule`. Default true.
 
@@ -328,7 +335,19 @@ contains
       this%natm = size(atomic_numbers)
       ! What the basis file said, carried through the reader. Every integral
       ! call below routes on it, and so does nao.
+      !
+      ! `force_cartesian` overrides it, and the reason it exists is that the Basis Set
+      ! Exchange is not consistent about Pople sets: 6-31G* declares its d Cartesian,
+      ! while 6-31G(2df,p) and 6-311++G** declare theirs spherical. The Pople
+      ! convention is Cartesian, and it is what GAMESS assumes -- its ISPHER default
+      ! is -1 -- so reading one of those as spherical is a different calculation from
+      ! the one anybody comparing against GAMESS means. Not automatic: it changes the
+      ! variational space, and for a Dunning set spherical is right and GAMESS uses it
+      ! too, so which one is correct depends on the basis and the caller has to say.
       this%cartesian = basis%is_cartesian()
+      if (present(force_cartesian)) then
+         if (force_cartesian) this%cartesian = .true.
+      end if
       if (basis%nelements /= this%natm) then
          call error%set(ERROR_VALIDATION, "libcint: the basis covers a different "// &
                         "number of atoms than the geometry has")

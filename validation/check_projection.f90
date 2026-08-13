@@ -38,6 +38,12 @@ program check_projection
 
    failures = 0
    call one_case(1, "6-31g*", 1)
+   ! A second case carrying f functions, read in Cartesian form the way GAMESS reads
+   ! a Pople set, so the ordering map for l = 3 can be derived against its own output.
+   ! In a general orientation: planar water puts an exact zero in every function with
+   ! an odd power of y, and a slot that is zero on both sides fits any scale factor,
+   ! so the components it would determine are the ones left undetermined.
+   call one_case(2, "6-31g(2df,p)", 1, force_cartesian=.true., rotated=.true.)
 
    write (*, "(A)") ""
    if (failures == 0) then
@@ -49,10 +55,13 @@ program check_projection
 
 contains
 
-   subroutine one_case(case_index, basis, n_core)
+   subroutine one_case(case_index, basis, n_core, force_cartesian, rotated)
       integer, intent(in) :: case_index
       character(len=*), intent(in) :: basis
       integer, intent(in) :: n_core
+      logical, intent(in), optional :: force_cartesian
+      !> Use the same water turned into a frame with no zero coordinate.
+      logical, intent(in), optional :: rotated
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -71,8 +80,15 @@ contains
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                    0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
                    0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      if (present(rotated)) then
+         if (rotated) &
+            c = reshape([0.0000000000_dp, 0.0000000000_dp, 0.0000000000_dp, &
+                         0.2493568104_dp, 0.5884773575_dp, 0.7141751472_dp, &
+                         -0.0661597287_dp, 0.5685269177_dp, -0.7674361694_dp], [3, 3])*ANG
+      end if
 
-      call build_libcint_molecule(z, symbols, c, basis, mol, err)
+      call build_libcint_molecule(z, symbols, c, basis, mol, err, &
+                                  force_cartesian=force_cartesian)
       if (err%has_error()) then
          write (*, "(A,A)") "[projection] basis failed: ", err%get_message()
          failures = failures + 1
