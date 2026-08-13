@@ -475,6 +475,17 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(bench_df_k PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(bench_df_k PRIVATE ${main_lib} cint_fortran cint)
 
+  # The analytic gradient against finite differences of its own energy, and
+  # against translational invariance. Not a ctest case: it converges an SCF per
+  # displaced coordinate, which is seconds rather than the milliseconds the unit
+  # suite is meant to take.
+  add_executable(check_scf_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_scf_gradient.f90)
+  target_include_directories(check_scf_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_scf_gradient PRIVATE ${main_lib} cint_fortran
+                                                   cint)
+
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)
