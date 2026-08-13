@@ -45,7 +45,7 @@ module mqc_capi_fraglist
    public :: mqc_fraglist_last_error
 
    integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
    integer(c_int), parameter :: MQC_BAD_HANDLE = 2
 
    integer, parameter :: MESSAGE_LEN = 512
@@ -162,7 +162,7 @@ contains
 
       if (n_terms < list%n_terms .or. int(max_level, default_int) < list%max_level) then
          last_message = "mqc_fraglist_get: the supplied buffer is smaller than the list"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -207,7 +207,7 @@ contains
 
       if (n_terms < 0 .or. max_level < 1) then
          last_message = "mqc_fraglist_set: term count and level must be positive"
-         status = MQC_ERROR
+         status = MQC_FAIL
          return
       end if
 
@@ -279,7 +279,7 @@ contains
 
       if (error%has_error()) then
          last_message = error%get_message()
-         status = MQC_ERROR
+         status = MQC_FAIL
       else
          last_message = ""
          status = MQC_OK

@@ -20,7 +20,7 @@ module test_mqc_capi_run
    private
    public :: collect_mqc_capi_run_tests
 
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
    integer(c_int), parameter :: MQC_BAD_HANDLE = 2
 
 contains
@@ -75,7 +75,7 @@ contains
       label = to_cchars('t')
       status = mqc_run(handle, c_null_ptr, int(size(settings), c_int), settings, &
                        int(size(label), c_int), label, 0_c_int, energy)
-      call check(error, int(status), int(MQC_ERROR), "an undeclared cut is refused")
+      call check(error, int(status), int(MQC_FAIL), "an undeclared cut is refused")
       if (allocated(error)) return
       call check(error, index(last_run_error(), "never declared") > 0, &
                  "the message should explain the undeclared cut, got: "//last_run_error())
@@ -105,7 +105,7 @@ contains
       label = to_cchars('t')
       status = mqc_run(handle, c_null_ptr, int(size(settings), c_int), settings, &
                        int(size(label), c_int), label, 0_c_int, energy)
-      call check(error, int(status), int(MQC_ERROR), "no session means no run")
+      call check(error, int(status), int(MQC_FAIL), "no session means no run")
       if (allocated(error)) return
       call check(error, index(last_run_error(), "session") > 0, &
                  "the message should point at the missing session, got: "//last_run_error())

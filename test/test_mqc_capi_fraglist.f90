@@ -21,7 +21,7 @@ module test_mqc_capi_fraglist
    public :: collect_mqc_capi_fraglist_tests
 
    integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
    integer(c_int), parameter :: MQC_BAD_HANDLE = 2
 
 contains
@@ -114,7 +114,7 @@ contains
       handle = mqc_fraglist_new()
       status = mqc_fraglist_generate(handle, 5_c_int, 2_c_int)
       status = mqc_fraglist_get(handle, terms, 5_c_int64_t, 2_c_int)
-      call check(error, int(status), int(MQC_ERROR), "a short buffer is refused")
+      call check(error, int(status), int(MQC_FAIL), "a short buffer is refused")
 
       call mqc_fraglist_free(handle)
    end subroutine test_get_small_buffer
@@ -205,7 +205,7 @@ contains
 
       handle = mqc_fraglist_new()
       status = mqc_fraglist_generate(handle, 5_c_int, 1_c_int)
-      call check(error, int(status), int(MQC_ERROR), "level 1 is rejected")
+      call check(error, int(status), int(MQC_FAIL), "level 1 is rejected")
 
       call mqc_fraglist_free(handle)
    end subroutine test_generate_bad_level
@@ -220,7 +220,7 @@ contains
       handle = mqc_fraglist_new()
       terms = 0
       status = mqc_fraglist_set(handle, terms, 1_c_int64_t, 0_c_int)
-      call check(error, int(status), int(MQC_ERROR), "max_level below 1 is refused")
+      call check(error, int(status), int(MQC_FAIL), "max_level below 1 is refused")
 
       call mqc_fraglist_free(handle)
    end subroutine test_set_bad_shape
@@ -234,7 +234,7 @@ contains
 
       handle = mqc_fraglist_new()
       status = mqc_fraglist_generate(handle, 5_c_int, 1_c_int)
-      call check(error, int(status), int(MQC_ERROR), "provoke a failure")
+      call check(error, int(status), int(MQC_FAIL), "provoke a failure")
       if (allocated(error)) return
 
       message = last_fraglist_error()

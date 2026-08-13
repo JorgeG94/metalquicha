@@ -23,7 +23,7 @@ module test_mqc_capi_system
    public :: collect_mqc_capi_system_tests
 
    integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_FAIL = 1
    integer(c_int), parameter :: MQC_BAD_HANDLE = 2
 
 contains
@@ -122,11 +122,11 @@ contains
       handle = mqc_system_new()
       znum = 1; coord = 0.0_c_double
       status = mqc_system_set_geometry(handle, 0_c_int, znum, coord, 0_c_int, 1_c_int)
-      call check(error, int(status), int(MQC_ERROR), "zero atoms is an error")
+      call check(error, int(status), int(MQC_FAIL), "zero atoms is an error")
       if (allocated(error)) return
 
       status = mqc_system_set_geometry(handle, 1_c_int, znum, coord, 0_c_int, 0_c_int)
-      call check(error, int(status), int(MQC_ERROR), "multiplicity below 1 is an error")
+      call check(error, int(status), int(MQC_FAIL), "multiplicity below 1 is an error")
 
       call mqc_system_free(handle)
    end subroutine test_geometry_validation
@@ -141,7 +141,7 @@ contains
       handle = mqc_system_new()
       sizes = 1; atoms = 0; charge = 0; mult = 1
       status = mqc_system_set_monomers(handle, 1_c_int, 1_c_int, sizes, atoms, charge, mult)
-      call check(error, int(status), int(MQC_ERROR), "set the geometry first")
+      call check(error, int(status), int(MQC_FAIL), "set the geometry first")
 
       call mqc_system_free(handle)
    end subroutine test_monomers_order
@@ -185,13 +185,13 @@ contains
 
       sizes = [4, 3]   ! 4 > max_size = 3
       status = mqc_system_set_monomers(handle, 2_c_int, 3_c_int, sizes, atoms, charge, mult)
-      call check(error, int(status), int(MQC_ERROR), "a size above max_size is refused")
+      call check(error, int(status), int(MQC_FAIL), "a size above max_size is refused")
       if (allocated(error)) return
 
       sizes = [3, 3]
       atoms = [0, 1, 2, 3, 4, 9]   ! 9 >= total_atoms = 6
       status = mqc_system_set_monomers(handle, 2_c_int, 3_c_int, sizes, atoms, charge, mult)
-      call check(error, int(status), int(MQC_ERROR), "an out-of-range atom index is refused")
+      call check(error, int(status), int(MQC_FAIL), "an out-of-range atom index is refused")
 
       call mqc_system_free(handle)
    end subroutine test_monomer_validation
@@ -208,7 +208,7 @@ contains
                                        0_c_int, 1_c_int)
       ai = 0; aj = 1; ord = 1; brk = 0
       status = mqc_system_set_bonds(handle, 1_c_int, ai, aj, ord, brk)
-      call check(error, int(status), int(MQC_ERROR), "set the monomers first")
+      call check(error, int(status), int(MQC_FAIL), "set the monomers first")
 
       call mqc_system_free(handle)
    end subroutine test_bonds_order
@@ -264,7 +264,7 @@ contains
       ai = 0; aj = 3     ! atoms in different monomers
       ord = 1; brk = 0   ! ... but not marked broken
       status = mqc_system_set_bonds(handle, 1_c_int, ai, aj, ord, brk)
-      call check(error, int(status), int(MQC_ERROR), &
+      call check(error, int(status), int(MQC_FAIL), &
                  "a boundary-crossing bond left unbroken must be refused")
       if (allocated(error)) return
       call check(error, int(mqc_system_bonds_declared(handle)), 0, &
@@ -284,17 +284,17 @@ contains
 
       ai = 0; aj = 9; ord = 1; brk = 1   ! atom 9 does not exist
       status = mqc_system_set_bonds(handle, 1_c_int, ai, aj, ord, brk)
-      call check(error, int(status), int(MQC_ERROR), "an out-of-range atom is refused")
+      call check(error, int(status), int(MQC_FAIL), "an out-of-range atom is refused")
       if (allocated(error)) return
 
       ai = 2; aj = 2; ord = 1; brk = 0   ! an atom bonded to itself
       status = mqc_system_set_bonds(handle, 1_c_int, ai, aj, ord, brk)
-      call check(error, int(status), int(MQC_ERROR), "a self-bond is refused")
+      call check(error, int(status), int(MQC_FAIL), "a self-bond is refused")
       if (allocated(error)) return
 
       ai = 0; aj = 1; ord = 0; brk = 0   ! order below 1
       status = mqc_system_set_bonds(handle, 1_c_int, ai, aj, ord, brk)
-      call check(error, int(status), int(MQC_ERROR), "a zero bond order is refused")
+      call check(error, int(status), int(MQC_FAIL), "a zero bond order is refused")
 
       call mqc_system_free(handle)
    end subroutine test_bond_validation
@@ -379,7 +379,7 @@ contains
                -0.757_c_double, 0.586_c_double, 0.0_c_double]
       status = mqc_system_set_geometry(handle, 3_c_int, znum, coord, 0_c_int, 1_c_int)
       status = mqc_system_auto_monomers(handle, -1.0_c_double)
-      call check(error, int(status), int(MQC_ERROR), &
+      call check(error, int(status), int(MQC_FAIL), &
                  "one molecule cannot be partitioned automatically")
 
       call mqc_system_free(handle)
@@ -397,7 +397,7 @@ contains
       handle = mqc_system_new()
       znum = 1; coord = 0.0_c_double
       status = mqc_system_set_geometry(handle, 0_c_int, znum, coord, 0_c_int, 1_c_int)
-      call check(error, int(status), int(MQC_ERROR), "provoke a failure")
+      call check(error, int(status), int(MQC_FAIL), "provoke a failure")
       if (allocated(error)) return
 
       message = last_system_error()
