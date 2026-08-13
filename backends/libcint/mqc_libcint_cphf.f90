@@ -724,13 +724,35 @@ contains
       !!     and is not simply `operator^-1 h`; there is an extra `H2^T` in it.
       !!   * the frequency enters as `FREQI2 = 4 nu^2` (`locpol.src:3984`), not `nu^2`.
       !!
-      !! Which leaves a contradiction worth stating plainly rather than papering over:
-      !! the dipole-dipole block *does* match at 8e-5 using this routine's plain
-      !! `-2 sum h S`, which those two facts should have broken as well. Either they
-      !! cancel for the diagonal case and not the mixed one, or `H21` and `H2` are
-      !! related in a way that makes the extra factors identities. Resolving that is
-      !! what closing these two sections requires, and it is a scaling trace through
-      !! `CPH2O`, `POLH21` and `ADDFR` rather than another guess at the operator.
+      !! **The scaling has now been traced, and it closes that question: GAMESS solves
+      !! the same equation this routine does, in its product form.** `POLH21FULL` at
+      !! `locpol.src:3553` builds `H21(L,K) = sum_I H2(I,L) H1(I,K)`, so
+      !! `H21 = H2^T H1`; `ADDFR` puts `4 nu^2` on its diagonal; and `POLDB` supplies
+      !! `8 H2^T h`. Their equation is therefore
+      !!
+      !!     [H2^T H1 + 4 nu^2] ZA = 8 H2^T h
+      !!
+      !! Eliminating the antisymmetric part here *without* forming an inverse gives
+      !!
+      !!     [(A-B)(A+B) + nu^2] S = -2 (A-B) h
+      !!
+      !! which is the same product, in the same operator order, with the frequency on
+      !! the diagonal and the right-hand side premultiplied by `(A-B)`. Taking
+      !! `H2 = 2(A-B)` and `H1 = 2(A+B)` makes every factor line up and gives
+      !! `ZA = -2 S`.
+      !!
+      !! So their response is this routine's up to a constant -- which is what the
+      !! dipole-dipole agreement at 8e-5 already implied, and which the least-squares
+      !! fit above allows and rejects. **Scaling cannot explain the mixed blocks
+      !! either.**
+      !!
+      !! Every part of the equation is now confirmed to match: the operator, its
+      !! order, the frequency, the right-hand side, the drive, the measure, the
+      !! contraction, the factor, the nesting and the sample ordering. And the numbers
+      !! are still not in our span. That contradiction is sharp enough to be the whole
+      !! handoff: something in what `HF` holds for the quadrupole case, or in what
+      !! `PUSQLF` writes, is not what the routine names suggest, because nothing about
+      !! the response itself is left to be wrong.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
