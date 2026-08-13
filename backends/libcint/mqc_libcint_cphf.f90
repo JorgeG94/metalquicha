@@ -673,14 +673,32 @@ contains
       !! per-orbital dipole-dipole tensors are asymmetric at all. Swapping to
       !! GAMESS's order was tested and does not close the gap either.
       !!
-      !! So: five operators, two nestings, the factor, the sample ordering, the
-      !! decomposition and the drive/measure order have all been checked, most of
-      !! them confirmed directly from GAMESS's source, and a single-scale fit still
-      !! leaves a relative residual of 1.0. The remaining candidate is the
-      !! normalisation of the dynamic response itself -- `POLDB` forms its
-      !! right-hand side as `8 * H2^T h` and `SOLVCPDYN` solves with it, so their `U`
-      !! is not this routine's `S` -- but that is a scale, which the fit already
-      !! allows and rejects. Something structural remains unidentified.
+      !! **The quantities are the same physics, and the difference is a linear
+      !! mixing.** Correlating our 27 components against the reference's over all 48
+      !! samples: eight of theirs correlate above 0.99 with one of ours, fifteen above
+      !! 0.90, the best at 0.9989. So this is not a different property -- it is the
+      !! same property under a transform that mixes components, which is why every
+      !! permutation-and-scale hypothesis fails at a relative residual of 1.0 while
+      !! the correlations sit near unity. Magnitudes differ by about 9x.
+      !!
+      !! That rules out, definitively, the entire family of explanations that
+      !! accounted for every other convention in this project -- the nine-component
+      !! polarizability transpose, the Cartesian d permutation, the printed
+      !! contraction coefficients, the units constant were all permutations or
+      !! scales. The combinatorial space is now exhausted: both drive/measure
+      !! orientations, three operator definitions (raw second moment, traceless, and
+      !! traceless referred to each orbital's centroid), both nine-slot expansions of
+      !! the six unique components, and both nestings.
+      !!
+      !! Normalisation is also ruled out by argument rather than by search: the
+      !! dipole-dipole block matches at 8e-5 using `-2 sum h S`, and `LDQPOL` uses the
+      !! *same* dipole-driven response with the same factor, so GAMESS's `U` is this
+      !! routine's `S`.
+      !!
+      !! What is left is to find the mixing. The correlation matrix is the lead: a
+      !! reference slot correlating 0.99 rather than 1.0 with one of ours is one
+      !! dominated by a single component of ours plus a small admixture, and the
+      !! pattern of which slots those are should identify the transform.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
