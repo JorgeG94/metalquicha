@@ -17,6 +17,10 @@ Input parameters flow through three stages:
 - ``src/io/mqc_config_parser.f90`` - Parser and ``mqc_config_t`` type
 - ``src/io/mqc_config_adapter.f90`` - Adapter and ``driver_config_t`` type
 - ``src/core/mqc_calculation_keywords.f90`` - Keyword group types (hessian, aimd, scf)
+- ``src/optimization/mqc_optimizer_types.f90`` - ``optimizer_settings_t``, the
+  ``keywords.optimization`` group. It lives with the optimizer rather than with the
+  other keyword groups because it also carries the vocabulary those settings are
+  spelled in, and the parsing of it
 
 Step-by-Step Guide
 ------------------

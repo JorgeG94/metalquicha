@@ -452,6 +452,10 @@ Specifies the calculation type:
 - ``Energy``: Single-point energy calculation
 - ``Gradient``: Energy + analytical gradient (if method supports it)
 - ``Hessian``: Second derivatives by finite difference, plus vibrational analysis
+- ``Optimize``: Minimize the geometry, calling the method for a gradient at each
+  step. ``Optimization`` and ``Opt`` are accepted for the same thing. Needs a build
+  with the optimizer, and a method that has gradients. See
+  :doc:`geometry_optimization`.
 - ``MakeFP``: Build an effective fragment potential and write it as a ``.efp``
   file, computing no energy. ``MakeEFP`` is accepted for the same thing. See
   :doc:`makefp`.

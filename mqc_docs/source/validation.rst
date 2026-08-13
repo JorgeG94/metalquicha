@@ -130,6 +130,47 @@ Edit ``validation_tests.json`` to add your test with expected energy:
 - ``fragmented``: Many-body expansion calculation
 - ``multi_molecule``: Multiple independent molecules (conformers, isomers)
 
+**Optional per-case keys**:
+
+- ``tolerance``: overrides the suite default for this case alone, for a reference
+  with a known approximation in it
+- ``requires``: the name of an optional backend the case needs, as ``mqc --version``
+  spells it in its ``features:`` line. A build without it **skips** the case rather
+  than failing it -- optional backends are off by default, so without this a default
+  build would fail every gated case and bury the real failures. ``"requires":
+  "dlfind"`` is what the geometry optimization cases use
+- ``expected_distances`` and ``distance_tolerance``: check the optimized structure,
+  not only its energy. See below
+
+**Checking a structure**
+
+An optimization case is checked on its geometry as well as its energy, because a run
+that stopped somewhere else on the surface can still land inside the energy
+tolerance -- floppy clusters have minima separated by microhartrees -- while the
+structure is plainly not the reference one.
+
+The comparison is on the **sorted list of every interatomic distance**, in Angstrom.
+Raw coordinates are not comparable between runs: nothing fixes the molecule's
+position or orientation, so two identical structures differ by a rigid motion and an
+elementwise comparison fails on a correct answer. Sorted distances are unchanged by
+translation and rotation, and still catch what matters -- a broken bond, a
+dissociated fragment, the wrong isomer.
+
+.. code-block:: json
+
+   {
+     "name": "Optimize water dimer MBE(2) GFN2 (DL-FIND)",
+     "input": "inputs/cpu/tblite/gfn2/w2_dimer_optimize.json",
+     "expected_energy": -10.149006723,
+     "type": "fragmented",
+     "requires": "dlfind",
+     "expected_distances": [0.958281, 0.960065, "..."],
+     "distance_tolerance": 0.02
+   }
+
+The case also fails if the optimization did not converge. Add
+``"expect_converged": false`` for a case that is meant not to.
+
 4. Run Validation
 ^^^^^^^^^^^^^^^^^
 

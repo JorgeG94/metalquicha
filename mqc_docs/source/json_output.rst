@@ -27,6 +27,11 @@ Where ``<basename>`` is derived from the input filename (e.g., ``water.json`` pr
 
 Output files are named ``output_<basename>.json`` and placed in the working directory.
 
+A ``driver: Optimize`` run writes this document for a final single point at the
+optimized geometry, and writes the record of the optimization itself -- convergence,
+step counts, the final structure and the trajectory -- to a separate
+``output_<basename>_optimization.json``. See :doc:`geometry_optimization`.
+
 Common Fields
 =============
 
