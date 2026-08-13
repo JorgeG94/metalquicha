@@ -746,13 +746,31 @@ contains
       !! fit above allows and rejects. **Scaling cannot explain the mixed blocks
       !! either.**
       !!
-      !! Every part of the equation is now confirmed to match: the operator, its
-      !! order, the frequency, the right-hand side, the drive, the measure, the
-      !! contraction, the factor, the nesting and the sample ordering. And the numbers
-      !! are still not in our span. That contradiction is sharp enough to be the whole
-      !! handoff: something in what `HF` holds for the quadrupole case, or in what
-      !! `PUSQLF` writes, is not what the routine names suggest, because nothing about
-      !! the response itself is left to be wrong.
+      !! **And the writer explains the span failure.** `efinp.src:7635` does not write
+      !! the tensor `LDQPOL` computes; it writes `DQL_SFT`, produced by `DQSHIFT`
+      !! (`efinp.src:12210`), which *mixes the dipole-dipole polarizability into it*:
+      !!
+      !!     DR = centroid - centre_of_mass
+      !!     A'(a,bc) = A(a,bc) - (3/2)[ DR_b alpha(c,a) + DR_c alpha(a,b) ]
+      !!                        + delta_bc sum_d DR_d alpha(d,a)
+      !!
+      !! written with `slot = (a-1)*9 + (b-1)*3 + c`, dipole outermost. That is a
+      !! multipole translation of the mixed polarizability from the centre of mass to
+      !! each orbital's own centroid, and `alpha` in it is the dipole-dipole tensor.
+      !!
+      !! So the reference genuinely carries information a dip-quad contraction alone
+      !! does not, which is exactly what the rank-18 fit was reporting, and no
+      !! rearrangement of our components could ever have reproduced it. Applying the
+      !! formula above with our own dip-dip tensors drops the residual from 1.0 to
+      !! 0.88, so the mechanism is right and something in the pre-shift tensor is not
+      !! -- most likely its reference point, since `DQSHIFT` assumes its input is
+      !! expanded about the centre of mass while `multipole_matrices` here is called
+      !! about the origin.
+      !!
+      !! That is the remaining gap, and it is now a bookkeeping question rather than an
+      !! unknown quantity. Everything else is confirmed: operator, order, frequency,
+      !! right-hand side, drive, measure, contraction, factor, nesting, sample
+      !! ordering, and now the translation.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
