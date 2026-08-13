@@ -512,6 +512,12 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_dipquad_sumrule PRIVATE ${main_lib} cint_fortran
                                                       cint)
 
+  # Baseline for the Fock build: libcint throughput and contraction rate, so
+  # optimisation has a target rather than a feeling.
+  add_executable(bench_fock ${PROJECT_SOURCE_DIR}/validation/bench_fock.f90)
+  target_include_directories(bench_fock PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(bench_fock PRIVATE ${main_lib} cint_fortran cint)
+
   # Does the response machinery hold up as the basis grows, with the writing
   # left out so a Dunning set is not refused before any of the physics runs.
   add_executable(check_makefp_scaling
