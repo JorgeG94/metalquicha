@@ -82,6 +82,12 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_efp_read)
   target_link_libraries(test_mqc_efp_read PRIVATE cint_fortran cint)
 
+  # The electrostatic interaction between two fragments, against the energy
+  # GAMESS reports for the same dimer. Chiefly a guard on the charge-dipole
+  # sign, which both ways round gives a plausible-looking answer.
+  addtest(mqc_efp_interaction)
+  target_link_libraries(test_mqc_efp_interaction PRIVATE cint_fortran cint)
+
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.
