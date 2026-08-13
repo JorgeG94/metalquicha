@@ -234,6 +234,23 @@ def main():
         print(f"          their documented initial guess {at_start:8.4f}"
               f"   ({'fit improved on it' if improved else 'FIT IS WORSE'})")
 
+        # And the search, from GAMESS's own starting point under its own bounds.
+        from scipy.optimize import minimize
+        bounded = minimize(lambda a: objective(np.clip(a, 0.5, 10.0), gaussian),
+                           initial, method="Powell", bounds=[(0.5, 10.0)]*len(initial),
+                           options=dict(xtol=1e-6, ftol=1e-6, maxiter=20000))
+        fitted_here = np.clip(bounded.x, 0.5, 10.0)
+        ours = objective(fitted_here, gaussian)
+        print(f"          our Powell search             {ours:8.4f}"
+              f"   ({'beats theirs' if ours < fitted else 'worse than theirs'})")
+        for i, label in enumerate(labels):
+            note = "  (theirs stuck at the bound)" if theirs[i] >= 9.999 else ""
+            print(f"            {label:6s} ours {fitted_here[i]:8.4f}   "
+                  f"theirs {theirs[i]:8.4f}{note}")
+        if ours > fitted*1.05:
+            print("          FAIL our search cannot reach GAMESS's objective value")
+            failures += 1
+
         shallow = []
         for i, label in enumerate(labels):
             down, up = theirs.copy(), theirs.copy()
