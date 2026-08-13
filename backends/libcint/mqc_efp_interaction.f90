@@ -493,9 +493,10 @@ contains
          ! set, so the points are independent within a sweep and this threads
          ! directly. `field` has to be private, which is why it is a local array
          ! rather than a shared scratch buffer.
+         change = 0.0_dp
          !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field) &
          !$omp shared(n_pol, owner, centres, mu, mu_new, fstat, pol) &
-         !$omp schedule(static) if(n_pol >= 32)
+         !$omp schedule(static) reduction(max:change) if(n_pol >= 32)
          do i = 1, n_pol
             field = fstat(:, i)
             do j = 1, n_pol
@@ -508,9 +509,13 @@ contains
                        - mu(:, j)*inv3
             end do
             mu_new(:, i) = matmul(pol(:, :, i), field)
+            ! Convergence measured inside the same loop rather than by a pass over
+            ! the whole array afterwards: it is a max reduction, it costs three
+            ! comparisons on values already in registers, and it removes one of the
+            ! two serial sweeps that stood between the parallel regions.
+            change = max(change, maxval(abs(mu_new(:, i) - mu(:, i))))
          end do
          !$omp end parallel do
-         change = maxval(abs(mu_new - mu))
          mu = mu_new
          if (change < use_tol) exit
       end do
