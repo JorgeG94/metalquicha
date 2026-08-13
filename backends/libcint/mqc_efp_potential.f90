@@ -33,7 +33,7 @@ module mqc_efp_potential
    !! found by handing a file to GAMESS, not by reading its output: every
    !! parameter in it agreed with GAMESS's own and the file was still unreadable.
    !!
-   !! What the fifteen support, in EFP terms: electrostatics to octupole with
+   !! What the fourteen support, in EFP terms: electrostatics to octupole with
    !! charge-penetration screening, polarization, and exchange repulsion. What
    !! they do not is dispersion, which needs the two dynamic blocks, and charge
    !! transfer, which needs `CTVEC`.
