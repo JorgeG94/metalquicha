@@ -76,12 +76,12 @@ module mqc_libcint_dma
    !> anything beyond returns a default and is flagged, because silently inventing
    !> a radius would silently invent or drop a bond.
    real(dp), parameter :: COVALENT_RADII(MAX_ELEMENT) = [ &
-                         0.32_dp, 0.93_dp, &                                     ! H  He
-                         1.23_dp, 0.90_dp, 0.82_dp, 0.77_dp, 0.75_dp, 0.73_dp, 0.72_dp, 0.71_dp, &  ! Li..Ne
-                         1.54_dp, 1.36_dp, 1.18_dp, 1.11_dp, 1.06_dp, 1.02_dp, 0.99_dp, 0.98_dp, &  ! Na..Ar
-                         2.03_dp, 1.74_dp, 1.44_dp, 1.32_dp, 1.22_dp, 1.18_dp, 1.17_dp, 1.17_dp, &  ! K..Fe
-                         1.16_dp, 1.15_dp, 1.17_dp, 1.25_dp, 1.26_dp, 1.22_dp, 1.20_dp, 1.16_dp, &  ! Co..Se
-                         1.14_dp, 1.12_dp]                                       ! Br Kr
+                          0.32_dp, 0.93_dp, &                                     ! H  He
+                          1.23_dp, 0.90_dp, 0.82_dp, 0.77_dp, 0.75_dp, 0.73_dp, 0.72_dp, 0.71_dp, &  ! Li..Ne
+                          1.54_dp, 1.36_dp, 1.18_dp, 1.11_dp, 1.06_dp, 1.02_dp, 0.99_dp, 0.98_dp, &  ! Na..Ar
+                          2.03_dp, 1.74_dp, 1.44_dp, 1.32_dp, 1.22_dp, 1.18_dp, 1.17_dp, 1.17_dp, &  ! K..Fe
+                          1.16_dp, 1.15_dp, 1.17_dp, 1.25_dp, 1.26_dp, 1.22_dp, 1.20_dp, 1.16_dp, &  ! Co..Se
+                          1.14_dp, 1.12_dp]                                       ! Br Kr
 
    real(dp), parameter :: BOHR_PER_ANGSTROM = 1.8897261254578281_dp
 

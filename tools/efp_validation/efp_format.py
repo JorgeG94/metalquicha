@@ -63,6 +63,13 @@ RAW_SECTIONS = ("PROJECTION BASIS SET", "PROJECTION WAVEFUNCTION",
                 # lines of a real file. Kept raw: bulk data with no consumer yet.
                 "DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS",
                 "LMOQQPOL DYNAMIC POLARIZABLE POINTS",
+                # The fitted screening parameters. Kept raw rather than as
+                # records: we do not compute them yet -- the Powell fit over a
+                # geodesic ESP grid is its own milestone -- and their records are
+                # indented one space where every other section starts in column
+                # one, so passing them through byte-for-byte is both simpler and
+                # more faithful than reproducing that.
+                "SCREEN2", "SCREEN",
                 "LMODOPOL DYNAMIC POLARIZABLE POINTS",
                 "MOLECULAR DIPOLE POLARIZABILITY",
                 "MOLECULAR DIP-QUAD POLARIZABILITY",
@@ -103,22 +110,41 @@ def _split_label(line: str) -> tuple[str, str]:
 def _records(lines: list[str]) -> list[tuple[str, str]]:
     """Group a section's lines into (label, payload) records.
 
-    A record begins on a line whose first column is non-blank; anything indented
-    continues it. That rule is what the file actually obeys, and it is more
-    reliable than the trailing ``>`` continuation marker -- the polarizability
-    sections put a point's tensor on *unmarked* following lines, so a
-    ``>``-driven parser silently truncates them to their coordinates.
+    A record begins at the section's *own* indentation and anything indented
+    further continues it. Relative, not absolute: an earlier version required
+    column one, which is right for every section that starts its records there
+    and wrong for ``SCREEN2`` and ``SCREEN``, whose whole block is shifted one
+    space. Every one of their records then looked like a continuation of a record
+    that did not exist yet and was dropped -- ten lines of fitted screening
+    parameters, silently.
+
+    That went unnoticed because a parse-render-parse round trip cannot see it:
+    both sides drop the same lines and compare equal. It surfaced only when GAMESS
+    was asked to read a rendered file and refused. Hence ``dropped`` below, which
+    is what a round trip should have been asserting all along.
+
+    Continuations are found by indentation rather than by the trailing ``>``
+    marker, because the polarizability sections put a point's tensor on *unmarked*
+    following lines -- a ``>``-driven parser truncates them to their coordinates.
     """
     out: list[tuple[str, str]] = []
+    dropped: list[str] = []
+    base: int | None = None
     for line in lines:
         if not line.strip():
             continue
         payload = line.rstrip().rstrip(">").rstrip()
-        if line[0] not in " \t":
+        indent = len(line) - len(line.lstrip())
+        if base is None:
+            base = indent
+        if indent <= base:
             label, rest = _split_label(payload)
             out.append((label, rest))
         elif out:
             out[-1] = (out[-1][0], out[-1][1] + " " + payload)
+        else:
+            dropped.append(line.rstrip())
+    _records.dropped = dropped
     return out
 
 
@@ -176,6 +202,17 @@ def parse_efp(text: str) -> dict:
             continue
         stripped = line.strip()
         if stripped.upper() == "STOP":
+            # Which sections a STOP actually follows, because it does not follow
+            # all of them. PROJECTION WAVEFUNCTION, FOCK MATRIX ELEMENTS and LMO
+            # CENTROIDS share one; so do CTVEC and CTFOK. Emitting a STOP after
+            # every section put one where GAMESS expected more MO coefficients,
+            # and it refused the file with "ERROR READING VARIABLE MO4".
+            if current is not None:
+                doc.setdefault("stop_after", []).append(current)
+                # Verbatim, because SCREEN2 and SCREEN put theirs in column one
+                # to match their column-one headers while every other section
+                # indents it.
+                doc.setdefault("stop_lines", {})[current] = line.rstrip()
             consumed += 1
             close()
             continue
@@ -198,6 +235,15 @@ def parse_efp(text: str) -> dict:
             trailing = _numbers(stripped[len(header):])
             if trailing:
                 doc.setdefault("header_values", {})[header] = trailing
+            # The header line verbatim, because GAMESS's reader takes the values
+            # on it from fixed columns. Re-synthesising " PROJECTION WAVEFUNCTION
+            # 4 19" with different padding is enough to make GAMESS fail with
+            # "ERROR READING VARIABLE MO4 CHECK COLUMN 7" -- which is what it
+            # did, on a file carrying GAMESS's own parameters, so the fault was
+            # entirely in the rendering. Anything parsed from a real potential
+            # keeps its own header; only a section built from scratch needs one
+            # synthesised.
+            doc.setdefault("header_lines", {})[header] = line.rstrip()
             continue
         if current is not None:
             consumed += 1
@@ -240,13 +286,20 @@ def _is_header(line: str) -> bool:
 
 
 def _finish(section: str, body: list[str]) -> object:
-    """Turn a section's raw lines into structure."""
+    """Turn a section's raw lines into structure.
+
+    Sets ``_finish.dropped`` to any body line that could not be filed anywhere, so
+    the caller can refuse a document rather than quietly losing part of it.
+    """
+    _finish.dropped = []
     if section in RAW_SECTIONS:
         return {"raw": [l.rstrip() for l in body]}
 
     if section in TENSOR_SECTIONS:
         points = []
-        for label, payload in _records(body):
+        pairs = _records(body)
+        _finish.dropped = getattr(_records, "dropped", [])
+        for label, payload in pairs:
             freq = _FREQ.search(payload)
             values = _numbers(_FREQ.sub("", payload))
             points.append({
@@ -261,7 +314,86 @@ def _finish(section: str, body: list[str]) -> object:
     records = []
     for label, payload in _records(body):
         records.append({"label": label, "values": _numbers(payload)})
+    _finish.dropped = getattr(_records, "dropped", [])
     return records
+
+
+
+#: Column layout per section, as GAMESS writes it -- and reads it.
+#:
+#: **GAMESS's reader takes these from fixed columns, so this is not cosmetic.**
+#: A file rendered with free-form numbers is accepted for the sections whose
+#: reader is forgiving and then fails on one whose reader is not: GAMESS refused a
+#: potential carrying its *own* parameters with "ERROR READING VARIABLE MO4 CHECK
+#: COLUMN 7", because a section earlier in the file had the wrong number of lines
+#: and everything after it was out of step.
+#:
+#: `(label_width, [(width, decimals), ...], per_line)`, measured off a real
+#: MAKEFP file. Where a section's fields are not uniform -- COORDINATES carries
+#: three coordinates, a mass and a nuclear charge at three different widths -- the
+#: list gives each one.
+SECTION_FORMAT = {
+    "COORDINATES": (8, [(15, 10), (15, 10), (15, 10), (12, 7), (5, 1)], 5),
+    "MONOPOLES": (8, [(15, 10), (10, 5)], 2),
+    "DIPOLES": (8, [(16, 10)], 3),
+    "QUADRUPOLES": (8, [(16, 10)], 4),
+    "OCTUPOLES": (8, [(17, 9)], 4),
+    "LMO CENTROIDS": (3, [(15, 10)], 3),
+}
+
+#: Tensor sections write the point on its label line and the tensor beneath, at a
+#: different width again.
+TENSOR_FORMAT = {
+    "POLARIZABLE POINTS": (3, (15, 10), (16, 10), 4),
+    "DYNAMIC POLARIZABLE POINTS": (3, (15, 10), (16, 10), 4),
+}
+
+
+def _format_record(section, label, values):
+    """One record, in the columns GAMESS's reader expects."""
+    spec = SECTION_FORMAT.get(section)
+    if spec is None:
+        # Unknown section: free form, which is what the renderer did everywhere
+        # before the formats were measured. Better than dropping it.
+        return _wrap_record(label, "", list(values))
+    label_width, fields, per_line = spec
+    lines, chunk = [], []
+    for i, v in enumerate(values):
+        width, decimals = fields[i] if i < len(fields) else fields[-1]
+        chunk.append(f"{v:{width}.{decimals}f}")
+        if len(chunk) == per_line and i != len(values) - 1:
+            head = f"{label:<{label_width}}" if not lines else " "*label_width
+            lines.append(head + "".join(chunk) + " >")
+            chunk = []
+    head = f"{label:<{label_width}}" if not lines else " "*label_width
+    lines.append(head + "".join(chunk))
+    return lines
+
+
+def _format_tensor(section, point):
+    """A tensor section's point: coordinates on the label line, tensor beneath."""
+    spec = TENSOR_FORMAT.get(section)
+    label = point["label"]
+    if section.startswith("DYNAMIC"):
+        # The dynamic sections split the index off the label -- "CT  2" where
+        # every other section writes "CT2". The parser normalises that away, so
+        # the renderer has to put it back.
+        label = f"CT  {label[2:]}"
+    if spec is None:
+        coords = "".join(f"{v:16.10f}" for v in point["xyz"])
+        return [f"{label}{coords}"] + _wrap(point["tensor"])
+    label_width, (cw, cd), (tw, td), per_line = spec
+    suffix = ""
+    if "frequency" in point:
+        suffix = f" -- FOR W={point['frequency']:9.6f}I A.U."
+    head = f"{label:<{label_width}}" + "".join(f"{v:{cw}.{cd}f}" for v in point["xyz"])
+    lines = [head + suffix]
+    tensor = list(point["tensor"])
+    for start in range(0, len(tensor), per_line):
+        chunk = tensor[start:start + per_line]
+        marker = " >" if start + per_line < len(tensor) else ""
+        lines.append("".join(f"{v:{tw}.{td}f}" for v in chunk) + marker)
+    return lines
 
 
 def render_efp(doc: dict) -> str:
@@ -272,34 +404,35 @@ def render_efp(doc: dict) -> str:
     fidelity would be a much larger job for no extra confidence, since the test
     that matters is whether GAMESS accepts the file and agrees with it.
     """
+    # A document that was never parsed from a file -- one we built ourselves --
+    # has no record of which sections a STOP follows, so fall back to all of them.
+    stop_after = set(doc.get("stop_after", doc["sections"].keys()))
+    stop_line = doc.get("stop_lines", {})
+
     out: list[str] = list(doc.get("banner", []))
     out.append(f" ${doc.get('name', 'FRAG')}")
     if "comment" in doc:
         out.append(doc["comment"])
 
     for section, content in doc["sections"].items():
-        header = f" {section}"
-        for value in doc.get("header_values", {}).get(section, []):
-            header += f"   {int(value) if float(value).is_integer() else value}"
-        out.append(header)
+        if section in doc.get("header_lines", {}):
+            out.append(doc["header_lines"][section])
+        else:
+            header = f" {section}"
+            for value in doc.get("header_values", {}).get(section, []):
+                header += f"   {int(value) if float(value).is_integer() else value}"
+            out.append(header)
 
         if isinstance(content, dict) and "raw" in content:
             out.extend(content["raw"])
         elif section in TENSOR_SECTIONS:
             for point in content:
-                tag = point["label"]
-                suffix = ""
-                if "frequency" in point:
-                    tag = f"CT  {tag[2:]}"
-                    suffix = f" -- FOR W= {point['frequency']:.6f}I A.U."
-                coords = "".join(f"{v:16.10f}" for v in point["xyz"])
-                out.append(f"{tag}{coords}{suffix}")
-                out.extend(_wrap(point["tensor"]))
+                out.extend(_format_tensor(section, point))
         else:
             for record in content:
-                values = "".join(f"{v:16.10f}" for v in record["values"])
-                out.extend(_wrap_record(record["label"], values, record["values"]))
-        out.append(" STOP")
+                out.extend(_format_record(section, record["label"], record["values"]))
+        if section in stop_after:
+            out.append(stop_line.get(section, " STOP"))
 
     if doc.get("terminated"):
         out.append(" $END")
