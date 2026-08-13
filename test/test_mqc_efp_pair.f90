@@ -23,7 +23,7 @@ module test_mqc_efp_pair
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_potential, only: from_gamess_ao_order
    use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
-                           exchange_repulsion, dispersion_e6_damped
+                           exchange_repulsion, dispersion_e6_damped, charge_transfer
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_error, only: error_t
@@ -45,7 +45,8 @@ contains
                   new_unittest("efp_lmo_orthonormal", test_lmo), &
                   new_unittest("efp_exchange_repulsion", test_xr), &
                   new_unittest("efp_e6_damped", test_e6d), &
-                  new_unittest("efp_ctvec_orthonormal", test_ctvec) &
+                  new_unittest("efp_ctvec_orthonormal", test_ctvec), &
+                  new_unittest("efp_charge_transfer", test_ct) &
                   ]
    end subroutine collect_mqc_efp_pair_tests
 
@@ -310,6 +311,45 @@ contains
       call a%destroy()
       call mol%destroy()
    end subroutine test_ctvec
+
+   subroutine test_ct(error)
+      !! Charge transfer, on the rung where only monopoles are present
+      !!
+      !! `V` is built from the charge rank alone so far, and GAMESS's `V` also carries
+      !! dipoles and quadrupoles. So the comparison is made on a potential whose higher
+      !! multipoles are zero, where the two agree by construction -- 0.000082348, which
+      !! is what GAMESS reports for exactly that potential. Compare on the full
+      !! potential instead and the difference would be the missing ranks, which is not
+      !! a test of anything yet.
+      !!
+      !! The sign of `V` was what this rung pinned: it is the potential energy of an
+      !! *electron*, so it carries minus the monopole. Not a trivial overall sign --
+      !! `STIN` does not flip with `V`, so the wrong choice was out by 11% in magnitude
+      !! as well as negated, which is what made it visible rather than a plausible
+      !! stabilization energy.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+      ! The higher multipoles zeroed, so the monopole-only potential is the whole of it.
+      a%dipole = 0.0_dp; a%quadrupole = 0.0_dp; a%octopole = 0.0_dp
+      b%dipole = 0.0_dp; b%quadrupole = 0.0_dp; b%octopole = 0.0_dp
+
+      e = charge_transfer(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
+                          [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "charge transfer failed")
+      if (allocated(error)) return
+      call check(error, e, 0.000082348_dp, thr=1.0e-9_dp, &
+                 message="charge transfer disagrees with GAMESS on the monopole rung")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_ct
 
    subroutine test_lmo(error)
       !! The localized orbitals come back orthonormal, which pins the AO conversion

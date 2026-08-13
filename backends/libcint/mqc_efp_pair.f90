@@ -23,6 +23,7 @@ module mqc_efp_pair
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_efp_read, only: efp_fragment_t
    use mqc_efp_interaction, only: CP_WEIGHT
+   use mqc_libcint_esp, only: esp_matrices
    use mqc_efp_potential, only: from_gamess_ao_order, frozen_core
    implicit none
    private
@@ -34,6 +35,7 @@ module mqc_efp_pair
    public :: exchange_repulsion
    public :: dispersion_e6_damped
    public :: lmo_overlap
+   public :: charge_transfer
 
 contains
 
@@ -88,6 +90,181 @@ contains
          end do
       end do
    end subroutine fragment_basis
+
+   function charge_transfer(frag_a, frag_b, offset_a, offset_b, error) result(energy)
+      !! Charge transfer, from `ECHTR` in `efchtr.src`
+      !!
+      !!     for i occupied on A, n virtual on B:
+      !!       SAB2 = sum_M S_AB(M,n)^2                  M over A's occupied + virtual
+      !!       W    = V_AB(i,n) - sum_M S_AB(M,n) V_AA(i,M)
+      !!       STIN = sum_J ( T_BB(n,J) - sum_M S_AB(M,n) T_AB(M,J) ) S_AB(i,J)
+      !!       CT  += W (W + STIN) / ( (1 - SAB2) (F_A(i) - T_BB(n,n)) )
+      !!     E = 2 CT(A->B) + 2 CT(B->A)
+      !!
+      !! The orbitals are `CTVEC`'s -- occupied *and* virtual, since this moves density
+      !! into the latter -- and `F_A(i)` is `CTFOK`. Note the denominator pairs an
+      !! orbital energy with a *kinetic-energy diagonal* standing in for the virtual's;
+      !! that is GAMESS's expression, not an approximation introduced here.
+      !!
+      !! **`V` is the other fragment's multipole potential over these orbitals**, built
+      !! by `EFCEF`, `EFDEF` and `EFQEF` in GAMESS -- charges, dipoles and quadrupoles,
+      !! no octupole. Only the charge rank is built here so far, so this is exact for a
+      !! potential carrying monopoles alone and incomplete otherwise; `monopole_only`
+      !! says which, and the caller is not allowed to forget.
+      type(efp_fragment_t), intent(in) :: frag_a, frag_b
+      real(dp), intent(in) :: offset_a(3), offset_b(3)
+      type(error_t), intent(inout) :: error
+      real(dp) :: energy
+
+      real(dp), allocatable :: s_ao(:, :), t_ao(:, :), ct_a(:, :), ct_b(:, :)
+      real(dp), allocatable :: v_from_b(:, :), v_from_a(:, :)
+      type(libcint_molecule_t) :: pair
+      integer :: n_ao_a
+
+      energy = 0.0_dp
+      if (.not. (frag_a%has_ctvec .and. frag_b%has_ctvec)) then
+         call error%set(ERROR_VALIDATION, "efp: charge transfer needs CTVEC from both "// &
+                        "fragments")
+         return
+      end if
+      if (.not. (frag_a%has_ctfok .and. frag_b%has_ctfok)) then
+         call error%set(ERROR_VALIDATION, "efp: charge transfer needs CTFOK from both "// &
+                        "fragments")
+         return
+      end if
+
+      call two_fragment_molecule(frag_a, frag_b, offset_a, offset_b, pair, n_ao_a, error)
+      if (error%has_error()) return
+      call pair%overlap(s_ao)
+      call pair%kinetic(t_ao)
+      call padded_ctvec(frag_a, pair, 0, n_ao_a, ct_a, error)
+      if (error%has_error()) return
+      call padded_ctvec(frag_b, pair, n_ao_a, pair%nao - n_ao_a, ct_b, error)
+      if (error%has_error()) return
+      call monopole_potential(pair, frag_b, offset_b, v_from_b, error)
+      if (error%has_error()) return
+      call monopole_potential(pair, frag_a, offset_a, v_from_a, error)
+      if (error%has_error()) return
+
+      energy = 2.0_dp*one_direction(frag_a, frag_b, ct_a, ct_b, s_ao, t_ao, v_from_b) &
+               + 2.0_dp*one_direction(frag_b, frag_a, ct_b, ct_a, s_ao, t_ao, v_from_a)
+
+      call pair%destroy()
+      deallocate (s_ao, t_ao, ct_a, ct_b, v_from_b, v_from_a)
+   end function charge_transfer
+
+   function one_direction(frag_a, frag_b, ct_a, ct_b, s_ao, t_ao, v_b) result(ct)
+      !! Density moving from `a`'s occupied orbitals into `b`'s virtuals
+      type(efp_fragment_t), intent(in) :: frag_a, frag_b
+      real(dp), intent(in) :: ct_a(:, :), ct_b(:, :)
+      real(dp), intent(in) :: s_ao(:, :), t_ao(:, :), v_b(:, :)
+      real(dp) :: ct
+
+      real(dp), allocatable :: sab(:, :), tab(:, :), tbb(:, :), vab(:, :), vaa(:, :)
+      real(dp) :: sab2, w, stin, denom, inner
+      integer :: n_a, n_b, occ_a, occ_b, i, n, m, j
+
+      n_a = frag_a%n_mo_ct
+      n_b = frag_b%n_mo_ct
+      occ_a = frag_a%n_occ_ct
+      occ_b = frag_b%n_occ_ct
+      ct = 0.0_dp
+
+      sab = project(ct_a, s_ao, ct_b)
+      tab = project(ct_a, t_ao, ct_b)
+      tbb = project(ct_b, t_ao, ct_b)
+      vab = project(ct_a, v_b, ct_b)
+      vaa = project(ct_a, v_b, ct_a)
+
+      do i = 1, occ_a
+         do n = occ_b + 1, n_b
+            sab2 = 0.0_dp
+            w = vab(i, n)
+            do m = 1, n_a
+               sab2 = sab2 + sab(m, n)*sab(m, n)
+               w = w - sab(m, n)*vaa(i, m)
+            end do
+            stin = 0.0_dp
+            do j = 1, occ_b
+               inner = tbb(n, j)
+               do m = 1, n_a
+                  inner = inner - sab(m, n)*tab(m, j)
+               end do
+               stin = stin + inner*sab(i, j)
+            end do
+            denom = (1.0_dp - sab2)*(frag_a%eps_occ(i) - tbb(n, n))
+            ct = ct + w*(w + stin)/denom
+         end do
+      end do
+      deallocate (sab, tab, tbb, vab, vaa)
+   end function one_direction
+
+   function project(left, matrix, right) result(out)
+      !! `left^T matrix right`, both sets already in the pair's AO space
+      real(dp), intent(in) :: left(:, :), matrix(:, :), right(:, :)
+      real(dp), allocatable :: out(:, :)
+
+      real(dp), allocatable :: work(:, :)
+
+      allocate (work(size(matrix, 1), size(right, 2)))
+      allocate (out(size(left, 2), size(right, 2)))
+      call pic_gemm(matrix, right, work)
+      call pic_gemm(left, work, out, transa="T")
+      deallocate (work)
+   end function project
+
+   subroutine monopole_potential(pair, frag, offset, v, error)
+      !! The potential of one fragment's monopoles over the pair's basis
+      !!
+      !! Charges only. The dipole and quadrupole ranks GAMESS also includes are `grad_C`
+      !! and `grad grad_C` of this, which by translational invariance are basis
+      !! derivatives -- `int1e_grids_ip` -- and are not built yet.
+      type(libcint_molecule_t), intent(in) :: pair
+      type(efp_fragment_t), intent(in) :: frag
+      real(dp), intent(in) :: offset(3)
+      real(dp), allocatable, intent(out) :: v(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: grids(:, :), matrices(:, :, :)
+      integer :: k
+
+      allocate (grids(3, frag%n_points))
+      do k = 1, frag%n_points
+         grids(:, k) = frag%points(:, k) + offset
+      end do
+      call esp_matrices(pair, grids, matrices, error)
+      if (error%has_error()) return
+      allocate (v(pair%nao, pair%nao))
+      v = 0.0_dp
+      do k = 1, frag%n_points
+         ! Minus: this is the potential energy of an *electron* in the field of that
+         ! monopole, and the electron's charge is negative.
+         v = v - (frag%q_elec(k) + frag%q_nuc(k))*matrices(:, :, k)
+      end do
+      deallocate (grids, matrices)
+   end subroutine monopole_potential
+
+   subroutine padded_ctvec(frag, pair, offset_ao, n_own, padded, error)
+      !! `CTVEC` in our AO order, padded into the pair's space
+      type(efp_fragment_t), intent(in) :: frag
+      type(libcint_molecule_t), intent(in) :: pair
+      integer, intent(in) :: offset_ao, n_own
+      real(dp), allocatable, intent(out) :: padded(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(libcint_molecule_t) :: own
+      real(dp), allocatable :: ct(:, :)
+
+      call fragment_molecule(frag, [0.0_dp, 0.0_dp, 0.0_dp], own, error)
+      if (error%has_error()) return
+      call from_gamess_ao_order(own, frag%ctvec_gamess, ct, error)
+      call own%destroy()
+      if (error%has_error()) return
+      allocate (padded(pair%nao, frag%n_mo_ct))
+      padded = 0.0_dp
+      padded(offset_ao + 1:offset_ao + n_own, :) = ct
+      deallocate (ct)
+   end subroutine padded_ctvec
 
    subroutine lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
       !! Overlap and kinetic energy between two fragments' localized orbitals
