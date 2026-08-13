@@ -52,9 +52,13 @@ from efp_format import parse_efp  # noqa: E402
 
 BOHR_PER_ANGSTROM = 1.0/0.52917724924
 
-#: Bondi van der Waals radii, Angstrom. GAMESS has its own table and the difference
-#: is one of the identified gaps above.
-VDW = {1: 1.20, 6: 1.70, 7: 1.55, 8: 1.52}
+#: The radii GAMESS uses for a geodesic point selection, Angstrom, from
+#: `VANDER(:,2)` in `prplib.src:2086` -- Gavezzotti and Spackman's, not Bondi's.
+#: Oxygen is 1.40 where Bondi has 1.52, which is an 8% difference in every sphere
+#: around it. Anything not listed defaults to 1.8 in GAMESS.
+VDW = {1: 1.20, 5: 1.85, 6: 1.50, 7: 1.50, 8: 1.40, 9: 1.35,
+       13: 2.07, 14: 2.05, 15: 1.96, 16: 1.89, 17: 1.80}
+VDW_DEFAULT = 1.8
 
 #: The layer schedule GAMESS documents: VDWSCL=0.7, VDWINC=0.1, 25 layers.
 VDW_SCALE, VDW_STEP, N_LAYER = 0.7, 0.1, 25
@@ -76,7 +80,26 @@ def fibonacci_sphere(n):
                  np.cos(polar)]
 
 
-def fused_spheres(charges, coords):
+def centre_radii(labels, charges):
+    """A radius per expansion point, including the bond midpoints.
+
+    Spheres go on *every* expansion centre, not only the atoms: `chgpen.src` calls
+    `PDCPTS` with `NEFC`, the number of screened multipole centres, and
+    `prplib.src:2162` gives a midpoint the mean of its two atoms' radii.
+    """
+    radii = []
+    for label in labels:
+        if label.startswith("BO"):
+            a, b = int(label[2]) - 1, int(label[3]) - 1
+            radii.append(0.5*(VDW.get(int(charges[a]), VDW_DEFAULT)
+                              + VDW.get(int(charges[b]), VDW_DEFAULT)))
+        else:
+            index = len(radii)
+            radii.append(VDW.get(int(charges[index]), VDW_DEFAULT))
+    return np.array(radii)
+
+
+def fused_spheres(radii, coords):
     """Points on scaled vdW spheres, dropping any that fall inside another.
 
     **Constant surface density, not constant point count.** `chgpen.src:188` sets
@@ -98,14 +121,14 @@ def fused_spheres(charges, coords):
     for layer in range(N_LAYER):
         scale = VDW_SCALE + VDW_STEP*layer
         unit = fibonacci_sphere(int((scale/VDW_SCALE)**2 * N_ANGULAR))
-        for a, (z, centre) in enumerate(zip(charges, coords)):
-            candidate = centre + VDW[int(z)]*BOHR_PER_ANGSTROM*scale*unit
+        for a in range(len(radii)):
+            candidate = coords[:, a] + radii[a]*BOHR_PER_ANGSTROM*scale*unit
             keep = np.ones(len(candidate), bool)
-            for b, (zb, other) in enumerate(zip(charges, coords)):
+            for b in range(len(radii)):
                 if b == a:
                     continue
-                inside = VDW[int(zb)]*BOHR_PER_ANGSTROM*scale - 1e-9
-                keep &= np.linalg.norm(candidate - other, axis=1) > inside
+                inside = radii[b]*BOHR_PER_ANGSTROM*scale - 1e-9
+                keep &= np.linalg.norm(candidate - coords[:, b], axis=1) > inside
             points.append(candidate[keep])
             layers += [layer]*int(keep.sum())
     return np.vstack(points), np.array(layers)
@@ -167,7 +190,8 @@ def main():
     mf.conv_tol = 1e-12
     mf.kernel()
 
-    grid, layers = fused_spheres(mol.atom_charges(), mol.atom_coords())
+    radii = centre_radii(dma["labels"], mol.atom_charges())
+    grid, layers = fused_spheres(radii, dma["points"])
     quantum = -np.einsum("gpq,qp->g", mol.intor("int1e_grids", grids=grid),
                          mf.make_rdm1())
 
@@ -239,8 +263,8 @@ def main():
                   f"{name}'s damping function is not this one")
             failures += 1
         elif shallow:
-            print(f"          note: {', '.join(shallow)} shallow by <1%, consistent "
-                  f"with the radii table difference")
+            print(f"          note: {', '.join(shallow)} shallow by <1%, shallow by "
+                  f"<1%, within their Powell convergence on a flat surface")
 
     print()
     if failures:
