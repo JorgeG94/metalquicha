@@ -54,6 +54,9 @@ module mqc_efp_potential
    public :: efp_potential_t
    public :: make_efp_potential
    public :: write_efp_potential
+   !> Exposed so a reader can invert it. The printed contraction coefficients carry
+   !> this factor, and recovering the raw ones is an exact division by it.
+   public :: gamess_primitive_norm
 
    !> Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160

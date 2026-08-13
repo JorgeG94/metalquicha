@@ -25,6 +25,9 @@ module test_mqc_efp_read
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_error, only: error_t
+   use mqc_cgto, only: molecular_basis_type
+   use mqc_basis_utils, only: find_basis_file
+   use mqc_json_basis_reader, only: build_molecular_basis_json
    implicit none
    private
 
@@ -45,6 +48,7 @@ contains
                   new_unittest("efp_round_trip", test_round_trip), &
                   new_unittest("efp_net_charge", test_net_charge), &
                   new_unittest("efp_polarizabilities", test_polarizabilities), &
+                  new_unittest("efp_projection_basis", test_projection_basis), &
                   new_unittest("efp_missing_file", test_missing_file) &
                   ]
    end subroutine collect_mqc_efp_read_tests
@@ -258,6 +262,93 @@ contains
       call pot%destroy()
       call delete(path)
    end subroutine test_polarizabilities
+
+   subroutine test_projection_basis(error)
+      !! The projection basis, recovered against the basis it was written from
+      !!
+      !! GAMESS folds primitive normalization into the coefficients it prints, so the
+      !! reader divides `gamess_primitive_norm` back out. This checks that the result
+      !! is the *original* 6-31G* contraction -- exponents and coefficients both --
+      !! by comparing against the same JSON the writer read.
+      !!
+      !! That is the test that matters for the inter-fragment overlaps to come: a
+      !! basis rebuilt with the normalization still folded in would produce overlaps
+      !! that are wrong by a smooth factor per primitive, which is exactly the kind
+      !! of error that yields plausible energies.
+      !!
+      !! Shell counts differ by construction: an `L` in the file is one shell there
+      !! and two here, matching how the basis file itself holds a shared-exponent sp
+      !! pair, so the two sets line up shell for shell.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_potential_t) :: pot
+      type(efp_fragment_t) :: frag
+      type(error_t) :: err
+      type(molecular_basis_type) :: basis
+      character(len=:), allocatable :: path_json
+      character(len=*), parameter :: path = "test_efp_basis.efp"
+      character(len=2) :: symbols(3)
+      integer :: sh, k, at, want, first
+      real(dp) :: worst_e, worst_c
+
+      symbols = ["O ", "H ", "H "]
+      call water(pot, err)
+      call check(error,.not. err%has_error(), "building the potential failed")
+      if (allocated(error)) return
+      call write_efp_potential(pot, path, err)
+      call read_efp_potential(path, frag, err)
+      call check(error,.not. err%has_error(), "reading the potential failed")
+      if (allocated(error)) return
+      call check(error, frag%has_basis, "the projection basis was not read")
+      if (allocated(error)) return
+
+      call find_basis_file("6-31g*", path_json, err)
+      call check(error,.not. err%has_error(), "cannot find the basis file")
+      if (allocated(error)) return
+      call build_molecular_basis_json(path_json, symbols, basis, err)
+      call check(error,.not. err%has_error(), "cannot read the basis file")
+      if (allocated(error)) return
+
+      want = 0
+      do at = 1, 3
+         want = want + basis%elements(at)%nshells
+      end do
+      call check(error, frag%n_shells == want, &
+                 "the recovered shell count does not match the basis")
+      if (allocated(error)) return
+
+      worst_e = 0.0_dp
+      worst_c = 0.0_dp
+      sh = 0
+      do at = 1, 3
+         do k = 1, basis%elements(at)%nshells
+            sh = sh + 1
+            call check(error, frag%shell_l(sh) == basis%elements(at)%shells(k)%ang_mom, &
+                       "a recovered shell has the wrong angular momentum")
+            if (allocated(error)) return
+            call check(error, frag%shell_nprim(sh) == &
+                       size(basis%elements(at)%shells(k)%exponents), &
+                       "a recovered shell has the wrong primitive count")
+            if (allocated(error)) return
+            first = frag%shell_first(sh)
+            worst_e = max(worst_e, maxval(abs( &
+                                          frag%prim_expo(first:first + frag%shell_nprim(sh) - 1) &
+                                          - basis%elements(at)%shells(k)%exponents)))
+            worst_c = max(worst_c, maxval(abs( &
+                                          frag%prim_coef(first:first + frag%shell_nprim(sh) - 1) &
+                                          - basis%elements(at)%shells(k)%coefficients)))
+         end do
+      end do
+      ! The file carries ten decimals on an exponent and eight on a coefficient, so
+      ! this is the format's precision rather than the arithmetic's.
+      call check(error, worst_e < 1.0e-6_dp, "a recovered exponent does not match")
+      if (allocated(error)) return
+      call check(error, worst_c < 1.0e-6_dp, "a recovered coefficient does not match")
+
+      call frag%destroy()
+      call pot%destroy()
+      call delete(path)
+   end subroutine test_projection_basis
 
    subroutine test_missing_file(error)
       !! A path that is not there is an error, not a fragment full of zeros

@@ -27,6 +27,7 @@ module mqc_efp_read
    !! multipoles. Nothing is converted on the way in.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_IO
+   use mqc_efp_potential, only: gamess_primitive_norm
    implicit none
    private
 
@@ -95,6 +96,13 @@ module mqc_efp_read
       real(dp), allocatable :: quadquad(:, :, :)  !! (n_quadquad, n_lmo, n_freq)
       logical :: has_dipquad = .false.
       logical :: has_quadquad = .false.
+      !> The projection basis, with GAMESS's primitive normalization divided back
+      !> out, so these are the raw contraction coefficients a basis object wants.
+      !> An `L` shell arrives as two shells over shared exponents.
+      integer :: n_shells = 0
+      integer, allocatable :: shell_atom(:), shell_l(:), shell_first(:), shell_nprim(:)
+      real(dp), allocatable :: prim_expo(:), prim_coef(:)
+      logical :: has_basis = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -133,6 +141,14 @@ contains
       self%n_quadquad = 0
       self%has_dipquad = .false.
       self%has_quadquad = .false.
+      if (allocated(self%shell_atom)) deallocate (self%shell_atom)
+      if (allocated(self%shell_l)) deallocate (self%shell_l)
+      if (allocated(self%shell_first)) deallocate (self%shell_first)
+      if (allocated(self%shell_nprim)) deallocate (self%shell_nprim)
+      if (allocated(self%prim_expo)) deallocate (self%prim_expo)
+      if (allocated(self%prim_coef)) deallocate (self%prim_coef)
+      self%n_shells = 0
+      self%has_basis = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -253,11 +269,171 @@ contains
                              frag%n_lmo, frag%n_freq, error)
       if (error%has_error()) return
 
+      call read_projection_basis(lines, n_lines, frag, error)
+      if (error%has_error()) return
+
       call multiplicity(lines, n_lines, frag%multiplicity)
       deallocate (lines)
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_projection_basis(lines, n_lines, frag, error)
+      !! `PROJECTION BASIS SET`, with GAMESS's normalization taken back out
+      !!
+      !! Needed to build a molecule spanning two fragments, which is what the
+      !! inter-fragment overlaps behind exchange repulsion, charge transfer and the
+      !! dispersion damping are computed from.
+      !!
+      !! **The printed coefficients are not the contraction coefficients.** GAMESS
+      !! folds the primitive normalization in -- the first oxygen s primitive reads
+      !! 0.83172368 where the basis file has 0.0018311 -- so each is divided by
+      !! `gamess_primitive_norm` at its own exponent and angular momentum. That is
+      !! exact rather than fitted: our own writer multiplies by that same function,
+      !! so this inverts a known transformation.
+      !!
+      !! An `L` shell is stored as two shells sharing exponents, and the angular
+      !! momentum used for the division is **per coefficient column** -- zero for the
+      !! first, one for the second -- not one value for the shell.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      type(efp_fragment_t), intent(inout) :: frag
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: MAX_SHELLS = 512, MAX_PRIMS = 4096
+      integer :: start, finish, i, atom, nprim, k, ncol, col, stat, l
+      integer :: first_of(2)
+      integer :: n_sh, n_pr
+      integer :: sh_atom(MAX_SHELLS), sh_l(MAX_SHELLS), sh_first(MAX_SHELLS)
+      integer :: sh_n(MAX_SHELLS)
+      real(dp) :: expo(MAX_PRIMS), coef(MAX_PRIMS)
+      real(dp) :: values(3)
+      character(len=MAX_LINE) :: text
+      character(len=:), allocatable :: rest
+      character(len=1) :: letter
+
+      start = 0
+      do i = 1, n_lines
+         if (index(adjustl(lines(i)), "PROJECTION BASIS SET") == 1) then
+            start = i + 1
+            exit
+         end if
+      end do
+      if (start == 0) return
+      finish = start - 1
+      do i = start, n_lines
+         if (trim(adjustl(lines(i))) == "STOP") exit
+         finish = i
+      end do
+
+      atom = 0
+      n_sh = 0
+      n_pr = 0
+      i = start
+      do while (i <= finish)
+         text = lines(i)
+         if (len_trim(text) == 0) then
+            i = i + 1
+            cycle
+         end if
+         if (text(1:1) /= " ") then
+            ! An atom header: label, centre, valence charge.
+            atom = atom + 1
+            i = i + 1
+            cycle
+         end if
+         rest = adjustl(text)
+         letter = rest(1:1)
+         if (index("SPDFGL", letter) == 0) then
+            i = i + 1
+            cycle
+         end if
+         read (rest(2:), *, iostat=stat) nprim
+         if (stat /= 0) then
+            call error%set(ERROR_VALIDATION, "efp: a projection basis shell has no "// &
+                           "primitive count")
+            return
+         end if
+         ncol = 1
+         if (letter == "L") ncol = 2
+         if (n_sh + ncol > MAX_SHELLS .or. n_pr + ncol*nprim > MAX_PRIMS) then
+            call error%set(ERROR_VALIDATION, "efp: the projection basis is larger "// &
+                           "than this reader allows")
+            return
+         end if
+         do col = 1, ncol
+            n_sh = n_sh + 1
+            sh_atom(n_sh) = atom
+            sh_l(n_sh) = shell_l_of(letter, col)
+            sh_first(n_sh) = n_pr + (col - 1)*nprim + 1
+            sh_n(n_sh) = nprim
+            first_of(col) = sh_first(n_sh)
+         end do
+         i = i + 1
+         do k = 1, nprim
+            if (i > finish) then
+               call error%set(ERROR_VALIDATION, "efp: a projection basis shell is "// &
+                              "short of its primitives")
+               return
+            end if
+            ! index, exponent, then one coefficient per column
+            rest = strip_tokens(lines(i), 1)
+            do col = 1, ncol + 1
+               call next_number(rest, values(col), stat)
+               if (stat /= 0) then
+                  call error%set(ERROR_VALIDATION, "efp: a projection basis "// &
+                                 "primitive is short of its values")
+                  return
+               end if
+            end do
+            do col = 1, ncol
+               l = shell_l_of(letter, col)
+               expo(first_of(col) + k - 1) = values(1)
+               coef(first_of(col) + k - 1) = values(1 + col) &
+                                             /gamess_primitive_norm(l, values(1))
+            end do
+            i = i + 1
+         end do
+         n_pr = n_pr + ncol*nprim
+      end do
+      if (n_sh == 0) return
+
+      frag%n_shells = n_sh
+      allocate (frag%shell_atom(n_sh), frag%shell_l(n_sh), frag%shell_first(n_sh), &
+                frag%shell_nprim(n_sh), frag%prim_expo(n_pr), frag%prim_coef(n_pr))
+      frag%shell_atom = sh_atom(1:n_sh)
+      frag%shell_l = sh_l(1:n_sh)
+      frag%shell_first = sh_first(1:n_sh)
+      frag%shell_nprim = sh_n(1:n_sh)
+      frag%prim_expo = expo(1:n_pr)
+      frag%prim_coef = coef(1:n_pr)
+      frag%has_basis = .true.
+   end subroutine read_projection_basis
+
+   pure function shell_l_of(letter, col) result(l)
+      !! The angular momentum of one coefficient column of a shell
+      character(len=1), intent(in) :: letter
+      integer, intent(in) :: col
+      integer :: l
+
+      select case (letter)
+      case ("S")
+         l = 0
+      case ("P")
+         l = 1
+      case ("D")
+         l = 2
+      case ("F")
+         l = 3
+      case ("G")
+         l = 4
+      case ("L")
+         ! A shared-exponent sp pair: the first column is the s, the second the p.
+         l = col - 1
+      case default
+         l = -1
+      end select
+   end function shell_l_of
 
    subroutine read_tensor_block(lines, n_lines, name, per_record, store, n_values, &
                                 present_flag, n_lmo, n_freq, error)
