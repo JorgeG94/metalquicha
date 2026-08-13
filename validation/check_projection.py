@@ -79,6 +79,85 @@ def read_dump(path):
                 fock=fock, centroids=centroids, orbitals=orbitals)
 
 
+def gamess_primitive_norm(l, exponent):
+    """The factor GAMESS folds into a printed contraction coefficient.
+
+    The standard normalization of the `(l,0,0)` Cartesian primitive,
+
+        N = (2a/pi)^(3/4) (4a)^(l/2) / sqrt((2l-1)!!)
+
+    **Derived from the reference rather than assumed, and exact.** GAMESS prints
+    1.11382493 where the Basis Set Exchange table has 1.0, and 0.83172368 where it
+    has 0.0018311, so a `PROJECTION BASIS SET` written with our coefficients would
+    be read by GAMESS as a different basis. Checked against all fifteen primitives
+    of water/6-31G* -- six s, one sp triple, one sp single and one d, spanning
+    exponents from 0.27 to 5484 -- and reproduces every printed coefficient to
+    eight digits.
+
+    This is what makes the section emittable. It is separate from, and not to be
+    confused with, the d-shell factor in `D_NORMALIZATION`: that one relates the
+    two codes' *basis functions*, and so appears in the orbital coefficients
+    inversely.
+    """
+    double_factorial = 1.0
+    n = 2*l - 1
+    while n > 1:
+        double_factorial *= n
+        n -= 2
+    return ((2.0*exponent/np.pi)**0.75 * (4.0*exponent)**(l/2.0)
+            / np.sqrt(double_factorial))
+
+
+def check_basis_normalization():
+    """Every printed coefficient in the reference, from our table plus the rule."""
+    s = parse_efp(REFERENCE.read_text())["sections"]
+    raw = s["PROJECTION BASIS SET"]["raw"]
+
+    # (l, exponent, printed coefficient) for every primitive GAMESS listed. An "L"
+    # shell prints two coefficient columns, s then p.
+    listed = []
+    angular = None
+    for line in raw:
+        token = line.split()
+        if not token:
+            continue
+        if token[0] in ("S", "P", "D", "L"):
+            angular = token[0]
+            continue
+        if angular is None or not token[0].isdigit():
+            continue
+        numbers = _numbers(line)
+        if len(numbers) < 3:
+            continue
+        exponent = numbers[1]
+        if angular == "L":
+            listed.append((0, exponent, numbers[2]))
+            listed.append((1, exponent, numbers[3]))
+        else:
+            listed.append(({"S": 0, "P": 1, "D": 2}[angular], exponent, numbers[2]))
+
+    import json
+    table = json.loads((REPO / "basis_sets" / "6-31g_st_.json").read_text())
+    ours = []
+    for element in ("8", "1"):
+        for shell in table["elements"][element]["electron_shells"]:
+            for column, l in enumerate(shell["angular_momentum"]):
+                for exponent, coefficient in zip(shell["exponents"],
+                                                 shell["coefficients"][column]):
+                    ours.append((l, float(exponent), float(coefficient)))
+
+    worst = 0.0
+    matched = 0
+    for l, exponent, printed in listed:
+        for our_l, our_exponent, our_coefficient in ours:
+            if our_l == l and abs(our_exponent - exponent) < 1e-6*max(1.0, exponent):
+                predicted = our_coefficient*gamess_primitive_norm(l, exponent)
+                worst = max(worst, abs(predicted - printed)/max(1e-8, abs(printed)))
+                matched += 1
+                break
+    return matched, len(listed), worst
+
+
 def reference_coefficients(n_lmo, nao):
     """GAMESS's localized orbital coefficients, one row per LMO."""
     s = parse_efp(REFERENCE.read_text())["sections"]
@@ -202,6 +281,15 @@ def main():
     if max(worst_sp, worst_d) >= 1e-7:
         print("        FAIL the localized orbital coefficients do not map onto "
               "GAMESS's basis-function order")
+        failures += 1
+
+    matched, total, worst = check_basis_normalization()
+    print(f"        basis normalization: {matched}/{total} printed coefficients "
+          f"reproduced from our table, worst relative gap {worst:.2e}")
+    if matched != total or worst > 1e-7:
+        print("        FAIL our basis table plus the normalization rule does not "
+              "reproduce what GAMESS printed, so PROJECTION BASIS SET cannot be "
+              "emitted from it")
         failures += 1
 
     print()
