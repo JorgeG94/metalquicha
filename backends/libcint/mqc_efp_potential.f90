@@ -17,9 +17,9 @@ module mqc_efp_potential
    !! So this is the assembly, and it is where a run turns into a fragment
    !! someone else can use.
    !!
-   !! **Fourteen of the seventeen sections GAMESS's reader recognises.**
-   !! `DIPOLE-QUADRUPOLE DYNAMIC
-   !! POLARIZABLE POINTS`, `LMOQQPOL DYNAMIC POLARIZABLE POINTS` and `CTVEC` are
+   !! **Fifteen of the seventeen sections GAMESS's reader recognises.**
+   !! `LMOQQPOL DYNAMIC
+   !! POLARIZABLE POINTS` and `CTVEC` are
    !! not written, because we cannot reproduce GAMESS's values for them -- see the
    !! record in `mqc_libcint_cphf`, which ends in two span arguments showing the
    !! discrepancy is neither a rearrangement nor a translation of what we compute.
@@ -33,10 +33,11 @@ module mqc_efp_potential
    !! found by handing a file to GAMESS, not by reading its output: every
    !! parameter in it agreed with GAMESS's own and the file was still unreadable.
    !!
-   !! What the fourteen support, in EFP terms: electrostatics to octupole with
-   !! charge-penetration screening, polarization, and exchange repulsion. What
-   !! they do not is dispersion, which needs the two dynamic blocks, and charge
-   !! transfer, which needs `CTVEC`.
+   !! What the fifteen support, in EFP terms: electrostatics to octupole with
+   !! charge-penetration screening, polarization, exchange repulsion, and
+   !! dispersion through its `E6` and `E7` terms. What they do not is `E8`, which
+   !! needs the quadrupole-quadrupole block, and charge transfer, which needs
+   !! `CTVEC`.
    !!
    !! **The formats are GAMESS's reader's, not its writer's.** Free-form values in
    !! measured columns with the continuation markers each section expects. Byte
@@ -56,7 +57,9 @@ module mqc_efp_potential
    use mqc_libcint_dma, only: dma_result_t, distributed_multipoles
    use mqc_libcint_cphf, only: distributed_polarizability, &
                                distributed_dynamic_polarizability, &
+                               distributed_dynamic_cross, &
                                casimir_polder_frequencies, N_CASIMIR_POLDER
+   use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_screening, only: fit_screening, SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
    use libcint_fortran, only: LIBCINT_ANG_OF
    implicit none
@@ -80,6 +83,10 @@ module mqc_efp_potential
    !> libcint's index for each of GAMESS's six Cartesian d slots, and the
    !> normalization between the two codes' d functions. Both established in
    !> `validation/check_projection.py` against GAMESS's own coefficients.
+   !> libcint's full-Cartesian quadrupole slots, which run xx,xy,xz,yx,...,zz.
+   integer, parameter :: QXX = 1, QXY = 2, QXZ = 3, QYX = 4, QYY = 5
+   integer, parameter :: QYZ = 6, QZX = 7, QZY = 8, QZZ = 9
+
    integer, parameter :: D_FROM_LIBCINT(6) = [1, 4, 6, 2, 3, 5]
    real(dp), parameter :: D_NORMALIZATION = 1.585330892_dp
 
@@ -105,6 +112,11 @@ module mqc_efp_potential
       real(dp), allocatable :: centroids(:, :)        !! (3, n_lmo)
       real(dp), allocatable :: static_pol(:, :, :)    !! (3, 3, n_lmo)
       real(dp), allocatable :: dynamic_pol(:, :, :, :)!! (3, 3, n_lmo, n_freq)
+      real(dp), allocatable :: dipquad(:, :, :, :, :)
+         !! `(3, 3, 3, n_lmo, n_freq)` as `A'(a,b,c)`, **after** the write-time
+         !! translation to each centroid. Post-shift because that is the form the
+         !! file carries and the shift needs the dipole-dipole tensors, so keeping
+         !! the pre-shift tensor would mean carrying its inputs too.
       real(dp), allocatable :: frequencies(:)         !! Imaginary, a.u.
       real(dp), allocatable :: fock_lmo(:, :)         !! (n_lmo, n_lmo)
       real(dp), allocatable :: orbitals(:, :)         !! LMOs in GAMESS's AO order
@@ -135,6 +147,7 @@ contains
       if (allocated(self%centroids)) deallocate (self%centroids)
       if (allocated(self%static_pol)) deallocate (self%static_pol)
       if (allocated(self%dynamic_pol)) deallocate (self%dynamic_pol)
+      if (allocated(self%dipquad)) deallocate (self%dipquad)
       if (allocated(self%frequencies)) deallocate (self%frequencies)
       if (allocated(self%fock_lmo)) deallocate (self%fock_lmo)
       if (allocated(self%orbitals)) deallocate (self%orbitals)
@@ -291,6 +304,14 @@ contains
       if (talk) write (*, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, &
          " imaginary frequencies"
 
+      call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
+                                   error)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      if (talk) write (*, "(A)") "  dipole-quadrupole dispersion tensors"
+
       ! --- exchange repulsion: the LMO Fock matrix and the orbitals themselves --
       ! F in the LMO basis is W^T diag(eps) W with W = C_occ^T S C_loc, so no AO
       ! Fock matrix is needed and nothing here depends on basis function ordering.
@@ -345,6 +366,109 @@ contains
       call mol%destroy()
       deallocate (loc, ovl, sc, w, scaled)
    end subroutine make_efp_potential
+
+   subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
+                                      pot, error)
+      !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
+      !!
+      !! Three conventions here were established by
+      !! `validation/check_dipquad_sumrule`, which pins them by structure rather
+      !! than by fitting -- see its docstring and the record in
+      !! `mqc_libcint_cphf`. Getting any one of them wrong leaves a tensor that
+      !! passes every internal check and disagrees with GAMESS, which is what
+      !! happened for a long time.
+      !!
+      !!   * **The quadrupole measures and the dipole drives**, both expanded about
+      !!     the centre of mass, and the quadrupole is the traceless Buckingham
+      !!     form. Per orbital that is not the same as the reverse assignment,
+      !!     because the projector onto the localized set does not commute with the
+      !!     response operator; summed over orbitals they agree.
+      !!   * **The write-time translation to each centroid**, `DQSHIFT`, whose
+      !!     `delta_bc` term takes the dipole-dipole tensor **transposed**:
+      !!     `alpha(a,d)`, not `alpha(d,a)` as the rest of the formula reads. That
+      !!     transpose is the whole of what used to be a 14% discrepancy; with it
+      !!     the block agrees to 8.9e-05, which is GAMESS's own precision.
+      !!   * **The dipole-dipole tensor in the shift is the dynamic one at the same
+      !!     frequency**, not the static one.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(rhf_result_t), intent(in) :: scf
+      real(dp), intent(in) :: coordinates(:, :)
+      integer, intent(in) :: atomic_numbers(:)
+      integer, intent(in) :: core
+      type(efp_potential_t), intent(inout) :: pot
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
+      real(dp), allocatable :: raw(:, :, :, :), centroids(:, :)
+      real(dp) :: com(3), mass_total, r(3), alpha(3, 3), isotropic
+      integer :: i, a, b, c, d, k, f, n_freq
+
+      com = 0.0_dp
+      mass_total = 0.0_dp
+      do i = 1, size(atomic_numbers)
+         com = com + element_mass(atomic_numbers(i))*coordinates(:, i)
+         mass_total = mass_total + element_mass(atomic_numbers(i))
+      end do
+      com = com/mass_total
+
+      call multipole_matrices(mol, com, 1, dip, error)
+      if (error%has_error()) return
+      call multipole_matrices(mol, com, 2, quad, error)
+      if (error%has_error()) return
+
+      ! The traceless Buckingham quadrupole, as GAMESS builds it
+      ! (`prpel.src:5625`), kept as all nine Cartesian slots so that no expansion
+      ! of six unique values into nine has to be guessed at.
+      allocate (buck(mol%nao, mol%nao, 9))
+      buck(:, :, QXX) = 0.5_dp*(2.0_dp*quad(:, :, QXX) - quad(:, :, QYY) &
+                                - quad(:, :, QZZ))
+      buck(:, :, QYY) = 0.5_dp*(2.0_dp*quad(:, :, QYY) - quad(:, :, QXX) &
+                                - quad(:, :, QZZ))
+      buck(:, :, QZZ) = 0.5_dp*(2.0_dp*quad(:, :, QZZ) - quad(:, :, QXX) &
+                                - quad(:, :, QYY))
+      buck(:, :, QXY) = 1.5_dp*quad(:, :, QXY)
+      buck(:, :, QXZ) = 1.5_dp*quad(:, :, QXZ)
+      buck(:, :, QYZ) = 1.5_dp*quad(:, :, QYZ)
+      buck(:, :, QYX) = buck(:, :, QXY)
+      buck(:, :, QZX) = buck(:, :, QXZ)
+      buck(:, :, QZY) = buck(:, :, QYZ)
+
+      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                     pot%n_occ, pot%frequencies, buck, dip, raw, &
+                                     centroids, error, n_core=core)
+      if (error%has_error()) return
+
+      n_freq = size(pot%frequencies)
+      allocate (pot%dipquad(3, 3, 3, pot%n_lmo, n_freq))
+      do f = 1, n_freq
+         do k = 1, pot%n_lmo
+            r = pot%centroids(:, k) - com
+            alpha = pot%dynamic_pol(:, :, k, f)
+            do a = 1, 3
+               ! The delta_bc term's transpose: alpha(a,d), not alpha(d,a).
+               isotropic = 0.0_dp
+               do d = 1, 3
+                  isotropic = isotropic + r(d)*alpha(a, d)
+               end do
+               do b = 1, 3
+                  do c = 1, 3
+                     ! raw is (quadrupole slot, dipole, orbital, frequency); the
+                     ! nine quadrupole slots run with the second index fastest.
+                     pot%dipquad(a, b, c, k, f) = raw((b - 1)*3 + c, a, k, f) &
+                                                  - 1.5_dp*(r(b)*alpha(c, a) &
+                                                            + r(c)*alpha(a, b))
+                     if (b == c) then
+                        pot%dipquad(a, b, c, k, f) = pot%dipquad(a, b, c, k, f) &
+                                                     + isotropic
+                     end if
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (dip, quad, buck, raw, centroids)
+   end subroutine dipole_quadrupole_block
 
    pure function frozen_core(atomic_numbers) result(n)
       !! The standard frozen core, which is the set MAKEFP excludes
@@ -552,9 +676,10 @@ contains
       type(error_t), intent(inout) :: error
       character(len=:), allocatable, intent(out), optional :: omitted
 
-      integer :: unit, i, k, f, stat
+      integer :: unit, i, k, f, stat, a, b, c
       character(len=8) :: label
       real(dp) :: tensor(9)
+      real(dp) :: wide(27)
 
       open (newunit=unit, file=path, status="replace", action="write", iostat=stat)
       if (stat /= 0) then
@@ -620,8 +745,43 @@ contains
             do i = 1, 9
                tensor(i) = pot%dynamic_pol(POL_ROW(i), POL_COL(i), k, f)
             end do
-            call write_tensor_point(unit, label, pot%centroids(:, k), tensor, &
-                                    frequency=pot%frequencies(f))
+            ! Only the first point of a block carries the frequency, which is how
+            ! MAKEFP writes it: the stamp opens a block rather than labelling a
+            ! point. GAMESS's reader tolerates one per point, but a parser keying
+            ! on the stamp -- ours included -- then sees every point as a new
+            ! block.
+            if (k == 1) then
+               call write_tensor_point(unit, label, pot%centroids(:, k), tensor, &
+                                       frequency=pot%frequencies(f))
+            else
+               call write_tensor_point(unit, label, pot%centroids(:, k), tensor)
+            end if
+         end do
+      end do
+      write (unit, "(A)") " STOP"
+
+      ! The dipole-quadrupole block, 27 values a point. The slot order is
+      ! `(a-1)*9 + (c-1)*3 + b` -- the *first* quadrupole index runs fastest, which
+      ! is transposed from how the `DQSHIFT` source reads, and was pinned by
+      ! requiring the pre-shift tensor's symmetry in `bc` to come back.
+      write (unit, "(A)") " DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS"
+      do f = 1, size(pot%frequencies)
+         do k = 1, pot%n_lmo
+            write (label, "(A,I3)") "CT", k
+            do a = 1, 3
+               do b = 1, 3
+                  do c = 1, 3
+                     wide((a - 1)*9 + (c - 1)*3 + b) = pot%dipquad(a, b, c, k, f)
+                  end do
+               end do
+            end do
+            if (k == 1) then
+               write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
+                  pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
+            else
+               write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
+            end if
+            call write_values(unit, wide, 16, 10, 4)
          end do
       end do
       write (unit, "(A)") " STOP"
@@ -676,8 +836,7 @@ contains
       close (unit)
 
       if (present(omitted)) then
-         omitted = "DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS, "// &
-                   "LMOQQPOL DYNAMIC POLARIZABLE POINTS, CTVEC (with CTFOK)"
+         omitted = "LMOQQPOL DYNAMIC POLARIZABLE POINTS, CTVEC (with CTFOK)"
       end if
    end subroutine write_efp_potential
 
@@ -725,7 +884,10 @@ contains
          write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), xyz, " -- FOR W=", &
             frequency, "I A.U."
       else
-         write (unit, "(A3,3F15.10)") adjustl(label), xyz
+         ! trim, not a fixed width: this path serves both "CT1" from the static
+         ! section and "CT  2" from a dynamic block's continuation points, and a
+         ! fixed A3 would truncate the second.
+         write (unit, "(A,3F15.10)") trim(label), xyz
       end if
       call write_values(unit, tensor, 16, 10, 4)
    end subroutine write_tensor_point

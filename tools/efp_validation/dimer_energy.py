@@ -51,13 +51,22 @@ FRAGMENT = "EFPTEST"
 #: The terms GAMESS prints for an EFP calculation, and how it labels them. Only
 #: those it names explicitly -- a term we cannot find is reported missing rather
 #: than defaulted to zero, since zero is also a legitimate value.
+#:
+#: **Dispersion is broken out by order, and it has to be.** GAMESS prints `E6`,
+#: `E7` and `E8` on separate lines and then a total, all of them ending in
+#: "DISPERSION ENERGY". A pattern matching that phrase and taking the last hit
+#: silently returns `E8`, which is what this script did at first -- so it compared
+#: our `E6` against GAMESS's `E8`, reported a 4.9e-04 disagreement, and the real
+#: numbers agreed to 1.6e-09. Each order is matched by its own label now.
 TERMS = {
     "electrostatic": r"ELECTROSTATIC ENERGY\s*=\s*(-?\d+\.\d+)",
     "polarization": r"POLARIZATION ENERGY\s*=\s*(-?\d+\.\d+)",
     "repulsion": r"REPULSION ENERGY\s*=\s*(-?\d+\.\d+)",
-    "dispersion": r"DISPERSION ENERGY\s*=\s*(-?\d+\.\d+)",
+    "dispersion E6": r"E6 DISPERSION ENERGY\s*=\s*(-?\d+\.\d+)",
+    "dispersion E7": r"E7 DISPERSION ENERGY\s*=\s*(-?\d+\.\d+)",
+    "dispersion E8": r"E8 DISPERSION ENERGY\s*=\s*(-?\d+\.\d+)",
+    "dispersion total": r"TOTAL DISPERSION ENERGY\(E6\+E7\+E8\)\s*=\s*(-?\d+\.\d+)",
     "charge transfer": r"CHARGE TRANSFER ENERGY\s*=\s*(-?\d+\.\d+)",
-    "total": r"TOTAL ENERGY\s*=\s*(-?\d+\.\d+)",
 }
 
 
@@ -233,11 +242,10 @@ def main():
             continue
         gap = abs(a - b)
         mark = ""
-        if key in ("dispersion", "charge transfer"):
-            # Expected to differ: we do not write the sections they come from.
-            mark = "  (not written by us)"
-        elif key == "total":
-            mark = "  (differs by the terms above)"
+        if key in ("dispersion E8", "dispersion total", "charge transfer"):
+            # E8 needs LMOQQPOL and charge transfer needs CTVEC, neither of which
+            # we write; the total therefore differs by E8.
+            mark = "  (needs a section we do not write)"
         elif key == "electrostatic" and gap > args.tol and not args.screen_from_gamess:
             # The screening fit is known to differ -- ours finds a real minimum
             # where GAMESS's search reaches its alpha = 10 "off" bound, which is
