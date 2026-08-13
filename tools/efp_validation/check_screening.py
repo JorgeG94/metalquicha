@@ -59,8 +59,8 @@ VDW = {1: 1.20, 6: 1.70, 7: 1.55, 8: 1.52}
 #: The layer schedule GAMESS documents: VDWSCL=0.7, VDWINC=0.1, 25 layers.
 VDW_SCALE, VDW_STEP, N_LAYER = 0.7, 0.1, 25
 
-#: Points per sphere. Angular quadrature only; a geodesic tessellation would put
-#: them elsewhere but at this count the objective is insensitive to that.
+#: Points on the *innermost* sphere. Outer layers get more, in proportion to their
+#: surface area -- see `fused_spheres`.
 N_ANGULAR = 110
 
 QUAD_PAIRS = [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)]
@@ -77,11 +77,27 @@ def fibonacci_sphere(n):
 
 
 def fused_spheres(charges, coords):
-    """Points on scaled vdW spheres, dropping any that fall inside another."""
-    unit = fibonacci_sphere(N_ANGULAR)
+    """Points on scaled vdW spheres, dropping any that fall inside another.
+
+    **Constant surface density, not constant point count.** `chgpen.src:188` sets
+    the points on each layer as
+
+        KOUNT_L = INT(SCALED**2 * (NLAYER(ILAYER+1) - NLAYER(ILAYER)))
+
+    with `SCALED` the layer's scale relative to the first, so an outer sphere gets
+    more points in proportion to its area. That is also the layer weighting: there
+    is no explicit one, and the outer layers count for more because there are more
+    of them.
+
+    Getting this wrong was what left the shallow exponents unstationary. A fixed
+    count per layer plus an explicit `1/(layer+1)` weight -- weighting the *inner*
+    layers up, the opposite way round -- put GAMESS's fitted answer below its own
+    initial guess, which a converged Powell search cannot do.
+    """
     points, layers = [], []
     for layer in range(N_LAYER):
         scale = VDW_SCALE + VDW_STEP*layer
+        unit = fibonacci_sphere(int((scale/VDW_SCALE)**2 * N_ANGULAR))
         for a, (z, centre) in enumerate(zip(charges, coords)):
             candidate = centre + VDW[int(z)]*BOHR_PER_ANGSTROM*scale*unit
             keep = np.ones(len(candidate), bool)
@@ -141,11 +157,10 @@ def main():
     quantum = -np.einsum("gpq,qp->g", mol.intor("int1e_grids", grids=grid),
                          mf.make_rdm1())
 
-    weight = 1.0/(layers + 1.0)
-
     def objective(alpha):
+        # Unweighted: the layer weighting is already in the point counts.
         residual = (classical_potential(dma, grid, alpha) - quantum)*HARTREE_PER_KCAL
-        return float(np.sqrt(np.sum(weight*residual**2)/np.sum(weight)))
+        return float(np.sqrt(np.mean(residual**2)))
 
     reference = parse_efp((HERE / "reference" / "water_6-31gs_boys.efp").read_text())
     # SCREEN2 is kept as raw text by the parser -- we do not compute it yet and its
@@ -171,34 +186,43 @@ def main():
         print("        FAIL damping barely helps, so the functional form is wrong")
         failures += 1
 
+    # A converged search cannot land above its own starting point, so this is a
+    # sharp check on the objective and costs one evaluation.
+    initial = np.where(np.array([l.startswith("BO") for l in labels]), 4.0, 2.0)
+    at_start = objective(initial)
+    print(f"        their documented initial guess {at_start:9.4f} kcal/mol   "
+          f"({'fit improved on it' if fitted < at_start else 'FIT IS WORSE'})")
+    if fitted >= at_start:
+        print("        FAIL GAMESS's fitted exponents score worse than the guess "
+              "they started from, so this is not the objective they minimized")
+        failures += 1
+
     print("        stationarity of each exponent, +/-10%:")
     for i, label in enumerate(labels):
         down, up = theirs.copy(), theirs.copy()
         down[i] *= 0.9
         up[i] *= 1.1
-        flat = abs(objective(up) - fitted) < 1e-4 and abs(objective(down) - fitted) < 1e-4
-        note = "  (no effect -- screening off at the 10.0 bound)" if flat else ""
-        print(f"          {label:6s} {objective(down):9.4f} {fitted:9.4f} "
-              f"{objective(up):9.4f}{note}")
-
-    # Oxygen carries most of the density, so its exponent is the one that must be
-    # stationary for the form to be right. The others are shallow enough that grid
-    # differences dominate -- see the module docstring.
-    heavy = int(np.argmax(np.abs(dma["electronic"])))
-    down, up = theirs.copy(), theirs.copy()
-    down[heavy] *= 0.9
-    up[heavy] *= 1.1
-    if min(objective(down), objective(up)) <= fitted:
-        print(f"        FAIL {labels[heavy]}'s exponent is not stationary, so this "
-              f"is not GAMESS's objective")
-        failures += 1
+        lo, hi = objective(down), objective(up)
+        # An exponent at the 10.0 bound is switched off, so the objective is flat
+        # in it by construction and stationarity is neither expected nor meaningful.
+        off = theirs[i] >= 9.999
+        note = "  (off at the 10.0 bound)" if off else ""
+        print(f"          {label:6s} {lo:9.5f} {fitted:9.5f} {hi:9.5f}{note}")
+        if off:
+            if abs(hi - fitted) > 1e-6 or abs(lo - fitted) > 1e-6:
+                print(f"        FAIL {label} is at the bound but still affects the "
+                      f"potential, so 10.0 does not mean off")
+                failures += 1
+        elif min(lo, hi) <= fitted:
+            print(f"        FAIL {label}'s exponent is not stationary")
+            failures += 1
 
     print()
     if failures:
         print(f"[screening] {failures} FAILURE(S)")
         return 1
-    print("[screening] the damping form is confirmed and GAMESS's dominant exponent "
-          "is stationary under it")
+    print("[screening] every one of GAMESS's fitted exponents is stationary under "
+          "this objective")
     return 0
 
 
