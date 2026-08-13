@@ -15,6 +15,25 @@
 !! nothing about the next is the lesson; this walks the series so a regression shows
 !! up as the size where it stops rather than as a surprise later.
 !!
+!! **Where this stands against GAMESS.** With the Hessian stored, water in cc-pVQZ
+!! takes 5139 CPU seconds and about 190 seconds of wall time on forty threads. GAMESS
+!! does the same potential in 1108 seconds of wall time on one core plus a spinning
+!! helper, 1665 CPU seconds. So we finish 5.8 times sooner and use 3.1 times more
+!! processor to do it: the parallel scaling is carrying us, and its integrals are
+!! genuinely better per cycle.
+!!
+!! Two attempts at closing the CPU gap failed on measurement and are worth recording
+!! so they are not retried. Solving the response in product form, which is what GAMESS
+!! does, is 16 times *slower* here -- squaring the operator squares its condition
+!! number, and a Krylov method pays for that immediately, whereas forming the same
+!! product once as a matrix costs nothing. And building both `(A+B)` and `(A-B)` from
+!! one pass over the integrals, by routing the symmetric half through the build that
+!! writes all eight permutations, cost 1.6 times more rather than less: it halves
+!! integral generation and more than gives that back in scatter, because the folded
+!! build does six updates with a degeneracy factor where the explicit one does eight.
+!! Getting that win needs a build that folds one half and expands the other in the
+!! same quartet loop.
+!!
 !! Reported per basis: orbital count, SCF energy, the isotropic static and
 !! highest-frequency polarizabilities, and the wall time. No reference values -- the
 !! polarizabilities should fall smoothly towards a limit and the run should finish,
