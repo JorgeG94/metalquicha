@@ -60,19 +60,27 @@ module mqc_libcint_cphf
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
-   use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
+   use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_nosym, &
+                                 schwarz_bounds, direct_stats_t
    implicit none
    private
 
    public :: cphf_solve
    public :: static_polarizability
    public :: distributed_polarizability
+   public :: dynamic_polarizability
+   public :: distributed_dynamic_polarizability
+   public :: casimir_polder_frequencies
 
    !> CG iterations before giving up.
    integer, parameter :: DEFAULT_MAX_ITER = 200
 
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
+
+   !> Casimir-Polder quadrature points, which is how many imaginary frequencies a
+   !> potential is tabulated at.
+   integer, parameter, public :: N_CASIMIR_POLDER = 12
 
 contains
 
@@ -280,6 +288,386 @@ contains
 
       deallocate (dtilde, g, half, work)
    end subroutine response_operator
+
+   subroutine response_operator_minus(mol, bounds, zero_h, c_occ, c_vir, gaps, u, au, &
+                                      error)
+      !! Apply `A - B`, the other half of a frequency-dependent response
+      !!
+      !! Same shape as `response_operator` above and the same Fock build, on the
+      !! *antisymmetrized* response density instead of the symmetrized one:
+      !!
+      !!     A + B   from   Dt = C_vir U C_occ^T + transpose
+      !!     A - B   from   Dt = C_vir U C_occ^T - transpose
+      !!
+      !! The Coulomb term vanishes identically on the second, because the integral
+      !! is symmetric in its ket pair while the density is not, so `A - B` comes out
+      !! carrying only exchange -- `delta (eps_a - eps_i) - (ab|ij) + (aj|ib)`.
+      !!
+      !! It must go through `build_fock_direct_nosym`, not the fast build: that one
+      !! folds three of the eightfold permutations into a multiplicity factor, which
+      !! doubles them where an antisymmetric density needs them to cancel. See the
+      !! note on that routine, and the test that asserts the fast one really is
+      !! wrong here.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: bounds(:, :)
+      real(dp), intent(in) :: zero_h(:, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
+      real(dp), intent(in) :: gaps(:, :)
+      real(dp), intent(in) :: u(:, :)
+      real(dp), intent(out) :: au(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dtilde(:, :, :), g(:, :, :), half(:, :), work(:, :)
+      type(direct_stats_t) :: stats
+      integer :: n_ao, n_occ
+
+      n_ao = size(c_occ, 1)
+      n_occ = size(c_occ, 2)
+      allocate (dtilde(n_ao, n_ao, 1), half(n_ao, n_occ), work(n_ao, n_occ))
+
+      call pic_gemm(c_vir, u, half)
+      call pic_gemm(half, c_occ, dtilde(:, :, 1), transb="T")
+      dtilde(:, :, 1) = dtilde(:, :, 1) - transpose(dtilde(:, :, 1))
+
+      call build_fock_direct_nosym(mol, zero_h, dtilde, bounds, g, stats, error)
+      if (error%has_error()) return
+
+      call pic_gemm(g(:, :, 1), c_occ, work)
+      call pic_gemm(c_vir, work, au, transa="T")
+      au = gaps*u + 2.0_dp*au
+
+      deallocate (dtilde, g, half, work)
+   end subroutine response_operator_minus
+
+   function casimir_polder_frequencies() result(nu)
+      !! The twelve imaginary frequencies a potential is tabulated at
+      !!
+      !! Gauss-Legendre on `t` in (-1,1) under the substitution
+      !! `nu = w0 (1 + t)/(1 - t)` with `w0 = 0.3`, which is the Casimir-Polder
+      !! quadrature GAMESS uses. Confirmed against the reference potential: the
+      !! twelve values it labels its dynamic blocks with are exactly these, from
+      !! 0.002792 to 32.239080.
+      real(dp) :: nu(N_CASIMIR_POLDER)
+      real(dp), parameter :: W0 = 0.3_dp
+      !> 12-point Gauss-Legendre abscissae on (-1,1), positive half mirrored.
+      real(dp), parameter :: T(N_CASIMIR_POLDER) = [ &
+                             -0.9815606342467192_dp, -0.9041172563704749_dp, &
+                             -0.7699026741943047_dp, -0.5873179542866175_dp, &
+                             -0.3678314989981802_dp, -0.1252334085114689_dp, &
+                             0.1252334085114689_dp, 0.3678314989981802_dp, &
+                             0.5873179542866175_dp, 0.7699026741943047_dp, &
+                             0.9041172563704749_dp, 0.9815606342467192_dp]
+      integer :: i
+      do i = 1, N_CASIMIR_POLDER
+         nu(i) = W0*(1.0_dp + T(i))/(1.0_dp - T(i))
+      end do
+   end function casimir_polder_frequencies
+
+   subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
+                                     frequencies, alpha, error, max_iter, tol, &
+                                     response)
+      !! `alpha(i nu)` at each imaginary frequency
+      !!
+      !! **Imaginary frequency is the friendly case.** The time-dependent equations
+      !! couple the `+omega` and `-omega` blocks, and at real frequency the result
+      !! is non-symmetric with poles at every excitation energy -- which is why
+      !! GAMESS solves it with GMRES against an explicit Hessian on disk. On the
+      !! imaginary axis the same equations fold into something real and positive
+      !! definite. Writing `S = X + Y` and `D' = (X - Y)/i`,
+      !!
+      !!     (A+B) S + nu D' = -2h
+      !!     (A-B) D' - nu S = 0
+      !!
+      !! and eliminating `D'` gives
+      !!
+      !!     [ (A+B) + nu^2 (A-B)^-1 ] S = -2h
+      !!
+      !! whose operator is a sum of positive definite pieces -- no poles anywhere on
+      !! the axis, and *better* conditioned as `nu` grows rather than worse. So
+      !! conjugate gradients still applies, with an inner solve against `A - B` for
+      !! each outer product.
+      !!
+      !! `alpha_kl(i nu) = -2 sum_ai h^k_ai S^l_ai`, which at `nu = 0` reduces to
+      !! the static `-4 sum h U` because `S = 2U` there. That limit is the check
+      !! worth having: it must reproduce `static_polarizability` exactly, and it
+      !! costs nothing to run.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: frequencies(:)      !! Imaginary frequencies, a.u.
+      real(dp), allocatable, intent(out) :: alpha(:, :, :)
+         !! `(3, 3, n_frequencies)`, Bohr^3.
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: response(:, :, :, :)
+         !! `S_ai` per perturbation per frequency, `(n_vir, n_occ, 3, n_freq)`, for
+         !! a caller that wants to distribute it over localized orbitals rather
+         !! than only take the total.
+
+      real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
+      real(dp), allocatable :: eri0(:, :, :, :), work(:, :)
+      real(dp), allocatable :: s_vec(:, :), rhs(:, :), r(:, :), z(:, :), p(:, :)
+      real(dp), allocatable :: ap(:, :), inner(:, :)
+      real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
+      integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit
+      character(len=32) :: text
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      n_vir = n_mo - n_occ
+      limit = DEFAULT_MAX_ITER
+      if (present(max_iter)) limit = max_iter
+      use_tol = DEFAULT_TOL
+      if (present(tol)) use_tol = tol
+
+      if (n_occ < 1 .or. n_occ >= n_mo) then
+         call error%set(ERROR_VALIDATION, "dynamic response needs both occupied "// &
+                        "and virtual orbitals")
+         return
+      end if
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
+      if (error%has_error()) return
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), zero_h(n_ao, n_ao))
+      allocate (eri0(0, 0, 0, 0))
+      c_occ = orbitals(:, 1:n_occ)
+      c_vir = orbitals(:, n_occ + 1:n_mo)
+      zero_h = 0.0_dp
+
+      allocate (gaps(n_vir, n_occ))
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = orbital_energies(n_occ + a) - orbital_energies(i)
+         end do
+      end do
+      if (minval(gaps) <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "dynamic response: the reference is not "// &
+                        "a minimum")
+         return
+      end if
+
+      allocate (h(n_vir, n_occ, 3), work(n_ao, n_occ))
+      do k = 1, 3
+         call pic_gemm(dip(:, :, k), c_occ, work)
+         call pic_gemm(c_vir, work, h(:, :, k), transa="T")
+      end do
+
+      allocate (alpha(3, 3, size(frequencies)))
+      if (present(response)) allocate (response(n_vir, n_occ, 3, size(frequencies)))
+      allocate (s_vec(n_vir, n_occ), rhs(n_vir, n_occ), r(n_vir, n_occ))
+      allocate (z(n_vir, n_occ), p(n_vir, n_occ), ap(n_vir, n_occ))
+      allocate (inner(n_vir, n_occ))
+
+      do ifreq = 1, size(frequencies)
+         nu = frequencies(ifreq)
+         do l = 1, 3
+            rhs = -2.0_dp*h(:, :, l)
+            target_norm = sqrt(sum(rhs*rhs))*use_tol
+
+            s_vec = 0.0_dp
+            r = rhs
+            z = r/gaps
+            p = z
+            rz = sum(r*z)
+            do iter = 1, limit
+               call apply_dynamic(mol, bounds, zero_h, eri0, c_occ, c_vir, gaps, &
+                                  nu, p, ap, inner, limit, use_tol, error)
+               if (error%has_error()) return
+               pap = sum(p*ap)
+               if (pap <= 0.0_dp) then
+                  call error%set(ERROR_VALIDATION, "dynamic response operator is "// &
+                                 "not positive definite, which it must be on the "// &
+                                 "imaginary axis")
+                  return
+               end if
+               step = rz/pap
+               s_vec = s_vec + step*p
+               r = r - step*ap
+               if (sqrt(sum(r*r)) <= target_norm) exit
+               z = r/gaps
+               rz_new = sum(r*z)
+               p = z + (rz_new/rz)*p
+               rz = rz_new
+            end do
+            if (sqrt(sum(r*r)) > target_norm) then
+               write (text, "(f0.4)") nu
+               call error%set(ERROR_GENERIC, "dynamic response did not converge at "// &
+                              "nu = "//trim(text))
+               return
+            end if
+
+            do k = 1, 3
+               alpha(k, l, ifreq) = -2.0_dp*sum(h(:, :, k)*s_vec)
+            end do
+            if (present(response)) response(:, :, l, ifreq) = s_vec
+         end do
+      end do
+
+      deallocate (dip, bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0)
+      deallocate (s_vec, rhs, r, z, p, ap, inner)
+   end subroutine dynamic_polarizability
+
+   subroutine apply_dynamic(mol, bounds, zero_h, eri0, c_occ, c_vir, gaps, nu, u, au, &
+                            scratch, limit, tol, error)
+      !! `[(A+B) + nu^2 (A-B)^-1] u`, the inner solve included
+      !!
+      !! The `(A-B)` inverse is applied by its own conjugate gradients. Nested, and
+      !! the inner tolerance is deliberately far tighter than the outer one: an
+      !! inexact inner solve makes the outer operator non-linear, and conjugate
+      !! gradients on a non-linear operator loses its conjugacy quietly rather than
+      !! failing. `A - B` is well conditioned -- for water it needs a handful of
+      !! iterations -- so tightening it is nearly free.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: eri0(:, :, :, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), intent(in) :: nu
+      real(dp), intent(in) :: u(:, :)
+      real(dp), intent(out) :: au(:, :)
+      real(dp), intent(inout) :: scratch(:, :)
+      integer, intent(in) :: limit
+      real(dp), intent(in) :: tol
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: r(:, :), z(:, :), p(:, :), ap(:, :)
+      real(dp) :: rz, rz_new, pap, step, target_norm
+      integer :: iter
+
+      call response_operator(mol, .true., eri0, bounds, zero_h, c_occ, c_vir, gaps, &
+                             u, au, error)
+      if (error%has_error()) return
+      if (nu == 0.0_dp) return
+
+      ! (A-B) x = u, by conjugate gradients on the same preconditioner.
+      allocate (r, source=u)
+      allocate (z, mold=u)
+      allocate (p, mold=u)
+      allocate (ap, mold=u)
+      scratch = 0.0_dp
+      target_norm = sqrt(sum(u*u))*min(tol, 1.0e-13_dp)
+      z = r/gaps
+      p = z
+      rz = sum(r*z)
+      do iter = 1, limit
+         call response_operator_minus(mol, bounds, zero_h, c_occ, c_vir, gaps, p, ap, &
+                                      error)
+         if (error%has_error()) return
+         pap = sum(p*ap)
+         if (pap <= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "A - B is not positive definite, so the "// &
+                           "reference SCF is unstable")
+            return
+         end if
+         step = rz/pap
+         scratch = scratch + step*p
+         r = r - step*ap
+         if (sqrt(sum(r*r)) <= target_norm) exit
+         z = r/gaps
+         rz_new = sum(r*z)
+         p = z + (rz_new/rz)*p
+         rz = rz_new
+      end do
+
+      au = au + nu*nu*scratch
+      deallocate (r, z, p, ap)
+   end subroutine apply_dynamic
+
+   subroutine distributed_dynamic_polarizability(mol, orbitals, orbital_energies, &
+                                                 n_occ, frequencies, tensors, &
+                                                 centroids, error, n_core, max_iter, &
+                                                 tol)
+      !! One tensor per localized orbital at each imaginary frequency
+      !!
+      !! What `DYNAMIC POLARIZABLE POINTS` carries, and what dispersion is built
+      !! from: the Casimir-Polder integral over these is the `C6` between two
+      !! fragments. The projection is the same one `distributed_polarizability`
+      !! uses -- insert `W W^T` into the occupied sum -- applied to `S` at each
+      !! frequency instead of to the static `U`.
+      !!
+      !! The `nu = 0` member of the set must reproduce the static distributed
+      !! tensors exactly, orbital by orbital, which is the check that this
+      !! projection and that one agree.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: frequencies(:)
+      real(dp), allocatable, intent(out) :: tensors(:, :, :, :)
+         !! `(3, 3, n_localized, n_frequencies)`, Bohr^3.
+      real(dp), allocatable, intent(out) :: centroids(:, :)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_core
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
+      real(dp), allocatable :: dip(:, :, :), s(:, :), sc(:, :), w(:, :)
+      real(dp), allocatable :: h_loc(:, :, :), s_loc(:, :), c_occ(:, :), c_vir(:, :)
+      real(dp), allocatable :: work(:, :)
+      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, l, i, a, ifreq
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      n_vir = n_mo - n_occ
+      core = 0
+      if (present(n_core)) core = n_core
+      n_lmo = n_occ - core
+      if (core < 0 .or. n_lmo < 1) then
+         call error%set(ERROR_VALIDATION, "no orbitals left to distribute over")
+         return
+      end if
+
+      call boys_localize(mol, orbitals(:, core + 1:n_occ), n_lmo, localized, &
+                         centroids, error)
+      if (error%has_error()) return
+
+      call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
+                                  alpha, error, max_iter=max_iter, tol=tol, &
+                                  response=s_all)
+      if (error%has_error()) return
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
+      if (error%has_error()) return
+
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
+      c_occ = orbitals(:, 1:n_occ)
+      c_vir = orbitals(:, n_occ + 1:n_mo)
+      call mol%overlap(s)
+      allocate (sc(n_ao, n_lmo), w(n_occ, n_lmo))
+      call pic_gemm(s, localized, sc)
+      call pic_gemm(c_occ, sc, w, transa="T")
+
+      allocate (h_loc(n_vir, n_lmo, 3), work(n_ao, n_lmo), s_loc(n_vir, n_lmo))
+      do k = 1, 3
+         call pic_gemm(dip(:, :, k), localized, work)
+         call pic_gemm(c_vir, work, h_loc(:, :, k), transa="T")
+      end do
+
+      allocate (tensors(3, 3, n_lmo, size(frequencies)))
+      do ifreq = 1, size(frequencies)
+         do l = 1, 3
+            call pic_gemm(s_all(:, :, l, ifreq), w, s_loc)
+            do i = 1, n_lmo
+               do k = 1, 3
+                  tensors(k, l, i, ifreq) = 0.0_dp
+                  do a = 1, n_vir
+                     tensors(k, l, i, ifreq) = tensors(k, l, i, ifreq) &
+                                               - 2.0_dp*h_loc(a, i, k)*s_loc(a, i)
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (alpha, s_all, localized, dip, s, sc, w, h_loc, s_loc)
+      deallocate (c_occ, c_vir, work)
+   end subroutine distributed_dynamic_polarizability
 
    subroutine distributed_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                          tensors, centroids, error, n_core, &
