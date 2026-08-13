@@ -7,6 +7,7 @@ target_sources(
           mqc_program_limits.f90
           mqc_version.f90
           mqc_elements.f90
+          mqc_pcm_radii.f90
           mqc_geometry.f90
           mqc_logo.f90
           mqc_mpi_comms.f90

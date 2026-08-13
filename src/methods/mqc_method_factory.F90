@@ -171,6 +171,7 @@ contains
       m%options%verbose = config%verbose
       m%options%device_rank = config%device_rank
 
+      m%options%backend = config%backend
       ! SCF settings from shared config%scf
       if (present(with_mp2)) m%options%run_mp2 = with_mp2
       if (present(with_cc)) m%options%run_cc = with_cc
@@ -228,6 +229,8 @@ contains
       m%options%functional = config%dft%functional
       m%options%grid_type = config%dft%grid_type
       m%options%grid_level = config%dft%grid_level
+      m%options%pcm = config%pcm
+      m%options%backend = config%backend
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points
 

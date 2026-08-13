@@ -84,6 +84,28 @@ Here is a complete example with all available options:
      "driver": "Energy"
    }
 
+Backend Selection
+-----------------
+
+Which integral backend runs, as a root-level key beside ``driver``:
+
+.. code-block:: json
+
+   "backend": "cuest"
+
+- ``auto`` (default): cuEST when the build has it, the CPU path otherwise. This
+  is the historical behaviour and what every existing deck gets.
+- ``cuest``, or ``gpu``: require the GPU backend. A build without cuEST is
+  **refused**, with the CMake flag that would fix it, rather than falling back --
+  a deck that asked for cuEST and silently ran on the CPU would report a
+  provenance and a timing that were not true. Asking for it alongside MP2 or
+  coupled cluster is refused too, since those have no GPU implementation here.
+- ``libcint``, or ``cpu``: force the CPU path even on a build that has cuEST,
+  which is how the two are compared against each other.
+
+An unrecognised name is refused rather than treated as ``auto``, so a typo
+cannot quietly select a different implementation.
+
 Schema Section
 --------------
 
@@ -319,6 +341,84 @@ table above exactly.
 
 Anything beyond meta-GGA is refused, as is a functional needing the density
 Laplacian -- on libxc's own say-so rather than a guess about which ones are safe.
+
+Continuum Solvation
+^^^^^^^^^^^^^^^^^^^
+
+A polarizable continuum, on the **cuEST (GPU) backend only**:
+
+.. code-block:: json
+
+   "keywords": {
+     "pcm": {
+       "dielectric": 78.39,
+       "angular_points": 302,
+       "radii_scale": 1.2,
+       "zeta": 2.0,
+       "tolerance": 1e-8,
+       "max_iter": 100
+     }
+   }
+
+Naming the block is what turns solvation on -- there is no separate flag, because
+a deck that states a dielectric wants solvent and two switches could disagree.
+
+- ``dielectric``: the solvent's dielectric constant. **Required.** There is no
+  solvent-name table on this path: tblite has one for its own CPCM, and a second
+  table here that disagreed with it would make the same word mean two things.
+- ``angular_points``: Lebedev points per atom on the cavity surface. 302 by
+  default, and not a knob to economise on: 110 was the default until it was
+  measured, and it gave a dielectric energy 21% short of the converged one. The
+  surface integrand has cusps where the atomic spheres intersect.
+- ``radii_scale``: multiplies the van der Waals radii in ``mqc_pcm_radii``, which
+  are Bondi's filled in from Mantina's. 1.2 is the usual convention.
+- ``zeta``: the Gaussian switching prefactor for the smooth cavity surface, used
+  as :math:`\zeta_i = \zeta \sqrt{n_{ang}} / R_i`. Its default is calibrated
+  against the reference below rather than derived -- cuEST's own convention for
+  these exponents is not documented -- so treat it as an empirical constant of
+  this interface.
+- ``tolerance``, ``max_iter``: the surface-charge solve. A final solve that did
+  not converge is refused rather than reported, because the SCF's own convergence
+  test cannot see the cavity.
+
+This is **not** ``keywords.xtb.solvation_model: cpcm``. That configures tblite's
+continuum, which builds its own cavity with its own defaults, and the two are
+separate models rather than one keyword with two backends.
+
+**Validated against PySCF's C-PCM**, on water in water at PBE0/def2-SVP and
+:math:`\varepsilon` = 78.39, at the defaults above:
+
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - metalquicha
+     - PySCF C-PCM
+   * - dielectric energy
+     - -10.2104 mHartree
+     - -10.3625 mHartree
+   * - solvation energy
+     - -5.804 kcal/mol
+     - -5.904 kcal/mol
+   * - solvated dipole
+     - 2.21754 D
+     - 2.2162 D
+
+The dipole is the sharp one: agreeing to 0.0013 D means the potential reaching the
+Fock matrix is right, not merely that an energy came out plausible. The residual
+1.5% on the dielectric energy is the difference between two independently
+discretised cavities and is not expected to close.
+
+Two limits were checked as well, and both are worth knowing because they need no
+external reference. At :math:`\varepsilon` = 1.0001 the dielectric energy falls
+to -7e-7 Hartree and the total returns to the gas-phase energy, which agrees with
+PySCF's to 5.5 microhartree -- so the continuum contributes nothing when it should
+contribute nothing. And the surface resolution matters more than it looks: at 110
+angular points the dielectric energy was 21% short.
+
+``zeta`` remains the one parameter whose convention is not confirmed against
+cuEST's own definition, and its default was set by matching the reference above
+rather than derived. It is a keyword so it can be checked.
 
 DFT Options
 ^^^^^^^^^^^

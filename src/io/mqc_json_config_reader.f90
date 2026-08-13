@@ -218,6 +218,25 @@ contains
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
+      ! The continuum is switched on by the presence of the block rather than by a
+      ! flag inside it: a deck that names a dielectric wants solvent, and a
+      ! separate "enabled" would let the two disagree.
+      block
+         ! Read into a deferred-length local, since the config field is fixed
+         ! width and `optional_string` takes an allocatable.
+         character(len=:), allocatable :: backend_text
+         logical :: backend_found
+         call json%get("backend", backend_text, backend_found)
+         if (backend_found .and. allocated(backend_text)) config%backend = backend_text
+      end block
+      call json%info("keywords.pcm", found=found)
+      config%pcm_enabled = found
+      call optional_real(json, "keywords.pcm.dielectric", config%pcm_dielectric)
+      call optional_int(json, "keywords.pcm.angular_points", config%pcm_angular_points)
+      call optional_real(json, "keywords.pcm.radii_scale", config%pcm_radii_scale)
+      call optional_real(json, "keywords.pcm.zeta", config%pcm_zeta)
+      call optional_real(json, "keywords.pcm.tolerance", config%pcm_tolerance)
+      call optional_int(json, "keywords.pcm.max_iter", config%pcm_max_iter)
       call optional_int(json, "keywords.dft.radial_points", config%dft_radial_points)
       call optional_int(json, "keywords.dft.angular_points", config%dft_angular_points)
 

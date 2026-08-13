@@ -170,6 +170,14 @@ contains
       driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
       driver_config%method_config%dft%grid_level = mqc_config%dft_grid_level
+      driver_config%method_config%backend = mqc_config%backend
+      driver_config%method_config%pcm%enabled = mqc_config%pcm_enabled
+      driver_config%method_config%pcm%dielectric = mqc_config%pcm_dielectric
+      driver_config%method_config%pcm%angular_points = mqc_config%pcm_angular_points
+      driver_config%method_config%pcm%radii_scale = mqc_config%pcm_radii_scale
+      driver_config%method_config%pcm%zeta = mqc_config%pcm_zeta
+      driver_config%method_config%pcm%tolerance = mqc_config%pcm_tolerance
+      driver_config%method_config%pcm%max_iter = mqc_config%pcm_max_iter
       ! Only overridden when a deck asked; -1 leaves the level in charge, and
       ! the grid builder refuses one without the other rather than half-applying.
       if (mqc_config%dft_radial_points > 0 .and. mqc_config%dft_angular_points > 0) then

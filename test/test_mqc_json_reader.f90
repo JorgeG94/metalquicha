@@ -18,6 +18,8 @@ module test_mqc_json_reader
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_PRESSURE
    use mqc_error, only: error_t
+   use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
+                              BACKEND_LIBCINT
    use pic_types, only: dp
    implicit none
    private
@@ -52,6 +54,8 @@ contains
                   new_unittest("error_missing_schema", test_missing_schema), &
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
+                  new_unittest("backend_keyword", test_backend_keyword), &
+                  new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
@@ -475,6 +479,83 @@ contains
       if (allocated(error)) return
       call check(error, config%nodes_per_group, 4)
    end subroutine test_nodes_per_group
+
+   subroutine test_backend_keyword(error)
+      !! The root-level `backend` key, and that an unknown one is refused
+      !!
+      !! Refused rather than defaulted, because a typo that fell back to "auto"
+      !! would be a deck asking for one backend and silently getting another --
+      !! and the two are independent implementations, so that is a provenance
+      !! error, not a preference ignored.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      integer :: kind
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%backend) == "auto", "the default backend is auto")
+      if (allocated(error)) return
+
+      call parse_backend_name("gpu", kind, parse_error)
+      call check(error, kind == BACKEND_CUEST, "'gpu' must mean cuEST")
+      if (allocated(error)) return
+      call parse_backend_name("cpu", kind, parse_error)
+      call check(error, kind == BACKEND_LIBCINT, "'cpu' must mean libcint")
+      if (allocated(error)) return
+      call parse_backend_name("", kind, parse_error)
+      call check(error, kind == BACKEND_AUTO, "an empty name must mean auto")
+      if (allocated(error)) return
+
+      call parse_error%clear()
+      call parse_backend_name("cuda", kind, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown backend name must be refused, not defaulted")
+   end subroutine test_backend_keyword
+
+   subroutine test_pcm_keywords(error)
+      !! keywords.pcm, and that the block's presence is what switches it on
+      !!
+      !! There is no `enabled` flag inside the block on purpose: a deck that names
+      !! a dielectric wants solvent, and a separate switch would let the two
+      !! disagree. So an absent block must leave the calculation in the gas phase
+      !! and a present one must turn the continuum on, which is the pair below.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "dft", "functional": "pbe0", "basis": "sto-3g"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "angular_points": 302, '// &
+                      '"radii_scale": 1.1, "max_iter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%pcm_enabled, "naming the block must enable the continuum")
+      if (allocated(error)) return
+      call check(error, abs(config%pcm_dielectric - 78.39_dp) < 1.0e-10_dp)
+      if (allocated(error)) return
+      call check(error, config%pcm_angular_points, 302)
+      if (allocated(error)) return
+      call check(error, abs(config%pcm_radii_scale - 1.1_dp) < 1.0e-10_dp)
+      if (allocated(error)) return
+      call check(error, config%pcm_max_iter, 50)
+      if (allocated(error)) return
+      ! Untouched keys keep their defaults rather than being zeroed.
+      call check(error, abs(config%pcm_zeta - 2.0_dp) < 1.0e-10_dp, &
+                 "an unmentioned key must keep its default")
+      if (allocated(error)) return
+
+      ! And no block at all is the gas phase.
+      call write_deck('"method": "dft", "functional": "pbe0", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"grid_level": 3}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%pcm_enabled, &
+                 "without the block the calculation must stay in the gas phase")
+   end subroutine test_pcm_keywords
 
    subroutine test_dft_keywords(error)
       !! keywords.dft, and that explicit counts take the level out of charge

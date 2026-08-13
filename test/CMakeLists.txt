@@ -120,6 +120,11 @@ if(MQC_ENABLE_CUEST)
   addtestpp(mqc_cuest_spin)
   target_compile_definitions(test_mqc_cuest_spin PRIVATE MQC_WITH_CUEST)
 endif()
+# The continuum cavity radii. Unconditional: the table is ours, a wrong entry
+# gives a wrong solvation energy with nothing to object, and neither cuEST nor
+# libxc is needed to check it.
+addtest(mqc_pcm_radii)
+
 # What a functional name means as a composition. Unconditional: the
 # double-hybrid coefficients are ours, and libxc is not needed to check them.
 addtest(mqc_xc_spec)

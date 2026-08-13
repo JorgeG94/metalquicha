@@ -99,6 +99,9 @@ module mqc_cuest_scf
       !! What an SCF run produces
       real(dp) :: electronic_energy = 0.0_dp  !! Electronic energy, Hartree
       real(dp) :: xc_energy = 0.0_dp          !! Exchange-correlation energy, Hartree
+      real(dp) :: pcm_energy = 0.0_dp         !! Dielectric (polarization) energy, Hartree
+      logical :: pcm_solved = .true.          !! Whether the final charge solve converged
+      integer :: pcm_points = 0               !! Cavity surface points
       real(dp) :: nuclear_repulsion = 0.0_dp  !! Nuclear repulsion, Hartree
       real(dp) :: total_energy = 0.0_dp       !! Sum of the two
       integer :: iterations = 0               !! Iterations actually taken
@@ -367,7 +370,7 @@ contains
       type(diis_device_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
-      real(dp) :: xc_energy, trace_h, trace_j, trace_k
+      real(dp) :: xc_energy, pcm_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
 
       guess_type = SCF_GUESS_GWH
@@ -430,6 +433,7 @@ contains
       call build_density(occupied(:, 1:n_occ), density)
 
       xc_energy = 0.0_dp
+      pcm_energy = 0.0_dp
       if (use_diis) then
          ! The error vectors live in the orthogonal basis, the Fock matrices in the AO basis.
          call diis%init(context, diis_size, n_ao*n_ao, n_mo*n_mo, error)
@@ -447,6 +451,17 @@ contains
          end if
          write (*, "(A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
             "   n_occ = ", n_occ
+         ! The cavity, when there is one. Worth printing rather than inferring:
+         ! how many surface points survived the switching function is the first
+         ! thing to look at if a solvation energy comes out wrong, and it is not
+         ! recoverable from the total.
+         if (system%has_pcm) then
+            write (*, "(A,F10.4,A,I0,A,F6.3,A,F7.3)") "    continuum: eps = ", &
+               system%pcm_dielectric, "   angular points ", system%pcm_angular_points, &
+               "   radii x ", system%pcm_radii_scale, "   zeta ", system%pcm_zeta
+            write (*, "(A,I0,A,I0)") "    continuum: ", system%n_pcm_points, &
+               " surface points, active ", system%n_pcm_active
+         end if
          write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
@@ -490,6 +505,11 @@ contains
 
          call system%xc_device(system%d_c_occ, system%d_xc, xc_energy, error)
 
+         ! The continuum. Solved from the current total density, so it belongs
+         ! here beside the other density-dependent terms; the potential it leaves
+         ! in `system%d_pcm` is picked up by `assemble_fock` below.
+         call system%pcm_device(system%d_matrix, pcm_energy, error)
+
          ! The one synchronise in the iteration, standing between the cuEST
          ! integrals and the cuBLAS that consumes them: cuEST is free to queue
          ! its work on a stream of its own, and a cuBLAS call reading J before
@@ -520,10 +540,14 @@ contains
             call error%add_context("mqc_cuest_scf:energy traces")
             return
          end if
+         ! The dielectric energy is added whole, like Exc and unlike J and K: the
+         ! surface charges are determined variationally, so cuEST's value already
+         ! carries the factor of one half that the Fock term must not.
          electronic_energy = trace_h &
                              + 0.5_dp*trace_j &
                              - 0.5_dp*trace_k &
-                             + xc_energy
+                             + xc_energy &
+                             + pcm_energy
          energy_change = electronic_energy - previous_energy
          previous_energy = electronic_energy
 
@@ -596,6 +620,27 @@ contains
 
       result%electronic_energy = electronic_energy
       result%xc_energy = xc_energy
+      result%pcm_energy = pcm_energy
+      result%pcm_solved = system%pcm_solved
+      result%pcm_points = int(system%n_pcm_points)
+      if (verbose .and. system%has_pcm) then
+         write (*, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
+            "  charge-solve iterations ", system%pcm_iterations, &
+            "  residual ", system%pcm_residual
+      end if
+      ! A continuum that never solved makes the total wrong by however far
+      ! the surface charges were off, and the SCF above would still report
+      ! itself converged -- its own two criteria know nothing about the
+      ! cavity. Refused here rather than reported, on the same principle as
+      ! a non-converged SCF.
+      if (system%has_pcm .and. .not. system%pcm_solved) then
+         call error%set(ERROR_VALIDATION, "the continuum surface charges did not "// &
+                        "converge on the final iteration; raise keywords.pcm.max_iter "// &
+                        "or loosen keywords.pcm.tolerance. The energy would be wrong "// &
+                        "by however far the charges were off, and the SCF's own "// &
+                        "convergence test cannot see the cavity.")
+         return
+      end if
       result%total_energy = electronic_energy + result%nuclear_repulsion
       call system%compute_dipole(density, result%dipole, error)
       result%has_dipole = .not. error%has_error()
@@ -716,6 +761,7 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration
       integer :: n_fock_spin, n_err_spin
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
+      real(dp) :: pcm_energy
       real(dp) :: trace_h, trace_j, trace_ka, trace_kb
       logical :: diis_ok, occupations_ok, beta_exchange
 
@@ -799,6 +845,7 @@ contains
       end if
       d_error_beta = device_offset(system%d_error, int(n_err_spin, c_int64_t))
       xc_energy = 0.0_dp
+      pcm_energy = 0.0_dp
       previous_energy = 0.0_dp
       result%converged = .false.
 
@@ -863,6 +910,10 @@ contains
          call system%xc_uks_device(system%d_c_occ, system%d_c_occ_beta, max(n_beta, 1), &
                                    system%d_xc, system%d_xc_beta, xc_energy, error)
 
+         ! The continuum sees the total density, so there is one solve and one
+         ! potential for both spins -- `assemble_fock` adds it to each channel.
+         call system%pcm_device(system%d_matrix, pcm_energy, error)
+
          ! The one synchronise in the iteration, between the cuEST integrals
          ! and the cuBLAS that consumes them.
          call device_sync("Fock terms (UKS)", error)
@@ -898,7 +949,8 @@ contains
          electronic_energy = trace_h &
                              + 0.5_dp*trace_j &
                              - 0.5_dp*(trace_ka + trace_kb) &
-                             + xc_energy
+                             + xc_energy &
+                             + pcm_energy
          energy_change = electronic_energy - previous_energy
          previous_energy = electronic_energy
 
@@ -978,6 +1030,27 @@ contains
       result%has_dipole = .not. error%has_error()
       result%electronic_energy = electronic_energy
       result%xc_energy = xc_energy
+      result%pcm_energy = pcm_energy
+      result%pcm_solved = system%pcm_solved
+      result%pcm_points = int(system%n_pcm_points)
+      if (verbose .and. system%has_pcm) then
+         write (*, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
+            "  charge-solve iterations ", system%pcm_iterations, &
+            "  residual ", system%pcm_residual
+      end if
+      ! A continuum that never solved makes the total wrong by however far
+      ! the surface charges were off, and the SCF above would still report
+      ! itself converged -- its own two criteria know nothing about the
+      ! cavity. Refused here rather than reported, on the same principle as
+      ! a non-converged SCF.
+      if (system%has_pcm .and. .not. system%pcm_solved) then
+         call error%set(ERROR_VALIDATION, "the continuum surface charges did not "// &
+                        "converge on the final iteration; raise keywords.pcm.max_iter "// &
+                        "or loosen keywords.pcm.tolerance. The energy would be wrong "// &
+                        "by however far the charges were off, and the SCF's own "// &
+                        "convergence test cannot see the cavity.")
+         return
+      end if
       result%total_energy = electronic_energy + result%nuclear_repulsion
       result%orbital_energies = energies_a
       result%orbital_energies_beta = energies_b

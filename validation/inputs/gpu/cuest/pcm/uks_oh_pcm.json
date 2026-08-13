@@ -1,0 +1,39 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/oh.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 2
+        }
+    ],
+    "model": {
+        "method": "dft",
+        "basis": "def2-svp",
+        "aux_basis": "def2-universal-jkfit",
+        "functional": "pbe"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-08
+        },
+        "pcm": {
+            "dielectric": 78.39,
+            "angular_points": 302,
+            "radii_scale": 1.2,
+            "zeta": 2.0,
+            "tolerance": 1e-08,
+            "max_iter": 100
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}

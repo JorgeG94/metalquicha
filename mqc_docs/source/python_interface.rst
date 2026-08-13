@@ -183,6 +183,27 @@ gradient is worse than an absent one -- so it raises:
 xTB gradients work normally, and so do cuEST's. Only the CPU Hartree-Fock path
 refuses.
 
+``backend=`` picks the integral backend -- ``"cuest"``/``"gpu"``,
+``"libcint"``/``"cpu"``, or omitted for the build's default. A request the build
+cannot honour raises rather than falling back:
+
+.. code-block:: python
+
+   >>> mqc.MBE(water, level=0, method="hf", basis="sto-3g", backend="gpu").run()
+   MQCError: This calculation needs the cuEST integral backend; build with CMake
+   and -DMQC_ENABLE_CUEST=ON
+
+Continuum solvation is a named argument, and cuEST-only -- the CPU backend has no
+cavity and refuses it rather than returning a gas-phase energy:
+
+.. code-block:: python
+
+   >>> mqc.MBE(water, level=0, method="dft", functional="pbe0", basis="def2-svp",
+   ...         pcm={"dielectric": 78.39}).run(write_to_file=False).energy
+
+The dict takes the same keys as ``keywords.pcm`` in a deck, documented under
+:ref:`input_files`. ``dielectric`` is required; everything else has a default.
+
 Correlated methods on the CPU backend are closed-shell only. MP2, coupled
 cluster and the double hybrids each need separate alpha and beta transforms for an
 open-shell reference, and are refused in the same way rather than approximated.

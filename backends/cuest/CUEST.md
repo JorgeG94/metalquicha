@@ -430,7 +430,17 @@ second, geometric response solve on top.
 ## Not implemented
 
 - Empirical dispersion. Requesting it errors rather than silently omitting it.
-- ECPs, PCM. cuEST supports both; neither is wired up.
+- ECPs. cuEST supports them; they are not wired up.
+
+PCM is wired up and agrees with PySCF's C-PCM to 1.5% on the dielectric energy
+and 0.0013 D on the solvated dipole (water in water, PBE0/def2-SVP): `cuestPCMIntPlanCreate` on the one-electron plan,
+`cuestPCMPotentialCompute` once per SCF iteration, and the potential added to the
+Fock matrix beside Vxc. cuEST builds the cavity itself, so what is ours is the
+input data -- radii from `mqc_pcm_radii` and the Gaussian switching exponents,
+whose convention has *not* been checked against cuEST's and whose prefactor was
+calibrated against the reference rather than derived. Both spin channels share
+one solve, since the surface charges come from the total density. Gradients are
+bound (`cuestPCMDerivativeCompute`) but not called.
 
 Multi-rank GPU binding is implemented and logged, but has not yet been exercised
 beyond one rank.

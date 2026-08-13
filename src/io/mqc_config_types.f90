@@ -23,6 +23,8 @@ module mqc_config_types
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_CPCM_NANG, DEFAULT_CPCM_RSCALE, &
+                                       DEFAULT_PCM_NANG, DEFAULT_PCM_RSCALE, &
+                                       DEFAULT_PCM_ZETA, &
                                        DEFAULT_FRAG_LEVEL, DEFAULT_MAX_INTERSECTION
    implicit none
    private
@@ -115,6 +117,29 @@ module mqc_config_types
          !! end of the run and marked in the fragment table.
          !! Force UHF/UKS even when the shell is closed
          !! XC functional name, only meaningful when method = dft
+
+      ! keywords.pcm -- the polarizable continuum on the ab initio backends.
+      !
+      ! Deliberately not the xTB solvation keys below. Those configure tblite's
+      ! own CPCM, which builds its own cavity with its own defaults
+      ! (cpcm_rscale is 1.0 there, against the 1.2 conventional for a van der
+      ! Waals cavity), and routing one implementation's settings into another's
+      ! would make two different models look like one keyword.
+      ! Which integral backend to run on: "auto" (default), "cuest"/"gpu", or
+      ! "libcint"/"cpu". A request that the build or the method cannot honour is
+      ! refused, not substituted.
+      character(len=16) :: backend = "auto"
+
+      logical :: pcm_enabled = .false.
+      real(dp) :: pcm_dielectric = -1.0_dp
+         !! Solvent dielectric constant. Required: there is no solvent-name
+         !! table on this path, because inventing one that disagreed with
+         !! tblite's would make the same deck mean two things.
+      integer :: pcm_angular_points = DEFAULT_PCM_NANG
+      real(dp) :: pcm_radii_scale = DEFAULT_PCM_RSCALE
+      real(dp) :: pcm_zeta = DEFAULT_PCM_ZETA
+      real(dp) :: pcm_tolerance = 1.0e-8_dp
+      integer :: pcm_max_iter = 100
 
       ! XTB solvation settings
       character(len=:), allocatable :: solvent  !! Solvent name (e.g., "water", "ethanol") or empty for gas phase
