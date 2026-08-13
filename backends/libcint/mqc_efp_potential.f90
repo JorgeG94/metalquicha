@@ -99,11 +99,33 @@ module mqc_efp_potential
    !! what `QQSHIFT` receives. Nothing in this module can currently distinguish
    !! those two.
    !!
+   !! **The shift's inputs are not the problem either.** GAMESS's own dipole-dipole
+   !! tensors, and its own pre-shift dipole-quadrupole tensor recovered from the
+   !! block above, give bit-for-bit the same 1.317e-01 as ours in all four
+   !! combinations -- and our pre-shift dipole-quadrupole agrees with its recovered
+   !! one to 1.8e-04, which independently confirms both. So what differs is the
+   !! quadrupole-quadrupole response itself, or this transcription of `QQSHIFT`.
+   !!
+   !! **And there is no index freedom left.** `QQSHIFT` preserves symmetry within
+   !! each index pair -- every one of its terms is symmetric in `(a,b)` and in
+   !! `(c,d)` -- so unlike `DQSHIFT`, whose asymmetric terms are exactly what forced
+   !! the transposed slot order there, the written values here are within-pair
+   !! symmetric and all four within-pair readings give the identical 1.317e-01. The
+   !! trick that closed the dipole-quadrupole block cannot even be applied.
+   !!
    !! **What has been eliminated, so the next attempt need not repeat it:** all eight
    !! transposes of the dipole-dipole tensor across the three `delta`-bearing terms;
-   !! the pair-swapped orientation the source's `DLPOL(K,L)` indexing implies; raw
-   !! second moments on either or both sides; a free least-squares fit of all six
-   !! term coefficients; and the trace-nulling fit above.
+   !! the pair-swapped orientation the source's `DLPOL(K,L)` indexing implies, and
+   !! every within-pair and cross-pair index permutation; raw second moments on
+   !! either or both sides, and both mixed combinations, all four constructed
+   !! algebraically from one raw response so the comparison needs no extra run
+   !! (`1.5 Q - 0.5 delta tr Q` per index pair, checked against the directly
+   !! computed traceless response to 1.6e-11); a free least-squares fit of all six
+   !! term coefficients; the trace-nulling fit above; and GAMESS's own shift inputs.
+   !!
+   !! Six independent hypothesis classes, all closed, and the residual does not move
+   !! off 1.3e-01. Unlike the dipole-quadrupole case there is no structural identity
+   !! left to anchor a search, which is why this is recorded rather than guessed at.
    !!
    !! With the factor the forward recipe reaches 1.3e-01 relative, and the residual
    !! sits on the components the `delta` terms touch: 1.6e-01 where both index pairs
