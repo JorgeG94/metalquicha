@@ -40,16 +40,131 @@ REFERENCE = HERE / "reference" / "water_6-31gs_boys.efp"
 POL_ORDER = [(0, 0), (1, 1), (2, 2), (1, 0), (2, 0), (2, 1), (0, 1), (0, 2), (1, 2)]
 
 
+#: libcint's index for each of GAMESS's Cartesian d slots, and the normalization
+#: between the two codes' d functions. Both established in
+#: validation/check_projection.py, which checks them against GAMESS's own
+#: coefficients.
+D_FROM_LIBCINT = [0, 3, 5, 1, 2, 4]
+D_NORMALIZATION = 1.585330892
+
+
+def gamess_primitive_norm(l, exponent):
+    """The factor GAMESS folds into a printed contraction coefficient."""
+    double_factorial = 1.0
+    n = 2*l - 1
+    while n > 1:
+        double_factorial *= n
+        n -= 2
+    return ((2.0*exponent/np.pi)**0.75 * (4.0*exponent)**(l/2.0)
+            / np.sqrt(double_factorial))
+
+
+def projection_basis_lines(atoms, points, basis_name):
+    """PROJECTION BASIS SET, in GAMESS's own columns and normalization.
+
+    Shell types are named the way GAMESS names them, including "L" for a shared-
+    exponent sp pair, because that is what its reader expects -- even though our
+    own basis reader hands libcint the s and p separately. The two land on the same
+    basis functions either way, which is what
+    validation/check_projection.py establishes.
+    """
+    import json
+
+    # basis_sets/ sanitises "*" to "_st_", as the CMake extraction names them.
+    path = REPO / "basis_sets" / (basis_name.replace("*", "_st_") + ".json")
+    table = json.loads(path.read_text())
+    lines = []
+    primitive = 0
+    for index, (symbol, z, xyz) in enumerate(atoms, start=1):
+        valence = z - (0 if z <= 2 else 2 if z <= 10 else 10)
+        # Columns measured off a real MAKEFP file: label in ten, three
+        # coordinates in fifteen each, then the valence electron count in seven.
+        lines.append(f"{points[index - 1][0]:<10}" +
+                     "".join(f"{v:15.10f}" for v in xyz) +
+                     f"{float(valence):7.1f}")
+        for shell in table["elements"][str(z)]["electron_shells"]:
+            angular = shell["angular_momentum"]
+            name = "L" if angular == [0, 1] else {0: "S", 1: "P", 2: "D",
+                                                  3: "F"}[angular[0]]
+            nprim = len(shell["exponents"])
+            lines.append(f"   {name}{nprim:11d}")
+            for j, exponent in enumerate(shell["exponents"]):
+                primitive += 1
+                exponent = float(exponent)
+                values = ""
+                for column, l in enumerate(angular):
+                    coefficient = float(shell["coefficients"][column][j])
+                    values += f"{coefficient*gamess_primitive_norm(l, exponent):15.8f}"
+                lines.append(f"{primitive:6d}{exponent:21.10f}{values}")
+        lines.append("  ")
+    return lines
+
+
+def projection_wavefunction_lines(orbitals, shells):
+    """PROJECTION WAVEFUNCTION: our LMO coefficients in GAMESS's basis order."""
+    nao, n_lmo = orbitals.shape
+    mapped = orbitals.copy()
+    for atom, l, offset, dim in shells:
+        if l == 2 and dim == 6:
+            scale = [D_NORMALIZATION]*3 + [D_NORMALIZATION/np.sqrt(3.0)]*3
+            for slot, (src, factor) in enumerate(zip(D_FROM_LIBCINT, scale)):
+                mapped[offset + slot, :] = orbitals[offset + src, :]*factor
+        elif l >= 2:
+            raise SystemExit(f"no basis-function map for l={l} yet")
+    lines = []
+    for i in range(n_lmo):
+        chunk = 0
+        for start in range(0, nao, 5):
+            chunk += 1
+            values = "".join(f"{v:15.8E}" for v in mapped[start:start + 5, i])
+            lines.append(f"{i + 1:2d}{chunk:3d}{values}")
+    return lines
+
+
+def fock_lines(fock):
+    """FOCK MATRIX ELEMENTS: the lower triangle, four to a line."""
+    values = [fock[i, j] for i in range(fock.shape[0]) for j in range(i + 1)]
+    lines = []
+    for start in range(0, len(values), 4):
+        chunk = values[start:start + 4]
+        marker = " >" if start + 4 < len(values) else ""
+        lines.append("".join(f"{v:16.10f}" for v in chunk) + marker)
+    return lines
+
+
 def load_ours():
     import check_dma
     import check_distributed_polarizability as cdp
+    import check_projection as cproj
 
     dma = check_dma.read_dump(pathlib.Path("/tmp/mqc_dma_1.txt"))
     pol = cdp.read_dump(pathlib.Path("/tmp/mqc_distributed_1.txt"))
-    return dma, pol
+    proj = read_projection(pathlib.Path("/tmp/mqc_projection_1.txt"))
+    return dma, pol, proj
 
 
-def graft(doc, dma, pol):
+def read_projection(path):
+    """The Fock matrix, centroids, LMO coefficients and shell layout."""
+    lines = path.read_text().split("\n")
+    tokens = " ".join(lines).split()
+    basis = tokens[0]
+    values = [float(x) for x in tokens[1:]]
+    nao, n_occ, n_lmo = int(values[0]), int(values[1]), int(values[2])
+    at = 3
+    fock = np.array(values[at:at + n_lmo*n_lmo]).reshape((n_lmo, n_lmo), order="F")
+    at += n_lmo*n_lmo
+    centroids = np.array(values[at:at + 3*n_lmo]).reshape((3, n_lmo), order="F")
+    at += 3*n_lmo
+    orbitals = np.array(values[at:at + nao*n_lmo]).reshape((nao, n_lmo), order="F")
+    at += nao*n_lmo
+    nbas = int(values[at])
+    at += 1
+    shells = [tuple(int(v) for v in values[at + 4*k:at + 4*k + 4]) for k in range(nbas)]
+    return dict(basis=basis, nao=nao, n_occ=n_occ, n_lmo=n_lmo, fock=fock,
+                centroids=centroids, orbitals=orbitals, shells=shells)
+
+
+def graft(doc, dma, pol, proj):
     """Replace what we can compute, leave the rest, and say what was touched."""
     s = doc["sections"]
     touched = []
@@ -83,6 +198,20 @@ def graft(doc, dma, pol):
         s["LMO CENTROIDS"][j]["values"] = [float(v) for v in pol["centroids"][:, i]]
     touched += ["POLARIZABLE POINTS", "LMO CENTROIDS"]
 
+    # The projection data. Raw sections, so they are built as text in GAMESS's own
+    # columns; the basis-function map and the two normalizations these need are
+    # established in validation/check_projection.py against GAMESS's own values.
+    atoms = [("O", 8, dma["points"][:, 0]), ("H", 1, dma["points"][:, 1]),
+             ("H", 1, dma["points"][:, 2])]
+    labels = [(r["label"],) for r in s["COORDINATES"]]
+    s["PROJECTION BASIS SET"] = {
+        "raw": projection_basis_lines(atoms, labels, "6-31g*")}
+    s["PROJECTION WAVEFUNCTION"] = {
+        "raw": projection_wavefunction_lines(proj["orbitals"], proj["shells"])}
+    s["FOCK MATRIX ELEMENTS"] = {"raw": fock_lines(proj["fock"])}
+    touched += ["PROJECTION BASIS SET", "PROJECTION WAVEFUNCTION",
+                "FOCK MATRIX ELEMENTS"]
+
     return touched
 
 
@@ -99,8 +228,8 @@ def main():
     if args.untouched:
         touched = []
     else:
-        dma, pol = load_ours()
-        touched = graft(doc, dma, pol)
+        dma, pol, proj = load_ours()
+        touched = graft(doc, dma, pol, proj)
 
     if args.name:
         doc["name"] = args.name

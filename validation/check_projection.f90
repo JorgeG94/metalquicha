@@ -27,6 +27,8 @@ program check_projection
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_localize, only: boys_localize
+   use mqc_libcint_integrals, only: shell_dim
+   use libcint_fortran, only: LIBCINT_ATOM_OF, LIBCINT_ANG_OF
    use mqc_error, only: error_t
    implicit none
 
@@ -128,6 +130,14 @@ contains
       ! The localized coefficients, in libcint's AO order. The Python works out
       ! the permutation onto GAMESS's, which is what the projection sections need.
       write (unit, "(es25.16e3)") loc
+      ! The shell layout, so the consumer can apply the Cartesian-d permutation
+      ! wherever a d shell happens to sit rather than at a hard-coded offset.
+      write (unit, "(I0)") mol%nbas
+      do k = 1, mol%nbas
+         write (unit, "(4(I0,1X))") mol%bas(LIBCINT_ATOM_OF, k) + 1, &
+            mol%bas(LIBCINT_ANG_OF, k), mol%shell_offset(k), &
+            shell_dim(mol%cartesian, k - 1, mol%bas)
+      end do
       close (unit)
 
       write (*, "(A,A8,A,I0,A,I0,A,ES9.2)") "  ", trim(basis), "  LMOs ", n_lmo, &
