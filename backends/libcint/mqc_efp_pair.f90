@@ -22,6 +22,7 @@ module mqc_efp_pair
    use mqc_elements, only: element_number_to_symbol
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_efp_read, only: efp_fragment_t
+   use mqc_efp_interaction, only: CP_WEIGHT
    use mqc_efp_potential, only: from_gamess_ao_order, frozen_core
    implicit none
    private
@@ -31,6 +32,8 @@ module mqc_efp_pair
    public :: fragment_molecule
    public :: fragment_lmo
    public :: exchange_repulsion
+   public :: dispersion_e6_damped
+   public :: lmo_overlap
 
 contains
 
@@ -85,6 +88,113 @@ contains
          end do
       end do
    end subroutine fragment_basis
+
+   subroutine lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
+      !! Overlap and kinetic energy between two fragments' localized orbitals
+      !!
+      !! `(n_lmo_a, n_lmo_b)`. Both exchange repulsion and the dispersion damping are
+      !! built from this, so it is computed in one place.
+      type(efp_fragment_t), intent(in) :: frag_a, frag_b
+      real(dp), intent(in) :: offset_a(3), offset_b(3)
+      real(dp), allocatable, intent(out) :: s_lmo(:, :), t_lmo(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(libcint_molecule_t) :: pair
+      real(dp), allocatable :: s_ao(:, :), t_ao(:, :), lmo_a(:, :), lmo_b(:, :)
+      real(dp), allocatable :: work(:, :)
+      integer :: n_ao_a
+
+      call two_fragment_molecule(frag_a, frag_b, offset_a, offset_b, pair, n_ao_a, error)
+      if (error%has_error()) return
+      call pair%overlap(s_ao)
+      call pair%kinetic(t_ao)
+      call padded_lmo(frag_a, pair, 0, n_ao_a, lmo_a, error)
+      if (error%has_error()) return
+      call padded_lmo(frag_b, pair, n_ao_a, pair%nao - n_ao_a, lmo_b, error)
+      if (error%has_error()) return
+
+      allocate (work(pair%nao, frag_b%n_lmo_proj))
+      allocate (s_lmo(frag_a%n_lmo_proj, frag_b%n_lmo_proj))
+      allocate (t_lmo(frag_a%n_lmo_proj, frag_b%n_lmo_proj))
+      call pic_gemm(s_ao, lmo_b, work)
+      call pic_gemm(lmo_a, work, s_lmo, transa="T")
+      call pic_gemm(t_ao, lmo_b, work)
+      call pic_gemm(lmo_a, work, t_lmo, transa="T")
+
+      call pair%destroy()
+      deallocate (s_ao, t_ao, lmo_a, lmo_b, work)
+   end subroutine lmo_overlap
+
+   function dispersion_e6_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
+      !! `E6` with GAMESS's overlap-based damping, which is what it reports
+      !!
+      !! The undamped `E6` in `mqc_efp_interaction` is 0.19% from GAMESS's number, and
+      !! this is the difference. GAMESS's output says
+      !! `DISPERSION EFP-EFP SCREENING CHOICE IS USING OVERLAP`, and its default
+      !! `IDISDMP = 1` damps each orbital pair by a Tang-Toennies series in that pair's
+      !! own overlap (`efdrvr.src` around line 2734):
+      !!
+      !!     RB = -2 ln|S_ij|
+      !!     F6 = 1 - S_ij^2 ( 1 + sqrt(RB) + RB/2 + RB^(3/2)/6
+      !!                         + RB^2/24 + RB^(5/2)/120 + RB^3/720 )
+      !!
+      !! and `F6 = 1` where `|S_ij| <= 1e-5`, the series being meaningless once the
+      !! orbitals do not overlap. Note the half-integer powers: the series is in
+      !! `sqrt(RB)`, not in `RB`, so six of its seven terms would be wrong if read as an
+      !! ordinary exponential expansion.
+      type(efp_fragment_t), intent(in) :: frag_a, frag_b
+      real(dp), intent(in) :: offset_a(3), offset_b(3)
+      type(error_t), intent(inout) :: error
+      real(dp) :: energy
+
+      real(dp), parameter :: PI = 3.141592653589793_dp
+      real(dp), parameter :: S_FLOOR = 1.0e-5_dp
+      real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
+      real(dp) :: sep(3)
+      real(dp) :: c6, dist, sab, rb, f6
+      integer :: i, j, k
+
+      energy = 0.0_dp
+      if (.not. (frag_a%has_dynamic .and. frag_b%has_dynamic)) then
+         call error%set(ERROR_VALIDATION, "efp: damped E6 needs the dynamic "// &
+                        "polarizabilities of both fragments")
+         return
+      end if
+      call lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
+      if (error%has_error()) return
+
+      do i = 1, frag_a%n_lmo
+         do j = 1, frag_b%n_lmo
+            c6 = 0.0_dp
+            do k = 1, min(frag_a%n_freq, frag_b%n_freq)
+               c6 = c6 + CP_WEIGHT(k)*isotropic_alpha(frag_a%dyn_pol(:, :, i, k)) &
+                    *isotropic_alpha(frag_b%dyn_pol(:, :, j, k))
+            end do
+            c6 = c6*3.0_dp/PI
+            sep = frag_b%centroids(:, j) + offset_b - frag_a%centroids(:, i) - offset_a
+            dist = sqrt(sep(1)*sep(1) + sep(2)*sep(2) + sep(3)*sep(3))
+
+            f6 = 1.0_dp
+            sab = s_lmo(i, j)
+            if (abs(sab) > S_FLOOR) then
+               rb = -2.0_dp*log(abs(sab))
+               f6 = 1.0_dp - sab*sab*(1.0_dp + sqrt(rb) + rb/2.0_dp &
+                                      + rb**1.5_dp/6.0_dp + rb*rb/24.0_dp &
+                                      + rb**2.5_dp/120.0_dp + rb**3/720.0_dp)
+            end if
+            energy = energy - c6*f6/dist**6
+         end do
+      end do
+      deallocate (s_lmo, t_lmo)
+   end function dispersion_e6_damped
+
+   pure function isotropic_alpha(tensor) result(a)
+      !! A third of the trace
+      real(dp), intent(in) :: tensor(3, 3)
+      real(dp) :: a
+
+      a = (tensor(1, 1) + tensor(2, 2) + tensor(3, 3))/3.0_dp
+   end function isotropic_alpha
 
    function exchange_repulsion(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! Pauli exchange repulsion between two fragments

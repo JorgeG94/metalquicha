@@ -22,7 +22,7 @@ module test_mqc_efp_pair
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
-                           exchange_repulsion
+                           exchange_repulsion, dispersion_e6_damped
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_error, only: error_t
@@ -42,7 +42,8 @@ contains
                   new_unittest("efp_pair_diagonal_blocks", test_blocks), &
                   new_unittest("efp_pair_coupling_falls_off", test_falloff), &
                   new_unittest("efp_lmo_orthonormal", test_lmo), &
-                  new_unittest("efp_exchange_repulsion", test_xr) &
+                  new_unittest("efp_exchange_repulsion", test_xr), &
+                  new_unittest("efp_e6_damped", test_e6d) &
                   ]
    end subroutine collect_mqc_efp_pair_tests
 
@@ -219,6 +220,36 @@ contains
       call a%destroy()
       call b%destroy()
    end subroutine test_xr
+
+   subroutine test_e6d(error)
+      !! Damped E6 against GAMESS's own reported value
+      !!
+      !! The series is in `sqrt(RB)`, not in `RB` -- six of its seven terms carry
+      !! half-integer powers. Read as an ordinary exponential expansion it would be
+      !! wrong in a way that still damps plausibly, which is why the powers are worth
+      !! stating rather than inferring.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+      e = dispersion_e6_damped(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
+                               [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "damped E6 failed")
+      if (allocated(error)) return
+      ! GAMESS's reported E6, which is the damped one. The undamped value is
+      ! -5.1738e-04, so the damping is worth 0.19% here -- and that 0.19% was the whole
+      ! gap between our dispersion and theirs.
+      call check(error, e, -0.0005163981_dp, thr=1.0e-9_dp, &
+                 message="damped E6 disagrees with GAMESS")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_e6d
 
    subroutine test_lmo(error)
       !! The localized orbitals come back orthonormal, which pins the AO conversion

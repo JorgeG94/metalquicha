@@ -37,6 +37,7 @@ module mqc_efp_interaction
    public :: electrostatic_energy
    public :: dispersion_energy_e6
    public :: polarization_energy
+   public :: CP_WEIGHT
 
    !> Components of each stored multipole, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
