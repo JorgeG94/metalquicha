@@ -35,6 +35,7 @@ module mqc_efp_interaction
    public :: efp_system_t
    public :: build_efp_system
    public :: electrostatic_energy
+   public :: dispersion_energy_e6
 
    !> Components of each stored multipole, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
@@ -53,6 +54,19 @@ module mqc_efp_interaction
    integer, parameter :: OCT_J(N_OCTUPOLE) = [1, 2, 3, 1, 1, 2, 2, 3, 3, 2]
    integer, parameter :: OCT_K(N_OCTUPOLE) = [1, 2, 3, 2, 3, 2, 3, 3, 3, 3]
 
+   !> The twelve Casimir-Polder quadrature weights, as GAMESS carries them in
+   !> `efdrvr.src`. They are 12-point Gauss-Legendre weights times the Jacobian of
+   !> `nu = w0 (1 + t)/(1 - t)` at `w0 = 0.3` -- checked against that construction
+   !> rather than only copied, and the two agree to every digit.
+   integer, parameter :: N_FREQUENCIES = 12
+   real(dp), parameter :: CP_WEIGHT(N_FREQUENCIES) = [ &
+                          0.72086099022968040154e-02_dp, 0.17697067815034886394e-01_dp, &
+                          0.30660908596251749739e-01_dp, 0.48381293256249884995e-01_dp, &
+                          0.74878830420650517080e-01_dp, 0.11806515901361630228e+00_dp, &
+                          0.19535413832209084204e+00_dp, 0.35055692324483221824e+00_dp, &
+                          0.71577113554429568336e+00_dp, 1.81409759976323969729e+00_dp, &
+                          6.97923445114870823247e+00_dp, 83.2480938829658453917e+00_dp]
+
    type :: efp_system_t
       !! Several placed fragments, flattened into one set of point arrays
       integer :: n_fragments = 0
@@ -64,6 +78,7 @@ module mqc_efp_interaction
       real(dp), allocatable :: q_nuc(:)          !! Nuclear part, for screening
       real(dp), allocatable :: alpha(:)          !! Exponential damping exponent
       logical :: has_screening = .false.
+      real(dp), allocatable :: offset(:, :)      !! (3, n_fragments), how each was placed
       real(dp), allocatable :: dipole(:, :)      !! (3, n_points)
       real(dp), allocatable :: quad(:, :, :)     !! (3, 3, n_points), symmetric
       real(dp), allocatable :: oct(:, :, :, :)   !! (3, 3, 3, n_points), symmetric
@@ -82,6 +97,7 @@ contains
       if (allocated(self%q_elec)) deallocate (self%q_elec)
       if (allocated(self%q_nuc)) deallocate (self%q_nuc)
       if (allocated(self%alpha)) deallocate (self%alpha)
+      if (allocated(self%offset)) deallocate (self%offset)
       self%has_screening = .false.
       if (allocated(self%dipole)) deallocate (self%dipole)
       if (allocated(self%quad)) deallocate (self%quad)
@@ -125,6 +141,8 @@ contains
 
       system%n_fragments = n_frag
       system%n_points = total
+      allocate (system%offset(3, n_frag))
+      system%offset = translations
       allocate (system%fragment_of(total), system%points(3, total), &
                 system%charge(total), system%q_elec(total), &
                 system%q_nuc(total), system%alpha(total), &
@@ -354,6 +372,71 @@ contains
           *(-qa*(15.0_dp*ob_rrr - 9.0_dp*r2*dot_product(r, ob_tr)) &
             + qb*(15.0_dp*oa_rrr - 9.0_dp*r2*dot_product(r, oa_tr)))*inv7
    end function pair_energy
+
+   function dispersion_energy_e6(system, fragments) result(energy)
+      !! The `E6` dispersion energy, undamped
+      !!
+      !!     E6 = - sum_ij C6_ij / R_ij^6,   C6_ij = (3/pi) sum_k w_k a_i(k) a_j(k)
+      !!
+      !! summed over localized orbitals on different fragments, with `a` the
+      !! isotropic dynamic polarizability -- a third of the tensor trace -- at each
+      !! of the twelve Casimir-Polder frequencies. The form and the factor of
+      !! `3/pi` are GAMESS's, from `efdrvr.src`, and the weights are its own.
+      !!
+      !! **Undamped, where GAMESS reports a damped number.** Its output says
+      !! `DISPERSION EFP-EFP SCREENING CHOICE IS USING OVERLAP`: the damping is
+      !! built from overlaps between the two fragments' localized orbitals, which
+      !! needs integrals over both fragments' basis sets -- the same machinery
+      !! exchange repulsion needs, and not yet present. So this reproduces
+      !! GAMESS's E6 to about two parts in a thousand, that difference being the
+      !! damping and not an error in the coefficient: undamped is larger in
+      !! magnitude, which is the direction damping works in.
+      !!
+      !! Not truncated at the fragment's own points: dispersion sits on the
+      !! localized orbital centroids, which are a different set from the multipole
+      !! expansion points, so it takes the fragments rather than the flattened
+      !! system.
+      type(efp_system_t), intent(in) :: system
+      type(efp_fragment_t), intent(in) :: fragments(:)
+      real(dp) :: energy
+
+      real(dp), parameter :: PI = 3.141592653589793_dp
+      real(dp) :: sep(3)
+      real(dp) :: c6, r6, dist
+      integer :: fa, fb, ia, ib, k
+
+      energy = 0.0_dp
+      do fa = 1, size(fragments) - 1
+         if (.not. fragments(fa)%has_dynamic) cycle
+         do fb = fa + 1, size(fragments)
+            if (.not. fragments(fb)%has_dynamic) cycle
+            do ia = 1, fragments(fa)%n_lmo
+               do ib = 1, fragments(fb)%n_lmo
+                  c6 = 0.0_dp
+                  do k = 1, min(fragments(fa)%n_freq, fragments(fb)%n_freq)
+                     c6 = c6 + CP_WEIGHT(k) &
+                          *isotropic(fragments(fa)%dyn_pol(:, :, ia, k)) &
+                          *isotropic(fragments(fb)%dyn_pol(:, :, ib, k))
+                  end do
+                  c6 = c6*3.0_dp/PI
+                  sep = fragments(fb)%centroids(:, ib) + system%offset(:, fb) &
+                        - fragments(fa)%centroids(:, ia) - system%offset(:, fa)
+                  dist = sqrt(sep(1)*sep(1) + sep(2)*sep(2) + sep(3)*sep(3))
+                  r6 = dist**6
+                  energy = energy - c6/r6
+               end do
+            end do
+         end do
+      end do
+   end function dispersion_energy_e6
+
+   pure function isotropic(tensor) result(a)
+      !! A third of the trace, which is what the isotropic `C6` is built from
+      real(dp), intent(in) :: tensor(3, 3)
+      real(dp) :: a
+
+      a = (tensor(1, 1) + tensor(2, 2) + tensor(3, 3))/3.0_dp
+   end function isotropic
 
    pure function penetration(system, a, b, r) result(e)
       !! Charge-charge penetration between two points

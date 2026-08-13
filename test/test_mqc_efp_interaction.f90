@@ -33,7 +33,7 @@ module test_mqc_efp_interaction
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_interaction, only: efp_system_t, build_efp_system, &
-                                  electrostatic_energy
+                                  electrostatic_energy, dispersion_energy_e6
    use mqc_error, only: error_t
    implicit none
    private
@@ -53,6 +53,12 @@ module test_mqc_efp_interaction
    !> energy for the unmodified potential, screening sections and all.
    real(dp), parameter :: E_SCREENED = 0.004959639_dp
 
+   !> GAMESS's E6, which is overlap-damped, and the undamped value this computes.
+   !> The gap between them is the damping -- two parts in a thousand at this
+   !> separation -- and is expected until inter-fragment overlaps exist.
+   real(dp), parameter :: E6_GAMESS_DAMPED = -0.0005163981_dp
+   real(dp), parameter :: E6_UNDAMPED = -5.173790776e-4_dp
+
    !> The references carry nine decimals.
    real(dp), parameter :: REF_TOL = 1.0e-9_dp
 
@@ -70,6 +76,7 @@ contains
                   new_unittest("efp_through_quadrupole_vs_gamess", test_rank2), &
                   new_unittest("efp_through_octupole_vs_gamess", test_rank3), &
                   new_unittest("efp_screened_vs_gamess", test_screened), &
+                  new_unittest("efp_dispersion_e6", test_e6), &
                   new_unittest("efp_translation_invariance", test_translation), &
                   new_unittest("efp_no_self_interaction", test_no_self) &
                   ]
@@ -212,6 +219,81 @@ contains
                  "the screening correction made no difference")
       call system%destroy()
    end subroutine test_screened
+
+   subroutine test_e6(error)
+      !! Undamped E6 against its own value, and against GAMESS's damped one
+      !!
+      !! Two checks, because neither alone says much. The first pins the
+      !! coefficient: the weights, the factor of `3/pi`, the isotropic average and
+      !! the centroid separations. The second requires it to land within half a
+      !! percent of what GAMESS reports, which is the claim that the *only* thing
+      !! missing is the damping -- a wrong coefficient would not be close, and a
+      !! coefficient that matched exactly would mean GAMESS was not damping after
+      !! all and something else was wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_system_t) :: system
+      type(efp_fragment_t) :: frags(2)
+      type(error_t) :: err
+      real(dp) :: e6
+
+      call dimer_with_fragments(system, frags, err)
+      call check(error,.not. err%has_error(), "building the dimer failed")
+      if (allocated(error)) return
+      call check(error, frags(1)%has_dynamic, "the dynamic polarizabilities were not read")
+      if (allocated(error)) return
+      call check(error, frags(1)%n_freq == 12, "expected twelve frequencies")
+      if (allocated(error)) return
+
+      e6 = dispersion_energy_e6(system, frags)
+      call check(error, e6, E6_UNDAMPED, thr=1.0e-9_dp, &
+                 message="the undamped E6 changed")
+      if (allocated(error)) return
+      call check(error, abs(e6 - E6_GAMESS_DAMPED) < 0.005_dp*abs(E6_GAMESS_DAMPED), &
+                 "undamped E6 is not within half a percent of GAMESS's damped value")
+      if (allocated(error)) return
+      ! And in the direction damping works: undamped is the larger magnitude.
+      call check(error, abs(e6) > abs(E6_GAMESS_DAMPED), &
+                 "undamped E6 should exceed the damped value in magnitude")
+
+      call frags(1)%destroy()
+      call frags(2)%destroy()
+      call system%destroy()
+   end subroutine test_e6
+
+   subroutine dimer_with_fragments(system, frags, err)
+      !! As `dimer`, but handing the fragments back: dispersion sits on the orbital
+      !! centroids, which the flattened point set does not carry.
+      type(efp_system_t), intent(out) :: system
+      type(efp_fragment_t), intent(out) :: frags(2)
+      type(error_t), intent(inout) :: err
+
+      type(efp_potential_t) :: pot
+      real(dp) :: c(3, 3), translations(3, 2)
+      integer :: z(3)
+      character(len=2) :: symbols(3)
+      character(len=*), parameter :: path = "test_efp_disp.efp"
+
+      z = [8, 1, 1]
+      symbols = ["O ", "H ", "H "]
+      c = reshape([0.00000000000000_dp, 0.00000000009155_dp, 0.10077199490609_dp, &
+                   0.00000000000000_dp, 0.77250895271063_dp, -0.46780199741728_dp, &
+                   0.00000000000000_dp, -0.77250895280218_dp, -0.46780199748881_dp], &
+                  [3, 3])*ANG
+      call make_efp_potential(z, symbols, c, "6-31g*", "WATER", pot, err)
+      if (err%has_error()) return
+      call write_efp_potential(pot, path, err)
+      if (err%has_error()) return
+      call read_efp_potential(path, frags(1), err)
+      if (err%has_error()) return
+      call read_efp_potential(path, frags(2), err)
+      if (err%has_error()) return
+      translations = 0.0_dp
+      translations(1, 2) = SEPARATION*ANG
+      call build_efp_system(frags, translations, system, err)
+      call pot%destroy()
+      call delete(path)
+   end subroutine dimer_with_fragments
 
    subroutine test_translation(error)
       !! Moving the whole system must not change its internal energy

@@ -41,6 +41,15 @@ module mqc_efp_read
    !> A dynamic polarizability record: a centroid then a 3x3 tensor.
    integer, parameter :: N_DYNAMIC_RECORD = 12
 
+   !> Row and column of each of GAMESS's nine polarizability slots. The diagonal
+   !> comes first and the off-diagonal triples are the transpose of what its labels
+   !> suggest -- the same map `mqc_efp_potential` writes with, established there
+   !> against GAMESS's own output. Reading these nine as a row-major 3x3 gives a
+   !> tensor whose trace is negative, which is how the mistake announces itself.
+   integer, parameter :: N_POL_SLOTS = 9
+   integer, parameter :: POL_ROW(N_POL_SLOTS) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
+   integer, parameter :: POL_COL(N_POL_SLOTS) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
+
    !> Longest line a potential is expected to carry, matching the writer's own.
    integer, parameter :: MAX_LINE = 160
 
@@ -230,7 +239,7 @@ contains
       type(efp_fragment_t), intent(inout) :: frag
       type(error_t), intent(inout) :: error
 
-      integer :: start, finish, i, k, n_rec, n_blocks, lmo, freq, row, col
+      integer :: start, finish, i, k, n_rec, n_blocks, lmo, freq
       integer :: per_block
       character(len=:), allocatable :: joined, rest
       character(len=MAX_LINE) :: text
@@ -262,7 +271,7 @@ contains
       i = start
       do while (i <= finish)
          new_block = index(lines(i), "FOR W=") > 0
-         call join_record(lines, i, finish, joined)
+         call join_dynamic(lines, i, finish, joined)
          if (len_trim(joined) == 0) cycle
          if (new_block) n_blocks = n_blocks + 1
          n_rec = n_rec + 1
@@ -291,7 +300,7 @@ contains
             lmo = 0
             call frequency_of(lines(i), frag%frequencies(freq))
          end if
-         call join_record(lines, i, finish, joined)
+         call join_dynamic(lines, i, finish, joined)
          if (len_trim(joined) == 0) cycle
          lmo = lmo + 1
          ! The label is two tokens, `CT` and its index, so three coordinates and
@@ -306,14 +315,62 @@ contains
             end if
          end do
          if (freq == 1) frag%centroids(:, lmo) = values(1:3)
-         do col = 1, 3
-            do row = 1, 3
-               frag%dyn_pol(row, col, lmo, freq) = values(3 + (row - 1)*3 + col)
-            end do
+         do k = 1, N_POL_SLOTS
+            frag%dyn_pol(POL_ROW(k), POL_COL(k), lmo, freq) = values(3 + k)
          end do
       end do
       frag%has_dynamic = .true.
    end subroutine read_dynamic
+
+   subroutine join_dynamic(lines, i, finish, joined)
+      !! One dynamic-polarizability record: its label line plus its tensor lines
+      !!
+      !! **This section cannot use `join_record`.** There, a record is continued
+      !! only where a line ends in `>`, and here the label line does not -- the
+      !! tensor starts on the line *after* it, and the `>` marks continue within the
+      !! tensor. Reading it the general way makes each tensor line a record of its
+      !! own, which is how this announced itself: the record count stopped dividing
+      !! by the frequency count.
+      !!
+      !! The frequency tag is dropped: everything from `--` onwards is a comment on
+      !! the label line, not data.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(inout) :: i
+      integer, intent(in) :: finish
+      character(len=:), allocatable, intent(out) :: joined
+
+      character(len=MAX_LINE) :: text
+      integer :: cut
+      logical :: continued
+
+      joined = ""
+      if (i > finish) return
+      text = lines(i)
+      i = i + 1
+      cut = index(text, "--")
+      if (cut > 0) then
+         joined = trim(text(1:cut - 1))
+      else
+         joined = trim(text)
+      end if
+
+      do
+         if (i > finish) exit
+         text = lines(i)
+         ! A new label line means this record is done; do not consume it.
+         if (index(adjustl(text), "CT") == 1) exit
+         i = i + 1
+         cut = index(text, ">")
+         continued = cut > 0
+         if (continued) then
+            joined = joined//" "//trim(text(1:cut - 1))
+         else
+            joined = joined//" "//trim(text)
+         end if
+         if (.not. continued) exit
+      end do
+      joined = adjustl(joined)
+   end subroutine join_dynamic
 
    function strip_tokens(text, n) result(rest)
       !! `text` with its first `n` whitespace-separated tokens removed
