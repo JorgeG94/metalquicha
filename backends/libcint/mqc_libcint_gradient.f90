@@ -195,7 +195,8 @@ contains
       real(dp), intent(inout) :: gradient(:, :)
 
       integer :: ia, ib
-      real(dp) :: rvec(3), r
+      real(dp) :: rvec(3)
+      real(dp) :: r
 
       do ia = 1, mol%natm
          do ib = 1, mol%natm
@@ -372,12 +373,13 @@ contains
       !! exchange takes that spin alone and the coefficient is one rather than
       !! a half.
       !!
-      !! **No permutational symmetry.** A differentiated quartet has none of
-      !! the eightfold symmetry of an ordinary one -- the nabla distinguishes
-      !! the first index from the second, and the bra from the ket -- so this
-      !! walks every quartet. That is eight times the work of an energy build
-      !! and is the honest starting point; the symmetry that does survive
-      !! (k <-> l) is worth exploiting once this is known to be right.
+      !! **One permutation survives, and it is used.** A differentiated quartet
+      !! has none of the eightfold symmetry of an ordinary one: the nabla
+      !! distinguishes the first index from the second and the bra from the
+      !! ket. What is left untouched is the ket pair, `(∇i j|k l) = (∇i j|l k)`,
+      !! so this walks `l <= k` and counts the off-diagonal pair twice -- once
+      !! as itself and once transposed, which is not the same contraction and
+      !! has to be written out rather than doubled.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: vhf(:, :, :)
@@ -385,20 +387,22 @@ contains
       real(dp), intent(in), optional :: exchange_density(:, :)
 
       real(dp), allocatable :: buf(:), vj(:, :, :), vk(:, :, :)
+      real(dp), allocatable :: vj_local(:, :, :), vk_local(:, :, :)
       real(dp), allocatable :: exchange_from(:, :)
       real(dp) :: g, k_scale
       type(c_ptr) :: opt
       integer :: shls(4)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
-      integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx
+      integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx, nao, nbas
 
       mx = largest_shell(mol)
-      allocate (buf(mx**4*3))
-      allocate (vj(mol%nao, mol%nao, 3), vk(mol%nao, mol%nao, 3))
+      nao = mol%nao
+      nbas = mol%nbas
+      allocate (vj(nao, nao, 3), vk(nao, nao, 3))
       vj = 0.0_dp
       vk = 0.0_dp
 
-      allocate (exchange_from(mol%nao, mol%nao))
+      allocate (exchange_from(nao, nao))
       if (present(exchange_density)) then
          exchange_from = exchange_density
          k_scale = 1.0_dp
@@ -414,26 +418,44 @@ contains
          call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
       end if
 
-      do ish = 1, mol%nbas
+      ! Thread-local accumulators merged once, rather than atomics on a shared
+      ! matrix: the inner update is two scattered writes per integral, and
+      ! making those atomic costs more than the integral. The price is
+      ! 2 * nao^2 * 3 doubles per thread, which is worth watching on a few
+      ! thousand functions -- the same caveat the direct Fock build carries.
+      !
+      ! schedule(dynamic) because the l <= k triangle makes the work per ish
+      ! uneven, and a static split leaves threads idle on the tail.
+      !$omp parallel default(none) &
+      !$omp    shared(mol, density, exchange_from, opt, vj, vk, mx, nao, nbas) &
+      !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local)
+      allocate (buf(mx**4*3))
+      allocate (vj_local(nao, nao, 3), vk_local(nao, nao, 3))
+      vj_local = 0.0_dp
+      vk_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
+      do ish = 1, nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
-         do jsh = 1, mol%nbas
+         do jsh = 1, nbas
             dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
             jo = mol%shell_offset(jsh)
-            do ksh = 1, mol%nbas
+            do ksh = 1, nbas
                dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
                ko = mol%shell_offset(ksh)
-               do lsh = 1, mol%nbas
+               do lsh = 1, ksh
                   dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
                   lo = mol%shell_offset(lsh)
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
 
                   if (mol%cartesian) then
                      ret = libcint_2e_ip1_cart(buf, shls, mol%atm, mol%natm, &
-                                               mol%bas, mol%nbas, mol%env, opt)
+                                               mol%bas, nbas, mol%env, opt)
                   else
                      ret = libcint_2e_ip1_sph(buf, shls, mol%atm, mol%natm, &
-                                              mol%bas, mol%nbas, mol%env, opt)
+                                              mol%bas, nbas, mol%env, opt)
                   end if
                   if (ret == 0) cycle
 
@@ -444,10 +466,18 @@ contains
                               do i = 1, di
                                  idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
                                  g = buf(idx)
-                                 vj(io + i, jo + j, comp) = vj(io + i, jo + j, comp) &
-                                                            + g*density(lo + l, ko + k)
-                                 vk(io + i, lo + l, comp) = vk(io + i, lo + l, comp) &
-                                                            + g*exchange_from(jo + j, ko + k)
+                                 vj_local(io + i, jo + j, comp) = vj_local(io + i, jo + j, comp) &
+                                                                  + g*density(lo + l, ko + k)
+                                 vk_local(io + i, lo + l, comp) = vk_local(io + i, lo + l, comp) &
+                                                                  + g*exchange_from(jo + j, ko + k)
+                                 ! The transposed ket pair. Skipped on the
+                                 ! diagonal, where it is the same quartet.
+                                 if (lsh /= ksh) then
+                                    vj_local(io + i, jo + j, comp) = vj_local(io + i, jo + j, comp) &
+                                                                     + g*density(ko + k, lo + l)
+                                    vk_local(io + i, ko + k, comp) = vk_local(io + i, ko + k, comp) &
+                                                                     + g*exchange_from(jo + j, lo + l)
+                                 end if
                               end do
                            end do
                         end do
@@ -457,13 +487,21 @@ contains
             end do
          end do
       end do
+      !$omp end do
+
+      !$omp critical
+      vj = vj + vj_local
+      vk = vk + vk_local
+      !$omp end critical
+      deallocate (buf, vj_local, vk_local)
+      !$omp end parallel
 
       call libcint_del_optimizer(opt)
 
       ! Minus, for the same reason the one-electron ones carry it: libcint
       ! returns the nabla on the bra, and the derivative with respect to the
       ! atom is its negative.
-      allocate (vhf(mol%nao, mol%nao, 3))
+      allocate (vhf(nao, nao, 3))
       vhf = -(vj - k_scale*vk)
 
    end subroutine two_electron_deriv

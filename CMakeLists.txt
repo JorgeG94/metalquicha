@@ -471,6 +471,13 @@ if(MQC_ENABLE_LIBXC)
 endif()
 
 if(MQC_ENABLE_LIBCINT)
+  add_executable(bench_scf_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/bench_scf_gradient.f90)
+  target_include_directories(bench_scf_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(bench_scf_gradient PRIVATE ${main_lib} cint_fortran
+                                                   cint)
+
   add_executable(bench_df_k ${PROJECT_SOURCE_DIR}/validation/bench_df_k.f90)
   target_include_directories(bench_df_k PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(bench_df_k PRIVATE ${main_lib} cint_fortran cint)

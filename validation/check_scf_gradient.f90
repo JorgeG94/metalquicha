@@ -85,7 +85,8 @@ contains
       integer, intent(inout) :: n_bad
 
       real(dp), allocatable :: analytic(:, :), numeric(:, :)
-      real(dp) :: worst, translation(3)
+      real(dp) :: translation(3)
+      real(dp) :: worst
       integer :: natm, ia, ic
       type(error_t) :: error
 
