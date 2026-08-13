@@ -481,6 +481,14 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_cphf PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_cphf PRIVATE ${main_lib} cint_fortran cint)
 
+  # The projection data a potential carries: the LMO Fock matrix, which needs no
+  # basis ordering, against GAMESS's own.
+  add_executable(check_projection
+                 ${PROJECT_SOURCE_DIR}/validation/check_projection.f90)
+  target_include_directories(check_projection
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_projection PRIVATE ${main_lib} cint_fortran cint)
+
   # Distributed multipoles: the sum rule in Fortran, needing no reference, then
   # the distribution itself against GAMESS in Python.
   add_executable(check_dma ${PROJECT_SOURCE_DIR}/validation/check_dma.f90)
