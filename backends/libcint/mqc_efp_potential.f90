@@ -213,6 +213,15 @@ contains
       if (talk) write (*, "(A,A,A,I0,A)") "  basis ", trim(basis_name), ", ", &
          mol%nao, " functions"
 
+      ! Checked here, not where the ordering map needs it. The map runs after the
+      ! SCF, the localization and every response solve, so a basis this cannot emit
+      ! would otherwise be refused several minutes in.
+      call check_angular_form(mol, error)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+
       call run_libcint_rhf(mol, sum(atomic_numbers), 200, 1.0e-12_dp, 1.0e-10_dp, &
                            .false., scf, error)
       if (error%has_error()) then
@@ -575,6 +584,31 @@ contains
       end do
    end function frozen_core
 
+   subroutine check_angular_form(mol, error)
+      !! Refuse a basis whose angular form this cannot write
+      !!
+      !! **The ordering map is Cartesian s, p and d, and both codes have to agree on
+      !! that.** GAMESS defaults ISPHER = -1, Cartesian, which is what a Pople set
+      !! wants -- the Basis Set Exchange declares 6-31G*'s d Cartesian too, so the
+      !! validated path lines up without either side being asked.
+      !!
+      !! A Dunning or def2 set is not simply unsupported: BSE declares those
+      !! spherical and GAMESS will not run them Cartesian, so both sides would agree
+      !! on spherical. What is missing is the spherical ordering map and `ISPHER=1`
+      !! in the deck, not the possibility. Emitting 58 orbitals where the reader
+      !! expands 65 would be rejected or read as nonsense, so it is refused.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(error_t), intent(inout) :: error
+
+      if (.not. mol%cartesian) then
+         call error%set(ERROR_VALIDATION, &
+                        "makefp: this basis is spherical and only Cartesian s, p "// &
+                        "and d are mapped to GAMESS's ordering. GAMESS reads a "// &
+                        "spherical potential with ISPHER=1, so this needs a "// &
+                        "spherical ordering map rather than a Cartesian basis.")
+      end if
+   end subroutine check_angular_form
+
    subroutine to_gamess_ao_order(mol, coefficients, mapped, error)
       !! Orbital coefficients in the AO order and normalization GAMESS reads
       !!
@@ -588,26 +622,6 @@ contains
 
       integer :: ish, l, off, dim, slot
       real(dp) :: scale
-
-      ! **The map below is Cartesian s, p and d, and the two codes have to agree on
-      ! that.** GAMESS defaults ISPHER = -1, which is Cartesian, and that is what a
-      ! Pople set wants -- 6-31G* is the validated path and the Basis Set Exchange
-      ! declares its d Cartesian, so both sides line up without either being asked.
-      !
-      ! A Dunning or def2 set is a different matter and not simply unsupported: BSE
-      ! declares those spherical, and GAMESS will not run them Cartesian, so both
-      ! sides would agree on spherical too. What is missing there is the spherical
-      ! ordering map and `ISPHER=1` in the deck, not the possibility. Refused here
-      ! rather than in the shell loop below, which would blame a missing angular
-      ! momentum for what is really a difference in the angular form.
-      if (.not. mol%cartesian) then
-         call error%set(ERROR_VALIDATION, &
-                        "makefp: this basis is spherical and only Cartesian s, p "// &
-                        "and d are mapped to GAMESS's ordering. GAMESS reads a "// &
-                        "spherical potential with ISPHER=1, so this needs a "// &
-                        "spherical ordering map rather than a Cartesian basis.")
-         return
-      end if
 
       allocate (mapped(size(coefficients, 1), size(coefficients, 2)))
       mapped = coefficients
