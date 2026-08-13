@@ -88,6 +88,11 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_efp_interaction)
   target_link_libraries(test_mqc_efp_interaction PRIVATE cint_fortran cint)
 
+  # A molecule spanning two fragments, checked by the block structure of its own
+  # overlap: the diagonal blocks must be each fragment's overlap exactly.
+  addtest(mqc_efp_pair)
+  target_link_libraries(test_mqc_efp_pair PRIVATE cint_fortran cint)
+
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.

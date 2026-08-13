@@ -31,4 +31,5 @@ target_sources(
           mqc_libcint_xc.F90
           mqc_efp_potential.f90
           mqc_efp_read.f90
-          mqc_efp_interaction.f90)
+          mqc_efp_interaction.f90
+          mqc_efp_pair.f90)
