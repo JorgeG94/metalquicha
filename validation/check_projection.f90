@@ -140,6 +140,10 @@ contains
             mol%bas(LIBCINT_ANG_OF, k), mol%shell_offset(k), &
             shell_dim(mol%cartesian, k - 1, mol%bas)
       end do
+      ! All the canonical MOs, in libcint's AO order, appended last so the readers
+      ! that parse this file positionally are unaffected. CTVEC is 5 occupied plus
+      ! 2 valence virtuals, so the canonical set is what to test it against.
+      write (unit, "(es25.16e3)") scf%orbitals
       close (unit)
 
       write (*, "(A,A8,A,I0,A,I0,A,ES9.2)") "  ", trim(basis), "  LMOs ", n_lmo, &

@@ -101,10 +101,26 @@ GAMESS's -- as an all-EFP job and compares the energy terms GAMESS reports.
 | term | ours vs GAMESS | |
 |---|---|---|
 | exchange repulsion | **0** | exact |
-| polarization | 1.2e-09 | |
+| charge transfer | **0** | exact, against `water_6-31gs_cmo.efp` |
 | electrostatics | 1.0e-10 | with `--screen-from-gamess` |
+| polarization | 1.2e-09 | |
+| dispersion E6 | 1.7e-09 | |
+| dispersion E7 | 4.0e-10 | |
+| dispersion E8 | 2.0e-07 | |
+| dispersion total | 2.0e-07 | |
 | electrostatics | 4.4e-05 | with our own screening fit |
-| dispersion | 4.9e-04 | we write one of the three blocks it needs |
+
+All seventeen sections GAMESS's reader recognises are written, so every EFP energy
+component above comes from parameters this codebase computed.
+
+**Two `CTVEC` forms, and they are different bases.** By default MAKEFP writes five
+occupied orbitals plus two quasi-atomic valence virtuals built by `VVOS`; with
+`$MAKEFP CTVVO=.FALSE.` it writes the whole canonical MO matrix instead, which is
+the form we emit and the one GAMESS itself recommends when the valence virtuals
+cannot be formed. GAMESS reads either. Compared against `water_6-31gs_boys.efp`
+charge transfer therefore differs by 2.6e-05 -- 38 EFP MOs against 14, a larger
+virtual space -- and against `water_6-31gs_cmo.efp` it agrees exactly. That second
+file is here for exactly this reason.
 
 **Three things about the deck, each of which cost a run to find.** An all-EFP
 system needs `COORD=FRAGONLY` and *no* `$DATA` group -- with `$DATA` GAMESS asks

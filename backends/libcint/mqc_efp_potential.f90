@@ -17,15 +17,24 @@ module mqc_efp_potential
    !! So this is the assembly, and it is where a run turns into a fragment
    !! someone else can use.
    !!
-   !! **Sixteen of the seventeen sections GAMESS's reader recognises.**
-   !! `CTVEC DYNAMIC
-   !! POLARIZABLE POINTS` and `CTVEC` are
-   !! not written, because we cannot reproduce GAMESS's values for them -- see the
-   !! record in `mqc_libcint_cphf`, which ends in two span arguments showing the
-   !! discrepancy is neither a rearrangement nor a translation of what we compute.
-   !! `write_efp_potential` therefore reports what it omitted rather than emitting
-   !! a plausible guess: a wrong dispersion tensor in a file someone runs is worse
-   !! than an absent one, and their absence is legible to a reader of the file.
+   !! **All seventeen sections GAMESS's reader recognises are written**, so a
+   !! potential from this module is a complete fragment: electrostatics to octupole
+   !! with charge-penetration screening, polarization, exchange repulsion,
+   !! dispersion through `E6`, `E7` and `E8`, and charge transfer.
+   !!
+   !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
+   !! subsection of `CTVEC`, accepted only directly behind one, so the two are
+   !! written together and share a `STOP` -- see the comment where they are emitted.
+   !! That is not a detail: a standalone `CTFOK` makes GAMESS abort, and it was found
+   !! by handing a file to GAMESS rather than by reading its output, because every
+   !! parameter in that file already agreed with GAMESS's own.
+   !!
+   !! **The formats are GAMESS's reader's, not its writer's.** Free-form values in
+   !! measured columns with the continuation markers each section expects. Byte
+   !! identity with MAKEFP's output would be a much larger job for no extra
+   !! confidence, since the test that matters is whether GAMESS accepts the file and
+   !! agrees with the energies it computes from it -- which is what
+   !! `tools/efp_validation/dimer_energy.py` asks it.
    !!
    !! **`LMOQQPOL` is written, and validated by the energy rather than the tensor.**
    !! Its 81 values are `QQL_SFT(3,3,3,3)` with the last index fastest, and its
@@ -156,6 +165,9 @@ module mqc_efp_potential
       real(dp), allocatable :: frequencies(:)         !! Imaginary, a.u.
       real(dp), allocatable :: fock_lmo(:, :)         !! (n_lmo, n_lmo)
       real(dp), allocatable :: orbitals(:, :)         !! LMOs in GAMESS's AO order
+      real(dp), allocatable :: canonical(:, :)
+         !! All the canonical MOs, in GAMESS's AO order. `CTVEC` in its
+         !! canonical-orbital form is exactly this matrix.
       real(dp), allocatable :: eps_occ(:)             !! CTFOK
       real(dp), allocatable :: screen2(:)             !! Exponential alpha per point
       real(dp), allocatable :: screen(:)              !! Gaussian alpha per point
@@ -189,6 +201,7 @@ contains
       if (allocated(self%frequencies)) deallocate (self%frequencies)
       if (allocated(self%fock_lmo)) deallocate (self%fock_lmo)
       if (allocated(self%orbitals)) deallocate (self%orbitals)
+      if (allocated(self%canonical)) deallocate (self%canonical)
       if (allocated(self%eps_occ)) deallocate (self%eps_occ)
       if (allocated(self%screen2)) deallocate (self%screen2)
       if (allocated(self%screen)) deallocate (self%screen)
@@ -366,6 +379,19 @@ contains
       call pic_gemm(w, scaled, pot%fock_lmo, transa="T")
 
       call to_gamess_ao_order(mol, loc, pot%orbitals, error)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+
+      ! The charge-transfer basis. `CTVEC` has two forms in GAMESS and this is the
+      ! second: with `$MAKEFP CTVVO=.FALSE.` it writes the whole canonical MO
+      ! matrix and the header `CTVEC NA NUM` (`efinp.src`, the branch labelled
+      ! CMO), where the default path writes `NOCC` occupied orbitals plus a set of
+      ! quasi-atomic valence virtuals built by `VVOS`. The canonical form needs no
+      ! extra machinery and is what GAMESS itself recommends when the valence
+      ! virtuals cannot be formed -- "PLEASE TRY IT AGAIN WITH CANONICAL ORBITALS".
+      call to_gamess_ao_order(mol, scf%orbitals, pot%canonical, error)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -963,6 +989,18 @@ contains
 
       ! Beta is frozen at one, as MAKEFP freezes it: its ICFIX flag fixes the
       ! prefactor and fits the exponent alone.
+      ! Charge transfer, in the canonical-orbital form: the header carries the
+      ! occupied count and the number of vectors, then the whole MO matrix in the
+      ! same five-to-a-line layout the projection wavefunction uses. `CTFOK` is a
+      ! *subsection* of this one, not a section of its own -- GAMESS's reader looks
+      ! for it only directly behind a `CTVEC` block and aborts on a standalone one --
+      ! so the two are written together and share one `STOP`.
+      write (unit, "(A,I8,A,I8)") " CTVEC   ", pot%n_occ, "  ", pot%nao
+      call write_wavefunction(unit, pot%canonical)
+      write (unit, "(A)") " CTFOK   "
+      call write_values(unit, pot%eps_occ, 16, 10, 4)
+      write (unit, "(A)") " STOP"
+
       write (unit, "(A,F8.3,A)") "SCREEN2      (FROM VDWSCL=", pot%vdwscl, ")"
       do i = 1, pot%n_points
          write (unit, "(1X,A8,2F14.9)") pot%labels(i), 1.0_dp, pot%screen2(i)
@@ -979,7 +1017,7 @@ contains
       close (unit)
 
       if (present(omitted)) then
-         omitted = "CTVEC (with CTFOK)"
+         omitted = "nothing"
       end if
    end subroutine write_efp_potential
 

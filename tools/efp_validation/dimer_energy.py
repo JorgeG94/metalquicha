@@ -33,6 +33,14 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parent.parent
+#: The default reference. Its `CTVEC` is the *valence virtual orbital* form -- five
+#: occupied orbitals plus two quasi-atomic virtuals built by GAMESS's `VVOS` -- while
+#: we write the canonical-orbital form, all of the MOs. Both are legitimate and
+#: GAMESS reads either, but they are different charge-transfer bases, so comparing
+#: against this file leaves charge transfer differing by 2.6e-05 for a reason that is
+#: not an error. `water_6-31gs_cmo.efp` is the same molecule and basis with
+#: `$MAKEFP CTVVO=.FALSE.`, which is the apples-to-apples comparison and where the
+#: term agrees exactly.
 REFERENCE = HERE / "reference" / "water_6-31gs_boys.efp"
 GAMESS = REPO.parent / "mgga" / "gamess"
 
@@ -65,7 +73,9 @@ TERMS = {
     "dispersion E7": r"E7 DISPERSION ENERGY\s*=\s*(-?\d+\.\d+)",
     "dispersion E8": r"E8 DISPERSION ENERGY\s*=\s*(-?\d+\.\d+)",
     "dispersion total": r"TOTAL DISPERSION ENERGY\(E6\+E7\+E8\)\s*=\s*(-?\d+\.\d+)",
-    "charge transfer": r"CHARGE TRANSFER ENERGY\s*=\s*(-?\d+\.\d+)",
+    # GAMESS spells it ENRGY, not ENERGY. Matching the correct spelling finds
+    # nothing and reports the term missing, which is how it hid for a while.
+    "charge transfer": r"CHARGE TRANSFER ENRGY\s*=\s*(-?\d+\.\d+)",
 }
 
 
@@ -241,10 +251,7 @@ def main():
             continue
         gap = abs(a - b)
         mark = ""
-        if key == "charge transfer":
-            # Needs CTVEC, which we do not write.
-            mark = "  (needs CTVEC, which we do not write)"
-        elif key == "electrostatic" and gap > args.tol and not args.screen_from_gamess:
+        if key == "electrostatic" and gap > args.tol and not args.screen_from_gamess:
             # The screening fit is known to differ -- ours finds a real minimum
             # where GAMESS's search reaches its alpha = 10 "off" bound, which is
             # an absorbing state its objective is flat in. Rerunning with
