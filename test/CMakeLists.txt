@@ -76,6 +76,12 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_uhf)
   target_link_libraries(test_mqc_libcint_uhf PRIVATE cint_fortran cint)
 
+  # A fragment potential written and read back. The format is GAMESS's, so
+  # writer and reader are two halves of one thing and a round trip is what pins
+  # them.
+  addtest(mqc_efp_read)
+  target_link_libraries(test_mqc_efp_read PRIVATE cint_fortran cint)
+
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.
