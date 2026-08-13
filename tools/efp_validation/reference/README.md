@@ -147,3 +147,38 @@ dipole-dipole dynamic polarizabilities and GAMESS builds `E6` from them, so it
 reports a dispersion energy from our file -- that section is live, not merely
 present. GAMESS's own value additionally contains `E7` and `E8` from the two
 blocks we cannot write, so the two numbers are not comparable term by term.
+
+
+## What sets the floor on the agreement
+
+Not the integrals and not the units, both of which are checkable:
+
+* GAMESS reports `FINAL RHF ENERGY IS -76.0105013381` for the reference geometry
+  and this code gets `-76.0105013381` -- identical to all ten printed digits, so
+  libcint and GAMESS's Rys quadrature agree far below anything visible in the
+  parameters;
+* everything is computed and written in Bohr, from a geometry converted with
+  GAMESS's own old CODATA value `0.52917724924`, so no unit conversion is left to
+  disagree about.
+
+**It is the basis table.** Comparing the `PROJECTION BASIS SET` block we emit
+against GAMESS's own, 5 of 42 numbers differ and all five are *exponents* -- the
+contraction coefficients are exact:
+
+```
+ours   15.5396162500      GAMESS 15.5396162453
+ours    2.8253943650      GAMESS  2.8253943648
+```
+
+Worst relative difference 3.0e-10. Basis Set Exchange ships `15.53961625` to ten
+significant figures and GAMESS's internal `N31` table carries more, so our JSON is
+the truncated one. That is the floor under the 1e-10 to 1e-09 agreements above, and
+it is the same class of problem noted for the PySCF ab initio references: feeding a
+code a basis table that differs in the tenth digit looks exactly like a bug in
+whichever code you are checking.
+
+**The one term this does not explain is `E8`, at 2.0e-07.** That is three orders
+above this floor. It is the per-orbital pair-antisymmetric difference in `LMOQQPOL`
+described in `backends/libcint/mqc_efp_potential.f90`, which is structural rather
+than numerical -- worth keeping distinct, because "it is just the basis" is a
+comfortable and wrong explanation for it.
