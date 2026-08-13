@@ -35,14 +35,29 @@ module mqc_efp_potential
    !! computes. Subtracting that shift from GAMESS's values recovers a tensor
    !! symmetric in both index pairs to 4.4e-16, which validates the formula and the
    !! index reading, and the recovered tensor is our quadrupole-quadrupole response
-   !! times **exactly 1/3** -- median ratio 0.333333 in all four index-pattern
-   !! groups, so a constant rather than a component-dependent convention.
+   !! times roughly 1/3.
    !!
-   !! With that factor the forward recipe reaches 1.3e-01 relative at scale 0.987,
-   !! down from nothing. What is *not* yet explained: unlike the
-   !! dipole-quadrupole case, the residual is not purely a trace -- removing the
-   !! traces in both pairs leaves 1.0e-01 -- so a further operator convention
-   !! differs, not just a `delta` term. It is not written until that is closed.
+   !! **That factor is not exact, and an earlier version of this comment said it
+   !! was.** The median ratio is 0.3333 in every one of the four index-pattern
+   !! groups, which is what made it look like a clean constant, but the best single
+   !! scale is 0.3312 and the ratio scatters over [0.312, 0.354] between the 16th
+   !! and 84th percentiles -- 5.8% residual, far above the 1.7e-04 this block's
+   !! numbers are printed to. So 1/3 is the leading behaviour and something
+   !! structural sits on top of it. Quoting the median as the relation was the same
+   !! error as reading a global scale fit off a tensor whose components follow
+   !! different conventions, which is what a scale fit did on the dipole-quadrupole
+   !! block before the index order was pinned.
+   !!
+   !! With the factor the forward recipe reaches 1.3e-01 relative, and the residual
+   !! sits on the components the `delta` terms touch: 1.6e-01 where both index pairs
+   !! are diagonal against 2.6e-02 where neither is. Transposing the dipole-dipole
+   !! tensor in any combination of those terms makes it worse, which is the fix that
+   !! worked for `DQSHIFT`. And a least-squares fit of all six term coefficients over
+   !! all 3888 values returns no clean fraction and only improves to 1.28e-01, so the
+   !! reference is not in the span of our tensor plus the five shift terms -- the
+   !! quadrupole-quadrupole response itself still differs, as the dipole-quadrupole
+   !! one appeared to before its operator convention was found. Not written until
+   !! that closes.
    !!
    !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
    !! subsection of `CTVEC`, accepted only directly behind one, so it goes when
