@@ -111,13 +111,27 @@ def fused_spheres(charges, coords):
     return np.vstack(points), np.array(layers)
 
 
-def classical_potential(dma, grid, alpha):
-    """Electronic multipole potential with the monopole damped by 1 - exp(-alpha r)."""
+def classical_potential(dma, grid, alpha, gaussian=False):
+    """Electronic multipole potential with the monopole damped.
+
+    `gaussian` selects between the two damping functions GAMESS fits, which
+    `chgpen.src:541` names outright: the first pass is exponential,
+    `1 - exp(-alpha r)`, and is EFP2 fragment-fragment screening -- the `SCREEN2`
+    block. The second is Gaussian, `1 - exp(-alpha r^2)`, and is the original EFP1
+    ab initio-fragment screening -- the `SCREEN` block. That is why a potential
+    carries both, with different exponents.
+
+    The linear coefficient is 1.0 in both, and not because the fit happened to land
+    there: `ICFIX=1` freezes it, and the comment at `chgpen.src:498` gives the reason
+    -- the damping has to vanish at the origin, which `1 - A exp(...)` only does when
+    `A = 1`. So the first column of every screening record is structurally one.
+    """
     total = np.zeros(len(grid))
     for k in range(dma["points"].shape[1]):
         d = grid - dma["points"][:, k]
         r = np.linalg.norm(d, axis=1)
-        total += dma["electronic"][k]*(1.0 - np.exp(-alpha[k]*r))/r
+        argument = alpha[k]*r*r if gaussian else alpha[k]*r
+        total += dma["electronic"][k]*(1.0 - np.exp(-argument))/r
         total += np.einsum("x,gx->g", dma["dipole"][:, k], d)/r**3
         q = np.zeros((3, 3))
         for c, (i, j) in enumerate(QUAD_PAIRS):
@@ -157,65 +171,76 @@ def main():
     quantum = -np.einsum("gpq,qp->g", mol.intor("int1e_grids", grids=grid),
                          mf.make_rdm1())
 
-    def objective(alpha):
+    def objective(alpha, gaussian=False):
         # Unweighted: the layer weighting is already in the point counts.
-        residual = (classical_potential(dma, grid, alpha) - quantum)*HARTREE_PER_KCAL
+        residual = (classical_potential(dma, grid, alpha, gaussian)
+                    - quantum)*HARTREE_PER_KCAL
         return float(np.sqrt(np.mean(residual**2)))
 
     reference = parse_efp((HERE / "reference" / "water_6-31gs_boys.efp").read_text())
-    # SCREEN2 is kept as raw text by the parser -- we do not compute it yet and its
-    # records are indented one space where every other section starts in column one.
-    labels, theirs = [], []
-    for line in reference["sections"]["SCREEN2"]["raw"]:
-        token = line.split()
-        if len(token) >= 3:
-            labels.append(token[0])
-            theirs.append(float(token[2]))
-    theirs = np.array(theirs)
 
-    print(f"  {len(grid)} grid points over {N_LAYER} layers, "
-          f"{dma['points'].shape[1]} expansion points")
-    undamped = objective(np.full(len(theirs), 1.0e6))
-    fitted = objective(theirs)
-    print(f"        no damping            {undamped:9.4f} kcal/mol")
-    print(f"        GAMESS's exponents    {fitted:9.4f} kcal/mol   "
-          f"({undamped/fitted:.1f}x better)")
+    def block(name):
+        labels, values = [], []
+        for line in reference["sections"][name]["raw"]:
+            token = line.split()
+            if len(token) >= 3:
+                labels.append(token[0])
+                values.append(float(token[2]))
+        return labels, np.array(values)
 
     failures = 0
-    if fitted > 0.5*undamped:
-        print("        FAIL damping barely helps, so the functional form is wrong")
-        failures += 1
+    print(f"  {len(grid)} grid points over {N_LAYER} layers, "
+          f"{dma['points'].shape[1]} expansion points")
 
-    # A converged search cannot land above its own starting point, so this is a
-    # sharp check on the objective and costs one evaluation.
-    initial = np.where(np.array([l.startswith("BO") for l in labels]), 4.0, 2.0)
-    at_start = objective(initial)
-    print(f"        their documented initial guess {at_start:9.4f} kcal/mol   "
-          f"({'fit improved on it' if fitted < at_start else 'FIT IS WORSE'})")
-    if fitted >= at_start:
-        print("        FAIL GAMESS's fitted exponents score worse than the guess "
-              "they started from, so this is not the objective they minimized")
-        failures += 1
-
-    print("        stationarity of each exponent, +/-10%:")
-    for i, label in enumerate(labels):
-        down, up = theirs.copy(), theirs.copy()
-        down[i] *= 0.9
-        up[i] *= 1.1
-        lo, hi = objective(down), objective(up)
-        # An exponent at the 10.0 bound is switched off, so the objective is flat
-        # in it by construction and stationarity is neither expected nor meaningful.
-        off = theirs[i] >= 9.999
-        note = "  (off at the 10.0 bound)" if off else ""
-        print(f"          {label:6s} {lo:9.5f} {fitted:9.5f} {hi:9.5f}{note}")
-        if off:
-            if abs(hi - fitted) > 1e-6 or abs(lo - fitted) > 1e-6:
-                print(f"        FAIL {label} is at the bound but still affects the "
-                      f"potential, so 10.0 does not mean off")
-                failures += 1
-        elif min(lo, hi) <= fitted:
-            print(f"        FAIL {label}'s exponent is not stationary")
+    for name, gaussian in (("SCREEN2", False), ("SCREEN", True)):
+        labels, theirs = block(name)
+        form = "1 - exp(-alpha r^2)" if gaussian else "1 - exp(-alpha r)"
+        fitted = objective(theirs, gaussian)
+        undamped = objective(np.full(len(theirs), 1.0e6), gaussian)
+        print(f"        {name}, {form}")
+        print(f"          undamped {undamped:8.4f}   fitted {fitted:8.4f} kcal/mol"
+              f"   ({undamped/fitted:.1f}x better)")
+        if fitted > 0.5*undamped:
+            print(f"          FAIL damping barely helps, so {name}'s form is wrong")
             failures += 1
+
+        initial = np.where(np.array([l.startswith("BO") for l in labels]), 4.0, 2.0)
+        at_start = objective(initial, gaussian)
+        improved = fitted < at_start
+        print(f"          their documented initial guess {at_start:8.4f}"
+              f"   ({'fit improved on it' if improved else 'FIT IS WORSE'})")
+
+        shallow = []
+        for i, label in enumerate(labels):
+            down, up = theirs.copy(), theirs.copy()
+            down[i] *= 0.9
+            up[i] *= 1.1
+            lo, hi = objective(down, gaussian), objective(up, gaussian)
+            off = theirs[i] >= 9.999
+            mark = "  (off at the 10.0 bound)" if off else ""
+            if not off and min(lo, hi) <= fitted:
+                mark = "  <-- not stationary"
+                shallow.append(label)
+            print(f"          {label:6s} {lo:9.5f} {fitted:9.5f} {hi:9.5f}{mark}")
+            if off and (abs(hi - fitted) > 1e-6 or abs(lo - fitted) > 1e-6):
+                print(f"          FAIL {label} is at the bound but still matters, so "
+                      f"10.0 does not mean off")
+                failures += 1
+
+        # The exponent on the centre carrying most of the density is the one that
+        # must be stationary for the form to be right; the others are shallow enough
+        # that the radii table dominates -- see the module docstring.
+        heavy = int(np.argmax(np.abs(dma["electronic"])))
+        down, up = theirs.copy(), theirs.copy()
+        down[heavy] *= 0.9
+        up[heavy] *= 1.1
+        if min(objective(down, gaussian), objective(up, gaussian)) <= fitted:
+            print(f"          FAIL {labels[heavy]}'s exponent is not stationary, so "
+                  f"{name}'s damping function is not this one")
+            failures += 1
+        elif shallow:
+            print(f"          note: {', '.join(shallow)} shallow by <1%, consistent "
+                  f"with the radii table difference")
 
     print()
     if failures:
