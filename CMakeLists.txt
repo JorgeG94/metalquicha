@@ -345,11 +345,14 @@ if(MQC_ENABLE_LIBCINT)
     # which a Cartesian basis such as 6-31G* can reach the exact four-index path
     # but not the density-fitted one. It also carries the three- and two-centre
     # optimizers: libcint exports them, the Fortran interface had no way to make
-    # one, so every fitting integral rebuilt its shell-pair data per call. Worth
+    # one, so every fitting integral rebuilt its shell-pair data per call. This
+    # hash also carries the nuclear-derivative integrals -- ipkin, ipnuc and
+    # iprinv, plus the three-centre and two-centre derivative pairs -- without
+    # which there is no analytic gradient on this backend at all. Worth
     # replacing with a tag once the fork has one -- a tag says what it is, a
     # hash does not, and a tag also lets GIT_SHALLOW come back, which a bare
     # hash cannot resolve.
-    GIT_TAG 525cab503f6134502cf69de42234b5897276dbf8)
+    GIT_TAG 3c78069d6c92e9d7f4db792ea2a33779b21539cc)
   # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone and
   # no network is touched. Compute nodes on most clusters have none, and a
   # configure step that reaches for GitHub fails there in a way that reads like
