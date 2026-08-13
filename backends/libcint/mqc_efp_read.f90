@@ -38,6 +38,9 @@ module mqc_efp_read
    integer, parameter :: N_QUADRUPOLE = 6
    integer, parameter :: N_OCTUPOLE = 10
 
+   !> A dynamic polarizability record: a centroid then a 3x3 tensor.
+   integer, parameter :: N_DYNAMIC_RECORD = 12
+
    !> Longest line a potential is expected to carry, matching the writer's own.
    integer, parameter :: MAX_LINE = 160
 
@@ -60,6 +63,13 @@ module mqc_efp_read
       real(dp), allocatable :: screen2(:)          !! Exponential damping exponent per point
       logical :: has_screen = .false.
       logical :: has_screen2 = .false.
+      !> Dynamic polarizabilities, for dispersion. `(3, 3, n_lmo, n_freq)`.
+      integer :: n_lmo = 0
+      integer :: n_freq = 0
+      real(dp), allocatable :: dyn_pol(:, :, :, :)
+      real(dp), allocatable :: centroids(:, :)     !! (3, n_lmo), Bohr
+      real(dp), allocatable :: frequencies(:)      !! Imaginary, a.u.
+      logical :: has_dynamic = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -82,6 +92,12 @@ contains
       if (allocated(self%octopole)) deallocate (self%octopole)
       if (allocated(self%screen)) deallocate (self%screen)
       if (allocated(self%screen2)) deallocate (self%screen2)
+      if (allocated(self%dyn_pol)) deallocate (self%dyn_pol)
+      if (allocated(self%centroids)) deallocate (self%centroids)
+      if (allocated(self%frequencies)) deallocate (self%frequencies)
+      self%n_lmo = 0
+      self%n_freq = 0
+      self%has_dynamic = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -187,11 +203,152 @@ contains
          frag%has_screen = .true.
       end if
 
+      call read_dynamic(lines, n_lines, frag, error)
+      if (error%has_error()) return
+
       call multiplicity(lines, n_lines, frag%multiplicity)
       deallocate (lines)
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_dynamic(lines, n_lines, frag, error)
+      !! `DYNAMIC POLARIZABLE POINTS`: a 3x3 tensor per localized orbital per
+      !! frequency, which is what dispersion is built from
+      !!
+      !! The section's shape is a block per frequency, each block one record per
+      !! localized orbital: a label, the orbital's centroid, then nine tensor
+      !! components over continuation lines. Only the *first* record of a block
+      !! carries the frequency, tagged on the end of its label line as
+      !! `-- FOR W= 0.002792I A.U.`, so a new block is recognised by that tag
+      !! appearing rather than by counting records.
+      !!
+      !! Absent is not an error: a potential written without the dynamic response
+      !! is still usable for electrostatics.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      type(efp_fragment_t), intent(inout) :: frag
+      type(error_t), intent(inout) :: error
+
+      integer :: start, finish, i, k, n_rec, n_blocks, lmo, freq, row, col
+      integer :: per_block
+      character(len=:), allocatable :: joined, rest
+      character(len=MAX_LINE) :: text
+      real(dp) :: values(N_DYNAMIC_RECORD)
+      integer :: stat
+      logical :: new_block
+
+      start = 0
+      do i = 1, n_lines
+         text = adjustl(lines(i))
+         if (index(text, "DYNAMIC POLARIZABLE POINTS") == 1) then
+            start = i + 1
+            exit
+         end if
+      end do
+      if (start == 0) return
+
+      finish = start - 1
+      do i = start, n_lines
+         if (trim(adjustl(lines(i))) == "STOP") exit
+         finish = i
+      end do
+
+      ! First pass: how many records, and how many of them before the frequency tag
+      ! reappears -- that count is the number of localized orbitals.
+      n_rec = 0
+      n_blocks = 0
+      per_block = 0
+      i = start
+      do while (i <= finish)
+         new_block = index(lines(i), "FOR W=") > 0
+         call join_record(lines, i, finish, joined)
+         if (len_trim(joined) == 0) cycle
+         if (new_block) n_blocks = n_blocks + 1
+         n_rec = n_rec + 1
+         if (n_blocks == 1) per_block = per_block + 1
+      end do
+      if (n_rec == 0 .or. n_blocks == 0) return
+      if (per_block*n_blocks /= n_rec) then
+         call error%set(ERROR_VALIDATION, "efp: the dynamic polarizability section "// &
+                        "does not hold the same number of orbitals at every frequency")
+         return
+      end if
+
+      frag%n_lmo = per_block
+      frag%n_freq = n_blocks
+      allocate (frag%dyn_pol(3, 3, per_block, n_blocks))
+      allocate (frag%centroids(3, per_block), frag%frequencies(n_blocks))
+      frag%frequencies = 0.0_dp
+
+      i = start
+      freq = 0
+      lmo = 0
+      do while (i <= finish)
+         new_block = index(lines(i), "FOR W=") > 0
+         if (new_block) then
+            freq = freq + 1
+            lmo = 0
+            call frequency_of(lines(i), frag%frequencies(freq))
+         end if
+         call join_record(lines, i, finish, joined)
+         if (len_trim(joined) == 0) cycle
+         lmo = lmo + 1
+         ! The label is two tokens, `CT` and its index, so three coordinates and
+         ! nine tensor components follow from the third.
+         rest = strip_tokens(joined, 2)
+         do k = 1, N_DYNAMIC_RECORD
+            call next_number(rest, values(k), stat)
+            if (stat /= 0) then
+               call error%set(ERROR_VALIDATION, "efp: a dynamic polarizability "// &
+                              "record is short of its twelve numbers")
+               return
+            end if
+         end do
+         if (freq == 1) frag%centroids(:, lmo) = values(1:3)
+         do col = 1, 3
+            do row = 1, 3
+               frag%dyn_pol(row, col, lmo, freq) = values(3 + (row - 1)*3 + col)
+            end do
+         end do
+      end do
+      frag%has_dynamic = .true.
+   end subroutine read_dynamic
+
+   function strip_tokens(text, n) result(rest)
+      !! `text` with its first `n` whitespace-separated tokens removed
+      character(len=*), intent(in) :: text
+      integer, intent(in) :: n
+      character(len=:), allocatable :: rest
+
+      integer :: k, space
+
+      rest = adjustl(text)
+      do k = 1, n
+         space = index(trim(rest), " ")
+         if (space == 0) then
+            rest = ""
+            return
+         end if
+         rest = adjustl(rest(space:))
+      end do
+   end function strip_tokens
+
+   subroutine frequency_of(line, w)
+      !! The imaginary frequency out of `-- FOR W= 0.002792I A.U.`
+      character(len=*), intent(in) :: line
+      real(dp), intent(out) :: w
+
+      integer :: at, stop_at, stat
+
+      w = 0.0_dp
+      at = index(line, "FOR W=")
+      if (at == 0) return
+      stop_at = index(line(at:), "I")
+      if (stop_at == 0) return
+      read (line(at + 6:at + stop_at - 2), *, iostat=stat) w
+      if (stat /= 0) w = 0.0_dp
+   end subroutine frequency_of
 
    subroutine one_section(lines, n_lines, name, n_values, n_expected, values, error)
       !! A section that must be present and must carry one record per point
