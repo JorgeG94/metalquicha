@@ -481,6 +481,14 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_cphf PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_cphf PRIVATE ${main_lib} cint_fortran cint)
 
+  # The screening fit itself, in Fortran: grid, objective and search.
+  add_executable(check_screening_fit
+                 ${PROJECT_SOURCE_DIR}/validation/check_screening_fit.f90)
+  target_include_directories(check_screening_fit
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_screening_fit PRIVATE ${main_lib} cint_fortran
+                                                    cint)
+
   # Electrostatic potential integrals at arbitrary points, against PySCF. The
   # enabling piece for a charge-penetration screening fit.
   add_executable(check_esp ${PROJECT_SOURCE_DIR}/validation/check_esp.f90)
