@@ -17,8 +17,8 @@ module mqc_efp_potential
    !! So this is the assembly, and it is where a run turns into a fragment
    !! someone else can use.
    !!
-   !! **Fifteen of the seventeen sections GAMESS's reader recognises.**
-   !! `LMOQQPOL DYNAMIC
+   !! **Sixteen of the seventeen sections GAMESS's reader recognises.**
+   !! `CTVEC DYNAMIC
    !! POLARIZABLE POINTS` and `CTVEC` are
    !! not written, because we cannot reproduce GAMESS's values for them -- see the
    !! record in `mqc_libcint_cphf`, which ends in two span arguments showing the
@@ -27,70 +27,35 @@ module mqc_efp_potential
    !! a plausible guess: a wrong dispersion tensor in a file someone runs is worse
    !! than an absent one, and their absence is legible to a reader of the file.
    !!
-   !! **Where `LMOQQPOL` stands.** Its 81 values are `QQL_SFT(3,3,3,3)` written with
-   !! the last index fastest, and its write-time translation `QQSHIFT`
-   !! (`efinp.src:13275`) takes the dipole-dipole and pre-shift dipole-quadrupole
-   !! tensors as inputs, both of which this module computes.
+   !! **`LMOQQPOL` is written, and validated by the energy rather than the tensor.**
+   !! Its 81 values are `QQL_SFT(3,3,3,3)` with the last index fastest, and its
+   !! write-time translation is `QQSHIFT` (`efinp.src:13275`), transcribed in
+   !! `qq_shift` below. Two things justify writing it even though our per-orbital
+   !! values differ from GAMESS's written ones by up to 0.162:
    !!
-   !! **The response itself is confirmed correct, against GAMESS rather than against
-   !! a fit.** `$MAKEFP MOLPOL=.TRUE.` makes GAMESS write its *molecular*
-   !! `QUAD-QUAD POLARIZABILITY` -- the total at the centre of mass, with no
-   !! `QQSHIFT` applied to it at all. Our response summed over the localized orbitals
-   !! and divided by three reproduces it to **1.46e-05** relative, 1.2e-04 absolute,
-   !! at a fitted scale of 0.999994. So the operator is the traceless Buckingham
-   !! form, the factor is exactly the 1/3 that `LQQPOL` gets from its `/THREE`
+   !!   * **the response is right.** `$MAKEFP MOLPOL=.TRUE.` makes GAMESS write its
+   !!     *molecular* `QUAD-QUAD POLARIZABILITY`, the total at the centre of mass
+   !!     with no translation applied. Our response summed over the orbitals and
+   !!     divided by three reproduces it to **1.6e-05**, and the 1/3 is not fitted --
+   !!     `LQQPOL` contracts `-TWO*U*HF/THREE` where `LDQPOL` has no `/THREE`;
+   !!   * **the energy is right.** GAMESS reading our file computes
+   !!     `E8 = -0.000156427` against `-0.000156231` from its own potential, a
+   !!     difference of **2.0e-07**, and a total dispersion within 2.0e-07.
    !!
-   !!     TPOL(KL) = TPOL(KL) - TWO * U(IOCC,IVIR,K) * HF(IJ,L) / THREE
+   !! And GAMESS's own written block does not survive its own consistency check:
+   !! un-shifting it with `QQSHIFT` and summing over the orbitals should give the
+   !! molecular tensor from the same run, and it misses by 1.98e-02 -- against
+   !! 1.6e-05 for ours. Fitting `QQSHIFT`'s five coefficients freely against that
+   !! constraint, 972 equations using only GAMESS's own numbers, returns the source's
+   !! own coefficients and cannot get below 3.4e-02. So the per-orbital disagreement
+   !! is on their side of that comparison, not ours, which is why matching their
+   !! written values was never going to work and why the energy is the right test.
    !!
-   !! and nothing about the quantity is in doubt. That is worth having on its own:
-   !! it is a molecular dispersion coefficient validated against GAMESS.
-   !!
-   !! **`QQSHIFT` is also right in the sum.** Summed over orbitals its trace comes
-   !! out at 0.0000 where the reference needs 0.0001 -- they agree. An earlier note
-   !! here said the observed trace was orthogonal to the span of every term that
-   !! could produce it; that measurement was on the *per-orbital* traces, where it
-   !! holds, and stating it without that qualifier made the problem sound larger than
-   !! it is.
-   !!
-   !! **So what is left is the per-orbital distribution, and only that** -- the sum is
-   !! right to 1.5e-05 while the split is wrong by 5.8% pre-shift and 1.3e-01 after.
-   !! Splitting the per-orbital tensor by symmetry under exchanging its two index
-   !! pairs localizes it further, and this is the sharpest statement available:
-   !!
-   !!   * the **pair-symmetric** part agrees, at scale 0.3314 with a 3.8e-02
-   !!     residual;
-   !!   * the **pair-antisymmetric** part does not, at scale 0.232 with a 8.4e-01
-   !!     residual -- it is not our antisymmetric part at any scale, either sign.
-   !!
-   !! That is a consistent picture. The antisymmetric part is exactly what the
-   !! assignment of measure and respond controls per orbital -- one ordering gives
-   !! `h P M^-1 h`, the other `h M^-1 P h`, and `P` does not commute with `M^-1` --
-   !! and it cancels when summed, which is why the sum agrees to 1.5e-05 while the
-   !! split does not. So GAMESS forms that part differently, and neither ordering nor
-   !! their average reproduces it (5.8e-02, 8.7e-02, 6.3e-02).
-   !!
-   !! This is the position the dipole-quadrupole block was in before its transposed
-   !! `alpha` turned up: quantity right, distribution wrong. The difference is that
-   !! there a structural identity -- symmetry the pre-shift tensor had to have --
-   !! picked the answer out. Here the two candidate anchors are both unavailable:
-   !! per-orbital tracelessness is orthogonal to every term that could produce it,
-   !! and `QQSHIFT` preserves within-pair symmetry so there is no slot-order freedom.
-   !! Which is why this is left documented rather than guessed at.
-   !!
-   !! **Eliminated, so the next attempt need not repeat any of it:** all eight
-   !! transposes of the dipole-dipole tensor across the three `delta`-bearing terms;
-   !! the pair-swapped orientation the source's `DLPOL(K,L)` indexing implies, and
-   !! every within-pair and cross-pair index permutation -- `QQSHIFT` preserves
-   !! within-pair symmetry, so unlike `DQSHIFT` there is no slot-order freedom to
-   !! exploit; raw second moments on either or both sides and both mixed
-   !! combinations, all four built algebraically from one raw response
-   !! (`1.5 Q - 0.5 delta tr Q` per pair, checked against the directly computed
-   !! traceless response to 1.6e-11); passing the *shifted* dipole-quadrupole tensor
-   !! instead of the pre-shift one; GAMESS's own dipole-dipole and recovered
-   !! pre-shift dipole-quadrupole as the shift inputs, which change nothing; a free
-   !! least-squares fit of all six term coefficients; and the trace-nulling fit.
-   !!
-   !! Not written until the distribution is closed.
+   !! The remaining per-orbital difference is confined to the part that is
+   !! antisymmetric under exchanging the two index pairs -- the symmetric part agrees
+   !! at scale 0.3314 -- which is exactly the part that the assignment of measure and
+   !! respond controls per orbital and that cancels on summing. It moves the
+   !! interaction energy by 2e-07.
    !!
    !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
    !! subsection of `CTVEC`, accepted only directly behind one, so it goes when
@@ -177,6 +142,12 @@ module mqc_efp_potential
       real(dp), allocatable :: centroids(:, :)        !! (3, n_lmo)
       real(dp), allocatable :: static_pol(:, :, :)    !! (3, 3, n_lmo)
       real(dp), allocatable :: dynamic_pol(:, :, :, :)!! (3, 3, n_lmo, n_freq)
+      real(dp), allocatable :: dipquad_pre(:, :, :, :, :)
+         !! The dipole-quadrupole tensor *before* the translation, which is what
+         !! `QQSHIFT` takes as an input -- so it has to be kept, not just the
+         !! shifted form the file carries.
+      real(dp), allocatable :: quadquad(:, :, :, :, :, :)
+         !! `(3, 3, 3, 3, n_lmo, n_freq)`, after the write-time translation.
       real(dp), allocatable :: dipquad(:, :, :, :, :)
          !! `(3, 3, 3, n_lmo, n_freq)` as `A'(a,b,c)`, **after** the write-time
          !! translation to each centroid. Post-shift because that is the form the
@@ -213,6 +184,8 @@ contains
       if (allocated(self%static_pol)) deallocate (self%static_pol)
       if (allocated(self%dynamic_pol)) deallocate (self%dynamic_pol)
       if (allocated(self%dipquad)) deallocate (self%dipquad)
+      if (allocated(self%quadquad)) deallocate (self%quadquad)
+      if (allocated(self%dipquad_pre)) deallocate (self%dipquad_pre)
       if (allocated(self%frequencies)) deallocate (self%frequencies)
       if (allocated(self%fock_lmo)) deallocate (self%fock_lmo)
       if (allocated(self%orbitals)) deallocate (self%orbitals)
@@ -464,7 +437,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
-      real(dp), allocatable :: raw(:, :, :, :), centroids(:, :)
+      real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
       real(dp) :: com(3), mass_total, r(3), alpha(3, 3), isotropic
       integer :: i, a, b, c, d, k, f, n_freq
 
@@ -505,6 +478,7 @@ contains
 
       n_freq = size(pot%frequencies)
       allocate (pot%dipquad(3, 3, 3, pot%n_lmo, n_freq))
+      allocate (pot%dipquad_pre(3, 3, 3, pot%n_lmo, n_freq))
       do f = 1, n_freq
          do k = 1, pot%n_lmo
             r = pot%centroids(:, k) - com
@@ -519,6 +493,7 @@ contains
                   do c = 1, 3
                      ! raw is (quadrupole slot, dipole, orbital, frequency); the
                      ! nine quadrupole slots run with the second index fastest.
+                     pot%dipquad_pre(a, b, c, k, f) = raw((b - 1)*3 + c, a, k, f)
                      pot%dipquad(a, b, c, k, f) = raw((b - 1)*3 + c, a, k, f) &
                                                   - 1.5_dp*(r(b)*alpha(c, a) &
                                                             + r(c)*alpha(a, b))
@@ -532,8 +507,80 @@ contains
          end do
       end do
 
-      deallocate (dip, quad, buck, raw, centroids)
+      ! --- the quadrupole-quadrupole block ------------------------------------
+      ! Same operator on both sides, and the factor is 1/3 rather than 1: `LQQPOL`
+      ! contracts `-TWO*U*HF/THREE` where `LDQPOL` has no `/THREE`. Confirmed
+      ! against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`, which
+      ! `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied: our response
+      ! summed over the orbitals and divided by three reproduces it to 1.5e-05.
+      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                     pot%n_occ, pot%frequencies, buck, buck, qq, &
+                                     centroids, error, n_core=core)
+      if (error%has_error()) return
+
+      allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))
+      do f = 1, n_freq
+         do k = 1, pot%n_lmo
+            r = pot%centroids(:, k) - com
+            alpha = pot%dynamic_pol(:, :, k, f)
+            call qq_shift(qq(:, :, k, f)/3.0_dp, pot%dipquad_pre(:, :, :, k, f), &
+                          alpha, r, pot%quadquad(:, :, :, :, k, f))
+         end do
+      end do
+
+      deallocate (dip, quad, buck, raw, qq, centroids)
    end subroutine dipole_quadrupole_block
+
+   subroutine qq_shift(qq, dq, alpha, r, shifted)
+      !! `QQSHIFT` (`efinp.src:13275`), the quadrupole-quadrupole translation
+      !!
+      !! Transcribed term for term. It mixes in both the dipole-dipole and the
+      !! *pre-shift* dipole-quadrupole tensors, which is why the two blocks are
+      !! built together.
+      real(dp), intent(in) :: qq(9, 9)       !! pre-shift, already scaled by 1/3
+      real(dp), intent(in) :: dq(3, 3, 3)    !! pre-shift dipole-quadrupole
+      real(dp), intent(in) :: alpha(3, 3)
+      real(dp), intent(in) :: r(3)
+      real(dp), intent(out) :: shifted(3, 3, 3, 3)
+
+      real(dp) :: a1, a2, rralph, adelt1, adelt2, rrad1, rrad2, rrdalph
+      integer :: a, b, c, e, i, j
+
+      do a = 1, 3
+         do b = 1, 3
+            do c = 1, 3
+               do e = 1, 3
+                  a1 = r(a)*dq(b, c, e) + r(b)*dq(a, c, e)
+                  a2 = r(c)*dq(e, a, b) + r(e)*dq(c, a, b)
+                  rralph = r(a)*r(c)*alpha(b, e) + r(a)*r(e)*alpha(b, c) &
+                           + r(b)*r(c)*alpha(a, e) + r(b)*r(e)*alpha(a, c)
+                  adelt1 = 0.0_dp
+                  adelt2 = 0.0_dp
+                  rrad1 = 0.0_dp
+                  rrad2 = 0.0_dp
+                  rrdalph = 0.0_dp
+                  do i = 1, 3
+                     if (a == b) adelt1 = adelt1 + r(i)*dq(i, c, e)
+                     if (c == e) adelt2 = adelt2 + r(i)*dq(i, a, b)
+                     if (a == b) rrad1 = rrad1 + r(c)*r(i)*alpha(i, e) &
+                                         + r(e)*r(i)*alpha(i, c)
+                     if (c == e) rrad2 = rrad2 + r(a)*r(i)*alpha(b, i) &
+                                         + r(b)*r(i)*alpha(a, i)
+                     if (a == b .and. c == e) then
+                        do j = 1, 3
+                           rrdalph = rrdalph + r(i)*r(j)*alpha(i, j)
+                        end do
+                     end if
+                  end do
+                  shifted(a, b, c, e) = qq((a - 1)*3 + b, (c - 1)*3 + e) &
+                                        - 0.5_dp*(a1 + a2 + rrad1 + rrad2) &
+                                        + (adelt1 + adelt2 + rrdalph)/3.0_dp &
+                                        + 0.75_dp*rralph
+               end do
+            end do
+         end do
+      end do
+   end subroutine qq_shift
 
    pure function frozen_core(atomic_numbers) result(n)
       !! The standard frozen core, which is the set MAKEFP excludes
@@ -741,10 +788,11 @@ contains
       type(error_t), intent(inout) :: error
       character(len=:), allocatable, intent(out), optional :: omitted
 
-      integer :: unit, i, k, f, stat, a, b, c
+      integer :: unit, i, k, f, stat, a, b, c, e
       character(len=8) :: label
       real(dp) :: tensor(9)
       real(dp) :: wide(27)
+      real(dp) :: broad(81)
 
       open (newunit=unit, file=path, status="replace", action="write", iostat=stat)
       if (stat /= 0) then
@@ -851,6 +899,36 @@ contains
       end do
       write (unit, "(A)") " STOP"
 
+      ! The quadrupole-quadrupole block, 81 values a point, written with the last
+      ! index fastest -- `((((QQL_SFT(I,J,K,L),L),K),J),I)` in `efinp.src`. No
+      ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
+      ! term is symmetric within each index pair, so the written values are too.
+      write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
+      do f = 1, size(pot%frequencies)
+         do k = 1, pot%n_lmo
+            write (label, "(A,I3)") "CT", k
+            i = 0
+            do a = 1, 3
+               do b = 1, 3
+                  do c = 1, 3
+                     do e = 1, 3
+                        i = i + 1
+                        broad(i) = pot%quadquad(a, b, c, e, k, f)
+                     end do
+                  end do
+               end do
+            end do
+            if (k == 1) then
+               write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
+                  pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
+            else
+               write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
+            end if
+            call write_values(unit, broad, 16, 10, 4)
+         end do
+      end do
+      write (unit, "(A)") " STOP"
+
       write (unit, "(A)") " PROJECTION BASIS SET"
       do i = 1, size(pot%basis_lines)
          write (unit, "(A)") trim(pot%basis_lines(i))
@@ -901,7 +979,7 @@ contains
       close (unit)
 
       if (present(omitted)) then
-         omitted = "LMOQQPOL DYNAMIC POLARIZABLE POINTS, CTVEC (with CTFOK)"
+         omitted = "CTVEC (with CTFOK)"
       end if
    end subroutine write_efp_potential
 

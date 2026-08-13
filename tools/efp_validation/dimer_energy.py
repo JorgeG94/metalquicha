@@ -16,12 +16,11 @@ So this builds the same water dimer twice, once from the potential
 ``check_makefp`` wrote and once from GAMESS's own, and compares the energy terms
 it reports. Agreement means our file *is* a fragment: read, oriented, and used.
 
-**Dispersion is expected to differ, and it is reported rather than hidden.** Our
-potential omits the two dynamic dispersion blocks and ``CTVEC`` (see
-``backends/libcint/mqc_efp_potential.f90``), so GAMESS gets no dispersion or
-charge transfer from it and those terms come out zero. The terms we do supply --
-electrostatics with screening, polarization, exchange repulsion -- are the ones
-compared.
+**Every term but charge transfer is ours.** Only ``CTVEC`` is unwritten (see
+``backends/libcint/mqc_efp_potential.f90``), so GAMESS gets no charge transfer from
+our file and reports ``CHARGE TRANSFER=F`` for it. Electrostatics with screening,
+polarization, exchange repulsion and all three dispersion orders are computed from
+parameters we wrote.
 """
 
 import argparse
@@ -242,10 +241,9 @@ def main():
             continue
         gap = abs(a - b)
         mark = ""
-        if key in ("dispersion E8", "dispersion total", "charge transfer"):
-            # E8 needs LMOQQPOL and charge transfer needs CTVEC, neither of which
-            # we write; the total therefore differs by E8.
-            mark = "  (needs a section we do not write)"
+        if key == "charge transfer":
+            # Needs CTVEC, which we do not write.
+            mark = "  (needs CTVEC, which we do not write)"
         elif key == "electrostatic" and gap > args.tol and not args.screen_from_gamess:
             # The screening fit is known to differ -- ours finds a real minimum
             # where GAMESS's search reaches its alpha = 10 "off" bound, which is
