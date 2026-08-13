@@ -640,12 +640,33 @@ contains
       !!     applied as the exact linear combination of the responses -- and it does
       !!     not match either.
       !!
-      !! So the operator is now known and the discrepancy is elsewhere: in how the
-      !! tensor is assembled from the responses rather than in what drives them.
-      !! `POLDB` and `SOLVCPDYN` in `locpol.src` are what build the record that
-      !! reaches DAF 816, and that is where to look next. Until it is identified this
-      !! routine should be used with dipole operators only, and the two quadrupole
-      !! blocks of a potential cannot be emitted.
+      !! **The assembly has now been read too, and it agrees with what this computes.**
+      !! `LDQPOL` at `locpol.src:5300` forms the tensor as
+      !!
+      !!     KL = (K-1)*6 + L
+      !!     TPOL(KL) = TPOL(KL) - 2 * U(occ,vir,K) * HF(occ,vir,L)
+      !!
+      !! with `K` the three dipole components, `L` the six traceless quadrupole ones
+      !! read from DAF 807-812, and the factor two for the dynamic case (four for the
+      !! static). So the nesting is dipole-outer, quadrupole-inner over the six
+      !! unique components, and the contraction and its factor are exactly this
+      !! routine's -- the two differ only in which operator drives and which
+      !! measures, and the response function is symmetric in those.
+      !!
+      !! It still does not reproduce the reference. Fitting a single scale over the
+      !! 874 samples where our value is above noise leaves a relative residual of
+      !! 1.0, under either candidate expansion of the six unique components into the
+      !! nine slots the file carries.
+      !!
+      !! So five operators, two nestings and the factor have been eliminated with the
+      !! definition confirmed from GAMESS's own source at every step. What has *not*
+      !! been read is the per-orbital decomposition: `LDQPOL` as cited computes the
+      !! molecular total, and the localized tensors come from a further transform
+      !! through its `TRAN` argument. That is the only remaining place for the
+      !! difference, and it is where the next attempt should start.
+      !!
+      !! Until then this routine should be used with dipole operators only, and the
+      !! two quadrupole blocks of a potential cannot be emitted.
       !!
       !! **No phase ambiguity here, unlike the Fock matrix.** Each tensor is
       !! quadratic in its localized orbital -- the orbital appears once in `h` and
