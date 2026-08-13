@@ -215,6 +215,27 @@ contains
       call check(error, frag%n_freq == 12, "expected twelve frequencies")
       if (allocated(error)) return
 
+      ! The two higher dispersion tensor sets, read flat. Only their extents are
+      ! asserted: the slot order is not established, so there is nothing else here
+      ! that could be checked without assuming the answer.
+      call check(error, frag%has_dipquad, "the dipole-quadrupole tensors were not read")
+      if (allocated(error)) return
+      call check(error, frag%n_dipquad == 27, "expected 27 dipole-quadrupole values")
+      if (allocated(error)) return
+      call check(error, frag%has_quadquad, "the quadrupole-quadrupole tensors were not read")
+      if (allocated(error)) return
+      call check(error, frag%n_quadquad == 81, "expected 81 quadrupole-quadrupole values")
+      if (allocated(error)) return
+      call check(error, size(frag%dipquad, 2) == frag%n_lmo .and. &
+                 size(frag%dipquad, 3) == frag%n_freq, &
+                 "the dipole-quadrupole extents disagree with the dipole section")
+      if (allocated(error)) return
+      ! Not all zero: a section that parsed into nothing would still have the right
+      ! shape, and that is the failure this catches.
+      call check(error, maxval(abs(frag%quadquad)) > 1.0e-6_dp, &
+                 "the quadrupole-quadrupole tensors read as all zero")
+      if (allocated(error)) return
+
       do i = 1, frag%n_pol
          static_iso = (frag%static_pol(1, 1, i) + frag%static_pol(2, 2, i) &
                        + frag%static_pol(3, 3, i))/3.0_dp

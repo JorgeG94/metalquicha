@@ -84,6 +84,17 @@ module mqc_efp_read
       real(dp), allocatable :: static_pol(:, :, :)  !! (3, 3, n_pol)
       real(dp), allocatable :: pol_points(:, :)     !! (3, n_pol), Bohr
       logical :: has_static_pol = .false.
+      !> The two higher dispersion tensor sets, stored flat: their component order
+      !> is *not* established, and the E7/E8 formulas in GAMESS's `efdrvr.src` are
+      !> what will settle it. Reading them into a shaped array now would mean
+      !> guessing an index convention, which is how the polarizability slot order
+      !> went wrong once already.
+      integer :: n_dipquad = 0                    !! Values per record, expected 27
+      integer :: n_quadquad = 0                   !! Values per record, expected 81
+      real(dp), allocatable :: dipquad(:, :, :)   !! (n_dipquad, n_lmo, n_freq)
+      real(dp), allocatable :: quadquad(:, :, :)  !! (n_quadquad, n_lmo, n_freq)
+      logical :: has_dipquad = .false.
+      logical :: has_quadquad = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -116,6 +127,12 @@ contains
       if (allocated(self%pol_points)) deallocate (self%pol_points)
       self%n_pol = 0
       self%has_static_pol = .false.
+      if (allocated(self%dipquad)) deallocate (self%dipquad)
+      if (allocated(self%quadquad)) deallocate (self%quadquad)
+      self%n_dipquad = 0
+      self%n_quadquad = 0
+      self%has_dipquad = .false.
+      self%has_quadquad = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -227,11 +244,119 @@ contains
       call read_dynamic(lines, n_lines, frag, error)
       if (error%has_error()) return
 
+      call read_tensor_block(lines, n_lines, "DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS", &
+                             27, frag%dipquad, frag%n_dipquad, frag%has_dipquad, &
+                             frag%n_lmo, frag%n_freq, error)
+      if (error%has_error()) return
+      call read_tensor_block(lines, n_lines, "LMOQQPOL DYNAMIC POLARIZABLE POINTS", &
+                             81, frag%quadquad, frag%n_quadquad, frag%has_quadquad, &
+                             frag%n_lmo, frag%n_freq, error)
+      if (error%has_error()) return
+
       call multiplicity(lines, n_lines, frag%multiplicity)
       deallocate (lines)
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_tensor_block(lines, n_lines, name, per_record, store, n_values, &
+                                present_flag, n_lmo, n_freq, error)
+      !! One of the higher dispersion tensor sections, read flat
+      !!
+      !! `DIPOLE-QUADRUPOLE` carries 27 numbers per record and `LMOQQPOL` 81, both
+      !! laid out as a block per frequency with one record per localized orbital --
+      !! the same shape as the dipole dynamic section, two-token labels and all, so
+      !! the same joiner serves.
+      !!
+      !! **Stored flat, deliberately.** Which of the 27 or 81 slots is which index
+      !! triple or quadruple is not established, and the only thing that would
+      !! settle it is the E7/E8 expressions in GAMESS's own source. Reshaping now
+      !! would bake in a guess, and the nine-slot polarizability order already
+      !! showed what that costs: read row-major it gave a negative polarizability
+      !! and a fitted constant 15 times too large.
+      !!
+      !! The orbital and frequency counts come from the dipole section rather than
+      !! being counted again, and a section that disagrees with them is an error --
+      !! they describe the same set of localized orbitals at the same frequencies.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      character(len=*), intent(in) :: name
+      integer, intent(in) :: per_record
+      real(dp), allocatable, intent(out) :: store(:, :, :)
+      integer, intent(out) :: n_values
+      logical, intent(out) :: present_flag
+      integer, intent(in) :: n_lmo, n_freq
+      type(error_t), intent(inout) :: error
+
+      integer :: start, finish, i, k, n_rec, lmo, freq, stat
+      character(len=:), allocatable :: joined, rest
+      character(len=MAX_LINE) :: text
+      real(dp) :: value
+      logical :: new_block
+
+      n_values = 0
+      present_flag = .false.
+      if (n_lmo == 0 .or. n_freq == 0) return
+
+      start = 0
+      do i = 1, n_lines
+         text = adjustl(lines(i))
+         if (index(text, trim(name)) == 1) then
+            start = i + 1
+            exit
+         end if
+      end do
+      if (start == 0) return
+
+      finish = start - 1
+      do i = start, n_lines
+         if (trim(adjustl(lines(i))) == "STOP") exit
+         finish = i
+      end do
+
+      n_rec = 0
+      i = start
+      do while (i <= finish)
+         call join_dynamic(lines, i, finish, joined)
+         if (len_trim(joined) > 0) n_rec = n_rec + 1
+      end do
+      if (n_rec == 0) return
+      if (n_rec /= n_lmo*n_freq) then
+         call error%set(ERROR_VALIDATION, "efp: "//trim(name)//" does not carry one "// &
+                        "record per orbital per frequency")
+         return
+      end if
+
+      n_values = per_record
+      allocate (store(per_record, n_lmo, n_freq))
+      store = 0.0_dp
+      i = start
+      freq = 0
+      lmo = 0
+      do while (i <= finish)
+         new_block = index(lines(i), "FOR W=") > 0
+         if (new_block) then
+            freq = freq + 1
+            lmo = 0
+         end if
+         call join_dynamic(lines, i, finish, joined)
+         if (len_trim(joined) == 0) cycle
+         lmo = lmo + 1
+         ! Two label tokens then the centroid, which the dipole section already
+         ! carries, so only the tensor values are kept here.
+         rest = strip_tokens(joined, 5)
+         do k = 1, per_record
+            call next_number(rest, value, stat)
+            if (stat /= 0) then
+               call error%set(ERROR_VALIDATION, "efp: a record of "//trim(name)// &
+                              " is short of its values")
+               return
+            end if
+            store(k, lmo, freq) = value
+         end do
+      end do
+      present_flag = .true.
+   end subroutine read_tensor_block
 
    subroutine read_static_pol(lines, n_lines, frag, error)
       !! `POLARIZABLE POINTS`: the static polarizability at each orbital centroid
