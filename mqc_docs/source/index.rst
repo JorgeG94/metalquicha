@@ -26,6 +26,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    json_output
    validation
    vibrational_analysis
+   makefp
 
 .. toctree::
    :maxdepth: 2
