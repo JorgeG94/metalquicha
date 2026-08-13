@@ -183,10 +183,23 @@ def check_charge_transfer(orbital_energies):
     comparison below aligns each vector's phase anyway, and seven columns is neither
     our five occupied orbitals nor our four valence LMOs. Only the first of the seven
     is close to a canonical orbital of ours (3e-3 against our oxygen 1s); the rest are
-    0.38 to 0.58 away, which is not a convention difference. So DAF 15 holds something
-    other than the canonical orbitals of this SCF at the point it is read -- the
-    localization writes back to it, and a run with a second exchange-repulsion basis
-    would have more orbitals than this one does. That is the thread to pull.
+    0.38 to 0.58 away, which is not a convention difference.
+
+    Nor are they our *localized* orbitals, which was the obvious next guess given that
+    DAF 15 is the general MO-vector record and many routines write to it: matched
+    against our four valence LMOs the gaps are 0.29 to 0.87, and two CTVEC vectors both
+    match the same LMO best, so it is not a reordering either.
+
+    One measurement that looks like a clue and is not: the CTVEC rows have Euclidean
+    norms from 0.70 to 1.38 rather than one. That is unremarkable -- an MO coefficient
+    vector in a non-orthogonal AO basis satisfies `c^T S c = 1`, not `c^T c = 1` -- so
+    it neither confirms nor excludes these being orbitals. Checking `c^T S c` would,
+    and has not been done.
+
+    So DAF 15 holds neither the canonical nor the localized orbitals of this SCF at the
+    point CTVEC is written, and what it does hold is unidentified. A run carrying the
+    second exchange-repulsion basis would have more orbitals than this single-basis one
+    does, which is the only candidate found so far for a count of seven.
     """
     s = parse_efp(REFERENCE.read_text())["sections"]
     values = _numbers(" ".join(s["CTFOK"]["raw"]).replace(">", " "))
