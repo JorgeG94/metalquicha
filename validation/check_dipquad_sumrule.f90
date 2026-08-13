@@ -62,7 +62,7 @@ program check_dipquad_sumrule
    real(dp), allocatable :: buckingham(:, :, :)
    real(dp), allocatable :: tensors(:, :, :, :), centroids(:, :)
    real(dp), allocatable :: dq_dr(:, :, :, :), dq_rd(:, :, :, :), dd(:, :, :, :)
-   real(dp), allocatable :: qq(:, :, :, :)
+   real(dp), allocatable :: qq(:, :, :, :), qq_raw(:, :, :, :)
    real(dp), allocatable :: total(:, :, :), buck_total(:, :, :)
    real(dp) :: c(3, 3), com(3), mass_total
    real(dp) :: nu(N_CASIMIR_POLDER)
@@ -170,6 +170,15 @@ program check_dipquad_sumrule
    write (unit, "(es25.16e3)") dq_rd
    write (unit, "(es25.16e3)") dd
    write (unit, "(es25.16e3)") qq
+   ! And the same with the *raw* second moment driving and measuring. The trace of
+   ! GAMESS's LMOQQPOL block cannot be removed by any combination of QQSHIFT's
+   ! terms, so its quadrupole is not the traceless Buckingham form; this is the
+   ! alternative.
+   call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                  scf%n_occupied, nu, theta, theta, qq_raw, &
+                                  centroids, err, n_core=1)
+   if (err%has_error()) error stop "raw quadrupole-quadrupole"
+   write (unit, "(es25.16e3)") qq_raw
    close (unit)
 
    write (*, "(A,I0,A,I0,A)") "  ", n_lmo, " localized orbitals, ", &

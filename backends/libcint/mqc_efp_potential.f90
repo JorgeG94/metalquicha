@@ -77,6 +77,25 @@ module mqc_efp_potential
    !! `alpha` that closed `DQSHIFT` -- but transposing these two terms was tried and
    !! makes it worse, so it is not the same fix.
    !!
+   !! **The structural anchor that worked for `DQSHIFT` is unavailable here, and
+   !! that is a measured fact rather than a guess.** For the dipole-quadrupole block
+   !! the pre-shift tensor had to be symmetric in its quadrupole pair, and requiring
+   !! that pinned three conventions at once. The analogue here is tracelessness:
+   !! `LQQPOL` reads its integrals from DAF 806+K for K = 1..6, which are the
+   !! traceless components, so the pre-shift tensor ought to be traceless in each
+   !! pair. GAMESS's recovered tensor is not -- 0.176 -- and no combination of
+   !! `QQSHIFT`'s five terms can account for it: solving for the coefficients that
+   !! null both pair traces, 864 equations in five unknowns, returns every
+   !! coefficient at zero to six decimals with the residual still at 1.000. The
+   !! observed trace is orthogonal to the span of the terms that could produce it.
+   !!
+   !! So one of three things is true, and this module cannot yet say which: the
+   !! operator carries a trace after all, some `delta`-term contraction differs from
+   !! the transcription here (which matches the source line for line), or an input
+   !! to the shift is not what `QQSHIFT` receives. The first is testable and the
+   !! test is wired up -- `check_dipquad_sumrule` now also computes the response with
+   !! the raw second moment on both sides.
+   !!
    !! With the factor the forward recipe reaches 1.3e-01 relative, and the residual
    !! sits on the components the `delta` terms touch: 1.6e-01 where both index pairs
    !! are diagonal against 2.6e-02 where neither is. Transposing the dipole-dipole
