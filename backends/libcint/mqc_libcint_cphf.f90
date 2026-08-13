@@ -46,11 +46,13 @@ module mqc_libcint_cphf
    !! so a hybrid handed to this module would silently get the Hartree-Fock response
    !! of Kohn-Sham orbitals. There is no functional argument to get wrong; the caller
    !! has to keep it straight. EFP2 wants Hartree-Fock anyway.
+   use iso_fortran_env, only: output_unit
    use pic_types, only: dp
+   use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
-   use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_block
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
@@ -68,6 +70,8 @@ module mqc_libcint_cphf
    public :: distributed_dynamic_polarizability
    public :: distributed_dynamic_cross
    public :: casimir_polder_frequencies
+   !> Exposed side by side so a check can hold both builds of the same matrices.
+   public :: build_hessian, build_hessian_df
 
    !> CG iterations before giving up.
    type :: response_hessian_t
@@ -420,7 +424,8 @@ contains
 
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
-                                     response, perturbations, in_core, hessian)
+                                     response, perturbations, in_core, hessian, &
+                                     progress)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -479,6 +484,10 @@ contains
          !! components instead and `alpha` becomes the quadrupole-quadrupole
          !! response, which is what the `LMOQQPOL` block of a potential carries.
          !! The solver does not care -- only the right-hand sides change.
+      logical, intent(in), optional :: progress
+         !! Report where the two long phases are while they run. On a fragment of any
+         !! size this routine is most of the wall clock and prints nothing for minutes
+         !! at a time, which is indistinguishable from a hang.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
@@ -495,7 +504,11 @@ contains
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
       character(len=32) :: text
+      logical :: talk
+      type(timer_type) :: clock
 
+      talk = .false.
+      if (present(progress)) talk = progress
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
       n_vir = n_mo - n_occ
@@ -586,7 +599,7 @@ contains
          end if
       else
          call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
-                            aplus, aminus, HESSIAN_CHUNK, error)
+                            aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
          if (error%has_error()) return
       end if
 
@@ -611,6 +624,11 @@ contains
 
       allocate (solution(n_ov, n_pert))
 
+      if (talk) then
+         write (*, "(A,I0,A,I0,A,I0,A)") "        solving ", size(frequencies), &
+            " frequencies x ", n_pert, " perturbations over ", n_ov, " pairs"
+         call clock%start()
+      end if
       do ifreq = 1, size(frequencies)
          if (reuse) then
             lu = hessian%product
@@ -640,6 +658,7 @@ contains
                response(:, :, l, ifreq) = reshape(solution(:, l), [n_vir, n_occ])
             end if
          end do
+         if (talk) call tick(clock, ifreq, size(frequencies), "frequency")
       end do
 
       ! Hand the build back if the caller wants it, rather than freeing it.
@@ -658,7 +677,7 @@ contains
    end subroutine dynamic_polarizability
 
    subroutine build_hessian(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            aplus, aminus, chunk, error)
+                            aplus, aminus, chunk, error, progress)
       !! `(A+B)` and `(A-B)` as explicit matrices over the occupied-virtual space
       !!
       !! **Why materialise an operator a matrix-free solver was built to avoid.** The
@@ -685,16 +704,27 @@ contains
       real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
       integer, intent(in) :: chunk
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: progress
 
       real(dp), allocatable :: u(:, :, :), au(:, :, :)
       integer, allocatable :: idx(:)
       integer :: n_vir, n_occ, n_ov, first, last, nthis, m, col, a, i
+      logical :: talk
+      type(timer_type) :: clock
 
+      talk = .false.
+      if (present(progress)) talk = progress
       n_vir = size(gaps, 1)
       n_occ = size(gaps, 2)
       n_ov = n_vir*n_occ
       allocate (aplus(n_ov, n_ov), aminus(n_ov, n_ov))
       allocate (u(n_vir, n_occ, chunk), au(n_vir, n_occ, chunk), idx(chunk))
+      if (talk) then
+         write (*, "(A,I0,A,I0,A,F0.1,A)") "        Hessian: ", n_ov, &
+            " columns in chunks of ", chunk, ", ", &
+            2.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
+         call clock%start()
+      end if
 
       first = 1
       do while (first <= n_ov)
@@ -723,10 +753,138 @@ contains
             aminus(:, first + m - 1) = reshape(au(:, :, m), [n_ov])
          end do
 
+         if (talk) call tick(clock, last, n_ov, "column")
          first = last + 1
       end do
       deallocate (u, au, idx)
    end subroutine build_hessian
+
+   subroutine build_hessian_df(orb, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
+                               progress)
+      !! `(A+B)` and `(A-B)` from fitted integrals instead of from Fock builds
+      !!
+      !! `build_hessian` gets each column by applying the operator to a unit vector,
+      !! which costs an integral pass per chunk of columns -- `n_ov` Fock builds for
+      !! the whole matrix, and that is the whole cost of a potential. The operators
+      !! are, written out,
+      !!
+      !!     (A+B)_{ai,bj} = d Deps + 4(ai|bj) - (ab|ij) - (aj|ib)
+      !!     (A-B)_{ai,bj} = d Deps          - (ab|ij) + (aj|ib)
+      !!
+      !! so with the integrals fitted, `B^P_pq`, every term is a matrix product over
+      !! the auxiliary index and the column loop disappears:
+      !!
+      !!   * `(ai|bj)` is `B_ov B_ov^T` -- one gemm, and because
+      !!     `build_df_mo_block` runs its compound index left-fastest that product
+      !!     already sits in the `n_ov` layout the solver uses, with no repacking.
+      !!   * `(aj|ib)` needs no product of its own. It is the *same* matrix read at
+      !!     permuted indices: `(aj|ib)` is element `[(a,j),(b,i)]` of it. What looks
+      !!     like a third integral class is a transpose of the first.
+      !!   * `(ab|ij)` is `B_vv B_oo^T`, a second gemm of the same flop count, whose
+      !!     result is indexed by `(ab)` and `(ij)` and so is scattered rather than
+      !!     read straight off.
+      !!
+      !! Two gemms of `n_ov^2 naux` replace `n_ov` Fock builds. The result is not the
+      !! same matrix: fitting is an approximation, and how good it is is what
+      !! `validation/check_df_hessian` measures against the exact build rather than
+      !! against GAMESS, so the fitting error is not confused with anything else.
+      !!
+      !! The memory is unchanged and is what limits this -- `n_ov^2` for each
+      !! operator, plus `n_ov^2` again for each of the two integral matrices while
+      !! they are assembled.
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: progress
+
+      real(dp), allocatable :: bov(:, :), bvv(:, :), boo(:, :)
+      real(dp), allocatable :: coul(:, :), exch(:, :), gap_flat(:)
+      real(dp) :: term_abij, term_ajib
+      integer :: n_vir, n_occ, n_ov, naux, row, col, a, i, b, j
+      logical :: talk
+      type(timer_type) :: clock
+
+      talk = .false.
+      if (present(progress)) talk = progress
+      n_vir = size(gaps, 1)
+      n_occ = size(gaps, 2)
+      n_ov = n_vir*n_occ
+      if (talk) call clock%start()
+
+      call build_df_mo_block(orb, aux, c_vir, c_occ, bov, error)
+      if (error%has_error()) return
+      call build_df_mo_block(orb, aux, c_vir, c_vir, bvv, error)
+      if (error%has_error()) return
+      call build_df_mo_block(orb, aux, c_occ, c_occ, boo, error)
+      if (error%has_error()) return
+      naux = size(bov, 2)
+      if (talk) then
+         write (*, "(A,I0,A,I0,A,F0.1,A)") "        fitted Hessian: ", n_ov, &
+            " pairs, ", naux, " auxiliary functions, ", &
+            4.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
+         call tick(clock, 1, 3, "step")
+      end if
+
+      allocate (coul(n_ov, n_ov))
+      call pic_gemm(bov, bov, coul, transb="T")
+      allocate (exch(n_vir*n_vir, n_occ*n_occ))
+      call pic_gemm(bvv, boo, exch, transb="T")
+      deallocate (bov, bvv, boo)
+      if (talk) call tick(clock, 2, 3, "step")
+
+      allocate (aplus(n_ov, n_ov), aminus(n_ov, n_ov))
+      !$omp parallel do default(none) private(col, row, a, i, b, j, term_abij, term_ajib) &
+      !$omp shared(n_ov, n_vir, n_occ, coul, exch, aplus, aminus) schedule(static)
+      do col = 1, n_ov
+         b = mod(col - 1, n_vir) + 1
+         j = (col - 1)/n_vir + 1
+         do row = 1, n_ov
+            a = mod(row - 1, n_vir) + 1
+            i = (row - 1)/n_vir + 1
+            term_abij = exch(a + (b - 1)*n_vir, i + (j - 1)*n_occ)
+            ! `(aj|ib)`: the pair `(a,j)` against the pair `(b,i)`, both of which are
+            ! virtual-occupied, so both are indices into the same fitted matrix.
+            term_ajib = coul(a + (j - 1)*n_vir, b + (i - 1)*n_vir)
+            aplus(row, col) = 4.0_dp*coul(row, col) - term_abij - term_ajib
+            aminus(row, col) = term_ajib - term_abij
+         end do
+      end do
+      !$omp end parallel do
+      deallocate (coul, exch)
+
+      gap_flat = reshape(gaps, [n_ov])
+      do col = 1, n_ov
+         aplus(col, col) = aplus(col, col) + gap_flat(col)
+         aminus(col, col) = aminus(col, col) + gap_flat(col)
+      end do
+      deallocate (gap_flat)
+      if (talk) call tick(clock, 3, 3, "step")
+   end subroutine build_hessian_df
+
+   subroutine tick(clock, done, total, unit_name)
+      !! One progress line: how far in, how long it has taken, what is left
+      !!
+      !! The estimate assumes the remaining work costs what the finished work did,
+      !! which holds for the Hessian columns -- every chunk is the same integral pass
+      !! -- and for the frequency solves, where each is the same factorization. It is
+      !! printed as an estimate rather than a promise because screening makes some
+      !! chunks cheaper than others.
+      type(timer_type), intent(inout) :: clock
+      integer, intent(in) :: done, total
+      character(len=*), intent(in) :: unit_name
+
+      real(dp) :: so_far, left
+
+      ! Read the clock without stopping it: `start` resets, so a stop/start pair here
+      ! would leave `so_far` measuring only the interval since the previous line and
+      ! the estimate would be built from one chunk rather than all of them.
+      so_far = clock%get_elapsed_time()
+      left = so_far*real(total - done, dp)/real(max(done, 1), dp)
+      write (*, "(A,I6,A,I0,1X,A,A,F8.1,A,F8.1,A)") "        ", done, " of ", total, &
+         trim(unit_name), "s   ", so_far, " s in, ~", left, " s left"
+      flush (output_unit)
+   end subroutine tick
 
    subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, idx, nact, minus, au, error)
@@ -959,7 +1117,8 @@ contains
 
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
-                                        centroids, error, n_core, max_iter, tol, hessian)
+                                        centroids, error, n_core, max_iter, tol, hessian, &
+                                        progress)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -1007,6 +1166,8 @@ contains
       real(dp), intent(in), optional :: tol
       type(response_hessian_t), intent(inout), optional :: hessian
          !! Passed straight through, so the blocks of one potential share a build.
+      logical, intent(in), optional :: progress
+         !! Passed straight through as well: the solver is where the time goes.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
@@ -1031,7 +1192,7 @@ contains
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, perturbations=respond, &
-                                  hessian=hessian)
+                                  hessian=hessian, progress=progress)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
@@ -1071,7 +1232,7 @@ contains
    subroutine distributed_dynamic_polarizability(mol, orbitals, orbital_energies, &
                                                  n_occ, frequencies, tensors, &
                                                  centroids, error, n_core, max_iter, &
-                                                 tol, hessian)
+                                                 tol, hessian, progress)
       !! One tensor per localized orbital at each imaginary frequency
       !!
       !! What `DYNAMIC POLARIZABLE POINTS` carries, and what dispersion is built
@@ -1097,6 +1258,8 @@ contains
       real(dp), intent(in), optional :: tol
       type(response_hessian_t), intent(inout), optional :: hessian
          !! Passed straight through, so the blocks of one potential share a build.
+      logical, intent(in), optional :: progress
+         !! Passed straight through as well: the solver is where the time goes.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: dip(:, :, :), s(:, :), sc(:, :), w(:, :)
@@ -1121,7 +1284,8 @@ contains
 
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
-                                  response=s_all, hessian=hessian)
+                                  response=s_all, hessian=hessian, &
+                                  progress=progress)
       if (error%has_error()) return
 
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)

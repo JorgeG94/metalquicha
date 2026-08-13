@@ -321,7 +321,7 @@ contains
                                               scf%orbital_energies, pot%n_occ, &
                                               pot%frequencies, pot%dynamic_pol, &
                                               pot%centroids, error, n_core=core, &
-                                              hessian=shared_hessian)
+                                              hessian=shared_hessian, progress=talk)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -331,7 +331,7 @@ contains
          " imaginary frequencies"
 
       call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
-                                   shared_hessian, error)
+                                   shared_hessian, error, progress=talk)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -410,7 +410,7 @@ contains
    end subroutine make_efp_potential
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
-                                      pot, hessian, error)
+                                      pot, hessian, error, progress)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -440,6 +440,7 @@ contains
       type(efp_potential_t), intent(inout) :: pot
       type(response_hessian_t), intent(inout) :: hessian
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: progress
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
@@ -478,7 +479,8 @@ contains
 
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      pot%n_occ, pot%frequencies, buck, dip, raw, &
-                                     centroids, error, n_core=core, hessian=hessian)
+                                     centroids, error, n_core=core, hessian=hessian, &
+                                     progress=progress)
       if (error%has_error()) return
 
       n_freq = size(pot%frequencies)
@@ -520,7 +522,8 @@ contains
       ! summed over the orbitals and divided by three reproduces it to 1.5e-05.
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      pot%n_occ, pot%frequencies, buck, buck, qq, &
-                                     centroids, error, n_core=core, hessian=hessian)
+                                     centroids, error, n_core=core, hessian=hessian, &
+                                     progress=progress)
       if (error%has_error()) return
 
       allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))

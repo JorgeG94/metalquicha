@@ -120,7 +120,7 @@ set(MQC_BASIS_BUNDLE
     CACHE STRING "Basis Set Exchange bundle under basis_sets/")
 set(MQC_BASIS_SETS
     # Pople, Dunning, and the auxiliaries the validation inputs name
-    "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;cc-pvqz;aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
+    "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;cc-pvqz;6-31g(2df,p);aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
     # every def2 the bundle carries: orbital, diffuse, RI/JK auxiliaries, ECP
     "def2-sv(p);def2-sv(p)-jkfit;def2-sv(p)-rifit;def2-svp;def2-svp-rifit;def2-svpd;def2-svpd-rifit"
     "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
@@ -532,6 +532,14 @@ if(MQC_ENABLE_LIBCINT)
   add_executable(check_makefp ${PROJECT_SOURCE_DIR}/validation/check_makefp.f90)
   target_include_directories(check_makefp PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_makefp PRIVATE ${main_lib} cint_fortran cint)
+
+  # The fitted response Hessian against the exact one, so the fitting error is
+  # measured on its own rather than mixed into a comparison with GAMESS.
+  add_executable(check_df_hessian
+                 ${PROJECT_SOURCE_DIR}/validation/check_df_hessian.f90)
+  target_include_directories(check_df_hessian
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_df_hessian PRIVATE ${main_lib} cint_fortran cint)
 
   # The projection data a potential carries: the LMO Fock matrix, which needs no
   # basis ordering, against GAMESS's own.
