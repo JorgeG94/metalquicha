@@ -69,6 +69,11 @@ module mqc_libcint_cphf
    !> CG iterations before giving up.
    integer, parameter :: DEFAULT_MAX_ITER = 200
 
+   !> Largest two-electron tensor to store rather than recompute, in bytes. Two
+   !> gigabytes reaches about 150 basis functions, which covers a fragment; past it
+   !> the direct build is the only option anyway.
+   real(dp), parameter :: IN_CORE_LIMIT = 2.0e9_dp
+
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
 
@@ -283,8 +288,8 @@ contains
       deallocate (dtilde, g, half, work)
    end subroutine response_operator
 
-   subroutine response_operator_minus(mol, bounds, zero_h, c_occ, c_vir, gaps, u, au, &
-                                      error)
+   subroutine response_operator_minus(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, u, au, error)
       !! Apply `A - B`, the other half of a frequency-dependent response
       !!
       !! Same shape as `response_operator` above and the same Fock build, on the
@@ -303,6 +308,8 @@ contains
       !! note on that routine, and the test that asserts the fast one really is
       !! wrong here.
       type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct              !! Recompute integrals rather than store them
+      real(dp), intent(in) :: eri(:, :, :, :)    !! Zero-sized when `direct`
       real(dp), intent(in) :: bounds(:, :)
       real(dp), intent(in) :: zero_h(:, :)
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
@@ -323,8 +330,17 @@ contains
       call pic_gemm(half, c_occ, dtilde(:, :, 1), transb="T")
       dtilde(:, :, 1) = dtilde(:, :, 1) - transpose(dtilde(:, :, 1))
 
-      call build_fock_direct_nosym(mol, zero_h, dtilde, bounds, g, stats, error)
-      if (error%has_error()) return
+      ! In core the plain four-index contraction is already right for an
+      ! antisymmetric density -- the Coulomb term vanishes on its own, since the
+      ! integral is symmetric in the contracted pair -- so no `nosym` variant is
+      ! needed on this path.
+      if (direct) then
+         call build_fock_direct_nosym(mol, zero_h, dtilde, bounds, g, stats, error)
+         if (error%has_error()) return
+      else
+         allocate (g(size(dtilde, 1), size(dtilde, 2), 1))
+         call build_fock(zero_h, eri, dtilde(:, :, 1), g(:, :, 1))
+      end if
 
       call pic_gemm(g(:, :, 1), c_occ, work)
       call pic_gemm(c_vir, work, au, transa="T")
@@ -359,7 +375,7 @@ contains
 
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
-                                     response, perturbations)
+                                     response, perturbations, in_core)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -399,6 +415,14 @@ contains
          !! `S_ai` per perturbation per frequency, `(n_vir, n_occ, n_pert, n_freq)`,
          !! for a caller that wants to distribute it over localized orbitals rather
          !! than only take the total.
+      logical, intent(in), optional :: in_core
+         !! Store the two-electron integrals instead of recomputing them each time
+         !! the response operator is applied. Defaults to storing them whenever the
+         !! tensor fits `IN_CORE_LIMIT`, because this solver applies that operator a
+         !! great many times: every outer iteration runs an inner solve of its own,
+         !! so the count is frequencies times perturbations times outer times inner.
+         !! For a fragment-sized molecule recomputing all of it each time dominates
+         !! everything else the potential costs.
       real(dp), intent(in), optional :: perturbations(:, :, :)
          !! One-electron operators in the AO basis. Defaults to the three dipole
          !! components, which is what `alpha` means; supply the six quadrupole
@@ -409,6 +433,7 @@ contains
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
       real(dp), allocatable :: eri0(:, :, :, :), work(:, :)
+      logical :: direct
       real(dp), allocatable :: s_vec(:, :), rhs(:, :), r(:, :), z(:, :), p(:, :)
       real(dp), allocatable :: ap(:, :), inner(:, :)
       real(dp), allocatable :: operators(:, :, :)
@@ -443,11 +468,19 @@ contains
                         "not n_ao square")
          return
       end if
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
+      direct = .true.
+      if (real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT) direct = .false.
+      if (present(in_core)) direct = .not. in_core
+      if (direct) then
+         call schwarz_bounds(mol, bounds, error)
+         if (error%has_error()) return
+         allocate (eri0(0, 0, 0, 0))
+      else
+         call mol%eris(eri0)
+         allocate (bounds(0, 0))
+      end if
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), zero_h(n_ao, n_ao))
-      allocate (eri0(0, 0, 0, 0))
       c_occ = orbitals(:, 1:n_occ)
       c_vir = orbitals(:, n_occ + 1:n_mo)
       zero_h = 0.0_dp
@@ -490,7 +523,7 @@ contains
             p = z
             rz = sum(r*z)
             do iter = 1, limit
-               call apply_dynamic(mol, bounds, zero_h, eri0, c_occ, c_vir, gaps, &
+               call apply_dynamic(mol, direct, bounds, zero_h, eri0, c_occ, c_vir, gaps, &
                                   nu, p, ap, inner, limit, use_tol, error)
                if (error%has_error()) return
                pap = sum(p*ap)
@@ -528,7 +561,7 @@ contains
       deallocate (s_vec, rhs, r, z, p, ap, inner)
    end subroutine dynamic_polarizability
 
-   subroutine apply_dynamic(mol, bounds, zero_h, eri0, c_occ, c_vir, gaps, nu, u, au, &
+   subroutine apply_dynamic(mol, direct, bounds, zero_h, eri0, c_occ, c_vir, gaps, nu, u, au, &
                             scratch, limit, tol, error)
       !! `[(A+B) + nu^2 (A-B)^-1] u`, the inner solve included
       !!
@@ -539,6 +572,7 @@ contains
       !! failing. `A - B` is well conditioned -- for water it needs a handful of
       !! iterations -- so tightening it is nearly free.
       type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
       real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
       real(dp), intent(in) :: eri0(:, :, :, :)
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
@@ -554,7 +588,7 @@ contains
       real(dp) :: rz, rz_new, pap, step, target_norm
       integer :: iter
 
-      call response_operator(mol, .true., eri0, bounds, zero_h, c_occ, c_vir, gaps, &
+      call response_operator(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, au, error)
       if (error%has_error()) return
       if (nu == 0.0_dp) return
@@ -570,7 +604,7 @@ contains
       p = z
       rz = sum(r*z)
       do iter = 1, limit
-         call response_operator_minus(mol, bounds, zero_h, c_occ, c_vir, gaps, p, ap, &
+         call response_operator_minus(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, p, ap, &
                                       error)
          if (error%has_error()) return
          pap = sum(p*ap)
