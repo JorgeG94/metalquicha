@@ -1,43 +1,22 @@
 !! The dipole-quadrupole response summed over localized orbitals
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON
 !!     ./build/check_dipquad_sumrule
 !!     python3 validation/check_dipquad_sumrule.py
 !!
-!! **Why a sum.** Every comparison of the `DIPOLE-QUADRUPOLE` block against GAMESS
-!! so far has been per localized orbital, and a per-orbital comparison cannot
-!! distinguish two very different failures: computing the wrong *quantity*, and
-!! computing the right quantity but projecting it onto the orbitals differently.
-!! Summing over the orbitals removes the second possibility entirely.
+!! **Why a sum.** Per orbital, a comparison against GAMESS cannot separate computing
+!! the wrong quantity from projecting the right one differently. Summed it can: the
+!! projector onto the localized set becomes the identity, so the two orderings of
+!! measure and respond coincide and the sum tests the quantity alone.
 !!
-!! That is not a hope, it is an identity, and it is recorded in
-!! `mqc_libcint_cphf`: per orbital the two orderings of measure and respond give
-!! `h^A P M^-1 h^B` and `h^A M^-1 P h^B`, which differ because the projector `P`
-!! does not commute with `M^-1`; summed over every orbital `P` is the identity and
-!! they coincide. So the sum is projection independent, ordering independent, and
-!! localization independent -- three of the free choices that made the per-orbital
-!! comparison ambiguous.
+!! That is how the dipole-quadrupole block was settled -- the sum matched at once,
+!! which said the quantity was right and sent the search to the decomposition, where
+!! the answer was a transposed tensor in the write-time translation. Both dumps here
+!! feed `check_dipquad_sumrule.py`, which also carries the quadrupole-quadrupole
+!! comparison.
 !!
-!! **What each outcome would mean.** GAMESS's written values are not the tensor
-!! its `LDQPOL` computes; they are `DQSHIFT`'s translation of it, which mixes the
-!! dipole-dipole polarizability in. That shift is known exactly and is undone in
-!! the Python from GAMESS's own dipole-dipole tensors and centroids, so both sides
-!! of the comparison are pre-shift totals. Then:
-!!
-!!   * if the sums agree, the quantity is right and the difference is entirely in
-!!     the per-orbital decomposition -- a much smaller and better-localized
-!!     problem than the one on record;
-!!   * if the sums disagree, the difference is upstream of any localization, and no
-!!     amount of work on the projection would ever have closed it.
-!!
-!! Either way it is worth knowing, and neither is knowable from the per-orbital
-!! numbers.
-!!
-!! The operators are GAMESS's: the three Cartesian dipoles measure, and the six
-!! unique traceless Buckingham quadrupole components drive, in its `XX YY ZZ XY XZ
-!! YZ` order, built from the raw second moments the way GAMESS builds them.
-!! Everything is expanded about the centre of mass, which is what `DQSHIFT` shifts
-!! *from*.
+!! The operators are GAMESS's: three Cartesian dipoles measure, six unique traceless
+!! Buckingham quadrupole components drive, in `XX YY ZZ XY XZ YZ` order, all expanded
+!! about the centre of mass -- which is what the translation shifts *from*.
 program check_dipquad_sumrule
    use pic_types, only: dp
    use mqc_elements, only: element_mass

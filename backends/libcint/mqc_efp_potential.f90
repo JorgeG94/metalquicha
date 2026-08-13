@@ -1,89 +1,34 @@
 !! A complete effective fragment potential, computed and written here
 module mqc_efp_potential
-   !! `RUNTYP=MAKEFP`: everything from a geometry and a basis name to a `.efp`
-   !! file on disk, in Fortran, with no reference potential involved.
+   !! `RUNTYP=MAKEFP`: a geometry and a basis name in, a `.efp` file out.
    !!
-   !! **Why this module exists separately from the pieces it calls.** Each
-   !! parameter block already had a `validation/check_*` program that computed it
-   !! and dumped it for a Python comparison against GAMESS's printed numbers.
-   !! That establishes that we compute the same quantities. It does not produce a
-   !! potential: the only thing that had ever *written* one was a Python script
-   !! that took GAMESS's own file and substituted our numbers into it, section by
-   !! section. That was the right instrument for the question it answered -- does
-   !! GAMESS agree with our parameters -- and it is not a makefp. The sections
-   !! were computed in six unrelated programs, the file format lived in Python,
-   !! and nothing assembled the two.
+   !! Each parameter block already had a `validation/check_*` program computing it
+   !! and dumping it for comparison against GAMESS's printed numbers. This is the
+   !! assembly -- the SCF, the localization, the multipoles, the static and dynamic
+   !! polarizabilities, the projection data and both screening fits, written as one
+   !! file -- and it is where a run turns into a fragment someone else can use.
    !!
-   !! So this is the assembly, and it is where a run turns into a fragment
-   !! someone else can use.
+   !! **All seventeen sections GAMESS's reader recognises are written**, so the
+   !! potential is complete: electrostatics to octupole with charge-penetration
+   !! screening, polarization, exchange repulsion, dispersion through `E6`, `E7` and
+   !! `E8`, and charge transfer. Seventeen and not eighteen because `CTFOK` is a
+   !! *subsection* of `CTVEC` rather than a section: GAMESS accepts it only directly
+   !! behind one and aborts on a standalone one, so the two share a `STOP`.
    !!
-   !! **All seventeen sections GAMESS's reader recognises are written**, so a
-   !! potential from this module is a complete fragment: electrostatics to octupole
-   !! with charge-penetration screening, polarization, exchange repulsion,
-   !! dispersion through `E6`, `E7` and `E8`, and charge transfer.
+   !! **The formats target GAMESS's reader, not byte-identity with its writer.** The
+   !! test that matters is whether GAMESS accepts the file and agrees with the
+   !! energies it computes from it, which `tools/efp_validation/dimer_energy.py`
+   !! asks: every term agrees, exchange repulsion and charge transfer exactly and the
+   !! rest between 1e-10 and 2e-07.
    !!
-   !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
-   !! subsection of `CTVEC`, accepted only directly behind one, so the two are
-   !! written together and share a `STOP` -- see the comment where they are emitted.
-   !! That is not a detail: a standalone `CTFOK` makes GAMESS abort, and it was found
-   !! by handing a file to GAMESS rather than by reading its output, because every
-   !! parameter in that file already agreed with GAMESS's own.
-   !!
-   !! **The formats are GAMESS's reader's, not its writer's.** Free-form values in
-   !! measured columns with the continuation markers each section expects. Byte
-   !! identity with MAKEFP's output would be a much larger job for no extra
-   !! confidence, since the test that matters is whether GAMESS accepts the file and
-   !! agrees with the energies it computes from it -- which is what
-   !! `tools/efp_validation/dimer_energy.py` asks it.
-   !!
-   !! **`LMOQQPOL` is written, and validated by the energy rather than the tensor.**
-   !! Its 81 values are a 3x3x3x3 array with the last index fastest, and its
-   !! write-time translation is `QQSHIFT`, transcribed in
-   !! `qq_shift` below. Two things justify writing it even though our per-orbital
-   !! values differ from GAMESS's written ones by up to 0.162:
-   !!
-   !!   * **the response is right.** `$MAKEFP MOLPOL=.TRUE.` makes GAMESS write its
-   !!     *molecular* `QUAD-QUAD POLARIZABILITY`, the total at the centre of mass
-   !!     with no translation applied. Our response summed over the orbitals and
-   !!     divided by three reproduces it to **1.6e-05**, and the 1/3 is not fitted:
-   !!     the quadrupole-quadrupole contraction carries a factor of a third that the
-   !!     dipole-quadrupole one does not;
-   !!   * **the energy is right.** GAMESS reading our file computes
-   !!     `E8 = -0.000156427` against `-0.000156231` from its own potential, a
-   !!     difference of **2.0e-07**, and a total dispersion within 2.0e-07.
-   !!
-   !! And GAMESS's own written block does not survive its own consistency check:
-   !! un-shifting it with `QQSHIFT` and summing over the orbitals should give the
-   !! molecular tensor from the same run, and it misses by 1.98e-02 -- against
-   !! 1.6e-05 for ours. Fitting `QQSHIFT`'s five coefficients freely against that
-   !! constraint, 972 equations using only GAMESS's own numbers, returns the source's
-   !! own coefficients and cannot get below 3.4e-02. So the per-orbital disagreement
-   !! is on their side of that comparison, not ours, which is why matching their
-   !! written values was never going to work and why the energy is the right test.
-   !!
-   !! The remaining per-orbital difference is confined to the part that is
-   !! antisymmetric under exchanging the two index pairs -- the symmetric part agrees
-   !! at scale 0.3314 -- which is exactly the part that the assignment of measure and
-   !! respond controls per orbital and that cancels on summing. It moves the
-   !! interaction energy by 2e-07.
-   !!
-   !! Seventeen and not eighteen because `CTFOK` is not a section. It is a
-   !! subsection of `CTVEC`, accepted only directly behind one, so it goes when
-   !! `CTVEC` goes -- see the comment where it would have been written. That was
-   !! found by handing a file to GAMESS, not by reading its output: every
-   !! parameter in it agreed with GAMESS's own and the file was still unreadable.
-   !!
-   !! What the fifteen support, in EFP terms: electrostatics to octupole with
-   !! charge-penetration screening, polarization, exchange repulsion, and
-   !! dispersion through its `E6` and `E7` terms. What they do not is `E8`, which
-   !! needs the quadrupole-quadrupole block, and charge transfer, which needs
-   !! `CTVEC`.
-   !!
-   !! **The formats are GAMESS's reader's, not its writer's.** Free-form values in
-   !! measured columns with the continuation markers each section expects. Byte
-   !! identity with MAKEFP's output would be a much larger job for no extra
-   !! confidence, since the test that matters is whether GAMESS accepts the file
-   !! and agrees with the energies it computes from it.
+   !! **`LMOQQPOL` is the one block validated by its energy rather than its values.**
+   !! Our per-orbital tensors differ from GAMESS's written ones by up to 0.162, and
+   !! deliberately so: our response summed over the orbitals reproduces GAMESS's own
+   !! *molecular* quadrupole-quadrupole polarizability -- which
+   !! `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied -- to 1.6e-05, while
+   !! its written per-orbital block misses that same tensor by 1.98e-02. The
+   !! difference is confined to the part antisymmetric under exchanging the two index
+   !! pairs, which cancels on summing, and it moves the interaction energy by 2e-07.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION

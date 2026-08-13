@@ -2,12 +2,10 @@
 module mqc_libcint_cphf
    !! First-order orbital response to a one-electron perturbation.
    !!
-   !! An SCF is variational, so a perturbation does not simply shift the
-   !! orbitals by first-order perturbation theory: changing them changes the
-   !! Fock operator, which changes them again. The self-consistency is what
-   !! makes the equations *coupled*, and solving them is the difference between
-   !! an uncoupled estimate that is wrong by tens of percent and a derivative
-   !! that is exact.
+   !! An SCF is variational, so a perturbation does not simply shift the orbitals:
+   !! changing them changes the Fock operator, which changes them again. That
+   !! self-consistency is what makes the equations *coupled*, and it is worth tens of
+   !! percent against an uncoupled estimate.
    !!
    !! **The equations.** Writing the first-order orbitals as a rotation into the
    !! virtual space, `C_i^(1) = sum_a C_a U_ai`, the stationarity of the energy
@@ -35,24 +33,19 @@ module mqc_libcint_cphf
    !! the machinery needed. The same substitution is what lets analytical
    !! Hessians and MP2 gradients reuse this later.
    !!
-   !! **Why conjugate gradients.** The bracket above is symmetric -- swapping
-   !! `(ai)` with `(bj)` maps each of the three terms to itself -- and it is
-   !! positive definite whenever the SCF sits at a minimum rather than a saddle.
-   !! So the natural solver is preconditioned CG with the orbital-energy
-   !! differences as the preconditioner -- the same denominators the uncoupled
-   !! sum-over-states expression uses, so the preconditioner is exactly "ignore
-   !! the coupling" and CG spends its iterations on nothing else. It converges in
-   !! a handful. If it ever fails to here, the reference is the suspect and not
-   !! the solver: a broken-symmetry or saddle-point SCF is the usual reason, and
-   !! the positive-definiteness guards below say so rather than iterating on.
+   !! **Why conjugate gradients.** That bracket is symmetric and positive definite
+   !! whenever the SCF sits at a minimum, so preconditioned CG fits, with the
+   !! orbital-energy differences as the preconditioner -- the preconditioner is then
+   !! exactly "ignore the coupling" and CG spends its handful of iterations on
+   !! nothing else. If it fails to converge the reference is the suspect, usually a
+   !! saddle point or broken symmetry, and the guards below say so rather than
+   !! iterating on.
    !!
-   !! **Restricted Hartree-Fock only.** With a functional the response operator
-   !! acquires the exchange-correlation kernel, the second derivative of the
-   !! energy density, which is a different object from anything the SCF already
-   !! builds -- so a hybrid handed to this module would silently return the
-   !! Hartree-Fock response of the Kohn-Sham orbitals. The caller has to keep
-   !! that straight; there is no functional argument to get wrong. EFP2, which
-   !! is what wants this, is defined over a Hartree-Fock reference anyway.
+   !! **Restricted Hartree-Fock only.** With a functional the response operator gains
+   !! the exchange-correlation kernel, which nothing the SCF already builds supplies,
+   !! so a hybrid handed to this module would silently get the Hartree-Fock response
+   !! of Kohn-Sham orbitals. There is no functional argument to get wrong; the caller
+   !! has to keep it straight. EFP2 wants Hartree-Fock anyway.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
@@ -605,222 +598,36 @@ contains
                                         centroids, error, n_core, max_iter, tol)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
-      !! The general object the three dynamic blocks of a potential are cases of:
-      !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
       !!
-      !! with `measure` the operator the response is read off with and `respond` the
-      !! one that drives it. Both dipole gives `DYNAMIC POLARIZABLE POINTS`; dipole
-      !! against quadrupole gives the dipole-quadrupole block; both quadrupole gives
-      !! `LMOQQPOL`. Nothing in the solver distinguishes them.
+      !! `measure` is the operator the response is read off with, `respond` the one
+      !! that drives it. All three dynamic blocks of a potential are cases of this
+      !! and the solver does not distinguish them: dipole against dipole gives
+      !! `DYNAMIC POLARIZABLE POINTS`, dipole against quadrupole the
+      !! dipole-quadrupole block, quadrupole against quadrupole `LMOQQPOL`.
       !!
-      !! **Validated for dipole against dipole only.** With both operators the
-      !! dipole this reproduces `DYNAMIC POLARIZABLE POINTS` to 8e-5, GAMESS's own
-      !! precision. Dipole against quadrupole does *not* reproduce GAMESS's
-      !! `DIPOLE-QUADRUPOLE` block, and two hypotheses have been ruled out rather
-      !! than one being confirmed:
+      !! **The quadrupole to pass is the traceless Buckingham form**, not the raw
+      !! second moment, and for the quadrupole-quadrupole case GAMESS carries an
+      !! extra factor of one third that the mixed case does not. Both are applied by
+      !! the caller; see `mqc_efp_potential`, which also holds the write-time
+      !! translation from the centre of mass to each centroid.
       !!
-      !!   * the raw second moment `r_l r_m` as the driving operator -- no component
-      !!     of the reference is proportional to any component of ours, across all
-      !!     48 samples of four orbitals by twelve frequencies, so it is not a
-      !!     permutation and scale of what this computes;
-      !!   * the same with the quadrupole referred to each orbital's own centroid,
-      !!     which was the physically motivated guess -- the dipole's
-      !!     occupied-virtual block is origin independent because `<a|i> = 0`, but
-      !!     the quadrupole's is not, so a distributed quadrupole response ought to
-      !!     be expanded about its own point. Implemented as the exact linear
-      !!     combination `S_quad - R_l S_dip,m - R_m S_dip,l` and it does not match
-      !!     either.
+      !! **Per orbital, which operator measures is not a free choice.** One order
+      !! gives `h P M^-1 h` and the other `h M^-1 P h`, and the projector onto the
+      !! localized set does not commute with the response operator, so the two differ
+      !! -- by 1.4e-01 against 4.5e-01 for the dipole-quadrupole block. Summed over
+      !! every orbital `P` is the identity and they agree, which is what makes a
+      !! summed comparison the way to test the quantity independently of the
+      !! decomposition. It is also why each per-orbital tensor is asymmetric and only
+      !! the total is symmetric.
       !!
-      !!   * the **traceless** Buckingham quadrupole, which is what GAMESS actually
-      !!     uses -- built from the raw second moments as
-      !!     `theta_xx = (2 Q_xx - Q_yy - Q_zz)/2` and `theta_xy = 3 Q_xy / 2`, with the
-      !!     six unique components stored in
-      !!     `XX YY ZZ XY XZ YZ` order. Read from its source rather than guessed,
-      !!     applied as the exact linear combination of the responses -- and it does
-      !!     not match either.
+      !! Validated against GAMESS: dipole-dipole to 8e-05 elementwise, and the mixed
+      !! and quadrupole-quadrupole blocks through the dispersion energies GAMESS
+      !! computes from an emitted potential -- `E7` to 4e-10, `E8` to 2e-07.
       !!
-      !! **The assembly has now been read too, and it agrees with what this computes.**
-      !! `LDQPOL` forms the tensor as a sum over occupied-virtual pairs of the response
-      !! against the integral, dipole index outermost and quadrupole innermost, with a
-      !! factor of two for the dynamic case and four for the static. `K` runs over the
-      !! three dipole components, `L` the six traceless quadrupole ones
-      !! read from DAF 807-812, and the factor two for the dynamic case (four for the
-      !! static). So the nesting is dipole-outer, quadrupole-inner over the six
-      !! unique components, and the contraction and its factor are exactly this
-      !! routine's -- the two differ only in which operator drives and which
-      !! measures, and the response function is symmetric in those.
-      !!
-      !! It still does not reproduce the reference. Fitting a single scale over the
-      !! 874 samples where our value is above noise leaves a relative residual of
-      !! 1.0, under either candidate expansion of the six unique components into the
-      !! nine slots the file carries.
-      !!
-      !! The per-orbital decomposition has been read too: GAMESS
-      !! transforms *both* factors into the localized basis and then contracts over
-      !! virtuals, which is the same shape this routine uses.
-      !!
-      !! **One real asymmetry came out of that read, and it is worth keeping even
-      !! though it did not resolve the discrepancy.** GAMESS contracts the
-      !! *dipole-driven response* against the *quadrupole integral*; this routine as
-      !! called for the earlier tests did the reverse. Those are not equivalent per
-      !! orbital: writing `M` for the response operator and `P` for the projector
-      !! onto the localized set, one is `h^A P M^-1 h^B` and the other
-      !! `h^A M^-1 P h^B`, and `P` does not commute with `M^-1`. They agree only when
-      !! summed over every orbital, where `P` is the identity. That is also why the
-      !! per-orbital dipole-dipole tensors are asymmetric at all. Swapping to
-      !! GAMESS's order was tested and does not close the gap either.
-      !!
-      !! **The quantities are the same physics, and the difference is a linear
-      !! mixing.** Correlating our 27 components against the reference's over all 48
-      !! samples: eight of theirs correlate above 0.99 with one of ours, fifteen above
-      !! 0.90, the best at 0.9989. So this is not a different property -- it is the
-      !! same property under a transform that mixes components, which is why every
-      !! permutation-and-scale hypothesis fails at a relative residual of 1.0 while
-      !! the correlations sit near unity. Magnitudes differ by about 9x.
-      !!
-      !! That rules out, definitively, the entire family of explanations that
-      !! accounted for every other convention in this project -- the nine-component
-      !! polarizability transpose, the Cartesian d permutation, the printed
-      !! contraction coefficients, the units constant were all permutations or
-      !! scales. The combinatorial space is now exhausted: both drive/measure
-      !! orientations, three operator definitions (raw second moment, traceless, and
-      !! traceless referred to each orbital's centroid), both nine-slot expansions of
-      !! the six unique components, and both nestings.
-      !!
-      !! Normalisation is also ruled out by argument rather than by search: the
-      !! dipole-dipole block matches at 8e-5 using `-2 sum h S`, and `LDQPOL` uses the
-      !! *same* dipole-driven response with the same factor, so GAMESS's `U` is this
-      !! routine's `S`.
-      !!
-      !! **And there is no mixing to find: their block is not in our span.** Solving
-      !! `ref = M x ours` by least squares over all 48 samples gives rank 18 -- which
-      !! is right, since a symmetric quadrupole has six unique components and six
-      !! times three is eighteen -- and a worst relative residual of 0.139. So no
-      !! linear map from what this routine computes reproduces what GAMESS writes.
-      !!
-      !! That is stronger than the enumeration above and supersedes the correlation
-      !! argument, which was misleading: a reference component correlating 0.9989 with
-      !! one of ours does not imply the reference set is *spanned* by ours, and it is
-      !! not. Their block carries information this contraction does not contain.
-      !!
-      !! So the search should stop looking for a transform and start asking what
-      !! quantity GAMESS computes.
-      !!
-      !! `LDQPOL`'s caller has been followed back and it does not
-      !! resolve it, but it narrows where to look. `ZA` is the dipole-driven response:
-      !! `POLDB` is called with `MOMENT = 1`, which reads the dipole MO integrals from
-      !! DAF 252-254. The several branches around the call are alternative *solvers*
-      !! for the same equation -- `CHFSLV` selects GMRES, BiCGSTAB, DIIS or an exact
-      !! `LINEQU` -- not extra transformations, so `ZA` is what it appears to be.
-      !!
-      !! Two scaling facts from that region are the remaining thread, and they are the
-      !! reason a factor argument cannot be dismissed as easily as it was above:
-      !!
-      !!   * `POLDB` forms the right-hand side as `DB = 8 H2^T h`, with `H2` the stored
-      !!     Hessian rather than its inverse. So `ZA` solves `(H21 + freq) ZA = 8 H2^T h`
-      !!     and is not simply `operator^-1 h`; there is an extra `H2^T` in it.
-      !!   * the frequency enters as `4 nu^2`, not `nu^2`.
-      !!
-      !! **The scaling has now been traced, and it closes that question: GAMESS solves
-      !! the same equation this routine does, in its product form.** `POLH21FULL` at
-      !! it builds the product `H21 = H2^T H1`; `ADDFR` puts `4 nu^2` on its diagonal; and `POLDB` supplies
-      !! `8 H2^T h`. Their equation is therefore
-      !!
-      !!     [H2^T H1 + 4 nu^2] ZA = 8 H2^T h
-      !!
-      !! Eliminating the antisymmetric part here *without* forming an inverse gives
-      !!
-      !!     [(A-B)(A+B) + nu^2] S = -2 (A-B) h
-      !!
-      !! which is the same product, in the same operator order, with the frequency on
-      !! the diagonal and the right-hand side premultiplied by `(A-B)`. Taking
-      !! `H2 = 2(A-B)` and `H1 = 2(A+B)` makes every factor line up and gives
-      !! `ZA = -2 S`.
-      !!
-      !! So their response is this routine's up to a constant -- which is what the
-      !! dipole-dipole agreement at 8e-5 already implied, and which the least-squares
-      !! fit above allows and rejects. **Scaling cannot explain the mixed blocks
-      !! either.**
-      !!
-      !! **And the writer explains the span failure.** GAMESS does not write
-      !! the tensor `LDQPOL` computes; it writes `DQL_SFT`, produced by `DQSHIFT`
-      !! which *mixes the dipole-dipole polarizability into it*:
-      !!
-      !!     DR = centroid - centre_of_mass
-      !!     A'(a,bc) = A(a,bc) - (3/2)[ DR_b alpha(c,a) + DR_c alpha(a,b) ]
-      !!                        + delta_bc sum_d DR_d alpha(d,a)
-      !!
-      !! written with `slot = (a-1)*9 + (b-1)*3 + c`, dipole outermost. That is a
-      !! multipole translation of the mixed polarizability from the centre of mass to
-      !! each orbital's own centroid, and `alpha` in it is the dipole-dipole tensor.
-      !!
-      !! So the reference genuinely carries information a dip-quad contraction alone
-      !! does not, which is exactly what the rank-18 fit was reporting, and no
-      !! rearrangement of our components could ever have reproduced it. That much is
-      !! settled, and it explains every failed enumeration above at once.
-      !!
-      !! **The reference point is not the remaining gap, though.** Applying the shift
-      !! with the quadrupole measure referenced to the centre of mass and shifting
-      !! from there, referenced to the origin and shifting from there, and the mixed
-      !! pairings, all leave a relative residual near 0.95. The 0.88 seen with one
-      !! combination was an inconsistent pairing rather than a near miss. So our
-      !! pre-shift tensor is itself not GAMESS's, and the translation being confirmed
-      !! from source does not localise what differs.
-      !!
-      !! **Everything above this line is superseded, and the conclusion it reached was
-      !! wrong.** `validation/check_dipquad_sumrule` settles it: summed over the
-      !! localized orbitals, this routine's dipole-quadrupole tensor **is** GAMESS's,
-      !! to 9.2e-05 relative -- its own precision on this block -- at a fitted scale
-      !! of 1.00008. The quantity was right the whole time.
-      !!
-      !! The two span arguments recorded above were sound as tests and wrong as
-      !! evidence for that conclusion. Both were run on GAMESS's *shifted* values
-      !! under an index convention that is transposed, so they compared objects that
-      !! were never commensurable; no rearrangement or translation could have related
-      !! them, and that fact said nothing about the underlying quantity. The lesson is
-      !! narrower than "the quantity differs": a span argument is only as good as the
-      !! correspondence between the two bases, and that correspondence had not been
-      !! established.
-      !!
-      !! **Three conventions, pinned by structure rather than by fitting.** The
-      !! pre-shift tensor must be symmetric in its two quadrupole indices, because the
-      !! driving operator is. Requiring that symmetry to return after undoing
-      !! `DQSHIFT` is a test that never touches our numbers, and it holds to 1.2e-09 --
-      !! the file's printing precision -- for exactly one combination:
-      !!
-      !!   * `slot = (a-1)*9 + (c-1)*3 + b`. The **first** quadrupole index runs
-      !!     fastest, transposed from what the `DQSHIFT` source reading above assumed;
-      !!   * the `alpha` the shift mixes in is the **dynamic** dipole-dipole tensor at
-      !!     the same frequency. The static one leaves 3.2e-01;
-      !!   * the factor 1.5 on the asymmetric part.
-      !!
-      !! **The trace belongs to the shift, not to the tensor.** With the traceless
-      !! Buckingham quadrupole driving, this routine's tensor is traceless in the
-      !! quadrupole pair to 1.6e-11; GAMESS's recovered tensor carries a trace of
-      !! 0.54, which is exactly `DQSHIFT`'s `delta_bc` term. So the trace is produced
-      !! by applying the shift forward, not by carrying it. The raw second moment is
-      !! ruled out properly now: it fits at scale 1.5001 -- the Buckingham off-diagonal
-      !! factor -- with residual 0.33.
-      !!
-      !! **What is actually still open, and it is much smaller.** Applying the shift
-      !! forward *per orbital* leaves 1.4e-01 relative with the quadrupole measuring
-      !! and the dipole driving, which is the order this module's reading of
-      !! GAMESS's own assembly implies, and 4.5e-01 the other way round; no mixing of the
-      !! two does better. So the sum is right and its distribution over the orbitals is
-      !! not, which is why the block is still not written. The sum is now a constraint
-      !! any candidate decomposition has to satisfy, and the same projection machinery
-      !! reproduces the dipole-dipole block to 8e-05, so what differs is specific to
-      !! operators of unequal rank.
-      !!
-      !! Until then this routine should be used with dipole operators only, and the
-      !! two quadrupole blocks of a potential cannot be emitted.
-      !!
-      !! **No phase ambiguity here, unlike the Fock matrix.** Each tensor is
-      !! quadratic in its localized orbital -- the orbital appears once in `h` and
-      !! once in `S` -- so flipping an orbital's sign leaves every component
-      !! unchanged. That is why these can be compared against a reference
-      !! elementwise while the Fock matrix cannot.
+      !! Sign conventions do not enter: each component is quadratic in its localized
+      !! orbital, so flipping an orbital's phase leaves it unchanged. That is why
+      !! these compare elementwise against a reference where the Fock matrix cannot.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: orbital_energies(:)
