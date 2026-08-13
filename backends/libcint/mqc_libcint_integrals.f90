@@ -71,6 +71,16 @@ module mqc_libcint_integrals
    ! Both follow from the packing order in `molecule_build`, so they belong
    ! beside it rather than being re-derived by whatever needs them.
    public :: atom_ao_blocks
+   public :: build_df_shell_table
+   ! The undifferentiated three- and two-centre integrals, and the metric's
+   ! inverse square root. Public because the gradient needs the same three
+   ! quantities the fitted Fock build does -- and, for the metric, needs them
+   ! from the *same* eigenvalue threshold: a gradient built on a pseudo-inverse
+   ! that kept different modes than the SCF's would not differentiate the
+   ! energy the SCF actually converged.
+   public :: three_centre
+   public :: two_centre
+   public :: metric_inverse_sqrt
    public :: subshell_layout
 
    type :: libcint_molecule_t
@@ -829,6 +839,54 @@ contains
       end do
    end subroutine two_centre
 
+   subroutine build_df_shell_table(orb, aux, bas, env, dummy)
+      !! Orbital and auxiliary shells in one table, as libcint needs them
+      !!
+      !! libcint addresses all four centres of a three-centre call by index
+      !! into a single shell table, so the two bases have to be concatenated
+      !! and the auxiliary env offsets shifted past the orbital env. The fourth
+      !! index names a dummy s shell of zero exponent, which is how libcint
+      !! spells "only three centres".
+      !!
+      !! Extracted so that the energy's `three_centre` and the gradient's
+      !! derivative equivalents build the same table. Two constructions of this
+      !! would agree until one of them was edited, and the failure would be a
+      !! fitted quantity differentiated in a basis it was not built in.
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      integer, allocatable, intent(out) :: bas(:, :)
+      real(dp), allocatable, intent(out) :: env(:)
+      integer, intent(out) :: dummy   !! 1-based index of the dummy shell
+
+      integer :: nbas_orb, nbas_aux, n_env_orb, ish
+
+      nbas_orb = orb%nbas
+      nbas_aux = aux%nbas
+      n_env_orb = size(orb%env)
+
+      allocate (bas(LIBCINT_BAS_SLOTS, nbas_orb + nbas_aux + 1))
+      allocate (env(n_env_orb + size(aux%env) + 1))
+      bas = 0
+      env = 0.0_dp
+      env(1:n_env_orb) = orb%env
+      env(n_env_orb + 1:n_env_orb + size(aux%env)) = aux%env
+
+      bas(:, 1:nbas_orb) = orb%bas
+      bas(:, nbas_orb + 1:nbas_orb + nbas_aux) = aux%bas
+      do ish = 1, nbas_aux
+         bas(LIBCINT_PTR_EXP, nbas_orb + ish) = aux%bas(LIBCINT_PTR_EXP, ish) + n_env_orb
+         bas(LIBCINT_PTR_COEFF, nbas_orb + ish) = aux%bas(LIBCINT_PTR_COEFF, ish) + n_env_orb
+      end do
+
+      dummy = nbas_orb + nbas_aux + 1
+      bas(LIBCINT_ATOM_OF, dummy) = 0
+      bas(LIBCINT_ANG_OF, dummy) = 0
+      bas(LIBCINT_NPRIM_OF, dummy) = 1
+      bas(LIBCINT_NCTR_OF, dummy) = 1
+      bas(LIBCINT_PTR_EXP, dummy) = size(env) - 1
+      bas(LIBCINT_PTR_COEFF, dummy) = size(env) - 1
+      env(size(env)) = 0.0_dp
+   end subroutine build_df_shell_table
+
    subroutine three_centre(orb, aux, three)
       !! (mu nu | P), flattened to (nao*nao, naux)
       !!
@@ -845,7 +903,7 @@ contains
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
-      integer :: nbas_orb, nbas_aux, dummy, n_env_orb
+      integer :: nbas_orb, nbas_aux, dummy
       integer :: shls(4)
       integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
       integer :: npair, ipair
@@ -854,34 +912,7 @@ contains
 
       nbas_orb = orb%nbas
       nbas_aux = aux%nbas
-
-      ! Orbital shells, then auxiliary shells, then one dummy. The auxiliary
-      ! env offsets are shifted by the orbital env length because both live in
-      ! one array now.
-      n_env_orb = size(orb%env)
-      allocate (bas(LIBCINT_BAS_SLOTS, nbas_orb + nbas_aux + 1))
-      allocate (env(n_env_orb + size(aux%env) + 1))
-      bas = 0
-      env = 0.0_dp
-      env(1:n_env_orb) = orb%env
-      env(n_env_orb + 1:n_env_orb + size(aux%env)) = aux%env
-
-      bas(:, 1:nbas_orb) = orb%bas
-      bas(:, nbas_orb + 1:nbas_orb + nbas_aux) = aux%bas
-      do ish = 1, nbas_aux
-         bas(LIBCINT_PTR_EXP, nbas_orb + ish) = aux%bas(LIBCINT_PTR_EXP, ish) + n_env_orb
-         bas(LIBCINT_PTR_COEFF, nbas_orb + ish) = aux%bas(LIBCINT_PTR_COEFF, ish) + n_env_orb
-      end do
-
-      ! The dummy: one s shell, one primitive, exponent and coefficient zero.
-      dummy = nbas_orb + nbas_aux + 1
-      bas(LIBCINT_ATOM_OF, dummy) = 0
-      bas(LIBCINT_ANG_OF, dummy) = 0
-      bas(LIBCINT_NPRIM_OF, dummy) = 1
-      bas(LIBCINT_NCTR_OF, dummy) = 1
-      bas(LIBCINT_PTR_EXP, dummy) = size(env) - 1
-      bas(LIBCINT_PTR_COEFF, dummy) = size(env) - 1
-      env(size(env)) = 0.0_dp
+      call build_df_shell_table(orb, aux, bas, env, dummy)
 
       allocate (three(orb%nao*orb%nao, aux%nao))
       three = 0.0_dp
