@@ -49,6 +49,10 @@ module test_mqc_efp_interaction
    real(dp), parameter :: E_RANK2 = 0.005680360_dp
    real(dp), parameter :: E_RANK3 = 0.005736532_dp
 
+   !> The same, with the charge-penetration correction: GAMESS's electrostatic
+   !> energy for the unmodified potential, screening sections and all.
+   real(dp), parameter :: E_SCREENED = 0.004959639_dp
+
    !> The references carry nine decimals.
    real(dp), parameter :: REF_TOL = 1.0e-9_dp
 
@@ -65,6 +69,7 @@ contains
                   new_unittest("efp_through_dipole_vs_gamess", test_rank1), &
                   new_unittest("efp_through_quadrupole_vs_gamess", test_rank2), &
                   new_unittest("efp_through_octupole_vs_gamess", test_rank3), &
+                  new_unittest("efp_screened_vs_gamess", test_screened), &
                   new_unittest("efp_translation_invariance", test_translation), &
                   new_unittest("efp_no_self_interaction", test_no_self) &
                   ]
@@ -182,6 +187,31 @@ contains
                  message="the full multipole energy disagrees with GAMESS")
       call system%destroy()
    end subroutine test_rank3
+
+   subroutine test_screened(error)
+      !! The whole electrostatic term as GAMESS reports it, penetration included.
+      !!
+      !! This is the end of the electrostatics ladder: an unmodified potential, no
+      !! sections zeroed, compared against what GAMESS computes from that same file.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_system_t) :: system
+      type(error_t) :: err
+
+      call dimer(system, err)
+      call check(error,.not. err%has_error(), "building the dimer failed")
+      if (allocated(error)) return
+      call check(error, electrostatic_energy(system, 3, screen=.true.), E_SCREENED, &
+                 thr=REF_TOL, &
+                 message="the screened electrostatic energy disagrees with GAMESS")
+      if (allocated(error)) return
+      ! And that asking for screening actually changed something, so a silently
+      ! inactive correction cannot pass by matching the undamped number.
+      call check(error, abs(electrostatic_energy(system, 3, screen=.true.) &
+                            - electrostatic_energy(system, 3)) > 1.0e-6_dp, &
+                 "the screening correction made no difference")
+      call system%destroy()
+   end subroutine test_screened
 
    subroutine test_translation(error)
       !! Moving the whole system must not change its internal energy

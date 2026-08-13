@@ -60,6 +60,10 @@ module mqc_efp_interaction
       integer, allocatable :: fragment_of(:)     !! (n_points), which fragment
       real(dp), allocatable :: points(:, :)      !! (3, n_points), Bohr
       real(dp), allocatable :: charge(:)         !! Total monopole per point
+      real(dp), allocatable :: q_elec(:)         !! Electronic part, for screening
+      real(dp), allocatable :: q_nuc(:)          !! Nuclear part, for screening
+      real(dp), allocatable :: alpha(:)          !! Exponential damping exponent
+      logical :: has_screening = .false.
       real(dp), allocatable :: dipole(:, :)      !! (3, n_points)
       real(dp), allocatable :: quad(:, :, :)     !! (3, 3, n_points), symmetric
       real(dp), allocatable :: oct(:, :, :, :)   !! (3, 3, 3, n_points), symmetric
@@ -75,6 +79,10 @@ contains
       if (allocated(self%fragment_of)) deallocate (self%fragment_of)
       if (allocated(self%points)) deallocate (self%points)
       if (allocated(self%charge)) deallocate (self%charge)
+      if (allocated(self%q_elec)) deallocate (self%q_elec)
+      if (allocated(self%q_nuc)) deallocate (self%q_nuc)
+      if (allocated(self%alpha)) deallocate (self%alpha)
+      self%has_screening = .false.
       if (allocated(self%dipole)) deallocate (self%dipole)
       if (allocated(self%quad)) deallocate (self%quad)
       if (allocated(self%oct)) deallocate (self%oct)
@@ -118,10 +126,14 @@ contains
       system%n_fragments = n_frag
       system%n_points = total
       allocate (system%fragment_of(total), system%points(3, total), &
-                system%charge(total), system%dipole(N_DIPOLE, total), &
+                system%charge(total), system%q_elec(total), &
+                system%q_nuc(total), system%alpha(total), &
+                system%dipole(N_DIPOLE, total), &
                 system%quad(3, 3, total), &
                 system%oct(3, 3, 3, total))
       system%dipole = 0.0_dp
+      system%alpha = 0.0_dp
+      system%has_screening = .true.
       system%quad = 0.0_dp
       system%oct = 0.0_dp
 
@@ -135,6 +147,16 @@ contains
             ! GAMESS stores the electronic and nuclear parts separately because
             ! they come from different places, not because they act differently.
             system%charge(at) = fragments(f)%q_elec(i) + fragments(f)%q_nuc(i)
+            ! Kept apart as well as summed: the penetration correction screens the
+            ! electronic cloud against the other point's electrons and nucleus by
+            ! different amounts, so their sum is not enough there.
+            system%q_elec(at) = fragments(f)%q_elec(i)
+            system%q_nuc(at) = fragments(f)%q_nuc(i)
+            if (fragments(f)%has_screen2) then
+               system%alpha(at) = fragments(f)%screen2(i)
+            else
+               system%has_screening = .false.
+            end if
             if (allocated(fragments(f)%dipole)) then
                system%dipole(:, at) = fragments(f)%dipole(:, i)
             end if
@@ -159,12 +181,12 @@ contains
       end do
    end subroutine build_efp_system
 
-   function electrostatic_energy(system, max_rank) result(energy)
+   function electrostatic_energy(system, max_rank, screen) result(energy)
       !! The multipole interaction energy between different fragments
       !!
-      !! Undamped: this is the bare multipole sum, with no charge-penetration
-      !! screening. The screening term is a separate correction with its own fit,
-      !! and keeping it separate is what lets each rank be checked on its own.
+      !! With `screen` the charge-penetration correction is added; without it this is
+      !! the bare multipole sum. Keeping them separable is what let each rank be
+      !! checked on its own against GAMESS.
       !!
       !! `max_rank` truncates the expansion -- 0 for charges only, 1 through the
       !! dipole, 2 the quadrupole, 3 the octupole. Present because it is what the
@@ -172,11 +194,20 @@ contains
       !! off fast and a screening study wants to switch them off.
       type(efp_system_t), intent(in) :: system
       integer, intent(in) :: max_rank
+      logical, intent(in), optional :: screen
+         !! Add the charge-penetration correction. Off by default, so the bare
+         !! multipole sum stays reachable -- it is what each rank was validated
+         !! against, and the correction is a separate physical approximation with
+         !! its own fitted parameters.
       real(dp) :: energy
 
       real(dp) :: r(3)
       real(dp) :: pair
       integer :: a, b
+      logical :: screening
+
+      screening = .false.
+      if (present(screen)) screening = screen
 
       energy = 0.0_dp
       ! One loop over ordered pairs of points on different fragments. Each
@@ -191,6 +222,9 @@ contains
             if (system%fragment_of(a) == system%fragment_of(b)) cycle
             r = system%points(:, b) - system%points(:, a)
             pair = pair_energy(system, a, b, r, max_rank)
+            if (screening .and. system%has_screening) then
+               pair = pair + penetration(system, a, b, r)
+            end if
             energy = energy + pair
          end do
       end do
@@ -320,6 +354,68 @@ contains
           *(-qa*(15.0_dp*ob_rrr - 9.0_dp*r2*dot_product(r, ob_tr)) &
             + qb*(15.0_dp*oa_rrr - 9.0_dp*r2*dot_product(r, oa_tr)))*inv7
    end function pair_energy
+
+   pure function penetration(system, a, b, r) result(e)
+      !! Charge-charge penetration between two points
+      !!
+      !! The multipole expansion treats each fragment's charge density as a set of
+      !! points, which overstates the repulsion where the two densities actually
+      !! overlap: real electron clouds penetrate each other and screen the nuclei
+      !! they surround. This is the correction for that, and it is short ranged --
+      !! exponential in `alpha R` -- so it matters at hydrogen-bond distances and
+      !! vanishes by a few Angstrom.
+      !!
+      !! Taken from `EPENCHCH` and its call site in GAMESS's `efelec.src`, not
+      !! fitted: the electronic and nuclear monopoles are screened by different
+      !! factors and no amount of comparing totals would have revealed which pairing
+      !! goes with which exponent. It reproduces GAMESS's own screening contribution
+      !! exactly.
+      !!
+      !! Only the charge-charge term. GAMESS also has penetration corrections for
+      !! the dipole, quadrupole and octupole, behind its `HOCHPEN` flag, which its
+      !! default run does not set -- and the number this reproduces was produced by
+      !! a default run.
+      !!
+      !! GAMESS treats a point whose screening *coefficient* is zero as unscreened,
+      !! by setting its exponent to 1e20. Every potential this program writes carries
+      !! a coefficient of one at every point, so that case cannot arise here and the
+      !! coefficient is not read.
+      type(efp_system_t), intent(in) :: system
+      integer, intent(in) :: a, b
+      real(dp), intent(in) :: r(3)
+      real(dp) :: e
+
+      real(dp), parameter :: SAME = 1.0e-5_dp
+      real(dp) :: dist, aa, ab, ap, bp, aa2, ab2
+      real(dp) :: p0_e, p0_n1, p0_n2
+
+      dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
+      aa = system%alpha(a)
+      ab = system%alpha(b)
+      ap = aa*dist
+      bp = ab*dist
+      aa2 = aa*aa
+      ab2 = ab*ab
+
+      if (abs(aa - ab) < SAME) then
+         ! The two-exponent form is singular when the exponents coincide; this is
+         ! its limit, not a separate approximation.
+         p0_e = -exp(-ap)*(1.0_dp + 0.5_dp*ap)
+         p0_n1 = -exp(-ap)
+         p0_n2 = -exp(-ap)
+      else
+         p0_e = -exp(-ap)*(ab2/(ab2 - aa2)) - exp(-bp)*(aa2/(aa2 - ab2))
+         p0_n1 = -exp(-bp)
+         p0_n2 = -exp(-ap)
+      end if
+
+      ! `a`'s electrons screened against `b`'s nucleus carry `a`'s own exponent, and
+      ! the other way round carries `b`'s -- which is the pairing that cannot be
+      ! guessed from a total.
+      e = (system%q_elec(a)*system%q_elec(b)*p0_e &
+           + system%q_elec(a)*system%q_nuc(b)*p0_n2 &
+           + system%q_elec(b)*system%q_nuc(a)*p0_n1)/dist
+   end function penetration
 
    pure subroutine spread_octupole(oct, i, j, k, value)
       !! One stored component written into every permutation of its indices
