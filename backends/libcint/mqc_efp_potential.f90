@@ -160,8 +160,8 @@ contains
    end subroutine potential_destroy
 
    subroutine make_efp_potential(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, pot, error, n_core, vdwscl, &
-                                 verbose)
+                                 basis_name, name, pot, error, charge, n_core, &
+                                 vdwscl, verbose)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what. The SCF gives the density
@@ -177,6 +177,10 @@ contains
       character(len=*), intent(in) :: name         !! Fragment name, e.g. `WATER`
       type(efp_potential_t), intent(out) :: pot
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: charge
+         !! Net charge. Ignoring it is not a small error: the electron count comes out
+         !! wrong, and for a cation it comes out odd, so a closed-shell reference is
+         !! refused outright. Ionic-liquid fragments are the obvious case.
       integer, intent(in), optional :: n_core
          !! Orbitals excluded from the localized set. Default is the standard
          !! frozen core, which is what MAKEFP uses: its polarizable points and
@@ -190,12 +194,14 @@ contains
       type(response_hessian_t) :: shared_hessian
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
-      integer :: natm, core, i, j, k, n_valence
+      integer :: natm, core, i, j, k, n_valence, n_electrons
       logical :: talk
 
       talk = .false.
       if (present(verbose)) talk = verbose
       natm = size(atomic_numbers)
+      n_electrons = sum(atomic_numbers)
+      if (present(charge)) n_electrons = n_electrons - charge
       pot%name = trim(name)
       pot%basis_name = trim(basis_name)
       pot%n_atoms = natm
@@ -223,7 +229,7 @@ contains
          return
       end if
 
-      call run_libcint_rhf(mol, sum(atomic_numbers), 200, 1.0e-12_dp, 1.0e-10_dp, &
+      call run_libcint_rhf(mol, n_electrons, 200, 1.0e-12_dp, 1.0e-10_dp, &
                            .false., scf, error)
       if (error%has_error()) then
          call mol%destroy()
@@ -607,7 +613,17 @@ contains
       type(libcint_molecule_t), intent(in) :: mol
       type(error_t), intent(inout) :: error
 
-      if (.not. mol%cartesian) then
+      integer :: ish
+      logical :: has_high_l
+
+      ! Only an issue if there is actually a shell it applies to: s and p are the
+      ! same either way, so 6-31G* on hydrogen alone is not a spherical basis in any
+      ! sense that matters, and refusing it was wrong.
+      has_high_l = .false.
+      do ish = 1, mol%nbas
+         if (mol%bas(LIBCINT_ANG_OF, ish) >= 2) has_high_l = .true.
+      end do
+      if (.not. mol%cartesian .and. has_high_l) then
          call error%set(ERROR_VALIDATION, &
                         "makefp: this basis is spherical and only Cartesian s, p "// &
                         "and d are mapped to GAMESS's ordering. GAMESS reads a "// &

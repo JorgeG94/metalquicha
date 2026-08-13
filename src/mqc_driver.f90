@@ -933,7 +933,8 @@ contains
 
       call logger%info("Building an effective fragment potential")
       call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
-                              config%method_config%basis_set, name, path, err, verbose=.true.)
+                              config%method_config%basis_set, name, path, err, &
+                              charge=sys_geom%charge, verbose=.true.)
       if (err%has_error()) then
          call logger%error("MAKEFP failed: "//err%get_message())
          return

@@ -45,7 +45,7 @@ contains
    end function libcint_backend_available
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, path, error, verbose)
+                                 basis_name, name, path, error, charge, verbose)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of whether
@@ -61,12 +61,14 @@ contains
       character(len=*), intent(in) :: name          !! Fragment name for `$FRAGNAME`
       character(len=*), intent(in) :: path
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: charge   !! Net charge; a fragment may be an ion
       logical, intent(in), optional :: verbose
 
       type(efp_potential_t) :: pot
 
       call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
-                              basis_name, name, pot, error, verbose=verbose)
+                              basis_name, name, pot, error, charge=charge, &
+                              verbose=verbose)
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
       call pot%destroy()

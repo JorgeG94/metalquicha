@@ -26,7 +26,7 @@ contains
    end function libcint_backend_available
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, path, error, verbose)
+                                 basis_name, name, path, error, charge, verbose)
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -35,6 +35,7 @@ contains
       real(dp), intent(in) :: coordinates(:, :)
       character(len=*), intent(in) :: basis_name, name, path
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: charge   !! Net charge; a fragment may be an ion
       logical, intent(in), optional :: verbose
 
       call error%set(ERROR_VALIDATION, &
@@ -43,7 +44,7 @@ contains
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(name)*len_trim(path) < 0) return
-      if (present(verbose)) return
+      if (present(charge) .or. present(verbose)) return
    end subroutine run_libcint_makefp
 
    subroutine run_libcint_hf(settings, fragment, result, want_gradient)
