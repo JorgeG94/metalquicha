@@ -21,7 +21,8 @@ module test_mqc_efp_pair
    use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-   use mqc_efp_pair, only: two_fragment_molecule
+   use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_error, only: error_t
    implicit none
@@ -38,7 +39,8 @@ contains
 
       testsuite = [ &
                   new_unittest("efp_pair_diagonal_blocks", test_blocks), &
-                  new_unittest("efp_pair_coupling_falls_off", test_falloff) &
+                  new_unittest("efp_pair_coupling_falls_off", test_falloff), &
+                  new_unittest("efp_lmo_orthonormal", test_lmo) &
                   ]
    end subroutine collect_mqc_efp_pair_tests
 
@@ -182,6 +184,61 @@ contains
       call a%destroy()
       call b%destroy()
    end subroutine test_falloff
+
+   subroutine test_lmo(error)
+      !! The localized orbitals come back orthonormal, which pins the AO conversion
+      !!
+      !! A potential stores its orbitals in GAMESS's AO order, so using them with our
+      !! integrals means undoing a permutation and two normalizations. Applied in the
+      !! wrong direction the result is still a plausible matrix, and every downstream
+      !! energy would be quietly wrong -- so the test is a property no wrong
+      !! permutation can satisfy: `C^T S C` must be the identity, because localized
+      !! orbitals are orthonormal by construction.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: lmo(:, :), s(:, :), sc(:, :), gram(:, :)
+      integer :: i, j, n_lmo
+      real(dp) :: worst
+
+      call water_fragment(a, err)
+      call check(error,.not. err%has_error(), "building the fragment failed")
+      if (allocated(error)) return
+
+      call fragment_molecule(a, [0.0_dp, 0.0_dp, 0.0_dp], mol, err)
+      call check(error,.not. err%has_error(), "building the molecule failed")
+      if (allocated(error)) return
+      call fragment_lmo(a, mol, lmo, err)
+      call check(error,.not. err%has_error(), "converting the orbitals failed")
+      if (allocated(error)) return
+
+      n_lmo = a%n_lmo_proj
+      call mol%overlap(s)
+      allocate (sc(mol%nao, n_lmo), gram(n_lmo, n_lmo))
+      call pic_gemm(s, lmo, sc)
+      call pic_gemm(lmo, sc, gram, transa="T")
+
+      worst = 0.0_dp
+      do j = 1, n_lmo
+         do i = 1, n_lmo
+            if (i == j) then
+               worst = max(worst, abs(gram(i, j) - 1.0_dp))
+            else
+               worst = max(worst, abs(gram(i, j)))
+            end if
+         end do
+      end do
+      ! The file carries eight decimals on an orbital coefficient, so this is the
+      ! format's precision rather than the arithmetic's.
+      call check(error, worst < 1.0e-6_dp, &
+                 "the localized orbitals are not orthonormal, so the AO order "// &
+                 "conversion is wrong")
+
+      call a%destroy()
+      call mol%destroy()
+   end subroutine test_lmo
 
    function coupling(a, b, separation, err) result(peak)
       type(efp_fragment_t), intent(in) :: a, b

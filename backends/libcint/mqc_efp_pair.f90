@@ -21,11 +21,14 @@ module mqc_efp_pair
    use mqc_elements, only: element_number_to_symbol
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_efp_read, only: efp_fragment_t
+   use mqc_efp_potential, only: from_gamess_ao_order
    implicit none
    private
 
    public :: fragment_basis
    public :: two_fragment_molecule
+   public :: fragment_molecule
+   public :: fragment_lmo
 
 contains
 
@@ -80,6 +83,61 @@ contains
          end do
       end do
    end subroutine fragment_basis
+
+   subroutine fragment_molecule(frag, offset, mol, error)
+      !! One fragment as a molecule of its own, from the basis it carries
+      !!
+      !! Useful in its own right and as the reference the pair is checked against: the
+      !! pair's diagonal block has to be this molecule's overlap.
+      type(efp_fragment_t), intent(in) :: frag
+      real(dp), intent(in) :: offset(3)
+      type(libcint_molecule_t), intent(out) :: mol
+      type(error_t), intent(inout) :: error
+
+      type(molecular_basis_type) :: basis
+      real(dp), allocatable :: coords(:, :)
+      integer, allocatable :: z(:)
+      integer :: at
+
+      call fragment_basis(frag, basis, error)
+      if (error%has_error()) return
+      allocate (coords(3, frag%n_atoms), z(frag%n_atoms))
+      do at = 1, frag%n_atoms
+         coords(:, at) = frag%points(:, at) + offset
+         z(at) = nint(frag%charge(at))
+      end do
+      call mol%build(z, coords, basis, error, force_cartesian=.true.)
+      deallocate (coords, z)
+   end subroutine fragment_molecule
+
+   subroutine fragment_lmo(frag, mol, lmo, error)
+      !! The fragment's localized orbitals in *our* AO order
+      !!
+      !! The file stores them in GAMESS's, so the d and f permutation and its
+      !! normalizations have to be undone -- `from_gamess_ao_order`, which lives beside
+      !! the forward map so the two cannot drift apart.
+      !!
+      !! The check that this is right is that the orbitals come back orthonormal
+      !! against the fragment's own overlap: `C^T S C = I`. Nothing weaker would
+      !! notice a permutation applied in the wrong direction, because a wrongly
+      !! permuted set is still a perfectly good-looking matrix.
+      type(efp_fragment_t), intent(in) :: frag
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), allocatable, intent(out) :: lmo(:, :)
+      type(error_t), intent(inout) :: error
+
+      if (.not. frag%has_lmo) then
+         call error%set(ERROR_VALIDATION, "efp: this fragment carries no projection "// &
+                        "wavefunction")
+         return
+      end if
+      if (frag%nao_proj /= mol%nao) then
+         call error%set(ERROR_VALIDATION, "efp: the projection wavefunction and the "// &
+                        "molecule disagree on the number of basis functions")
+         return
+      end if
+      call from_gamess_ao_order(mol, frag%lmo_gamess, lmo, error)
+   end subroutine fragment_lmo
 
    subroutine two_fragment_molecule(frag_a, frag_b, offset_a, offset_b, mol, &
                                     n_ao_a, error)

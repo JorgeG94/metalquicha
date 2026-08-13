@@ -57,6 +57,7 @@ module mqc_efp_potential
    !> Exposed so a reader can invert it. The printed contraction coefficients carry
    !> this factor, and recovering the raw ones is an exact division by it.
    public :: gamess_primitive_norm
+   public :: from_gamess_ao_order
 
    !> Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160
@@ -751,6 +752,54 @@ contains
                         "spherical ordering map rather than a Cartesian basis.")
       end if
    end subroutine check_angular_form
+
+   subroutine from_gamess_ao_order(mol, mapped, coefficients, error)
+      !! The inverse of `to_gamess_ao_order`
+      !!
+      !! A potential stores its orbitals in GAMESS's AO order, so anything that reads
+      !! one back and wants to use it with our own integrals has to undo the
+      !! permutation and the normalization. Written here, beside the forward map, so
+      !! the two cannot drift: a permutation inverted in another file is a permutation
+      !! that gets out of step the next time this one changes.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: mapped(:, :)
+      real(dp), allocatable, intent(out) :: coefficients(:, :)
+      type(error_t), intent(inout) :: error
+
+      integer :: ish, l, off, dim, slot
+      real(dp) :: scale
+
+      allocate (coefficients(size(mapped, 1), size(mapped, 2)))
+      coefficients = mapped
+      do ish = 1, mol%nbas
+         l = mol%bas(LIBCINT_ANG_OF, ish)
+         off = mol%shell_offset(ish)
+         dim = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         if (l == 2 .and. dim == 6) then
+            do slot = 1, 6
+               scale = D_NORMALIZATION
+               if (slot > 3) scale = D_NORMALIZATION/sqrt(3.0_dp)
+               coefficients(off + D_FROM_LIBCINT(slot), :) = mapped(off + slot, :)/scale
+            end do
+         else if (l == 3 .and. dim == 10) then
+            do slot = 1, 10
+               select case (F_CLASS(slot))
+               case (1)
+                  scale = F_NORMALIZATION
+               case (2)
+                  scale = F_NORMALIZATION/sqrt(5.0_dp)
+               case default
+                  scale = F_NORMALIZATION/sqrt(15.0_dp)
+               end select
+               coefficients(off + F_FROM_LIBCINT(slot), :) = mapped(off + slot, :)/scale
+            end do
+         else if (l >= 2) then
+            call error%set(ERROR_VALIDATION, "efp: this basis has g functions or "// &
+                           "higher, whose ordering against GAMESS is not mapped")
+            return
+         end if
+      end do
+   end subroutine from_gamess_ao_order
 
    subroutine to_gamess_ao_order(mol, coefficients, mapped, error)
       !! Orbital coefficients in the AO order and normalization GAMESS reads
