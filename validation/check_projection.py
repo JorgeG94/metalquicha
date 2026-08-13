@@ -169,37 +169,21 @@ def check_charge_transfer(orbital_energies):
     anything charge-transfer specific. So one of the two charge-transfer sections
     needs no new physics at all -- it is the SCF's own output, serialized.
 
-    `CTVEC` is traced to its source but not reproduced. `efinp.src:8105` writes it as
+    **`CTVEC` is reproduced too, and this docstring used to say it was not.** It has
+    two forms. By default GAMESS writes the occupied orbitals plus a set of
+    quasi-atomic valence virtuals, which for water in 6-31G* is 5 + 2 = 7 vectors --
+    the seven that made the block look unidentifiable. Asked for the canonical form
+    instead, it writes the whole canonical MO matrix, and that is exactly our
+    canonical orbitals in its AO ordering, agreeing column by column to 3e-08 up to
+    each column's arbitrary sign.
 
-        WRITE(NFTEFP,*) 'CTVEC   ', NA, ' ', NLMO
-        CALL PUSQLF(NFTEFP, CTVEC, NLMO, L1, L1, 0)
-
-    after `DAREAD(IDAF, IODA, CTVEC, L3, 15, 0)` and `STFASE(CTVEC, L1, L1, L1)`. So
-    the header is (alpha electrons, orbital count) -- 5 and 7 for water, and the 5 is
-    confirmed -- the data is DAF record 15, and `STFASE` (`symorb.src:761`) is a pure
-    sign convention: make the largest element of each column positive.
-
-    **What does not add up.** A sign convention cannot explain a mismatch, since the
-    comparison below aligns each vector's phase anyway, and seven columns is neither
-    our five occupied orbitals nor our four valence LMOs. Only the first of the seven
-    is close to a canonical orbital of ours (3e-3 against our oxygen 1s); the rest are
-    0.38 to 0.58 away, which is not a convention difference.
-
-    Nor are they our *localized* orbitals, which was the obvious next guess given that
-    DAF 15 is the general MO-vector record and many routines write to it: matched
-    against our four valence LMOs the gaps are 0.29 to 0.87, and two CTVEC vectors both
-    match the same LMO best, so it is not a reordering either.
-
-    One measurement that looks like a clue and is not: the CTVEC rows have Euclidean
-    norms from 0.70 to 1.38 rather than one. That is unremarkable -- an MO coefficient
-    vector in a non-orthogonal AO basis satisfies `c^T S c = 1`, not `c^T c = 1` -- so
-    it neither confirms nor excludes these being orbitals. Checking `c^T S c` would,
-    and has not been done.
-
-    So DAF 15 holds neither the canonical nor the localized orbitals of this SCF at the
-    point CTVEC is written, and what it does hold is unidentified. A run carrying the
-    second exchange-repulsion basis would have more orbitals than this single-basis one
-    does, which is the only candidate found so far for a count of seven.
+    The earlier conclusion here -- that DAF 15 holds neither our canonical nor our
+    localized orbitals -- was reached by comparing against the default form's seven
+    vectors, five of which *are* our occupied canonical orbitals to 2e-10. The
+    comparison missed it because it was made in a foreign AO ordering, which is the
+    same trap this file documents below for the overlap matrix. The two virtuals are
+    genuinely different objects, and needing a quasi-atomic construction to make them
+    is why the canonical form is the one worth emitting.
     """
     s = parse_efp(REFERENCE.read_text())["sections"]
     values = _numbers(" ".join(s["CTFOK"]["raw"]).replace(">", " "))

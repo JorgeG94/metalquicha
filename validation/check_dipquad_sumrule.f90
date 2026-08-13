@@ -35,7 +35,7 @@
 !!
 !! The operators are GAMESS's: the three Cartesian dipoles measure, and the six
 !! unique traceless Buckingham quadrupole components drive, in its `XX YY ZZ XY XZ
-!! YZ` order, built from the raw second moments the way `prpel.src:5625` does.
+!! YZ` order, built from the raw second moments the way GAMESS builds them.
 !! Everything is expanded about the centre of mass, which is what `DQSHIFT` shifts
 !! *from*.
 program check_dipquad_sumrule
@@ -110,7 +110,7 @@ program check_dipquad_sumrule
    ! Both candidate driving operators, as the *full* nine Cartesian components so
    ! that no expansion of six unique values into nine slots has to be guessed at.
    ! The traceless Buckingham form is what GAMESS builds internally
-   ! (`prpel.src:5625`); the raw second moment is what the recovered tensor's
+   ! form; the raw second moment is what the recovered tensor's
    ! non-zero trace points to. Dumping both is what makes the comparison a
    ! measurement rather than a choice.
    allocate (theta(mol%nao, mol%nao, 9))

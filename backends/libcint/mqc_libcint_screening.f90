@@ -7,22 +7,22 @@ module mqc_libcint_screening
    !! constant in it was read out of GAMESS rather than guessed -- the exponents in
    !! a reference potential are the check.
    !!
-   !! **Two blocks, two damping functions.** `chgpen.src:541` names them:
+   !! **Two blocks, two damping functions.** GAMESS names them:
    !!
    !!     SCREEN2   1 - exp(-alpha r)     exponential, EFP2 fragment-fragment
    !!     SCREEN    1 - exp(-alpha r^2)   Gaussian, EFP1 ab initio-fragment
    !!
    !! and the linear coefficient in front is frozen at one in both, because
-   !! `1 - A exp(...)` only vanishes at the origin when `A = 1` (`chgpen.src:498`).
+   !! `1 - A exp(...)` only vanishes at the origin when `A = 1`, which is why GAMESS freezes it there.
    !! That is why the first column of every screening record is `1.000000000`.
    !!
    !! **The grid, from the source.** Radii are Gavezzotti and Spackman's, selected
-   !! because the point scheme is geodesic (`VANDER(:,2)`, `prplib.src:2086`);
-   !! spheres sit on *every* expansion centre, since `chgpen.src` passes `NEFC` to
+   !! because the point scheme is geodesic, over Gavezzotti and Spackman's radii;
+   !! spheres sit on *every* expansion centre, since GAMESS passes the full centre count to
    !! `PDCPTS`; a bond midpoint takes the mean of its two atoms' radii
-   !! (`prplib.src:2162`); layers run from `VDWSCL = 0.7` in steps of `0.1`, and the
+   !! ; layers run from `VDWSCL = 0.7` in steps of `0.1`, and the
    !! points per layer grow as the square of the scale, which is a constant surface
-   !! density and is also the only weighting there is (`chgpen.src:188`).
+   !! density and is also the only weighting there is.
    !!
    !! Getting that last point wrong is instructive: a fixed count per layer with an
    !! explicit `1/(layer+1)` weight -- weighting the inner layers up, the opposite
@@ -60,7 +60,7 @@ module mqc_libcint_screening
    integer, parameter :: N_ANGULAR = 110
 
    !> Bounds on an exponent, and the starting values: two on an atom, four on a
-   !> bond midpoint (`chgpen.src:787` with `NMAIN = NAT`).
+   !> bond midpoint, which is how GAMESS initialises the search.
    real(dp), parameter :: ALPHA_MIN = 0.5_dp
    real(dp), parameter :: ALPHA_MAX = 10.0_dp
    real(dp), parameter :: ALPHA_ATOM = 2.0_dp

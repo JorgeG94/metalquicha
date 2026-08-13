@@ -130,7 +130,7 @@ asking for `WATER` silently gets the internal EFP1 potential and reads neither
 file, while running to completion and printing plausible energies; both are
 renamed to `EFPTEST`. And `CTFOK` must not be written unless `CTVEC` is: it is a
 subsection of `CTVEC` rather than a section, and GAMESS aborts on a standalone one
-(`efinp.src`, `RDCANV`). That last one is why this test exists -- every parameter
+(its reader rejects it). That last one is why this test exists -- every parameter
 in the file already matched GAMESS's own and the file was still unreadable.
 
 **Why the `--screen-from-gamess` flag exists.** Electrostatics is a multipole

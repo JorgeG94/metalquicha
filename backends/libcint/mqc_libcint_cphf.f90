@@ -633,20 +633,18 @@ contains
       !!     either.
       !!
       !!   * the **traceless** Buckingham quadrupole, which is what GAMESS actually
-      !!     uses -- `prpel.src:5625` builds it as
-      !!     `QXX = (2 QMXX - QMYY - QMZZ)/2` and `QXY = 3 QMXY / 2` from the raw
-      !!     second moments, and stores the six unique components in
+      !!     uses -- built from the raw second moments as
+      !!     `theta_xx = (2 Q_xx - Q_yy - Q_zz)/2` and `theta_xy = 3 Q_xy / 2`, with the
+      !!     six unique components stored in
       !!     `XX YY ZZ XY XZ YZ` order. Read from its source rather than guessed,
       !!     applied as the exact linear combination of the responses -- and it does
       !!     not match either.
       !!
       !! **The assembly has now been read too, and it agrees with what this computes.**
-      !! `LDQPOL` at `locpol.src:5300` forms the tensor as
-      !!
-      !!     KL = (K-1)*6 + L
-      !!     TPOL(KL) = TPOL(KL) - 2 * U(occ,vir,K) * HF(occ,vir,L)
-      !!
-      !! with `K` the three dipole components, `L` the six traceless quadrupole ones
+      !! `LDQPOL` forms the tensor as a sum over occupied-virtual pairs of the response
+      !! against the integral, dipole index outermost and quadrupole innermost, with a
+      !! factor of two for the dynamic case and four for the static. `K` runs over the
+      !! three dipole components, `L` the six traceless quadrupole ones
       !! read from DAF 807-812, and the factor two for the dynamic case (four for the
       !! static). So the nesting is dipole-outer, quadrupole-inner over the six
       !! unique components, and the contraction and its factor are exactly this
@@ -658,7 +656,7 @@ contains
       !! 1.0, under either candidate expansion of the six unique components into the
       !! nine slots the file carries.
       !!
-      !! The per-orbital decomposition has been read too (`locpol.src:5326`): GAMESS
+      !! The per-orbital decomposition has been read too: GAMESS
       !! transforms *both* factors into the localized basis and then contracts over
       !! virtuals, which is the same shape this routine uses.
       !!
@@ -709,7 +707,7 @@ contains
       !! So the search should stop looking for a transform and start asking what
       !! quantity GAMESS computes.
       !!
-      !! `LDQPOL`'s caller has been followed back (`locpol.src:4033`) and it does not
+      !! `LDQPOL`'s caller has been followed back and it does not
       !! resolve it, but it narrows where to look. `ZA` is the dipole-driven response:
       !! `POLDB` is called with `MOMENT = 1`, which reads the dipole MO integrals from
       !! DAF 252-254. The several branches around the call are alternative *solvers*
@@ -722,12 +720,11 @@ contains
       !!   * `POLDB` forms the right-hand side as `DB = 8 H2^T h`, with `H2` the stored
       !!     Hessian rather than its inverse. So `ZA` solves `(H21 + freq) ZA = 8 H2^T h`
       !!     and is not simply `operator^-1 h`; there is an extra `H2^T` in it.
-      !!   * the frequency enters as `FREQI2 = 4 nu^2` (`locpol.src:3984`), not `nu^2`.
+      !!   * the frequency enters as `4 nu^2`, not `nu^2`.
       !!
       !! **The scaling has now been traced, and it closes that question: GAMESS solves
       !! the same equation this routine does, in its product form.** `POLH21FULL` at
-      !! `locpol.src:3553` builds `H21(L,K) = sum_I H2(I,L) H1(I,K)`, so
-      !! `H21 = H2^T H1`; `ADDFR` puts `4 nu^2` on its diagonal; and `POLDB` supplies
+      !! it builds the product `H21 = H2^T H1`; `ADDFR` puts `4 nu^2` on its diagonal; and `POLDB` supplies
       !! `8 H2^T h`. Their equation is therefore
       !!
       !!     [H2^T H1 + 4 nu^2] ZA = 8 H2^T h
@@ -746,9 +743,9 @@ contains
       !! fit above allows and rejects. **Scaling cannot explain the mixed blocks
       !! either.**
       !!
-      !! **And the writer explains the span failure.** `efinp.src:7635` does not write
+      !! **And the writer explains the span failure.** GAMESS does not write
       !! the tensor `LDQPOL` computes; it writes `DQL_SFT`, produced by `DQSHIFT`
-      !! (`efinp.src:12210`), which *mixes the dipole-dipole polarizability into it*:
+      !! which *mixes the dipole-dipole polarizability into it*:
       !!
       !!     DR = centroid - centre_of_mass
       !!     A'(a,bc) = A(a,bc) - (3/2)[ DR_b alpha(c,a) + DR_c alpha(a,b) ]
@@ -809,7 +806,7 @@ contains
       !! **What is actually still open, and it is much smaller.** Applying the shift
       !! forward *per orbital* leaves 1.4e-01 relative with the quadrupole measuring
       !! and the dipole driving, which is the order this module's reading of
-      !! `locpol.src` implies, and 4.5e-01 the other way round; no linear mixing of the
+      !! GAMESS's own assembly implies, and 4.5e-01 the other way round; no mixing of the
       !! two does better. So the sum is right and its distribution over the orbitals is
       !! not, which is why the block is still not written. The sum is now a constraint
       !! any candidate decomposition has to satisfy, and the same projection machinery

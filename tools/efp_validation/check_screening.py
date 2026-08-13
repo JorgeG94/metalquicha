@@ -22,7 +22,7 @@ whether it is stationary under *our* objective.
     way raises the objective to 9.63 and 7.17. So that value is at a minimum of
     essentially this objective, not merely near one.
   * `alpha = 10.0` means the screening is off for that centre, as the plan read from
-    `chgpen.src`. Perturbing `BO31`, which sits at the bound, moves the objective by
+    GAMESS's own fit. Perturbing `BO31`, which sits at the bound, moves the objective by
     2e-6 -- it has no effect at all, which is why the fit pushed it there.
 
 **What this does not establish, and the honest gap.** The shallow parameters are not
@@ -53,7 +53,7 @@ from efp_format import parse_efp  # noqa: E402
 BOHR_PER_ANGSTROM = 1.0/0.52917724924
 
 #: The radii GAMESS uses for a geodesic point selection, Angstrom, from
-#: `VANDER(:,2)` in `prplib.src:2086` -- Gavezzotti and Spackman's, not Bondi's.
+#: Gavezzotti and Spackman's radii, which is the table GAMESS uses here, not Bondi's.
 #: Oxygen is 1.40 where Bondi has 1.52, which is an 8% difference in every sphere
 #: around it. Anything not listed defaults to 1.8 in GAMESS.
 VDW = {1: 1.20, 5: 1.85, 6: 1.50, 7: 1.50, 8: 1.40, 9: 1.35,
@@ -83,9 +83,9 @@ def fibonacci_sphere(n):
 def centre_radii(labels, charges):
     """A radius per expansion point, including the bond midpoints.
 
-    Spheres go on *every* expansion centre, not only the atoms: `chgpen.src` calls
+    Spheres go on *every* expansion centre, not only the atoms: GAMESS calls
     `PDCPTS` with `NEFC`, the number of screened multipole centres, and
-    `prplib.src:2162` gives a midpoint the mean of its two atoms' radii.
+    a midpoint gets the mean of its two atoms' radii.
     """
     radii = []
     for label in labels:
@@ -102,7 +102,7 @@ def centre_radii(labels, charges):
 def fused_spheres(radii, coords):
     """Points on scaled vdW spheres, dropping any that fall inside another.
 
-    **Constant surface density, not constant point count.** `chgpen.src:188` sets
+    **Constant surface density, not constant point count.** GAMESS sets
     the points on each layer as
 
         KOUNT_L = INT(SCALED**2 * (NLAYER(ILAYER+1) - NLAYER(ILAYER)))
@@ -138,14 +138,14 @@ def classical_potential(dma, grid, alpha, gaussian=False):
     """Electronic multipole potential with the monopole damped.
 
     `gaussian` selects between the two damping functions GAMESS fits, which
-    `chgpen.src:541` names outright: the first pass is exponential,
+    GAMESS names outright: the first pass is exponential,
     `1 - exp(-alpha r)`, and is EFP2 fragment-fragment screening -- the `SCREEN2`
     block. The second is Gaussian, `1 - exp(-alpha r^2)`, and is the original EFP1
     ab initio-fragment screening -- the `SCREEN` block. That is why a potential
     carries both, with different exponents.
 
     The linear coefficient is 1.0 in both, and not because the fit happened to land
-    there: `ICFIX=1` freezes it, and the comment at `chgpen.src:498` gives the reason
+    there: GAMESS freezes it, and its own comment gives the reason
     -- the damping has to vanish at the origin, which `1 - A exp(...)` only does when
     `A = 1`. So the first column of every screening record is structurally one.
     """

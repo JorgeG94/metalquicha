@@ -37,16 +37,17 @@ module mqc_efp_potential
    !! `tools/efp_validation/dimer_energy.py` asks it.
    !!
    !! **`LMOQQPOL` is written, and validated by the energy rather than the tensor.**
-   !! Its 81 values are `QQL_SFT(3,3,3,3)` with the last index fastest, and its
-   !! write-time translation is `QQSHIFT` (`efinp.src:13275`), transcribed in
+   !! Its 81 values are a 3x3x3x3 array with the last index fastest, and its
+   !! write-time translation is `QQSHIFT`, transcribed in
    !! `qq_shift` below. Two things justify writing it even though our per-orbital
    !! values differ from GAMESS's written ones by up to 0.162:
    !!
    !!   * **the response is right.** `$MAKEFP MOLPOL=.TRUE.` makes GAMESS write its
    !!     *molecular* `QUAD-QUAD POLARIZABILITY`, the total at the centre of mass
    !!     with no translation applied. Our response summed over the orbitals and
-   !!     divided by three reproduces it to **1.6e-05**, and the 1/3 is not fitted --
-   !!     `LQQPOL` contracts `-TWO*U*HF/THREE` where `LDQPOL` has no `/THREE`;
+   !!     divided by three reproduces it to **1.6e-05**, and the 1/3 is not fitted:
+   !!     the quadrupole-quadrupole contraction carries a factor of a third that the
+   !!     dipole-quadrupole one does not;
    !!   * **the energy is right.** GAMESS reading our file computes
    !!     `E8 = -0.000156427` against `-0.000156231` from its own potential, a
    !!     difference of **2.0e-07**, and a total dispersion within 2.0e-07.
@@ -386,8 +387,8 @@ contains
 
       ! The charge-transfer basis. `CTVEC` has two forms in GAMESS and this is the
       ! second: with `$MAKEFP CTVVO=.FALSE.` it writes the whole canonical MO
-      ! matrix and the header `CTVEC NA NUM` (`efinp.src`, the branch labelled
-      ! CMO), where the default path writes `NOCC` occupied orbitals plus a set of
+      ! matrix and the header `CTVEC NA NUM` -- the branch GAMESS labels CMO -- where
+      ! its default path writes `NOCC` occupied orbitals plus a set of
       ! quasi-atomic valence virtuals built by `VVOS`. The canonical form needs no
       ! extra machinery and is what GAMESS itself recommends when the valence
       ! virtuals cannot be formed -- "PLEASE TRY IT AGAIN WITH CANONICAL ORBITALS".
@@ -481,7 +482,7 @@ contains
       if (error%has_error()) return
 
       ! The traceless Buckingham quadrupole, as GAMESS builds it
-      ! (`prpel.src:5625`), kept as all nine Cartesian slots so that no expansion
+      ! -- the traceless Buckingham form -- kept as all nine Cartesian slots so that no expansion
       ! of six unique values into nine has to be guessed at.
       allocate (buck(mol%nao, mol%nao, 9))
       buck(:, :, QXX) = 0.5_dp*(2.0_dp*quad(:, :, QXX) - quad(:, :, QYY) &
@@ -535,7 +536,7 @@ contains
 
       ! --- the quadrupole-quadrupole block ------------------------------------
       ! Same operator on both sides, and the factor is 1/3 rather than 1: `LQQPOL`
-      ! contracts `-TWO*U*HF/THREE` where `LDQPOL` has no `/THREE`. Confirmed
+      ! carries a factor of a third that the dipole-quadrupole one does not. Confirmed
       ! against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`, which
       ! `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied: our response
       ! summed over the orbitals and divided by three reproduces it to 1.5e-05.
@@ -558,7 +559,7 @@ contains
    end subroutine dipole_quadrupole_block
 
    subroutine qq_shift(qq, dq, alpha, r, shifted)
-      !! `QQSHIFT` (`efinp.src:13275`), the quadrupole-quadrupole translation
+      !! `QQSHIFT`, the quadrupole-quadrupole translation
       !!
       !! Transcribed term for term. It mixes in both the dipole-dipole and the
       !! *pre-shift* dipole-quadrupole tensors, which is why the two blocks are
@@ -926,7 +927,7 @@ contains
       write (unit, "(A)") " STOP"
 
       ! The quadrupole-quadrupole block, 81 values a point, written with the last
-      ! index fastest -- `((((QQL_SFT(I,J,K,L),L),K),J),I)` in `efinp.src`. No
+      ! index fastest, the last of the four varying first. No
       ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
       ! term is symmetric within each index pair, so the written values are too.
       write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
@@ -979,10 +980,8 @@ contains
 
       ! CTFOK is deliberately not written, and cannot be. It is not a top-level
       ! section but a *subsection of* CTVEC: GAMESS's reader looks for it only
-      ! immediately after reading a CTVEC block (`efinp.src`, RDCANV, which
-      ! aborts with "SUBSECTION 'CTFOK' ... MUST FOLLOW RIGHT BEHIND ANY 'CTVEC'
-      ! SUBSECTION"), and a standalone one falls through its keyword dispatcher
-      ! to an abort. So writing the occupied orbital energies without CTVEC does
+      ! immediately after reading a CTVEC block, and a standalone one falls through
+      ! its keyword dispatcher to an abort. So writing the occupied orbital energies without CTVEC does
       ! not produce a file with one more section in it -- it produces a file
       ! GAMESS refuses to read at all. They are kept in the potential type
       ! against CTVEC being solved, and `pot%eps_occ` is what to emit then.
