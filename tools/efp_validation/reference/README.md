@@ -82,3 +82,52 @@ Checked by `../check_sum_rules.py`, which needs no metalquicha build:
   midpoints, nothing else. The shipped `HCN.efp` has an `A04D4`, so that comes
   from its own input rather than from MAKEFP's handling of linear molecules. One
   less unknown for M4 than the plan feared.
+
+
+## Does GAMESS accept a potential *we* wrote
+
+`../dimer_energy.py` is the end-to-end test, and the only one here that judges the
+file rather than the numbers in it:
+
+```bash
+./build/check_makefp                                # writes /tmp/mqc_water.efp
+python3 tools/efp_validation/dimer_energy.py
+python3 tools/efp_validation/dimer_energy.py --screen-from-gamess
+```
+
+It builds the same water dimer twice -- once from our potential, once from
+GAMESS's -- as an all-EFP job and compares the energy terms GAMESS reports.
+
+| term | ours vs GAMESS | |
+|---|---|---|
+| exchange repulsion | **0** | exact |
+| polarization | 1.2e-09 | |
+| electrostatics | 1.0e-10 | with `--screen-from-gamess` |
+| electrostatics | 4.4e-05 | with our own screening fit |
+| dispersion | 4.9e-04 | we write one of the three blocks it needs |
+
+**Three things about the deck, each of which cost a run to find.** An all-EFP
+system needs `COORD=FRAGONLY` and *no* `$DATA` group -- with `$DATA` GAMESS asks
+for basis functions it has no atoms to put a basis on. The fragment must not be
+named `WATER`, because GAMESS ships a built-in fragment by that name, so a deck
+asking for `WATER` silently gets the internal EFP1 potential and reads neither
+file, while running to completion and printing plausible energies; both are
+renamed to `EFPTEST`. And `CTFOK` must not be written unless `CTVEC` is: it is a
+subsection of `CTVEC` rather than a section, and GAMESS aborts on a standalone one
+(`efinp.src`, `RDCANV`). That last one is why this test exists -- every parameter
+in the file already matched GAMESS's own and the file was still unreadable.
+
+**Why the `--screen-from-gamess` flag exists.** Electrostatics is a multipole
+expansion plus a charge-penetration correction, and both are ours, so a
+disagreement cannot be attributed by looking at it. Substituting only GAMESS's
+screening moves the term from 4.4e-05 to 1.0e-10, which places the entire
+difference in the damping fit and none of it in the moments. The fit difference is
+itself understood: our optimizer finds a real minimum on the bond midpoint where
+GAMESS's search reaches its `alpha = 10` "off" bound, an absorbing state its
+objective is flat in.
+
+**Dispersion is not zero, which was worth learning.** Our potential carries the
+dipole-dipole dynamic polarizabilities and GAMESS builds `E6` from them, so it
+reports a dispersion energy from our file -- that section is live, not merely
+present. GAMESS's own value additionally contains `E7` and `E8` from the two
+blocks we cannot write, so the two numbers are not comparable term by term.

@@ -503,6 +503,12 @@ if(MQC_ENABLE_LIBCINT)
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_dynamic PRIVATE ${main_lib} cint_fortran cint)
 
+  # The whole of MAKEFP: a geometry in, a .efp out. Not one parameter block
+  # against a reference but every block we can compute, assembled into a file.
+  add_executable(check_makefp ${PROJECT_SOURCE_DIR}/validation/check_makefp.f90)
+  target_include_directories(check_makefp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_makefp PRIVATE ${main_lib} cint_fortran cint)
+
   # The projection data a potential carries: the LMO Fock matrix, which needs no
   # basis ordering, against GAMESS's own.
   add_executable(check_projection
