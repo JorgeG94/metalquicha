@@ -48,6 +48,7 @@ module mqc_libcint_cphf
    !! has to keep it straight. EFP2 wants Hartree-Fock anyway.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_multipole, only: multipole_matrices
@@ -70,10 +71,32 @@ module mqc_libcint_cphf
    !> CG iterations before giving up.
    integer, parameter :: DEFAULT_MAX_ITER = 200
 
-   !> Largest two-electron tensor to store rather than recompute, in bytes. Two
-   !> gigabytes reaches about 150 basis functions, which covers a fragment; past it
-   !> the direct build is the only option anyway.
-   real(dp), parameter :: IN_CORE_LIMIT = 2.0e9_dp
+   !> Columns of the Hessian built per pass over the integrals. Large enough that
+   !> integral generation is amortised, small enough that the batch of densities
+   !> stays a sensible size -- at 115 orbitals, 64 of them is 60 MB.
+   integer, parameter :: HESSIAN_CHUNK = 64
+
+   !> Above this many orbitals, recompute the integrals rather than store them.
+   !>
+   !> Set from measurement, not from memory. `validation/bench_fock` times both paths
+   !> per density, batched the way the Hessian build batches them, on water:
+   !>
+   !>      orbitals   batched direct   stored contraction
+   !>            19        1.10e-04             2.07e-05
+   !>            24        1.76e-04             7.89e-05
+   !>            58        2.84e-03             8.09e-03
+   !>           115        3.24e-02             2.46e-01
+   !>
+   !> so storing wins below about forty orbitals and loses badly above it -- by
+   !> nearly eight times at 115. The direct build is screened, threaded and exploits
+   !> permutational symmetry; the stored contraction is a quadruple loop running at a
+   !> few GFlop/s. An earlier version of this threshold was a two gigabyte memory
+   !> budget, about 126 orbitals, which sent everything between forty and that down
+   !> the slower path.
+   integer, parameter :: IN_CORE_MAX_ORBITALS = 40
+
+   !> Even below that, refuse to store what will not fit.
+   real(dp), parameter :: IN_CORE_LIMIT = 4.0e9_dp
 
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
@@ -437,12 +460,10 @@ contains
       logical :: direct
       ! Every system's vectors carry a batch index: all frequencies and all
       ! perturbations are in flight together.
-      real(dp), allocatable :: s_vec(:, :, :), rhs(:, :, :), r(:, :, :)
-      real(dp), allocatable :: z(:, :, :), p(:, :, :), ap(:, :, :)
-      real(dp), allocatable :: nu_of(:), rz_of(:), target_of(:)
-      integer, allocatable :: active(:)
-      integer :: nb, nact, kept, j, m
-      real(dp), allocatable :: precond(:, :)
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
+      real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
+      integer, allocatable :: ipiv(:)
+      integer :: n_ov, j, info
       real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
@@ -476,7 +497,8 @@ contains
          return
       end if
       direct = .true.
-      if (real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT) direct = .false.
+      if (n_ao <= IN_CORE_MAX_ORBITALS .and. &
+          real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT) direct = .false.
       if (present(in_core)) direct = .not. in_core
       if (direct) then
          call schwarz_bounds(mol, bounds, error)
@@ -514,94 +536,140 @@ contains
       if (present(response)) then
          allocate (response(n_vir, n_occ, n_pert, size(frequencies)))
       end if
-      ! Every frequency and every perturbation is solved at once, in lockstep, so a
-      ! single pass over the integrals serves all of them. They are independent
-      ! systems sharing one operator; only the right-hand side and the frequency
-      ! shift differ. Solved one at a time this is the same arithmetic and two orders
-      ! of magnitude more integral passes.
-      nb = n_pert*size(frequencies)
-      allocate (s_vec(n_vir, n_occ, nb), rhs(n_vir, n_occ, nb), r(n_vir, n_occ, nb))
-      allocate (z(n_vir, n_occ, nb), p(n_vir, n_occ, nb), ap(n_vir, n_occ, nb))
-      allocate (nu_of(nb), rz_of(nb), target_of(nb), active(nb))
-      allocate (precond(n_vir, n_occ))
+      ! **Built once, then solved densely.** Materialising `(A+B)` and `(A-B)` costs
+      ! `n_ov` Fock builds. After that every frequency and every perturbation is
+      ! dense linear algebra on matrices already in hand: no further integrals, no
+      ! iterations, and nothing that can fail to converge.
+      !
+      ! The product `(A-B)(A+B)` is the same at every frequency -- only the `nu^2` on
+      ! the diagonal changes -- so it is formed once too. Each frequency is then one
+      ! LU factorisation and one solve per perturbation.
+      !
+      ! This is what makes the frequency and perturbation counts free. Matrix-free,
+      ! twelve frequencies by nine operators by however many iterations each needed
+      ! was thousands of builds; here it is `n_ov` of them and some BLAS.
+      n_ov = n_vir*n_occ
+      call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
+                         aplus, aminus, HESSIAN_CHUNK, error)
+      if (error%has_error()) return
+
+      allocate (product(n_ov, n_ov), lu(n_ov, n_ov), ipiv(n_ov))
+      allocate (rhs_flat(n_ov, n_pert), h_flat(n_ov, n_pert))
+      call pic_gemm(aminus, aplus, product)
+
+      do l = 1, n_pert
+         h_flat(:, l) = reshape(h(:, :, l), [n_ov])
+      end do
+      ! The right-hand side is `-2 (A-B) h`, which the multiplication through by
+      ! `(A-B)` leaves behind.
+      call pic_gemm(aminus, h_flat, rhs_flat)
+      rhs_flat = -2.0_dp*rhs_flat
+
+      allocate (solution(n_ov, n_pert))
 
       do ifreq = 1, size(frequencies)
-         do l = 1, n_pert
-            j = (ifreq - 1)*n_pert + l
-            nu_of(j) = frequencies(ifreq)
-            rhs(:, :, j) = -2.0_dp*h(:, :, l)
-            target_of(j) = sqrt(sum(rhs(:, :, j)**2))*use_tol
-            s_vec(:, :, j) = 0.0_dp
-            r(:, :, j) = rhs(:, :, j)
-            ! Preconditioned with the diagonal of the operator actually being
-            ! solved, not with `gaps` alone. `(A+B)` has `gaps` on its diagonal but
-            ! `nu^2 (A-B)^-1` has `nu^2/gaps`, so at the top of the Casimir-Polder
-            ! range -- nu = 32, nu^2 = 1039 -- preconditioning on `gaps` is wrong by
-            ! three orders of magnitude, and the mismatch grows with the spread of
-            ! the gaps, which is why it survived a small basis and failed a larger
-            ! one at the highest frequency only.
-            precond = gaps + nu_of(j)*nu_of(j)/gaps
-            z(:, :, j) = r(:, :, j)/precond
-            p(:, :, j) = z(:, :, j)
-            rz_of(j) = sum(r(:, :, j)*z(:, :, j))
-            active(j) = j
+         lu = product
+         do j = 1, n_ov
+            lu(j, j) = lu(j, j) + frequencies(ifreq)**2
          end do
-      end do
-      nact = nb
+         solution = rhs_flat
+         call pic_getrf(lu, ipiv, info)
+         if (info /= 0) then
+            call error%set(ERROR_GENERIC, "dynamic response: the operator is singular")
+            return
+         end if
+         call pic_getrs(lu, ipiv, solution, info=info)
+         if (info /= 0) then
+            call error%set(ERROR_GENERIC, "dynamic response: the solve failed")
+            return
+         end if
 
-      do iter = 1, limit
-         if (nact == 0) exit
-         call apply_dynamic_batch(mol, direct, bounds, zero_h, eri0, c_occ, c_vir, &
-                                  gaps, nu_of, p, active, nact, ap, limit, use_tol, &
-                                  error)
-         if (error%has_error()) return
-         kept = 0
-         do m = 1, nact
-            j = active(m)
-            pap = sum(p(:, :, j)*ap(:, :, j))
-            if (pap <= 0.0_dp) then
-               call error%set(ERROR_VALIDATION, "dynamic response operator is "// &
-                              "not positive definite, which it must be on the "// &
-                              "imaginary axis")
-               return
-            end if
-            step = rz_of(j)/pap
-            s_vec(:, :, j) = s_vec(:, :, j) + step*p(:, :, j)
-            r(:, :, j) = r(:, :, j) - step*ap(:, :, j)
-            if (sqrt(sum(r(:, :, j)**2)) > target_of(j)) then
-               precond = gaps + nu_of(j)*nu_of(j)/gaps
-               z(:, :, j) = r(:, :, j)/precond
-               rz_new = sum(r(:, :, j)*z(:, :, j))
-               p(:, :, j) = z(:, :, j) + (rz_new/rz_of(j))*p(:, :, j)
-               rz_of(j) = rz_new
-               kept = kept + 1
-               active(kept) = j
-            end if
-         end do
-         nact = kept
-      end do
-      if (nact > 0) then
-         write (text, "(f0.4)") nu_of(active(1))
-         call error%set(ERROR_GENERIC, "dynamic response did not converge at "// &
-                        "nu = "//trim(text))
-         return
-      end if
-
-      do ifreq = 1, size(frequencies)
          do l = 1, n_pert
-            j = (ifreq - 1)*n_pert + l
             do k = 1, n_pert
-               alpha(k, l, ifreq) = -2.0_dp*sum(h(:, :, k)*s_vec(:, :, j))
+               alpha(k, l, ifreq) = -2.0_dp*sum(h_flat(:, k)*solution(:, l))
             end do
-            if (present(response)) response(:, :, l, ifreq) = s_vec(:, :, j)
+            if (present(response)) then
+               response(:, :, l, ifreq) = reshape(solution(:, l), [n_vir, n_occ])
+            end if
          end do
       end do
+
+      deallocate (aplus, aminus, product, lu, ipiv, rhs_flat, h_flat, solution)
 
       deallocate (bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0, operators)
       if (allocated(dip)) deallocate (dip)
-      deallocate (s_vec, rhs, r, z, p, ap)
-      deallocate (nu_of, rz_of, target_of, active, precond)
    end subroutine dynamic_polarizability
+
+   subroutine build_hessian(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                            aplus, aminus, chunk, error)
+      !! `(A+B)` and `(A-B)` as explicit matrices over the occupied-virtual space
+      !!
+      !! **Why materialise an operator a matrix-free solver was built to avoid.** The
+      !! response is wanted at twelve frequencies for up to nine perturbations, and
+      !! every one of those solves applies the same two operators. Matrix-free, the
+      !! cost is the number of iterations times the number of systems times a Fock
+      !! build. Built once, it is `n_ov` builds full stop -- independent of how many
+      !! frequencies and perturbations follow, because each of those becomes dense
+      !! linear algebra on a matrix that is already in hand.
+      !!
+      !! Column `j` is the operator applied to the unit vector `e_j`, so the whole
+      !! thing is `n_ov` applications, done in batches so one pass over the integrals
+      !! serves `chunk` columns.
+      !!
+      !! `n_ov` is `n_vir * n_occ` -- 550 for water in cc-pVQZ, where the two matrices
+      !! come to 4.8 MB. It is the square that limits this, not the basis: a fragment
+      !! with a thousand occupied-virtual pairs needs 16 MB and one with ten thousand
+      !! needs 1.6 GB.
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      integer, intent(in) :: chunk
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: u(:, :, :), au(:, :, :)
+      integer, allocatable :: idx(:)
+      integer :: n_vir, n_occ, n_ov, first, last, nthis, m, col, a, i
+
+      n_vir = size(gaps, 1)
+      n_occ = size(gaps, 2)
+      n_ov = n_vir*n_occ
+      allocate (aplus(n_ov, n_ov), aminus(n_ov, n_ov))
+      allocate (u(n_vir, n_occ, chunk), au(n_vir, n_occ, chunk), idx(chunk))
+
+      first = 1
+      do while (first <= n_ov)
+         last = min(first + chunk - 1, n_ov)
+         nthis = last - first + 1
+         u = 0.0_dp
+         do m = 1, nthis
+            col = first + m - 1
+            a = mod(col - 1, n_vir) + 1
+            i = (col - 1)/n_vir + 1
+            u(a, i, m) = 1.0_dp
+            idx(m) = m
+         end do
+
+         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             u, idx, nthis, .false., au, error)
+         if (error%has_error()) return
+         do m = 1, nthis
+            aplus(:, first + m - 1) = reshape(au(:, :, m), [n_ov])
+         end do
+
+         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             u, idx, nthis, .true., au, error)
+         if (error%has_error()) return
+         do m = 1, nthis
+            aminus(:, first + m - 1) = reshape(au(:, :, m), [n_ov])
+         end do
+
+         first = last + 1
+      end do
+      deallocate (u, au, idx)
+   end subroutine build_hessian
 
    subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, idx, nact, minus, au, error)
