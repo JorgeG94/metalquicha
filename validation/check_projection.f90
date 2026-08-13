@@ -125,6 +125,9 @@ contains
       write (unit, "(I0,1X,I0,1X,I0)") mol%nao, n_occ, n_lmo
       write (unit, "(es25.16e3)") fock_lmo
       write (unit, "(3es25.16e3)") cen
+      ! The localized coefficients, in libcint's AO order. The Python works out
+      ! the permutation onto GAMESS's, which is what the projection sections need.
+      write (unit, "(es25.16e3)") loc
       close (unit)
 
       write (*, "(A,A8,A,I0,A,I0,A,ES9.2)") "  ", trim(basis), "  LMOs ", n_lmo, &

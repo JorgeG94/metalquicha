@@ -24,13 +24,44 @@ import numpy as np
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools" / "efp_validation"))
-from efp_format import parse_efp  # noqa: E402
+from efp_format import parse_efp, _numbers  # noqa: E402
 
 REFERENCE = REPO / "tools" / "efp_validation" / "reference" / "water_6-31gs_boys.efp"
 
 #: The reference prints ten decimals and both codes converge to 1e-12, so this is
 #: the file's precision rather than the physics'.
 FOCK_TOL = 1e-8
+
+#: libcint's basis-function index for each of GAMESS's six Cartesian d slots.
+#:
+#: **The shell ordering already agrees and only the d shell differs.** libcint gets
+#: water/6-31G* as ten shells -- s(6), s(3), p(3), s(1), p(1), d(1) on oxygen, then
+#: s(3), s(1) per hydrogen -- and GAMESS as S(6), L(3), L(1), D(1) then S(3), S(1).
+#: Different shell *types*, identical basis-function positions, because our split
+#: s and p shells land exactly where GAMESS's combined L shell puts its s and p.
+#: So no atom or shell permutation is needed at all; verified by the s and p
+#: coefficients agreeing to 1.4e-9 before any reordering.
+#:
+#: Within the d shell libcint runs `xx xy xz yy yz zz` and GAMESS `XX YY ZZ XY XZ
+#: YZ`.
+D_FROM_LIBCINT = [0, 3, 5, 1, 2, 4]
+
+#: And the Cartesian d normalization, which differs as well as the order.
+#:
+#: GAMESS's diagonal components carry `sqrt(pi a)` relative to libcint's and its
+#: off-diagonal ones `sqrt(pi a / 3)` -- the ratio being exactly sqrt(3), which is
+#: the familiar difference between normalising every Cartesian component
+#: individually and normalising the `(l,0,0)` one. Measured here as 1.585330892 and
+#: 0.915290921 on the oxygen d shell at exponent 0.8, whose square is 0.8*pi to
+#: eight digits.
+#:
+#: **The sqrt(3) ratio is established; the overall sqrt(pi a) is inferred from one
+#: shell.** A basis with more than one d exponent, or with f functions, would test
+#: it -- and emitting `PROJECTION BASIS SET` needs the general rule anyway, since
+#: GAMESS prints contraction coefficients in its own normalisation (1.11382493 for
+#: a BSE coefficient of 1.0 at that exponent), so a basis emitted with ours would
+#: be read as a different basis.
+D_NORMALIZATION = 1.585330892
 
 
 def read_dump(path):
@@ -42,8 +73,30 @@ def read_dump(path):
     fock = np.array(values[at:at + n_lmo*n_lmo]).reshape((n_lmo, n_lmo), order="F")
     at += n_lmo*n_lmo
     centroids = np.array(values[at:at + 3*n_lmo]).reshape((3, n_lmo), order="F")
+    at += 3*n_lmo
+    orbitals = np.array(values[at:at + nao*n_lmo]).reshape((nao, n_lmo), order="F")
     return dict(basis=basis, nao=nao, n_occ=n_occ, n_lmo=n_lmo,
-                fock=fock, centroids=centroids)
+                fock=fock, centroids=centroids, orbitals=orbitals)
+
+
+def reference_coefficients(n_lmo, nao):
+    """GAMESS's localized orbital coefficients, one row per LMO."""
+    s = parse_efp(REFERENCE.read_text())["sections"]
+    values = []
+    for line in s["PROJECTION WAVEFUNCTION"]["raw"]:
+        # Past the "  i  j" index pair. The numbers run together where a minus
+        # sign abuts the previous exponent, so they cannot simply be split.
+        values += _numbers(line[5:])
+    return np.array(values).reshape((n_lmo, nao))
+
+
+def to_gamess_order(coefficients, d_offset):
+    """Our coefficients in GAMESS's basis-function order and normalization."""
+    out = coefficients.copy()
+    scale = [D_NORMALIZATION]*3 + [D_NORMALIZATION/np.sqrt(3.0)]*3
+    for slot, (src, factor) in enumerate(zip(D_FROM_LIBCINT, scale)):
+        out[d_offset + slot, :] = coefficients[d_offset + src, :]*factor
+    return out
 
 
 def reference_fock():
@@ -132,11 +185,30 @@ def main():
         print(f"        FAIL the LMO Fock matrices differ by {worst:.2e}")
         failures += 1
 
+    # The orbital coefficients, which is what needs the basis-function map. The
+    # phase is taken from the s and p block alone, so the d block is compared
+    # against a phase it did not help choose.
+    theirs_c = reference_coefficients(ours["n_lmo"], ours["nao"])
+    mine = to_gamess_order(ours["orbitals"], d_offset=9)
+    sp = [i for i in range(ours["nao"]) if not 9 <= i < 15]
+    worst_sp = worst_d = 0.0
+    for i in range(ours["n_lmo"]):
+        phase = 1.0 if np.dot(ours["orbitals"][sp, i], theirs_c[i][sp]) >= 0 else -1.0
+        gap = np.abs(phase*mine[:, i] - theirs_c[i])
+        worst_sp = max(worst_sp, gap[sp].max())
+        worst_d = max(worst_d, gap[9:15].max())
+    print(f"        coefficients: s/p {worst_sp:.2e} before any reordering, "
+          f"d {worst_d:.2e} after the permutation and normalization")
+    if max(worst_sp, worst_d) >= 1e-7:
+        print("        FAIL the localized orbital coefficients do not map onto "
+              "GAMESS's basis-function order")
+        failures += 1
+
     print()
     if failures:
         print(f"[projection] {failures} FAILURE(S)")
         return 1
-    print("[projection] our LMO Fock matrix matches GAMESS's MAKEFP")
+    print("[projection] our LMO Fock matrix and coefficients match GAMESS's MAKEFP")
     return 0
 
 
