@@ -3,7 +3,7 @@
 set(_lib "tblite")
 set(_pkg "TBLITE")
 set(_url "https://github.com/tblite/tblite")
-set(_rev "v0.5.0")
+set(_rev "v0.6.0")
 
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
