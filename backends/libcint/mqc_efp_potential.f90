@@ -252,8 +252,22 @@ contains
          mol%nao, " functions"
 
       if (present(aux_basis)) then
+         ! Read the fitting set in whatever angular form the orbital basis is in.
+         ! libcint builds all three centres of a fitting integral in one form, so the
+         ! two have to agree -- and the writer needs the orbital basis Cartesian,
+         ! while every fitting set on hand is declared spherical. Without this the
+         ! fitted path and a written potential are mutually exclusive.
+         !
+         ! Legitimate because an auxiliary basis is a fitting space, not a
+         ! wavefunction: taking the Cartesian components of the same primitives
+         ! enlarges that space rather than changing what is being fitted. It does
+         ! make the space redundant -- the Cartesian d shells carry an s contaminant
+         ! that duplicates the aux s functions -- so the metric is more nearly
+         ! singular than it would otherwise be, and what that costs is measured in
+         ! `validation/check_df_hessian` rather than assumed.
          call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
-                                     aux_basis, aux, error)
+                                     aux_basis, aux, error, &
+                                     force_cartesian=mol%cartesian)
          if (error%has_error()) then
             call mol%destroy()
             return
