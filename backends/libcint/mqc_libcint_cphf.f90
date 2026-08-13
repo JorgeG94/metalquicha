@@ -695,10 +695,23 @@ contains
       !! *same* dipole-driven response with the same factor, so GAMESS's `U` is this
       !! routine's `S`.
       !!
-      !! What is left is to find the mixing. The correlation matrix is the lead: a
-      !! reference slot correlating 0.99 rather than 1.0 with one of ours is one
-      !! dominated by a single component of ours plus a small admixture, and the
-      !! pattern of which slots those are should identify the transform.
+      !! **And there is no mixing to find: their block is not in our span.** Solving
+      !! `ref = M x ours` by least squares over all 48 samples gives rank 18 -- which
+      !! is right, since a symmetric quadrupole has six unique components and six
+      !! times three is eighteen -- and a worst relative residual of 0.139. So no
+      !! linear map from what this routine computes reproduces what GAMESS writes.
+      !!
+      !! That is stronger than the enumeration above and supersedes the correlation
+      !! argument, which was misleading: a reference component correlating 0.9989 with
+      !! one of ours does not imply the reference set is *spanned* by ours, and it is
+      !! not. Their block carries information this contraction does not contain.
+      !!
+      !! So the search should stop looking for a transform and start asking what
+      !! quantity GAMESS computes. Candidates that would add information rather than
+      !! rearrange it: a contribution from the nuclei as well as the electrons, a
+      !! second-order rather than first-order response, or a response driven by
+      !! something other than the dipole -- `LDQPOL` receives `U` as an argument and
+      !! the caller decides what it holds, which this reading never followed back.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.

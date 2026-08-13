@@ -72,9 +72,9 @@ module mqc_libcint_screening
    !> Geodesic van der Waals radii, Angstrom, indexed by Z. Zero means absent, and
    !> an absent element takes `RADIUS_DEFAULT`, as GAMESS does.
    real(dp), parameter :: GEODESIC_RADII(MAX_RADIUS_ELEMENT) = [ &
-                         1.20_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.85_dp, 1.50_dp, 1.50_dp, &
-                         1.40_dp, 1.35_dp, 0.0_dp, 0.0_dp, 0.0_dp, 2.07_dp, 2.05_dp, &
-                         1.96_dp, 1.89_dp, 1.80_dp]
+                          1.20_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.85_dp, 1.50_dp, 1.50_dp, &
+                          1.40_dp, 1.35_dp, 0.0_dp, 0.0_dp, 0.0_dp, 2.07_dp, 2.05_dp, &
+                          1.96_dp, 1.89_dp, 1.80_dp]
    real(dp), parameter :: RADIUS_DEFAULT = 1.8_dp
 
    real(dp), parameter :: BOHR_PER_ANGSTROM = 1.0_dp/0.52917724924_dp
