@@ -21,7 +21,22 @@ program check_distributed_polarizability
    use mqc_error, only: error_t
    implicit none
 
-   real(dp), parameter :: ANG = 1.8897261254578281_dp
+   !> Bohr per Angstrom **as GAMESS converts it**, not as CODATA now has it.
+   !>
+   !> GAMESS uses 0.52917724924 Angstrom per Bohr, an older CODATA value; the
+   !> current one is 0.529177210903, which is what the rest of this repository
+   !> uses. The difference is 7e-8 relative -- invisible in an energy, and not
+   !> invisible here. Converting water's geometry with our constant put every
+   !> coordinate 1.3e-7 Bohr from GAMESS's, which is a *different molecule* by the
+   !> standards of a parameter comparison and would have been charged against the
+   !> partition instead of against arithmetic.
+   !>
+   !> So a program that compares against a GAMESS potential converts the way
+   !> GAMESS does. `0.9584 * this` reproduces their printed 1.8111133866 exactly.
+   !> Programs that compare against PySCF must *not* use this -- PySCF is on the
+   !> current value, and this is the same trap as feeding it a different basis
+   !> table.
+   real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
    integer :: failures
 
    failures = 0

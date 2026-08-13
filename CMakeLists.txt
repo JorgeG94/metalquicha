@@ -481,6 +481,12 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_cphf PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_cphf PRIVATE ${main_lib} cint_fortran cint)
 
+  # Distributed multipoles: the sum rule in Fortran, needing no reference, then
+  # the distribution itself against GAMESS in Python.
+  add_executable(check_dma ${PROJECT_SOURCE_DIR}/validation/check_dma.f90)
+  target_include_directories(check_dma PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_dma PRIVATE ${main_lib} cint_fortran cint)
+
   # Distributed LMO polarizabilities against a GAMESS MAKEFP potential. The
   # first milestone whose reference is GAMESS rather than PySCF.
   add_executable(
