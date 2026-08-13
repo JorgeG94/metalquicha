@@ -365,7 +365,7 @@ contains
 
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
-                                     response)
+                                     response, perturbations)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -397,22 +397,29 @@ contains
       integer, intent(in) :: n_occ
       real(dp), intent(in) :: frequencies(:)      !! Imaginary frequencies, a.u.
       real(dp), allocatable, intent(out) :: alpha(:, :, :)
-         !! `(3, 3, n_frequencies)`, Bohr^3.
+         !! `(n_pert, n_pert, n_frequencies)`, Bohr^3 for the dipole case.
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
       real(dp), allocatable, intent(out), optional :: response(:, :, :, :)
-         !! `S_ai` per perturbation per frequency, `(n_vir, n_occ, 3, n_freq)`, for
-         !! a caller that wants to distribute it over localized orbitals rather
+         !! `S_ai` per perturbation per frequency, `(n_vir, n_occ, n_pert, n_freq)`,
+         !! for a caller that wants to distribute it over localized orbitals rather
          !! than only take the total.
+      real(dp), intent(in), optional :: perturbations(:, :, :)
+         !! One-electron operators in the AO basis. Defaults to the three dipole
+         !! components, which is what `alpha` means; supply the six quadrupole
+         !! components instead and `alpha` becomes the quadrupole-quadrupole
+         !! response, which is what the `LMOQQPOL` block of a potential carries.
+         !! The solver does not care -- only the right-hand sides change.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
       real(dp), allocatable :: eri0(:, :, :, :), work(:, :)
       real(dp), allocatable :: s_vec(:, :), rhs(:, :), r(:, :), z(:, :), p(:, :)
       real(dp), allocatable :: ap(:, :), inner(:, :)
+      real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
-      integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit
+      integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
       character(len=32) :: text
 
       n_ao = size(orbitals, 1)
@@ -429,8 +436,19 @@ contains
          return
       end if
 
-      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
-      if (error%has_error()) return
+      if (present(perturbations)) then
+         operators = perturbations
+      else
+         call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
+         if (error%has_error()) return
+         operators = dip
+      end if
+      n_pert = size(operators, 3)
+      if (size(operators, 1) /= n_ao .or. size(operators, 2) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "dynamic response: the perturbations are "// &
+                        "not n_ao square")
+         return
+      end if
       call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
 
@@ -452,21 +470,23 @@ contains
          return
       end if
 
-      allocate (h(n_vir, n_occ, 3), work(n_ao, n_occ))
-      do k = 1, 3
-         call pic_gemm(dip(:, :, k), c_occ, work)
+      allocate (h(n_vir, n_occ, n_pert), work(n_ao, n_occ))
+      do k = 1, n_pert
+         call pic_gemm(operators(:, :, k), c_occ, work)
          call pic_gemm(c_vir, work, h(:, :, k), transa="T")
       end do
 
-      allocate (alpha(3, 3, size(frequencies)))
-      if (present(response)) allocate (response(n_vir, n_occ, 3, size(frequencies)))
+      allocate (alpha(n_pert, n_pert, size(frequencies)))
+      if (present(response)) then
+         allocate (response(n_vir, n_occ, n_pert, size(frequencies)))
+      end if
       allocate (s_vec(n_vir, n_occ), rhs(n_vir, n_occ), r(n_vir, n_occ))
       allocate (z(n_vir, n_occ), p(n_vir, n_occ), ap(n_vir, n_occ))
       allocate (inner(n_vir, n_occ))
 
       do ifreq = 1, size(frequencies)
          nu = frequencies(ifreq)
-         do l = 1, 3
+         do l = 1, n_pert
             rhs = -2.0_dp*h(:, :, l)
             target_norm = sqrt(sum(rhs*rhs))*use_tol
 
@@ -502,14 +522,15 @@ contains
                return
             end if
 
-            do k = 1, 3
+            do k = 1, n_pert
                alpha(k, l, ifreq) = -2.0_dp*sum(h(:, :, k)*s_vec)
             end do
             if (present(response)) response(:, :, l, ifreq) = s_vec
          end do
       end do
 
-      deallocate (dip, bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0)
+      deallocate (bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0, operators)
+      if (allocated(dip)) deallocate (dip)
       deallocate (s_vec, rhs, r, z, p, ap, inner)
    end subroutine dynamic_polarizability
 
