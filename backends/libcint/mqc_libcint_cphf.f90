@@ -707,11 +707,30 @@ contains
       !! not. Their block carries information this contraction does not contain.
       !!
       !! So the search should stop looking for a transform and start asking what
-      !! quantity GAMESS computes. Candidates that would add information rather than
-      !! rearrange it: a contribution from the nuclei as well as the electrons, a
-      !! second-order rather than first-order response, or a response driven by
-      !! something other than the dipole -- `LDQPOL` receives `U` as an argument and
-      !! the caller decides what it holds, which this reading never followed back.
+      !! quantity GAMESS computes.
+      !!
+      !! `LDQPOL`'s caller has been followed back (`locpol.src:4033`) and it does not
+      !! resolve it, but it narrows where to look. `ZA` is the dipole-driven response:
+      !! `POLDB` is called with `MOMENT = 1`, which reads the dipole MO integrals from
+      !! DAF 252-254. The several branches around the call are alternative *solvers*
+      !! for the same equation -- `CHFSLV` selects GMRES, BiCGSTAB, DIIS or an exact
+      !! `LINEQU` -- not extra transformations, so `ZA` is what it appears to be.
+      !!
+      !! Two scaling facts from that region are the remaining thread, and they are the
+      !! reason a factor argument cannot be dismissed as easily as it was above:
+      !!
+      !!   * `POLDB` forms the right-hand side as `DB = 8 H2^T h`, with `H2` the stored
+      !!     Hessian rather than its inverse. So `ZA` solves `(H21 + freq) ZA = 8 H2^T h`
+      !!     and is not simply `operator^-1 h`; there is an extra `H2^T` in it.
+      !!   * the frequency enters as `FREQI2 = 4 nu^2` (`locpol.src:3984`), not `nu^2`.
+      !!
+      !! Which leaves a contradiction worth stating plainly rather than papering over:
+      !! the dipole-dipole block *does* match at 8e-5 using this routine's plain
+      !! `-2 sum h S`, which those two facts should have broken as well. Either they
+      !! cancel for the diagonal case and not the mixed one, or `H21` and `H2` are
+      !! related in a way that makes the extra factors identities. Resolving that is
+      !! what closing these two sections requires, and it is a scaling trace through
+      !! `CPH2O`, `POLH21` and `ADDFR` rather than another guess at the operator.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
