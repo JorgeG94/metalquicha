@@ -481,6 +481,12 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_cphf PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_cphf PRIVATE ${main_lib} cint_fortran cint)
 
+  # Electrostatic potential integrals at arbitrary points, against PySCF. The
+  # enabling piece for a charge-penetration screening fit.
+  add_executable(check_esp ${PROJECT_SOURCE_DIR}/validation/check_esp.f90)
+  target_include_directories(check_esp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_esp PRIVATE ${main_lib} cint_fortran cint)
+
   # The twelve imaginary frequencies, their static limit, and GAMESS's own
   # dynamic polarizable points.
   add_executable(check_dynamic
