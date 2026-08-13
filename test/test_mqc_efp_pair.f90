@@ -21,6 +21,7 @@ module test_mqc_efp_pair
    use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
+   use mqc_efp_potential, only: from_gamess_ao_order
    use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
                            exchange_repulsion, dispersion_e6_damped
    use pic_blas_interfaces, only: pic_gemm
@@ -43,7 +44,8 @@ contains
                   new_unittest("efp_pair_coupling_falls_off", test_falloff), &
                   new_unittest("efp_lmo_orthonormal", test_lmo), &
                   new_unittest("efp_exchange_repulsion", test_xr), &
-                  new_unittest("efp_e6_damped", test_e6d) &
+                  new_unittest("efp_e6_damped", test_e6d), &
+                  new_unittest("efp_ctvec_orthonormal", test_ctvec) &
                   ]
    end subroutine collect_mqc_efp_pair_tests
 
@@ -250,6 +252,64 @@ contains
       call a%destroy()
       call b%destroy()
    end subroutine test_e6d
+
+   subroutine test_ctvec(error)
+      !! `CTVEC` and `CTFOK`, checked the way the localized orbitals were
+      !!
+      !! The whole canonical set must be orthonormal against the fragment's overlap, so
+      !! `C^T S C = I` over all of it -- a stronger statement than for the four
+      !! localized orbitals, since it covers the virtuals charge transfer actually moves
+      !! density into. And `CTFOK` must be negative: they are occupied orbital energies.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: ct(:, :), s(:, :), sc(:, :), gram(:, :)
+      integer :: i, j
+      real(dp) :: worst
+
+      call water_fragment(a, err)
+      call check(error,.not. err%has_error(), "building the fragment failed")
+      if (allocated(error)) return
+      call check(error, a%has_ctvec, "CTVEC was not read")
+      if (allocated(error)) return
+      call check(error, a%has_ctfok, "CTFOK was not read")
+      if (allocated(error)) return
+      call check(error, a%n_occ_ct == 5, "expected five occupied orbitals")
+      if (allocated(error)) return
+      do i = 1, a%n_occ_ct
+         call check(error, a%eps_occ(i) < 0.0_dp, "an occupied orbital energy is positive")
+         if (allocated(error)) return
+      end do
+
+      call fragment_molecule(a, [0.0_dp, 0.0_dp, 0.0_dp], mol, err)
+      call check(error,.not. err%has_error(), "building the molecule failed")
+      if (allocated(error)) return
+      call from_gamess_ao_order(mol, a%ctvec_gamess, ct, err)
+      call check(error,.not. err%has_error(), "converting CTVEC failed")
+      if (allocated(error)) return
+
+      call mol%overlap(s)
+      allocate (sc(mol%nao, a%n_mo_ct), gram(a%n_mo_ct, a%n_mo_ct))
+      call pic_gemm(s, ct, sc)
+      call pic_gemm(ct, sc, gram, transa="T")
+      worst = 0.0_dp
+      do j = 1, a%n_mo_ct
+         do i = 1, a%n_mo_ct
+            if (i == j) then
+               worst = max(worst, abs(gram(i, j) - 1.0_dp))
+            else
+               worst = max(worst, abs(gram(i, j)))
+            end if
+         end do
+      end do
+      call check(error, worst < 1.0e-6_dp, &
+                 "CTVEC is not orthonormal, so it was read or converted wrongly")
+
+      call a%destroy()
+      call mol%destroy()
+   end subroutine test_ctvec
 
    subroutine test_lmo(error)
       !! The localized orbitals come back orthonormal, which pins the AO conversion

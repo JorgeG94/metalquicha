@@ -114,6 +114,16 @@ module mqc_efp_read
       !> matrix. The file stores its lower triangle row by row and carries no labels.
       real(dp), allocatable :: fock_lmo(:, :)     !! (n_lmo_proj, n_lmo_proj)
       logical :: has_fock = .false.
+      !> `CTVEC` and `CTFOK`, which charge transfer needs. The orbital set here is
+      !> wider than the projection wavefunction's: `CTVEC` carries occupied *and*
+      !> virtual orbitals, since charge transfer moves density into the latter.
+      !> Also in GAMESS's AO order, so it needs the same inversion.
+      integer :: n_occ_ct = 0
+      integer :: n_mo_ct = 0
+      real(dp), allocatable :: ctvec_gamess(:, :)  !! (nao_proj, n_mo_ct)
+      real(dp), allocatable :: eps_occ(:)          !! (n_occ_ct), from CTFOK
+      logical :: has_ctvec = .false.
+      logical :: has_ctfok = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -166,6 +176,12 @@ contains
       self%has_lmo = .false.
       if (allocated(self%fock_lmo)) deallocate (self%fock_lmo)
       self%has_fock = .false.
+      if (allocated(self%ctvec_gamess)) deallocate (self%ctvec_gamess)
+      if (allocated(self%eps_occ)) deallocate (self%eps_occ)
+      self%n_occ_ct = 0
+      self%n_mo_ct = 0
+      self%has_ctvec = .false.
+      self%has_ctfok = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -292,6 +308,9 @@ contains
       call read_fock_lmo(lines, n_lines, frag, error)
       if (error%has_error()) return
 
+      call read_ctvec(lines, n_lines, frag, error)
+      if (error%has_error()) return
+
       call read_projection_basis(lines, n_lines, frag, error)
       if (error%has_error()) return
 
@@ -300,6 +319,114 @@ contains
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_ctvec(lines, n_lines, frag, error)
+      !! `CTVEC` and `CTFOK`: the orbitals and orbital energies charge transfer needs
+      !!
+      !! `CTVEC`'s header carries two counts, occupied and total -- `CTVEC 5 19` is five
+      !! occupied among nineteen. **Not the same set as `PROJECTION WAVEFUNCTION`**,
+      !! which is valence-occupied only: charge transfer moves density into virtual
+      !! orbitals, so it needs them, and a potential can carry either the whole
+      !! canonical set or occupied-plus-valence-virtuals depending on `CTVVO`. The count
+      !! in the header says which arrived, so nothing has to be assumed.
+      !!
+      !! Rows are chunked by column, as in `PROJECTION WAVEFUNCTION`, and the
+      !! coefficients are in GAMESS's AO order -- `from_gamess_ao_order` applies here
+      !! too.
+      !!
+      !! `CTFOK` follows as a bare list of the occupied orbital energies, no labels,
+      !! and is read here because it is meaningless without the count `CTVEC` declares.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      type(efp_fragment_t), intent(inout) :: frag
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: WIDTH = 15
+      integer :: at, i, stat, col, filled, pos, n_occ, n_mo
+      character(len=MAX_LINE) :: text
+      real(dp) :: value
+
+      at = 0
+      do i = 1, n_lines
+         if (index(adjustl(lines(i)), "CTVEC") == 1) then
+            at = i
+            exit
+         end if
+      end do
+      if (at == 0) return
+      text = adjustl(lines(at))
+      read (text(6:), *, iostat=stat) n_occ, n_mo
+      if (stat /= 0 .or. n_occ < 1 .or. n_mo < n_occ) then
+         call error%set(ERROR_VALIDATION, "efp: the CTVEC header does not carry an "// &
+                        "occupied and a total orbital count")
+         return
+      end if
+      if (frag%nao_proj == 0) return
+
+      frag%n_occ_ct = n_occ
+      frag%n_mo_ct = n_mo
+      allocate (frag%ctvec_gamess(frag%nao_proj, n_mo))
+      frag%ctvec_gamess = 0.0_dp
+
+      col = 0
+      filled = 0
+      do i = at + 1, n_lines
+         text = lines(i)
+         if (len_trim(text) == 0) cycle
+         if (trim(adjustl(text)) == "STOP") exit
+         read (text(1:2), *, iostat=stat) col
+         if (stat /= 0 .or. col < 1 .or. col > n_mo) exit
+         if (filled >= frag%nao_proj) filled = 0
+         pos = 6
+         do while (pos + WIDTH - 1 <= len_trim(text))
+            read (text(pos:pos + WIDTH - 1), *, iostat=stat) value
+            if (stat /= 0) exit
+            filled = filled + 1
+            if (filled > frag%nao_proj) then
+               call error%set(ERROR_VALIDATION, "efp: CTVEC carries more coefficients "// &
+                              "than there are basis functions")
+               return
+            end if
+            frag%ctvec_gamess(filled, col) = value
+            pos = pos + WIDTH
+         end do
+      end do
+      frag%has_ctvec = .true.
+
+      ! CTFOK: the occupied orbital energies, unlabelled.
+      at = 0
+      do i = 1, n_lines
+         if (index(adjustl(lines(i)), "CTFOK") == 1) then
+            at = i
+            exit
+         end if
+      end do
+      if (at == 0) return
+      allocate (frag%eps_occ(n_occ))
+      frag%eps_occ = 0.0_dp
+      filled = 0
+      do i = at + 1, n_lines
+         if (trim(adjustl(lines(i))) == "STOP") exit
+         rest_of_ctfok: block
+            character(len=:), allocatable :: rest
+            integer :: cut
+            rest = lines(i)
+            cut = index(rest, ">")
+            if (cut > 0) rest = rest(1:cut - 1)
+            rest = adjustl(rest)
+            do
+               if (len_trim(rest) == 0) exit
+               call next_number(rest, value, stat)
+               if (stat /= 0) exit
+               filled = filled + 1
+               if (filled > n_occ) exit
+               frag%eps_occ(filled) = value
+            end do
+         end block rest_of_ctfok
+         if (filled >= n_occ) exit
+      end do
+      frag%has_ctfok = filled == n_occ
+   end subroutine read_ctvec
 
    subroutine read_fock_lmo(lines, n_lines, frag, error)
       !! `FOCK MATRIX ELEMENTS`: the Fock operator over the localized orbitals
