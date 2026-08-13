@@ -21,7 +21,8 @@ module test_mqc_efp_pair
    use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-   use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo
+   use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
+                           exchange_repulsion
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_error, only: error_t
@@ -40,7 +41,8 @@ contains
       testsuite = [ &
                   new_unittest("efp_pair_diagonal_blocks", test_blocks), &
                   new_unittest("efp_pair_coupling_falls_off", test_falloff), &
-                  new_unittest("efp_lmo_orthonormal", test_lmo) &
+                  new_unittest("efp_lmo_orthonormal", test_lmo), &
+                  new_unittest("efp_exchange_repulsion", test_xr) &
                   ]
    end subroutine collect_mqc_efp_pair_tests
 
@@ -184,6 +186,39 @@ contains
       call a%destroy()
       call b%destroy()
    end subroutine test_falloff
+
+   subroutine test_xr(error)
+      !! Pauli exchange repulsion against GAMESS
+      !!
+      !! The term that pinned the valence-charge convention: the potential in the third
+      !! term is built from each fragment's *valence* nuclear charges, not its full
+      !! ones, because the localized orbitals a potential carries are valence only and
+      !! the core has to appear as screening of its own nucleus. With full charges this
+      !! comes out -0.002949404 against GAMESS's -0.001172851 -- a factor of 2.5, not a
+      !! sign or a scale, which is what made it findable.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+      e = exchange_repulsion(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
+                             [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "exchange repulsion failed")
+      if (allocated(error)) return
+      ! GAMESS's own exchange repulsion for this dimer, every digit it prints. It
+      ! computes this from data the potential supplies rather than from anything of its
+      ! own, so an exact match is the right expectation and a near one would mean a
+      ! wrong factor somewhere.
+      call check(error, e, -0.001172851_dp, thr=1.0e-9_dp, &
+                 message="exchange repulsion disagrees with GAMESS")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_xr
 
    subroutine test_lmo(error)
       !! The localized orbitals come back orthonormal, which pins the AO conversion

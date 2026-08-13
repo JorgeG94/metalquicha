@@ -110,6 +110,10 @@ module mqc_efp_read
       integer :: nao_proj = 0
       real(dp), allocatable :: lmo_gamess(:, :)   !! (nao_proj, n_lmo_proj)
       logical :: has_lmo = .false.
+      !> The Fock matrix over the localized orbitals, unpacked to a full symmetric
+      !> matrix. The file stores its lower triangle row by row and carries no labels.
+      real(dp), allocatable :: fock_lmo(:, :)     !! (n_lmo_proj, n_lmo_proj)
+      logical :: has_fock = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -160,6 +164,8 @@ contains
       self%n_lmo_proj = 0
       self%nao_proj = 0
       self%has_lmo = .false.
+      if (allocated(self%fock_lmo)) deallocate (self%fock_lmo)
+      self%has_fock = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -283,6 +289,9 @@ contains
       call read_projection_wavefunction(lines, n_lines, frag, error)
       if (error%has_error()) return
 
+      call read_fock_lmo(lines, n_lines, frag, error)
+      if (error%has_error()) return
+
       call read_projection_basis(lines, n_lines, frag, error)
       if (error%has_error()) return
 
@@ -291,6 +300,90 @@ contains
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_fock_lmo(lines, n_lines, frag, error)
+      !! `FOCK MATRIX ELEMENTS`: the Fock operator over the localized orbitals
+      !!
+      !! Exchange repulsion needs it, and it is the one section with no labels at all --
+      !! just the lower triangle, row by row, over continuation lines. Its size fixes
+      !! the orbital count independently, so a mismatch against the projection
+      !! wavefunction is caught rather than reshaped around.
+      !!
+      !! Unpacked to a full symmetric matrix here. GAMESS keeps the triangle and
+      !! expands it where it is used (`CPYTSQ`); doing it once on the way in means the
+      !! consumers index `(i, j)` without thinking about packing.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      type(efp_fragment_t), intent(inout) :: frag
+      type(error_t), intent(inout) :: error
+
+      integer :: start, finish, i, k, n_want, filled, row, col, stat
+      real(dp), allocatable :: packed(:)
+      character(len=:), allocatable :: rest
+      character(len=MAX_LINE) :: text
+      real(dp) :: value
+
+      if (frag%n_lmo_proj == 0) return
+      start = 0
+      do i = 1, n_lines
+         if (index(adjustl(lines(i)), "FOCK MATRIX ELEMENTS") == 1) then
+            start = i + 1
+            exit
+         end if
+      end do
+      if (start == 0) return
+      finish = start - 1
+      do i = start, n_lines
+         text = adjustl(lines(i))
+         ! No labels here, so the section ends at `STOP` or at the next header -- a
+         ! line that carries a letter where a number belongs.
+         if (trim(text) == "STOP") exit
+         if (len_trim(text) > 0) then
+            if (index("0123456789-+.", text(1:1)) == 0) exit
+         end if
+         finish = i
+      end do
+
+      n_want = frag%n_lmo_proj*(frag%n_lmo_proj + 1)/2
+      allocate (packed(n_want))
+      packed = 0.0_dp
+      filled = 0
+      do i = start, finish
+         rest = lines(i)
+         k = index(rest, ">")
+         if (k > 0) rest = rest(1:k - 1)
+         rest = adjustl(rest)
+         do
+            if (len_trim(rest) == 0) exit
+            call next_number(rest, value, stat)
+            if (stat /= 0) exit
+            filled = filled + 1
+            if (filled > n_want) then
+               call error%set(ERROR_VALIDATION, "efp: FOCK MATRIX ELEMENTS carries "// &
+                              "more values than the orbital count allows")
+               return
+            end if
+            packed(filled) = value
+         end do
+      end do
+      if (filled /= n_want) then
+         call error%set(ERROR_VALIDATION, "efp: FOCK MATRIX ELEMENTS is not a lower "// &
+                        "triangle over the projection orbitals")
+         return
+      end if
+
+      allocate (frag%fock_lmo(frag%n_lmo_proj, frag%n_lmo_proj))
+      k = 0
+      do row = 1, frag%n_lmo_proj
+         do col = 1, row
+            k = k + 1
+            frag%fock_lmo(row, col) = packed(k)
+            frag%fock_lmo(col, row) = packed(k)
+         end do
+      end do
+      deallocate (packed)
+      frag%has_fock = .true.
+   end subroutine read_fock_lmo
 
    subroutine read_projection_wavefunction(lines, n_lines, frag, error)
       !! `PROJECTION WAVEFUNCTION`: the localized orbitals exchange repulsion needs

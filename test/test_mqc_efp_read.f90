@@ -362,6 +362,20 @@ contains
          if (allocated(error)) return
       end do
 
+      ! The LMO Fock matrix, unpacked from the file's lower triangle. Symmetric by
+      ! construction, and its diagonal must be negative -- these are occupied orbital
+      ! energies, so a positive one means the triangle was unpacked wrongly.
+      call check(error, frag%has_fock, "the LMO Fock matrix was not read")
+      if (allocated(error)) return
+      do sh = 1, frag%n_lmo_proj
+         call check(error, frag%fock_lmo(sh, sh) < 0.0_dp, &
+                    "an LMO Fock diagonal element is not negative")
+         if (allocated(error)) return
+      end do
+      call check(error, maxval(abs(frag%fock_lmo - transpose(frag%fock_lmo))) < 1.0e-12_dp, &
+                 "the LMO Fock matrix is not symmetric")
+      if (allocated(error)) return
+
       call frag%destroy()
       call pot%destroy()
       call delete(path)
