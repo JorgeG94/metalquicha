@@ -83,6 +83,21 @@ option(MQC_ENABLE_LIBCINT
        ON)
 option(MQC_ENABLE_LIBXC
        "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
+
+# A coverage build measures this project's own Fortran, not its dependencies.
+# libxc will not even configure under a build type it does not recognise: its
+# autocmake safeguard allows only Debug/Release/RelWithDebInfo and aborts on
+# "Coverage-mqc", so a coverage configure that fetched it dies before a line of
+# mqc is compiled. Drop both CPU backends for coverage -- which is also how
+# coverage ran before they became default-on. A normal (non-cache) set so it
+# shadows the option here and in the subdirectories without rewriting the cache,
+# leaving a later reconfigure of the same tree under another build type intact.
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
+  set(MQC_ENABLE_LIBXC OFF)
+  set(MQC_ENABLE_LIBCINT OFF)
+  message(STATUS "Coverage-mqc build: libxc and libcint disabled")
+endif()
+
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
