@@ -14,6 +14,7 @@ module mqc_libcint_bridge
    private
 
    public :: run_libcint_hf
+   public :: run_libcint_makefp
    public :: libcint_backend_available
 
 contains
@@ -23,6 +24,27 @@ contains
       logical :: available
       available = .false.
    end function libcint_backend_available
+
+   subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
+                                 basis_name, name, path, error, verbose)
+      !! No-op stand-in: an effective fragment potential needs the CPU backend
+      use pic_types, only: dp
+      use mqc_error, only: error_t
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      character(len=*), intent(in) :: basis_name, name, path
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: verbose
+
+      call error%set(ERROR_VALIDATION, &
+                     "MAKEFP needs the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_LIBCINT=ON")
+      if (size(atomic_numbers) < 0 .or. size(coordinates) < 0) return
+      if (len_trim(element_symbols(1)) < 0) return
+      if (len_trim(basis_name)*len_trim(name)*len_trim(path) < 0) return
+      if (present(verbose)) return
+   end subroutine run_libcint_makefp
 
    subroutine run_libcint_hf(settings, fragment, result, want_gradient)
       !! No-op stand-in: report the missing backend, compute nothing

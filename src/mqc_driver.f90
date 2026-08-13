@@ -20,7 +20,8 @@ module mqc_driver
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_method_types, only: method_type_to_string
-   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
+                             CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
@@ -126,6 +127,14 @@ contains
          call logger%info("  Fragment level: "//to_char(max_level))
          call logger%info("  Total atoms: "//to_char(sys_geom%total_atoms))
          call logger%info("============================================")
+      end if
+
+      ! MAKEFP writes a file and returns no energy, so it takes neither the
+      ! fragmented nor the unfragmented path: a fragment potential is built from
+      ! the whole system by definition, and there is no result_t to fill.
+      if (config%calc_type == CALC_TYPE_MAKEFP) then
+         call run_makefp(config, sys_geom, resources%mpi_comms%world_comm%rank())
+         return
       end if
 
       ! Warn if overlapping fragments flag is set but nlevel=0
@@ -889,5 +898,47 @@ contains
       end if
 
    end subroutine run_multi_molecule_calculations
+
+   subroutine run_makefp(config, sys_geom, rank)
+      !! Build an effective fragment potential for the whole system and write it
+      !!
+      !! Only rank zero does anything: the work is one SCF and a set of response
+      !! solves, all of them threaded inside the integral backend, and the write is
+      !! a single file. Distributing it would mean every rank recomputing the same
+      !! potential to overwrite the same path.
+      use mqc_calc_types, only: CALC_TYPE_MAKEFP
+      use mqc_elements, only: element_number_to_symbol
+      use mqc_libcint_bridge, only: run_libcint_makefp
+      use mqc_io_helpers, only: get_basename
+      type(driver_config_t), intent(in) :: config
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: rank
+
+      type(error_t) :: err
+      character(len=8), allocatable :: symbols(:)
+      character(len=:), allocatable :: path, name
+      integer :: i
+
+      if (rank /= 0) return
+
+      allocate (symbols(sys_geom%total_atoms))
+      do i = 1, sys_geom%total_atoms
+         symbols(i) = element_number_to_symbol(sys_geom%element_numbers(i))
+      end do
+
+      ! Named and placed off the deck, the way the JSON output is: a run on
+      ! water.json leaves water.efp beside it.
+      name = trim(get_basename())
+      path = trim(name)//".efp"
+
+      call logger%info("Building an effective fragment potential")
+      call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
+                              config%method_config%basis_set, name, path, err, verbose=.true.)
+      if (err%has_error()) then
+         call logger%error("MAKEFP failed: "//err%get_message())
+         return
+      end if
+      call logger%info("Wrote "//trim(path))
+   end subroutine run_makefp
 
 end module mqc_driver
