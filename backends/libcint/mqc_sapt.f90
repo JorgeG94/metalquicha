@@ -34,6 +34,7 @@ module mqc_sapt
    public :: sapt_cache_t
    public :: build_sapt_cache
    public :: sapt_elst10
+   public :: sapt_exch10_s2
 
    type :: sapt_molecules_t
       !! The dimer and its two counterpoise-corrected monomers
@@ -59,6 +60,17 @@ module mqc_sapt
       real(dp), allocatable :: eps_a(:), eps_b(:)
       real(dp), allocatable :: v_a(:, :), v_b(:, :)   !! One monomer's nuclei alone
       real(dp), allocatable :: j_a(:, :), j_b(:, :)   !! `J[D]`, undoubled density
+      real(dp), allocatable :: k_a(:, :), k_b(:, :)   !! `K[D]`
+      real(dp), allocatable :: w_a(:, :), w_b(:, :)   !! `V + 2J`, electrostatic potential
+      real(dp), allocatable :: h_a(:, :), h_b(:, :)   !! `V + 2J - K`
+      real(dp), allocatable :: k_o(:, :)
+         !! `K[D_A S D_B]`, from the inter-monomer transition density.
+         !!
+         !! **Not symmetric**, and that matters everywhere it is used. psi4 builds
+         !! it with the JK pair reversed and transposes in place afterwards
+         !! (`sapt_jk_terms.py:96-111`); it is built here in FISAPT's orientation
+         !! (`fisapt.cc:3665`) so no transpose is needed and the most bug-prone
+         !! line in that file has no counterpart here.
       real(dp), allocatable :: s(:, :)
       real(dp), allocatable :: eri(:, :, :, :)
    contains
@@ -164,7 +176,7 @@ contains
       type(error_t), intent(inout) :: error
 
       type(rhf_result_t) :: scf_a, scf_b
-      real(dp), allocatable :: h(:, :), t(:, :), zero(:, :)
+      real(dp), allocatable :: h(:, :), t(:, :), zero(:, :), tmp(:, :)
       integer :: nao, nocc_a, nocc_b
 
       nao = mols%dimer%nao
@@ -176,10 +188,13 @@ contains
          return
       end if
 
-      call run_libcint_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
+      ! Tight on purpose. A SAPT term is a small difference of large quantities,
+      ! and Exch10 in particular tracks the monomer density closely enough that a
+      ! 1e-9 density threshold shows up in the ninth decimal of the answer.
+      call run_libcint_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-12_dp, 1.0e-11_dp, &
                            .false., scf_a, error, in_core=.true.)
       if (error%has_error()) return
-      call run_libcint_rhf(mols%mono_b, mols%n_elec_b, 200, 1.0e-11_dp, 1.0e-9_dp, &
+      call run_libcint_rhf(mols%mono_b, mols%n_elec_b, 200, 1.0e-12_dp, 1.0e-11_dp, &
                            .false., scf_b, error, in_core=.true.)
       if (error%has_error()) return
       if (.not. (scf_a%converged .and. scf_b%converged)) then
@@ -229,16 +244,103 @@ contains
       ! J from each monomer's own density. `build_fock` is `H + J - K/2`, so a
       ! zero core and no exchange leaves exactly J -- and it is linear in the
       ! density, so passing the undoubled D gives J[D] as the terms want.
-      allocate (zero(nao, nao), cache%j_a(nao, nao), cache%j_b(nao, nao))
-      zero = 0.0_dp
-      call build_fock(zero, cache%eri, cache%d_a, cache%j_a, k_scale=0.0_dp)
-      call build_fock(zero, cache%eri, cache%d_b, cache%j_b, k_scale=0.0_dp)
-      deallocate (zero)
+      allocate (cache%j_a(nao, nao), cache%j_b(nao, nao))
+      allocate (cache%k_a(nao, nao), cache%k_b(nao, nao))
+      allocate (cache%k_o(nao, nao))
+      call coulomb_exchange(cache%eri, cache%d_a, cache%j_a, cache%k_a)
+      call coulomb_exchange(cache%eri, cache%d_b, cache%j_b, cache%k_b)
+
+      ! The inter-monomer transition density, and the exchange over it. It is
+      ! NOT symmetric -- one index runs through an occupied orbital of A and the
+      ! other through one of B -- so K_O and its transpose are different matrices
+      ! and both appear in the terms below.
+      allocate (zero(nao, nao), tmp(nao, nao))
+      call pic_gemm(cache%d_a, cache%s, tmp)
+      call pic_gemm(tmp, cache%d_b, zero)          ! zero now holds D_A S D_B
+      call coulomb_exchange(cache%eri, zero, tmp, cache%k_o)
+      deallocate (zero, tmp)
+
+      allocate (cache%w_a(nao, nao), cache%w_b(nao, nao))
+      allocate (cache%h_a(nao, nao), cache%h_b(nao, nao))
+      cache%w_a = cache%v_a + 2.0_dp*cache%j_a
+      cache%w_b = cache%v_b + 2.0_dp*cache%j_b
+      cache%h_a = cache%w_a - cache%k_a
+      cache%h_b = cache%w_b - cache%k_b
 
       cache%e_nuc = mols%dimer%nuclear_repulsion() &
                     - mols%mono_a%nuclear_repulsion() &
                     - mols%mono_b%nuclear_repulsion()
    end subroutine build_sapt_cache
+
+   subroutine coulomb_exchange(eri, d, j, k)
+      !! `J[D]` and `K[D]` for an arbitrary, possibly non-symmetric, density
+      !!
+      !! `build_fock` is `H + J - K/2`, so with a zero core it gives `J` at
+      !! `k_scale = 0` and `J - K/2` at 1, and the difference is `K/2`. Two calls
+      !! rather than a new integral routine, and correct for a non-symmetric
+      !! density because `build_fock` assumes neither symmetry nor antisymmetry.
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: d(:, :)
+      real(dp), intent(out) :: j(:, :), k(:, :)
+
+      real(dp), allocatable :: zero(:, :), jk(:, :)
+      integer :: n
+
+      n = size(d, 1)
+      allocate (zero(n, n), jk(n, n))
+      zero = 0.0_dp
+      call build_fock(zero, eri, d, j, k_scale=0.0_dp)
+      call build_fock(zero, eri, d, jk, k_scale=1.0_dp)
+      k = 2.0_dp*(j - jk)
+      deallocate (zero, jk)
+   end subroutine coulomb_exchange
+
+   function sapt_exch10_s2(c) result(energy)
+      !! `Exch10(S^2)`, FISAPT's MCBS form -- `fisapt.cc:2450-2465`
+      !!
+      !!     -2 D_A.K_B  -2 (D_A S D_B).h_A  -2 (D_B S D_A).h_B
+      !!     +2 (D_B S D_A S D_B).w_A  +2 (D_A S D_B S D_A).w_B
+      !!     -2 (D_A S D_B).K_O
+      !!
+      !! Preferred over the DCBS form of `sapt_jk_terms.py:215-222`, which needs
+      !! the virtual density `P` and is valid only while `D + P = S^-1`. That
+      !! identity fails silently if the monomer SCF drops linearly dependent MOs,
+      !! and this form never mentions `P` at all.
+      !!
+      !! **Every contraction is elementwise**, `sum_pq X_pq Y_pq` -- psi4's
+      !! `vector_dot`. The last term has two non-symmetric operands, where that is
+      !! *not* `Tr(X Y)`; taking the trace convention there puts the answer 55%
+      !! high, which is how it was found in the PySCF reference.
+      type(sapt_cache_t), intent(in) :: c
+      real(dp) :: energy
+
+      real(dp), allocatable :: ab(:, :), ba(:, :), t(:, :), u(:, :)
+      integer :: n
+
+      n = c%nao
+      allocate (ab(n, n), ba(n, n), t(n, n), u(n, n))
+
+      call pic_gemm(c%d_a, c%s, t)
+      call pic_gemm(t, c%d_b, ab)                ! D_A S D_B
+      call pic_gemm(c%d_b, c%s, t)
+      call pic_gemm(t, c%d_a, ba)                ! D_B S D_A
+
+      energy = -2.0_dp*sum(c%d_a*c%k_b)
+      energy = energy - 2.0_dp*sum(ab*c%h_a)
+      energy = energy - 2.0_dp*sum(ba*c%h_b)
+
+      call pic_gemm(ba, c%s, t)
+      call pic_gemm(t, c%d_b, u)                 ! D_B S D_A S D_B
+      energy = energy + 2.0_dp*sum(u*c%w_a)
+
+      call pic_gemm(ab, c%s, t)
+      call pic_gemm(t, c%d_a, u)                 ! D_A S D_B S D_A
+      energy = energy + 2.0_dp*sum(u*c%w_b)
+
+      energy = energy - 2.0_dp*sum(ab*c%k_o)
+
+      deallocate (ab, ba, t, u)
+   end function sapt_exch10_s2
 
    pure function sapt_elst10(c) result(energy)
       !! `Elst10,r` -- the classical Coulomb interaction of the two unperturbed
@@ -272,6 +374,13 @@ contains
       if (allocated(self%v_b)) deallocate (self%v_b)
       if (allocated(self%j_a)) deallocate (self%j_a)
       if (allocated(self%j_b)) deallocate (self%j_b)
+      if (allocated(self%k_a)) deallocate (self%k_a)
+      if (allocated(self%k_b)) deallocate (self%k_b)
+      if (allocated(self%w_a)) deallocate (self%w_a)
+      if (allocated(self%w_b)) deallocate (self%w_b)
+      if (allocated(self%h_a)) deallocate (self%h_a)
+      if (allocated(self%h_b)) deallocate (self%h_b)
+      if (allocated(self%k_o)) deallocate (self%k_o)
       if (allocated(self%s)) deallocate (self%s)
       if (allocated(self%eri)) deallocate (self%eri)
    end subroutine sapt_cache_destroy

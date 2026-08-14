@@ -7,6 +7,9 @@ density-fitted by construction.
 
 Every formula is cited to psi4 master (2026-08-12); see SAPT_PLAN.md section 5.
 """
+import sys
+from pathlib import Path
+
 import numpy as np
 from pyscf import gto, scf, lib
 
@@ -44,12 +47,41 @@ H     3.00000000  -0.77250895  -0.46780200
 """
 
 
+#: The Angstrom-to-Bohr factor metalquicha uses. PySCF's own differs in the
+#: tenth digit (0.52917721092 against 0.52917721067), which is a 4.7e-10 relative
+#: change in every coordinate -- and that alone moves Exch10 in its ninth decimal.
+#: Converting here and handing PySCF Bohr makes the two geometries bit-identical,
+#: so a disagreement is the physics rather than a unit constant.
+MQC_ANG = 1.8897261254578281
+
+#: Where the basis comes from, and why not PySCF's own tables.
+#:
+#: BSE writes exponents to ten significant figures and PySCF carries more, so
+#: the two are *different basis sets* at the 1e-7 level -- worth 3.2e-7 relative
+#: on Exch10, which looks exactly like an implementation bug and is not one. The
+#: CPU validation harness has always fed PySCF this program's own basis JSON for
+#: the same reason (`tools/cpu_validation/gen_cpu_validation.py:482`); this reuses
+#: that converter rather than growing a second one.
+BASIS_DIR = Path(__file__).resolve().parents[1] / "basis_sets"
+
+
+def mqc_basis(name, symbols):
+    """The basis this program reads, in PySCF's format."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "cpu_validation"))
+    from gen_cpu_validation import bse_to_pyscf
+    return {s: bse_to_pyscf(name, s) for s in set(symbols)}
+
+
 def _atoms(block):
     out = []
     for line in block.strip().splitlines():
         f = line.split()
         out.append((f[0], (float(f[1]), float(f[2]), float(f[3]))))
     return out
+
+
+def _to_bohr(spec):
+    return [(s, tuple(v*MQC_ANG for v in x)) for s, x in spec]
 
 
 def build(basis="cc-pvdz", verbose=0, geom=None):
@@ -72,21 +104,32 @@ def build(basis="cc-pvdz", verbose=0, geom=None):
         up as Tr(D_B S) != n_occ_B, which is the cheapest way to catch it.
         """
         spec, bas = [], {}
+        table = mqc_basis(basis, [s for s, _ in A + B])
         for idx, (s, x) in enumerate(A + B):
             label = s if idx in real else "ghost-" + s
             spec.append((label, x))
-            bas[label] = basis
-        return gto.M(atom=spec, basis=bas, unit="Angstrom", verbose=verbose)
+            bas[label] = table[s]
+        return gto.M(atom=_to_bohr(spec), basis=bas, unit="Bohr", verbose=verbose)
 
-    dimer = gto.M(atom=A + B, basis=basis, unit="Angstrom", verbose=verbose)
+    table = mqc_basis(basis, [s for s, _ in A + B])
+    dimer = gto.M(atom=_to_bohr(A + B), basis={s: table[s] for s, _ in A + B},
+                  unit="Bohr", verbose=verbose)
     molA = mol_of(set(range(len(A))))
     molB = mol_of(set(range(len(A), len(A) + len(B))))
     return dimer, molA, molB
 
 
-def monomer_scf(mol, conv=1e-11):
+def monomer_scf(mol, conv=1e-12):
+    """A monomer SCF converged tightly enough to be a reference.
+
+    `conv_tol` is on the *energy*; `conv_tol_grad` defaults to its square root,
+    about 3e-6, which leaves the density converged far more loosely than the
+    energy suggests. A SAPT term is a small difference of large quantities and
+    Exch10 tracks the density closely -- the default costs its ninth decimal.
+    """
     mf = scf.RHF(mol)
     mf.conv_tol = conv
+    mf.conv_tol_grad = 1e-10
     mf.kernel()
     assert mf.converged
     return mf
@@ -109,7 +152,8 @@ def check_m1(basis="cc-pvdz"):
     assert zA[:len(A)].sum() == sum(gto.charge(s) for s, _ in A)
 
     # BSSE: the same monomer in the bigger basis must be lower.
-    own = gto.M(atom=A, basis=basis, unit="Angstrom", verbose=0)  # A alone, own basis
+    own = gto.M(atom=_to_bohr(A), basis=mqc_basis(basis, [s for s, _ in A]),
+                unit="Bohr", verbose=0)
     e_own = monomer_scf(own).e_tot
     e_dcbs = monomer_scf(molA).e_tot
     print(f"  A in own basis  {e_own:.10f}")
