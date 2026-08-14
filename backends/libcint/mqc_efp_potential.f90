@@ -48,6 +48,8 @@ module mqc_efp_potential
    use mqc_libcint_screening, only: fit_screening, SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
    use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
+   use pic_logger, only: logger => global_logger
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -251,6 +253,8 @@ contains
       type(timer_type) :: stage
       logical :: talk
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       talk = .false.
       if (present(verbose)) talk = verbose
       if (talk) call stage%start()
@@ -272,8 +276,10 @@ contains
       if (error%has_error()) return
       pot%nao = mol%nao
 
-      if (talk) write (*, "(A,A,A,I0,A)") "  basis ", trim(basis_name), ", ", &
-         mol%nao, " functions"
+      if (talk) then
+         write (line, "(A,A,A,I0,A)") "  basis ", trim(basis_name), ", ", mol%nao, " functions"
+         call logger%info(trim(line))
+      end if
 
       if (present(aux_basis)) then
          ! Read the fitting set in whatever angular form the orbital basis is in.
@@ -296,8 +302,10 @@ contains
             call mol%destroy()
             return
          end if
-         if (talk) write (*, "(A,A,A,I0,A)") "  fitting the response with ", &
-            trim(aux_basis), ", ", aux%nao, " functions"
+         if (talk) then
+            write (line, "(A,A,A,I0,A)") "  fitting the response with ", trim(aux_basis), ", ", aux%nao, " functions"
+            call logger%info(trim(line))
+         end if
       end if
 
       ! Checked here, not where the ordering map needs it. The map runs after the
@@ -322,7 +330,10 @@ contains
       end if
       pot%n_occ = scf%n_occupied
       if (talk) call report(stage, "SCF", talk)
-      if (talk) write (*, "(A,F18.10)") "  RHF energy ", scf%energy
+      if (talk) then
+         write (line, "(A,F18.10)") "  RHF energy ", scf%energy
+         call logger%info(trim(line))
+      end if
 
       core = frozen_core(atomic_numbers)
       if (present(n_core)) core = n_core
@@ -344,8 +355,10 @@ contains
          call mol%destroy()
          return
       end if
-      if (talk) write (*, "(A,I0,A,I0,A)") "  localized ", n_valence, " of ", &
-         pot%n_occ, " occupied orbitals"
+      if (talk) then
+         write (line, "(A,I0,A,I0,A)") "  localized ", n_valence, " of ", pot%n_occ, " occupied orbitals"
+         call logger%info(trim(line))
+      end if
       if (talk) call report(stage, "localization", talk)
 
       ! --- electrostatics -------------------------------------------------------
@@ -417,8 +430,10 @@ contains
          return
       end if
       if (talk) call report(stage, "dynamic dipole response, with the Hessian build", talk)
-      if (talk) write (*, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, &
-         " imaginary frequencies"
+      if (talk) then
+         write (line, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, " imaginary frequencies"
+         call logger%info(trim(line))
+      end if
 
       call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                    shared_hessian, error, progress=talk)
@@ -426,7 +441,10 @@ contains
          call mol%destroy()
          return
       end if
-      if (talk) write (*, "(A)") "  dipole-quadrupole dispersion tensors"
+      if (talk) then
+         write (line, "(A)") "  dipole-quadrupole dispersion tensors"
+         call logger%info(trim(line))
+      end if
       if (talk) call report(stage, "the mixed and quadrupole blocks", talk)
 
       ! --- exchange repulsion: the LMO Fock matrix and the orbitals themselves --
@@ -491,7 +509,10 @@ contains
       allocate (pot%screen(pot%n_points))
       pot%screen = alpha
       deallocate (alpha)
-      if (talk) write (*, "(A)") "  screening fitted for both damping forms"
+      if (talk) then
+         write (line, "(A)") "  screening fitted for both damping forms"
+         call logger%info(trim(line))
+      end if
       if (talk) call report(stage, "charge-penetration screening", talk)
 
       call shared_hessian%destroy()
@@ -720,9 +741,12 @@ contains
       character(len=*), intent(in) :: what
       logical, intent(in) :: talk
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       if (.not. talk) return
       call stage%stop()
-      write (*, "(A,F9.1,A,A)") "      ", stage%get_elapsed_time(), " s  ", what
+      write (line, "(A,F9.1,A,A)") "      ", stage%get_elapsed_time(), " s  ", what
+      call logger%info(trim(line))
       flush (6)
       call stage%start()
    end subroutine report

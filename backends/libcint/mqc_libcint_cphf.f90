@@ -59,6 +59,8 @@ module mqc_libcint_cphf
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_nosym, &
                                  build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
+   use pic_logger, only: logger => global_logger
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -513,6 +515,8 @@ contains
       logical :: talk
       type(timer_type) :: clock
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       talk = .false.
       if (present(progress)) talk = progress
       n_ao = size(orbitals, 1)
@@ -636,8 +640,9 @@ contains
       allocate (solution(n_ov, n_pert))
 
       if (talk) then
-         write (*, "(A,I0,A,I0,A,I0,A)") "        solving ", size(frequencies), &
-            " frequencies x ", n_pert, " perturbations over ", n_ov, " pairs"
+         write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", size(frequencies), " frequencies x ", &
+            n_pert, " perturbations over ", n_ov, " pairs"
+         call logger%info(trim(line))
          call clock%start()
       end if
       do ifreq = 1, size(frequencies)
@@ -723,6 +728,8 @@ contains
       logical :: talk
       type(timer_type) :: clock
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       talk = .false.
       if (present(progress)) talk = progress
       n_vir = size(gaps, 1)
@@ -731,9 +738,9 @@ contains
       allocate (aplus(n_ov, n_ov), aminus(n_ov, n_ov))
       allocate (u(n_vir, n_occ, chunk), au(n_vir, n_occ, chunk), idx(chunk))
       if (talk) then
-         write (*, "(A,I0,A,I0,A,F0.1,A)") "        Hessian: ", n_ov, &
-            " columns in chunks of ", chunk, ", ", &
-            2.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
+         write (line, "(A,I0,A,I0,A,F0.1,A)") "        Hessian: ", n_ov, " columns in chunks of ", chunk, &
+            ", ", 2.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
+         call logger%info(trim(line))
          call clock%start()
       end if
 
@@ -816,6 +823,8 @@ contains
       logical :: talk
       type(timer_type) :: clock
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       talk = .false.
       if (present(progress)) talk = progress
       n_vir = size(gaps, 1)
@@ -831,9 +840,9 @@ contains
       if (error%has_error()) return
       naux = size(bov, 2)
       if (talk) then
-         write (*, "(A,I0,A,I0,A,F0.1,A)") "        fitted Hessian: ", n_ov, &
-            " pairs, ", naux, " auxiliary functions, ", &
-            4.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
+         write (line, "(A,I0,A,I0,A,F0.1,A)") "        fitted Hessian: ", n_ov, " pairs, ", naux, &
+            " auxiliary functions, ", 4.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
+         call logger%info(trim(line))
          call tick(clock, 1, 3, "step")
       end if
 
@@ -890,10 +899,13 @@ contains
       ! Read the clock without stopping it: `start` resets, so a stop/start pair here
       ! would leave `so_far` measuring only the interval since the previous line and
       ! the estimate would be built from one chunk rather than all of them.
+      character(len=MAX_LINE_LENGTH) :: line
+
       so_far = clock%get_elapsed_time()
       left = so_far*real(total - done, dp)/real(max(done, 1), dp)
-      write (*, "(A,I6,A,I0,1X,A,A,F8.1,A,F8.1,A)") "        ", done, " of ", total, &
-         trim(unit_name), "s   ", so_far, " s in, ~", left, " s left"
+      write (line, "(A,I6,A,I0,1X,A,A,F8.1,A,F8.1,A)") "        ", done, " of ", total, trim(unit_name), &
+         "s   ", so_far, " s in, ~", left, " s left"
+      call logger%info(trim(line))
       flush (output_unit)
    end subroutine tick
 

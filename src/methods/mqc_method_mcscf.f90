@@ -7,6 +7,8 @@ module mqc_method_mcscf
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
    implicit none
    private
 
@@ -103,13 +105,13 @@ contains
       integer :: n_inactive
 
       if (this%options%verbose) then
-         print *, "MCSCF: Calculating CASSCF energy"
-         print *, "MCSCF: Basis set: ", trim(this%options%basis_set)
-         print *, "MCSCF: Fragment has", fragment%n_atoms, "atoms"
-         print *, "MCSCF: nelec =", fragment%nelec
-         print *, "MCSCF: charge =", fragment%charge
-         print *, "MCSCF: Active space: (", this%options%n_active_electrons, ",", &
-            this%options%n_active_orbitals, ")"
+         call logger%info("MCSCF: Calculating CASSCF energy")
+         call logger%info("MCSCF: Basis set: "//trim(this%options%basis_set))
+         call logger%info("MCSCF: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
+         call logger%info("MCSCF: nelec ="//" "//to_char(fragment%nelec))
+         call logger%info("MCSCF: charge ="//" "//to_char(fragment%charge))
+         call logger%info("MCSCF: Active space: ("//" "//to_char(this%options%n_active_electrons)//" "//"," &
+                          //" "//to_char(this%options%n_active_orbitals)//" "//")")
 
          ! Calculate inactive orbitals
          if (this%options%n_inactive_orbitals < 0) then
@@ -117,20 +119,20 @@ contains
          else
             n_inactive = this%options%n_inactive_orbitals
          end if
-         print *, "MCSCF: Inactive orbitals:", n_inactive
+         call logger%info("MCSCF: Inactive orbitals:"//" "//to_char(n_inactive))
 
          if (this%options%n_states > 1) then
-            print *, "MCSCF: State-averaged over", this%options%n_states, "states"
+            call logger%info("MCSCF: State-averaged over"//" "//to_char(this%options%n_states)//" "//"states")
          end if
          if (this%options%use_pt2) then
-            print *, "MCSCF: Will apply ", trim(this%options%pt2_type), " correction"
+            call logger%info("MCSCF: Will apply "//trim(this%options%pt2_type)//" correction")
          end if
       end if
 
       ! Validate active space
       if (this%options%n_active_electrons <= 0 .or. this%options%n_active_orbitals <= 0) then
-         print *, "MCSCF: ERROR - Active space not defined!"
-         print *, "MCSCF: Set n_active_electrons and n_active_orbitals in config"
+         call logger%info("MCSCF: ERROR - Active space not defined!")
+         call logger%info("MCSCF: Set n_active_electrons and n_active_orbitals in config")
          result%has_error = .true.
          return
       end if
@@ -141,7 +143,7 @@ contains
       result%has_energy = .true.
 
       if (this%options%verbose) then
-         print *, "MCSCF: [STUB] CASSCF Energy =", result%energy%total()
+         call logger%info("MCSCF: [STUB] CASSCF Energy ="//" "//to_char(result%energy%total()))
       end if
 
    end subroutine mcscf_calc_energy
@@ -163,7 +165,7 @@ contains
       type(calculation_result_t), intent(out) :: result
 
       if (this%options%verbose) then
-         print *, "MCSCF: Calculating CASSCF gradient"
+         call logger%info("MCSCF: Calculating CASSCF gradient")
       end if
 
       ! First get energy (and converged orbitals/CI)
@@ -176,7 +178,7 @@ contains
       result%has_gradient = .true.
 
       if (this%options%verbose) then
-         print *, "MCSCF: [STUB] Gradient computed"
+         call logger%info("MCSCF: [STUB] Gradient computed")
       end if
 
    end subroutine mcscf_calc_gradient
@@ -194,8 +196,8 @@ contains
       type(calculation_result_t), intent(out) :: result
 
       if (this%options%verbose) then
-         print *, "MCSCF: Analytical Hessian not implemented"
-         print *, "MCSCF: Use finite difference of gradients instead"
+         call logger%info("MCSCF: Analytical Hessian not implemented")
+         call logger%info("MCSCF: Use finite difference of gradients instead")
       end if
 
       ! For now, just compute energy

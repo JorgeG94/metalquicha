@@ -24,6 +24,7 @@ module mqc_method_xtb
    use tblite_xtb_gfn1, only: new_gfn1_calculator
    use tblite_xtb_gfn2, only: new_gfn2_calculator
    use tblite_xtb_singlepoint, only: xtb_singlepoint
+   use pic_io, only: to_char
 
    implicit none
    private
@@ -81,18 +82,18 @@ contains
       real(wp) :: dipole_wp(3)
 
       if (this%verbose) then
-         print *, "XTB: Calculating energy using ", this%variant
-         print *, "XTB: Fragment has", fragment%n_atoms, "atoms"
-         print *, "XTB: nelec =", fragment%nelec
-         print *, "XTB: charge =", fragment%charge
+         call logger%info("XTB: Calculating energy using "//to_char(this%variant))
+         call logger%info("XTB: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
+         call logger%info("XTB: nelec ="//" "//to_char(fragment%nelec))
+         call logger%info("XTB: charge ="//" "//to_char(fragment%charge))
          if (allocated(this%solvent)) then
             if (allocated(this%solvation_model)) then
-               print *, "XTB: Solvation: ", trim(this%solvation_model), " with solvent = ", this%solvent
+               call logger%info("XTB: Solvation: "//trim(this%solvation_model)//" with solvent = "//to_char(this%solvent))
             else
-               print *, "XTB: Solvation: alpb with solvent = ", this%solvent
+               call logger%info("XTB: Solvation: alpb with solvent = "//to_char(this%solvent))
             end if
          else
-            print *, "XTB: Solvation: none (gas phase)"
+            call logger%info("XTB: Solvation: none (gas phase)")
          end if
       end if
 
@@ -189,9 +190,9 @@ contains
       result%has_dipole = .true.
 
       if (this%verbose) then
-         print *, "XTB: Energy =", result%energy%total()
-         print *, "XTB: Dipole (e*Bohr) =", result%dipole
-         print *, "XTB: Dipole magnitude (Debye) =", norm2(result%dipole)*2.541746_dp
+         call logger%info("XTB: Energy ="//" "//to_char(result%energy%total()))
+         call logger%info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
+         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*2.541746_dp))
       end if
 
       deallocate (num, xyz)
@@ -219,18 +220,18 @@ contains
       real(wp) :: dipole_wp(3)
 
       if (this%verbose) then
-         print *, "XTB: Calculating gradient using ", this%variant
-         print *, "XTB: Fragment has", fragment%n_atoms, "atoms"
-         print *, "XTB: nelec =", fragment%nelec
-         print *, "XTB: charge =", fragment%charge
+         call logger%info("XTB: Calculating gradient using "//to_char(this%variant))
+         call logger%info("XTB: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
+         call logger%info("XTB: nelec ="//" "//to_char(fragment%nelec))
+         call logger%info("XTB: charge ="//" "//to_char(fragment%charge))
          if (allocated(this%solvent)) then
             if (allocated(this%solvation_model)) then
-               print *, "XTB: Solvation: ", trim(this%solvation_model), " with solvent = ", this%solvent
+               call logger%info("XTB: Solvation: "//trim(this%solvation_model)//" with solvent = "//to_char(this%solvent))
             else
-               print *, "XTB: Solvation: alpb with solvent = ", this%solvent
+               call logger%info("XTB: Solvation: alpb with solvent = "//to_char(this%solvent))
             end if
          else
-            print *, "XTB: Solvation: none (gas phase)"
+            call logger%info("XTB: Solvation: none (gas phase)")
          end if
       end if
 
@@ -342,11 +343,11 @@ contains
       result%has_dipole = .true.
 
       if (this%verbose) then
-         print *, "XTB: Energy =", result%energy%total()
-         print *, "XTB: Gradient norm =", sqrt(sum(result%gradient**2))
-         print *, "XTB: Dipole (e*Bohr) =", result%dipole
-         print *, "XTB: Dipole magnitude (Debye) =", norm2(result%dipole)*2.541746_dp
-         print *, "XTB: Gradient calculation complete"
+         call logger%info("XTB: Energy ="//" "//to_char(result%energy%total()))
+         call logger%info("XTB: Gradient norm ="//" "//to_char(sqrt(sum(result%gradient**2))))
+         call logger%info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
+         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*2.541746_dp))
+         call logger%info("XTB: Gradient calculation complete")
       end if
 
       deallocate (num, xyz, gradient, sigma)

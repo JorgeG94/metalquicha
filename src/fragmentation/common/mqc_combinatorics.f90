@@ -3,6 +3,9 @@ module mqc_combinatorics
    !! Provides pure combinatorial functions for generating molecular fragments
    !! including binomial coefficients, combinations, and fragment counting
    use pic_types, only: default_int, int32, int64
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -128,15 +131,21 @@ contains
       integer(int64) :: i
       integer(default_int) :: j
 
+      character(len=MAX_LINE_LENGTH) :: line
+
+      ! Assembled in `line` and emitted once per combination. The non-advancing
+      ! writes this replaces built the row directly on the unit, which a logger
+      ! cannot do: a log record is a whole line or it is nothing.
       do i = 1_int64, count
+         line = ""
          do j = 1, max_len
             if (out_array(i, j) == 0) exit
-            write (*, "(I0)", advance="no") out_array(i, j)
+            line = trim(line)//to_char(out_array(i, j))
             if (j < max_len .and. out_array(i, j + 1) /= 0) then
-               write (*, "(A)", advance="no") ":"
+               line = trim(line)//":"
             end if
          end do
-         write (*, *)  ! newline
+         call logger%info(trim(line))
       end do
    end subroutine print_combos
 
