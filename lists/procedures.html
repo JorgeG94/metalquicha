@@ -1569,15 +1569,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1587,27 +1587,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1617,15 +1617,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1756,13 +1756,13 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -2894,6 +2894,18 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td><p>No-op stand-in: report the missing backend, compute nothing</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_libcint_makefp.html'>run_libcint_makefp</a></td>
+                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: an effective fragment potential needs the CPU backend</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_makefp.html'>run_makefp</a></td>
+                 <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Build an effective fragment potential for the whole system and write it</p><a href="../proc/run_makefp.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_multi_molecule_calculations.html'>run_multi_molecule_calculations</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -3290,7 +3302,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-13 12:53 +0000             </p>
+ on 2026-08-14 00:51 +0000             </p>
           </div>
         </div>
         <br>
