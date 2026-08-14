@@ -79,6 +79,11 @@ module mqc_efp_potential
    !> measured in `validation/check_distributed_polarizability.py` rather than
    !> assumed, and it is the one convention here that a symmetric test tensor
    !> would not have caught.
+   !>
+   !> It is also the transpose of what `efinp.src:7552-7561` writes, and that is not a
+   !> conflict: GAMESS indexes the tensor `(field, dipole)` where this code indexes it
+   !> `(dipole, field)`, so both put the same number in slot 4 and the files agree. See
+   !> the longer note on `POL_ROW` in `mqc_efp_read`, which carries the measurement.
    integer, parameter :: POL_ROW(N_CART_PAIR) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
    integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 

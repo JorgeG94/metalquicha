@@ -23,7 +23,9 @@ module test_mqc_efp_pair
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_potential, only: from_gamess_ao_order
    use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
-                           exchange_repulsion, dispersion_e6_damped, charge_transfer
+                           exchange_repulsion, dispersion_e6_damped, &
+                           dispersion_e7_damped, dispersion_e8_damped, &
+                           charge_transfer
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_error, only: error_t
@@ -45,8 +47,12 @@ contains
                   new_unittest("efp_lmo_orthonormal", test_lmo), &
                   new_unittest("efp_exchange_repulsion", test_xr), &
                   new_unittest("efp_e6_damped", test_e6d), &
+                  new_unittest("efp_e7_damped", test_e7d), &
+                  new_unittest("efp_e8_damped", test_e8d), &
                   new_unittest("efp_ctvec_orthonormal", test_ctvec), &
-                  new_unittest("efp_charge_transfer", test_ct) &
+                  new_unittest("efp_charge_transfer", test_ct), &
+                  new_unittest("efp_charge_transfer_dipole", test_ct_dipole), &
+                  new_unittest("efp_charge_transfer_full", test_ct_full) &
                   ]
    end subroutine collect_mqc_efp_pair_tests
 
@@ -254,6 +260,84 @@ contains
       call b%destroy()
    end subroutine test_e6d
 
+   subroutine test_e7d(error)
+      !! Damped E7 against GAMESS's own reported value
+      !!
+      !! E7 is the first term that can see three conventions E6 and E8 are blind to:
+      !! the sign of the A-minus-B displacement, `T3`'s deliberate extra negative, and
+      !! the transpose between GAMESS's `(field, dipole)` polarizability and ours. Its
+      !! *positive* sign is the useful signal -- it is the only one of the three
+      !! dispersion terms that is not negative, and it is linear in both `T3` and `C`,
+      !! so a wrong tensor sign or a swapped A/B flips it rather than merely shifting
+      !! it. It is also the first use of the `DIPOLE-QUADRUPOLE` block for anything.
+      !!
+      !! Swapping the two fragments must not change the answer. GAMESS never has to
+      !! check that -- it fixes A as the lower fragment index and only ever walks pairs
+      !! one way -- so the invariance is ours to establish, and it is what would catch
+      !! an A/B mix-up that happened to leave the reference value intact.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e, swapped
+      real(dp), parameter :: SEP(3) = [3.0_dp*ANG, 0.0_dp, 0.0_dp]
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+      e = dispersion_e7_damped(a, b, [0.0_dp, 0.0_dp, 0.0_dp], SEP, err)
+      call check(error,.not. err%has_error(), "damped E7 failed")
+      if (allocated(error)) return
+      call check(error, e, 0.0000598618_dp, thr=1.0e-10_dp, &
+                 message="damped E7 disagrees with GAMESS")
+      if (allocated(error)) return
+
+      swapped = dispersion_e7_damped(b, a, SEP, [0.0_dp, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "swapped E7 failed")
+      if (allocated(error)) return
+      call check(error, swapped, e, thr=1.0e-14_dp, &
+                 message="E7 depends on which fragment is named first")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_e7d
+
+   subroutine test_e8d(error)
+      !! Damped E8 against GAMESS's own reported value
+      !!
+      !! This is the first number that reads the `LMOQQPOL` block for anything, so it
+      !! checks two things at once: that the quadrupole-quadrupole response written by
+      !! our own MAKEFP is right, and that E8 contracts it the way GAMESS does. The
+      !! block's values were never validated component by component -- only its
+      !! molecular sum, to 1.5e-05 -- so an exact match here is the real test of it.
+      !!
+      !! The value to beat is *not* `E6/3`. GAMESS has such a branch and it is off for
+      !! a pair of file-based fragments; it would put E8 at -1.72e-04 rather than the
+      !! -1.14e-04 it actually prints.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+      e = dispersion_e8_damped(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
+                               [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "damped E8 failed")
+      if (allocated(error)) return
+      ! Ours is -1.1433371035e-04, so this agrees to 1.0e-11 -- all of the residual is
+      ! GAMESS rounding its own number to the ten decimals it prints. The bound is
+      ! 1e-10 rather than the 1e-9 its neighbours use because that is what "every digit
+      ! GAMESS prints" is worth here.
+      call check(error, e, -0.0001143337_dp, thr=1.0e-10_dp, &
+                 message="damped E8 disagrees with GAMESS")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_e8d
+
    subroutine test_ctvec(error)
       !! `CTVEC` and `CTFOK`, checked the way the localized orbitals were
       !!
@@ -350,6 +434,76 @@ contains
       call a%destroy()
       call b%destroy()
    end subroutine test_ct
+
+   subroutine test_ct_dipole(error)
+      !! Charge transfer's second rung: monopoles and dipoles
+      !!
+      !! The ladder is climbed a rank at a time because each rung has its own GAMESS
+      !! number, measured by feeding GAMESS a potential truncated at that rank. Dipoles
+      !! move the answer a long way -- 0.000082348 to 0.000060349, a 27% drop -- so this
+      !! is a sharp test of the new rank rather than a small correction to the old one.
+      !!
+      !! The quadrupole rank is not in yet, so the quadrupoles are zeroed here too. The
+      !! octupole is zeroed for tidiness rather than necessity: `V` has no octupole rank
+      !! in GAMESS either, and its own number is the same with and without one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+      a%quadrupole = 0.0_dp
+      a%octopole = 0.0_dp
+      b%quadrupole = 0.0_dp
+      b%octopole = 0.0_dp
+
+      e = charge_transfer(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
+                          [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "charge transfer failed")
+      if (allocated(error)) return
+      call check(error, e, 0.000060349_dp, thr=1.0e-9_dp, &
+                 message="charge transfer disagrees with GAMESS on the dipole rung")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_ct_dipole
+
+   subroutine test_ct_full(error)
+      !! Charge transfer's top rung: the potential as it stands, nothing zeroed
+      !!
+      !! `V` runs charge, dipole, quadrupole and stops. So this is the complete
+      !! expression, and the octupoles the potential carries are left in place
+      !! deliberately -- GAMESS reports 0.000081783 both with and without an octupole
+      !! section, which is what established that the rank genuinely ends at the
+      !! quadrupole rather than merely being unimplemented there.
+      !!
+      !! Note the quadrupole rung is *not* monotone in the one below it: 0.000082348
+      !! at monopoles, 0.000060349 with dipoles, 0.000081783 with quadrupoles. The
+      !! quadrupole undoes most of what the dipole did, so a quadrupole rank that was
+      !! quietly zero would look like a 26% error rather than a small one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: a, b
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_fragment(a, err)
+      call water_fragment(b, err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+
+      e = charge_transfer(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
+                          [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
+      call check(error,.not. err%has_error(), "charge transfer failed")
+      if (allocated(error)) return
+      call check(error, e, 0.000081783_dp, thr=1.0e-9_dp, &
+                 message="charge transfer disagrees with GAMESS on the full potential")
+      call a%destroy()
+      call b%destroy()
+   end subroutine test_ct_full
 
    subroutine test_lmo(error)
       !! The localized orbitals come back orthonormal, which pins the AO conversion

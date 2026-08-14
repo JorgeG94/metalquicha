@@ -47,6 +47,21 @@ module mqc_efp_read
    !> suggest -- the same map `mqc_efp_potential` writes with, established there
    !> against GAMESS's own output. Reading these nine as a row-major 3x3 gives a
    !> tensor whose trace is negative, which is how the mistake announces itself.
+   !>
+   !> **`efinp.src` appears to contradict this, and does not.** Its reader
+   !> (`efinp.src:8456-8464`) and its writer (`efinp.src:7552-7561`) agree with each
+   !> other that slot 4 is `DYNDD_LMO(1,2)`, which is the transpose of the map below.
+   !> Both statements are true because the two arrays are indexed oppositely: GAMESS's
+   !> is `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose to
+   !> the identity, so the *files* agree and a potential written here is read correctly
+   !> by GAMESS. Measured, not argued: per-orbital against a real `MAKEFP` potential,
+   !> this map lands 1.96e-05 away while the source-derived one lands 1.72e-01 away --
+   !> and that 1.72e-01 is each tensor's own asymmetry, orbital for orbital.
+   !>
+   !> So do not "fix" this to match `efinp.src`. What *does* follow from the transpose
+   !> is that anything mirroring a GAMESS expression over `DYNDD_LMO` must swap the two
+   !> indices when it reads `dyn_pol` -- E7 is the first such consumer. `dipquad` and
+   !> `quadquad` are stored flat in file order and need no swap.
    integer, parameter :: N_POL_SLOTS = 9
    integer, parameter :: POL_ROW(N_POL_SLOTS) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
    integer, parameter :: POL_COL(N_POL_SLOTS) = [1, 2, 3, 1, 1, 2, 2, 3, 3]

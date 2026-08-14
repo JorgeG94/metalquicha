@@ -93,6 +93,12 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_efp_pair)
   target_link_libraries(test_mqc_efp_pair PRIVATE cint_fortran cint)
 
+  # All five EFP2 terms assembled into one energy. Each was pinned against
+  # GAMESS on its own, so what this checks is the bookkeeping: no term dropped,
+  # none counted twice, dispersion totalled damped rather than undamped.
+  addtest(mqc_efp_energy)
+  target_link_libraries(test_mqc_efp_energy PRIVATE cint_fortran cint)
+
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.
@@ -118,6 +124,12 @@ if(MQC_ENABLE_LIBCINT)
   # evaluate basis functions -- so the quadrature is the check.
   addtest(mqc_libcint_ao)
   target_link_libraries(test_mqc_libcint_ao PRIVATE cint_fortran cint)
+
+  # The potential integral against its own centre-gradient. This is what fixes
+  # the sign of libcint's `nabla-rinv` for every caller, charge transfer's
+  # dipole rank being the first.
+  addtest(mqc_libcint_esp)
+  target_link_libraries(test_mqc_libcint_esp PRIVATE cint_fortran cint)
 
   # Coupled cluster, against the identities a reference energy cannot see:
   # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the

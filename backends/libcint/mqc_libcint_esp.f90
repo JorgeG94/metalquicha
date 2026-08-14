@@ -32,11 +32,14 @@ module mqc_libcint_esp
    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_ptr, c_loc, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
+   use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG
    implicit none
    private
 
    public :: esp_matrices
    public :: esp_contract
+   public :: drinv_matrices
+   public :: ddrinv_matrices
 
    !> `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
    !> and 0-based like every other `PTR_*`, so it is used as `+ 1`.
@@ -66,6 +69,78 @@ module mqc_libcint_esp
          type(c_ptr), value, intent(in) :: env, opt, cache
          integer(c_int) :: ret
       end function cint1e_grids_cart
+
+      function cint1e_drinv_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
+                                cache) result(ret) bind(C, name="int1e_drinv_sph")
+         import :: c_int, c_ptr
+         implicit none
+         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
+         integer(c_int), value, intent(in) :: natm
+         type(c_ptr), value, intent(in) :: bas
+         integer(c_int), value, intent(in) :: nbas
+         type(c_ptr), value, intent(in) :: env, opt, cache
+         integer(c_int) :: ret
+      end function cint1e_drinv_sph
+
+      function cint1e_drinv_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
+                                 cache) result(ret) bind(C, name="int1e_drinv_cart")
+         import :: c_int, c_ptr
+         implicit none
+         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
+         integer(c_int), value, intent(in) :: natm
+         type(c_ptr), value, intent(in) :: bas
+         integer(c_int), value, intent(in) :: nbas
+         type(c_ptr), value, intent(in) :: env, opt, cache
+         integer(c_int) :: ret
+      end function cint1e_drinv_cart
+
+      function cint1e_ipiprinv_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
+                                   cache) result(ret) bind(C, name="int1e_ipiprinv_sph")
+         import :: c_int, c_ptr
+         implicit none
+         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
+         integer(c_int), value, intent(in) :: natm
+         type(c_ptr), value, intent(in) :: bas
+         integer(c_int), value, intent(in) :: nbas
+         type(c_ptr), value, intent(in) :: env, opt, cache
+         integer(c_int) :: ret
+      end function cint1e_ipiprinv_sph
+
+      function cint1e_ipiprinv_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
+                                    cache) result(ret) bind(C, name="int1e_ipiprinv_cart")
+         import :: c_int, c_ptr
+         implicit none
+         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
+         integer(c_int), value, intent(in) :: natm
+         type(c_ptr), value, intent(in) :: bas
+         integer(c_int), value, intent(in) :: nbas
+         type(c_ptr), value, intent(in) :: env, opt, cache
+         integer(c_int) :: ret
+      end function cint1e_ipiprinv_cart
+
+      function cint1e_iprinvip_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
+                                   cache) result(ret) bind(C, name="int1e_iprinvip_sph")
+         import :: c_int, c_ptr
+         implicit none
+         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
+         integer(c_int), value, intent(in) :: natm
+         type(c_ptr), value, intent(in) :: bas
+         integer(c_int), value, intent(in) :: nbas
+         type(c_ptr), value, intent(in) :: env, opt, cache
+         integer(c_int) :: ret
+      end function cint1e_iprinvip_sph
+
+      function cint1e_iprinvip_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
+                                    cache) result(ret) bind(C, name="int1e_iprinvip_cart")
+         import :: c_int, c_ptr
+         implicit none
+         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
+         integer(c_int), value, intent(in) :: natm
+         type(c_ptr), value, intent(in) :: bas
+         integer(c_int), value, intent(in) :: nbas
+         type(c_ptr), value, intent(in) :: env, opt, cache
+         integer(c_int) :: ret
+      end function cint1e_iprinvip_cart
    end interface
 
 contains
@@ -179,6 +254,228 @@ contains
       values = -values
       deallocate (env_local)
    end subroutine esp_contract
+
+   subroutine drinv_matrices(mol, centres, matrices, error)
+      !! The gradient of `1/|r - C|` with respect to `C`, over every shell pair
+      !!
+      !! Returns `(n_ao, n_ao, 3, n_centres)`. This is what a point *dipole*'s
+      !! potential needs: the field of a dipole `d` at `C` is `d . grad_C (1/|r - C|)`,
+      !! so a rank the electrostatics stops one short of is one gradient away from the
+      !! rank below it.
+      !!
+      !! **The operator carries the derivative, not the basis.** libcint calls this
+      !! `nabla-rinv` (`scripts/auto_intor.cl:48`), meaning `grad` applied to `1/r_C`
+      !! itself, with the Gaussians left alone -- so no integration by parts and no
+      !! pairing with a transpose is needed here, unlike the `int1e_grids_ip` route the
+      !! plan sketched for a build that lacked this integral.
+      !!
+      !! **Its sign convention is asserted rather than assumed.** The gradient could be
+      !! with respect to `r` or to `C`, and those differ by exactly a minus. Rather than
+      !! read it out of the generated code, `test_mqc_libcint_esp` differences
+      !! `esp_matrices` about each centre and requires this to reproduce it. That test
+      !! is what defines the convention for every caller, and it is why the dipole rank
+      !! could be written without a sign to guess at.
+      !!
+      !! Unlike the grid integral this takes **one centre per call**, in
+      !! `env(PTR_RINV_ORIG)`, so `env` is rewritten per centre. A fragment has a
+      !! handful of expansion points, so that is a handful of passes over the shell
+      !! pairs and not worth restructuring.
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: centres(:, :)        !! (3, n_centres), Bohr
+      real(dp), allocatable, intent(out) :: matrices(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable, target :: buf(:), env_local(:)
+      integer, target :: shls(2)
+      integer :: ish, jsh, di, dj, i, j, c, x, ret, io, jo, block_max, n_centre
+
+      if (size(centres, 1) /= 3) then
+         call error%set(ERROR_VALIDATION, "drinv integrals: centres must be (3, n)")
+         return
+      end if
+      n_centre = size(centres, 2)
+      if (n_centre < 1) then
+         call error%set(ERROR_VALIDATION, "drinv integrals: no centres")
+         return
+      end if
+
+      block_max = 1
+      do ish = 1, mol%nbas
+         block_max = max(block_max, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+
+      allocate (matrices(mol%nao, mol%nao, 3, n_centre))
+      matrices = 0.0_dp
+      allocate (buf(3*block_max*block_max))
+      allocate (env_local(size(mol%env)))
+      env_local = mol%env
+
+      do c = 1, n_centre
+         env_local(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = centres(:, c)
+         do ish = 1, mol%nbas
+            di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+            io = mol%shell_offset(ish)
+            do jsh = 1, mol%nbas
+               dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+               jo = mol%shell_offset(jsh)
+               shls = [ish - 1, jsh - 1]
+
+               if (mol%cartesian) then
+                  ret = cint1e_drinv_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
+                                          c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                          mol%nbas, c_loc(env_local), c_null_ptr, &
+                                          c_null_ptr)
+               else
+                  ret = cint1e_drinv_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
+                                         c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                         mol%nbas, c_loc(env_local), c_null_ptr, &
+                                         c_null_ptr)
+               end if
+               if (ret == 0) cycle      ! screened away, leave the block zero
+
+               ! The Cartesian component is *slowest* here, the opposite of the grid
+               ! integral where the point runs fastest. Both orderings are libcint's
+               ! own and neither is inferable from the other.
+               do x = 1, 3
+                  do j = 1, dj
+                     do i = 1, di
+                        matrices(io + i, jo + j, x, c) = &
+                           buf(i + (j - 1)*di + (x - 1)*di*dj)
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (buf, env_local)
+   end subroutine drinv_matrices
+
+   subroutine ddrinv_matrices(mol, centres, matrices, error)
+      !! The second centre-derivative of `1/|r - C|`, over every shell pair
+      !!
+      !! Returns `(n_ao, n_ao, 3, 3, n_centres)`. This is what a point *quadrupole*'s
+      !! potential needs, one gradient above `drinv_matrices`.
+      !!
+      !! **libcint has no `ddrinv`,** so unlike the first derivative this one is
+      !! assembled from basis derivatives. Writing `f = 1/|r - C|` and using
+      !! `grad_C f = -grad_r f` with an integration by parts whose boundary term
+      !! vanishes,
+      !!
+      !!     d/dC_a I    = <d_a mu| f |nu> + <mu| f |d_a nu>
+      !!     d2/dC_a dC_b I = <d_a d_b mu| f |nu> + <d_a mu| f |d_b nu>
+      !!                    + <d_b mu| f |d_a nu> + <mu| f |d_a d_b nu>
+      !!
+      !! which is `int1e_ipiprinv` (`nabla nabla | rinv |`) plus its transpose, plus
+      !! `int1e_iprinvip` (`nabla | rinv | nabla`) plus *its* index-swapped self.
+      !!
+      !! **Two of libcint's conventions cancel here rather than needing to be known.**
+      !! Whether its `nabla` carries a minus does not matter, because every term above
+      !! carries exactly two of them. And whether its nine components run `a` fastest or
+      !! `b` fastest does not matter either, because the expression is symmetrized over
+      !! `(a,b)`: `ipiprinv` is symmetric in the pair to begin with, and `iprinvip`
+      !! enters as `ab` plus `ba`. That is worth stating because the same two questions
+      !! were live and load-bearing for `drinv_matrices`, which has one derivative.
+      !!
+      !! What is *not* free is the overall correctness, so `test_mqc_libcint_esp`
+      !! requires this to reproduce a second difference of `esp_matrices`.
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: centres(:, :)        !! (3, n_centres), Bohr
+      real(dp), allocatable, intent(out) :: matrices(:, :, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable, target :: buf_pp(:), buf_pip(:), env_local(:)
+      integer, target :: shls(2)
+      integer :: ish, jsh, di, dj, i, j, c, a, b, io, jo, block_max, n_centre
+      integer :: slot, ret_pp, ret_pip
+
+      if (size(centres, 1) /= 3) then
+         call error%set(ERROR_VALIDATION, "ddrinv integrals: centres must be (3, n)")
+         return
+      end if
+      n_centre = size(centres, 2)
+      if (n_centre < 1) then
+         call error%set(ERROR_VALIDATION, "ddrinv integrals: no centres")
+         return
+      end if
+
+      block_max = 1
+      do ish = 1, mol%nbas
+         block_max = max(block_max, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+
+      allocate (matrices(mol%nao, mol%nao, 3, 3, n_centre))
+      matrices = 0.0_dp
+      allocate (buf_pp(9*block_max*block_max))
+      allocate (buf_pip(9*block_max*block_max))
+      allocate (env_local(size(mol%env)))
+      env_local = mol%env
+
+      do c = 1, n_centre
+         env_local(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = centres(:, c)
+         do ish = 1, mol%nbas
+            di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+            io = mol%shell_offset(ish)
+            do jsh = 1, mol%nbas
+               dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+               jo = mol%shell_offset(jsh)
+               shls = [ish - 1, jsh - 1]
+
+               ! Both are asked for unconditionally and each zeroes its own buffer when
+               ! screened away. Chaining them on one return code would drop a live
+               ! contribution whenever the other one happened to be screened.
+               if (mol%cartesian) then
+                  ret_pp = cint1e_ipiprinv_cart(c_loc(buf_pp), c_null_ptr, c_loc(shls), &
+                                                c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                                mol%nbas, c_loc(env_local), c_null_ptr, &
+                                                c_null_ptr)
+                  ret_pip = cint1e_iprinvip_cart(c_loc(buf_pip), c_null_ptr, c_loc(shls), &
+                                                 c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                                 mol%nbas, c_loc(env_local), c_null_ptr, &
+                                                 c_null_ptr)
+               else
+                  ret_pp = cint1e_ipiprinv_sph(c_loc(buf_pp), c_null_ptr, c_loc(shls), &
+                                               c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                               mol%nbas, c_loc(env_local), c_null_ptr, &
+                                               c_null_ptr)
+                  ret_pip = cint1e_iprinvip_sph(c_loc(buf_pip), c_null_ptr, c_loc(shls), &
+                                                c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                                mol%nbas, c_loc(env_local), c_null_ptr, &
+                                                c_null_ptr)
+               end if
+               if (ret_pp == 0 .and. ret_pip == 0) cycle
+               if (ret_pp == 0) buf_pp = 0.0_dp
+               if (ret_pip == 0) buf_pip = 0.0_dp
+
+               do b = 1, 3
+                  do a = 1, 3
+                     slot = (a - 1) + (b - 1)*3
+                     do j = 1, dj
+                        do i = 1, di
+                           ! <d_a d_b mu|f|nu> + <d_a mu|f|d_b nu>, the two terms whose
+                           ! derivatives sit on this shell pair in this order; the other
+                           ! two arrive when the (jsh, ish) block is visited, since this
+                           ! loop covers every ordered pair.
+                           matrices(io + i, jo + j, a, b, c) = &
+                              matrices(io + i, jo + j, a, b, c) &
+                              + buf_pp(i + (j - 1)*di + slot*di*dj) &
+                              + buf_pip(i + (j - 1)*di + slot*di*dj)
+                           ! ... and their partners, placed transposed: <mu|f|d_a d_b nu>
+                           ! and <d_b mu|f|d_a nu> as seen from the other block.
+                           matrices(jo + j, io + i, a, b, c) = &
+                              matrices(jo + j, io + i, a, b, c) &
+                              + buf_pp(i + (j - 1)*di + slot*di*dj) &
+                              + buf_pip(i + (j - 1)*di + slot*di*dj)
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (buf_pp, buf_pip, env_local)
+   end subroutine ddrinv_matrices
 
    subroutine esp_matrices(mol, grids, matrices, error)
       !! `1/|r - R_g|` over every shell pair, for each point

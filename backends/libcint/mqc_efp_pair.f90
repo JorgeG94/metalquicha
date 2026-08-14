@@ -23,7 +23,7 @@ module mqc_efp_pair
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_efp_read, only: efp_fragment_t
    use mqc_efp_interaction, only: CP_WEIGHT
-   use mqc_libcint_esp, only: esp_matrices
+   use mqc_libcint_esp, only: esp_matrices, drinv_matrices, ddrinv_matrices
    use mqc_efp_potential, only: from_gamess_ao_order, frozen_core
    implicit none
    private
@@ -34,8 +34,22 @@ module mqc_efp_pair
    public :: fragment_lmo
    public :: exchange_repulsion
    public :: dispersion_e6_damped
+   public :: dispersion_e7_damped
+   public :: dispersion_e8_damped
    public :: lmo_overlap
    public :: charge_transfer
+
+   real(dp), parameter :: PI = 3.141592653589793_dp
+
+   !> Overlap below which a pair's damping series is not evaluated at all,
+   !> `efdrvr.src:4464`.
+   real(dp), parameter :: S_FLOOR = 1.0e-5_dp
+
+   !> Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
+   integer, parameter :: N_DQ_SLOTS = 27
+
+   !> Slots in the `LMOQQPOL` record: a 3x3x3x3 tensor, last index fastest.
+   integer, parameter :: N_QQ_SLOTS = 81
 
 contains
 
@@ -108,9 +122,9 @@ contains
       !!
       !! **`V` is the other fragment's multipole potential over these orbitals**, built
       !! by `EFCEF`, `EFDEF` and `EFQEF` in GAMESS -- charges, dipoles and quadrupoles,
-      !! no octupole. Only the charge rank is built here so far, so this is exact for a
-      !! potential carrying monopoles alone and incomplete otherwise; `monopole_only`
-      !! says which, and the caller is not allowed to forget.
+      !! no octupole. `multipole_potential` builds all three, so this is the complete
+      !! expression rather than a rung of one. That the rank ends at the quadrupole is
+      !! GAMESS's own answer being unchanged by an octupole section, not an omission.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
@@ -141,9 +155,9 @@ contains
       if (error%has_error()) return
       call padded_ctvec(frag_b, pair, n_ao_a, pair%nao - n_ao_a, ct_b, error)
       if (error%has_error()) return
-      call monopole_potential(pair, frag_b, offset_b, v_from_b, error)
+      call multipole_potential(pair, frag_b, offset_b, v_from_b, error)
       if (error%has_error()) return
-      call monopole_potential(pair, frag_a, offset_a, v_from_a, error)
+      call multipole_potential(pair, frag_a, offset_a, v_from_a, error)
       if (error%has_error()) return
 
       energy = 2.0_dp*one_direction(frag_a, frag_b, ct_a, ct_b, s_ao, t_ao, v_from_b) &
@@ -213,20 +227,39 @@ contains
       deallocate (work)
    end function project
 
-   subroutine monopole_potential(pair, frag, offset, v, error)
-      !! The potential of one fragment's monopoles over the pair's basis
+   subroutine multipole_potential(pair, frag, offset, v, error)
+      !! The potential of one fragment's multipoles over the pair's basis
       !!
-      !! Charges only. The dipole and quadrupole ranks GAMESS also includes are `grad_C`
-      !! and `grad grad_C` of this, which by translational invariance are basis
-      !! derivatives -- `int1e_grids_ip` -- and are not built yet.
+      !! `VEFP`, built by `EFCEF`, `EFDEF` and `EFQEF` in `efchtr.src`: charges, dipoles
+      !! and quadrupoles, and **no octupole** -- one rank fewer than the electrostatic
+      !! energy uses. That the octupole is genuinely absent is not inferred from the
+      !! source alone; GAMESS's charge transfer is the same number with and without an
+      !! octupole section in the potential.
+      !!
+      !! Every rank carries a minus, because this is the potential energy of an
+      !! *electron* in the multipole's field and the electron's charge is negative. The
+      !! ranks are successive centre-gradients of one integral:
+      !!
+      !!     charge      -        q     <mu| 1/r_C |nu>
+      !!     dipole      -        d_a   grad_a <mu| 1/r_C |nu>
+      !!     quadrupole  - (1/3)  Q_ab  grad_a grad_b <mu| 1/r_C |nu>
+      !!
+      !! all gradients with respect to `C`, and the quadrupole one summed over all nine
+      !! `ab` -- which is `efchtr.src:1801-1807`'s three diagonal terms plus twice its
+      !! three off-diagonal ones, written out.
+      !!
+      !! The dipole and quadrupole moments here are **electronic only** -- the nucleus
+      !! sits entirely in the monopole -- which is how the potential stores them.
       type(libcint_molecule_t), intent(in) :: pair
       type(efp_fragment_t), intent(in) :: frag
       real(dp), intent(in) :: offset(3)
       real(dp), allocatable, intent(out) :: v(:, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: grids(:, :), matrices(:, :, :)
-      integer :: k
+      real(dp), allocatable :: grids(:, :), matrices(:, :, :), grad(:, :, :, :)
+      real(dp), allocatable :: second(:, :, :, :, :)
+      real(dp) :: quad(3, 3)
+      integer :: k, x, y
 
       allocate (grids(3, frag%n_points))
       do k = 1, frag%n_points
@@ -241,8 +274,74 @@ contains
          ! monopole, and the electron's charge is negative.
          v = v - (frag%q_elec(k) + frag%q_nuc(k))*matrices(:, :, k)
       end do
-      deallocate (grids, matrices)
-   end subroutine monopole_potential
+      deallocate (matrices)
+
+      ! The dipole rank. `drinv_matrices` is `grad_C` of the integral above, its sign
+      ! fixed in `test_mqc_libcint_esp` against a difference of `esp_matrices` rather
+      ! than read off libcint's `nabla-rinv` naming, which does not say whether the
+      ! gradient is with respect to `r` or to `C`.
+      call drinv_matrices(pair, grids, grad, error)
+      if (error%has_error()) return
+      do k = 1, frag%n_points
+         do x = 1, 3
+            v = v - frag%dipole(x, k)*grad(:, :, x, k)
+         end do
+      end do
+      deallocate (grad)
+
+      ! The quadrupole rank, `efchtr.src:1801-1807`. Its three diagonal terms and twice
+      ! its three off-diagonal ones are the sum over all nine `ab` of a symmetric `Q`.
+      !
+      ! **The `1/3` is not in `efchtr.src`, and belongs here anyway.** It is the
+      ! coefficient a *traceless* quadrupole carries against `grad grad (1/R)`: the
+      ! expansion is `(1/2) M_ab grad_a grad_b` over the second moments, and
+      ! substituting `Q = (3M - tr M)/2` turns the half into a third, because
+      ! `delta_ab grad_a grad_b (1/R)` vanishes and the trace part drops out. GAMESS
+      ! folds it into its Rys assembly instead of writing it at the contraction, which
+      ! is why reading that contraction alone suggests there is no factor. Fitting the
+      ! rung numerically gives 0.33336, which is how this was caught.
+      call ddrinv_matrices(pair, grids, second, error)
+      if (error%has_error()) return
+      do k = 1, frag%n_points
+         quad = traceless_quadrupole(frag%quadrupole(:, k))
+         do y = 1, 3
+            do x = 1, 3
+               v = v - quad(x, y)*second(:, :, x, y, k)/3.0_dp
+            end do
+         end do
+      end do
+      deallocate (grids, second)
+   end subroutine multipole_potential
+
+   pure function traceless_quadrupole(stored) result(quad)
+      !! The stored second moments as the electric quadrupole `EFQEF` contracts
+      !!
+      !! `efchtr.src:1557-1571`, which does this conversion on its own copy before using
+      !! it -- so a potential's `QUADRUPOLES` section holds **second moments, not
+      !! traceless quadrupoles**. That is visible in the files themselves: HCN's stored
+      !! trace is -12.40 rather than 0.
+      !!
+      !!     Q_aa = (3 M_aa - tr M) / 2        Q_ab = (3/2) M_ab,  a /= b
+      !!
+      !! The tracelessness is not cosmetic here. `grad_a grad_b (1/r_C)` is traceless
+      !! away from `C` but carries a delta function at it, so a trace left in `Q` would
+      !! contribute through that contact term rather than cancelling.
+      real(dp), intent(in) :: stored(6)   !! `XX YY ZZ XY XZ YZ`
+      real(dp) :: quad(3, 3)
+
+      real(dp) :: trace
+
+      trace = stored(1) + stored(2) + stored(3)
+      quad(1, 1) = (3.0_dp*stored(1) - trace)*0.5_dp
+      quad(2, 2) = (3.0_dp*stored(2) - trace)*0.5_dp
+      quad(3, 3) = (3.0_dp*stored(3) - trace)*0.5_dp
+      quad(1, 2) = 1.5_dp*stored(4)
+      quad(1, 3) = 1.5_dp*stored(5)
+      quad(2, 3) = 1.5_dp*stored(6)
+      quad(2, 1) = quad(1, 2)
+      quad(3, 1) = quad(1, 3)
+      quad(3, 2) = quad(2, 3)
+   end function traceless_quadrupole
 
    subroutine padded_ctvec(frag, pair, offset_ao, n_own, padded, error)
       !! `CTVEC` in our AO order, padded into the pair's space
@@ -324,11 +423,9 @@ contains
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
-      real(dp), parameter :: PI = 3.141592653589793_dp
-      real(dp), parameter :: S_FLOOR = 1.0e-5_dp
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
       real(dp) :: sep(3)
-      real(dp) :: c6, dist, sab, rb, f6
+      real(dp) :: c6, dist, f6, f7, f8
       integer :: i, j, k
 
       energy = 0.0_dp
@@ -351,19 +448,336 @@ contains
             sep = frag_b%centroids(:, j) + offset_b - frag_a%centroids(:, i) - offset_a
             dist = sqrt(sep(1)*sep(1) + sep(2)*sep(2) + sep(3)*sep(3))
 
-            f6 = 1.0_dp
-            sab = s_lmo(i, j)
-            if (abs(sab) > S_FLOOR) then
-               rb = -2.0_dp*log(abs(sab))
-               f6 = 1.0_dp - sab*sab*(1.0_dp + sqrt(rb) + rb/2.0_dp &
-                                      + rb**1.5_dp/6.0_dp + rb*rb/24.0_dp &
-                                      + rb**2.5_dp/120.0_dp + rb**3/720.0_dp)
-            end if
+            call overlap_damping(s_lmo(i, j), f6, f7, f8)
             energy = energy - c6*f6/dist**6
          end do
       end do
       deallocate (s_lmo, t_lmo)
    end function dispersion_e6_damped
+
+   pure subroutine overlap_damping(sab, f6, f7, f8)
+      !! `Damping_for_Dispersion`'s overlap branch, `efdrvr.src:4462-4517`
+      !!
+      !! One routine produces all three damping factors, and they are one series
+      !! truncated at three different orders:
+      !!
+      !!     F_n = 1 - S^2 sum_{k=0..K} x^k / k!,   x = sqrt(-2 ln|S|)
+      !!
+      !! with `K = 6, 7, 8`. The variable is `sqrt(RB)`, not `RB`, so six of F6's
+      !! seven terms carry half-integer powers -- read as an ordinary exponential
+      !! expansion the series still damps, plausibly and wrongly.
+      !!
+      !! `F8` is assembled the way the source assembles it, by subtracting the two
+      !! extra terms from `F6` rather than by re-summing, so the transcription can be
+      !! read against `efdrvr.src:4491-4492` line for line. Algebraically it is the
+      !! `K = 8` sum. Since each factor subtracts one more positive term than the
+      !! last, `F8 < F7 < F6 < 1` holds wherever the series is used at all.
+      !!
+      !! Below `|S| = 1e-5` the series is meaningless -- the orbitals do not overlap
+      !! -- and all three are 1. GAMESS additionally zeroes a whole fragment pair's
+      !! overlaps when every one of them is under `1e-6` (`efpaul.src:2925-2930`),
+      !! which reaches the same answer by a different route.
+      real(dp), intent(in) :: sab
+      real(dp), intent(out) :: f6, f7, f8
+
+      real(dp) :: rb, s2
+
+      f6 = 1.0_dp
+      f7 = 1.0_dp
+      f8 = 1.0_dp
+      if (abs(sab) <= S_FLOOR) return
+
+      rb = -2.0_dp*log(abs(sab))
+      s2 = sab*sab
+      f6 = 1.0_dp - s2*(1.0_dp + sqrt(rb) + rb/2.0_dp &
+                        + rb**1.5_dp/6.0_dp + rb*rb/24.0_dp &
+                        + rb**2.5_dp/120.0_dp + rb**3/720.0_dp)
+      f7 = f6 - s2*rb**3.5_dp/5040.0_dp
+      f8 = f7 - s2*rb**4/40320.0_dp
+   end subroutine overlap_damping
+
+   function dispersion_e8_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
+      !! `E8`, the isotropic one -- which is the one GAMESS prints
+      !!
+      !! `Disp8_LMOpol` (`efdrvr.src:4311`) computes two unrelated things. The
+      !! anisotropic E8, with its `E8DO`/`E8DQ`/`E8QQ` decomposition, sits behind
+      !! `IF(do_aniso_disp)` and accumulates into `EDISP8_aniso` -- a variable no
+      !! `WRITE` in the tree ever names, and `do_aniso_disp` is off unless `$EFRAG
+      !! ANISO` asks for it. What reaches `E8 DISPERSION ENERGY` is the isotropic form
+      !! at `efdrvr.src:4401-4418`, computed whenever the potential carries an
+      !! `LMOQQPOL` section at all:
+      !!
+      !!     C8 = sum_f (15/pi) FACT(f) ( a_iso^A A_QQ^B + a_iso^B A_QQ^A )
+      !!     E8 = - F8 C8 / R^8
+      !!
+      !! It therefore needs the trace of the dipole-dipole polarizability and the
+      !! spherical average of the quadrupole-quadrupole one, and nothing else: no `T`
+      !! tensors, no dipole-quadrupole, no dipole-octupole. Both averages are
+      !! isotropic contractions and so survive the rotation that carries a potential
+      !! into the current frame unchanged, which is why nothing is rotated here.
+      !!
+      !! **Not `E6/3`.** That approximation is `efdrvr.src:1917`, behind
+      !! `IF((.not.E8DISP).or.IQMDISP.eq.1)`, and it does not run for a pair of
+      !! file-based fragments -- it would give -1.72e-04 where the real E8 is
+      !! -1.14e-04. Reconciling against it would fit a factor to the wrong quantity.
+      type(efp_fragment_t), intent(in) :: frag_a, frag_b
+      real(dp), intent(in) :: offset_a(3), offset_b(3)
+      type(error_t), intent(inout) :: error
+      real(dp) :: energy
+
+      real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
+      real(dp) :: sep(3)
+      real(dp) :: c8, dist, f6, f7, f8
+      integer :: i, j, k
+
+      energy = 0.0_dp
+      if (.not. (frag_a%has_dynamic .and. frag_b%has_dynamic)) then
+         call error%set(ERROR_VALIDATION, "efp: damped E8 needs the dynamic "// &
+                        "polarizabilities of both fragments")
+         return
+      end if
+      if (.not. (frag_a%has_quadquad .and. frag_b%has_quadquad)) then
+         call error%set(ERROR_VALIDATION, "efp: damped E8 needs the "// &
+                        "quadrupole-quadrupole polarizabilities of both fragments")
+         return
+      end if
+      if (frag_a%n_quadquad /= N_QQ_SLOTS .or. frag_b%n_quadquad /= N_QQ_SLOTS) then
+         call error%set(ERROR_VALIDATION, "efp: a quadrupole-quadrupole record "// &
+                        "does not carry 81 values")
+         return
+      end if
+      call lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
+      if (error%has_error()) return
+
+      do i = 1, frag_a%n_lmo
+         do j = 1, frag_b%n_lmo
+            c8 = 0.0_dp
+            do k = 1, min(frag_a%n_freq, frag_b%n_freq)
+               c8 = c8 + CP_WEIGHT(k) &
+                    *(isotropic_alpha(frag_a%dyn_pol(:, :, i, k)) &
+                      *isotropic_quadquad(frag_b%quadquad(:, j, k)) &
+                      + isotropic_alpha(frag_b%dyn_pol(:, :, j, k)) &
+                      *isotropic_quadquad(frag_a%quadquad(:, i, k)))
+            end do
+            c8 = c8*15.0_dp/PI
+            sep = frag_b%centroids(:, j) + offset_b - frag_a%centroids(:, i) - offset_a
+            dist = sqrt(sep(1)*sep(1) + sep(2)*sep(2) + sep(3)*sep(3))
+
+            call overlap_damping(s_lmo(i, j), f6, f7, f8)
+            energy = energy - c8*f8/dist**8
+         end do
+      end do
+      deallocate (s_lmo, t_lmo)
+   end function dispersion_e8_damped
+
+   function dispersion_e7_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
+      !! `E7`, the dipole-dipole/dipole-quadrupole cross term
+      !!
+      !! `Disp7_LMOpol`, `efdrvr.src:3979-4308`, accumulating `efdrvr.src:4042-4049`:
+      !!
+      !!     DUM1 = DD_A(a,c) DQ_B(b,d,e)
+      !!     DUM2 = DD_B(b,e) DQ_A(a,c,d)
+      !!     E7 = F7 sum_f sum_abcde (-1/3pi) T2(a,b) T3(c,d,e) FACT(f) (DUM1 - DUM2)
+      !!
+      !! `a` and `b` are the two `T2` slots and `c,d,e` the three `T3` slots; `a`
+      !! belongs to A and `b` to B. Each dipole-quadrupole tensor puts its dipole index
+      !! on a `T2` slot and its quadrupole pair on `T3` slots. Unlike E6 and E8 there is
+      !! only one E7 -- no isotropic variant exists anywhere in the file, and the
+      !! printed number is this one, gated by `E7DISP` alone and not by `do_aniso_disp`.
+      !!
+      !! **Three things here are sign- or transpose-critical, and E7 is the first term
+      !! that can see any of them.** E6 and E8 reach the polarizabilities only through
+      !! isotropic averages and depend on the separation only through `R`, so all three
+      !! were invisible until now.
+      !!
+      !! *The displacement runs A minus B* (`efdrvr.src:1724-1726`), where A is the
+      !! fragment GAMESS visits first. E7 is odd in `C`: `T2` is even and `T3` is odd,
+      !! so the whole term changes sign with it, where E6 and E8 see only `|C|`.
+      !!
+      !! *`T3` carries a deliberate extra negative* (`efdrvr.src:3507`, with the comment
+      !! `in EFPDYN, T3 had an extra negative sign`). The textbook
+      !! `-grad grad grad 1/R` gives E7 the wrong sign; `t_tensors` builds the form the
+      !! routine actually hands over.
+      !!
+      !! *The dipole-dipole tensor arrives transposed.* GAMESS indexes it
+      !! `(field, dipole)` and `mqc_efp_read` indexes it `(dipole, field)` -- the two
+      !! conventions differ by a transpose, which is why the file's nine slots are read
+      !! with a map that looks like the transpose of `efinp.src`'s and is not. So
+      !! GAMESS's `DYNDD_LMO_ROT(a,c)` is our `dyn_pol(c,a)`, and the swap below is
+      !! load-bearing: the tensor's antisymmetric part is 12% of it here, so getting
+      !! this wrong is worth far more than the number itself.
+      !!
+      !! The dipole-quadrupole tensor needs no such care because `mqc_efp_read` keeps it
+      !! flat in file order, so GAMESS's own slot formula recovers GAMESS's own tensor.
+      type(efp_fragment_t), intent(in) :: frag_a, frag_b
+      real(dp), intent(in) :: offset_a(3), offset_b(3)
+      type(error_t), intent(inout) :: error
+      real(dp) :: energy
+
+      real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
+      real(dp) :: sep(3), t2(3, 3), t3(3, 3, 3)
+      real(dp) :: pair, weighted, f6, f7, f8
+      integer :: i, j, k, ia, ib, ic, id, ie
+
+      energy = 0.0_dp
+      if (.not. (frag_a%has_dynamic .and. frag_b%has_dynamic)) then
+         call error%set(ERROR_VALIDATION, "efp: damped E7 needs the dynamic "// &
+                        "polarizabilities of both fragments")
+         return
+      end if
+      if (.not. (frag_a%has_dipquad .and. frag_b%has_dipquad)) then
+         call error%set(ERROR_VALIDATION, "efp: damped E7 needs the "// &
+                        "dipole-quadrupole polarizabilities of both fragments")
+         return
+      end if
+      if (frag_a%n_dipquad /= N_DQ_SLOTS .or. frag_b%n_dipquad /= N_DQ_SLOTS) then
+         call error%set(ERROR_VALIDATION, "efp: a dipole-quadrupole record does "// &
+                        "not carry 27 values")
+         return
+      end if
+      call lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
+      if (error%has_error()) return
+
+      do i = 1, frag_a%n_lmo
+         do j = 1, frag_b%n_lmo
+            ! A minus B, A being this routine's first fragment -- the role GAMESS
+            ! gives the lower fragment index.
+            sep = frag_a%centroids(:, i) + offset_a - frag_b%centroids(:, j) - offset_b
+            call t_tensors(sep, t2, t3)
+
+            pair = 0.0_dp
+            do k = 1, min(frag_a%n_freq, frag_b%n_freq)
+               weighted = 0.0_dp
+               do ia = 1, 3
+                  do ib = 1, 3
+                     do ic = 1, 3
+                        do id = 1, 3
+                           do ie = 1, 3
+                              weighted = weighted + t2(ia, ib)*t3(ic, id, ie) &
+                                         *(frag_a%dyn_pol(ic, ia, i, k) &
+                                           *frag_b%dipquad(dq_slot(ib, id, ie), j, k) &
+                                           - frag_b%dyn_pol(ie, ib, j, k) &
+                                           *frag_a%dipquad(dq_slot(ia, ic, id), i, k))
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+               pair = pair + CP_WEIGHT(k)*weighted
+            end do
+            pair = -pair/(3.0_dp*PI)
+
+            call overlap_damping(s_lmo(i, j), f6, f7, f8)
+            energy = energy + f7*pair
+         end do
+      end do
+      deallocate (s_lmo, t_lmo)
+   end function dispersion_e7_damped
+
+   pure subroutine t_tensors(c, t2, t3)
+      !! The rank-2 and rank-3 interaction tensors, `efdrvr.src:3449-3562`
+      !!
+      !!     T2(i,j)   = ( 3 C_i C_j - R^2 d_ij ) / R^5
+      !!     T3(i,j,k) = ( 15 C_i C_j C_k
+      !!                   - 3 R^2 ( C_i d_jk + C_j d_ik + C_k d_ij ) ) / R^7
+      !!
+      !! `T3`'s sign is GAMESS's, not the textbook's: `T_tensor_3` builds the negative
+      !! of the form above and then flips it in place at `efdrvr.src:3507`, commenting
+      !! `in EFPDYN, T3 had an extra negative sign`. What is written here is the net
+      !! tensor its caller receives. E7 is linear in `T3`, so this is the difference
+      !! between `+5.99e-05` and `-5.99e-05` and nothing subtler.
+      real(dp), intent(in) :: c(3)
+      real(dp), intent(out) :: t2(3, 3), t3(3, 3, 3)
+
+      real(dp) :: r2, r5, r7
+      integer :: i, j, k
+
+      r2 = c(1)*c(1) + c(2)*c(2) + c(3)*c(3)
+      r5 = r2*r2*sqrt(r2)
+      r7 = r5*r2
+
+      do j = 1, 3
+         do i = 1, 3
+            t2(i, j) = (3.0_dp*c(i)*c(j) - r2*delta(i, j))/r5
+         end do
+      end do
+
+      do k = 1, 3
+         do j = 1, 3
+            do i = 1, 3
+               t3(i, j, k) = (15.0_dp*c(i)*c(j)*c(k) &
+                              - 3.0_dp*r2*(c(i)*delta(j, k) + c(j)*delta(i, k) &
+                                           + c(k)*delta(i, j)))/r7
+            end do
+         end do
+      end do
+   end subroutine t_tensors
+
+   pure function delta(i, j) result(d)
+      !! Kronecker delta, so the tensors above read like the source they came from
+      integer, intent(in) :: i, j
+      real(dp) :: d
+
+      d = 0.0_dp
+      if (i == j) d = 1.0_dp
+   end function delta
+
+   pure function dq_slot(i, j, k) result(slot)
+      !! Where `DQ(i,j,k)` sits in a `DIPOLE-QUADRUPOLE` record
+      !!
+      !! `i` is the dipole index and `(j,k)` the quadrupole pair. Row-major with the
+      !! last index fastest, in GAMESS's writer (`efinp.src:7635`) and reader
+      !! (`efinp.src:12943-12949`) alike -- they are exact inverses, so the file
+      !! convention is not in doubt.
+      integer, intent(in) :: i, j, k
+      integer :: slot
+
+      slot = (i - 1)*9 + (j - 1)*3 + k
+   end function dq_slot
+
+   pure function isotropic_quadquad(values) result(a)
+      !! `DYNQQ_LMO_AVE`, the spherical average of a quadrupole-quadrupole tensor
+      !!
+      !! `efdrvr.src:1567-1572` contracts the full rank-four tensor against the
+      !! isotropic projector
+      !!
+      !!     A_QQ = (1/5) sum_ijkl QQ(i,j,k,l)
+      !!            [ (d_ik d_jl + d_il d_jk)/2 - d_ij d_kl / 3 ]
+      !!
+      !! which with the deltas resolved is the two sums below. The projector
+      !! symmetrises in `(i,j) <-> (k,l)`, so whether the stored tensor is exactly
+      !! symmetric under that swap does not affect this number.
+      !!
+      !! The 81 file slots are plain row-major with the last index fastest, both in
+      !! the writer (`efinp.src:7744`) and in the reader (`efinp.src:13004-13010`) --
+      !! unlike the nine dipole-dipole slots, which are permuted. `E8` reaches the
+      !! tensor only through this average, so a wrong slot order would show up as a
+      !! wrong energy rather than as anything more legible.
+      real(dp), intent(in) :: values(N_QQ_SLOTS)
+      real(dp) :: a
+
+      real(dp) :: paired, traced
+      integer :: i, j
+
+      paired = 0.0_dp
+      traced = 0.0_dp
+      do i = 1, 3
+         do j = 1, 3
+            paired = paired + 0.5_dp*(values(qq_slot(i, j, i, j)) &
+                                      + values(qq_slot(i, j, j, i)))
+            traced = traced + values(qq_slot(i, i, j, j))
+         end do
+      end do
+      a = (paired - traced/3.0_dp)/5.0_dp
+   end function isotropic_quadquad
+
+   pure function qq_slot(i, j, k, l) result(slot)
+      !! Where `QQ(i,j,k,l)` sits in an `LMOQQPOL` record
+      integer, intent(in) :: i, j, k, l
+      integer :: slot
+
+      slot = (i - 1)*27 + (j - 1)*9 + (k - 1)*3 + l
+   end function qq_slot
 
    pure function isotropic_alpha(tensor) result(a)
       !! A third of the trace
