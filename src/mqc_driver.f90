@@ -903,30 +903,29 @@ contains
    subroutine run_efp(config, sys_geom, rank, result_out)
       !! The interaction energy of a set of effective fragments
       !!
-      !! Each fragment of the deck names a potential; this loads them, places each one
-      !! on the atoms the deck gave it, and evaluates the five EFP2 terms. There is no
-      !! SCF: the wavefunctions were solved when the potentials were made.
+      !! Each fragment of the deck names a potential; the backend loads them, places
+      !! each on the atoms the deck gave it, turns it into that orientation and
+      !! evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were
+      !! solved when the potentials were made.
       !!
-      !! Rank zero only, for now. The work is pairwise over fragments and is the
-      !! obvious thing to distribute -- the pair loop in `efp_interaction_energy` is
-      !! already flat -- but the terms are milliseconds on a dimer and distributing
-      !! them before there is a cluster to distribute would be guessing at the shape.
-      use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-      use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy, place_fragment
-      use mqc_efp_rotate, only: rotate_fragment
+      !! The work itself is in `run_libcint_efp` rather than here, because all of it
+      !! lives behind `MQC_ENABLE_LIBCINT` and this file compiles either way. The stub
+      !! declines with the same signature and names the build option.
+      !!
+      !! Rank zero only, for now. The pair loop is the obvious thing to distribute and
+      !! is already flat, but the terms are milliseconds on a dimer and shaping that
+      !! before there is a cluster to shape it around would be guessing.
+      use mqc_libcint_bridge, only: run_libcint_efp
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: rank
       type(calculation_result_t), intent(out), optional :: result_out
 
-      type(efp_fragment_t), allocatable :: frags(:)
-      type(efp_energy_t) :: energy
       type(error_t) :: err
       type(json_output_data_t) :: json_data
-      real(dp), allocatable :: shifts(:, :), own(:, :)
-      real(dp) :: rot(3, 3)
-      integer :: n, k, a, natom, i
+      real(dp) :: terms(6)
+      integer :: n
 
       if (rank /= 0) return
 
@@ -942,47 +941,8 @@ contains
          return
       end if
 
-      allocate (frags(n), shifts(3, n))
-      do k = 1, n
-         if (len_trim(config%fragment_potentials(k)) == 0) then
-            call logger%error("EFP: fragment "//to_char(k)//" carries no potential. "// &
-                              "A mixed quantum/EFP system is not supported yet -- "// &
-                              "every fragment needs one.")
-            return
-         end if
-         call read_efp_potential(trim(config%fragment_potentials(k)), frags(k), err)
-         if (err%has_error()) then
-            call logger%error("EFP: could not read "// &
-                              trim(config%fragment_potentials(k))//": "//err%get_message())
-            return
-         end if
-
-         ! The deck's own atoms for this fragment, in the order it listed them.
-         natom = sys_geom%fragment_sizes(k)
-         allocate (own(3, natom))
-         do i = 1, natom
-            a = sys_geom%fragment_atoms(i, k) + 1     ! stored 0-based
-            own(:, i) = sys_geom%coordinates(:, a)
-         end do
-         call place_fragment(frags(k), own, rot, shifts(:, k), err)
-         deallocate (own)
-         if (err%has_error()) then
-            call logger%error("EFP: fragment "//to_char(k)//": "//err%get_message())
-            return
-         end if
-         ! Turn the fragment into the deck's orientation before anything reads it.
-         ! Everything the potential carries is in its own frame -- the multipoles, the
-         ! polarizabilities at every rank, and the localized orbitals -- so this is not
-         ! optional for any term.
-         call rotate_fragment(frags(k), rot, err)
-         if (err%has_error()) then
-            call logger%error("EFP: rotating fragment "//to_char(k)//": "// &
-                              err%get_message())
-            return
-         end if
-      end do
-
-      energy = efp_interaction_energy(frags, shifts, err)
+      call run_libcint_efp(config%fragment_potentials, sys_geom%fragment_sizes, &
+                           sys_geom%fragment_atoms, sys_geom%coordinates, terms, err)
       if (err%has_error()) then
          call logger%error("EFP: "//err%get_message())
          return
@@ -990,12 +950,12 @@ contains
 
       call logger%info("============================================")
       call logger%info("  EFP2 interaction energy, Hartree")
-      call logger%info("    electrostatics      "//to_char(energy%electrostatics))
-      call logger%info("    polarization        "//to_char(energy%polarization))
-      call logger%info("    exchange repulsion  "//to_char(energy%exchange_repulsion))
-      call logger%info("    dispersion          "//to_char(energy%dispersion))
-      call logger%info("    charge transfer     "//to_char(energy%charge_transfer))
-      call logger%info("    total               "//to_char(energy%total))
+      call logger%info("    electrostatics      "//to_char(terms(1)))
+      call logger%info("    polarization        "//to_char(terms(2)))
+      call logger%info("    exchange repulsion  "//to_char(terms(3)))
+      call logger%info("    dispersion          "//to_char(terms(4)))
+      call logger%info("    charge transfer     "//to_char(terms(5)))
+      call logger%info("    total               "//to_char(terms(6)))
       call logger%info("============================================")
 
       if (present(result_out)) then
@@ -1003,7 +963,7 @@ contains
          ! reference, and an EFP interaction energy has no correlation correction
          ! sitting on top of it. It is not an SCF energy and nothing here pretends
          ! otherwise -- there is no wavefunction solved in this routine at all.
-         result_out%energy%scf = energy%total
+         result_out%energy%scf = terms(6)
          result_out%has_energy = .true.
       end if
 
@@ -1013,17 +973,12 @@ contains
       ! one system -- not a claim that the system has no fragments.
       if (.not. config%skip_json_output) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
-         json_data%total_energy = energy%total
+         json_data%total_energy = terms(6)
          json_data%has_energy = .true.
          json_data%fragment_breakdown = config%fragment_breakdown
          call write_json_output(json_data)
          call json_data%destroy()
       end if
-
-      do k = 1, n
-         call frags(k)%destroy()
-      end do
-      deallocate (frags, shifts)
    end subroutine run_efp
 
    subroutine run_makefp(config, sys_geom, rank)
