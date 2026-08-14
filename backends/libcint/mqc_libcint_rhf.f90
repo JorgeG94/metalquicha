@@ -88,6 +88,25 @@ module mqc_libcint_rhf
       !!
       !! Only the Coulomb and exchange part. The exchange-correlation potential is
       !! not linear in the density and is rebuilt in full every iteration.
+      !!
+      !! **Kohn-Sham works and is checked, but gains little.** `g_ref` is captured
+      !! before the long-range exchange and before V_xc are added, so neither is
+      !! double counted, and `check_dft` agrees with PySCF to 1e-11 for a pure
+      !! functional, a hybrid and two range-separated ones through this path.
+      !! What it does not do is help much: for water in cc-pVDZ the quadrature is
+      !! 0.44 s of a 0.48 s SCF and the Fock build is too small to measure, so
+      !! this accelerates 8% of the run. The balance moves with size -- the
+      !! quadrature grows about linearly in the basis where the screened Fock
+      !! build tends toward quadratic -- but where they cross is not measured.
+      !! For a Kohn-Sham calculation the quadrature is the thing to look at.
+      !!
+      !! Two gaps, both deliberate rather than overlooked. A range-separated
+      !! functional needs a second exchange matrix over the attenuated kernel, and
+      !! that one is still rebuilt from the full density every iteration -- it
+      !! could carry its own `g_ref`, and until it does such a functional saves on
+      !! one of its two passes. And `assemble_fock_uhf` takes no state, so every
+      !! open-shell calculation builds in full; the mechanism carries over, with
+      !! two spin densities and two accumulated G, but it is a separate change.
       real(dp), allocatable :: d_ref(:, :)   !! Density `g_ref` belongs to
       real(dp), allocatable :: g_ref(:, :)   !! Accumulated G, without H
       integer :: since_reset = 0             !! Iterations since the last full build
