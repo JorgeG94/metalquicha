@@ -431,11 +431,15 @@ contains
       real(dp), allocatable :: coords(:, :)
       real(dp) :: exact, err, previous
       character(len=200) :: line
-      integer :: n_waters, lvl
+      character(len=8) :: label
+      integer :: n_waters, lvl, method
 
       do n_waters = 3, 4
+      do method = 1, 2
+         label = merge("FMO_n   ", "EE-MBE_n", method == 1)
          call logger%info("")
-         write (line, "(a,i0,a)") "== ", n_waters, " waters, level by level"
+         write (line, "(a,i0,a,a)") "== ", n_waters, " waters, level by level: ", &
+            trim(label)
          call logger%info(trim(line))
 
          call water_geometry(n_waters, 0.0_dp, z, symbols, coords, owner)
@@ -445,8 +449,18 @@ contains
          previous = huge(1.0_dp)
          do lvl = 2, n_waters
             opts%basis = "sto-3g"
-            opts%esp = "exact"
-            opts%expansion = "fmo"
+            ! Both expansions telescope for the same reason: the top n-mer holds
+            ! every fragment, so nothing is outside it to embed in, and the
+            ! corrections below it cancel. Which of the two is running changes
+            ! what a correction is made of, not that it cancels.
+            if (method == 1) then
+               opts%esp = "exact"
+               opts%expansion = "fmo"
+            else
+               opts%esp = "ptc"
+               opts%expansion = "mbe"
+               opts%far_field = "mulliken"
+            end if
             opts%resppc = -1.0_dp     !! no cutoff: this is about the expansion
             opts%level = lvl
             call run_fmo2(z, symbols, coords, owner, opts, res, error)
@@ -466,7 +480,9 @@ contains
 
          ! The last rung used every fragment at once, so it is not an
          ! approximation and the tolerance is SCF convergence, not chemistry.
-         call report("the full expansion is the supermolecule", err, 1.0e-9_dp, n_bad)
+         call report("the full expansion is the supermolecule, "//trim(label), &
+                     err, 1.0e-9_dp, n_bad)
+      end do
       end do
    end subroutine level_ladder
 

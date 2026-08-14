@@ -87,18 +87,27 @@ calculation.
 
 Climbing the level converges on the exact answer, and when the level reaches the
 number of fragments it *is* the exact answer -- the corrections telescope to the
-supermolecular energy. Measured on stacked waters in STO-3G:
+supermolecular energy. That holds for both methods, and for the same reason: the
+top n-mer holds every fragment, so there is nothing outside it to embed in.
+Which method is running changes what a correction is made of, not that it
+cancels.
 
-=================  ================  ================
-Level              3 waters          4 waters
-=================  ================  ================
-2                  1.0e-05           2.3e-05
-3                  **1.4e-13**       1.3e-06
-4                  --                **8.0e-13**
-=================  ================  ================
+Four stacked waters in STO-3G, error against the supermolecule in Hartree:
 
-The bold entries are where the level equals the fragment count. Those are not
+=========  ================  ================
+Level      FMO_n             EE-MBE_n
+=========  ================  ================
+2          2.3e-05           2.0e-04
+3          1.3e-06           4.1e-06
+4          **6.3e-13**       **4.5e-13**
+=========  ================  ================
+
+The bold row is where the level equals the fragment count. Those are not
 approximations and the agreement is SCF convergence, not chemistry.
+
+Note the truncated rows: FMO's exact embedding is worth roughly an order of
+magnitude over point charges at level 2, and the gap narrows as the level climbs
+and the expansion itself does more of the work.
 
 Tuning the field
 ----------------
