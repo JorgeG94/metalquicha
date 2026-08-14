@@ -143,6 +143,11 @@ contains
       write (line, "(a,i14,f9.1,a)") "    computed             ", stats%quartets_computed, &
          100.0_dp*real(stats%quartets_computed, dp)/real(stats%quartets_total, dp), " %"
       call logger%performance(trim(line))
+      ! One is perfect balance. This is the figure a work-ordering change has to
+      ! move, and unlike wall time it is a ratio inside one run, so a contended
+      ! node largely divides out of it.
+      write (line, "(a,f14.4)") "    thread imbalance     ", stats%thread_imbalance
+      call logger%performance(trim(line))
    end subroutine screening_summary
 
    subroutine scf_table_header(verbose)

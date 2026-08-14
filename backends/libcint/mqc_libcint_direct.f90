@@ -33,6 +33,7 @@ module mqc_libcint_direct
    !! against the in-core build elementwise, which catches exactly that.
    use pic_types, only: dp, int64, int_index
    use pic_sorting, only: sort_index
+   use pic_timer, only: timer_type
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, &
@@ -66,6 +67,13 @@ module mqc_libcint_direct
          !! Skipped because the integral itself is negligible. Depends on the
          !! basis and the geometry only, so this number is the same at every
          !! iteration of an SCF.
+      real(dp) :: thread_imbalance = 1.0_dp
+         !! Slowest thread's time on the quartet loop divided by the mean.
+         !!
+         !! One is perfect balance. This is what a work-ordering change has to
+         !! move, and it is measurable where wall time is not: it is a ratio
+         !! within a single run, so the contention that swamps a before/after
+         !! comparison on a shared node largely divides out.
       integer(int64) :: screened_density = 0
          !! Skipped because the *contribution* is negligible although the
          !! integral is not -- the extra reach the density weighting buys.
@@ -141,6 +149,13 @@ contains
 
       deallocate (buf)
    end subroutine schwarz_bounds
+
+   integer function omp_threads() result(n)
+      !! Threads that ran the last parallel region, or one without OpenMP
+!$    use omp_lib, only: omp_get_max_threads
+      n = 1
+!$    n = omp_get_max_threads()
+   end function omp_threads
 
    subroutine pair_work_order(pair_i, pair_j, dims, order)
       !! Task indices sorted by descending cost
@@ -305,6 +320,8 @@ contains
       integer :: ij, kl, npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
       integer :: itask
+      type(timer_type) :: thread_clock
+      real(dp) :: t_thread, t_thread_max, t_thread_sum
       integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
       real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
@@ -393,6 +410,8 @@ contains
       n_screened = 0_int64
       n_schwarz = 0_int64
       n_density = 0_int64
+      t_thread_max = 0.0_dp
+      t_thread_sum = 0.0_dp
 
       ! Threaded over bra pairs. libcint carries no mutable state across calls
       ! -- the 2e path has no static globals, and `opt` is written once here and
@@ -419,12 +438,14 @@ contains
       !$omp           block_max, kq, jf, env_local) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
-      !$omp            buf, g_local) &
-      !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density)
+      !$omp            buf, g_local, thread_clock, t_thread) &
+      !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density) &
+      !$omp    reduction(max:t_thread_max) reduction(+:t_thread_sum)
       allocate (buf(block_max**4))
       allocate (g_local(n, n))
       g_local = 0.0_dp
 
+      call thread_clock%start()
       !$omp do schedule(dynamic)
       do itask = 1, npair
          ij = order(itask)
@@ -501,7 +522,13 @@ contains
             end do
          end do
       end do
-      !$omp end do
+      !$omp end do nowait
+      ! `nowait`, so what is timed is this thread's share of the loop and not
+      ! the wait for the slowest one -- the wait is the thing being measured.
+      call thread_clock%stop()
+      t_thread = thread_clock%get_elapsed_time()
+      t_thread_max = max(t_thread_max, t_thread)
+      t_thread_sum = t_thread_sum + t_thread
 
       !$omp critical(mqc_direct_fock_accumulate)
       g = g + g_local
@@ -515,6 +542,9 @@ contains
       stats%quartets_screened = n_screened
       stats%screened_schwarz = n_schwarz
       stats%screened_density = n_density
+      if (t_thread_sum > 0.0_dp) then
+         stats%thread_imbalance = t_thread_max/(t_thread_sum/real(omp_threads(), dp))
+      end if
 
       call libcint_del_optimizer(opt)
 
