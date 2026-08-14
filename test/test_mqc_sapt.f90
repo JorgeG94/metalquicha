@@ -14,7 +14,8 @@ module test_mqc_sapt
    !!     by comparing against the monomer alone
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules
+   use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, &
+                       sapt_cache_t, build_sapt_cache, sapt_elst10
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use pic_blas_interfaces, only: pic_gemm
@@ -34,7 +35,8 @@ contains
       testsuite = [ &
                   new_unittest("sapt_dimer_basis_and_ghosts", test_ghosts), &
                   new_unittest("sapt_monomer_ao_ordering", test_ordering), &
-                  new_unittest("sapt_bsse_is_negative", test_bsse) &
+                  new_unittest("sapt_bsse_is_negative", test_bsse), &
+                  new_unittest("sapt_elst10", test_elst10) &
                   ]
    end subroutine collect_mqc_sapt_tests
 
@@ -195,6 +197,38 @@ contains
       call alone%destroy()
       call mols%destroy()
    end subroutine test_bsse
+
+   subroutine test_elst10(error)
+      !! `Elst10,r` against the conventional four-index reference
+      !!
+      !! The reference is `validation/check_sapt0.py`, which computes the same
+      !! quantity in PySCF with exact integrals. psi4 cannot serve here: its
+      !! closed-shell SAPT is density-fitted by construction, so its number is a
+      !! different quantity in the same basis and agrees only to ~1e-6.
+      !!
+      !! Regenerate with:  python validation/check_sapt0.py --json <path>
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_cache_t) :: cache
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_dimer(mols, err)
+      call check(error,.not. err%has_error(), "building the molecules failed")
+      if (allocated(error)) return
+      call build_sapt_cache(mols, cache, err)
+      call check(error,.not. err%has_error(), "the SAPT cache failed")
+      if (allocated(error)) return
+
+      e = sapt_elst10(cache)
+      ! Conventional four-index, water dimer 3.0 Angstrom along x, 6-31G.
+      call check(error, e, 0.006384228907_dp, thr=1.0e-9_dp, &
+                 message="Elst10,r disagrees with the PySCF reference")
+
+      call cache%destroy()
+      call mols%destroy()
+   end subroutine test_elst10
 
 end module test_mqc_sapt
 

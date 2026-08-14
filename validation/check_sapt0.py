@@ -10,6 +10,11 @@ Every formula is cited to psi4 master (2026-08-12); see SAPT_PLAN.md section 5.
 import numpy as np
 from pyscf import gto, scf, lib
 
+#: Named systems. `sapt1` is psi4's tests/sapt1 and is what the psi4 reference
+#: values in PSI4_SAPT1 belong to; `water6-31g` is small enough for a Fortran
+#: unit test and shares the geometry every EFP number in this tree is pinned to.
+SYSTEMS = {}
+
 # Ethene-ethyne, the psi4 tests/sapt1 geometry, Angstrom.
 GEOM_A = """
 C     0.000000    -0.667578    -2.124659
@@ -27,6 +32,18 @@ H     0.000000     0.000000     3.963929
 """
 
 
+WATER_A = """
+O     0.00000000   0.00000000   0.10077199
+H     0.00000000   0.77250895  -0.46780200
+H     0.00000000  -0.77250895  -0.46780200
+"""
+WATER_B = """
+O     3.00000000   0.00000000   0.10077199
+H     3.00000000   0.77250895  -0.46780200
+H     3.00000000  -0.77250895  -0.46780200
+"""
+
+
 def _atoms(block):
     out = []
     for line in block.strip().splitlines():
@@ -35,14 +52,15 @@ def _atoms(block):
     return out
 
 
-def build(basis="cc-pvdz", verbose=0):
+def build(basis="cc-pvdz", verbose=0, geom=None):
     """The dimer and the two monomers, all in the dimer-centred basis.
 
     Ghost atoms carry their basis functions and no nuclear charge. PySCF spells
     that with a `ghost-` prefix on the symbol; the charge follows from the label
     and the basis has to be named for the ghost label too.
     """
-    A, B = _atoms(GEOM_A), _atoms(GEOM_B)
+    ga, gb = geom if geom else (GEOM_A, GEOM_B)
+    A, B = _atoms(ga), _atoms(gb)
 
     def mol_of(real):
         """The dimer's atoms in the dimer's order, with one monomer ghosted.
@@ -101,13 +119,13 @@ def check_m1(basis="cc-pvdz"):
     return dimer, molA, molB
 
 
-def cache(basis="cc-pvdz", df_aux=None):
+def cache(basis="cc-pvdz", df_aux=None, geom=None):
     """Everything the terms are built from, in psi4's naming.
 
     `D` carries NO factor of two (sapt_jk_terms.py:65-67) -- every factor of 2
     and 4 downstream exists because of that.
     """
-    dimer, molA, molB = build(basis)
+    dimer, molA, molB = build(basis, geom=geom)
     # `df_aux` reproduces psi4 rather than being the production path: DF-SCF for
     # the orbitals, then the same fitting basis for J/K. It exists so a term that
     # disagrees can be shown to disagree by exactly the fitting error.
@@ -455,8 +473,8 @@ def report(name, got):
     print(f"  {name:<16} {got:+.12f}   psi4 {ref:+.12f}   d {got - ref:+.2e}")
 
 
-def run(basis="cc-pvdz"):
-    c = cache(basis)
+def run(basis="cc-pvdz", geom=None):
+    c = cache(basis, geom=geom)
     # The ordering guard: a monomer built in its own atom order rather than the
     # dimer's gives a silently permuted AO basis, and this is what catches it.
     for t in ("A", "B"):
@@ -478,7 +496,35 @@ def run(basis="cc-pvdz"):
     return c, t
 
 
+def emit_json(path, basis, geom, label):
+    """Write the reference values a Fortran test reads.
+
+    The point of writing them rather than printing them is that a number pasted
+    into a test drifts from the script that produced it. Regenerate with
+    `python validation/check_sapt0.py --json <path>`.
+    """
+    import json
+    _, t = run(basis, geom=geom)
+    out = {"system": label, "basis": basis,
+           "note": "conventional four-index SAPT0; psi4 cannot produce these, "
+                   "its closed-shell SAPT being density-fitted by construction",
+           "terms": {k: v for k, v in sorted(t.items())}}
+    with open(path, "w") as fh:
+        json.dump(out, fh, indent=2)
+        fh.write("\n")
+    return out
+
+
 if __name__ == "__main__":
+    import sys
+    if "--json" in sys.argv:
+        dest = sys.argv[sys.argv.index("--json") + 1]
+        o = emit_json(dest, "6-31g", (WATER_A, WATER_B), "water dimer, 3.0 Angstrom along x")
+        print(f"wrote {dest}")
+        for k, v in o["terms"].items():
+            print(f"  {k:<28} {v:+.12f}")
+        sys.exit(0)
+
     print("== M1: ghost atoms and monomers in the dimer basis ==")
     check_m1()
     print("  OK\n")

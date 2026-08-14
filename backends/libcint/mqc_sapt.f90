@@ -24,11 +24,16 @@ module mqc_sapt
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, build_fock
+   use pic_blas_interfaces, only: pic_gemm
    implicit none
    private
 
    public :: sapt_molecules_t
    public :: build_sapt_molecules
+   public :: sapt_cache_t
+   public :: build_sapt_cache
+   public :: sapt_elst10
 
    type :: sapt_molecules_t
       !! The dimer and its two counterpoise-corrected monomers
@@ -42,6 +47,23 @@ module mqc_sapt
    contains
       procedure :: destroy => sapt_molecules_destroy
    end type sapt_molecules_t
+
+   type :: sapt_cache_t
+      !! What every SAPT0 term is built from, in psi4's naming
+      integer :: nao = 0
+      integer :: nocc_a = 0, nocc_b = 0
+      real(dp) :: e_scf_a = 0.0_dp, e_scf_b = 0.0_dp
+      real(dp) :: e_nuc = 0.0_dp     !! `E_nuc(dimer) - E_nuc(A) - E_nuc(B)`
+      real(dp), allocatable :: d_a(:, :), d_b(:, :)   !! `C_occ C_occ^T`, NO factor of 2
+      real(dp), allocatable :: c_a(:, :), c_b(:, :)   !! All MOs, dimer basis
+      real(dp), allocatable :: eps_a(:), eps_b(:)
+      real(dp), allocatable :: v_a(:, :), v_b(:, :)   !! One monomer's nuclei alone
+      real(dp), allocatable :: j_a(:, :), j_b(:, :)   !! `J[D]`, undoubled density
+      real(dp), allocatable :: s(:, :)
+      real(dp), allocatable :: eri(:, :, :, :)
+   contains
+      procedure :: destroy => sapt_cache_destroy
+   end type sapt_cache_t
 
 contains
 
@@ -124,6 +146,135 @@ contains
 
       deallocate (z, xyz, sym, ghost_a, ghost_b)
    end subroutine build_sapt_molecules
+
+   subroutine build_sapt_cache(mols, cache, error)
+      !! The monomer SCFs and the matrices every SAPT0 term is built from
+      !!
+      !! **`D` carries no factor of two.** It is `C_occ C_occ^T`, and every factor
+      !! of 2 and 4 in the terms exists because of that. Adopting the doubled
+      !! density while keeping those factors doubles half the expression -- and it
+      !! is invisible, because the shapes are unchanged.
+      !!
+      !! `V` is the nuclear attraction of one monomer's nuclei *alone*, in the
+      !! dimer basis. That falls out of ghosting for nothing: a ghosted monomer's
+      !! core Hamiltonian carries only its own nuclei, so `V = H_core - T` with
+      !! both taken from that molecule.
+      type(sapt_molecules_t), intent(inout) :: mols
+      type(sapt_cache_t), intent(out) :: cache
+      type(error_t), intent(inout) :: error
+
+      type(rhf_result_t) :: scf_a, scf_b
+      real(dp), allocatable :: h(:, :), t(:, :), zero(:, :)
+      integer :: nao, nocc_a, nocc_b
+
+      nao = mols%dimer%nao
+      nocc_a = mols%n_elec_a/2
+      nocc_b = mols%n_elec_b/2
+      if (2*nocc_a /= mols%n_elec_a .or. 2*nocc_b /= mols%n_elec_b) then
+         call error%set(ERROR_VALIDATION, "sapt: SAPT0 here is closed shell, and "// &
+                        "a monomer has an odd number of electrons")
+         return
+      end if
+
+      call run_libcint_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                           .false., scf_a, error, in_core=.true.)
+      if (error%has_error()) return
+      call run_libcint_rhf(mols%mono_b, mols%n_elec_b, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                           .false., scf_b, error, in_core=.true.)
+      if (error%has_error()) return
+      if (.not. (scf_a%converged .and. scf_b%converged)) then
+         call error%set(ERROR_VALIDATION, "sapt: a monomer SCF did not converge in "// &
+                        "the dimer basis")
+         return
+      end if
+
+      cache%nao = nao
+      cache%nocc_a = nocc_a
+      cache%nocc_b = nocc_b
+      cache%e_scf_a = scf_a%energy
+      cache%e_scf_b = scf_b%energy
+
+      allocate (cache%d_a(nao, nao), cache%d_b(nao, nao))
+      call pic_gemm(scf_a%orbitals(:, 1:nocc_a), scf_a%orbitals(:, 1:nocc_a), &
+                    cache%d_a, transb="T")
+      call pic_gemm(scf_b%orbitals(:, 1:nocc_b), scf_b%orbitals(:, 1:nocc_b), &
+                    cache%d_b, transb="T")
+      call move_alloc(scf_a%orbitals, cache%c_a)
+      call move_alloc(scf_b%orbitals, cache%c_b)
+      call move_alloc(scf_a%orbital_energies, cache%eps_a)
+      call move_alloc(scf_b%orbital_energies, cache%eps_b)
+
+      call mols%dimer%overlap(cache%s)
+      call mols%dimer%eris(cache%eri)
+
+      ! V for each monomer: the nuclear attraction of its nuclei alone, in the
+      ! dimer basis. Ghosting gives it without a new integral, because the kinetic
+      ! part is common to all three molecules:
+      !
+      !     H(dimer)  = T + V_A + V_B          H(mono_b) = T + V_B
+      !     => V_A = H(dimer) - H(mono_b),  and V_B = H(dimer) - H(mono_a)
+      !
+      ! The alternative, H(mono_a) minus a kinetic integral, would need an
+      ! accessor this backend does not have -- and SAPT0 never wants T on its own.
+      call mols%dimer%core_hamiltonian(h)
+      call mols%mono_b%core_hamiltonian(t)
+      allocate (cache%v_a(nao, nao))
+      cache%v_a = h - t
+      deallocate (t)
+      call mols%mono_a%core_hamiltonian(t)
+      allocate (cache%v_b(nao, nao))
+      cache%v_b = h - t
+      deallocate (h, t)
+
+      ! J from each monomer's own density. `build_fock` is `H + J - K/2`, so a
+      ! zero core and no exchange leaves exactly J -- and it is linear in the
+      ! density, so passing the undoubled D gives J[D] as the terms want.
+      allocate (zero(nao, nao), cache%j_a(nao, nao), cache%j_b(nao, nao))
+      zero = 0.0_dp
+      call build_fock(zero, cache%eri, cache%d_a, cache%j_a, k_scale=0.0_dp)
+      call build_fock(zero, cache%eri, cache%d_b, cache%j_b, k_scale=0.0_dp)
+      deallocate (zero)
+
+      cache%e_nuc = mols%dimer%nuclear_repulsion() &
+                    - mols%mono_a%nuclear_repulsion() &
+                    - mols%mono_b%nuclear_repulsion()
+   end subroutine build_sapt_cache
+
+   pure function sapt_elst10(c) result(energy)
+      !! `Elst10,r` -- the classical Coulomb interaction of the two unperturbed
+      !! monomer densities, nuclei included (`sapt_jk_terms.py:131-134`):
+      !!
+      !!     Elst10 = 4 D_B . J_A + 2 D_A . V_B + 2 D_B . V_A + dE_nuc
+      !!
+      !! Each contraction is elementwise -- `sum_pq X_pq Y_pq`, psi4's
+      !! `vector_dot`. Every operand here is symmetric so it coincides with
+      !! `Tr(X Y)`, but the exchange terms have operands that are not, and there
+      !! the two differ by 55% of the answer. Uniform is safer than case by case.
+      type(sapt_cache_t), intent(in) :: c
+      real(dp) :: energy
+
+      energy = 4.0_dp*sum(c%d_b*c%j_a) &
+               + 2.0_dp*sum(c%d_a*c%v_b) &
+               + 2.0_dp*sum(c%d_b*c%v_a) &
+               + c%e_nuc
+   end function sapt_elst10
+
+   subroutine sapt_cache_destroy(self)
+      class(sapt_cache_t), intent(inout) :: self
+
+      if (allocated(self%d_a)) deallocate (self%d_a)
+      if (allocated(self%d_b)) deallocate (self%d_b)
+      if (allocated(self%c_a)) deallocate (self%c_a)
+      if (allocated(self%c_b)) deallocate (self%c_b)
+      if (allocated(self%eps_a)) deallocate (self%eps_a)
+      if (allocated(self%eps_b)) deallocate (self%eps_b)
+      if (allocated(self%v_a)) deallocate (self%v_a)
+      if (allocated(self%v_b)) deallocate (self%v_b)
+      if (allocated(self%j_a)) deallocate (self%j_a)
+      if (allocated(self%j_b)) deallocate (self%j_b)
+      if (allocated(self%s)) deallocate (self%s)
+      if (allocated(self%eri)) deallocate (self%eri)
+   end subroutine sapt_cache_destroy
 
    subroutine sapt_molecules_destroy(self)
       class(sapt_molecules_t), intent(inout) :: self
