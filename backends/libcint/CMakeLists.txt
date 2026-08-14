@@ -33,4 +33,5 @@ target_sources(
           mqc_efp_read.f90
           mqc_efp_interaction.f90
           mqc_efp_pair.f90
+          mqc_efp_rotate.f90
           mqc_efp_energy.f90)

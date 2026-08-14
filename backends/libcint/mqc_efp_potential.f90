@@ -58,6 +58,9 @@ module mqc_efp_potential
    !> this factor, and recovering the raw ones is an exact division by it.
    public :: gamess_primitive_norm
    public :: from_gamess_ao_order
+   !> Its inverse, for anything that changes an orbital and must hand the result back
+   !> to a fragment still storing GAMESS's order. Rotation is the first such caller.
+   public :: to_gamess_ao_order
    public :: frozen_core
 
    !> Longest line any section emits, with room to spare.

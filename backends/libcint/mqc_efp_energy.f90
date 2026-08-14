@@ -21,9 +21,10 @@ module mqc_efp_energy
    !! undamped `dispersion_energy_e6` in `mqc_efp_interaction` is not used here; it
    !! exists because it was the rung the ladder started on.
    !!
-   !! **Translation only, still.** `build_efp_system` refuses a rotated placement
-   !! because the multipoles would have to rotate with it, and the pairwise terms
-   !! here inherit that: they take the same offsets. See `place_fragments`.
+   !! **Fragments arrive already turned.** `place_fragment` gives the rotation a deck
+   !! implies and `mqc_efp_rotate` applies it, so by the time a fragment reaches this
+   !! module its own stored frame *is* the working frame and all that is left is the
+   !! translation each term takes as an offset.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_efp_read, only: efp_fragment_t
@@ -32,6 +33,7 @@ module mqc_efp_energy
    use mqc_efp_pair, only: exchange_repulsion, charge_transfer, &
                            dispersion_e6_damped, dispersion_e7_damped, &
                            dispersion_e8_damped
+   use mqc_efp_rotate, only: superpose
    implicit none
    private
 
@@ -158,33 +160,34 @@ contains
       call system%destroy()
    end function efp_interaction_energy
 
-   subroutine place_fragment(frag, coords, translation, error)
-      !! Where a deck's atoms put a fragment, as a rigid shift of its own geometry
+   subroutine place_fragment(frag, coords, rot, translation, error)
+      !! Where a deck's atoms put a fragment: a rotation and a shift
       !!
-      !! A potential carries the geometry it was made at. A deck names atoms in its
-      !! own coordinates. Placing the fragment means finding the rigid transform
-      !! between the two, and this returns the translation part of it.
+      !! A potential carries the geometry it was made at; a deck names atoms in its
+      !! own coordinates. Placing the fragment is finding the rigid transform between
+      !! the two, `deck = rot . own + translation`, which `superpose` builds from the
+      !! frame three atoms define.
       !!
-      !! **Rotation is detected and refused, not approximated.** The shift is taken
-      !! from the two centroids, and then *every* atom is required to land where the
-      !! potential says it should. A rotated placement fails that check, and it has to
-      !! fail loudly: the multipoles, polarizability tensors and localized orbitals are
-      !! all expressed in the fragment's own frame and would every one of them need
-      !! rotating too. Applying the translation alone to a rotated fragment produces an
-      !! energy rather than an error, which is the outcome worth preventing.
+      !! **The rotation is returned, not applied.** Turning the fragment is
+      !! `rotate_fragment`, and it is a separate step because it rewrites every tensor
+      !! the potential carries and the caller may want to know the transform without
+      !! paying for that.
       !!
-      !! The same check catches the likelier mistakes for free: a potential paired with
-      !! the wrong species, atoms listed in a different order from the potential's, or
-      !! a geometry that is not the rigid one the potential was built at.
+      !! Every atom is then required to land where the potential says, which is a test
+      !! rather than a fit: an EFP fragment is rigid, so a residual means the deck and
+      !! the potential disagree about something. It catches a potential paired with the
+      !! wrong species, atoms listed in a different order, and a geometry that has been
+      !! relaxed since the potential was made -- each of which would otherwise place
+      !! the fragment somewhere plausible and return an energy.
       type(efp_fragment_t), intent(in) :: frag
       real(dp), intent(in) :: coords(:, :)     !! (3, n_atoms) from the deck, Bohr
+      real(dp), intent(out) :: rot(3, 3)
       real(dp), intent(out) :: translation(3)
       type(error_t), intent(inout) :: error
 
-      real(dp) :: own_centre(3), deck_centre(3), worst, gap(3)
-      integer :: n, k
+      real(dp) :: rmsd
+      integer :: n
 
-      translation = 0.0_dp
       n = size(coords, 2)
       if (size(coords, 1) /= 3) then
          call error%set(ERROR_VALIDATION, "efp: fragment coordinates must be (3, n)")
@@ -197,32 +200,30 @@ contains
          return
       end if
 
-      own_centre = 0.0_dp
-      deck_centre = 0.0_dp
-      do k = 1, n
-         own_centre = own_centre + frag%points(:, k)
-         deck_centre = deck_centre + coords(:, k)
-      end do
-      own_centre = own_centre/real(n, dp)
-      deck_centre = deck_centre/real(n, dp)
-      translation = deck_centre - own_centre
+      call superpose(frag%points(:, 1:n), coords, rot, translation, rmsd, error)
+      if (error%has_error()) return
 
-      worst = 0.0_dp
-      do k = 1, n
-         gap = coords(:, k) - (frag%points(:, k) + translation)
-         worst = max(worst, sqrt(gap(1)**2 + gap(2)**2 + gap(3)**2))
-      end do
-      if (worst > PLACEMENT_TOL) then
-         call error%set(ERROR_VALIDATION, "efp: this fragment is not a pure "// &
-                        "translation of its potential's own geometry -- rotated "// &
-                        "placement is not supported yet, because the multipoles, "// &
-                        "polarizabilities and localized orbitals would have to be "// &
-                        "rotated with it. Check also that the atoms are listed in "// &
-                        "the potential's order and that the potential describes "// &
-                        "this species.")
+      if (rmsd > PLACEMENT_TOL) then
+         call error%set(ERROR_VALIDATION, "efp: this fragment is not a rigid "// &
+                        "placement of its potential's own geometry -- the atoms miss "// &
+                        "by "//real_text(rmsd)//" Bohr after the best rigid "// &
+                        "transform. Check that the potential describes this species, "// &
+                        "that the atoms are listed in the potential's own order, and "// &
+                        "that the geometry is the one the potential was built at.")
          return
       end if
    end subroutine place_fragment
+
+   pure function real_text(x) result(text)
+      !! A number as text, for a message
+      real(dp), intent(in) :: x
+      character(len=:), allocatable :: text
+
+      character(len=24) :: buffer
+
+      write (buffer, "(ES10.3)") x
+      text = trim(adjustl(buffer))
+   end function real_text
 
    pure function count_text(n) result(text)
       !! A small integer as text, for a message

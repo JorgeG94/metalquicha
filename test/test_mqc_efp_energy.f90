@@ -15,6 +15,7 @@ module test_mqc_efp_energy
                                 write_efp_potential
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy
+   use mqc_efp_rotate, only: rotate_fragment
    use mqc_error, only: error_t
    implicit none
    private
@@ -30,7 +31,8 @@ contains
 
       testsuite = [ &
                   new_unittest("efp_energy_breakdown", test_breakdown), &
-                  new_unittest("efp_energy_single_fragment", test_single) &
+                  new_unittest("efp_energy_single_fragment", test_single), &
+                  new_unittest("efp_energy_rotation_invariant", test_rotation) &
                   ]
    end subroutine collect_mqc_efp_energy_tests
 
@@ -138,6 +140,116 @@ contains
       call check(error, e%total, 0.0_dp, thr=0.0_dp, &
                  message="a lone fragment should have no interaction energy")
    end subroutine test_single
+
+   subroutine test_rotation(error)
+      !! Turning the whole dimer changes nothing, term by term
+      !!
+      !! **This is the test that decides whether rotation is right, and it needs no
+      !! external reference.** Rotate both fragments rigidly and move them to the
+      !! correspondingly rotated positions: the physical arrangement is identical, so
+      !! every one of the five terms must come back bit for bit unchanged.
+      !!
+      !! It is sharp because the terms probe the rotated data in completely different
+      !! ways. Electrostatics contracts the multipoles against the separation
+      !! direction; polarization solves induced dipoles through the full
+      !! polarizability tensors; E7 contracts the anisotropic dipole-dipole and
+      !! dipole-quadrupole tensors against `T2` and `T3`; and exchange repulsion,
+      !! charge transfer and every damping factor go through overlaps between
+      !! localized orbitals, which is the only thing here that tests whether the
+      !! *orbitals* rotated correctly. A wrong Cartesian `d` block leaves the
+      !! multipole terms perfect and breaks the last three.
+      !!
+      !! The rotation is deliberately a general one, not about a coordinate axis: an
+      !! axis rotation leaves whole blocks of a Cartesian `d` shell alone and would
+      !! pass with a transformation that is wrong off-axis.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: plain(2), spun(2)
+      type(error_t) :: err
+      type(efp_energy_t) :: e_plain, e_spun
+      real(dp) :: shifts(3, 2), turned(3, 2), rot(3, 3)
+      integer :: k
+
+      call water_fragment(plain(1), err)
+      call water_fragment(plain(2), err)
+      call water_fragment(spun(1), err)
+      call water_fragment(spun(2), err)
+      call check(error,.not. err%has_error(), "building the fragments failed")
+      if (allocated(error)) return
+
+      shifts = 0.0_dp
+      shifts(1, 2) = 3.0_dp*ANG
+      e_plain = efp_interaction_energy(plain, shifts, err)
+      call check(error,.not. err%has_error(), "the reference energy failed")
+      if (allocated(error)) return
+
+      rot = general_rotation()
+      do k = 1, 2
+         call rotate_fragment(spun(k), rot, err)
+         turned(:, k) = matmul(rot, shifts(:, k))
+      end do
+      call check(error,.not. err%has_error(), "rotating the fragments failed")
+      if (allocated(error)) return
+      e_spun = efp_interaction_energy(spun, turned, err)
+      call check(error,.not. err%has_error(), "the rotated energy failed")
+      if (allocated(error)) return
+
+      ! Tight on purpose. This is the same arithmetic on rotated inputs, not an
+      ! approximation of it, so the only difference admissible is rounding through an
+      ! orthogonal transform -- parts in 1e-12 of terms that are themselves ~1e-3.
+      call check(error, e_spun%electrostatics, e_plain%electrostatics, thr=1.0e-12_dp, &
+                 message="electrostatics is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%polarization, e_plain%polarization, thr=1.0e-12_dp, &
+                 message="polarization is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%exchange_repulsion, e_plain%exchange_repulsion, &
+                 thr=1.0e-12_dp, message="exchange repulsion is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%dispersion_e6, e_plain%dispersion_e6, thr=1.0e-12_dp, &
+                 message="dispersion E6 is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%dispersion_e7, e_plain%dispersion_e7, thr=1.0e-12_dp, &
+                 message="dispersion E7 is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%dispersion_e8, e_plain%dispersion_e8, thr=1.0e-12_dp, &
+                 message="dispersion E8 is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%charge_transfer, e_plain%charge_transfer, thr=1.0e-12_dp, &
+                 message="charge transfer is not rotation invariant")
+      if (allocated(error)) return
+      call check(error, e_spun%total, e_plain%total, thr=1.0e-12_dp, &
+                 message="the total is not rotation invariant")
+
+      do k = 1, 2
+         call plain(k)%destroy()
+         call spun(k)%destroy()
+      end do
+   end subroutine test_rotation
+
+   pure function general_rotation() result(rot)
+      !! A rotation about no coordinate axis, so every Cartesian block is mixed
+      !!
+      !! Built as three successive axis rotations with angles that share no simple
+      !! relation, rather than written down as nine numbers: an accidentally
+      !! non-orthogonal matrix here would show up as a broken invariance and be
+      !! blamed on the code under test.
+      real(dp) :: rot(3, 3)
+
+      real(dp) :: rx(3, 3), ry(3, 3), rz(3, 3)
+      real(dp), parameter :: A = 0.37_dp, B = 1.13_dp, C = -0.79_dp
+
+      rx = reshape([1.0_dp, 0.0_dp, 0.0_dp, &
+                    0.0_dp, cos(A), sin(A), &
+                    0.0_dp, -sin(A), cos(A)], [3, 3])
+      ry = reshape([cos(B), 0.0_dp, -sin(B), &
+                    0.0_dp, 1.0_dp, 0.0_dp, &
+                    sin(B), 0.0_dp, cos(B)], [3, 3])
+      rz = reshape([cos(C), sin(C), 0.0_dp, &
+                    -sin(C), cos(C), 0.0_dp, &
+                    0.0_dp, 0.0_dp, 1.0_dp], [3, 3])
+      rot = matmul(rz, matmul(ry, rx))
+   end function general_rotation
 
 end module test_mqc_efp_energy
 

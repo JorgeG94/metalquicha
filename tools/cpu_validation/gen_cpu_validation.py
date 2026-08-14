@@ -290,6 +290,7 @@ HAND_MAINTAINED = {
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
+    "cpu/mqc/efp/water_dimer_efp_turned.json",
 }
 
 # Coupled cluster. Small on purpose: the spin-orbital tensor is (2 n_act)^4, so

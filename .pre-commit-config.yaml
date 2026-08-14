@@ -17,9 +17,16 @@ repos:
       - id: check-symlinks
       - id: detect-private-key
       - id: end-of-file-fixer
+        exclude: '\.efp$'
       - id: check-case-conflict
       - id: mixed-line-ending
       - id: trailing-whitespace
+        # A fragment potential is another program's output, kept verbatim so it can
+        # be compared against that program. Reformatting one silently edits the
+        # reference a validation number is measured against, which is the opposite
+        # of what a reference is for -- and these hooks rewrite in place, so the
+        # edit lands whether or not anyone looks.
+        exclude: '\.efp$'
   - repo: local
     hooks:
       - id: fprettify

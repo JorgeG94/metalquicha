@@ -99,6 +99,13 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_efp_energy)
   target_link_libraries(test_mqc_efp_energy PRIVATE cint_fortran cint)
 
+  # Placing a fragment in an arbitrary orientation, piece by piece: the frame
+  # construction, the Cartesian shell rotation as a group representation, and
+  # the invariants a rotated fragment must keep. The energy test asserts the
+  # same thing end to end but cannot say which piece broke.
+  addtest(mqc_efp_rotate)
+  target_link_libraries(test_mqc_efp_rotate PRIVATE cint_fortran cint)
+
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.

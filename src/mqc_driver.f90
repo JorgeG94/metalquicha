@@ -913,6 +913,7 @@ contains
       !! them before there is a cluster to distribute would be guessing at the shape.
       use mqc_efp_read, only: efp_fragment_t, read_efp_potential
       use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy, place_fragment
+      use mqc_efp_rotate, only: rotate_fragment
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
@@ -924,6 +925,7 @@ contains
       type(error_t) :: err
       type(json_output_data_t) :: json_data
       real(dp), allocatable :: shifts(:, :), own(:, :)
+      real(dp) :: rot(3, 3)
       integer :: n, k, a, natom, i
 
       if (rank /= 0) return
@@ -962,10 +964,20 @@ contains
             a = sys_geom%fragment_atoms(i, k) + 1     ! stored 0-based
             own(:, i) = sys_geom%coordinates(:, a)
          end do
-         call place_fragment(frags(k), own, shifts(:, k), err)
+         call place_fragment(frags(k), own, rot, shifts(:, k), err)
          deallocate (own)
          if (err%has_error()) then
             call logger%error("EFP: fragment "//to_char(k)//": "//err%get_message())
+            return
+         end if
+         ! Turn the fragment into the deck's orientation before anything reads it.
+         ! Everything the potential carries is in its own frame -- the multipoles, the
+         ! polarizabilities at every rank, and the localized orbitals -- so this is not
+         ! optional for any term.
+         call rotate_fragment(frags(k), rot, err)
+         if (err%has_error()) then
+            call logger%error("EFP: rotating fragment "//to_char(k)//": "// &
+                              err%get_message())
             return
          end if
       end do
