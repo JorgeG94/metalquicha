@@ -98,7 +98,7 @@ contains
       integer, intent(in) :: nelec
       integer, intent(inout) :: n_bad
 
-      real(dp), allocatable :: analytic(:, :), numeric(:, :)
+      real(dp), allocatable :: analytic(:, :), numeric(:, :), blocked(:, :)
       real(dp) :: translation(3)
       real(dp) :: worst
       integer :: natm, ia, ic
@@ -119,6 +119,30 @@ contains
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
          return
+      end if
+
+      ! The blocked path, on a system small enough that it would never be
+      ! taken, and with a byte target small enough to force several blocks --
+      ! one block would exercise neither the loop over them nor the offset into
+      ! the two-particle density. The two paths build the same quantities from
+      ! different amounts of memory, so they have to agree.
+      call gradient_at(numbers, symbols, coords, basis, nelec, blocked, error, &
+                       block_bytes=1.0_dp)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL (blocked): ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+      write (*, "(a,es14.4)") "  dense against blocked:                    ", &
+         maxval(abs(analytic - blocked))
+      ! Not bitwise: the blocked path screens its Fock builds and its response
+      ! solve on a Schwarz bound where the dense one reads a stored tensor, and
+      ! sums the two-electron terms in a different order. Both show up around
+      ! 1e-12 -- HCN is the worst of these five -- which is two orders below
+      ! where the gradient itself is validated.
+      if (maxval(abs(analytic - blocked)) > 1.0e-10_dp) then
+         write (*, "(a)") "  FAIL: the blocked path disagrees with the dense one"
+         n_bad = n_bad + 1
       end if
 
       call numeric_gradient(numbers, symbols, coords, basis, nelec, numeric, error)
@@ -156,7 +180,8 @@ contains
       end if
    end subroutine check_case
 
-   subroutine gradient_at(numbers, symbols, coords, basis, nelec, gradient, error)
+   subroutine gradient_at(numbers, symbols, coords, basis, nelec, gradient, error, &
+                          block_bytes)
       !! Converge an SCF, then the MP2 gradient over it
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -165,6 +190,7 @@ contains
       integer, intent(in) :: nelec
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: block_bytes
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -174,7 +200,7 @@ contains
       call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
       call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error)
+                                gradient, error, block_bytes=block_bytes)
       call mol%destroy()
    end subroutine gradient_at
 

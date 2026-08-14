@@ -16,7 +16,15 @@ program bench_mp2_gradient
    implicit none
 
    integer, parameter :: N_DIM = 3
+   real(dp), parameter :: BLOCK_BYTES = 5.0e8_dp
+      !! What the blocked path would use of its own accord. Passed explicitly
+      !! because these molecules are far too small to take that path otherwise.
+   character(len=32) :: mode
+      !! "dense" measures only that path, so a run cannot be perturbed by the
+      !! allocation and release of the other one's arrays.
 
+   mode = ""
+   call get_command_argument(1, mode)
    write (*, "(a,i0,a)") "== MP2 gradient, ", omp_get_max_threads(), " threads"
 
    call bench_case("H2O / cc-pvdz", [8, 1, 1], ["O", "H", "H"], &
@@ -56,7 +64,7 @@ contains
       type(error_t) :: error
       real(dp), allocatable :: gradient(:, :)
       integer(int64) :: t0, t1, rate
-      real(dp) :: seconds
+      real(dp) :: seconds, blocked_seconds
 
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) then
@@ -84,8 +92,32 @@ contains
       call system_clock(t1)
       seconds = real(t1 - t0, dp)/real(rate, dp)
 
-      write (*, "(a,a,a,i0,a,f10.3,a,es12.4)") "  ", label, "  nao=", mol%nao, &
-         "   ", seconds, " s   |g|=", sqrt(sum(gradient**2))
+      blocked_seconds = 0.0_dp
+      if (trim(mode) == "dense") then
+         write (*, "(a,a,a,i0,a,f9.3,a,es12.4)") "  ", label, "  nao=", mol%nao, &
+            "   dense ", seconds, " s   |g|=", sqrt(sum(gradient**2))
+         flush (output_unit)
+         call mol%destroy()
+         return
+      end if
+      deallocate (gradient)
+
+      ! And the same case through the blocked path, which these are all far too
+      ! small to take on their own. What it measures is the overhead of never
+      ! storing anything: the integrals are rebuilt per block and only the ket
+      ! pair's symmetry survives.
+      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                                gradient, error, block_bytes=BLOCK_BYTES)
+      deallocate (gradient)
+      call system_clock(t0, rate)
+      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                                gradient, error, block_bytes=BLOCK_BYTES)
+      call system_clock(t1)
+      blocked_seconds = real(t1 - t0, dp)/real(rate, dp)
+
+      write (*, "(a,a,a,i0,a,f9.3,a,f9.3,a,es12.4)") "  ", label, "  nao=", mol%nao, &
+         "   dense ", seconds, " s   blocked ", blocked_seconds, &
+         " s   |g|=", sqrt(sum(gradient**2))
       flush (output_unit)
       deallocate (gradient)
       call mol%destroy()
