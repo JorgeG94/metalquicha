@@ -35,7 +35,7 @@ module mqc_libcint_mp2_gradient
    !! alpha and beta amplitudes, a fitted one differentiates a different energy,
    !! and a frozen core adds occupied-frozen and virtual-frozen blocks to the
    !! relaxed density which are not built here.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
                                     two_electron_block
@@ -68,7 +68,7 @@ module mqc_libcint_mp2_gradient
 contains
 
    subroutine libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
-                                   error, n_frozen, block_bytes)
+                                   error, n_frozen, block_bytes, force_blocked)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
@@ -78,11 +78,14 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
       real(dp), intent(in), optional :: block_bytes
-         !! Take the blocked path whatever the size, with this byte target
-         !! instead of `BLOCK_TARGET`. For the check harness, which runs every
-         !! case both ways and compares -- and which passes something small
-         !! enough to force *several* blocks, since a single block exercises
-         !! neither the loop over them nor the index offset.
+         !! Byte target for the block sizes, in place of `BLOCK_TARGET`. Small
+         !! enough, it forces several blocks of both the first index and the
+         !! occupied one, which is what the check harness passes: a single
+         !! block exercises neither loop nor the offsets they carry.
+      logical, intent(in), optional :: force_blocked
+         !! Take the blocked path whatever the size. Separate from the target
+         !! on purpose -- the dense path blocks over the occupied index too,
+         !! and a knob that forced the other path would leave that untested.
 
       real(dp), allocatable :: eri_packed(:, :), eri(:, :, :, :)
       real(dp), allocatable :: ovov(:, :, :, :), t2(:, :, :, :)
@@ -102,7 +105,7 @@ contains
       integer :: n_ao, n_mo, n_o, n_v, frozen, iatom, comp, p0, p1, p, q, i, a
       logical :: dense
       real(dp) :: target_bytes
-      real(dp), allocatable :: half(:, :), bounds(:, :)
+      real(dp), allocatable :: bounds(:, :)
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -138,9 +141,9 @@ contains
       ! that is a choice rather than the basis size.
       dense = 2.0_dp*real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT
       target_bytes = BLOCK_TARGET
-      if (present(block_bytes)) then
-         dense = .false.
-         target_bytes = block_bytes
+      if (present(block_bytes)) target_bytes = block_bytes
+      if (present(force_blocked)) then
+         if (force_blocked) dense = .false.
       end if
 
       allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
@@ -163,9 +166,6 @@ contains
       dm1mo(n_o + 1:n_mo, n_o + 1:n_mo) = dvv + transpose(dvv)
 
       ! ---- the two-particle density, and what it contracts against ----------
-      call build_half_transformed(t2, c_vir, n_ao, n_o, n_v, half)
-      deallocate (t2)
-
       if (.not. dense) then
          ! The direct Fock builds below need these, and so does the response
          ! solve, which cannot be handed a tensor that was never formed.
@@ -184,17 +184,19 @@ contains
       hf_density = 2.0_dp*matmul(c_occ, transpose(c_occ))
 
       if (dense) then
-         call build_two_particle_density(half, c_occ, n_ao, n_o, gamma_ao)
+         call build_two_particle_density(t2, c_occ, c_vir, n_ao, n_o, n_v, &
+                                         target_bytes, gamma_ao)
          call mol%eris(eri)
          call contract_gamma_eri(eri, gamma_ao, n_ao, imat_ao)
          call two_electron_mp2_terms(mol, gamma_ao, hf_density, de2, vhf1)
          deallocate (gamma_ao)
       else
-         call blocked_two_electron_terms(mol, half, c_occ, hf_density, n_ao, n_o, &
-                                         target_bytes, imat_ao, de2, vhf1, error)
+         call blocked_two_electron_terms(mol, t2, c_occ, c_vir, n_ao, n_o, n_v, &
+                                         target_bytes, hf_density, imat_ao, de2, &
+                                         vhf1, error)
          if (error%has_error()) return
       end if
-      deallocate (half)
+      deallocate (t2)
 
       ! ---- the Lagrangian, and the orbitals relaxing under it ---------------
       !
@@ -459,38 +461,44 @@ contains
       end if
    end subroutine two_electron_potential
 
-   subroutine build_half_transformed(t2, c_vir, n_ao, n_o, n_v, half)
-      !! `half(i, (q, r, j))`, the amplitudes with both virtual indices in the
-      !! AO basis and the energy's weighting applied
+   subroutine build_half_block(t2, c_vir, n_ao, n_o, n_v, j_lo, j_hi, half)
+      !! `half(i, (q, r, j))` for one range of `j`: the amplitudes with both
+      !! virtual indices in the AO basis and the energy's weighting applied
       !!
       !! `4 t2(i,j,a,b) - 2 t2(i,j,b,a)` is the coefficient the energy gives
-      !! each integral. Shared by the dense and blocked paths, and `n_o^2
-      !! n_ao^2` either way -- smaller than `n_ao^4` by `(n_o/n_ao)^2`, but not
-      !! bounded: past a few hundred functions this is what the blocked path's
-      !! footprint is, not the block target. Blocking it over `j` is the next
-      !! ceiling to lift, and nothing above depends on it being whole.
+      !! each integral.
+      !!
+      !! Whole, this is `n_o^2 n_ao^2` -- smaller than `n_ao^4` by
+      !! `(n_o/n_ao)^2`, and still unbounded, which past a few hundred
+      !! functions made it the footprint rather than the block target. `j` is
+      !! the index to cut on because it is contracted last, against `C_occ`, so
+      !! a range of it contributes an addend to the two-particle density rather
+      !! than a slice of one. When the whole range fits, the caller asks for it
+      !! in one call and this is what it always was.
       real(dp), intent(in) :: t2(:, :, :, :)
       real(dp), intent(in) :: c_vir(:, :)
-      integer, intent(in) :: n_ao, n_o, n_v
+      integer, intent(in) :: n_ao, n_o, n_v, j_lo, j_hi
       real(dp), allocatable, intent(out) :: half(:, :)
 
       real(dp), allocatable :: part(:, :, :, :), tmp(:, :)
-      integer :: i, j, q, r, col
+      integer :: i, j, q, r, col, nj
+
+      nj = j_hi - j_lo + 1
 
       ! part(i,j,p,q) = sum_ab t2(i,j,a,b) C_vir(p,a) C_vir(q,b)
-      allocate (part(n_o, n_o, n_ao, n_ao), tmp(n_v, n_ao))
-      do j = 1, n_o
+      allocate (part(n_o, nj, n_ao, n_ao), tmp(n_v, n_ao))
+      do j = 1, nj
          do i = 1, n_o
-            tmp = matmul(t2(i, j, :, :), transpose(c_vir))
+            tmp = matmul(t2(i, j_lo + j - 1, :, :), transpose(c_vir))
             part(i, j, :, :) = matmul(c_vir, tmp)
          end do
       end do
       deallocate (tmp)
 
-      allocate (half(n_o, n_ao*n_ao*n_o))
+      allocate (half(n_o, n_ao*n_ao*nj))
       !$omp parallel do collapse(3) default(none) &
-      !$omp    shared(half, part, n_o, n_ao) private(i, j, q, r, col)
-      do j = 1, n_o
+      !$omp    shared(half, part, n_o, n_ao, nj) private(i, j, q, r, col)
+      do j = 1, nj
          do r = 1, n_ao
             do q = 1, n_ao
                col = q + n_ao*(r - 1) + n_ao*n_ao*(j - 1)
@@ -502,9 +510,27 @@ contains
       end do
       !$omp end parallel do
       deallocate (part)
-   end subroutine build_half_transformed
+   end subroutine build_half_block
 
-   subroutine build_gamma_block(half, c_occ, n_ao, n_o, p_lo, p_hi, gamma_blk)
+   pure function occupied_per_block(n_ao, n_o, target_bytes) result(nj)
+      !! How many occupied orbitals one pass over `j` may carry
+      !!
+      !! Sized on the two arrays that scale with it: the half-transformed
+      !! amplitudes at `n_o n_ao^2` per `j`, and the transformation
+      !! intermediate at `n_ao^3` per `j`. At least one, always -- a single
+      !! occupied orbital is the smallest pass there is, and if that does not
+      !! fit, nothing else here will either.
+      integer, intent(in) :: n_ao, n_o
+      real(dp), intent(in) :: target_bytes
+      integer :: nj
+
+      nj = int(target_bytes/((real(n_o, dp)*real(n_ao, dp)**2 &
+                              + real(n_ao, dp)**3)*8.0_dp))
+      nj = max(1, min(n_o, nj))
+   end function occupied_per_block
+
+   subroutine build_gamma_block(t2, c_occ, c_vir, n_ao, n_o, n_v, p_lo, p_hi, &
+                                target_bytes, gamma_blk)
       !! The two-particle density for a range of its first index
       !!
       !! The same two contractions the dense path makes, with the first index
@@ -513,108 +539,147 @@ contains
       !! `sum_i C(q,i) half(i,p,r,j)` term needs `p` restricted and `q` free,
       !! which is a different contraction rather than a rearrangement of the
       !! first one.
-      real(dp), intent(in) :: half(:, :)
-      real(dp), intent(in) :: c_occ(:, :)
-      integer, intent(in) :: n_ao, n_o, p_lo, p_hi
+      !!
+      !! Blocked over `j` as well, on the same target, so nothing here is
+      !! `n_o^2 n_ao^2`. The price is that the half transform is redone for
+      !! each block of the first index; it is `n_o^2 n_v^2 n_ao` against the
+      !! `n_ao^4` of integrals a block already pays for, and it is what buys a
+      !! footprint that does not grow with the basis.
+      real(dp), intent(in) :: t2(:, :, :, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
+      integer, intent(in) :: n_ao, n_o, n_v, p_lo, p_hi
+      real(dp), intent(in) :: target_bytes
       real(dp), allocatable, target, intent(out) :: gamma_blk(:, :, :, :)
 
       real(dp), allocatable, target :: xbuf(:)
-      real(dp), allocatable :: hblk(:, :), tblk(:, :)
+      real(dp), allocatable :: half(:, :), hblk(:, :), tblk(:, :)
       real(dp), pointer :: x_first(:, :), x_second(:, :), gamma_flat(:, :)
-      integer :: np, p, q, r, j, col, colb
+      integer :: np, p, q, r, j, col, colb, j_lo, j_hi, nj, per_block
 
       np = p_hi - p_lo + 1
-
-      allocate (xbuf(int(np, kind=8)*n_ao*n_ao*n_o))
-      x_first(1:np, 1:n_ao*n_ao*n_o) => xbuf
-      x_second(1:np*n_ao*n_ao, 1:n_o) => xbuf
-
-      ! term one: sum_i C(p,i) half(i, q, r, j), for p in the block
-      call pic_gemm(c_occ(p_lo:p_hi, :), half, x_first)
-
-      ! term two: sum_i C(q,i) half(i, p, r, j), same block of p. Gathered into
-      ! `(i, (p r j))` first, because the block is a stride in `half` and BLAS
-      ! wants it contiguous.
-      allocate (hblk(n_o, np*n_ao*n_o), tblk(n_ao, np*n_ao*n_o))
-      !$omp parallel do collapse(3) default(none) &
-      !$omp    shared(hblk, half, n_o, n_ao, np, p_lo) private(j, r, p, col, colb)
-      do j = 1, n_o
-         do r = 1, n_ao
-            do p = 1, np
-               colb = p + np*(r - 1) + np*n_ao*(j - 1)
-               col = (p_lo + p - 1) + n_ao*(r - 1) + n_ao*n_ao*(j - 1)
-               hblk(:, colb) = half(:, col)
-            end do
-         end do
-      end do
-      !$omp end parallel do
-      call pic_gemm(c_occ, hblk, tblk)
-      deallocate (hblk)
-
-      !$omp parallel do collapse(3) default(none) &
-      !$omp    shared(x_first, tblk, n_o, n_ao, np) private(j, r, p, q, col, colb)
-      do j = 1, n_o
-         do r = 1, n_ao
-            do q = 1, n_ao
-               col = q + n_ao*(r - 1) + n_ao*n_ao*(j - 1)
-               colb = np*(r - 1) + np*n_ao*(j - 1)
-               do p = 1, np
-                  x_first(p, col) = x_first(p, col) + tblk(q, p + colb)
-               end do
-            end do
-         end do
-      end do
-      !$omp end parallel do
-      deallocate (tblk)
+      per_block = occupied_per_block(n_ao, n_o, target_bytes)
 
       allocate (gamma_blk(np, n_ao, n_ao, n_ao))
       gamma_flat(1:np*n_ao*n_ao, 1:n_ao) => gamma_blk
-      call pic_gemm(x_second, c_occ, gamma_flat, transb="T")
-      deallocate (xbuf)
+      gamma_blk = 0.0_dp
+
+      j_lo = 1
+      do while (j_lo <= n_o)
+         j_hi = min(n_o, j_lo + per_block - 1)
+         nj = j_hi - j_lo + 1
+
+         call build_half_block(t2, c_vir, n_ao, n_o, n_v, j_lo, j_hi, half)
+
+         allocate (xbuf(int(np, kind=int64)*n_ao*n_ao*nj))
+         x_first(1:np, 1:n_ao*n_ao*nj) => xbuf
+         x_second(1:np*n_ao*n_ao, 1:nj) => xbuf
+
+         ! term one: sum_i C(p,i) half(i, q, r, j), for p in the block
+         call pic_gemm(c_occ(p_lo:p_hi, :), half, x_first)
+
+         ! term two: sum_i C(q,i) half(i, p, r, j), same block of p. Gathered
+         ! into `(i, (p r j))` first, because the block is a stride in `half`
+         ! and BLAS wants it contiguous.
+         allocate (hblk(n_o, np*n_ao*nj), tblk(n_ao, np*n_ao*nj))
+         !$omp parallel do collapse(3) default(none) &
+         !$omp    shared(hblk, half, n_o, n_ao, np, nj, p_lo) &
+         !$omp    private(j, r, p, col, colb)
+         do j = 1, nj
+            do r = 1, n_ao
+               do p = 1, np
+                  colb = p + np*(r - 1) + np*n_ao*(j - 1)
+                  col = (p_lo + p - 1) + n_ao*(r - 1) + n_ao*n_ao*(j - 1)
+                  hblk(:, colb) = half(:, col)
+               end do
+            end do
+         end do
+         !$omp end parallel do
+         deallocate (half)
+         call pic_gemm(c_occ, hblk, tblk)
+         deallocate (hblk)
+
+         !$omp parallel do collapse(3) default(none) &
+         !$omp    shared(x_first, tblk, n_ao, np, nj) private(j, r, p, q, col, colb)
+         do j = 1, nj
+            do r = 1, n_ao
+               do q = 1, n_ao
+                  col = q + n_ao*(r - 1) + n_ao*n_ao*(j - 1)
+                  colb = np*(r - 1) + np*n_ao*(j - 1)
+                  do p = 1, np
+                     x_first(p, col) = x_first(p, col) + tblk(q, p + colb)
+                  end do
+               end do
+            end do
+         end do
+         !$omp end parallel do
+         deallocate (tblk)
+
+         call pic_gemm(x_second, c_occ(:, j_lo:j_hi), gamma_flat, transb="T", &
+                       beta=1.0_dp)
+         deallocate (xbuf)
+         j_lo = j_hi + 1
+      end do
    end subroutine build_gamma_block
 
-   subroutine build_two_particle_density(half, c_occ, n_ao, n_o, gamma_ao)
+   subroutine build_two_particle_density(t2, c_occ, c_vir, n_ao, n_o, n_v, &
+                                         target_bytes, gamma_ao)
       !! The non-separable two-particle density, in the AO basis
-      !!
-      !! `4 t2(i,j,a,b) - 2 t2(i,j,b,a)` is the coefficient the energy gives
-      !! each integral, and the rest is four index transformations and the two
-      !! symmetrisations that make the object contract correctly against
-      !! integrals carrying the permutational symmetry of the ERIs.
       !!
       !! **Two occupied transformations, as two matrix multiplies.** Written
       !! elementwise -- one small `matmul` per `(p,q,r,s)` -- this was 65% of
       !! the whole gradient, because `n_ao^4` is eleven million calls at
       !! cc-pVTZ and each one costs more in call overhead than in arithmetic.
-      !! Contracted instead as `(n_ao x n_o) (n_o x n_ao^2 n_o)` and then
-      !! `(n_ao^3 x n_o) (n_o x n_ao)`, the same flops sit in two gemms.
+      !! Contracted instead as `(n_ao x n_o) (n_o x n_ao^2 n_j)` and then
+      !! `(n_ao^3 x n_j) (n_j x n_ao)`, the same flops sit in two gemms.
       !! Pointer bounds remapping is what lets the intermediate be read as
       !! `(p, q r j)` by the first and `(p q r, j)` by the second without a
       !! copy: the memory order is the same either way.
       !!
-      !! `n_ao^4` and dense, which is the point: this is the path taken when
-      !! the whole thing fits, where one gemm over the full first index beats
-      !! the same gemm run block by block. `build_gamma_block` is the other
-      !! path, and the driver picks between them on the size.
-      real(dp), intent(in) :: half(:, :)
-      real(dp), intent(in) :: c_occ(:, :)
-      integer, intent(in) :: n_ao, n_o
+      !! `j` is contracted last, so a range of it gives an addend rather than a
+      !! slice: the second gemm accumulates. One pass when the whole occupied
+      !! range fits, which is the ordinary case.
+      !!
+      !! `n_ao^4` and dense in its result, which is the point: this is the path
+      !! taken when the whole thing fits, where one gemm over the full first
+      !! index beats the same gemm run block by block.
+      !! `build_gamma_block` is the other path, and the driver picks on size.
+      real(dp), intent(in) :: t2(:, :, :, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
+      integer, intent(in) :: n_ao, n_o, n_v
+      real(dp), intent(in) :: target_bytes
       real(dp), allocatable, target, intent(out) :: gamma_ao(:, :, :, :)
 
       real(dp), allocatable, target :: xbuf(:)
+      real(dp), allocatable :: half(:, :)
       real(dp), pointer :: x_first(:, :), x_second(:, :), gamma_flat(:, :)
       real(dp) :: acc
-      integer :: p, q, r, s
+      integer :: p, q, r, s, j_lo, j_hi, nj, per_block
 
-      allocate (xbuf(int(n_ao, kind=8)*n_ao*n_ao*n_o))
-      x_first(1:n_ao, 1:n_ao*n_ao*n_o) => xbuf
-      x_second(1:n_ao*n_ao*n_ao, 1:n_o) => xbuf
-
-      call pic_gemm(c_occ, half, x_first)
+      per_block = occupied_per_block(n_ao, n_o, target_bytes)
 
       allocate (gamma_ao(n_ao, n_ao, n_ao, n_ao))
       gamma_flat(1:n_ao*n_ao*n_ao, 1:n_ao) => gamma_ao
-      call pic_gemm(x_second, c_occ, gamma_flat, transb="T")
-      deallocate (xbuf)
+      gamma_ao = 0.0_dp
+
+      j_lo = 1
+      do while (j_lo <= n_o)
+         j_hi = min(n_o, j_lo + per_block - 1)
+         nj = j_hi - j_lo + 1
+
+         call build_half_block(t2, c_vir, n_ao, n_o, n_v, j_lo, j_hi, half)
+
+         allocate (xbuf(int(n_ao, kind=int64)*n_ao*n_ao*nj))
+         x_first(1:n_ao, 1:n_ao*n_ao*nj) => xbuf
+         x_second(1:n_ao*n_ao*n_ao, 1:nj) => xbuf
+
+         call pic_gemm(c_occ, half, x_first)
+         deallocate (half)
+
+         call pic_gemm(x_second, c_occ(:, j_lo:j_hi), gamma_flat, transb="T", &
+                       beta=1.0_dp)
+         deallocate (xbuf)
+         j_lo = j_hi + 1
+      end do
 
       ! The bra pair, symmetrised in place. This is the second of the two
       ! transformation terms -- `sum_i C(q,i) half(i,p,r,j)` is the first one
@@ -648,8 +713,9 @@ contains
 
    end subroutine build_two_particle_density
 
-   subroutine blocked_two_electron_terms(mol, half, c_occ, hf_density, n_ao, n_o, &
-                                         target_bytes, imat_ao, de2, vhf1, error)
+   subroutine blocked_two_electron_terms(mol, t2, c_occ, c_vir, n_ao, n_o, n_v, &
+                                         target_bytes, hf_density, imat_ao, de2, &
+                                         vhf1, error)
       !! The Lagrangian and the gradient's two-electron term, a block at a time
       !!
       !! Neither the integrals nor the two-particle density is ever whole here.
@@ -666,8 +732,9 @@ contains
       !! Blocks are cut on shell boundaries, since a shell's functions share a
       !! quartet and cannot be split across two passes.
       type(libcint_molecule_t), intent(in) :: mol
-      real(dp), intent(in) :: half(:, :), c_occ(:, :), hf_density(:, :)
-      integer, intent(in) :: n_ao, n_o
+      real(dp), intent(in) :: t2(:, :, :, :), c_occ(:, :), c_vir(:, :)
+      real(dp), intent(in) :: hf_density(:, :)
+      integer, intent(in) :: n_ao, n_o, n_v
       real(dp), intent(in) :: target_bytes
       real(dp), intent(inout) :: imat_ao(:, :)
       real(dp), intent(inout) :: de2(:, :), vhf1(:, :, :, :)
@@ -694,7 +761,8 @@ contains
          p_hi = mol%shell_offset(ish_hi) + shell_dim(mol%cartesian, ish_hi - 1, mol%bas)
          np = p_hi - p_lo + 1
 
-         call build_gamma_block(half, c_occ, n_ao, n_o, p_lo, p_hi, gamma_blk)
+         call build_gamma_block(t2, c_occ, c_vir, n_ao, n_o, n_v, p_lo, p_hi, &
+                                target_bytes, gamma_blk)
 
          allocate (eri_blk(np, n_ao, n_ao, n_ao))
          eri_blk = 0.0_dp

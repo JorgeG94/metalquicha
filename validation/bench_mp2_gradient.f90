@@ -107,11 +107,11 @@ contains
       ! storing anything: the integrals are rebuilt per block and only the ket
       ! pair's symmetry survives.
       call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error, block_bytes=BLOCK_BYTES)
+                                gradient, error, force_blocked=.true.)
       deallocate (gradient)
       call system_clock(t0, rate)
       call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error, block_bytes=BLOCK_BYTES)
+                                gradient, error, force_blocked=.true.)
       call system_clock(t1)
       blocked_seconds = real(t1 - t0, dp)/real(rate, dp)
 
