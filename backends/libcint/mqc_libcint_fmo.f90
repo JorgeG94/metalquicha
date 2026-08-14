@@ -284,9 +284,16 @@ module mqc_libcint_fmo
 
    !> One fragment, and its place in the whole
    type :: fragment_t
-      type(libcint_molecule_t) :: mol
-      real(dp), allocatable :: bounds(:, :)      !! Schwarz, for its own Coulomb build
+      !! What persists between passes, and nothing that does not
+      !!
+      !! No molecule and no Schwarz bounds. Those are heavy, they are rebuilt
+      !! from the geometry wherever they are needed, and holding them would mean
+      !! materialising every fragment up front -- a serial bottleneck, and once
+      !! this is distributed, the very objects that must not cross a wire. What
+      !! stays is small: a density, an energy, a few indices.
+      integer :: nao = 0                         !! size of its basis, for block layout
       real(dp), allocatable :: density(:, :)
+      real(dp), allocatable :: charges(:)        !! computed while its molecule was in hand
       integer, allocatable :: atoms(:)           !! its atoms, as system indices
       integer, allocatable :: z(:)
       character(len=2), allocatable :: sym(:)
@@ -305,6 +312,9 @@ contains
       !! `owner(i)` is the fragment index of atom `i`, numbered 1..n_frag with
       !! no gaps -- which is what `connected_components` in
       !! [[mqc_bond_perception]] produces. Coordinates are Bohr.
+      !!
+      !! Two phases, and they are the two the distributed path hands out: the
+      !! monomers, iterated to self-consistency, then the pairs once.
       integer, intent(in) :: atomic_numbers(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
@@ -314,10 +324,7 @@ contains
       type(error_t), intent(inout) :: error
 
       type(fragment_t), allocatable :: frag(:)
-      real(dp), allocatable :: q_all(:), u(:, :)
-      logical, allocatable :: inside(:)
-      real(dp) :: e_sum, e_prev
-      integer :: n_atoms, n_frag, i, j, outer
+      integer :: n_atoms, n_frag, i
       logical :: all_converged
 
       n_atoms = size(atomic_numbers)
@@ -333,59 +340,11 @@ contains
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
       allocate (res%pair_correction(n_frag, n_frag), source=0.0_dp)
-      allocate (inside(n_atoms))
       all_converged = .true.
 
-      ! -- isolated fragments, to start the outer loop from -------------------
-      do i = 1, n_frag
-         call inner_scf(frag(i), opts, error, all_converged=all_converged)
-         if (error%has_error()) return
-      end do
-
-      ! -- the outer SCF ------------------------------------------------------
-      !
-      ! Each pass rebuilds the field from the densities the previous pass left,
-      ! then re-solves every fragment in it. Converged when the monomer energies
-      ! stop moving, which is when the densities and the field they make agree.
-      if (opts%esp == "none") then
-         res%converged = .true.
-      else
-         e_prev = sum(frag(:)%energy)
-         do outer = 1, opts%max_outer
-            call all_charges(frag, n_frag, n_atoms, opts, q_all, error)
-            if (error%has_error()) return
-
-            do i = 1, n_frag
-               inside = .false.
-               inside(frag(i)%atoms) = .true.
-               call embedding_operator(frag(i)%mol, frag(i)%z, frag(i)%sym, &
-                                       frag(i)%xyz, frag(i)%near, frag, n_frag, &
-                                       inside, atomic_numbers, coordinates, &
-                                       q_all, opts, u, error)
-               if (error%has_error()) return
-               call inner_scf(frag(i), opts, error, u, all_converged)
-               if (error%has_error()) return
-            end do
-
-            e_sum = sum(frag(:)%energy)
-            res%outer_iterations = outer
-            res%outer_change = abs(e_sum - e_prev)
-            call logger%verbose("  fmo outer "//to_char(outer)//": monomer sum "// &
-                                to_char(e_sum)//", moved "//to_char(res%outer_change))
-            if (res%outer_change < opts%outer_tol) then
-               res%converged = .true.
-               exit
-            end if
-            e_prev = e_sum
-         end do
-
-         if (.not. res%converged) then
-            call error%set(ERROR_VALIDATION, "fmo: the outer SCF did not settle in "// &
-                           to_char(opts%max_outer)//" passes; the monomer sum was still "// &
-                           "moving by "//to_char(res%outer_change)//" Hartree")
-            return
-         end if
-      end if
+      call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
+                              all_converged, error)
+      if (error%has_error()) return
 
       do i = 1, n_frag
          if (opts%expansion == "mbe") then
@@ -396,17 +355,9 @@ contains
       end do
       res%monomer_sum = sum(res%monomer_energy)
 
-      ! -- the pairs, in the field the converged monomers make ----------------
-      call all_charges(frag, n_frag, n_atoms, opts, q_all, error)
+      call calculate_polymers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
+                              all_converged, error)
       if (error%has_error()) return
-
-      do i = 1, n_frag
-         do j = i + 1, n_frag
-            call pair_term(frag, n_frag, i, j, atomic_numbers, coordinates, q_all, &
-                           opts, res, all_converged, error)
-            if (error%has_error()) return
-         end do
-      end do
 
       res%energy = res%monomer_sum + res%pair_sum + res%response_sum
 
@@ -422,6 +373,27 @@ contains
          return
       end if
    end subroutine run_fmo2
+
+   subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error)
+      !! A fragment's molecule and Schwarz bounds, built from its geometry
+      !!
+      !! Called wherever one is needed and discarded straight after. That is the
+      !! opposite of caching them, and deliberately: the basis set behind
+      !! `build_libcint_molecule` is itself cached, so what remains is arithmetic
+      !! that parallelises, where a cache of molecules is memory that has to be
+      !! filled serially and cannot be shared between ranks anyway.
+      integer, intent(in) :: frag_z(:)
+      character(len=2), intent(in) :: frag_sym(:)
+      real(dp), intent(in) :: frag_xyz(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      type(libcint_molecule_t), intent(out) :: mol
+      real(dp), allocatable, intent(out) :: bounds(:, :)
+      type(error_t), intent(inout) :: error
+
+      call build_libcint_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, error)
+      if (error%has_error()) return
+      call schwarz_bounds(mol, bounds, error)
+   end subroutine open_fragment
 
    subroutine build_fragments(z, symbols, coords, owner, opts, frag, n_frag, error)
       !! Each fragment, and which of the others it needs the exact term for
@@ -475,11 +447,17 @@ contains
             return
          end if
 
-         call build_libcint_molecule(frag(f)%z, frag(f)%sym, frag(f)%xyz, &
-                                     trim(opts%basis), frag(f)%mol, error)
-         if (error%has_error()) return
-         call schwarz_bounds(frag(f)%mol, frag(f)%bounds, error)
-         if (error%has_error()) return
+         ! Built only to learn how many basis functions it has, which the
+         ! block layout needs everywhere, then dropped. Every rank can work this
+         ! out for itself without asking anyone.
+         block
+            type(libcint_molecule_t) :: probe
+            real(dp), allocatable :: probe_bounds(:, :)
+            call open_fragment(frag(f)%z, frag(f)%sym, frag(f)%xyz, opts, probe, &
+                               probe_bounds, error)
+            if (error%has_error()) return
+            frag(f)%nao = probe%nao
+         end block
       end do
 
       ! Geometry fixes the near sets, so they are found once rather than each
@@ -570,7 +548,6 @@ contains
       real(dp), allocatable, intent(out) :: q_all(:)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: q(:)
       integer :: f
 
       allocate (q_all(n_atoms), source=0.0_dp)
@@ -578,10 +555,12 @@ contains
       ! Nothing reads these if distant fragments contribute nothing, and for
       ! CHELPG they are not cheap enough to compute on the off chance.
       if (opts%far_field == "ignore") return
+      ! Taken from what each fragment recorded while its molecule existed, not
+      ! recomputed -- rebuilding every fragment just to re-derive charges it
+      ! already knows would undo the point of building on demand.
       do f = 1, n_frag
-         call fragment_charges(frag(f), opts%far_field, q, error)
-         if (error%has_error()) return
-         q_all(frag(f)%atoms) = q
+         if (.not. allocated(frag(f)%charges)) cycle
+         q_all(frag(f)%atoms) = frag(f)%charges
       end do
    end subroutine all_charges
 
@@ -694,8 +673,8 @@ contains
       real(dp) :: e_internal, e_resp, e_pair
       integer :: na, nb
 
-      na = frag(a)%mol%nao
-      nb = frag(b)%mol%nao
+      na = frag(a)%nao
+      nb = frag(b)%nao
 
       pair_z = [frag(a)%z, frag(b)%z]
       pair_sym = [frag(a)%sym, frag(b)%sym]
@@ -867,7 +846,7 @@ contains
          z = [z, frag(near(k))%z]
          sym = [sym, frag(near(k))%sym]
          xyz = reshape([xyz, frag(near(k))%xyz], [3, size(z)])
-         expect = expect + frag(near(k))%mol%nao
+         expect = expect + frag(near(k))%nao
       end do
 
       call build_libcint_molecule(z, sym, xyz, trim(opts%basis), local, error)
@@ -887,7 +866,7 @@ contains
       allocate (d(local%nao, local%nao), source=0.0_dp)
       at = group_nao
       do k = 1, size(near)
-         nao_k = frag(near(k))%mol%nao
+         nao_k = frag(near(k))%nao
          d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
          at = at + nao_k
       end do
@@ -900,9 +879,162 @@ contains
       j_near = j_full(1:group_nao, 1:group_nao)
    end subroutine local_coulomb
 
-   subroutine inner_scf(f, opts, error, u, all_converged)
+   subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, &
+                             all_converged, error, bare)
+      !! One monomer: build it, field it, solve it, read its charges, drop it
+      !!
+      !! The whole of a fragment's work for one outer pass, and the unit a rank
+      !! would be handed. Its molecule exists only inside this call, which is
+      !! what lets the caller hold nothing heavy and lets two ranks do two
+      !! fragments without sharing anything but the geometry they both started
+      !! with.
+      type(fragment_t), intent(inout) :: frag(:)
+      integer, intent(in) :: n_frag, which
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      real(dp), allocatable, intent(in) :: q_all(:)
+      type(fmo_options_t), intent(in) :: opts
+      logical, intent(inout) :: all_converged
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: bare
+         !! Solve it in vacuum. True only for the very first pass, which has no
+         !! field to be solved against because no fragment has a density yet --
+         !! the field is what the passes after it are for.
+
+      type(libcint_molecule_t) :: mol
+      real(dp), allocatable :: bounds(:, :), u(:, :), q(:)
+      logical, allocatable :: inside(:)
+      logical :: isolated
+
+      isolated = .false.
+      if (present(bare)) isolated = bare
+
+      call open_fragment(frag(which)%z, frag(which)%sym, frag(which)%xyz, opts, &
+                         mol, bounds, error)
+      if (error%has_error()) return
+
+      if (.not. isolated) then
+         allocate (inside(size(z)), source=.false.)
+         inside(frag(which)%atoms) = .true.
+         call embedding_operator(mol, frag(which)%z, frag(which)%sym, frag(which)%xyz, &
+                                 frag(which)%near, frag, n_frag, inside, z, coords, &
+                                 q_all, opts, u, error)
+         if (error%has_error()) return
+      end if
+
+      call inner_scf(frag(which), mol, opts, error, u, all_converged)
+      if (error%has_error()) return
+
+      if (opts%esp /= "none") then
+         call fragment_charges(mol, frag(which)%density, opts%far_field, q, error)
+         if (error%has_error()) return
+         frag(which)%charges = q
+      end if
+   end subroutine solve_fragment
+
+   subroutine calculate_monomers(frag, n_frag, z, coords, opts, res, all_converged, error)
+      !! The outer SCF: every monomer in the field of all the others, iterated
+      !!
+      !! One pass solves every fragment against the field the previous pass
+      !! left. Converged when the monomer energies stop moving, which is when
+      !! the densities and the field they make agree.
+      !!
+      !! Every fragment within a pass is independent -- they all read the
+      !! previous pass's densities, none reads this pass's -- so a pass is a
+      !! bag of independent tasks with a barrier after it. That is the shape a
+      !! distributed version needs: hand the pass out, wait, share the
+      !! densities, decide whether to go again.
+      type(fragment_t), intent(inout) :: frag(:)
+      integer, intent(in) :: n_frag
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      type(fmo_result_t), intent(inout) :: res
+      logical, intent(inout) :: all_converged
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: q_all(:)
+      real(dp) :: e_sum, e_prev
+      integer :: i, outer
+
+      ! Isolated fragments, to start the field from something.
+      call all_charges(frag, n_frag, size(z), opts, q_all, error)
+      if (error%has_error()) return
+      do i = 1, n_frag
+         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, all_converged, &
+                             error, bare=.true.)
+         if (error%has_error()) return
+      end do
+
+      if (opts%esp == "none") then
+         res%converged = .true.
+         res%outer_iterations = 1
+         return
+      end if
+
+      e_prev = sum(frag(:)%energy)
+      do outer = 1, opts%max_outer
+         call all_charges(frag, n_frag, size(z), opts, q_all, error)
+         if (error%has_error()) return
+
+         do i = 1, n_frag
+            call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, &
+                                all_converged, error)
+            if (error%has_error()) return
+         end do
+
+         e_sum = sum(frag(:)%energy)
+         res%outer_iterations = outer
+         res%outer_change = abs(e_sum - e_prev)
+         call logger%verbose("  fmo outer "//to_char(outer)//": monomer sum "// &
+                             to_char(e_sum)//", moved "//to_char(res%outer_change))
+         if (res%outer_change < opts%outer_tol) then
+            res%converged = .true.
+            return
+         end if
+         e_prev = e_sum
+      end do
+
+      call error%set(ERROR_VALIDATION, "fmo: the outer SCF did not settle in "// &
+                     to_char(opts%max_outer)//" passes; the monomer sum was still "// &
+                     "moving by "//to_char(res%outer_change)//" Hartree")
+   end subroutine calculate_monomers
+
+   subroutine calculate_polymers(frag, n_frag, z, coords, opts, res, all_converged, error)
+      !! Every pair, in the field the converged monomers make
+      !!
+      !! Independent of each other and of everything else once the monomers have
+      !! settled, so this is a single bag of tasks with no barrier inside it --
+      !! the easy half to distribute, and the expensive one, being quadratic in
+      !! the fragment count where the monomer loop is linear.
+      type(fragment_t), intent(inout) :: frag(:)
+      integer, intent(in) :: n_frag
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      type(fmo_result_t), intent(inout) :: res
+      logical, intent(inout) :: all_converged
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: q_all(:)
+      integer :: i, j
+
+      call all_charges(frag, n_frag, size(z), opts, q_all, error)
+      if (error%has_error()) return
+
+      do i = 1, n_frag
+         do j = i + 1, n_frag
+            call pair_term(frag, n_frag, i, j, z, coords, q_all, opts, res, &
+                           all_converged, error)
+            if (error%has_error()) return
+         end do
+      end do
+   end subroutine calculate_polymers
+
+   subroutine inner_scf(f, mol, opts, error, u, all_converged)
       !! The inner SCF: this fragment's orbitals, against a fixed external field
       type(fragment_t), intent(inout) :: f
+      type(libcint_molecule_t), intent(in) :: mol
       type(fmo_options_t), intent(in) :: opts
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(in), optional :: u(:, :)
@@ -915,10 +1047,10 @@ contains
       if (present(u)) embedded = allocated(u)
 
       if (embedded) then
-         call run_libcint_rhf(f%mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+         call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, .false., scf, error, h_extra=u)
       else
-         call run_libcint_rhf(f%mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+         call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, .false., scf, error)
       end if
       if (error%has_error()) return
@@ -935,9 +1067,14 @@ contains
       f%density = scf%density
    end subroutine inner_scf
 
-   subroutine fragment_charges(f, scheme, q, error)
+   subroutine fragment_charges(mol, density, scheme, q, error)
       !! Atomic charges for a fragment whose density is already converged
-      type(fragment_t), intent(in) :: f
+      !!
+      !! Taken while the molecule is in hand rather than rebuilt for it later:
+      !! the overlap and the ESP grid both need it, and it is about to be thrown
+      !! away.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
       character(len=*), intent(in) :: scheme
       real(dp), allocatable, intent(out) :: q(:)
       type(error_t), intent(inout) :: error
@@ -945,10 +1082,10 @@ contains
       real(dp), allocatable :: s(:, :)
 
       if (trim(scheme) == "chelpg") then
-         call chelpg_charges(f%mol, f%density, q, error)
+         call chelpg_charges(mol, density, q, error)
       else
-         call f%mol%overlap(s)
-         call mulliken_charges(f%mol, f%density, s, q, error)
+         call mol%overlap(s)
+         call mulliken_charges(mol, density, s, q, error)
       end if
    end subroutine fragment_charges
 
@@ -959,14 +1096,12 @@ contains
       real(dp), allocatable, intent(out) :: charges(:)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: q(:)
       integer :: f
 
       allocate (charges(n_atoms), source=0.0_dp)
       do f = 1, n_frag
-         call fragment_charges(frag(f), "mulliken", q, error)
-         if (error%has_error()) return
-         charges(frag(f)%atoms) = q
+         if (.not. allocated(frag(f)%charges)) cycle
+         charges(frag(f)%atoms) = frag(f)%charges
       end do
    end subroutine report_charges
 
