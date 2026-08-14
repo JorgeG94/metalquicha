@@ -13,6 +13,8 @@ module mqc_method_types
    public :: METHOD_TYPE_HF, METHOD_TYPE_DFT
    ! Public constants - Multi-reference
    public :: METHOD_TYPE_MCSCF
+   ! Public constants - Classical, solving no wavefunction of its own
+   public :: METHOD_TYPE_EFP2
    ! Public constants - Correlation methods
    public :: METHOD_TYPE_MP2, METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T
    public :: METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12
@@ -37,6 +39,12 @@ module mqc_method_types
 
    ! Multi-reference (20-29)
    integer(int32), parameter :: METHOD_TYPE_MCSCF = 20
+
+   !> Effective fragment potentials (60-69). Unlike every other entry here, this
+   !> solves no wavefunction of its own: each fragment carries one already, computed
+   !> when its potential was made, and what is evaluated is the interaction between
+   !> them.
+   integer(int32), parameter :: METHOD_TYPE_EFP2 = 60
 
    ! Perturbation theory (30-39)
    integer(int32), parameter :: METHOD_TYPE_MP2 = 30
@@ -87,6 +95,11 @@ contains
       case ("mcscf", "casscf", "casci")
          method_type = METHOD_TYPE_MCSCF
 
+         ! Effective fragment potentials. "efp" alone means EFP2: there is no EFP1
+         ! here, and spelling it out is what a deck written for another program does.
+      case ("efp2", "efp")
+         method_type = METHOD_TYPE_EFP2
+
          ! Perturbation theory
       case ("mp2", "ri-mp2", "df-mp2", "scs-mp2", "sos-mp2")
          method_type = METHOD_TYPE_MP2
@@ -132,6 +145,10 @@ contains
          ! Multi-reference
       case (METHOD_TYPE_MCSCF)
          method_str = "mcscf"
+
+         ! Effective fragment potentials
+      case (METHOD_TYPE_EFP2)
+         method_str = "efp2"
 
          ! Perturbation theory
       case (METHOD_TYPE_MP2)

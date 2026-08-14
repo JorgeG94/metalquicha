@@ -57,6 +57,9 @@ contains
                   new_unittest("backend_keyword", test_backend_keyword), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("dft_keywords", test_dft_keywords), &
+                  new_unittest("fragment_potentials", test_fragment_potentials), &
+                  new_unittest("uniform_system_broadcast", test_uniform_system), &
+                  new_unittest("uniform_system_is_checked", test_uniform_rejected), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -744,6 +747,93 @@ contains
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), "a deck without molecules should fail")
    end subroutine test_missing_molecules
+
+   subroutine test_fragment_potentials(error)
+      !! One potential per fragment, and a fragment left quantum by omitting one
+      !!
+      !! The list is parallel to `fragments`, like the charges and multiplicities
+      !! beside it. An entry that is absent or empty leaves that fragment without a
+      !! potential, which is not an error: it is how a mixed QM/EFP system is written,
+      !! and there is deliberately no second way to declare a fragment.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN1"', "Energy", "", "", &
+                      '"symbols": ["O", "H", "H", "O", "H", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, -0.7,0,0, '// &
+                      '3,0,0, 3.7,0,0, 2.3,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1, 2], [3, 4, 5]], '// &
+                      '"fragment_potentials": ["water.efp", ""]')
+      call read_deck(config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%nfrag, 2)
+      if (allocated(error)) return
+      call check(error, allocated(config%fragments(1)%potential), &
+                 "the first fragment should carry a potential")
+      if (allocated(error)) return
+      call check(error, config%fragments(1)%potential, "water.efp")
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%fragments(2)%potential), &
+                 "an empty entry should leave the fragment quantum")
+   end subroutine test_fragment_potentials
+
+   subroutine test_uniform_system(error)
+      !! `uniform_system` lets one potential stand for every fragment
+      !!
+      !! The point of it is a cluster with thousands of identical fragments, where a
+      !! parallel list would be one filename repeated and nothing else. What is checked
+      !! here is that the single string reaches every fragment, not just the first.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN1"', "Energy", "", "", &
+                      '"symbols": ["O", "H", "H", "O", "H", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, -0.7,0,0, '// &
+                      '3,0,0, 3.7,0,0, 2.3,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1, 2], [3, 4, 5]], '// &
+                      '"uniform_system": true, '// &
+                      '"fragment_potentials": "water.efp"')
+      call read_deck(config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%uniform_system, "uniform_system should be set")
+      if (allocated(error)) return
+      call check(error, config%fragments(1)%potential, "water.efp")
+      if (allocated(error)) return
+      call check(error, config%fragments(2)%potential, "water.efp")
+   end subroutine test_uniform_system
+
+   subroutine test_uniform_rejected(error)
+      !! A deck that claims uniformity and does not have it is refused
+      !!
+      !! `uniform_system` is an assertion about the system, not just a spelling
+      !! convenience, so it is checked rather than believed. Fragments of different
+      !! sizes cannot all be the same species, and the failure this prevents is the
+      !! quiet one: every fragment handed a potential describing a different molecule,
+      !! producing an energy rather than an error.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN1"', "Energy", "", "", &
+                      '"symbols": ["O", "H", "H", "O", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, -0.7,0,0, 3,0,0, 3.7,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1, 2], [3, 4]], '// &
+                      '"uniform_system": true, '// &
+                      '"fragment_potentials": "water.efp"')
+      call read_deck(config, parse_error)
+
+      call check(error, parse_error%has_error(), &
+                 "fragments of different sizes cannot be a uniform system")
+   end subroutine test_uniform_rejected
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config
