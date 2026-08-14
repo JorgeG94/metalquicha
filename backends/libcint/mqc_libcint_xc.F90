@@ -58,6 +58,7 @@ module mqc_libcint_xc
    public :: xc_add_potential_uks
    public :: xc_available
    public :: xc_grid_lda_quantities
+   public :: xc_grid_gga_quantities
 
    type :: xc_context_t
       !! A functional, a grid, and the fraction of exact exchange to keep
@@ -411,6 +412,193 @@ contains
       call error%set(ERROR_VALIDATION, "no libxc in this build")
 #endif
    end subroutine xc_grid_lda_quantities
+
+   subroutine xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, grad_coeff, error, &
+                                     density_beta, rho_beta, vrho_beta, grad_coeff_beta)
+      !! rho, eps_xc, dE/drho and dE/d(grad rho) at every grid point, for a GGA
+      !!
+      !! The counterpart of `xc_grid_lda_quantities` for a functional that reads
+      !! the density gradient, and it returns one thing that routine does not:
+      !! `grad_coeff`, the quantity conjugate to `grad rho`.
+      !!
+      !! **It returns that rather than `vsigma` and `rho_grad` separately, on
+      !! purpose.** libxc parametrises a GGA by sigma = |grad rho|^2, so what
+      !! multiplies d(grad rho)/dR is 2 vsigma grad rho -- and in the polarised
+      !! case the spins couple through sigma_ab, giving
+      !!
+      !!     dE/d(grad rho_a) = 2 vsigma_aa grad rho_a + vsigma_ab grad rho_b
+      !!
+      !! Resolving that here means the gradient contracts a single vector per
+      !! spin and never has to know how many sigma channels there were. It is
+      !! also the same combination `xc_add_potential` builds for the Fock
+      !! matrix, so the two paths cannot disagree about the chain rule.
+      !!
+      !! LDA functionals are accepted and return `grad_coeff` zero, so a caller
+      !! that has already decided to take the GGA path does not need a second
+      !! branch. Meta-GGA is refused: tau brings a term of its own that nothing
+      !! here computes.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)         !! Total density, or alpha
+      real(dp), allocatable, intent(out) :: rho(:)
+      real(dp), allocatable, intent(out) :: exc(:)
+      real(dp), allocatable, intent(out) :: vrho(:)
+      real(dp), allocatable, intent(out) :: grad_coeff(:, :)  !! (npts, 3)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: density_beta(:, :)
+      real(dp), allocatable, intent(out), optional :: rho_beta(:)
+      real(dp), allocatable, intent(out), optional :: vrho_beta(:)
+      real(dp), allocatable, intent(out), optional :: grad_coeff_beta(:, :)
+
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho_blk(:), sigma(:), exc_i(:), vrho_i(:), vsigma_i(:)
+      real(dp), allocatable :: vsigma(:)
+      real(dp), allocatable :: rho_a_blk(:), rho_b_blk(:), grad_a(:, :), grad_b(:, :)
+      real(dp), allocatable :: rho_grad(:, :)
+      integer :: g0, g1, nb, i, ig, id, npts
+      logical :: unrestricted
+
+      unrestricted = present(density_beta)
+      npts = ctx%grid%n_points
+
+      allocate (rho(npts), exc(npts), vrho(npts), grad_coeff(npts, 3))
+      rho = 0.0_dp
+      exc = 0.0_dp
+      vrho = 0.0_dp
+      grad_coeff = 0.0_dp
+      if (unrestricted) then
+         allocate (rho_beta(npts), vrho_beta(npts), grad_coeff_beta(npts, 3))
+         rho_beta = 0.0_dp
+         vrho_beta = 0.0_dp
+         grad_coeff_beta = 0.0_dp
+      end if
+
+      if (.not. ctx%active) return
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation gradient is "// &
+                        "implemented for LDA and GGA functionals; this one needs "// &
+                        "the kinetic energy density")
+         return
+      end if
+      if (unrestricted .neqv. ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "xc_grid_gga_quantities: the spin case does "// &
+                        "not match how this context was built")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+
+         if (allocated(exc_i)) deallocate (exc_i)
+         if (allocated(vrho_i)) deallocate (vrho_i)
+         if (allocated(vsigma_i)) deallocate (vsigma_i)
+         if (allocated(vsigma)) deallocate (vsigma)
+         if (allocated(sigma)) deallocate (sigma)
+
+         if (unrestricted) then
+            call eval_rho(ao, density, rho_a_blk, ao_grad=ao_grad, rho_grad=grad_a)
+            call eval_rho(ao, density_beta, rho_b_blk, ao_grad=ao_grad, rho_grad=grad_b)
+
+            ! libxc's polarised arrays are spin-interleaved, and sigma runs
+            ! (aa, ab, bb) per point.
+            if (allocated(rho_blk)) deallocate (rho_blk)
+            allocate (rho_blk(2*nb), sigma(3*nb), exc_i(nb))
+            allocate (vrho_i(2*nb), vsigma_i(3*nb), vsigma(3*nb))
+            vsigma = 0.0_dp
+            do ig = 1, nb
+               rho_blk(2*ig - 1) = rho_a_blk(ig)
+               rho_blk(2*ig) = rho_b_blk(ig)
+               sigma(3*ig - 2) = dot_product(grad_a(ig, :), grad_a(ig, :))
+               sigma(3*ig - 1) = dot_product(grad_a(ig, :), grad_b(ig, :))
+               sigma(3*ig) = dot_product(grad_b(ig, :), grad_b(ig, :))
+            end do
+
+            do i = 1, ctx%n_func
+               exc_i = 0.0_dp
+               vrho_i = 0.0_dp
+               vsigma_i = 0.0_dp
+               ! Same dispatch the Fock build uses. A composition may mix an
+               ! LDA component with a GGA one -- a hybrid's correlation part
+               ! commonly is -- so the family is per functional rather than per
+               ! context, and `any_gga` only says at least one needs sigma.
+               select case (ctx%family(i))
+               case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+                  call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
+                                          exc_i, vrho_i, vsigma_i)
+                  vsigma = vsigma + ctx%weight(i)*vsigma_i
+               case default
+                  call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
+               end select
+               do ig = 1, nb
+                  exc(g0 + ig - 1) = exc(g0 + ig - 1) + ctx%weight(i)*exc_i(ig)
+                  vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(2*ig - 1)
+                  vrho_beta(g0 + ig - 1) = vrho_beta(g0 + ig - 1) &
+                                           + ctx%weight(i)*vrho_i(2*ig)
+               end do
+            end do
+
+            do ig = 1, nb
+               rho(g0 + ig - 1) = rho_a_blk(ig)
+               rho_beta(g0 + ig - 1) = rho_b_blk(ig)
+               do id = 1, 3
+                  grad_coeff(g0 + ig - 1, id) = 2.0_dp*vsigma(3*ig - 2)*grad_a(ig, id) &
+                                                + vsigma(3*ig - 1)*grad_b(ig, id)
+                  grad_coeff_beta(g0 + ig - 1, id) = 2.0_dp*vsigma(3*ig)*grad_b(ig, id) &
+                                                     + vsigma(3*ig - 1)*grad_a(ig, id)
+               end do
+            end do
+         else
+            call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad)
+
+            allocate (sigma(nb), exc_i(nb), vrho_i(nb), vsigma_i(nb), vsigma(nb))
+            vsigma = 0.0_dp
+            do ig = 1, nb
+               sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
+            end do
+
+            do i = 1, ctx%n_func
+               exc_i = 0.0_dp
+               vrho_i = 0.0_dp
+               vsigma_i = 0.0_dp
+               ! Same dispatch the Fock build uses. A composition may mix an
+               ! LDA component with a GGA one -- a hybrid's correlation part
+               ! commonly is -- so the family is per functional rather than per
+               ! context, and `any_gga` only says at least one needs sigma.
+               select case (ctx%family(i))
+               case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+                  call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
+                                          exc_i, vrho_i, vsigma_i)
+                  vsigma = vsigma + ctx%weight(i)*vsigma_i
+               case default
+                  call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
+               end select
+               do ig = 1, nb
+                  exc(g0 + ig - 1) = exc(g0 + ig - 1) + ctx%weight(i)*exc_i(ig)
+                  vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(ig)
+               end do
+            end do
+
+            do ig = 1, nb
+               rho(g0 + ig - 1) = rho_blk(ig)
+               do id = 1, 3
+                  grad_coeff(g0 + ig - 1, id) = 2.0_dp*vsigma(ig)*rho_grad(ig, id)
+               end do
+            end do
+         end if
+      end do
+#else
+      call error%set(ERROR_VALIDATION, "no libxc in this build")
+#endif
+   end subroutine xc_grid_gga_quantities
 
    subroutine xc_add_potential(ctx, mol, density, v_xc, e_xc, n_elec, error)
       !! The exchange-correlation potential and energy for one density

@@ -31,8 +31,9 @@ module mqc_libcint_gradient
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
                                     build_df_shell_table, three_centre, two_centre, &
                                     metric_inverse_sqrt
-   use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK
-   use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities
+   use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP
+   use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities, &
+                             xc_grid_gga_quantities
    use mqc_dft_partition, only: becke_partition_derivatives
    use pic_blas_interfaces, only: pic_gemm
    use libcint_fortran, only: libcint_1e_ipovlp_sph, libcint_1e_ipovlp_cart, &
@@ -294,8 +295,11 @@ contains
 
       real(dp), allocatable :: rho(:), exc(:), vrho(:)
       real(dp), allocatable :: rho_beta(:), vrho_beta(:)
-      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: gcoef(:, :), gcoef_beta(:, :)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
       real(dp), allocatable :: dchi(:, :), dchi_beta(:, :)
+      real(dp), allocatable :: dgchi(:, :, :), dgchi_beta(:, :, :)
+      logical :: gga
       real(dp), allocatable :: dpart(:, :, :)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: contrib(3)
@@ -310,12 +314,24 @@ contains
       natm = mol%natm
       npts = ctx%grid%n_points
 
-      if (unrestricted) then
-         call xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
-                                     density_beta=density_beta, rho_beta=rho_beta, &
-                                     vrho_beta=vrho_beta)
+      gga = ctx%any_gga
+
+      if (gga) then
+         if (unrestricted) then
+            call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
+                                        density_beta=density_beta, rho_beta=rho_beta, &
+                                        vrho_beta=vrho_beta, grad_coeff_beta=gcoef_beta)
+         else
+            call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error)
+         end if
       else
-         call xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error)
+         if (unrestricted) then
+            call xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
+                                        density_beta=density_beta, rho_beta=rho_beta, &
+                                        vrho_beta=vrho_beta)
+         else
+            call xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error)
+         end if
       end if
       if (error%has_error()) return
 
@@ -331,7 +347,12 @@ contains
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
          nb = g1 - g0 + 1
 
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         end if
          if (error%has_error()) return
 
          ! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g), the partner every term
@@ -345,6 +366,19 @@ contains
             call density_times_ao(ao, density_beta, nb, nao, dchi_beta)
          end if
 
+         ! (D grad chi)_mu(g), which only the GGA term needs: it is the partner
+         ! for the piece where the two first derivatives pair with each other.
+         if (gga) then
+            if (allocated(dgchi)) deallocate (dgchi)
+            allocate (dgchi(nb, nao, 3))
+            call density_times_ao_grad(ao_grad, density, nb, nao, dgchi)
+            if (unrestricted) then
+               if (allocated(dgchi_beta)) deallocate (dgchi_beta)
+               allocate (dgchi_beta(nb, nao, 3))
+               call density_times_ao_grad(ao_grad, density_beta, nb, nao, dgchi_beta)
+            end if
+         end if
+
          do ig = 1, nb
             gg = g0 + ig - 1
             own = ctx%grid%atom(gg)
@@ -352,10 +386,21 @@ contains
             wv = ctx%grid%weights(gg)*vrho(gg)
             call accumulate_channel(ao_grad, dchi, ig, nao, wv, scale, &
                                     offsets, counts, natm, own, gradient)
+            if (gga) then
+               call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, &
+                                           ctx%grid%weights(gg)*gcoef(gg, :), scale, &
+                                           offsets, counts, natm, own, gradient)
+            end if
             if (unrestricted) then
                wv = ctx%grid%weights(gg)*vrho_beta(gg)
                call accumulate_channel(ao_grad, dchi_beta, ig, nao, wv, scale, &
                                        offsets, counts, natm, own, gradient)
+               if (gga) then
+                  call accumulate_gga_channel(ao_grad, ao_hess, dchi_beta, dgchi_beta, &
+                                              ig, nao, &
+                                              ctx%grid%weights(gg)*gcoef_beta(gg, :), &
+                                              scale, offsets, counts, natm, own, gradient)
+               end if
             end if
          end do
 
@@ -473,6 +518,111 @@ contains
          gradient(comp, own) = gradient(comp, own) + scale*wv*total(comp)
       end do
    end subroutine accumulate_channel
+
+   subroutine density_times_ao_grad(ao_grad, density, nb, nao, dgchi)
+      !! (D grad chi)_mu,k(g) = sum_nu D_mu,nu d chi_nu / dx_k (g)
+      !!
+      !! The gradient counterpart of `density_times_ao`. Only the GGA term
+      !! needs it, and only for the piece in which both derivatives are first
+      !! derivatives -- one on the bra and one on the ket.
+      real(dp), intent(in) :: ao_grad(:, :, :)
+      real(dp), intent(in) :: density(:, :)
+      integer, intent(in) :: nb, nao
+      real(dp), intent(out) :: dgchi(:, :, :)
+
+      integer :: ig, mu, nu, k
+      real(dp) :: acc
+
+      do k = 1, 3
+         do mu = 1, nao
+            do ig = 1, nb
+               acc = 0.0_dp
+               do nu = 1, nao
+                  acc = acc + density(mu, nu)*ao_grad(ig, nu, k)
+               end do
+               dgchi(ig, mu, k) = acc
+            end do
+         end do
+      end do
+   end subroutine density_times_ao_grad
+
+   subroutine accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, wg, scale, &
+                                     offsets, counts, natm, own, gradient)
+      !! One spin channel's density-gradient term at one grid point
+      !!
+      !! A GGA reads `grad rho` as well as `rho`, so moving a nucleus moves that
+      !! too, and the chain rule needs
+      !!
+      !!     d(grad rho)_j / dR_{A,k}
+      !!         = -2 sum_{mu in A, nu} D_mu,nu [ d2chi_mu/dx_k dx_j * chi_nu
+      !!                                          + dchi_mu/dx_j * dchi_nu/dx_k ]
+      !!
+      !! **The two pieces are not one term doubled, and that is the trap.** The
+      !! second derivative pairs with `chi_nu`; the two first derivatives pair
+      !! with *each other*, one on the bra and one on the ket. Writing this as a
+      !! single doubled term gives a gradient of entirely plausible magnitude
+      !! that misses finite differences -- which is why the check that decides
+      !! this routine is the numerical one and not translational invariance.
+      !!
+      !! `wg` is the weight times dE/d(grad rho), the conjugate quantity
+      !! `xc_grid_gga_quantities` returns already resolved over libxc's sigma
+      !! channels, so nothing here knows whether the calculation was polarised.
+      !!
+      !! The second-derivative index follows `AO_HESS_COMP`'s packing: xx, xy,
+      !! xz, yy, yz, zz, so element (k, j) of the symmetric matrix is looked up
+      !! rather than stored twice.
+      real(dp), intent(in) :: ao_grad(:, :, :)
+      real(dp), intent(in) :: ao_hess(:, :, :)
+      real(dp), intent(in) :: dchi(:, :)
+      real(dp), intent(in) :: dgchi(:, :, :)
+      integer, intent(in) :: ig, nao, natm, own
+      real(dp), intent(in) :: wg(3)
+      real(dp), intent(in) :: scale
+      integer, intent(in) :: offsets(:), counts(:)
+      real(dp), intent(inout) :: gradient(:, :)
+
+      ! Which packed component holds d2/dx_k dx_j.
+      integer, parameter :: HESS_INDEX(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+
+      integer :: ia, mu, j, k, p0, p1
+      real(dp) :: block_sum(3)
+      real(dp) :: total(3)
+      real(dp) :: acc
+
+      total = 0.0_dp
+      do ia = 1, natm
+         p0 = offsets(ia) + 1
+         p1 = offsets(ia) + counts(ia)
+         block_sum = 0.0_dp
+         do mu = p0, p1
+            do k = 1, 3
+               acc = 0.0_dp
+               do j = 1, 3
+                  ! Note which index sits where. The derivative direction k is
+                  ! on the *bra* in both pieces; the summed direction j rides
+                  ! the second derivative in the first piece and the *ket* in
+                  ! the second. Pairing j with the bra instead -- the natural
+                  ! misreading -- is wrong by about six percent on water/PBE,
+                  ! and translational invariance does not notice.
+                  acc = acc + wg(j)*(ao_hess(ig, mu, HESS_INDEX(k, j))*dchi(ig, mu) &
+                                     + ao_grad(ig, mu, k)*dgchi(ig, mu, j))
+               end do
+               block_sum(k) = block_sum(k) + acc
+            end do
+         end do
+         do k = 1, 3
+            gradient(k, ia) = gradient(k, ia) - scale*block_sum(k)
+            total(k) = total(k) + block_sum(k)
+         end do
+      end do
+
+      ! The point travels with the atom that owns it: the same contraction over
+      ! every basis function, with the opposite sign, exactly as the LDA term
+      ! next door.
+      do k = 1, 3
+         gradient(k, own) = gradient(k, own) + scale*total(k)
+      end do
+   end subroutine accumulate_gga_channel
 
    subroutine nuclear_repulsion_gradient(mol, gradient)
       !! dE_NN/dR, accumulated into `gradient`
