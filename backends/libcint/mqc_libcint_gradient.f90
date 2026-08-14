@@ -31,6 +31,9 @@ module mqc_libcint_gradient
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
                                     build_df_shell_table, three_centre, two_centre, &
                                     metric_inverse_sqrt
+   use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK
+   use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities
+   use mqc_dft_partition, only: becke_partition_derivatives
    use pic_blas_interfaces, only: pic_gemm
    use libcint_fortran, only: libcint_1e_ipovlp_sph, libcint_1e_ipovlp_cart, &
                               libcint_1e_ipkin_sph, libcint_1e_ipkin_cart, &
@@ -60,7 +63,7 @@ contains
 
    subroutine libcint_scf_gradient(mol, density, density_beta, orbitals, orbitals_beta, &
                                    orbital_energies, orbital_energies_beta, &
-                                   n_occupied, n_occupied_beta, gradient, error, aux)
+                                   n_occupied, n_occupied_beta, gradient, error, aux, xc)
       !! dE/dR for a converged SCF, in Hartree/Bohr
       !!
       !! The beta arguments are what makes this one routine rather than two.
@@ -89,11 +92,17 @@ contains
       type(error_t), intent(inout) :: error
       type(libcint_molecule_t), intent(in), optional :: aux
          !! The auxiliary basis the SCF fitted with. Absent means exact ERIs.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! The functional the SCF used. Absent means Hartree-Fock. Present adds
+         !! the exchange-correlation term and scales exact exchange by the
+         !! fraction the functional asks for -- zero for a pure functional, so
+         !! the Fock exchange derivative is not merely small but absent.
 
       real(dp), allocatable :: total_density(:, :), weighted(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
       real(dp), allocatable :: vhf(:, :, :), vhf_beta(:, :, :)
       real(dp), allocatable :: vrinv(:, :, :), hcore_a(:, :, :)
+      real(dp) :: exx
       integer, allocatable :: offsets(:), counts(:)
       integer :: nao, iatom, comp, p0, p1
       logical :: unrestricted
@@ -101,6 +110,13 @@ contains
 
       unrestricted = present(density_beta)
       nao = mol%nao
+
+      ! Hartree-Fock keeps all of its exchange; a functional keeps the fraction
+      ! it declares. A range-separated one needs a second exchange derivative at
+      ! a screened omega, which this does not build, so it is refused below
+      ! rather than silently given its full-range part.
+      exx = 1.0_dp
+      if (present(xc)) exx = xc%exx_fraction
 
       if (size(density, 1) /= nao) then
          call error%set(ERROR_VALIDATION, &
@@ -157,14 +173,14 @@ contains
          end if
          if (error%has_error()) return
       else if (unrestricted) then
-         call two_electron_deriv(mol, total_density, vhf, error, &
+         call two_electron_deriv(mol, total_density, vhf, error, exx_fraction=exx, &
                                  exchange_density=density)
          if (error%has_error()) return
-         call two_electron_deriv(mol, total_density, vhf_beta, error, &
+         call two_electron_deriv(mol, total_density, vhf_beta, error, exx_fraction=exx, &
                                  exchange_density=density_beta)
          if (error%has_error()) return
       else
-         call two_electron_deriv(mol, total_density, vhf, error)
+         call two_electron_deriv(mol, total_density, vhf, error, exx_fraction=exx)
          if (error%has_error()) return
       end if
 
@@ -219,7 +235,244 @@ contains
          end do
       end do
 
+      ! Last, and on top of everything above: the exchange-correlation term is
+      ! an addition to the Hartree-Fock gradient, not a replacement for any part
+      ! of it.
+      if (present(xc)) then
+         if (xc%range_separated) then
+            call error%set(ERROR_VALIDATION, "the gradient of a range-separated "// &
+                           "functional needs a second exchange derivative at the "// &
+                           "screened omega, which this does not build")
+            return
+         end if
+         if (unrestricted) then
+            call xc_gradient(xc, mol, density, gradient, error, density_beta=density_beta)
+         else
+            ! The closed-shell density carries its factor of two, and
+            ! `xc_grid_lda_quantities` builds an unpolarised rho from it, which
+            ! is what the unpolarised functional expects.
+            call xc_gradient(xc, mol, total_density, gradient, error)
+         end if
+         if (error%has_error()) return
+      end if
+
    end subroutine libcint_scf_gradient
+
+   subroutine xc_gradient(ctx, mol, density, gradient, error, density_beta)
+      !! The exchange-correlation contribution to dE/dR, accumulated in place
+      !!
+      !! Three terms, and the last two are the ones a first attempt leaves out.
+      !!
+      !! **The basis functions move.** rho is built from functions centred on
+      !! atoms, so moving atom A changes rho wherever A's functions reach. This
+      !! is the term that looks like the Pulay term of the one-electron part and
+      !! is written the same way.
+      !!
+      !! **The grid points move.** The quadrature is atom-centred, so the points
+      !! belonging to A travel with it and the integrand is sampled at moved
+      !! positions. This contributes the same quantity as the first term but
+      !! summed over A's *points* rather than A's *functions* -- over every
+      !! basis function, not only the ones on A -- and with the opposite sign.
+      !!
+      !! **The partition weights move.** The Becke weight of every point depends
+      !! on every nuclear position, so moving A reweights the whole grid,
+      !! including points it does not own. This is the term whose absence leaves
+      !! a gradient that looks entirely plausible and misses finite differences
+      !! at about 1e-4, and it is also the term translational invariance is
+      !! sensitive to -- which is why that check is worth running on a DFT
+      !! gradient even though it is free.
+      !!
+      !! LDA only. `xc_grid_lda_quantities` refuses anything else, because a GGA
+      !! needs second derivatives of the basis functions and `eval_ao_block`
+      !! produces first.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: density_beta(:, :)
+
+      real(dp), allocatable :: rho(:), exc(:), vrho(:)
+      real(dp), allocatable :: rho_beta(:), vrho_beta(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: dchi(:, :), dchi_beta(:, :)
+      real(dp), allocatable :: dpart(:, :, :)
+      integer, allocatable :: offsets(:), counts(:)
+      real(dp) :: contrib(3)
+      real(dp) :: wv, scale
+      integer :: npts, nao, natm, g0, g1, nb, ig, gg, mu, comp, ia, own
+      logical :: unrestricted
+
+      if (.not. ctx%active) return
+
+      unrestricted = present(density_beta)
+      nao = mol%nao
+      natm = mol%natm
+      npts = ctx%grid%n_points
+
+      if (unrestricted) then
+         call xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
+                                     density_beta=density_beta, rho_beta=rho_beta, &
+                                     vrho_beta=vrho_beta)
+      else
+         call xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error)
+      end if
+      if (error%has_error()) return
+
+      allocate (offsets(natm), counts(natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      ! A closed-shell density already carries its factor of two, so the
+      ! derivative of rho with respect to a moving basis function is 2*D*chi
+      ! either way -- the two is the bra/ket pair, not the occupation.
+      scale = 2.0_dp
+
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+
+         ! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g), the partner every term
+         ! below contracts the basis-function gradient against.
+         if (allocated(dchi)) deallocate (dchi)
+         allocate (dchi(nb, nao))
+         call density_times_ao(ao, density, nb, nao, dchi)
+         if (unrestricted) then
+            if (allocated(dchi_beta)) deallocate (dchi_beta)
+            allocate (dchi_beta(nb, nao))
+            call density_times_ao(ao, density_beta, nb, nao, dchi_beta)
+         end if
+
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            own = ctx%grid%atom(gg)
+
+            wv = ctx%grid%weights(gg)*vrho(gg)
+            call accumulate_channel(ao_grad, dchi, ig, nao, wv, scale, &
+                                    offsets, counts, natm, own, gradient)
+            if (unrestricted) then
+               wv = ctx%grid%weights(gg)*vrho_beta(gg)
+               call accumulate_channel(ao_grad, dchi_beta, ig, nao, wv, scale, &
+                                       offsets, counts, natm, own, gradient)
+            end if
+         end do
+
+         ! The partition-weight term. Differentiated blockwise for the same
+         ! reason the density is: the full (3, natm, npoints) array is large and
+         ! nothing needs it all at once.
+         if (allocated(dpart)) deallocate (dpart)
+         allocate (dpart(3, natm, nb))
+         call becke_partition_derivatives(ctx%grid%coords(:, g0:g1), mol%coords, &
+                                          ctx%grid%numbers, ctx%grid%atom(g0:g1), &
+                                          ctx%grid%scheme, ctx%grid%adjust, dpart, error)
+         if (error%has_error()) return
+
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            contrib(1) = ctx%grid%quad_weights(gg)*exc(gg)
+            if (unrestricted) then
+               contrib(1) = contrib(1)*(rho(gg) + rho_beta(gg))
+            else
+               contrib(1) = contrib(1)*rho(gg)
+            end if
+            do ia = 1, natm
+               do comp = 1, 3
+                  gradient(comp, ia) = gradient(comp, ia) + contrib(1)*dpart(comp, ia, ig)
+               end do
+            end do
+
+            ! The partition weight of a point owned by A also changes because
+            ! the *point* moves with A, not only because A moves. That second
+            ! piece is what makes this term cancel the integrand's own
+            ! grid-motion contribution above -- together they are the integral
+            ! of grad(P f) over one atomic subgrid, which the quadrature
+            ! evaluates as very nearly zero because P f decays. Leaving it out
+            ! does not make the answer slightly worse: it leaves the
+            ! grid-motion term uncancelled, which on water is an error of 0.77
+            ! Hartree/Bohr against a gradient of 0.06.
+            !
+            ! It needs no new derivative. Displacing the point is the same as
+            ! displacing every nucleus the other way, so the gradient of the
+            ! partition with respect to the point is minus the sum over atoms
+            ! of what `becke_partition_derivatives` already returned.
+            own = ctx%grid%atom(gg)
+            do ia = 1, natm
+               do comp = 1, 3
+                  gradient(comp, own) = gradient(comp, own) &
+                                        - contrib(1)*dpart(comp, ia, ig)
+               end do
+            end do
+         end do
+      end do
+   end subroutine xc_gradient
+
+   subroutine density_times_ao(ao, density, nb, nao, dchi)
+      !! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g)
+      real(dp), intent(in) :: ao(:, :)
+      real(dp), intent(in) :: density(:, :)
+      integer, intent(in) :: nb, nao
+      real(dp), intent(out) :: dchi(:, :)
+
+      integer :: ig, mu, nu
+      real(dp) :: acc
+
+      do mu = 1, nao
+         do ig = 1, nb
+            acc = 0.0_dp
+            do nu = 1, nao
+               acc = acc + density(mu, nu)*ao(ig, nu)
+            end do
+            dchi(ig, mu) = acc
+         end do
+      end do
+   end subroutine density_times_ao
+
+   subroutine accumulate_channel(ao_grad, dchi, ig, nao, wv, scale, &
+                                 offsets, counts, natm, own, gradient)
+      !! One spin channel's basis-function and grid-point terms at one point
+      !!
+      !! Both are the same contraction of `grad chi` against `D chi`. They
+      !! differ in which basis functions are summed and where the result lands:
+      !! the basis-function term takes only the functions on atom A and lands on
+      !! A, the grid-point term takes every function and lands on the atom that
+      !! owns the point. Their signs are opposite, which is what makes the two
+      !! cancel when every atom moves together.
+      real(dp), intent(in) :: ao_grad(:, :, :)
+      real(dp), intent(in) :: dchi(:, :)
+      integer, intent(in) :: ig, nao, natm, own
+      real(dp), intent(in) :: wv, scale
+      integer, intent(in) :: offsets(:), counts(:)
+      real(dp), intent(inout) :: gradient(:, :)
+
+      integer :: ia, mu, comp, p0, p1
+      real(dp) :: block_sum(3), total(3)
+
+      total = 0.0_dp
+      do ia = 1, natm
+         p0 = offsets(ia) + 1
+         p1 = offsets(ia) + counts(ia)
+         block_sum = 0.0_dp
+         do mu = p0, p1
+            do comp = 1, 3
+               block_sum(comp) = block_sum(comp) + ao_grad(ig, mu, comp)*dchi(ig, mu)
+            end do
+         end do
+         do comp = 1, 3
+            ! Moving atom A moves its functions; d chi / dR_A is minus the
+            ! gradient with respect to the electron coordinate.
+            gradient(comp, ia) = gradient(comp, ia) - scale*wv*block_sum(comp)
+            total(comp) = total(comp) + block_sum(comp)
+         end do
+      end do
+
+      ! The point travels with the atom that produced it, which is the same
+      ! contraction over every function and with the opposite sign.
+      do comp = 1, 3
+         gradient(comp, own) = gradient(comp, own) + scale*wv*total(comp)
+      end do
+   end subroutine accumulate_channel
 
    subroutine nuclear_repulsion_gradient(mol, gradient)
       !! dE_NN/dR, accumulated into `gradient`
@@ -399,7 +652,7 @@ contains
       end do
    end subroutine iprinv_deriv_at
 
-   subroutine two_electron_deriv(mol, density, vhf, error, exchange_density)
+   subroutine two_electron_deriv(mol, density, vhf, error, exchange_density, exx_fraction)
       !! `J - K/2` built from the differentiated ERIs, as (nao, nao, 3)
       !!
       !! `density` drives the Coulomb field and is the total density in both
@@ -422,6 +675,7 @@ contains
       real(dp), allocatable, intent(out) :: vhf(:, :, :)
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: exchange_density(:, :)
+      real(dp), intent(in), optional :: exx_fraction   !! Default one, for Hartree-Fock
 
       real(dp), allocatable :: buf(:), vj(:, :, :), vk(:, :, :)
       real(dp), allocatable :: vj_local(:, :, :), vk_local(:, :, :)
@@ -447,6 +701,8 @@ contains
          exchange_from = density
          k_scale = 0.5_dp
       end if
+
+      if (present(exx_fraction)) k_scale = k_scale*exx_fraction
 
       opt = c_null_ptr
       if (mol%cartesian) then

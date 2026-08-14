@@ -486,6 +486,13 @@ if(MQC_ENABLE_LIBCINT)
   # against translational invariance. Not a ctest case: it converges an SCF per
   # displaced coordinate, which is seconds rather than the milliseconds the unit
   # suite is meant to take.
+  add_executable(check_partition_deriv
+                 ${PROJECT_SOURCE_DIR}/validation/check_partition_deriv.f90)
+  target_include_directories(check_partition_deriv
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_partition_deriv PRIVATE ${main_lib} cint_fortran
+                                                      cint)
+
   add_executable(check_df_deriv
                  ${PROJECT_SOURCE_DIR}/validation/check_df_deriv.f90)
   target_include_directories(check_df_deriv

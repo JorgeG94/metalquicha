@@ -57,6 +57,7 @@ module mqc_libcint_xc
    public :: xc_add_potential
    public :: xc_add_potential_uks
    public :: xc_available
+   public :: xc_grid_lda_quantities
 
    type :: xc_context_t
       !! A functional, a grid, and the fraction of exact exchange to keep
@@ -292,6 +293,124 @@ contains
       this%rs_omega = 0.0_dp
       this%rs_k_lr = 0.0_dp
    end subroutine xc_context_destroy
+
+   subroutine xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
+                                     density_beta, rho_beta, vrho_beta)
+      !! rho, eps_xc and v_xc at every grid point, for an LDA functional
+      !!
+      !! The gradient needs these three on the grid rather than contracted into
+      !! a matrix: the exchange-correlation gradient has one term contracting
+      !! `vrho` against the moving basis functions and another contracting
+      !! `rho*exc` against the moving quadrature weights, and neither can be
+      !! recovered from the Fock-matrix contribution that `xc_add_potential`
+      !! returns.
+      !!
+      !! LDA only, and it refuses anything else rather than returning something
+      !! incomplete. A GGA needs `vsigma` and the density gradient as well, and
+      !! its gradient needs second derivatives of the basis functions, which
+      !! `eval_ao_block` does not produce.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)         !! Total density, or alpha
+      real(dp), allocatable, intent(out) :: rho(:)  !! Total density on the grid
+      real(dp), allocatable, intent(out) :: exc(:)  !! Energy per electron
+      real(dp), allocatable, intent(out) :: vrho(:)  !! dE_xc/drho, or the alpha part
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: density_beta(:, :)
+      real(dp), allocatable, intent(out), optional :: rho_beta(:)
+      real(dp), allocatable, intent(out), optional :: vrho_beta(:)
+
+      real(dp), allocatable :: ao(:, :), rho_blk(:), exc_i(:), vrho_i(:)
+      real(dp), allocatable :: rho_a_blk(:), rho_b_blk(:)
+      integer :: g0, g1, nb, i, ig, npts
+      logical :: unrestricted
+
+      unrestricted = present(density_beta)
+      npts = ctx%grid%n_points
+
+      allocate (rho(npts), exc(npts), vrho(npts))
+      rho = 0.0_dp
+      exc = 0.0_dp
+      vrho = 0.0_dp
+      if (unrestricted) then
+         allocate (rho_beta(npts), vrho_beta(npts))
+         rho_beta = 0.0_dp
+         vrho_beta = 0.0_dp
+      end if
+
+      if (.not. ctx%active) return
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (ctx%any_gga .or. ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation gradient is "// &
+                        "implemented for LDA functionals only; this one needs the "// &
+                        "density gradient")
+         return
+      end if
+      if (unrestricted .neqv. ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "xc_grid_lda_quantities: the spin case does "// &
+                        "not match how this context was built")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
+         if (error%has_error()) return
+
+         if (allocated(exc_i)) deallocate (exc_i, vrho_i)
+
+         if (unrestricted) then
+            call eval_rho(ao, density, rho_a_blk)
+            call eval_rho(ao, density_beta, rho_b_blk)
+            ! libxc's polarised arrays are spin-interleaved.
+            if (allocated(rho_blk)) deallocate (rho_blk)
+            allocate (rho_blk(2*nb), exc_i(nb), vrho_i(2*nb))
+            do ig = 1, nb
+               rho_blk(2*ig - 1) = rho_a_blk(ig)
+               rho_blk(2*ig) = rho_b_blk(ig)
+            end do
+            do i = 1, ctx%n_func
+               exc_i = 0.0_dp
+               vrho_i = 0.0_dp
+               call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
+               do ig = 1, nb
+                  exc(g0 + ig - 1) = exc(g0 + ig - 1) + ctx%weight(i)*exc_i(ig)
+                  vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(2*ig - 1)
+                  vrho_beta(g0 + ig - 1) = vrho_beta(g0 + ig - 1) &
+                                           + ctx%weight(i)*vrho_i(2*ig)
+               end do
+            end do
+            do ig = 1, nb
+               rho(g0 + ig - 1) = rho_a_blk(ig)
+               rho_beta(g0 + ig - 1) = rho_b_blk(ig)
+            end do
+         else
+            call eval_rho(ao, density, rho_blk)
+            allocate (exc_i(nb), vrho_i(nb))
+            do i = 1, ctx%n_func
+               exc_i = 0.0_dp
+               vrho_i = 0.0_dp
+               call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
+               do ig = 1, nb
+                  exc(g0 + ig - 1) = exc(g0 + ig - 1) + ctx%weight(i)*exc_i(ig)
+                  vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(ig)
+               end do
+            end do
+            do ig = 1, nb
+               rho(g0 + ig - 1) = rho_blk(ig)
+            end do
+         end if
+      end do
+#else
+      call error%set(ERROR_VALIDATION, "no libxc in this build")
+#endif
+   end subroutine xc_grid_lda_quantities
 
    subroutine xc_add_potential(ctx, mol, density, v_xc, e_xc, n_elec, error)
       !! The exchange-correlation potential and energy for one density

@@ -39,6 +39,7 @@ module mqc_dft_partition
    public :: PARTITION_BECKE, PARTITION_STRATMANN
    public :: ADJUST_NONE, ADJUST_BECKE, ADJUST_TREUTLER
    public :: becke_partition_weights
+   public :: becke_partition_derivatives
    public :: partition_scheme_name
 
    !> Cutoff profile
@@ -177,6 +178,149 @@ contains
       end do
    end subroutine becke_partition_weights
 
+   subroutine becke_partition_derivatives(points, atom_coords, atomic_numbers, owner, &
+                                          scheme, adjust, dweights, error)
+      !! dP_k/dR_A at fixed grid points, as (3, n_atoms, n_points)
+      !!
+      !! The partition weight depends on every nuclear position, so moving any
+      !! atom changes the weight of every point -- including points owned by
+      !! other atoms. That is the whole content of the "grid response" term in
+      !! a DFT gradient, and omitting it leaves a gradient that looks entirely
+      !! reasonable and disagrees with finite differences at about 1e-4.
+      !!
+      !! **The grid points are held fixed here.** Points move with the atom that
+      !! owns them, but that motion is a separate contribution which the caller
+      !! adds; mixing the two into one routine would make neither checkable.
+      !!
+      !! The cell functions are differentiated by carrying the derivative
+      !! through the product alongside the value, rather than as a logarithmic
+      !! derivative summed at the end. The log form needs a division by each
+      !! cutoff factor, and those legitimately reach zero far from the molecule
+      !! -- where the value underflows to zero but the derivative does not, so
+      !! the quotient is 0/0 exactly where a guard would have to guess. Carrying
+      !! both costs an extra factor of the atom count and cannot divide by
+      !! anything.
+      real(dp), intent(in) :: points(:, :)       !! (3, n_points), Bohr
+      real(dp), intent(in) :: atom_coords(:, :)  !! (3, n_atoms), Bohr
+      integer, intent(in) :: atomic_numbers(:)   !! Z per atom, for the radii
+      integer, intent(in) :: owner(:)            !! Atom each point belongs to
+      integer, intent(in) :: scheme
+      integer, intent(in) :: adjust
+      real(dp), intent(out) :: dweights(:, :, :)  !! (3, n_atoms, n_points)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: shift(:, :), inv_distance(:, :)
+      real(dp), allocatable :: atom_r(:), unit_vec(:, :)
+      real(dp), allocatable :: cell(:), dcell(:, :, :)
+      real(dp) :: dtotal(3), rij(3), ds_i(3), ds_j(3), dmu_i(3), dmu_j(3)
+      real(dp) :: mu, nu, s, total, dnu_dmu, ds_dnu, invd
+      integer :: n_atoms, n_points, i, j, k, a
+
+      n_atoms = size(atom_coords, 2)
+      n_points = size(points, 2)
+      dweights = 0.0_dp
+
+      if (size(atomic_numbers) /= n_atoms) then
+         call error%set(ERROR_VALIDATION, &
+                        "partition derivatives: atomic_numbers does not match atom_coords")
+         return
+      end if
+      if (scheme /= PARTITION_BECKE .and. scheme /= PARTITION_STRATMANN) then
+         call error%set(ERROR_VALIDATION, "partition derivatives: unknown scheme")
+         return
+      end if
+
+      ! One atom owns everything and its weight is identically one, so it does
+      ! not change when the atom moves.
+      if (n_atoms == 1) return
+
+      allocate (shift(n_atoms, n_atoms), inv_distance(n_atoms, n_atoms))
+      allocate (atom_r(n_atoms), unit_vec(3, n_atoms))
+      allocate (cell(n_atoms), dcell(3, n_atoms, n_atoms))
+
+      call size_adjustment(atomic_numbers, adjust, shift)
+
+      inv_distance = 0.0_dp
+      do i = 1, n_atoms
+         do j = 1, n_atoms
+            if (i /= j) then
+               inv_distance(i, j) = 1.0_dp/norm2(atom_coords(:, i) - atom_coords(:, j))
+            end if
+         end do
+      end do
+
+      do k = 1, n_points
+         do i = 1, n_atoms
+            atom_r(i) = norm2(points(:, k) - atom_coords(:, i))
+            if (atom_r(i) > 0.0_dp) then
+               unit_vec(:, i) = (points(:, k) - atom_coords(:, i))/atom_r(i)
+            else
+               ! The point sits on the nucleus. |r - R| is not differentiable
+               ! there, and the quadrature never places a point exactly on one,
+               ! so this is a guard rather than a case.
+               unit_vec(:, i) = 0.0_dp
+            end if
+         end do
+
+         cell = 1.0_dp
+         dcell = 0.0_dp
+
+         do i = 1, n_atoms
+            do j = i + 1, n_atoms
+               invd = inv_distance(i, j)
+               rij = atom_coords(:, i) - atom_coords(:, j)
+
+               mu = (atom_r(i) - atom_r(j))*invd
+               nu = mu + shift(i, j)*(1.0_dp - mu*mu)
+
+               if (scheme == PARTITION_BECKE) then
+                  s = becke_cutoff(nu)
+                  ds_dnu = becke_cutoff_derivative(nu)
+               else
+                  s = stratmann_cutoff(nu)
+                  ds_dnu = stratmann_cutoff_derivative(nu)
+               end if
+
+               dnu_dmu = 1.0_dp - 2.0_dp*shift(i, j)*mu
+
+               ! mu depends on R_i and R_j only: through the distances from the
+               ! point, and through the internuclear distance in the denominator.
+               dmu_i = -unit_vec(:, i)*invd - (atom_r(i) - atom_r(j))*invd**3*rij
+               dmu_j = unit_vec(:, j)*invd + (atom_r(i) - atom_r(j))*invd**3*rij
+
+               ds_i = ds_dnu*dnu_dmu*dmu_i
+               ds_j = ds_dnu*dnu_dmu*dmu_j
+
+               ! Product rule, value and derivative together. Order matters:
+               ! the derivative uses the cell value from before this factor.
+               do a = 1, n_atoms
+                  dcell(:, a, i) = dcell(:, a, i)*s
+                  dcell(:, a, j) = dcell(:, a, j)*(1.0_dp - s)
+               end do
+               dcell(:, i, i) = dcell(:, i, i) + cell(i)*ds_i
+               dcell(:, j, i) = dcell(:, j, i) + cell(i)*ds_j
+               dcell(:, i, j) = dcell(:, i, j) - cell(j)*ds_i
+               dcell(:, j, j) = dcell(:, j, j) - cell(j)*ds_j
+
+               cell(i) = cell(i)*s
+               cell(j) = cell(j)*(1.0_dp - s)
+            end do
+         end do
+
+         total = sum(cell)
+         if (total <= 0.0_dp) cycle
+
+         do a = 1, n_atoms
+            dtotal = 0.0_dp
+            do i = 1, n_atoms
+               dtotal = dtotal + dcell(:, a, i)
+            end do
+            dweights(:, a, k) = (dcell(:, a, owner(k))*total &
+                                 - cell(owner(k))*dtotal)/(total*total)
+         end do
+      end do
+   end subroutine becke_partition_derivatives
+
    pure subroutine size_adjustment(atomic_numbers, adjust, shift)
       !! Pairwise shift applied to mu so unequal atoms get unequal cells
       integer, intent(in) :: atomic_numbers(:)
@@ -247,5 +391,40 @@ contains
          s = 0.5_dp*(1.0_dp - z)
       end if
    end function stratmann_cutoff
+
+   pure function becke_cutoff_derivative(nu) result(ds)
+      !! d/dnu of `becke_cutoff`
+      !!
+      !! Each iteration is p(x) = x(3 - x^2)/2 with p'(x) = 3(1 - x^2)/2, so the
+      !! chain rule over the three of them is the product of p' at the value
+      !! going into each.
+      real(dp), intent(in) :: nu
+      real(dp) :: ds
+      real(dp) :: f0, f1, f2
+
+      f0 = nu
+      f1 = 0.5_dp*f0*(3.0_dp - f0*f0)
+      f2 = 0.5_dp*f1*(3.0_dp - f1*f1)
+
+      ds = -0.5_dp*(1.5_dp*(1.0_dp - f2*f2)) &
+           *(1.5_dp*(1.0_dp - f1*f1)) &
+           *(1.5_dp*(1.0_dp - f0*f0))
+   end function becke_cutoff_derivative
+
+   pure function stratmann_cutoff_derivative(mu) result(ds)
+      !! d/dmu of `stratmann_cutoff`, zero where the cutoff is flat
+      real(dp), intent(in) :: mu
+      real(dp) :: ds
+      real(dp) :: z, z2
+
+      if (mu <= -STRATMANN_A .or. mu >= STRATMANN_A) then
+         ds = 0.0_dp
+      else
+         z = mu/STRATMANN_A
+         z2 = z*z
+         ds = -0.5_dp*(1.0_dp/16.0_dp) &
+              *(35.0_dp + z2*(-105.0_dp + z2*(105.0_dp - 35.0_dp*z2)))/STRATMANN_A
+      end if
+   end function stratmann_cutoff_derivative
 
 end module mqc_dft_partition
