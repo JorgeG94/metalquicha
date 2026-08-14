@@ -15,7 +15,7 @@ module test_mqc_sapt
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, &
-                       sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2
+                       sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2, sapt_exch10
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use pic_blas_interfaces, only: pic_gemm
@@ -37,7 +37,8 @@ contains
                   new_unittest("sapt_monomer_ao_ordering", test_ordering), &
                   new_unittest("sapt_bsse_is_negative", test_bsse), &
                   new_unittest("sapt_elst10", test_elst10), &
-                  new_unittest("sapt_exch10_s2", test_exch10_s2) &
+                  new_unittest("sapt_exch10_s2", test_exch10_s2), &
+                  new_unittest("sapt_exch10_sinf", test_exch10) &
                   ]
    end subroutine collect_mqc_sapt_tests
 
@@ -262,6 +263,42 @@ contains
       call cache%destroy()
       call mols%destroy()
    end subroutine test_exch10_s2
+
+   subroutine test_exch10(error)
+      !! `Exch10` at S^inf -- the form the SAPT0 total actually uses
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_cache_t) :: cache
+      type(error_t) :: err
+      real(dp) :: e, e_s2
+
+      call water_dimer(mols, err)
+      call check(error,.not. err%has_error(), "building the molecules failed")
+      if (allocated(error)) return
+      call build_sapt_cache(mols, cache, err)
+      call check(error,.not. err%has_error(), "the SAPT cache failed")
+      if (allocated(error)) return
+
+      e = sapt_exch10(cache, err)
+      call check(error,.not. err%has_error(), "Exch10 failed")
+      if (allocated(error)) return
+      call check(error, e, 0.003241500408_dp, thr=1.0e-9_dp, &
+                 message="Exch10 disagrees with the PySCF reference")
+      if (allocated(error)) return
+
+      ! The S^2 form is the leading term of this one, so at a separation where
+      ! the overlap is small the two must be close and S^inf the larger. They
+      ! part company as the monomers approach -- 19% at 2 Angstrom on LiH.
+      e_s2 = sapt_exch10_s2(cache)
+      call check(error, e > e_s2, "S^inf exchange should exceed the S^2 form here")
+      if (allocated(error)) return
+      call check(error, abs(e - e_s2) < 0.05_dp*abs(e), &
+                 "S^2 and S^inf differ by far more than the overlap warrants")
+
+      call cache%destroy()
+      call mols%destroy()
+   end subroutine test_exch10
 
 end module test_mqc_sapt
 

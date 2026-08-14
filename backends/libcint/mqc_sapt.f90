@@ -26,6 +26,7 @@ module mqc_sapt
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, build_fock
    use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_syev
    implicit none
    private
 
@@ -35,6 +36,7 @@ module mqc_sapt
    public :: build_sapt_cache
    public :: sapt_elst10
    public :: sapt_exch10_s2
+   public :: sapt_exch10
 
    type :: sapt_molecules_t
       !! The dimer and its two counterpoise-corrected monomers
@@ -341,6 +343,111 @@ contains
 
       deallocate (ab, ba, t, u)
    end function sapt_exch10_s2
+
+   function sapt_exch10(c, error) result(energy)
+      !! `Exch10` at `S^inf` -- `sapt_jk_terms.py:169-237`
+      !!
+      !! **This is the one the SAPT0 total uses** (`sapt0.cc:231`).
+      !! `Exch10(S^2)` is computed and printed but only forms the ratio that
+      !! sSAPT0's exchange scaling needs, so a total built from the `S^2` form is
+      !! not comparable to any published SAPT0 number.
+      !!
+      !! The single-exchange approximation is lifted by inverting the overlap
+      !! metric over both monomers' occupied spaces:
+      !!
+      !!     Sab = [[1, S_AB], [S_AB^T, 1]]     Tmo = Sab^-1 - 1
+      !!
+      !! psi4 spells the inverse `Matrix::power(-1.0, 1e-14)`, an eigendecomposition
+      !! with a *relative* cutoff that zeroes small eigenvalues rather than
+      !! inverting them; that is what is done here.
+      type(sapt_cache_t), intent(in) :: c
+      type(error_t), intent(inout) :: error
+      real(dp) :: energy
+
+      real(dp), parameter :: EIGEN_FLOOR = 1.0e-14_dp
+      real(dp), allocatable :: sab(:, :), vals(:), work(:, :)
+      real(dp), allocatable :: t_a(:, :), t_b(:, :), t_ab(:, :), tmp(:, :)
+      real(dp), allocatable :: jt_a(:, :), kt_a(:, :), jt_ab(:, :), kt_ab(:, :)
+      integer :: na, nb, n, no, i, j, info
+      real(dp) :: biggest
+
+      energy = 0.0_dp
+      na = c%nocc_a
+      nb = c%nocc_b
+      no = na + nb
+      n = c%nao
+
+      ! S_AB over the occupied blocks, then the bordered metric.
+      allocate (tmp(n, na), sab(no, no))
+      call pic_gemm(c%s, c%c_a(:, 1:na), tmp)
+      sab = 0.0_dp
+      call pic_gemm(c%c_b(:, 1:nb), tmp, sab(na + 1:no, 1:na), transa="T")
+      sab(1:na, na + 1:no) = transpose(sab(na + 1:no, 1:na))
+      deallocate (tmp)
+      do i = 1, no
+         sab(i, i) = sab(i, i) + 1.0_dp
+      end do
+
+      ! Invert by eigendecomposition, mirroring psi4's `power(-1.0, cutoff)`.
+      allocate (vals(no), work(no, no))
+      work = sab
+      call pic_syev(work, vals, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "sapt: the occupied overlap metric "// &
+                        "could not be diagonalised")
+         return
+      end if
+      biggest = maxval(abs(vals))
+      do i = 1, no
+         if (abs(vals(i)) < EIGEN_FLOOR*biggest) then
+            vals(i) = 0.0_dp
+         else
+            vals(i) = 1.0_dp/vals(i)
+         end if
+      end do
+      do j = 1, no
+         do i = 1, no
+            sab(i, j) = sum(work(i, :)*vals(:)*work(j, :))
+         end do
+      end do
+      ! `- 1` on the diagonal. Note the induction path's S^inf branch builds the
+      ! same object WITHOUT this subtraction (`sapt_jk_terms.py:387-388` against
+      ! `:175-177`) under the same variable names -- do not share a helper.
+      do i = 1, no
+         sab(i, i) = sab(i, i) - 1.0_dp
+      end do
+      deallocate (vals)
+
+      ! Back to the AO basis.
+      allocate (t_a(n, n), t_b(n, n), t_ab(n, n), tmp(n, no))
+      call pic_gemm(c%c_a(:, 1:na), sab(1:na, 1:na), tmp(:, 1:na))
+      call pic_gemm(tmp(:, 1:na), c%c_a(:, 1:na), t_a, transb="T")
+      call pic_gemm(c%c_b(:, 1:nb), sab(na + 1:no, na + 1:no), tmp(:, 1:nb))
+      call pic_gemm(tmp(:, 1:nb), c%c_b(:, 1:nb), t_b, transb="T")
+      call pic_gemm(c%c_a(:, 1:na), sab(1:na, na + 1:no), tmp(:, 1:nb))
+      call pic_gemm(tmp(:, 1:nb), c%c_b(:, 1:nb), t_ab, transb="T")
+      deallocate (tmp, sab, work)
+
+      ! **`JT_AB`/`KT_AB` come from T_AB TRANSPOSED.** psi4 feeds the pair as
+      ! (C_left = Cocc_B, C_right = Cocc_A Tmo_AB), so the implied density is
+      ! `T_AB^T` (`sapt_jk_terms.py:201-202`), and the `.T` on `KT_AB` in the last
+      ! term below puts it back. Building `T_AB` here instead is a silent 55%
+      ! error and changes nothing else.
+      allocate (jt_a(n, n), kt_a(n, n), jt_ab(n, n), kt_ab(n, n))
+      call coulomb_exchange(c%eri, t_a, jt_a, kt_a)
+      call coulomb_exchange(c%eri, transpose(t_ab), jt_ab, kt_ab)
+
+      energy = -2.0_dp*sum(c%d_a*c%k_b)
+      energy = energy + 2.0_dp*sum(t_a*c%h_b)
+      energy = energy + 2.0_dp*sum(t_b*c%h_a)
+      energy = energy + 2.0_dp*sum(t_ab*(c%h_a + c%h_b))
+      energy = energy + 4.0_dp*sum(t_b*(jt_ab - 0.5_dp*kt_ab))
+      energy = energy + 4.0_dp*sum(t_a*(jt_ab - 0.5_dp*kt_ab))
+      energy = energy + 4.0_dp*sum(t_b*(jt_a - 0.5_dp*kt_a))
+      energy = energy + 4.0_dp*sum(t_ab*(jt_ab - 0.5_dp*transpose(kt_ab)))
+
+      deallocate (t_a, t_b, t_ab, jt_a, kt_a, jt_ab, kt_ab)
+   end function sapt_exch10
 
    pure function sapt_elst10(c) result(energy)
       !! `Elst10,r` -- the classical Coulomb interaction of the two unperturbed
