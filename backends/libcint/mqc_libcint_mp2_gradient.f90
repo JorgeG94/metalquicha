@@ -54,6 +54,11 @@ module mqc_libcint_mp2_gradient
    private
 
    public :: libcint_mp2_gradient
+   ! Shared with the fitted gradient next door, which differs from this one in
+   ! the two-particle term and the Lagrangian and in nothing else.
+   public :: gamma1_intermediates
+   public :: two_electron_potential
+   public :: two_electron_mp2_terms
 
    real(dp), parameter :: BLOCK_TARGET = 5.0e8_dp
       !! Bytes the blocked path aims to hold in its two live block arrays. Not a
@@ -836,7 +841,7 @@ contains
    end subroutine contract_gamma_eri
 
    subroutine two_electron_mp2_terms(mol, gamma_ao, hf_density, de2, vhf1, &
-                                     ish_lo, ish_hi, p_offset, eri_blk)
+                                     ish_lo, ish_hi, p_offset, eri_blk, with_gamma)
       !! The differentiated integrals, contracted twice
       !!
       !! Once against the two-particle density, which gives a gradient
@@ -854,9 +859,17 @@ contains
       !! symmetric in that pair, so `k` and `l` exchanged is a different
       !! contraction rather than the same number twice.
       type(libcint_molecule_t), intent(in) :: mol
-      real(dp), intent(in) :: gamma_ao(:, :, :, :), hf_density(:, :)
+      real(dp), intent(in) :: gamma_ao(:, :, :, :)
+         !! Required, but ignored when `with_gamma` is false -- pass a
+         !! zero-sized array then. Not optional, because an absent optional
+         !! cannot be named in a data-sharing clause and this one has to be:
+         !! routing it through a pointer instead was tried and still faulted.
+      real(dp), intent(in) :: hf_density(:, :)
       real(dp), intent(inout) :: de2(:, :)        !! (3, natm), accumulated into
       real(dp), intent(inout) :: vhf1(:, :, :, :)  !! (nao, nao, 3, natm), likewise
+      logical, intent(in), optional :: with_gamma
+         !! False skips the two-particle contraction and builds only the
+         !! reference-density matrices, which is what the fitted gradient wants.
       integer, intent(in), optional :: ish_lo, ish_hi
          !! Shells to differentiate over. Absent means all of them, which is the
          !! dense path; present is one block of the first index.
@@ -880,7 +893,7 @@ contains
       real(dp) :: g, g0
       real(dp), allocatable :: eri_local(:)
       real(dp), pointer :: eri_out(:, :, :, :)
-      logical :: want_eri
+      logical :: want_eri, want_gamma
 
       nao = mol%nao
       nbas = mol%nbas
@@ -908,6 +921,8 @@ contains
       ! cannot appear in a data-sharing clause, and naming it there costs more
       ! than the branch it saves.
       want_eri = present(eri_blk)
+      want_gamma = .true.
+      if (present(with_gamma)) want_gamma = with_gamma
       eri_out => null()
       if (want_eri) eri_out => eri_blk
 
@@ -920,7 +935,7 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(mol, gamma_ao, hf_density, de2, vhf1, opt, mx, nao, nbas, natm, &
-      !$omp           shell_atom, first, last, off, want_eri, eri_out) &
+      !$omp           shell_atom, first, last, off, want_eri, want_gamma, eri_out) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, g0, gi, shls, ia, buf, &
       !$omp            de_local, vhf_local, eri_local)
@@ -990,8 +1005,8 @@ contains
                                  idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
                                  g = buf(idx)
 
-                                 de_local(comp, ia) = de_local(comp, ia) &
-                                                      - 2.0_dp*g*gamma_ao(io + i - off, jo + j, ko + k, lo + l)
+                                 if (want_gamma) de_local(comp, ia) = de_local(comp, ia) &
+                                                                 - 2.0_dp*g*gamma_ao(io + i - off, jo + j, ko + k, lo + l)
 
                                  vhf_local(ko + k, lo + l, comp, ia) = &
                                     vhf_local(ko + k, lo + l, comp, ia) &
@@ -1011,8 +1026,8 @@ contains
                                  ! diagonal, where it is the quartet already
                                  ! counted.
                                  if (lsh /= ksh) then
-                                    de_local(comp, ia) = de_local(comp, ia) &
-                                                         - 2.0_dp*g*gamma_ao(io + i - off, jo + j, lo + l, ko + k)
+                                    if (want_gamma) de_local(comp, ia) = de_local(comp, ia) &
+                                                                 - 2.0_dp*g*gamma_ao(io + i - off, jo + j, lo + l, ko + k)
                                     vhf_local(lo + l, ko + k, comp, ia) = &
                                        vhf_local(lo + l, ko + k, comp, ia) &
                                        + g*hf_density(io + i, jo + j)
