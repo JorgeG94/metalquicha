@@ -1,0 +1,94 @@
+!! Where the time goes in the MP2 gradient
+program bench_mp2_gradient
+   !! **Warm, and on a wall clock.** The first call into this path resolves
+   !! symbols lazily and allocates for the first time, which on a small molecule
+   !! is most of what a cold timing measures -- an earlier benchmark in this
+   !! repository reported an 11x gap that was entirely that. And `cpu_time` sums
+   !! over threads, so a threaded routine appears to get *slower* as it speeds
+   !! up; `system_clock` is what answers the question being asked.
+   use pic_types, only: dp, int64
+   use mqc_error, only: error_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use omp_lib, only: omp_get_max_threads
+   use, intrinsic :: iso_fortran_env, only: output_unit
+   implicit none
+
+   integer, parameter :: N_DIM = 3
+
+   write (*, "(a,i0,a)") "== MP2 gradient, ", omp_get_max_threads(), " threads"
+
+   call bench_case("H2O / cc-pvdz", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "cc-pvdz", 10)
+
+   call bench_case("H2O / cc-pvtz", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "cc-pvtz", 10)
+
+   call bench_case("(H2O)2 / cc-pvdz", [8, 1, 1, 8, 1, 1], &
+                   ["O", "H", "H", "O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 0.0_dp, 5.6_dp, &
+                            0.0_dp, -1.4308_dp, 6.7078_dp, &
+                            0.0_dp, 1.4308_dp, 6.7078_dp], [N_DIM, 6]), &
+                   "cc-pvdz", 20)
+
+contains
+
+   subroutine bench_case(label, numbers, symbols, coords, basis, nelec)
+      character(len=*), intent(in) :: label
+      integer, intent(in) :: numbers(:)
+      character(len=*), intent(in) :: symbols(:)
+      real(dp), intent(in) :: coords(:, :)
+      character(len=*), intent(in) :: basis
+      integer, intent(in) :: nelec
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: error
+      real(dp), allocatable :: gradient(:, :)
+      integer(int64) :: t0, t1, rate
+      real(dp) :: seconds
+
+      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         return
+      end if
+      call run_libcint_rhf(mol, nelec, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         return
+      end if
+
+      ! Warm-up, discarded.
+      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                                gradient, error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         return
+      end if
+      deallocate (gradient)
+
+      call system_clock(t0, rate)
+      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                                gradient, error)
+      call system_clock(t1)
+      seconds = real(t1 - t0, dp)/real(rate, dp)
+
+      write (*, "(a,a,a,i0,a,f10.3,a,es12.4)") "  ", label, "  nao=", mol%nao, &
+         "   ", seconds, " s   |g|=", sqrt(sum(gradient**2))
+      flush (output_unit)
+      deallocate (gradient)
+      call mol%destroy()
+   end subroutine bench_case
+
+end program bench_mp2_gradient

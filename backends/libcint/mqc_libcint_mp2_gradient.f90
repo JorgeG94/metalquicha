@@ -40,6 +40,8 @@ module mqc_libcint_mp2_gradient
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks
    use mqc_libcint_mp2, only: transform_ovov
    use mqc_libcint_cphf, only: cphf_solve
+   use mqc_libcint_rhf, only: build_fock
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                    iprinv_deriv_at, DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use libcint_fortran, only: libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
@@ -50,6 +52,10 @@ module mqc_libcint_mp2_gradient
    private
 
    public :: libcint_mp2_gradient
+
+   real(dp), parameter :: IN_CORE_LIMIT = 4.0e9_dp
+      !! Bytes. The same ceiling `mqc_libcint_cphf` applies to its own stored
+      !! tensor, for the same reason and deliberately not a different number.
 
 contains
 
@@ -67,18 +73,20 @@ contains
       real(dp), allocatable :: eri_packed(:, :), eri(:, :, :, :)
       real(dp), allocatable :: ovov(:, :, :, :), t2(:, :, :, :)
       real(dp), allocatable :: doo(:, :), dvv(:, :), dm1mo(:, :), zeta(:, :)
-      real(dp), allocatable :: gamma_ao(:, :, :, :)
+      real(dp), allocatable, target :: gamma_ao(:, :, :, :)
       real(dp), allocatable :: imat_ao(:, :), imat(:, :), im1(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
       real(dp), allocatable :: hf_density(:, :), dm1(:, :), dm1_total(:, :), dm1p(:, :)
       real(dp), allocatable :: veff(:, :), xvo(:, :, :), zvec(:, :, :)
       real(dp), allocatable :: overlap(:, :), work(:, :), p_occ(:, :), vhf_s1occ(:, :)
+      real(dp), allocatable :: zero_h(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
       real(dp), allocatable :: vrinv(:, :, :), hcore_a(:, :, :)
       real(dp), allocatable :: de2(:, :), vhf1(:, :, :, :)
       real(dp), allocatable :: im1_t(:, :), work_t(:, :)
       integer, allocatable :: offsets(:), counts(:)
       integer :: n_ao, n_mo, n_o, n_v, frozen, iatom, comp, p0, p1, p, q, i, a
+      character(len=32) :: text, gigabytes
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -102,6 +110,24 @@ contains
       if (size(orbital_energies) /= n_mo) then
          call error%set(ERROR_VALIDATION, "the MP2 gradient: one orbital energy per "// &
                         "orbital")
+         return
+      end if
+
+      ! Refused rather than attempted. Two dense `n_ao^4` arrays are live at
+      ! once here -- the integrals and the two-particle density -- so the
+      ! ceiling arrives as an allocation failure or an out-of-memory kill, with
+      ! nothing to say which array or how far over it went. Blocking the
+      ! two-particle density over its first index is what lifts this; until
+      ! then the limit is worth stating in the one place that knows it.
+      if (2.0_dp*real(n_ao, dp)**4*8.0_dp > IN_CORE_LIMIT) then
+         write (text, "(i0)") n_ao
+         write (gigabytes, "(f0.1)") 2.0_dp*real(n_ao, dp)**4*8.0_dp/1.0e9_dp
+         call error%set(ERROR_VALIDATION, "the MP2 gradient stores the integrals and "// &
+                        "the two-particle density as dense n^4 arrays, which for "// &
+                        trim(text)//" basis functions is "//trim(gigabytes)//" GB. "// &
+                        "Blocking over the auxiliary index is not implemented, so this "// &
+                        "is refused rather than attempted. Use a smaller basis, or "// &
+                        "fragment the system.")
          return
       end if
 
@@ -146,7 +172,12 @@ contains
 
       allocate (dm1(n_ao, n_ao))
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
-      call veff_rhf(eri, dm1, n_ao, veff)
+      ! `build_fock` returns `H + J - K/2`; a zero core Hamiltonian leaves the
+      ! two-electron part alone, which is what a response wants. Threaded over
+      ! the target element, and already the hot routine of the CPHF solver.
+      allocate (zero_h(n_ao, n_ao), veff(n_ao, n_ao))
+      zero_h = 0.0_dp
+      call build_fock(zero_h, eri, dm1, veff)
       veff = 2.0_dp*veff
 
       allocate (xvo(n_v, n_o, 1))
@@ -161,15 +192,15 @@ contains
       ! gradient directly rather than quadratically -- there is no variational
       ! principle to make it second order here -- so the default 1e-9 leaves
       ! ~1e-7 in the answer, which is the size of the terms being checked.
-      ! In core, not screened. The solver's default is integral-direct with a
-      ! Schwarz bound, which is right where the response is one quantity among
-      ! many; here the screening error lands in the gradient undiluted -- it was
-      ! 4e-8 on water/cc-pVDZ, the whole disagreement with the reference. This
-      ! routine has already built the tensor for the Lagrangian, so asking for
-      ! it again costs nothing it has not already paid.
+      ! In core, not screened, and over the tensor already in hand. The
+      ! solver's default is integral-direct with a Schwarz bound, which is right
+      ! where the response is one quantity among many; here the screening error
+      ! would land in the gradient undiluted. Handing over the tensor built for
+      ! the Lagrangian rather than letting it build its own saves a second
+      ! identical pass over every integral -- 10% of this routine at cc-pVTZ.
       call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
                       error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
-                      in_core=.true.)
+                      eri_in=eri)
       if (error%has_error()) return
 
       dm1mo(n_o + 1:n_mo, 1:n_o) = dm1mo(n_o + 1:n_mo, 1:n_o) + zvec(:, :, 1)
@@ -207,7 +238,7 @@ contains
 
       allocate (p_occ(n_ao, n_ao))
       p_occ = matmul(c_occ, transpose(c_occ))
-      call veff_rhf(eri, dm1 + transpose(dm1), n_ao, veff)
+      call build_fock(zero_h, eri, dm1 + transpose(dm1), veff)
       allocate (vhf_s1occ(n_ao, n_ao))
       vhf_s1occ = matmul(p_occ, matmul(veff, p_occ))
 
@@ -364,19 +395,31 @@ contains
       !! `4 t2(i,j,a,b) - 2 t2(i,j,b,a)` is the coefficient the energy gives
       !! each integral, and the rest is four index transformations and the two
       !! symmetrisations that make the object contract correctly against
-      !! integrals that carry the permutational symmetry of the ERIs.
+      !! integrals carrying the permutational symmetry of the ERIs.
+      !!
+      !! **Two occupied transformations, as two matrix multiplies.** Written
+      !! elementwise -- one small `matmul` per `(p,q,r,s)` -- this was 65% of
+      !! the whole gradient, because `n_ao^4` is eleven million calls at
+      !! cc-pVTZ and each one costs more in call overhead than in arithmetic.
+      !! Contracted instead as `(n_ao x n_o) (n_o x n_ao^2 n_o)` and then
+      !! `(n_ao^3 x n_o) (n_o x n_ao)`, the same flops sit in two gemms.
+      !! Pointer bounds remapping is what lets the intermediate be read as
+      !! `(p, q r j)` by the first and `(p q r, j)` by the second without a
+      !! copy: the memory order is the same either way.
       !!
       !! `n_ao^4` and dense. That is what limits this to validation-sized
-      !! systems; blocking over the first index is the way out and is a
-      !! performance change, not a correctness one.
+      !! systems; blocking over the first index is the way out, and is a
+      !! separate change.
       real(dp), intent(in) :: t2(:, :, :, :)
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
       integer, intent(in) :: n_ao, n_o, n_v
-      real(dp), allocatable, intent(out) :: gamma_ao(:, :, :, :)
+      real(dp), allocatable, target, intent(out) :: gamma_ao(:, :, :, :)
 
-      real(dp), allocatable :: part(:, :, :, :), tmp(:, :), half(:, :, :, :)
-      real(dp), allocatable :: swap(:, :, :, :)
-      integer :: i, j, p, q, r, s
+      real(dp), allocatable :: part(:, :, :, :), tmp(:, :), half(:, :)
+      real(dp), allocatable, target :: xbuf(:)
+      real(dp), pointer :: x_first(:, :), x_second(:, :), gamma_flat(:, :)
+      real(dp) :: acc
+      integer :: i, j, p, q, r, s, col
 
       ! part(i,j,p,q) = sum_ab t2(i,j,a,b) C_vir(p,a) C_vir(q,b)
       allocate (part(n_o, n_o, n_ao, n_ao), tmp(n_v, n_ao))
@@ -388,111 +431,104 @@ contains
       end do
       deallocate (tmp)
 
-      ! half(i,p,q,j), the combination the energy weights each integral by
-      allocate (half(n_o, n_ao, n_ao, n_o))
+      ! half(i, (q, r, j)), the combination the energy weights each integral by
+      allocate (half(n_o, n_ao*n_ao*n_o))
+      !$omp parallel do collapse(3) default(none) &
+      !$omp    shared(half, part, n_o, n_ao) private(i, j, q, r, col)
       do j = 1, n_o
-         do q = 1, n_ao
-            do p = 1, n_ao
+         do r = 1, n_ao
+            do q = 1, n_ao
+               col = q + n_ao*(r - 1) + n_ao*n_ao*(j - 1)
                do i = 1, n_o
-                  half(i, p, q, j) = 4.0_dp*part(i, j, p, q) - 2.0_dp*part(i, j, q, p)
+                  half(i, col) = 4.0_dp*part(i, j, q, r) - 2.0_dp*part(i, j, r, q)
                end do
             end do
          end do
       end do
+      !$omp end parallel do
       deallocate (part)
 
+      allocate (xbuf(int(n_ao, kind=8)*n_ao*n_ao*n_o))
+      x_first(1:n_ao, 1:n_ao*n_ao*n_o) => xbuf
+      x_second(1:n_ao*n_ao*n_ao, 1:n_o) => xbuf
+
+      call pic_gemm(c_occ, half, x_first)
+      deallocate (half)
+
       allocate (gamma_ao(n_ao, n_ao, n_ao, n_ao))
-      gamma_ao = 0.0_dp
+      gamma_flat(1:n_ao*n_ao*n_ao, 1:n_ao) => gamma_ao
+      call pic_gemm(x_second, c_occ, gamma_flat, transb="T")
+      deallocate (xbuf)
+
+      ! The bra pair, symmetrised in place. This is the second of the two
+      ! transformation terms -- `sum_i C(q,i) half(i,p,r,j)` is the first one
+      ! with `p` and `q` exchanged -- so it needs no second contraction, only a
+      ! transpose-add on each `(r,s)` slice.
+      !
+      ! **The ket pair is deliberately not symmetrised.** Both consumers
+      ! contract this against something already symmetric in `(r,s)`: the
+      ! integrals for the Lagrangian, and the differentiated integrals for the
+      ! gradient, where the nabla sits on the bra and leaves `(rs|` alone. For a
+      ! symmetric partner `sum B(r,s) X(s,r)` equals `sum B(r,s) X(r,s)`, so
+      ! symmetrising here would compute a quantity that contracts to the same
+      ! number -- at the cost of a second `n_ao^4` array and a strided pass over
+      ! it. That pass, and the packing half it carried, cancel exactly against
+      ! each other.
+      !$omp parallel do collapse(2) default(none) &
+      !$omp    shared(gamma_ao, n_ao) private(p, q, r, s, acc)
       do s = 1, n_ao
          do r = 1, n_ao
             do q = 1, n_ao
-               do p = 1, n_ao
-                  gamma_ao(p, q, r, s) = sum(matmul(c_occ(p, :), half(:, q, r, :)) &
-                                             *c_occ(s, :)) &
-                                         + sum(matmul(c_occ(q, :), half(:, p, r, :)) &
-                                               *c_occ(s, :))
+               do p = 1, q - 1
+                  acc = gamma_ao(p, q, r, s) + gamma_ao(q, p, r, s)
+                  gamma_ao(p, q, r, s) = acc
+                  gamma_ao(q, p, r, s) = acc
                end do
+               gamma_ao(q, q, r, s) = 2.0_dp*gamma_ao(q, q, r, s)
             end do
          end do
       end do
-      deallocate (half)
+      !$omp end parallel do
 
-      ! The ket pair, symmetrised: the integrals cannot tell `(pq|rs)` from
-      ! `(pq|sr)`, so the density it contracts with must not either. Written as
-      ! a loop rather than `reshape(..., order=)`, which permutes the fill order
-      ! of the result and is not the array transpose it looks like.
-      allocate (swap(n_ao, n_ao, n_ao, n_ao))
-      do s = 1, n_ao
-         do r = 1, n_ao
-            swap(:, :, r, s) = gamma_ao(:, :, s, r)
-         end do
-      end do
-
-      ! And the half. Both contractions this feeds -- the Lagrangian and the
-      ! gradient -- are written over the full four-index range, where the
-      ! reference implementation sums a packed lower triangle whose diagonal it
-      ! halves. That packed sum is exactly half of the full one for a density
-      ! symmetric in the ket pair, so the factor belongs here rather than being
-      ! spelled twice downstream.
-      gamma_ao = 0.5_dp*(gamma_ao + swap)
-      deallocate (swap)
    end subroutine build_two_particle_density
 
    subroutine contract_gamma_eri(eri, gamma_ao, n_ao, imat_ao)
       !! `Imat(p,q) = sum_{u,r,s} (u p|r s) gamma(u,q,r,s)`
+      !!
+      !! `n_ao^5` either way; the question is only whether those flops sit in a
+      !! loop nest or in BLAS. Fixing the ket pair leaves an ordinary
+      !! `(n_ao x n_ao) (n_ao x n_ao)` product of two contiguous slices -- the
+      !! integrals are symmetric in `(u,p)`, so the slice can be read with
+      !! either index first -- and the outer pair parallelises with no
+      !! reduction beyond one accumulator per thread.
       real(dp), intent(in) :: eri(:, :, :, :), gamma_ao(:, :, :, :)
       integer, intent(in) :: n_ao
       real(dp), allocatable, intent(out) :: imat_ao(:, :)
 
-      integer :: u, p, q, r, s
-      real(dp) :: acc
+      real(dp), allocatable :: local(:, :)
+      integer :: r, s
 
       allocate (imat_ao(n_ao, n_ao))
       imat_ao = 0.0_dp
-      !$omp parallel do collapse(2) default(none) &
-      !$omp    shared(eri, gamma_ao, imat_ao, n_ao) private(u, p, q, r, s, acc)
-      do q = 1, n_ao
-         do p = 1, n_ao
-            acc = 0.0_dp
-            do s = 1, n_ao
-               do r = 1, n_ao
-                  do u = 1, n_ao
-                     acc = acc + eri(u, p, r, s)*gamma_ao(u, q, r, s)
-                  end do
-               end do
-            end do
-            imat_ao(p, q) = acc
+
+      !$omp parallel default(none) shared(eri, gamma_ao, imat_ao, n_ao) &
+      !$omp    private(r, s, local)
+      allocate (local(n_ao, n_ao))
+      local = 0.0_dp
+      !$omp do collapse(2) schedule(static)
+      do s = 1, n_ao
+         do r = 1, n_ao
+            call pic_gemm(eri(:, :, r, s), gamma_ao(:, :, r, s), local, &
+                          beta=1.0_dp)
          end do
       end do
-      !$omp end parallel do
+      !$omp end do
+      !$omp critical
+      imat_ao = imat_ao + local
+      !$omp end critical
+      deallocate (local)
+      !$omp end parallel
    end subroutine contract_gamma_eri
-
-   subroutine veff_rhf(eri, density, n_ao, veff)
-      !! `J - K/2` from a stored ERI tensor and a symmetric density
-      real(dp), intent(in) :: eri(:, :, :, :), density(:, :)
-      integer, intent(in) :: n_ao
-      real(dp), allocatable, intent(inout) :: veff(:, :)
-
-      integer :: p, q, r, s
-      real(dp) :: acc
-
-      if (.not. allocated(veff)) allocate (veff(n_ao, n_ao))
-      !$omp parallel do collapse(2) default(none) &
-      !$omp    shared(eri, density, veff, n_ao) private(p, q, r, s, acc)
-      do q = 1, n_ao
-         do p = 1, n_ao
-            acc = 0.0_dp
-            do s = 1, n_ao
-               do r = 1, n_ao
-                  acc = acc + eri(p, q, r, s)*density(r, s) &
-                        - 0.5_dp*eri(p, r, s, q)*density(r, s)
-               end do
-            end do
-            veff(p, q) = acc
-         end do
-      end do
-      !$omp end parallel do
-   end subroutine veff_rhf
 
    subroutine two_electron_mp2_terms(mol, gamma_ao, hf_density, de2, vhf1)
       !! The differentiated integrals, contracted twice
@@ -503,10 +539,14 @@ contains
       !! afterwards. One quartet loop rather than two because the integrals are
       !! the expensive part and both contractions want the same ones.
       !!
-      !! No permutational symmetry is used at all. The differentiated quartet
-      !! keeps only the ket-pair exchange, and taking even that requires the
-      !! two-particle density to be symmetrised to match -- worth doing, and a
-      !! separate change from getting the terms right.
+      !! **One permutation survives, and it is used.** A differentiated quartet
+      !! has none of the eightfold symmetry of an ordinary one: the nabla
+      !! distinguishes the first index from the second and the bra from the
+      !! ket. What is untouched is the ket pair, `(∇i j|k l) = (∇i j|l k)`, so
+      !! this walks `l <= k` and writes the transposed contribution out rather
+      !! than doubling -- the two-particle density is deliberately not
+      !! symmetric in that pair, so `k` and `l` exchanged is a different
+      !! contraction rather than the same number twice.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: gamma_ao(:, :, :, :), hf_density(:, :)
       real(dp), allocatable, intent(out) :: de2(:, :)        !! (3, natm)
@@ -570,7 +610,7 @@ contains
             do ksh = 1, nbas
                dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
                ko = mol%shell_offset(ksh)
-               do lsh = 1, nbas
+               do lsh = 1, ksh
                   dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
                   lo = mol%shell_offset(lsh)
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
@@ -607,6 +647,27 @@ contains
                                  vhf_local(io + i, lo + l, comp, ia) = &
                                     vhf_local(io + i, lo + l, comp, ia) &
                                     - 0.5_dp*g*hf_density(jo + j, ko + k)
+
+                                 ! The transposed ket pair: the same integral,
+                                 ! and not the same contraction. Skipped on the
+                                 ! diagonal, where it is the quartet already
+                                 ! counted.
+                                 if (lsh /= ksh) then
+                                    de_local(comp, ia) = de_local(comp, ia) &
+                                                         - 2.0_dp*g*gamma_ao(io + i, jo + j, lo + l, ko + k)
+                                    vhf_local(lo + l, ko + k, comp, ia) = &
+                                       vhf_local(lo + l, ko + k, comp, ia) &
+                                       + g*hf_density(io + i, jo + j)
+                                    vhf_local(lo + l, jo + j, comp, ia) = &
+                                       vhf_local(lo + l, jo + j, comp, ia) &
+                                       - 0.5_dp*g*hf_density(io + i, ko + k)
+                                    vhf_local(io + i, jo + j, comp, ia) = &
+                                       vhf_local(io + i, jo + j, comp, ia) &
+                                       + g*hf_density(lo + l, ko + k)
+                                    vhf_local(io + i, ko + k, comp, ia) = &
+                                       vhf_local(io + i, ko + k, comp, ia) &
+                                       - 0.5_dp*g*hf_density(jo + j, lo + l)
+                                 end if
                               end do
                            end do
                         end do

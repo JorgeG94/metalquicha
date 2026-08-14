@@ -135,7 +135,8 @@ contains
    end subroutine hessian_destroy
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
-                         response, error, max_iter, tol, iterations, in_core, mo_rhs)
+                         response, error, max_iter, tol, iterations, in_core, mo_rhs, &
+                         eri_in)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
@@ -158,6 +159,11 @@ contains
          !! Store every integral instead of recomputing them. Default is direct.
          !! Present and true is the reference path, not the production one -- see
          !! the note where it is used.
+      real(dp), intent(in), optional, target :: eri_in(:, :, :, :)
+         !! An already-built two-electron tensor, used in place of building one.
+         !! Implies `in_core`. A caller that has the tensor for its own reasons --
+         !! the MP2 gradient contracts it against the two-particle density --
+         !! would otherwise pay for a second identical build.
       real(dp), intent(in), optional :: mo_rhs(:, :, :)
          !! The right-hand side already in the occupied-virtual MO block,
          !! `(n_vir, n_occ, n_perturbations)`. The Z-vector equation of an MP2
@@ -165,7 +171,9 @@ contains
          !! assembled in the MO basis, not a one-electron operator, and there is
          !! no AO matrix it is the transform of.
 
-      real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :), bounds(:, :)
+      real(dp), allocatable, target :: eri_own(:, :, :, :)
+      real(dp), pointer :: eri(:, :, :, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), bounds(:, :)
       real(dp), allocatable :: gaps(:, :), rhs(:, :), x(:, :), r(:, :), z(:, :)
       real(dp), allocatable :: p(:, :), ap(:, :), work(:, :), zero_h(:, :)
       real(dp) :: rz, rz_new, pap, target_norm, step, use_tol
@@ -238,12 +246,21 @@ contains
       ! against, exactly as `run_libcint_rhf` keeps its own `in_core`.
       direct = .true.
       if (present(in_core)) direct = .not. in_core
-      if (direct) then
+      if (present(eri_in)) direct = .false.
+      if (present(eri_in)) then
+         ! Pointed at, not copied: the tensor is the largest object either side
+         ! of this call has, and duplicating it to pass it would cost more than
+         ! the solve.
+         eri => eri_in
+         allocate (bounds(0, 0))
+      else if (direct) then
          call schwarz_bounds(mol, bounds, error)
          if (error%has_error()) return
-         allocate (eri(0, 0, 0, 0))
+         allocate (eri_own(0, 0, 0, 0))
+         eri => eri_own
       else
-         call mol%eris(eri)
+         call mol%eris(eri_own)
+         eri => eri_own
          allocate (bounds(0, 0))
       end if
       allocate (zero_h(n_ao, n_ao))
@@ -317,7 +334,9 @@ contains
       end do
 
       if (present(iterations)) iterations = worst
-      deallocate (eri, bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
+      nullify (eri)
+      if (allocated(eri_own)) deallocate (eri_own)
+      deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
    end subroutine cphf_solve
 
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
