@@ -79,6 +79,7 @@ module mqc_libcint_fmo
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use pic_mpi_lib, only: comm_t, allreduce, MPI_SUM
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_vdw_radius
    use mqc_physical_fragment, only: system_geometry_t
@@ -306,7 +307,7 @@ module mqc_libcint_fmo
 
 contains
 
-   subroutine run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error)
+   subroutine run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       !! Run FMO2 over a system already partitioned into whole molecules
       !!
       !! `owner(i)` is the fragment index of atom `i`, numbered 1..n_frag with
@@ -322,6 +323,11 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(fmo_result_t), intent(out) :: res
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+         !! Spread the fragment work over these ranks. Every rank runs this same
+         !! routine on the same geometry and assembles only what it is given, so
+         !! nothing heavy is ever sent -- only the densities and energies that
+         !! the next pass genuinely needs, which are small.
 
       type(fragment_t), allocatable :: frag(:)
       integer :: n_atoms, n_frag, i
@@ -343,7 +349,7 @@ contains
       all_converged = .true.
 
       call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
-                              all_converged, error)
+                              all_converged, error, comm)
       if (error%has_error()) return
 
       do i = 1, n_frag
@@ -356,7 +362,7 @@ contains
       res%monomer_sum = sum(res%monomer_energy)
 
       call calculate_polymers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
-                              all_converged, error)
+                              all_converged, error, comm)
       if (error%has_error()) return
 
       res%energy = res%monomer_sum + res%pair_sum + res%response_sum
@@ -932,7 +938,7 @@ contains
       end if
    end subroutine solve_fragment
 
-   subroutine calculate_monomers(frag, n_frag, z, coords, opts, res, all_converged, error)
+   subroutine calculate_monomers(frag, n_frag, z, coords, opts, res, all_converged, error, comm)
       !! The outer SCF: every monomer in the field of all the others, iterated
       !!
       !! One pass solves every fragment against the field the previous pass
@@ -952,6 +958,7 @@ contains
       type(fmo_result_t), intent(inout) :: res
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
       real(dp), allocatable :: q_all(:)
       real(dp) :: e_sum, e_prev
@@ -961,10 +968,12 @@ contains
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
       do i = 1, n_frag
+         if (.not. mine(i, comm)) cycle
          call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, all_converged, &
                              error, bare=.true.)
          if (error%has_error()) return
       end do
+      call exchange_monomers(frag, n_frag, comm)
 
       if (opts%esp == "none") then
          res%converged = .true.
@@ -977,11 +986,16 @@ contains
          call all_charges(frag, n_frag, size(z), opts, q_all, error)
          if (error%has_error()) return
 
+         ! Independent within a pass: every fragment reads the densities the
+         ! last pass left and none reads this pass's, so who computes which is
+         ! free. The exchange after is the barrier.
          do i = 1, n_frag
+            if (.not. mine(i, comm)) cycle
             call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, &
                                 all_converged, error)
             if (error%has_error()) return
          end do
+         call exchange_monomers(frag, n_frag, comm)
 
          e_sum = sum(frag(:)%energy)
          res%outer_iterations = outer
@@ -1000,7 +1014,7 @@ contains
                      "moving by "//to_char(res%outer_change)//" Hartree")
    end subroutine calculate_monomers
 
-   subroutine calculate_polymers(frag, n_frag, z, coords, opts, res, all_converged, error)
+   subroutine calculate_polymers(frag, n_frag, z, coords, opts, res, all_converged, error, comm)
       !! Every pair, in the field the converged monomers make
       !!
       !! Independent of each other and of everything else once the monomers have
@@ -1015,21 +1029,117 @@ contains
       type(fmo_result_t), intent(inout) :: res
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
-      real(dp), allocatable :: q_all(:)
-      integer :: i, j
+      real(dp), allocatable :: q_all(:), totals(:)
+      integer :: i, j, pair_index
 
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
 
+      ! One bag of tasks, no barrier inside it: nothing here feeds anything
+      ! else here. Quadratic in the fragment count where the monomer loop is
+      ! linear, so this is the half worth spreading.
+      pair_index = 0
       do i = 1, n_frag
          do j = i + 1, n_frag
+            pair_index = pair_index + 1
+            if (.not. mine(pair_index, comm)) cycle
             call pair_term(frag, n_frag, i, j, z, coords, q_all, opts, res, &
                            all_converged, error)
             if (error%has_error()) return
          end do
       end do
+
+      if (spread_over(comm)) then
+         ! Each rank accumulated only its own pairs, so the totals are partial
+         ! sums and add up to the whole.
+         allocate (totals(2 + n_frag*n_frag))
+         totals(1) = res%pair_sum
+         totals(2) = res%response_sum
+         totals(3:) = reshape(res%pair_correction, [n_frag*n_frag])
+         call allreduce(comm, totals, size(totals), MPI_SUM)
+         res%pair_sum = totals(1)
+         res%response_sum = totals(2)
+         res%pair_correction = reshape(totals(3:), [n_frag, n_frag])
+      end if
    end subroutine calculate_polymers
+
+   function spread_over(comm) result(many)
+      !! Whether there is more than one rank to spread over
+      type(comm_t), intent(in), optional :: comm
+      logical :: many
+
+      many = .false.
+      if (.not. present(comm)) return
+      many = comm%size() > 1
+   end function spread_over
+
+   function mine(task, comm) result(owned)
+      !! Whether this rank owns a task, round robin
+      !!
+      !! Static rather than handed out on demand, because FMO's tasks are all
+      !! much of a size -- every monomer is one fragment, every pair is two --
+      !! so the imbalance a task server exists to absorb is not there to absorb.
+      integer, intent(in) :: task
+      type(comm_t), intent(in), optional :: comm
+      logical :: owned
+
+      owned = .true.
+      if (.not. spread_over(comm)) return
+      owned = mod(task - 1, comm%size()) == comm%rank()
+   end function mine
+
+   subroutine exchange_monomers(frag, n_frag, comm)
+      !! Share what each rank computed this pass with every other
+      !!
+      !! A sum-reduce over buffers that are zero where a rank computed nothing,
+      !! which makes it a gather without needing displacements for fragments of
+      !! different sizes. Densities, energies and charges only -- small, and the
+      !! only things the next pass reads.
+      type(fragment_t), intent(inout) :: frag(:)
+      integer, intent(in) :: n_frag
+      type(comm_t), intent(in), optional :: comm
+
+      real(dp), allocatable :: buf(:)
+      integer :: f, at, n, total
+
+      if (.not. spread_over(comm)) return
+
+      total = 0
+      do f = 1, n_frag
+         total = total + frag(f)%nao*frag(f)%nao + 2 + size(frag(f)%atoms)
+      end do
+      allocate (buf(total), source=0.0_dp)
+
+      at = 0
+      do f = 1, n_frag
+         n = frag(f)%nao*frag(f)%nao
+         if (mine(f, comm)) then
+            if (allocated(frag(f)%density)) buf(at + 1:at + n) = reshape(frag(f)%density, [n])
+            buf(at + n + 1) = frag(f)%energy
+            buf(at + n + 2) = frag(f)%energy_total
+            if (allocated(frag(f)%charges)) then
+               buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = frag(f)%charges
+            end if
+         end if
+         at = at + n + 2 + size(frag(f)%atoms)
+      end do
+
+      call allreduce(comm, buf, size(buf), MPI_SUM)
+
+      at = 0
+      do f = 1, n_frag
+         n = frag(f)%nao*frag(f)%nao
+         if (.not. allocated(frag(f)%density)) allocate (frag(f)%density(frag(f)%nao, frag(f)%nao))
+         frag(f)%density = reshape(buf(at + 1:at + n), [frag(f)%nao, frag(f)%nao])
+         frag(f)%energy = buf(at + n + 1)
+         frag(f)%energy_total = buf(at + n + 2)
+         if (.not. allocated(frag(f)%charges)) allocate (frag(f)%charges(size(frag(f)%atoms)))
+         frag(f)%charges = buf(at + n + 3:at + n + 2 + size(frag(f)%atoms))
+         at = at + n + 2 + size(frag(f)%atoms)
+      end do
+   end subroutine exchange_monomers
 
    subroutine inner_scf(f, mol, opts, error, u, all_converged)
       !! The inner SCF: this fragment's orbitals, against a fixed external field
