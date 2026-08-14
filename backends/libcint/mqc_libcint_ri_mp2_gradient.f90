@@ -44,8 +44,9 @@ module mqc_libcint_ri_mp2_gradient
    use mqc_libcint_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                    iprinv_deriv_at, three_centre_deriv, &
                                    two_centre_deriv, DERIV_OVLP, DERIV_KIN, DERIV_NUC
+   use mqc_libcint_direct, only: schwarz_bounds
    use mqc_libcint_mp2_gradient, only: gamma1_intermediates, two_electron_potential, &
-                                       two_electron_mp2_terms
+                                       two_electron_mp2_terms, IN_CORE_LIMIT
    implicit none
    private
 
@@ -54,7 +55,7 @@ module mqc_libcint_ri_mp2_gradient
 contains
 
    subroutine libcint_ri_mp2_gradient(mol, aux, coeff, orbital_energies, n_occ, &
-                                      gradient, error, n_frozen)
+                                      gradient, error, n_frozen, force_direct)
       !! dE(RI-MP2)/dR for a closed-shell reference, in Hartree/Bohr
       type(libcint_molecule_t), intent(in) :: mol
       type(libcint_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
@@ -64,6 +65,11 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
+      logical, intent(in), optional :: force_direct
+         !! Recompute the reference integrals rather than storing them, whatever
+         !! the size. The check harness passes it so both paths are exercised on
+         !! a case small enough to take either -- a threshold nothing ever
+         !! crosses in a test is a threshold nothing ever tests.
 
       real(dp), allocatable :: bia(:, :, :), bia_raw(:, :, :), metric(:, :), jm12(:, :)
       real(dp), allocatable :: t2(:, :, :, :), xbar(:, :, :, :)
@@ -83,6 +89,7 @@ contains
       integer :: n_ao, n_mo, n_o, n_v, n_aux, frozen
       integer :: i, j, a, b, p, q, iatom, comp, p0, p1
       real(dp) :: denom
+      logical :: dense
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -101,6 +108,21 @@ contains
          call error%set(ERROR_VALIDATION, "the RI-MP2 gradient needs both occupied "// &
                         "and virtual orbitals")
          return
+      end if
+
+      ! Stored or recomputed, for the *reference* integrals only -- the ones the
+      ! Z-vector's operator and the reference potential are built from. Those
+      ! stay exact whatever the correlation is fitted with, because an `ri-mp2`
+      ! energy fits nothing in its SCF, so the response has to be the exact
+      ! reference's or it answers a question nobody asked.
+      !
+      ! What is fitted is not what makes this decision. Storing `n_ao^4` doubles
+      ! would put the ceiling of a method chosen to avoid `n_ao^4` back where RI
+      ! removed it, so past the limit the same integrals are recomputed instead
+      ! and nothing about the answer changes.
+      dense = real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT
+      if (present(force_direct)) then
+         if (force_direct) dense = .false.
       end if
 
       allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
@@ -200,14 +222,20 @@ contains
       allocate (hf_density(n_ao, n_ao))
       hf_density = 2.0_dp*matmul(c_occ, transpose(c_occ))
 
-      call mol%eris(eri)
-      allocate (bounds(0, 0))
+      if (dense) then
+         call mol%eris(eri)
+         allocate (bounds(0, 0))
+      else
+         allocate (eri(0, 0, 0, 0))
+         call schwarz_bounds(mol, bounds, error)
+         if (error%has_error()) return
+      end if
       allocate (zero_h(n_ao, n_ao), veff(n_ao, n_ao))
       zero_h = 0.0_dp
 
       allocate (dm1(n_ao, n_ao))
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
-      call two_electron_potential(.true., mol, eri, bounds, zero_h, dm1, veff, error)
+      call two_electron_potential(dense, mol, eri, bounds, zero_h, dm1, veff, error)
       if (error%has_error()) return
       veff = 2.0_dp*veff
 
@@ -219,9 +247,19 @@ contains
          end do
       end do
 
-      call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
-                      error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
-                      eri_in=eri)
+      ! Tighter than the solver's default, for the reason the conventional
+      ! gradient gives: the Z-vector residual enters the answer directly rather
+      ! than quadratically. Handing over the tensor when there is one saves a
+      ! second identical pass; when there is not, the solver goes direct with
+      ! the same Schwarz bound the potentials above used.
+      if (dense) then
+         call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
+                         error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
+                         eri_in=eri)
+      else
+         call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
+                         error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200)
+      end if
       if (error%has_error()) return
 
       dm1mo(n_o + 1:n_mo, 1:n_o) = dm1mo(n_o + 1:n_mo, 1:n_o) + zvec(:, :, 1)
@@ -252,7 +290,7 @@ contains
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
       allocate (p_occ(n_ao, n_ao))
       p_occ = matmul(c_occ, transpose(c_occ))
-      call two_electron_potential(.true., mol, eri, bounds, zero_h, &
+      call two_electron_potential(dense, mol, eri, bounds, zero_h, &
                                   dm1 + transpose(dm1), veff, error)
       if (error%has_error()) return
       allocate (vhf_s1occ(n_ao, n_ao))

@@ -66,7 +66,7 @@ module mqc_libcint_mp2_gradient
       !! one-particle quantities sit outside it -- but it is what sets the block
       !! size, and it is the number to raise on a machine with room.
 
-   real(dp), parameter :: IN_CORE_LIMIT = 4.0e9_dp
+   real(dp), parameter, public :: IN_CORE_LIMIT = 4.0e9_dp
       !! Bytes. The same ceiling `mqc_libcint_cphf` applies to its own stored
       !! tensor, for the same reason and deliberately not a different number.
 

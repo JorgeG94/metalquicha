@@ -78,7 +78,7 @@ contains
       integer, intent(in) :: nelec
       integer, intent(inout) :: n_bad
 
-      real(dp), allocatable :: analytic(:, :), numeric(:, :)
+      real(dp), allocatable :: analytic(:, :), direct(:, :), numeric(:, :)
       real(dp) :: translation(3)
       real(dp) :: worst, energy
       integer :: natm, ia, ic
@@ -93,11 +93,31 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, analytic, error)
+      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, analytic, &
+                       .false., error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
          return
+      end if
+
+      ! The same gradient with the reference integrals recomputed instead of
+      ! stored. Past the in-core limit that is the only path there is, and the
+      ! limit is far above anything a test case reaches -- so it is forced here
+      ! rather than waited for. The two differ only in where the integrals came
+      ! from, so they have to agree to rounding, not to a tolerance.
+      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, direct, &
+                       .true., error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL (direct): ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+      write (*, "(a,es14.4)") "  stored against recomputed integrals:       ", &
+         maxval(abs(analytic - direct))
+      if (maxval(abs(analytic - direct)) > 1.0e-10_dp) then
+         write (*, "(a)") "  FAIL: the two integral paths disagree"
+         n_bad = n_bad + 1
       end if
 
       call numeric_gradient(numbers, symbols, coords, basis, aux_basis, nelec, &
@@ -146,13 +166,14 @@ contains
    end subroutine check_case
 
    subroutine gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, &
-                          gradient, error)
+                          gradient, force_direct, error)
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis, aux_basis
       integer, intent(in) :: nelec
       real(dp), allocatable, intent(out) :: gradient(:, :)
+      logical, intent(in) :: force_direct
       type(error_t), intent(inout) :: error
 
       type(libcint_molecule_t) :: mol, aux
@@ -165,7 +186,8 @@ contains
       call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
       call libcint_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                   nelec/2, gradient, error)
+                                   nelec/2, gradient, error, &
+                                   force_direct=force_direct)
       call mol%destroy()
       call aux%destroy()
    end subroutine gradient_at
