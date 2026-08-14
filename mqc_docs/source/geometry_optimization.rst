@@ -140,15 +140,47 @@ optimization with cutoffs warns instead, and the caution above applies to it.
 Coordinate systems
 ------------------
 
-``cartesian`` is the default and always works. ``hdlc`` builds internal coordinates
-within each monomer and keeps Cartesians between them, which is the right shape for
-a molecular cluster; the residues it needs are this program's own monomers, so
-nothing has to be perceived.
+``cartesian`` is the default and always works. ``hdlc`` -- hybrid delocalised
+internal coordinates -- builds internal coordinates within each *residue* and keeps
+Cartesians between them, which is the right shape for a molecular cluster. The
+hybrid is of the two coordinate types, not of two levels of hierarchy.
+
+**The residue partition is HDLC's definition, not a tuning knob.** A fragmented
+calculation already has the grouping and its monomers are used directly. An
+unfragmented one perceives its own connectivity and makes each covalently connected
+molecule a residue, so a water dimer optimizes as two residues without the deck
+having to request a fragmented energy it did not want. A single molecule comes back
+as one residue, because that is what its connectivity says.
+
+That perception matters more than it looks. Giving HDLC one residue for a system
+that comes apart makes it build bonds, angles and torsions across a gap where there
+is no bond; the primitive set is deficient, the delocalised basis built from it is
+badly conditioned, and the optimizer does not fail -- it *converges early*. A water
+dimer that reports success at 20 steps and -10.148997 Hartree with one residue goes
+to 23 steps and -10.149007 with two, a hundredth of a millihartree lower. Nothing
+in the output said the first answer was worse, which is why the residue count is
+now reported at ``Verbose``::
+
+    optimizer residues: 2 for 6 atoms
 
 ``dlc`` puts every atom in one residue, which suits a single connected molecule and
 **fails on a cluster** -- there is no connected internal-coordinate system spanning
 molecules that are not bonded to each other, and DL-FIND says so
 (``cyclic failure at residue 1``).
+
+``hdlc-tc`` and ``dlc-tc`` are the *total connection* variants. They build the
+primitive internals of a residue from every atom pair in it rather than from the
+perceived bonds, which is the answer when the connectivity is not what a
+covalent-radius rule says it is: a weakly bound complex the perception splits, an
+ion pair it merges, a transition state where a bond is half formed. ``dlc-tc``
+therefore does not fail on a cluster the way plain ``dlc`` does -- the total
+connection supplies the coordinates no bond provides.
+
+The cost is quadratic in residue size where a bond list is linear, so ``hdlc-tc``
+is for systems whose residues are small and ``dlc-tc``, which totally connects
+everything at once, for systems that are small altogether. Prefer ``hdlc``: the
+perceived partition is right far more often than not, and this is the escape hatch
+for when it is not.
 
 For a well-behaved starting structure the difference is modest -- a water trimer
 takes 20 evaluations in Cartesians against 16 in HDLC. Far from the minimum, the
@@ -212,7 +244,8 @@ All optional. Everything under ``keywords.optimization``:
      - Longest step the optimizer may take, Bohr
    * - ``coordinates``
      - ``cartesian``
-     - ``cartesian``, ``hdlc`` or ``dlc``. ``coordinate_system`` is accepted too
+     - ``cartesian``, ``hdlc``, ``hdlc-tc``, ``dlc`` or ``dlc-tc``.
+       ``coordinate_system`` is accepted too
    * - ``algorithm``
      - ``lbfgs``
      - ``lbfgs``, ``cg`` or ``sd``. ``optimizer`` is accepted too

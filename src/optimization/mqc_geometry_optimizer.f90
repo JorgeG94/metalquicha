@@ -27,6 +27,7 @@ module mqc_geometry_optimizer
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
                                   coordinates_to_string, algorithm_to_string
    use mqc_physical_fragment, only: system_geometry_t, to_angstrom
+   use mqc_bond_perception, only: connected_components
    use mqc_config_adapter, only: driver_config_t
    use mqc_config_types, only: bond_t
    use mqc_resources, only: resources_t
@@ -134,7 +135,8 @@ contains
             ! was refused there and nobody was listening; optimizing in
             ! whatever the default happened to be would be worse.
             call error%set(ERROR_VALIDATION, &
-                           "Unknown keywords.optimization.coordinates. Use cartesian, hdlc or dlc.")
+                           "Unknown keywords.optimization.coordinates. Use cartesian, "// &
+                           "hdlc, hdlc-tc, dlc or dlc-tc.")
          else if (config%optimization%algorithm == OPT_ALGO_UNKNOWN) then
             call error%set(ERROR_VALIDATION, &
                            "Unknown keywords.optimization.algorithm. Use lbfgs, cg, sd or prfo.")
@@ -164,6 +166,12 @@ contains
          allocate (atomic_numbers(n_atoms), source=sys_geom%element_numbers)
          allocate (residues(n_atoms))
          call build_residues(sys_geom, residues)
+         ! Reported because HDLC's residues decide the coordinate system, and a
+         ! wrong partition does not fail -- it converges early somewhere slightly
+         ! above the minimum. One residue for a system that visibly comes apart
+         ! is the sign of that, and it is invisible unless the count is printed.
+         call logger%verbose("  optimizer residues: "//to_char(maxval(residues))// &
+                             " for "//to_char(n_atoms)//" atoms")
 
          ! One gradient before handing over, to find out whether this method
          ! can produce one at all.
@@ -664,15 +672,36 @@ contains
       !! knows that grouping -- it is the monomers -- so HDLC gets the
       !! chemically right answer for free rather than having to perceive it.
       !!
-      !! Everything in one residue when there is only one monomer, which is
-      !! what an ordinary molecule wants.
+      !! **A residue is a connectivity question, not a fragmentation one.** When
+      !! the calculation is fragmented the monomers already answer it, so those
+      !! are used. When it is not, the answer used to be "one residue" -- and for
+      !! a single molecule that is right, but for a cluster it is wrong in a way
+      !! that only shows up in the optimizer: HDLC then tries to build bonds,
+      !! angles and torsions across a gap where there is no bond, and struggles
+      !! on exactly the disjoint systems it should handle well.
+      !!
+      !! So an unfragmented system perceives its own connectivity. A water dimer
+      !! optimizes as two residues without the deck having to request a
+      !! fragmented energy it did not want, and a single molecule still comes
+      !! back as one residue because that is what its connectivity says.
+      !!
+      !! This changes no energy. It changes which internal coordinates the
+      !! optimizer works in, which moves the path taken and not the minimum
+      !! arrived at.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(out) :: residues(:)
 
-      integer :: imon, k, atom
+      integer, allocatable :: component(:)
+      integer :: imon, k, atom, n_components
 
       residues = 1
-      if (sys_geom%n_monomers <= 1) return
+      if (sys_geom%n_monomers <= 1) then
+         if (size(residues) < 2) return
+         call connected_components(sys_geom, component, n_components)
+         ! One component is an ordinary molecule and already has its answer.
+         if (n_components > 1) residues = component(1:size(residues))
+         return
+      end if
 
       if (allocated(sys_geom%fragment_atoms) .and. allocated(sys_geom%fragment_sizes)) then
          do imon = 1, sys_geom%n_monomers

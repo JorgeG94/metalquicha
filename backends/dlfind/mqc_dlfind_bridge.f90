@@ -27,6 +27,7 @@ module mqc_dlfind_bridge
    use pic_io, only: to_char
    use mqc_optimizer_types, only: optimizer_settings_t, energy_gradient_i, step_callback_i, &
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_HDLC, OPT_COORDS_DLC, &
+                                  OPT_COORDS_HDLC_TC, OPT_COORDS_DLC_TC, &
                                   OPT_ALGO_SD, OPT_ALGO_CG, OPT_ALGO_LBFGS, OPT_ALGO_PRFO
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    implicit none
@@ -41,6 +42,8 @@ module mqc_dlfind_bridge
    integer(c_int), parameter :: DLF_COORDS_CARTESIAN = 0
    integer(c_int), parameter :: DLF_COORDS_HDLC = 1
    integer(c_int), parameter :: DLF_COORDS_DLC = 3
+   integer(c_int), parameter :: DLF_COORDS_HDLC_TC = 2
+   integer(c_int), parameter :: DLF_COORDS_DLC_TC = 4
 
    integer(c_int), parameter :: DLF_OPT_SD = 0
    integer(c_int), parameter :: DLF_OPT_CG = 2
@@ -483,6 +486,10 @@ contains
          icoord = DLF_COORDS_HDLC
       case (OPT_COORDS_DLC)
          icoord = DLF_COORDS_DLC
+      case (OPT_COORDS_HDLC_TC)
+         icoord = DLF_COORDS_HDLC_TC
+      case (OPT_COORDS_DLC_TC)
+         icoord = DLF_COORDS_DLC_TC
       case default
          icoord = DLF_COORDS_CARTESIAN
       end select

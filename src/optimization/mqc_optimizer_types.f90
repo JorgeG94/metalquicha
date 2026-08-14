@@ -26,6 +26,7 @@ module mqc_optimizer_types
    public :: energy_gradient_i
    public :: step_callback_i
    public :: OPT_COORDS_UNKNOWN, OPT_COORDS_CARTESIAN, OPT_COORDS_HDLC, OPT_COORDS_DLC
+   public :: OPT_COORDS_HDLC_TC, OPT_COORDS_DLC_TC
    public :: OPT_ALGO_UNKNOWN, OPT_ALGO_SD, OPT_ALGO_CG, OPT_ALGO_LBFGS, OPT_ALGO_PRFO
    public :: coordinates_from_string, coordinates_to_string
    public :: algorithm_from_string, algorithm_to_string
@@ -40,6 +41,22 @@ module mqc_optimizer_types
    integer, parameter :: OPT_COORDS_CARTESIAN = 1
    integer, parameter :: OPT_COORDS_HDLC = 2  !! Hybrid delocalised internal coordinates
    integer, parameter :: OPT_COORDS_DLC = 3   !! Delocalised internal coordinates
+   integer, parameter :: OPT_COORDS_HDLC_TC = 4
+      !! HDLC over a total connection scheme
+      !!
+      !! The primitive internals of a residue are built from every atom pair in
+      !! it rather than from the perceived bonds. That is what makes it useful on
+      !! a system whose connectivity is not what a covalent-radius rule says: a
+      !! weakly bound complex the perception splits, an ion pair it merges, a
+      !! transition state where a bond is half formed. The cost is quadratic in
+      !! residue size where a bond list is linear, so it is for small residues.
+   integer, parameter :: OPT_COORDS_DLC_TC = 5
+      !! DLC over a total connection scheme
+      !!
+      !! One residue, totally connected. Unlike plain `dlc` this does not fail on
+      !! a cluster -- the total connection supplies the coordinates spanning the
+      !! molecules that no bond provides -- but it pays that quadratic cost over
+      !! the whole system rather than within a residue.
 
    integer, parameter :: OPT_ALGO_UNKNOWN = 0
    integer, parameter :: OPT_ALGO_SD = 1      !! Steepest descent
@@ -139,6 +156,10 @@ contains
          coordinates = OPT_COORDS_HDLC
       case ("dlc", "internal")
          coordinates = OPT_COORDS_DLC
+      case ("hdlc-tc", "hdlc_tc", "hdlctc")
+         coordinates = OPT_COORDS_HDLC_TC
+      case ("dlc-tc", "dlc_tc", "dlctc")
+         coordinates = OPT_COORDS_DLC_TC
       case default
          coordinates = OPT_COORDS_UNKNOWN
       end select
@@ -156,6 +177,10 @@ contains
          text = "hdlc"
       case (OPT_COORDS_DLC)
          text = "dlc"
+      case (OPT_COORDS_HDLC_TC)
+         text = "hdlc-tc"
+      case (OPT_COORDS_DLC_TC)
+         text = "dlc-tc"
       case default
          text = "unknown"
       end select
