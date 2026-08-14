@@ -36,6 +36,7 @@ module mqc_config_types
    public :: molecule_t         !! One molecule of a multi-molecule input
    public :: input_fragment_t   !! One fragment definition, as written in the input
    public :: bond_t             !! Re-exported so consumers need only this module
+   public :: guess_step_t       !! One rung of a basis-set-projection ladder
 
    type :: input_fragment_t
       !! Input fragment definition with charge, multiplicity, and atom indices

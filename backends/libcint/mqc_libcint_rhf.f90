@@ -55,6 +55,7 @@ module mqc_libcint_rhf
    integer, parameter, public :: SCF_GUESS_GWH = 1    !! Generalized Wolfsberg-Helmholz
    integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
+   integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
 
    !> The empirical scale on the GWH off-diagonal. 1.75 is the usual value and
    !> the one cuEST uses; the two backends have to start from the same matrix or
@@ -415,7 +416,7 @@ contains
          fock = h
       case (SCF_GUESS_GWH)
          call guess_fock(s, h, fock)
-      case (SCF_GUESS_SAC, SCF_GUESS_SAD)
+      case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. present(guess_density)) then
             call error%set(ERROR_VALIDATION, "RHF: an atomic guess was asked for but no "// &
                            "guess density was supplied")
@@ -671,7 +672,7 @@ contains
       case (SCF_GUESS_GWH)
          call guess_fock(s, h, fock_a)
          fock_b = fock_a
-      case (SCF_GUESS_SAC, SCF_GUESS_SAD)
+      case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. (present(guess_density_alpha) .and. present(guess_density_beta))) then
             call error%set(ERROR_VALIDATION, "UHF: an atomic guess was asked for but no "// &
                            "guess densities were supplied")

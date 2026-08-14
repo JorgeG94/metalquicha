@@ -38,7 +38,9 @@ module mqc_libcint_projection
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
+   use mqc_config_types, only: guess_step_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, build_libcint_molecule
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, SCF_GUESS_SAD, SCF_GUESS_GWH
    use libcint_fortran, only: LIBCINT_BAS_SLOTS, LIBCINT_PTR_EXP, &
                               LIBCINT_PTR_COEFF, LIBCINT_PTR_ENV_START
    implicit none
@@ -47,6 +49,7 @@ module mqc_libcint_projection
    public :: merge_basis_sets
    public :: cross_overlap
    public :: project_occupied
+   public :: climb_basis_ladder
 
    !> Overlap eigenvalues below this are dropped when inverting.
    !>
@@ -57,6 +60,96 @@ module mqc_libcint_projection
    real(dp), parameter :: OVERLAP_FLOOR = 1.0e-7_dp
 
 contains
+
+   subroutine climb_basis_ladder(steps, atomic_numbers, symbols, coords, nelec, &
+                                 mol_target, density, error, verbose)
+      !! Converge each basis in turn, projecting forward, and return a density
+      !! in the target basis
+      !!
+      !! Each rung starts from the previous rung's density rather than from a
+      !! core guess, so the ladder gets cheaper as it climbs even though the
+      !! bases get larger: the first SCF is the only one starting from nothing.
+      !!
+      !! The target basis is not a rung. `mol_target` is already built by the
+      !! caller and the last projection lands in it, so a two-step ladder plus a
+      !! model basis is three SCFs, the last of which is the caller's.
+      type(guess_step_t), intent(in) :: steps(:)
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: symbols(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: nelec
+      type(libcint_molecule_t), intent(in) :: mol_target
+      real(dp), allocatable, intent(out) :: density(:, :)
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: verbose
+
+      type(libcint_molecule_t), allocatable :: rungs(:)
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: carried(:, :)
+      integer :: i, n, n_occ
+      logical :: talk
+
+      talk = .false.
+      if (present(verbose)) talk = verbose
+      n = size(steps)
+      n_occ = nelec/2
+
+      if (mod(nelec, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "basis projection guess: the ladder converges "// &
+                        "closed-shell SCFs and this fragment has an odd electron count")
+         return
+      end if
+
+      ! Every rung is built up front. The last one is needed after its SCF to
+      ! project into the next, and a molecule that has been destroyed cannot be
+      ! asked for its overlap.
+      allocate (rungs(n))
+      do i = 1, n
+         call build_libcint_molecule(atomic_numbers, symbols, coords, steps(i)%basis, &
+                                     rungs(i), error)
+         if (error%has_error()) then
+            call error%set(ERROR_VALIDATION, "basis projection guess: rung "//to_char(i)// &
+                           " ("//trim(steps(i)%basis)//"): "//error%get_message())
+            return
+         end if
+      end do
+
+      do i = 1, n
+         if (i == 1) then
+            ! GWH rather than SAD for the bottom rung: SAD needs a density handed
+            ! to it and there is none yet, and this basis is small enough that
+            ! the difference between the two starting points costs an iteration
+            ! rather than a minute.
+            call run_libcint_rhf(rungs(i), nelec, steps(i)%maxiter, steps(i)%tolerance, &
+                                 steps(i)%tolerance, .false., scf, error, &
+                                 guess=SCF_GUESS_GWH)
+         else
+            call run_libcint_rhf(rungs(i), nelec, steps(i)%maxiter, steps(i)%tolerance, &
+                                 steps(i)%tolerance, .false., scf, error, &
+                                 guess=SCF_GUESS_SAD, guess_density=carried)
+         end if
+         if (error%has_error()) return
+         ! A rung that does not converge is not fatal. It is a starting point for
+         ! the next one, and a half-converged density from a smaller basis is
+         ! still closer to the answer than a core guess -- which is the whole
+         ! reason for climbing. Reported, because a ladder that never converges
+         ! anywhere is worth knowing about.
+         if (talk) then
+            call logger%info("  guess rung "//to_char(i)//": "//trim(steps(i)%basis)// &
+                             ", "//to_char(rungs(i)%nao)//" functions, "// &
+                             to_char(scf%iterations)//" iterations"// &
+                             merge("                ", " (not converged)", scf%converged))
+         end if
+
+         if (i < n) then
+            if (allocated(carried)) deallocate (carried)
+            call project_occupied(rungs(i + 1), rungs(i), scf%orbitals, n_occ, carried, error)
+         else
+            call project_occupied(mol_target, rungs(i), scf%orbitals, n_occ, density, error)
+         end if
+         if (error%has_error()) return
+      end do
+   end subroutine climb_basis_ladder
 
    subroutine merge_basis_sets(mol_target, mol_small, merged, error)
       !! One molecule carrying both shell lists, target first

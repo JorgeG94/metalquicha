@@ -23,7 +23,8 @@ module mqc_libcint_bridge
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
-                              SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+                              SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
+   use mqc_libcint_projection, only: climb_basis_ladder
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
@@ -345,6 +346,31 @@ contains
          result%has_error = .true.
          call mol%destroy()
          return
+      end if
+
+      if (guess_kind == SCF_GUESS_PROJ) then
+         if (.not. allocated(settings%guess_steps)) then
+            call result%error%set(ERROR_VALIDATION, "guess 'basis_set_projection' needs "// &
+                                  "keywords.guess.subscf.steps; the schema normally "// &
+                                  "refuses a deck without them, so this settings object "// &
+                                  "was built by something other than the JSON reader")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         call climb_basis_ladder(settings%guess_steps, fragment%element_numbers, symbols, &
+                                 fragment%coordinates, fragment%nelec, mol, guess_total, &
+                                 guess_error, verbose=settings%verbose)
+         if (guess_error%has_error()) then
+            ! The same reasoning the atomic guess uses: a guess that cannot be
+            ! built is a reason to start somewhere else, not to fail the
+            ! calculation. Loud, because the run is now doing something other
+            ! than what the deck asked for.
+            call logger%warning("basis projection guess: "//guess_error%get_message()// &
+                                " -- falling back to sad")
+            guess_kind = SCF_GUESS_SAD
+            if (allocated(guess_total)) deallocate (guess_total)
+         end if
       end if
 
       if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD) then
