@@ -173,6 +173,32 @@ Gradient Calculations
 - **Units**: Hartree/Bohr
 - **Applications**: Geometry optimization, molecular dynamics
 
+On the CPU backend the analytic gradient covers Hartree-Fock restricted and
+unrestricted, density-fitted restricted Hartree-Fock, Kohn-Sham through LDA,
+GGA and hybrid GGA, and MP2 over a restricted reference. What is refused rather
+than approximated, and why:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Case
+     - Why it is refused
+   * - Meta-GGA functionals
+     - The kinetic energy density brings a term of its own, which is not built
+   * - Range-separated hybrids
+     - Needs a second exchange derivative at the screened omega
+   * - Density-fitted MP2
+     - Would differentiate an energy nothing computed
+   * - Frozen-core MP2
+     - The relaxed density gains occupied-frozen and virtual-frozen blocks
+   * - Spin-scaled MP2 (SCS, SOS)
+     - The amplitudes enter the response equations, where the two spin cases
+       are no longer separable, so the scaled gradient is not the unscaled one
+       rescaled
+   * - Coupled cluster
+     - Needs the Lambda amplitudes, which are not implemented
+
 Geometry Optimization
 ---------------------
 

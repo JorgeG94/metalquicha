@@ -135,17 +135,17 @@ contains
    end subroutine hessian_destroy
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
-                         response, error, max_iter, tol, iterations, in_core)
+                         response, error, max_iter, tol, iterations, in_core, mo_rhs)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)     !! (n_mo), Hartree
       integer, intent(in) :: n_occ
-      real(dp), intent(in) :: perturbations(:, :, :)
+      real(dp), intent(in), optional :: perturbations(:, :, :)
          !! One-electron perturbation operators in the **AO** basis,
          !! `(n_ao, n_ao, n_perturbations)`. AO rather than MO because every
          !! caller has them that way and the occupied-virtual transform is this
-         !! routine's business.
+         !! routine's business. Exactly one of this and `mo_rhs` is given.
       real(dp), allocatable, intent(out) :: response(:, :, :)
          !! `U_ai` per perturbation, `(n_vir, n_occ, n_perturbations)`.
       type(error_t), intent(inout) :: error
@@ -158,6 +158,12 @@ contains
          !! Store every integral instead of recomputing them. Default is direct.
          !! Present and true is the reference path, not the production one -- see
          !! the note where it is used.
+      real(dp), intent(in), optional :: mo_rhs(:, :, :)
+         !! The right-hand side already in the occupied-virtual MO block,
+         !! `(n_vir, n_occ, n_perturbations)`. The Z-vector equation of an MP2
+         !! gradient arrives this way: its right-hand side is a Lagrangian
+         !! assembled in the MO basis, not a one-electron operator, and there is
+         !! no AO matrix it is the transform of.
 
       real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :), bounds(:, :)
       real(dp), allocatable :: gaps(:, :), rhs(:, :), x(:, :), r(:, :), z(:, :)
@@ -181,12 +187,25 @@ contains
          call error%set(ERROR_VALIDATION, "CPHF: one orbital energy per orbital")
          return
       end if
-      if (size(perturbations, 1) /= n_ao .or. size(perturbations, 2) /= n_ao) then
-         call error%set(ERROR_VALIDATION, "CPHF: the perturbations are not n_ao square")
+      if (present(perturbations) .eqv. present(mo_rhs)) then
+         call error%set(ERROR_VALIDATION, "CPHF: give either AO perturbations or an "// &
+                        "MO-basis right-hand side, not both and not neither")
          return
       end if
-
-      n_pert = size(perturbations, 3)
+      if (present(perturbations)) then
+         if (size(perturbations, 1) /= n_ao .or. size(perturbations, 2) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "CPHF: the perturbations are not n_ao square")
+            return
+         end if
+         n_pert = size(perturbations, 3)
+      else
+         if (size(mo_rhs, 1) /= n_vir .or. size(mo_rhs, 2) /= n_occ) then
+            call error%set(ERROR_VALIDATION, "CPHF: the right-hand side is not "// &
+                           "(n_vir, n_occ)")
+            return
+         end if
+         n_pert = size(mo_rhs, 3)
+      end if
       limit = DEFAULT_MAX_ITER
       if (present(max_iter)) limit = max_iter
       use_tol = DEFAULT_TOL
@@ -237,9 +256,14 @@ contains
       worst = 0
 
       do ipert = 1, n_pert
-         ! h_ai, the perturbation in the occupied-virtual block.
-         call pic_gemm(perturbations(:, :, ipert), c_occ, work)
-         call pic_gemm(c_vir, work, rhs, transa="T")
+         ! h_ai, the perturbation in the occupied-virtual block -- or that
+         ! block itself, when the caller assembled it there.
+         if (present(perturbations)) then
+            call pic_gemm(perturbations(:, :, ipert), c_occ, work)
+            call pic_gemm(c_vir, work, rhs, transa="T")
+         else
+            rhs = mo_rhs(:, :, ipert)
+         end if
          rhs = -rhs
 
          target_norm = sqrt(sum(rhs*rhs))
