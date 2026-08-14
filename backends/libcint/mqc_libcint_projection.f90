@@ -1,0 +1,284 @@
+!! A converged small-basis density, carried into a larger basis as a starting point
+module mqc_libcint_projection
+   !! Converge the cheap basis first, then start the expensive one from it.
+   !!
+   !! For a system that converges badly, the cost is rarely the iterations in the
+   !! target basis -- it is that a core or GWH guess is far enough from the answer
+   !! that the iteration wanders. An STO-3G calculation on the same geometry costs
+   !! almost nothing and lands close to the right density, and that density can be
+   !! carried across.
+   !!
+   !! **What is projected is the occupied orbitals, not the density.** The obvious
+   !! thing is
+   !!
+   !!     D_B = S_BB^-1 S_BA D_A S_AB S_BB^-1
+   !!
+   !! which is one expression and wrong in a way that matters: the result is not
+   !! idempotent and its trace against S is not the electron count, so the first
+   !! Fock matrix is built from something that is not a density. Projecting the
+   !! occupied orbitals and re-orthonormalising them gives a D that is idempotent
+   !! and has exactly the right trace by construction, which is worth the extra
+   !! eigendecomposition of an n_occ-square matrix.
+   !!
+   !!     C~ = S_BB^-1 S_BA C_A(occ)      project
+   !!     M  = C~^T S_BB C~               overlap of the projected orbitals
+   !!     C  = C~ M^-1/2                  re-orthonormalise
+   !!     D  = 2 C C^T
+   !!
+   !! **The cross-basis overlap needs both bases in one molecule.** libcint
+   !! computes integrals over shells of the molecule it is given, so S_BA -- rows
+   !! in the target basis, columns in the small one -- does not exist for either
+   !! molecule alone. `merge_basis_sets` builds a third whose shell list is the
+   !! target's followed by the small one's over the same atoms, and the wanted
+   !! block is the off-diagonal corner of its overlap. This is what PySCF's
+   !! `intor_cross` does and for the same reason.
+   use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_syev
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
+   use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
+   use libcint_fortran, only: LIBCINT_BAS_SLOTS, LIBCINT_PTR_EXP, &
+                              LIBCINT_PTR_COEFF, LIBCINT_PTR_ENV_START
+   implicit none
+   private
+
+   public :: merge_basis_sets
+   public :: cross_overlap
+   public :: project_occupied
+
+   !> Overlap eigenvalues below this are dropped when inverting.
+   !>
+   !> The same cutoff `build_orthogonalizer` uses, and for the same reason: a
+   !> near-dependent target basis has directions the small basis cannot inform,
+   !> and amplifying them by dividing through a tiny eigenvalue produces a guess
+   !> worse than the one it replaces.
+   real(dp), parameter :: OVERLAP_FLOOR = 1.0e-7_dp
+
+contains
+
+   subroutine merge_basis_sets(mol_target, mol_small, merged, error)
+      !! One molecule carrying both shell lists, target first
+      !!
+      !! Only the shells are concatenated. Both molecules describe the same atoms
+      !! at the same coordinates, and `molecule_build` writes those into `env`
+      !! before any basis data at offsets that depend on the atom count alone --
+      !! so the target's `atm` already points at coordinates that are correct for
+      !! the merged molecule, and the small basis contributes exponents and
+      !! coefficients only.
+      type(libcint_molecule_t), intent(in) :: mol_target, mol_small
+      type(libcint_molecule_t), intent(out) :: merged
+      type(error_t), intent(inout) :: error
+
+      integer :: coord_end, tail, shift, ish, ns, nt
+
+      if (mol_target%natm /= mol_small%natm) then
+         call error%set(ERROR_VALIDATION, "basis projection: the two bases describe "// &
+                        "different numbers of atoms")
+         return
+      end if
+      if (maxval(abs(mol_target%coords - mol_small%coords)) > 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "basis projection: the two bases are on "// &
+                        "different geometries")
+         return
+      end if
+      ! One angular form for the whole merged molecule, because libcint chooses it
+      ! per call rather than per shell -- the same constraint `cartesian` carries
+      ! for a single molecule, which here means the two bases have to agree.
+      if (mol_target%cartesian .neqv. mol_small%cartesian) then
+         call error%set(ERROR_VALIDATION, "basis projection: one basis is Cartesian "// &
+                        "and the other spherical; a merged molecule can only be one "// &
+                        "or the other")
+         return
+      end if
+
+      nt = mol_target%nbas
+      ns = mol_small%nbas
+      coord_end = LIBCINT_PTR_ENV_START + 3*mol_target%natm
+      tail = size(mol_small%env) - coord_end          !! small basis data only
+      shift = size(mol_target%env) - coord_end        !! where it lands in `merged`
+
+      merged%natm = mol_target%natm
+      merged%nbas = nt + ns
+      merged%cartesian = mol_target%cartesian
+      merged%atm = mol_target%atm
+      merged%charges = mol_target%charges
+      merged%coords = mol_target%coords
+
+      allocate (merged%env(size(mol_target%env) + tail))
+      merged%env(1:size(mol_target%env)) = mol_target%env
+      merged%env(size(mol_target%env) + 1:) = mol_small%env(coord_end + 1:)
+
+      allocate (merged%bas(LIBCINT_BAS_SLOTS, merged%nbas))
+      merged%bas(:, 1:nt) = mol_target%bas
+      merged%bas(:, nt + 1:) = mol_small%bas
+      do ish = nt + 1, merged%nbas
+         merged%bas(LIBCINT_PTR_EXP, ish) = merged%bas(LIBCINT_PTR_EXP, ish) + shift
+         merged%bas(LIBCINT_PTR_COEFF, ish) = merged%bas(LIBCINT_PTR_COEFF, ish) + shift
+      end do
+
+      allocate (merged%shell_offset(merged%nbas + 1))
+      merged%shell_offset(1) = 0
+      do ish = 1, merged%nbas
+         merged%shell_offset(ish + 1) = merged%shell_offset(ish) + &
+                                        shell_dim(merged%cartesian, ish - 1, merged%bas)
+      end do
+      merged%nao = merged%shell_offset(merged%nbas + 1)
+
+      if (merged%nao /= mol_target%nao + mol_small%nao) then
+         call error%set(ERROR_VALIDATION, "basis projection: the merged molecule has "// &
+                        to_char(merged%nao)//" functions where the two bases have "// &
+                        to_char(mol_target%nao + mol_small%nao)//" between them")
+         return
+      end if
+   end subroutine merge_basis_sets
+
+   subroutine cross_overlap(mol_target, mol_small, s_target, s_cross, error)
+      !! S_BB and S_BA in one pass over the merged molecule
+      !!
+      !! Both come out of the same matrix, so they are returned together: the
+      !! projection needs each of them and computing the merged overlap twice to
+      !! hand them back separately would be the only cost of pretending they were
+      !! independent.
+      type(libcint_molecule_t), intent(in) :: mol_target, mol_small
+      real(dp), allocatable, intent(out) :: s_target(:, :)   !! (n_B, n_B)
+      real(dp), allocatable, intent(out) :: s_cross(:, :)    !! (n_B, n_A)
+      type(error_t), intent(inout) :: error
+
+      type(libcint_molecule_t) :: merged
+      real(dp), allocatable :: s_all(:, :)
+      integer :: nb, na
+
+      call merge_basis_sets(mol_target, mol_small, merged, error)
+      if (error%has_error()) return
+
+      call merged%overlap(s_all)
+      nb = mol_target%nao
+      na = mol_small%nao
+      s_target = s_all(1:nb, 1:nb)
+      s_cross = s_all(1:nb, nb + 1:nb + na)
+   end subroutine cross_overlap
+
+   subroutine project_occupied(mol_target, mol_small, coeff_small, n_occ, density, error)
+      !! A target-basis density from the small basis's occupied orbitals
+      !!
+      !! The result is idempotent against S_BB and its trace against S_BB is
+      !! exactly 2*n_occ, both by construction rather than by luck -- which is
+      !! what makes it usable as a density rather than merely density-shaped.
+      type(libcint_molecule_t), intent(in) :: mol_target, mol_small
+      real(dp), intent(in) :: coeff_small(:, :)   !! (n_A, n_mo_A), occupied first
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: density(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: s_target(:, :), s_cross(:, :)
+      real(dp), allocatable :: rhs(:, :), proj(:, :), m(:, :), work(:, :)
+      real(dp), allocatable :: vec(:, :), val(:), half(:, :)
+      integer :: nb, i, kept
+
+      if (n_occ < 1) then
+         call error%set(ERROR_VALIDATION, "basis projection: no occupied orbitals to project")
+         return
+      end if
+      if (size(coeff_small, 2) < n_occ) then
+         call error%set(ERROR_VALIDATION, "basis projection: fewer orbitals than occupied ones")
+         return
+      end if
+
+      call cross_overlap(mol_target, mol_small, s_target, s_cross, error)
+      if (error%has_error()) return
+      nb = mol_target%nao
+
+      ! S_BA C_A(occ)
+      allocate (rhs(nb, n_occ))
+      call pic_gemm(s_cross, coeff_small(:, 1:n_occ), rhs)
+
+      ! S_BB^-1 applied through its eigendecomposition rather than a solve, so the
+      ! near-null directions of a nearly dependent target basis can be dropped
+      ! instead of divided by.
+      call invert_overlap(s_target, work, kept, error)
+      if (error%has_error()) return
+      if (kept < n_occ) then
+         call error%set(ERROR_VALIDATION, "basis projection: the target basis keeps only "// &
+                        to_char(kept)//" independent directions, fewer than the "// &
+                        to_char(n_occ)//" occupied orbitals being projected")
+         return
+      end if
+      allocate (proj(nb, n_occ))
+      call pic_gemm(work, rhs, proj)
+
+      ! M = C~^T S_BB C~, the overlap the projected orbitals have among themselves.
+      ! It is the identity only if the projection happened to be exact.
+      allocate (m(n_occ, n_occ))
+      deallocate (rhs)
+      allocate (rhs(nb, n_occ))
+      call pic_gemm(s_target, proj, rhs)
+      call pic_gemm(proj, rhs, m, transa="T")
+
+      ! C = C~ M^-1/2, by eigendecomposition. M is small -- occupied square -- and
+      ! positive definite unless the projection collapsed two orbitals onto one,
+      ! which the floor below catches.
+      allocate (vec(n_occ, n_occ), val(n_occ))
+      vec = m
+      call pic_syev(vec, val, jobz="V", uplo="U")
+      if (minval(val) <= OVERLAP_FLOOR) then
+         call error%set(ERROR_VALIDATION, "basis projection: the projected orbitals are "// &
+                        "linearly dependent; the small basis cannot represent this "// &
+                        "occupied space")
+         return
+      end if
+      ! M^-1/2 = V d^-1/2 V^T, so exactly one of the two factors carries the
+      ! eigenvalue scaling. Scaling `vec` in place and then multiplying it by
+      ! itself would put d^-1/2 in twice and produce M^-1 -- which is wrong in a
+      ! way the self-projection check cannot see, because there M is the identity
+      ! and every power of it is the same matrix.
+      allocate (half(n_occ, n_occ))
+      do i = 1, n_occ
+         half(:, i) = vec(:, i)/sqrt(val(i))
+      end do
+      deallocate (m)
+      allocate (m(n_occ, n_occ))
+      call pic_gemm(half, vec, m, transb="T")    !! M^-1/2
+
+      deallocate (rhs)
+      allocate (rhs(nb, n_occ))
+      call pic_gemm(proj, m, rhs)                !! C = C~ M^-1/2
+
+      allocate (density(nb, nb))
+      call pic_gemm(rhs, rhs, density, transb="T")
+      density = 2.0_dp*density
+   end subroutine project_occupied
+
+   subroutine invert_overlap(overlap, inverse, kept, error)
+      !! S^-1 with near-null directions dropped rather than amplified
+      real(dp), intent(in) :: overlap(:, :)
+      real(dp), allocatable, intent(out) :: inverse(:, :)
+      integer, intent(out) :: kept
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: vec(:, :), val(:), scaled(:, :)
+      integer :: n, i
+
+      n = size(overlap, 1)
+      allocate (vec(n, n), val(n), scaled(n, n), inverse(n, n))
+      vec = overlap
+      call pic_syev(vec, val, jobz="V", uplo="U")
+
+      kept = 0
+      scaled = 0.0_dp
+      do i = 1, n
+         if (val(i) > OVERLAP_FLOOR) then
+            kept = kept + 1
+            scaled(:, i) = vec(:, i)/val(i)
+         end if
+      end do
+      if (kept == 0) then
+         call error%set(ERROR_VALIDATION, "basis projection: the target overlap has no "// &
+                        "eigenvalue above the linear-dependence floor")
+         return
+      end if
+      call pic_gemm(scaled, vec, inverse, transb="T")
+   end subroutine invert_overlap
+
+end module mqc_libcint_projection
