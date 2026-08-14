@@ -15,7 +15,8 @@ module test_mqc_sapt
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, &
-                       sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2, sapt_exch10
+                       sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2, sapt_exch10, &
+                       sapt_induction, sapt_terms_t, sapt_disp20, sapt_exch_disp20
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use pic_blas_interfaces, only: pic_gemm
@@ -38,7 +39,10 @@ contains
                   new_unittest("sapt_bsse_is_negative", test_bsse), &
                   new_unittest("sapt_elst10", test_elst10), &
                   new_unittest("sapt_exch10_s2", test_exch10_s2), &
-                  new_unittest("sapt_exch10_sinf", test_exch10) &
+                  new_unittest("sapt_exch10_sinf", test_exch10), &
+                  new_unittest("sapt_induction", test_induction), &
+                  new_unittest("sapt_disp20", test_disp20), &
+                  new_unittest("sapt_exch_disp20", test_exch_disp20) &
                   ]
    end subroutine collect_mqc_sapt_tests
 
@@ -299,6 +303,118 @@ contains
       call cache%destroy()
       call mols%destroy()
    end subroutine test_exch10
+
+   subroutine test_induction(error)
+      !! `Ind20` and `Exch-Ind20`, uncoupled and coupled
+      !!
+      !! The uncoupled pair is asserted as well as the coupled one, because it
+      !! needs no response solver: if it passes and the coupled one does not, the
+      !! fault is in `cphf_solve`'s conventions rather than in the contraction,
+      !! and the two are otherwise indistinguishable from one failing number.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_cache_t) :: cache
+      type(sapt_terms_t) :: t
+      type(error_t) :: err
+
+      call water_dimer(mols, err)
+      call check(error,.not. err%has_error(), "building the molecules failed")
+      if (allocated(error)) return
+      call build_sapt_cache(mols, cache, err)
+      call check(error,.not. err%has_error(), "the SAPT cache failed")
+      if (allocated(error)) return
+
+      call sapt_induction(mols, cache, t, err)
+      call check(error,.not. err%has_error(), "induction failed")
+      if (allocated(error)) return
+
+      call check(error, t%ind20_u, -0.000954737579_dp, thr=1.0e-9_dp, &
+                 message="Ind20,u disagrees with the PySCF reference")
+      if (allocated(error)) return
+      call check(error, t%exch_ind20_u, 0.000805018637_dp, thr=1.0e-9_dp, &
+                 message="Exch-Ind20,u disagrees with the PySCF reference")
+      if (allocated(error)) return
+      call check(error, t%ind20_r, -0.001134897260_dp, thr=1.0e-8_dp, &
+                 message="Ind20,r disagrees with the PySCF reference")
+      if (allocated(error)) return
+      call check(error, t%exch_ind20_r, 0.000949574150_dp, thr=1.0e-8_dp, &
+                 message="Exch-Ind20,r disagrees with the PySCF reference")
+      if (allocated(error)) return
+
+      ! Induction is stabilising and its exchange counterpart repulsive, and
+      ! letting the monomer relax can only lower the energy further.
+      call check(error, t%ind20_r < t%ind20_u, &
+                 "the response must be more stabilising than the uncoupled form")
+      if (allocated(error)) return
+      call check(error, t%exch_ind20_r > 0.0_dp, &
+                 "exchange-induction must be repulsive")
+
+      call cache%destroy()
+      call mols%destroy()
+   end subroutine test_induction
+
+   subroutine test_disp20(error)
+      !! `Disp20` against the conventional four-index reference
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_cache_t) :: cache
+      type(error_t) :: err
+      real(dp) :: e
+
+      call water_dimer(mols, err)
+      call check(error,.not. err%has_error(), "building the molecules failed")
+      if (allocated(error)) return
+      call build_sapt_cache(mols, cache, err)
+      call check(error,.not. err%has_error(), "the SAPT cache failed")
+      if (allocated(error)) return
+
+      e = sapt_disp20(cache)
+      call check(error, e, -0.000317465444_dp, thr=1.0e-9_dp, &
+                 message="Disp20 disagrees with the PySCF reference")
+      if (allocated(error)) return
+      ! Dispersion is attractive. The denominator is negative throughout, so a
+      ! positive answer means the occupied and virtual energies were swapped.
+      call check(error, e < 0.0_dp, "dispersion must be attractive")
+
+      call cache%destroy()
+      call mols%destroy()
+   end subroutine test_disp20
+
+   subroutine test_exch_disp20(error)
+      !! `Exch-Disp20` against the conventional four-index reference
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_cache_t) :: cache
+      type(error_t) :: err
+      real(dp) :: e, d
+
+      call water_dimer(mols, err)
+      call check(error,.not. err%has_error(), "building the molecules failed")
+      if (allocated(error)) return
+      call build_sapt_cache(mols, cache, err)
+      call check(error,.not. err%has_error(), "the SAPT cache failed")
+      if (allocated(error)) return
+
+      e = sapt_exch_disp20(cache)
+      call check(error, e, 0.000117840542_dp, thr=1.0e-9_dp, &
+                 message="Exch-Disp20 disagrees with the PySCF reference")
+      if (allocated(error)) return
+
+      ! Repulsive, and a sizeable fraction of dispersion -- 10-25% across psi4's
+      ! own tests, always opposite in sign. A term that quietly evaluated to zero
+      ! would leave a total that is wrong in a systematic, plausible direction.
+      d = sapt_disp20(cache)
+      call check(error, e > 0.0_dp, "exchange-dispersion must be repulsive")
+      if (allocated(error)) return
+      call check(error, abs(e) > 0.05_dp*abs(d) .and. abs(e) < 0.6_dp*abs(d), &
+                 "exchange-dispersion is not a plausible fraction of dispersion")
+
+      call cache%destroy()
+      call mols%destroy()
+   end subroutine test_exch_disp20
 
 end module test_mqc_sapt
 

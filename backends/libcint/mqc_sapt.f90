@@ -25,6 +25,7 @@ module mqc_sapt
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, build_fock
+   use mqc_libcint_mp2, only: transform_block
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    implicit none
@@ -37,6 +38,10 @@ module mqc_sapt
    public :: sapt_elst10
    public :: sapt_exch10_s2
    public :: sapt_exch10
+   public :: sapt_induction
+   public :: sapt_disp20
+   public :: sapt_exch_disp20
+   public :: sapt_terms_t
 
    type :: sapt_molecules_t
       !! The dimer and its two counterpoise-corrected monomers
@@ -50,6 +55,19 @@ module mqc_sapt
    contains
       procedure :: destroy => sapt_molecules_destroy
    end type sapt_molecules_t
+
+   type :: sapt_terms_t
+      !! The named pieces of a SAPT0 interaction energy
+      real(dp) :: elst10 = 0.0_dp
+      real(dp) :: exch10_s2 = 0.0_dp
+      real(dp) :: exch10 = 0.0_dp
+      real(dp) :: ind20_u = 0.0_dp, ind20_r = 0.0_dp
+      real(dp) :: exch_ind20_u = 0.0_dp, exch_ind20_r = 0.0_dp
+      real(dp) :: disp20 = 0.0_dp
+      real(dp) :: exch_disp20 = 0.0_dp
+      real(dp) :: delta_hf = 0.0_dp
+      real(dp) :: total = 0.0_dp
+   end type sapt_terms_t
 
    type :: sapt_cache_t
       !! What every SAPT0 term is built from, in psi4's naming
@@ -75,6 +93,7 @@ module mqc_sapt
          !! line in that file has no counterpart here.
       real(dp), allocatable :: s(:, :)
       real(dp), allocatable :: eri(:, :, :, :)
+      real(dp), allocatable :: eri_packed(:, :)   !! For the four-index transforms
    contains
       procedure :: destroy => sapt_cache_destroy
    end type sapt_cache_t
@@ -223,6 +242,7 @@ contains
 
       call mols%dimer%overlap(cache%s)
       call mols%dimer%eris(cache%eri)
+      call mols%dimer%eris_packed(cache%eri_packed)
 
       ! V for each monomer: the nuclear attraction of its nuclei alone, in the
       ! dimer basis. Ghosting gives it without a new integral, because the kinetic
@@ -449,6 +469,420 @@ contains
       deallocate (t_a, t_b, t_ab, jt_a, kt_a, jt_ab, kt_ab)
    end function sapt_exch10
 
+   subroutine sapt_induction(mols, c, terms, error)
+      !! `Ind20` and `Exch-Ind20`, uncoupled and coupled
+      !!
+      !! **Uncoupled and coupled differ only in how `x` is obtained**; the
+      !! contraction after is identical (`sapt_jk_terms.py:350` against `:523`).
+      !! So both come out of one code path, and the uncoupled half is computable
+      !! with no solver at all -- which is how the sign and scale conventions here
+      !! were pinned before `cphf_solve` was involved.
+      !!
+      !!     w_B_MOA = C_occ_A^T w_B C_vir_A
+      !!     uncoupled: x = w / (eps_occ - eps_vir)
+      !!     coupled:   x from the response equations
+      !!     Ind20      = 2 x . w
+      !!     Exch-Ind20 = 2 x . EX
+      !!
+      !! Only the response form is reported as SAPT0 (`COUPLED_INDUCTION` defaults
+      !! true, `read_options.cc:1068`).
+      type(sapt_molecules_t), intent(in) :: mols
+      type(sapt_cache_t), intent(in) :: c
+      type(sapt_terms_t), intent(inout) :: terms
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: u_ab, u_ba, r_ab, r_ba, xu_ab, xu_ba, xr_ab, xr_ba
+
+      call one_direction(mols%mono_a, c, "A", "B", u_ab, r_ab, xu_ab, xr_ab, error)
+      if (error%has_error()) return
+      call one_direction(mols%mono_b, c, "B", "A", u_ba, r_ba, xu_ba, xr_ba, error)
+      if (error%has_error()) return
+
+      terms%ind20_u = u_ab + u_ba
+      terms%ind20_r = r_ab + r_ba
+      terms%exch_ind20_u = xu_ab + xu_ba
+      terms%exch_ind20_r = xr_ab + xr_ba
+   end subroutine sapt_induction
+
+   subroutine one_direction(mol, c, this, other, ind_u, ind_r, exch_u, exch_r, error)
+      !! One monomer polarised by the other's field
+      use mqc_libcint_cphf, only: cphf_solve
+      type(libcint_molecule_t), intent(in) :: mol
+      type(sapt_cache_t), intent(in) :: c
+      character(len=1), intent(in) :: this, other
+      real(dp), intent(out) :: ind_u, ind_r, exch_u, exch_r
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: coeff(:, :), eps(:), w_ao(:, :), w_mo(:, :)
+      real(dp), allocatable :: ex(:, :), x_u(:, :), x_r(:, :), pert(:, :, :)
+      real(dp), allocatable :: resp(:, :, :), tmp(:, :)
+      integer :: nocc, nvir, nmo, a, r
+
+      if (this == "A") then
+         nocc = c%nocc_a
+         coeff = c%c_a
+         eps = c%eps_a
+         w_ao = c%w_b
+      else
+         nocc = c%nocc_b
+         coeff = c%c_b
+         eps = c%eps_b
+         w_ao = c%w_a
+      end if
+      nmo = size(coeff, 2)
+      nvir = nmo - nocc
+
+      ! The partner's electrostatic potential in this monomer's occupied-virtual
+      ! block. `w` and not `h`: no exchange in the perturbing field.
+      allocate (w_mo(nocc, nvir), tmp(c%nao, nvir))
+      call pic_gemm(w_ao, coeff(:, nocc + 1:nmo), tmp)
+      call pic_gemm(coeff(:, 1:nocc), tmp, w_mo, transa="T")
+      deallocate (tmp)
+
+      call exch_ind_potential(c, this, other, ex)
+
+      ! Uncoupled: the orbital-energy denominator, negative throughout.
+      allocate (x_u(nocc, nvir))
+      do r = 1, nvir
+         do a = 1, nocc
+            x_u(a, r) = w_mo(a, r)/(eps(a) - eps(nocc + r))
+         end do
+      end do
+
+      ! Coupled: the same contraction, with `x` from the response equations.
+      allocate (pert(c%nao, c%nao, 1))
+      pert(:, :, 1) = w_ao
+      call cphf_solve(mol, coeff, eps, nocc, pert, resp, error, in_core=.true.)
+      if (error%has_error()) return
+      allocate (x_r(nocc, nvir))
+      do r = 1, nvir
+         do a = 1, nocc
+            x_r(a, r) = resp(r, a, 1)
+         end do
+      end do
+
+      ind_u = 2.0_dp*sum(x_u*w_mo)
+      ind_r = 2.0_dp*sum(x_r*w_mo)
+      exch_u = 2.0_dp*sum(x_u*ex)
+      exch_r = 2.0_dp*sum(x_r*ex)
+
+      deallocate (coeff, eps, w_ao, w_mo, ex, x_u, x_r, pert, resp)
+   end subroutine one_direction
+
+   subroutine exch_ind_potential(c, this, other, ex)
+      !! The exchange-induction potential, USAPT0's factorisation
+      !!
+      !! `usapt0.cc:1261-1315`. Two triplet products where `sapt_jk_terms.py`
+      !! spends eighteen matrix chains, and verified equal to them to 4.5e-17.
+      !!
+      !!     W  = -K_o - 2 J_O + K_O + 2 J[D_o S D_t S D_o]
+      !!     T1 = -h_t + S D_t w_o + w_t D_o S - K_O^T
+      !!     W += S D_o T1
+      !!     T2 = -h_o + w_o D_t S - K_O
+      !!     W += T2 D_o S
+      !!     EX = C_occ_t^T W C_vir_t
+      !!
+      !! **`T1` contains `S D_t w_o` -- `D_t`, this monomer's density, not the
+      !! partner's.** The outer `S D_o` supplies the other projector, and getting
+      !! it wrong is dimensionally invisible.
+      !!
+      !! One routine serves both directions: called the other way round the only
+      !! further change is `K_O -> K_O^T`, which is why it is written this way
+      !! rather than twice.
+      type(sapt_cache_t), intent(in) :: c
+      character(len=1), intent(in) :: this, other
+      real(dp), allocatable, intent(out) :: ex(:, :)
+
+      real(dp), allocatable :: d_t(:, :), d_o(:, :), h_t(:, :), h_o(:, :)
+      real(dp), allocatable :: w_t(:, :), w_o(:, :), k_o_mat(:, :), k_tr(:, :)
+      real(dp), allocatable :: w(:, :), t1(:, :), t2(:, :), p(:, :), q(:, :)
+      real(dp), allocatable :: j_o(:, :), k_junk(:, :), tmp(:, :)
+      integer :: n, nocc, nmo
+
+      n = c%nao
+      if (this == "A") then
+         d_t = c%d_a
+         d_o = c%d_b
+         h_t = c%h_a
+         h_o = c%h_b
+         w_t = c%w_a
+         w_o = c%w_b
+         k_o_mat = c%k_b
+         k_tr = c%k_o
+         nocc = c%nocc_a
+         nmo = size(c%c_a, 2)
+      else
+         d_t = c%d_b
+         d_o = c%d_a
+         h_t = c%h_b
+         h_o = c%h_a
+         w_t = c%w_b
+         w_o = c%w_a
+         k_o_mat = c%k_a
+         k_tr = transpose(c%k_o)        ! the one asymmetry between the two calls
+         nocc = c%nocc_b
+         nmo = size(c%c_b, 2)
+      end if
+
+      allocate (w(n, n), t1(n, n), t2(n, n), p(n, n), q(n, n), tmp(n, n))
+      allocate (j_o(n, n), k_junk(n, n))
+
+      ! J_O, from the transition density in *this* call's orientation.
+      call pic_gemm(d_t, c%s, tmp)
+      call pic_gemm(tmp, d_o, p)                      ! D_t S D_o
+      call coulomb_exchange(c%eri, p, j_o, k_junk)
+
+      ! J of D_o S D_t S D_o
+      call pic_gemm(d_o, c%s, tmp)
+      call pic_gemm(tmp, d_t, q)
+      call pic_gemm(q, c%s, tmp)
+      call pic_gemm(tmp, d_o, p)
+      call coulomb_exchange(c%eri, p, q, k_junk)      ! q now holds J[D_o S D_t S D_o]
+
+      w = -k_o_mat - 2.0_dp*j_o + k_tr + 2.0_dp*q
+
+      call pic_gemm(c%s, d_t, tmp)
+      call pic_gemm(tmp, w_o, t1)                     ! S D_t w_o
+      call pic_gemm(w_t, d_o, tmp)
+      call pic_gemm(tmp, c%s, q)                      ! w_t D_o S
+      t1 = -h_t + t1 + q - transpose(k_tr)
+
+      call pic_gemm(c%s, d_o, tmp)
+      call pic_gemm(tmp, t1, q)
+      w = w + q
+
+      call pic_gemm(w_o, d_t, tmp)
+      call pic_gemm(tmp, c%s, t2)                     ! w_o D_t S
+      t2 = -h_o + t2 - k_tr
+
+      call pic_gemm(d_o, c%s, tmp)
+      call pic_gemm(t2, tmp, q)
+      w = w + q
+
+      allocate (ex(nocc, nmo - nocc))
+      deallocate (tmp)
+      allocate (tmp(n, nmo - nocc))
+      if (this == "A") then
+         call pic_gemm(w, c%c_a(:, nocc + 1:nmo), tmp)
+         call pic_gemm(c%c_a(:, 1:nocc), tmp, ex, transa="T")
+      else
+         call pic_gemm(w, c%c_b(:, nocc + 1:nmo), tmp)
+         call pic_gemm(c%c_b(:, 1:nocc), tmp, ex, transa="T")
+      end if
+
+      deallocate (d_t, d_o, h_t, h_o, w_t, w_o, k_o_mat, k_tr)
+      deallocate (w, t1, t2, p, q, tmp, j_o, k_junk)
+   end subroutine exch_ind_potential
+
+   function sapt_disp20(c) result(energy)
+      !! `Disp20` -- `exch-disp20.cc:184-195`
+      !!
+      !!     Disp20 = 4 sum_{a,r in A} sum_{b,s in B}
+      !!              (ar|bs)^2 / (eps_a + eps_b - eps_r - eps_s)
+      !!
+      !! Chemists' notation, no antisymmetrisation: the bra pair is (occ A, vir A)
+      !! and the ket pair (occ B, vir B). Pairing `(ab)` with `(rs)` instead gives
+      !! a plausible and entirely wrong number.
+      !!
+      !! **Not the routine in `disp20.cc`**, which is debug-only Laplace code
+      !! called under `if (debug_)`, and whose neighbouring block computes a
+      !! natural-orbital variant assigning a different variable.
+      !!
+      !! The denominator is negative, so `Disp20` is negative. Factor 4, not 2 --
+      !! the closed-shell spin sum over both monomers. Its same-spin and
+      !! opposite-spin halves are exactly equal by construction, so a decomposition
+      !! that is not 50/50 is a bug rather than physics.
+      type(sapt_cache_t), intent(in) :: c
+      real(dp) :: energy
+
+      real(dp), allocatable :: v(:, :, :, :)
+      integer :: na, ra, nb, rb, a, r, b, s
+      integer :: nmo_a, nmo_b
+      real(dp) :: denom
+
+      na = c%nocc_a
+      nb = c%nocc_b
+      nmo_a = size(c%c_a, 2)
+      nmo_b = size(c%c_b, 2)
+      ra = nmo_a - na
+      rb = nmo_b - nb
+
+      call transform_block(c%eri_packed, c%c_a(:, 1:na), c%c_a(:, na + 1:nmo_a), &
+                           c%c_b(:, 1:nb), c%c_b(:, nb + 1:nmo_b), v)
+
+      energy = 0.0_dp
+      do s = 1, rb
+         do b = 1, nb
+            do r = 1, ra
+               do a = 1, na
+                  denom = c%eps_a(a) + c%eps_b(b) &
+                          - c%eps_a(na + r) - c%eps_b(nb + s)
+                  energy = energy + 4.0_dp*v(a, r, b, s)*v(a, r, b, s)/denom
+               end do
+            end do
+         end do
+      end do
+      deallocate (v)
+   end function sapt_disp20
+
+   function sapt_exch_disp20(c) result(energy)
+      !! `Exch-Disp20`, the S^2 form -- FISAPT's, `fisapt.cc:4351-4733`
+      !!
+      !! `libsapt_solver`'s version is factorised into some twenty `h`/`q` pieces
+      !! and is not term-comparable; FISAPT's is the readable one and the two
+      !! agree to 2.6e-8, that being libsapt's Laplace denominators.
+      !!
+      !! Four extra `(occ,vir)` transforms per monomer with modified coefficient
+      !! sets, plus four rank-one terms built from `J`, `K` and `V`. The shapes
+      !! are Disp20's throughout, so there is no new bottleneck -- about five
+      !! times its integral cost and none of its scaling.
+      !!
+      !! **Not optional if a total is to be reported.** It runs 10-25% of `Disp20`
+      !! across psi4's own tests and always with the opposite sign; omitting it
+      !! makes a total systematically and plausibly wrong.
+      type(sapt_cache_t), intent(in) :: c
+      real(dp) :: energy
+
+      real(dp), allocatable :: cr1(:, :), cs1(:, :), ca2(:, :), cb2(:, :)
+      real(dp), allocatable :: cr3(:, :), cs3(:, :), ca4(:, :), cb4(:, :)
+      real(dp), allocatable :: oa(:, :), va(:, :), ob(:, :), vb(:, :)
+      real(dp), allocatable :: g1(:, :, :, :), g2(:, :, :, :), g3(:, :, :, :)
+      real(dp), allocatable :: g4(:, :, :, :), g5(:, :, :, :), g6(:, :, :, :)
+      real(dp), allocatable :: amp(:, :, :, :), v(:, :, :, :)
+      real(dp), allocatable :: sas(:, :), sbr(:, :), sbar(:, :), sabs(:, :)
+      real(dp), allocatable :: qbr(:, :), qas(:, :), qar(:, :), qbs(:, :)
+      real(dp), allocatable :: t(:, :), u(:, :), eye(:, :)
+      integer :: n, na, ra, nb, rb, nmo_a, nmo_b, a, r, b, s, i
+      real(dp) :: denom
+
+      n = c%nao
+      na = c%nocc_a
+      nb = c%nocc_b
+      nmo_a = size(c%c_a, 2)
+      nmo_b = size(c%c_b, 2)
+      ra = nmo_a - na
+      rb = nmo_b - nb
+
+      oa = c%c_a(:, 1:na)
+      va = c%c_a(:, na + 1:nmo_a)
+      ob = c%c_b(:, 1:nb)
+      vb = c%c_b(:, nb + 1:nmo_b)
+
+      allocate (eye(n, n), t(n, n), u(n, n))
+      eye = 0.0_dp
+      do i = 1, n
+         eye(i, i) = 1.0_dp
+      end do
+
+      ! The modified coefficient sets, fisapt.cc:4351-4370.
+      call pic_gemm(c%d_b, c%s, t)
+      cr1 = matmul(eye - t, va)
+      ca2 = matmul(t, oa)
+      call pic_gemm(c%d_a, c%s, u)
+      cs1 = matmul(eye - u, vb)
+      cb2 = matmul(u, ob)
+      cr3 = 2.0_dp*matmul(t - matmul(u, t), va)
+      cs3 = 2.0_dp*matmul(u - matmul(t, u), vb)
+      ca4 = -2.0_dp*matmul(matmul(u, t), oa)
+      cb4 = -2.0_dp*matmul(matmul(t, u), ob)
+
+      ! v[a,r,b,s], assembled in FISAPT's order (fisapt.cc:4706-4716).
+      call transform_block(c%eri_packed, ob, cr1, oa, cs1, g1)
+      call transform_block(c%eri_packed, cb2, va, ca2, vb, g2)
+      call transform_block(c%eri_packed, oa, va, ob, cs3, g3)
+      call transform_block(c%eri_packed, oa, va, cb4, vb, g4)
+      call transform_block(c%eri_packed, oa, cr3, ob, vb, g5)
+      call transform_block(c%eri_packed, ca4, va, ob, vb, g6)
+
+      allocate (v(na, ra, nb, rb))
+      do s = 1, rb
+         do b = 1, nb
+            do r = 1, ra
+               do a = 1, na
+                  v(a, r, b, s) = g1(b, r, a, s) + g2(b, r, a, s) &
+                                  + g3(a, r, b, s) + g4(a, r, b, s) &
+                                  + g5(a, r, b, s) + g6(a, r, b, s)
+               end do
+            end do
+         end do
+      end do
+      deallocate (g1, g2, g3, g4, g5, g6)
+
+      ! Orbital-space overlap blocks and the Q matrices, fisapt.cc:4374-4452.
+      sas = matmul(transpose(oa), matmul(c%s, vb))
+      sbr = matmul(transpose(ob), matmul(c%s, va))
+      sbar = matmul(transpose(oa), matmul(c%s, matmul(c%d_b, matmul(c%s, va))))
+      sabs = matmul(transpose(ob), matmul(c%s, matmul(c%d_a, matmul(c%s, vb))))
+
+      qbr = 2.0_dp*matmul(transpose(ob), matmul(c%j_a, va)) &
+            - matmul(transpose(ob), matmul(c%k_a, va)) &
+            + matmul(transpose(ob), matmul(transpose(c%k_o), va)) &
+            - 2.0_dp*matmul(transpose(ob), matmul(c%s, matmul(c%d_a, matmul(c%j_b, va)))) &
+            - 2.0_dp*matmul(transpose(ob), matmul(c%j_a, matmul(c%d_b, matmul(c%s, va)))) &
+            - matmul(transpose(ob), matmul(c%s, matmul(c%d_a, matmul(c%v_b, va)))) &
+            + matmul(transpose(ob), matmul(c%v_a, matmul(p_of(c, "B"), matmul(c%s, va))))
+      qas = 2.0_dp*matmul(transpose(oa), matmul(c%j_b, vb)) &
+            - matmul(transpose(oa), matmul(c%k_b, vb)) &
+            + matmul(transpose(oa), matmul(c%k_o, vb)) &
+            - 2.0_dp*matmul(transpose(oa), matmul(c%j_b, matmul(c%d_a, matmul(c%s, vb)))) &
+            - 2.0_dp*matmul(transpose(oa), matmul(c%s, matmul(c%d_b, matmul(c%j_a, vb)))) &
+            - matmul(transpose(oa), matmul(c%s, matmul(c%d_b, matmul(c%v_a, vb)))) &
+            + matmul(transpose(oa), matmul(c%v_b, matmul(p_of(c, "A"), matmul(c%s, vb))))
+      qar = 4.0_dp*matmul(transpose(oa), matmul(c%j_b, va)) &
+            + 2.0_dp*matmul(transpose(oa), matmul(c%v_b, va))
+      qbs = 4.0_dp*matmul(transpose(ob), matmul(c%j_a, vb)) &
+            + 2.0_dp*matmul(transpose(ob), matmul(c%v_a, vb))
+
+      do s = 1, rb
+         do b = 1, nb
+            do r = 1, ra
+               do a = 1, na
+                  v(a, r, b, s) = v(a, r, b, s) &
+                                  + qbr(b, r)*sas(a, s) + sbr(b, r)*qas(a, s) &
+                                  + qar(a, r)*sabs(b, s) + sbar(a, r)*qbs(b, s)
+               end do
+            end do
+         end do
+      end do
+
+      ! `t` is the plain dispersion amplitude, reused (fisapt.cc:4697).
+      call transform_block(c%eri_packed, oa, va, ob, vb, amp)
+      energy = 0.0_dp
+      do s = 1, rb
+         do b = 1, nb
+            do r = 1, ra
+               do a = 1, na
+                  denom = c%eps_a(a) + c%eps_b(b) &
+                          - c%eps_a(na + r) - c%eps_b(nb + s)
+                  energy = energy - 2.0_dp*(amp(a, r, b, s)/denom)*v(a, r, b, s)
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (v, amp, eye, t, u)
+   end function sapt_exch_disp20
+
+   function p_of(c, which) result(p)
+      !! The virtual density of one monomer, `C_vir C_vir^T`
+      type(sapt_cache_t), intent(in) :: c
+      character(len=1), intent(in) :: which
+      real(dp), allocatable :: p(:, :)
+
+      integer :: nocc, nmo
+
+      allocate (p(c%nao, c%nao))
+      if (which == "A") then
+         nocc = c%nocc_a
+         nmo = size(c%c_a, 2)
+         call pic_gemm(c%c_a(:, nocc + 1:nmo), c%c_a(:, nocc + 1:nmo), p, transb="T")
+      else
+         nocc = c%nocc_b
+         nmo = size(c%c_b, 2)
+         call pic_gemm(c%c_b(:, nocc + 1:nmo), c%c_b(:, nocc + 1:nmo), p, transb="T")
+      end if
+   end function p_of
+
    pure function sapt_elst10(c) result(energy)
       !! `Elst10,r` -- the classical Coulomb interaction of the two unperturbed
       !! monomer densities, nuclei included (`sapt_jk_terms.py:131-134`):
@@ -490,6 +924,7 @@ contains
       if (allocated(self%k_o)) deallocate (self%k_o)
       if (allocated(self%s)) deallocate (self%s)
       if (allocated(self%eri)) deallocate (self%eri)
+      if (allocated(self%eri_packed)) deallocate (self%eri_packed)
    end subroutine sapt_cache_destroy
 
    subroutine sapt_molecules_destroy(self)
