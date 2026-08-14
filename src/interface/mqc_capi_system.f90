@@ -46,6 +46,11 @@ module mqc_capi_system
    public :: mqc_system_auto_monomers
    public :: mqc_system_last_error
    public :: system_handle_t
+   ! Shared with mqc_capi_bond_orders, which extends this API over the same
+   ! handle and has to answer in the same status codes and through the same
+   ! error buffer -- `mqc_system_last_error` is the only reader either has.
+   public :: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
+   public :: last_message
       !! Exposed for the sibling C-API modules that must open a system handle,
       !! not for general use. Nothing outside `src/interface` should hold one:
       !! the rest of the code works in `system_geometry_t`.
@@ -66,6 +71,12 @@ module mqc_capi_system
       !! fragment a covalent molecule into radicals.
       type(system_geometry_t) :: geom
       logical :: bonds_declared = .false.
+      real(dp), allocatable :: bond_orders(:, :)
+         !! Wiberg-Mayer orders from `mqc_system_compute_bond_orders`, if it has
+         !! run. On the handle rather than returned directly because a caller
+         !! deciding where to cut reads the same matrix many times while trying
+         !! partitions, and recomputing it per question would be an xTB
+         !! calculation per question.
    end type system_handle_t
 
 contains

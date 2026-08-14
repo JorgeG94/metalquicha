@@ -83,6 +83,16 @@ system_set_monomers = _declare(
 system_set_bonds = _declare(
     "mqc_system_set_bonds", _c_int, [_c_ptr, _c_int] + [ctypes.POINTER(_c_int)] * 4
 )
+system_compute_bond_orders = _declare(
+    "mqc_system_compute_bond_orders", _c_int, [_c_ptr, _c_int, _c_str, _c_double]
+)
+system_has_bond_orders = _declare("mqc_system_has_bond_orders", _c_int, [_c_ptr])
+system_get_bond_orders = _declare(
+    "mqc_system_get_bond_orders", _c_int, [_c_ptr, _c_int, ctypes.POINTER(_c_double)]
+)
+system_bond_order = _declare(
+    "mqc_system_bond_order", _c_double, [_c_ptr, _c_int, _c_int]
+)
 system_n_atoms = _declare("mqc_system_n_atoms", _c_int, [_c_ptr])
 system_n_monomers = _declare("mqc_system_n_monomers", _c_int, [_c_ptr])
 system_n_bonds = _declare("mqc_system_n_bonds", _c_int, [_c_ptr])
