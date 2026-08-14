@@ -138,7 +138,7 @@
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-opt_cmd_evaluate">OPT_CMD_EVALUATE</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-opt_cmd_final">OPT_CMD_FINAL</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-opt_cmd_stop">OPT_CMD_STOP</a>
-            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-active~2">active</a>
+            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-active~4">active</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-ctx_bonds">ctx_bonds</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-ctx_config">ctx_config</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-ctx_failed">ctx_failed</a>
@@ -203,7 +203,7 @@
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-send_final_geometry">send_final_geometry</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-send_geometry">send_geometry</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-stop_workers">stop_workers</a>
-            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-worker_loop">worker_loop</a>
+            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-worker_loop~2">worker_loop</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-write_final_single_point">write_final_single_point</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-write_optimization_record">write_optimization_record</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-write_optimized_xyz">write_optimized_xyz</a>
@@ -248,23 +248,23 @@ workers the same way and for the same reason.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
+                  <li class="list-inline-item"><a href='mqc_optimization_output.html'>mqc_optimization_output</a></li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
-                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='mqc_optimization_output.html'>mqc_optimization_output</a></li>
-                  <li class="list-inline-item"><a href='mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_logger</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1388,7 +1388,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-active~2"></span>
+              <span class="anchor" id="variable-active~4"></span>
               logical,
             </td>
               <td>private,</td>
@@ -1694,7 +1694,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-suffix~4"></span>
+              <span class="anchor" id="variable-suffix~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1780,7 +1780,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~11"></span>
+              <span class="anchor" id="variable-resources~14"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1795,7 +1795,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~20"></span>
+              <span class="anchor" id="variable-config~30"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1810,7 +1810,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~42"></span>
+              <span class="anchor" id="variable-sys_geom~59"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1825,7 +1825,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~15"></span>
+              <span class="anchor" id="variable-bonds~19"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1840,7 +1840,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~58"></span>
+              <span class="anchor" id="variable-error~81"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1880,7 +1880,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~12"></span>
+              <span class="anchor" id="variable-resources~15"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1895,7 +1895,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config~31"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1910,7 +1910,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~46"></span>
+              <span class="anchor" id="variable-sys_geom~63"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1925,7 +1925,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~16"></span>
+              <span class="anchor" id="variable-bonds~20"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1965,7 +1965,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~49"></span>
+              <span class="anchor" id="variable-sys_geom~66"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2033,7 +2033,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~25"></span>
+              <span class="anchor" id="variable-n_atoms~34"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2063,7 +2063,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~8"></span>
+              <span class="anchor" id="variable-energy~10"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2078,7 +2078,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~6"></span>
+              <span class="anchor" id="variable-gradient~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2093,7 +2093,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~14"></span>
+              <span class="anchor" id="variable-status~26"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2133,7 +2133,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~50"></span>
+              <span class="anchor" id="variable-sys_geom~67"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2148,7 +2148,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~24"></span>
+              <span class="anchor" id="variable-config~34"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2188,7 +2188,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~27"></span>
+              <span class="anchor" id="variable-n_atoms~36"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2218,7 +2218,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~15"></span>
+              <span class="anchor" id="variable-status~27"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2258,7 +2258,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~9"></span>
+              <span class="anchor" id="variable-comm~21"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2273,7 +2273,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~45"></span>
+              <span class="anchor" id="variable-sys_geom~62"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2313,7 +2313,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~26"></span>
+              <span class="anchor" id="variable-n_atoms~35"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2343,7 +2343,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~9"></span>
+              <span class="anchor" id="variable-energy~11"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2383,7 +2383,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~4"></span>
+              <span class="anchor" id="variable-final_energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2398,7 +2398,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~3"></span>
+              <span class="anchor" id="variable-converged~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2413,7 +2413,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~6"></span>
+              <span class="anchor" id="variable-tolerance~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2453,7 +2453,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~23"></span>
+              <span class="anchor" id="variable-config~33"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2468,7 +2468,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~28"></span>
+              <span class="anchor" id="variable-n_atoms~37"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2523,7 +2523,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~34"></span>
+              <span class="anchor" id="variable-result~41"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2538,7 +2538,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output~2"></span>
+              <span class="anchor" id="variable-write_output~4"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2578,7 +2578,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~7"></span>
+              <span class="anchor" id="variable-comm~19"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2593,7 +2593,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~43"></span>
+              <span class="anchor" id="variable-sys_geom~60"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2633,7 +2633,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~8"></span>
+              <span class="anchor" id="variable-comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2648,7 +2648,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~44"></span>
+              <span class="anchor" id="variable-sys_geom~61"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2688,7 +2688,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~10"></span>
+              <span class="anchor" id="variable-comm~22"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2709,11 +2709,11 @@ not ask for and should not see numbered among their steps.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-worker_loop"></span> <h3>private  subroutine <a href='../proc/worker_loop.html'>worker_loop</a>(comm)  
+    <div class="card-header codesum"><span class="anchor" id="proc-worker_loop~2"></span> <h3>private  subroutine <a href='../proc/worker_loop~2.html'>worker_loop</a>(comm)  
 </h3></div>
     <div class="card-body">
           
-  <p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2728,7 +2728,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~6"></span>
+              <span class="anchor" id="variable-comm~18"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2768,7 +2768,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~47"></span>
+              <span class="anchor" id="variable-sys_geom~64"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2808,7 +2808,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~48"></span>
+              <span class="anchor" id="variable-sys_geom~65"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2823,7 +2823,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~22"></span>
+              <span class="anchor" id="variable-config~32"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2838,7 +2838,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~3"></span>
+              <span class="anchor" id="variable-final_energy~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2853,7 +2853,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~2"></span>
+              <span class="anchor" id="variable-converged~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2868,7 +2868,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~59"></span>
+              <span class="anchor" id="variable-error~82"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2908,7 +2908,7 @@ not ask for and should not see numbered among their steps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~51"></span>
+              <span class="anchor" id="variable-sys_geom~68"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2923,7 +2923,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~5"></span>
+              <span class="anchor" id="variable-final_energy~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2938,7 +2938,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~4"></span>
+              <span class="anchor" id="variable-converged~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2953,7 +2953,7 @@ not ask for and should not see numbered among their steps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~60"></span>
+              <span class="anchor" id="variable-error~83"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2996,7 +2996,7 @@ not ask for and should not see numbered among their steps.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:56 +0000             </p>
+ on 2026-08-14 22:32 +0000             </p>
           </div>
         </div>
         <br>

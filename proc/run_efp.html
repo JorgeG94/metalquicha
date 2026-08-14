@@ -1,0 +1,2074 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>run_efp &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>run_efp
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">49 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_driver.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_driver.f90.html'>mqc_driver.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
+            <li class="breadcrumb-item active" aria-current="page">run_efp</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/run_efp.html#variable-err">err</a>
+            <a class="list-group-item" href="../proc/run_efp.html#variable-json_data~14">json_data</a>
+            <a class="list-group-item" href="../proc/run_efp.html#variable-n~8">n</a>
+            <a class="list-group-item" href="../proc/run_efp.html#variable-terms~4">terms</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/run_efp.html#src">run_efp</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine run_efp(config, sys_geom, rank, result_out)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_efp~~UsesGraph Pages: 1 -->
+<svg id="procrun_efpUsesGraph" width="641pt" height="482pt"
+ viewBox="0.00 0.00 641.00 481.93" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_efp~~UsesGraph" class="graph" transform="scale(0.76 0.76) rotate(0) translate(4 626.04)">
+<title>proc~~run_efp~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-626.04 834,-626.04 834,4 -4,4"/>
+<!-- proc~run_efp -->
+<g id="proc~~run_efp~~UsesGraph_node1" class="node">
+<title>proc~run_efp</title>
+<polygon fill="none" stroke="black" points="830,-416.04 776,-416.04 776,-392.04 830,-392.04 830,-416.04"/>
+<text text-anchor="middle" x="803" y="-401.64" font-family="Helvetica,sans-Serif" font-size="10.50">run_efp</text>
+</g>
+<!-- module~mqc_json_output_types -->
+<g id="proc~~run_efp~~UsesGraph_node2" class="node">
+<title>module~mqc_json_output_types</title>
+<g id="a_proc~~run_efp~~UsesGraph_node2"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="581.5,-492.04 445.5,-492.04 445.5,-468.04 581.5,-468.04 581.5,-492.04"/>
+<text text-anchor="middle" x="513.5" y="-477.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;module~mqc_json_output_types -->
+<g id="proc~~run_efp~~UsesGraph_edge1" class="edge">
+<title>proc~run_efp&#45;&gt;module~mqc_json_output_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M775.91,-413.44C764.9,-417.27 751.89,-421.59 740,-425.04 686.4,-440.63 624.78,-455.45 579.51,-465.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="578.51,-462.41 569.53,-468.04 580.06,-469.24 578.51,-462.41"/>
+</g>
+<!-- module~mqc_libcint_bridge -->
+<g id="proc~~run_efp~~UsesGraph_node3" class="node">
+<title>module~mqc_libcint_bridge</title>
+<g id="a_proc~~run_efp~~UsesGraph_node3"><a xlink:href="../module/mqc_libcint_bridge.html" xlink:title="mqc_libcint_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="736,-238.04 623,-238.04 623,-214.04 736,-214.04 736,-238.04"/>
+<text text-anchor="middle" x="679.5" y="-223.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_libcint_bridge</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;module~mqc_libcint_bridge -->
+<g id="proc~~run_efp~~UsesGraph_edge2" class="edge">
+<title>proc~run_efp&#45;&gt;module~mqc_libcint_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M793.65,-391.81C773.19,-361.83 720.36,-284.44 694.79,-246.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="697.44,-244.65 688.91,-238.36 691.66,-248.6 697.44,-244.65"/>
+</g>
+<!-- module~mqc_program_limits -->
+<g id="proc~~run_efp~~UsesGraph_node4" class="node">
+<title>module~mqc_program_limits</title>
+<g id="a_proc~~run_efp~~UsesGraph_node4"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
+<polygon fill="#337ab7" stroke="#337ab7" points="740,-416.04 619,-416.04 619,-392.04 740,-392.04 740,-416.04"/>
+<text text-anchor="middle" x="679.5" y="-401.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;module~mqc_program_limits -->
+<g id="proc~~run_efp~~UsesGraph_edge3" class="edge">
+<title>proc~run_efp&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M775.94,-404.04C768.34,-404.04 759.65,-404.04 750.68,-404.04"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="750.48,-400.54 740.48,-404.04 750.48,-407.54 750.48,-400.54"/>
+</g>
+<!-- module~mqc_thermochemistry -->
+<g id="proc~~run_efp~~UsesGraph_node9" class="node">
+<title>module~mqc_thermochemistry</title>
+<g id="a_proc~~run_efp~~UsesGraph_node9"><a xlink:href="../module/mqc_thermochemistry.html" xlink:title="mqc_thermochemistry">
+<polygon fill="#337ab7" stroke="#337ab7" points="408,-532.04 275,-532.04 275,-508.04 408,-508.04 408,-532.04"/>
+<text text-anchor="middle" x="341.5" y="-517.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_thermochemistry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry -->
+<g id="proc~~run_efp~~UsesGraph_edge4" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M461.49,-492.05C443.26,-496.34 422.52,-501.22 403.52,-505.69"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="402.7,-502.29 393.76,-507.98 404.3,-509.1 402.7,-502.29"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~run_efp~~UsesGraph_node10" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-298.04 0,-298.04 0,-274.04 62,-274.04 62,-298.04"/>
+<text text-anchor="middle" x="31" y="-283.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge5" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M453.2,-468.04C358.45,-448.75 182.22,-412.37 169.5,-406.04"/>
+</g>
+<!-- module~mqc_cuest_iface -->
+<g id="proc~~run_efp~~UsesGraph_node5" class="node">
+<title>module~mqc_cuest_iface</title>
+<g id="a_proc~~run_efp~~UsesGraph_node5"><a xlink:href="../module/mqc_cuest_iface.html" xlink:title="mqc_cuest_iface">
+<polygon fill="#337ab7" stroke="#337ab7" points="564,-98.04 463,-98.04 463,-74.04 564,-74.04 564,-98.04"/>
+<text text-anchor="middle" x="513.5" y="-83.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface -->
+<g id="proc~~run_efp~~UsesGraph_edge6" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M664.23,-213.87C635.64,-189.46 571.13,-134.39 536.87,-105.14"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="538.73,-102.13 528.85,-98.3 534.18,-107.45 538.73,-102.13"/>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~run_efp~~UsesGraph_node6" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~run_efp~~UsesGraph_node6"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="202,-218.04 135,-218.04 135,-194.04 202,-194.04 202,-218.04"/>
+<text text-anchor="middle" x="168.5" y="-203.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_error -->
+<g id="proc~~run_efp~~UsesGraph_edge7" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M512.5,-206.04C437.47,-197.16 417.77,-212.56 342.5,-206.04"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M340.5,-206.04C296.94,-202.27 246.91,-202.84 212.27,-204"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="211.9,-200.52 202.04,-204.38 212.16,-207.51 211.9,-200.52"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~run_efp~~UsesGraph_node7" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~run_efp~~UsesGraph_node7"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="583,-278.04 444,-278.04 444,-254.04 583,-254.04 583,-278.04"/>
+<text text-anchor="middle" x="513.5" y="-263.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~run_efp~~UsesGraph_edge8" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M629.29,-238.05C611.86,-242.3 592.06,-247.13 573.87,-251.56"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="572.84,-248.21 563.95,-253.98 574.5,-255.01 572.84,-248.21"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="proc~~run_efp~~UsesGraph_node8" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_proc~~run_efp~~UsesGraph_node8"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="393.5,-178.04 289.5,-178.04 289.5,-154.04 393.5,-154.04 393.5,-178.04"/>
+<text text-anchor="middle" x="341.5" y="-163.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types -->
+<g id="proc~~run_efp~~UsesGraph_edge9" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M622.72,-219.14C591,-215.24 550.53,-210.31 514.5,-206.04"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M512.5,-206.04C471.43,-201.18 425.87,-190.15 392.26,-180.9"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="392.8,-177.42 382.23,-178.09 390.92,-184.16 392.8,-177.42"/>
+</g>
+<!-- module~mqc_program_limits&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge10" class="edge">
+<title>module~mqc_program_limits&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M618.57,-410.25C501.8,-421.38 248.35,-440.51 169.5,-406.04"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M167.5,-406.04C138.53,-392.39 123.89,-405.9 98,-387.04 69.98,-366.64 50.6,-330.4 40.41,-307.33"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="43.6,-305.9 36.48,-298.05 37.15,-308.62 43.6,-305.9"/>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge12" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M462.75,-81.69C365.48,-74.21 154.61,-63.47 98,-105.04 46.86,-142.61 35.27,-223.9 32.7,-263.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="29.19,-263.52 32.18,-273.68 36.18,-263.88 29.19,-263.52"/>
+</g>
+<!-- module~mqc_method_config -->
+<g id="proc~~run_efp~~UsesGraph_node14" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_proc~~run_efp~~UsesGraph_node14"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="402,-58.04 281,-58.04 281,-34.04 402,-34.04 402,-58.04"/>
+<text text-anchor="middle" x="341.5" y="-43.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_method_config -->
+<g id="proc~~run_efp~~UsesGraph_edge11" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M462.87,-74.37C444.34,-70.01 423.09,-65.01 403.64,-60.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="404.2,-56.97 393.67,-58.08 402.6,-63.78 404.2,-56.97"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~run_efp~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M489.96,-253.93C458.17,-237.83 397.85,-210.84 342.5,-206.04"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge19" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M500.07,-278.27C481.53,-295.87 444.82,-328.3 408,-347.04 380.99,-360.8 372.17,-359.85 342.5,-366.04"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M340.5,-366.04C321.4,-370.03 188.63,-329.9 169.5,-326.04"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~run_efp~~UsesGraph_node11" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~run_efp~~UsesGraph_node11"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="373.5,-338.04 309.5,-338.04 309.5,-314.04 373.5,-314.04 373.5,-338.04"/>
+<text text-anchor="middle" x="341.5" y="-323.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~run_efp~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M478.1,-278.19C450.64,-287.88 412.11,-301.48 383.13,-311.7"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="381.97,-308.4 373.7,-315.03 384.3,-315 381.97,-308.4"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~run_efp~~UsesGraph_node12" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~run_efp~~UsesGraph_node12"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-458.04 123,-458.04 123,-434.04 214,-434.04 214,-458.04"/>
+<text text-anchor="middle" x="168.5" y="-443.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~run_efp~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M504.9,-278.08C489.53,-301.4 452.42,-352.85 408,-380.04 350.93,-414.99 275.01,-431.84 224.31,-439.69"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="223.58,-436.25 214.2,-441.18 224.61,-443.18 223.58,-436.25"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~run_efp~~UsesGraph_node13" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~run_efp~~UsesGraph_node13"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="215,-298.04 122,-298.04 122,-274.04 215,-274.04 215,-298.04"/>
+<text text-anchor="middle" x="168.5" y="-283.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~run_efp~~UsesGraph_edge16" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M443.91,-270.04C379.69,-273.79 284.92,-279.31 225.23,-282.79"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="225.02,-279.3 215.24,-283.38 225.43,-286.29 225.02,-279.3"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="proc~~run_efp~~UsesGraph_node15" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_proc~~run_efp~~UsesGraph_node15"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="239,-378.04 98,-378.04 98,-354.04 239,-354.04 239,-378.04"/>
+<text text-anchor="middle" x="168.5" y="-363.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~run_efp~~UsesGraph_edge17" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M340.5,-366.04C311.12,-372.18 278.29,-373.47 249.3,-372.78"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="249.33,-369.28 239.22,-372.46 249.1,-376.28 249.33,-369.28"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~run_efp~~UsesGraph_node16" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~run_efp~~UsesGraph_node16"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="391,-258.04 292,-258.04 292,-234.04 391,-234.04 391,-258.04"/>
+<text text-anchor="middle" x="341.5" y="-243.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~run_efp~~UsesGraph_edge18" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M443.84,-257.97C429.75,-256.31 415.02,-254.58 401.31,-252.96"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="401.39,-249.45 391.04,-251.76 400.57,-256.4 401.39,-249.45"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
+<g id="proc~~run_efp~~UsesGraph_edge20" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M289.19,-178.05C264.6,-183.8 235.49,-190.61 212.13,-196.07"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="211.11,-192.72 202.17,-198.4 212.71,-199.53 211.11,-192.72"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge22" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M289.26,-157.63C237.32,-151.8 156.49,-150.38 98,-185.04 68.02,-202.82 49.13,-240.15 39.58,-264.11"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="36.19,-263.17 35.95,-273.76 42.75,-265.64 36.19,-263.17"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~run_efp~~UsesGraph_node20" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-138.04 132.5,-138.04 132.5,-114.04 204.5,-114.04 204.5,-138.04"/>
+<text text-anchor="middle" x="168.5" y="-123.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="proc~~run_efp~~UsesGraph_edge21" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M289.19,-154.04C265.37,-148.47 237.31,-141.91 214.34,-136.53"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="215.05,-133.1 204.51,-134.23 213.45,-139.92 215.05,-133.1"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge28" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M274.82,-509.04C207.67,-497.26 111.35,-478.71 98,-467.04 50.55,-425.58 37.19,-347.11 33.45,-308.57"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="36.92,-308.07 32.6,-298.39 29.94,-308.65 36.92,-308.07"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;module~mqc_elements -->
+<g id="proc~~run_efp~~UsesGraph_edge23" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M307.03,-508.03C296.61,-503.95 285.18,-499.13 275,-494.04 258.22,-485.67 255.86,-480.26 239,-472.04 231.42,-468.35 223.18,-464.85 215.11,-461.68"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="216.35,-458.41 205.76,-458.13 213.86,-464.95 216.35,-458.41"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~run_efp~~UsesGraph_edge24" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M334.01,-508.02C319.93,-483 284.17,-424.92 239,-392.04 233.87,-388.31 228.15,-385.06 222.25,-382.23"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="223.45,-378.93 212.88,-378.13 220.64,-385.35 223.45,-378.93"/>
+</g>
+<!-- pic_io -->
+<g id="proc~~run_efp~~UsesGraph_node17" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="195.5,-580.04 141.5,-580.04 141.5,-556.04 195.5,-556.04 195.5,-580.04"/>
+<text text-anchor="middle" x="168.5" y="-565.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_io -->
+<g id="proc~~run_efp~~UsesGraph_edge25" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_io</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M297.35,-532.16C268.92,-540.14 232.14,-550.46 205.34,-557.99"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="204.27,-554.65 195.59,-560.72 206.16,-561.39 204.27,-554.65"/>
+</g>
+<!-- pic_lapack_interfaces -->
+<g id="proc~~run_efp~~UsesGraph_node18" class="node">
+<title>pic_lapack_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="232,-538.04 105,-538.04 105,-514.04 232,-514.04 232,-538.04"/>
+<text text-anchor="middle" x="168.5" y="-523.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces -->
+<g id="proc~~run_efp~~UsesGraph_edge26" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M274.88,-522.35C264.24,-522.72 253.17,-523.11 242.38,-523.49"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="242.01,-520 232.13,-523.85 242.25,-526.99 242.01,-520"/>
+</g>
+<!-- pic_logger -->
+<g id="proc~~run_efp~~UsesGraph_node19" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="202.5,-622.04 134.5,-622.04 134.5,-598.04 202.5,-598.04 202.5,-622.04"/>
+<text text-anchor="middle" x="168.5" y="-607.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_logger -->
+<g id="proc~~run_efp~~UsesGraph_edge27" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M325.9,-532.09C306.93,-547.24 272.27,-573.17 239,-589.04 230.65,-593.03 221.37,-596.46 212.38,-599.32"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="211.37,-595.97 202.8,-602.2 213.38,-602.67 211.37,-595.97"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge29" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M309.24,-329.72C274.67,-332.93 217.52,-335.73 169.5,-326.04"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M167.5,-326.04C134.77,-319.44 98.54,-308.55 71.79,-299.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.62,-296.39 62.02,-296.57 70.41,-303.03 72.62,-296.39"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge31" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M122.78,-435.01C113.86,-431.31 105.07,-426.44 98,-420.04 64.09,-389.36 45.58,-337.37 37.34,-307.98"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="40.71,-307.03 34.77,-298.26 33.95,-308.82 40.71,-307.03"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~run_efp~~UsesGraph_node22" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="60,-458.04 2,-458.04 2,-434.04 60,-434.04 60,-458.04"/>
+<text text-anchor="middle" x="31" y="-443.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~run_efp~~UsesGraph_edge30" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M122.76,-446.04C105.81,-446.04 86.68,-446.04 70.37,-446.04"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="70.11,-442.54 60.11,-446.04 70.11,-449.54 70.11,-442.54"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge32" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M121.63,-286.04C105.66,-286.04 87.87,-286.04 72.38,-286.04"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="72.07,-282.54 62.07,-286.04 72.07,-289.54 72.07,-282.54"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge34" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M315.73,-33.92C268.05,-12.51 162.52,25.19 98,-25.04 59.97,-54.66 40.38,-205.97 34.2,-263.66"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="30.69,-263.58 33.14,-273.89 37.65,-264.3 30.69,-263.58"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~run_efp~~UsesGraph_node21" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~run_efp~~UsesGraph_node21"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="226.5,-58.04 110.5,-58.04 110.5,-34.04 226.5,-34.04 226.5,-58.04"/>
+<text text-anchor="middle" x="168.5" y="-43.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="proc~~run_efp~~UsesGraph_edge33" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M280.69,-46.04C266.59,-46.04 251.45,-46.04 237.03,-46.04"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="236.69,-42.54 226.69,-46.04 236.69,-49.54 236.69,-42.54"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge35" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M128.24,-353.91C118.09,-350.09 107.38,-345.44 98,-340.04 81.16,-330.36 64.23,-316.41 51.74,-305.12"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="53.93,-302.38 44.22,-298.15 49.18,-307.51 53.93,-302.38"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~run_efp~~UsesGraph_edge36" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M291.96,-234.69C266.81,-228.81 236.39,-221.69 212.16,-216.02"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="212.72,-212.56 202.19,-213.69 211.13,-219.38 212.72,-212.56"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge38" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M291.75,-246.59C242.46,-247.9 164.31,-252.08 98,-265.04 89.43,-266.72 80.42,-269.13 71.9,-271.73"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="70.64,-268.46 62.18,-274.84 72.77,-275.13 70.64,-268.46"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~run_efp~~UsesGraph_edge37" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M291.96,-257.4C271.16,-262.27 246.75,-267.98 225.21,-273.01"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="224.17,-269.66 215.23,-275.35 225.76,-276.48 224.17,-269.66"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~run_efp~~UsesGraph_edge39" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M117.69,-58.2C110.38,-61.71 103.48,-66.23 98,-72.04 46.46,-126.71 35.12,-220.78 32.66,-263.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="29.16,-263.66 32.19,-273.81 36.15,-263.98 29.16,-263.66"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_efpUsesGraph = svgPanZoom('#procrun_efpUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>The interaction energy of a set of effective fragments</p>
+<p>Each fragment of the deck names a potential; the backend loads them, places
+each on the atoms the deck gave it, turns it into that orientation and
+evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were
+solved when the potentials were made.</p>
+<p>The work itself is in <code>run_libcint_efp</code> rather than here, because all of it
+lives behind <code>MQC_ENABLE_LIBCINT</code> and this file compiles either way. The stub
+declines with the same signature and names the build option.</p>
+<p>Rank zero only, for now. The pair loop is the obvious thing to distribute and
+is already flat, but the terms are milliseconds on a dimer and shaping that
+before there is a cluster to shape it around would be guessing.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~24"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~22"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rank~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rank</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result_out~5"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result_out</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_efp~~CallsGraph Pages: 1 -->
+<svg id="procrun_efpCallsGraph" width="641pt" height="550pt"
+ viewBox="0.00 0.00 641.00 550.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_efp~~CallsGraph" class="graph" transform="scale(0.68 0.68) rotate(0) translate(4 808.58)">
+<title>proc~~run_efp~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-808.58 943,-808.58 943,4 -4,4"/>
+<!-- proc~run_efp -->
+<g id="proc~~run_efp~~CallsGraph_node1" class="node">
+<title>proc~run_efp</title>
+<polygon fill="none" stroke="black" points="54,-174 0,-174 0,-150 54,-150 54,-174"/>
+<text text-anchor="middle" x="27" y="-159.6" font-family="Helvetica,sans-Serif" font-size="10.50">run_efp</text>
+</g>
+<!-- error -->
+<g id="proc~~run_efp~~CallsGraph_node2" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="764.5,-276 710.5,-276 710.5,-252 764.5,-252 764.5,-276"/>
+<text text-anchor="middle" x="737.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~run_efp&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge1" class="edge">
+<title>proc~run_efp&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M45.95,-174C57.94,-181.46 74.32,-190.62 90,-196 311.97,-272.11 599.85,-269.45 700.15,-265.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="700.5,-269.25 710.35,-265.36 700.22,-262.25 700.5,-269.25"/>
+</g>
+<!-- info -->
+<g id="proc~~run_efp~~CallsGraph_node3" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="764.5,-356 710.5,-356 710.5,-332 764.5,-332 764.5,-356"/>
+<text text-anchor="middle" x="737.5" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~run_efp&#45;&gt;info -->
+<g id="proc~~run_efp~~CallsGraph_edge2" class="edge">
+<title>proc~run_efp&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M34.34,-174.18C43.92,-191.26 63.79,-221.92 90,-237 296.2,-355.62 596.87,-351.85 700.12,-346.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="700.53,-349.97 710.32,-345.92 700.14,-342.98 700.53,-349.97"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~run_efp~~CallsGraph_node4" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~run_efp~~CallsGraph_node4"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="298.5,-154 138.5,-154 138.5,-130 298.5,-130 298.5,-154"/>
+<text text-anchor="middle" x="218.5" y="-139.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~error_get_message -->
+<g id="proc~~run_efp~~CallsGraph_edge3" class="edge">
+<title>proc~run_efp&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M54.35,-159.22C73.65,-157.18 101.05,-154.29 127.9,-151.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="128.57,-154.91 138.15,-150.37 127.84,-147.94 128.57,-154.91"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~run_efp~~CallsGraph_node5" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~run_efp~~CallsGraph_node5"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="288,-112 149,-112 149,-88 288,-88 288,-112"/>
+<text text-anchor="middle" x="218.5" y="-97.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~error_has_error -->
+<g id="proc~~run_efp~~CallsGraph_edge4" class="edge">
+<title>proc~run_efp&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M42.3,-149.99C54.28,-140.59 72.22,-127.97 90,-121 105.31,-115 122.3,-110.71 138.76,-107.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="139.66,-111.05 148.92,-105.9 138.47,-104.15 139.66,-111.05"/>
+</g>
+<!-- proc~json_output_data_destroy -->
+<g id="proc~~run_efp~~CallsGraph_node6" class="node">
+<title>proc~json_output_data_destroy</title>
+<g id="a_proc~~run_efp~~CallsGraph_node6"><a xlink:href="../proc/json_output_data_destroy.html" xlink:title="json_output_data_t%json_output_data_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="347,-70 90,-70 90,-46 347,-46 347,-70"/>
+<text text-anchor="middle" x="218.5" y="-55.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~json_output_data_destroy -->
+<g id="proc~~run_efp~~CallsGraph_edge5" class="edge">
+<title>proc~run_efp&#45;&gt;proc~json_output_data_destroy</title>
+<path fill="none" stroke="#ff0000" d="M33.39,-149.77C42.28,-131.16 61.87,-96.1 90,-79 92.88,-77.25 95.85,-75.64 98.91,-74.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="100.54,-77.25 108.29,-70.03 97.72,-70.84 100.54,-77.25"/>
+</g>
+<!-- proc~run_libcint_efp -->
+<g id="proc~~run_efp~~CallsGraph_node7" class="node">
+<title>proc~run_libcint_efp</title>
+<g id="a_proc~~run_efp~~CallsGraph_node7"><a xlink:href="../proc/run_libcint_efp.html" xlink:title="run_libcint_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="264,-28 173,-28 173,-4 264,-4 264,-28"/>
+<text text-anchor="middle" x="218.5" y="-13.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_efp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~run_libcint_efp -->
+<g id="proc~~run_efp~~CallsGraph_edge6" class="edge">
+<title>proc~run_efp&#45;&gt;proc~run_libcint_efp</title>
+<path fill="none" stroke="#ff0000" d="M30.25,-149.66C35.6,-124.1 51.63,-65.38 90,-37 110.67,-21.71 138.4,-15.9 162.71,-14.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="163.08,-17.64 172.89,-13.63 162.73,-10.64 163.08,-17.64"/>
+</g>
+<!-- proc~write_json_output -->
+<g id="proc~~run_efp~~CallsGraph_node8" class="node">
+<title>proc~write_json_output</title>
+<g id="a_proc~~run_efp~~CallsGraph_node8"><a xlink:href="../proc/write_json_output.html" xlink:title="write_json_output">
+<polygon fill="#d9534f" stroke="#d9534f" points="271.5,-436 165.5,-436 165.5,-412 271.5,-412 271.5,-436"/>
+<text text-anchor="middle" x="218.5" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_json_output</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~write_json_output -->
+<g id="proc~~run_efp~~CallsGraph_edge7" class="edge">
+<title>proc~run_efp&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#ff0000" d="M30.22,-174.22C35.94,-203.06 53.36,-276.63 90,-326 115.82,-360.8 157.2,-389.42 185.78,-406.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="184.17,-409.69 194.57,-411.73 187.71,-403.65 184.17,-409.69"/>
+</g>
+<!-- to_char -->
+<g id="proc~~run_efp~~CallsGraph_node9" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="764.5,-24 710.5,-24 710.5,0 764.5,0 764.5,-24"/>
+<text text-anchor="middle" x="737.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~run_efp&#45;&gt;to_char -->
+<g id="proc~~run_efp~~CallsGraph_edge8" class="edge">
+<title>proc~run_efp&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M54.24,-164.7C109,-169.76 239.33,-178.8 347,-163 475.55,-144.13 519.7,-152.26 627,-79 648.44,-64.36 641.46,-47.5 663,-33 674.12,-25.51 687.9,-20.67 700.52,-17.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="701.3,-20.95 710.32,-15.39 699.8,-14.12 701.3,-20.95"/>
+</g>
+<!-- proc~json_output_data_reset -->
+<g id="proc~~run_efp~~CallsGraph_node11" class="node">
+<title>proc~json_output_data_reset</title>
+<g id="a_proc~~run_efp~~CallsGraph_node11"><a xlink:href="../proc/json_output_data_reset.html" xlink:title="json_output_data_t%json_output_data_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="627,-70 383,-70 383,-46 627,-46 627,-70"/>
+<text text-anchor="middle" x="505" y="-55.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset -->
+<g id="proc~~run_efp~~CallsGraph_edge9" class="edge">
+<title>proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset</title>
+<path fill="none" stroke="#00ffff" d="M347.19,-58C355.59,-58 364.06,-58 372.48,-58"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="372.71,-61.5 382.71,-58 372.71,-54.5 372.71,-61.5"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~run_efp~~CallsGraph_node10" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~run_efp~~CallsGraph_node10"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="557.5,-28 452.5,-28 452.5,-4 557.5,-4 557.5,-28"/>
+<text text-anchor="middle" x="505" y="-13.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~run_libcint_efp&#45;&gt;proc~error_set -->
+<g id="proc~~run_efp~~CallsGraph_edge10" class="edge">
+<title>proc~run_libcint_efp&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#003fff" d="M264.27,-16C312.19,-16 388.56,-16 442.2,-16"/>
+<polygon fill="#003fff" stroke="#003fff" points="442.27,-19.5 452.27,-16 442.27,-12.5 442.27,-19.5"/>
+</g>
+<!-- proc~write_json_output&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge11" class="edge">
+<title>proc~write_json_output&#45;&gt;error</title>
+<path fill="none" stroke="#7f00ff" d="M258.36,-411.97C355.33,-381.96 606.92,-304.1 700.63,-275.1"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="701.71,-278.43 710.23,-272.13 699.64,-271.74 701.71,-278.43"/>
+</g>
+<!-- proc~write_fragment_table -->
+<g id="proc~~run_efp~~CallsGraph_node12" class="node">
+<title>proc~write_fragment_table</title>
+<g id="a_proc~~run_efp~~CallsGraph_node12"><a xlink:href="../proc/write_fragment_table.html" xlink:title="write_fragment_table">
+<polygon fill="#d9534f" stroke="#d9534f" points="568,-234 442,-234 442,-210 568,-210 568,-234"/>
+<text text-anchor="middle" x="505" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fragment_table</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_fragment_table -->
+<g id="proc~~run_efp~~CallsGraph_edge12" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_fragment_table</title>
+<path fill="none" stroke="#7f00ff" d="M236.44,-411.97C284.36,-377.95 421.07,-280.88 478.31,-240.24"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="480.66,-242.87 486.78,-234.22 476.6,-237.16 480.66,-242.87"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_node13" class="node">
+<title>proc~write_gmbe_pie_json_impl</title>
+<g id="a_proc~~run_efp~~CallsGraph_node13"><a xlink:href="../proc/write_gmbe_pie_json_impl.html" xlink:title="write_gmbe_pie_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="581,-478 429,-478 429,-454 581,-454 581,-478"/>
+<text text-anchor="middle" x="505" y="-463.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_gmbe_pie_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_edge13" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl</title>
+<path fill="none" stroke="#7f00ff" d="M271.68,-431.7C312.79,-437.77 370.95,-446.36 418.79,-453.42"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="418.43,-456.91 428.84,-454.9 419.45,-449.98 418.43,-456.91"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_node14" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<g id="a_proc~~run_efp~~CallsGraph_node14"><a xlink:href="../proc/write_mbe_breakdown_json_impl.html" xlink:title="write_mbe_breakdown_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="598.5,-562 411.5,-562 411.5,-538 598.5,-538 598.5,-562"/>
+<text text-anchor="middle" x="505" y="-547.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_mbe_breakdown_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_edge14" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl</title>
+<path fill="none" stroke="#7f00ff" d="M234.16,-436.35C261.5,-458.68 322.96,-505.62 383,-529 389,-531.34 395.26,-533.41 401.65,-535.26"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="401.2,-538.76 411.77,-537.98 403.02,-532 401.2,-538.76"/>
+</g>
+<!-- proc~write_unfragmented_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_node15" class="node">
+<title>proc~write_unfragmented_json_impl</title>
+<g id="a_proc~~run_efp~~CallsGraph_node15"><a xlink:href="../proc/write_unfragmented_json_impl.html" xlink:title="write_unfragmented_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="593,-436 417,-436 417,-412 593,-412 593,-436"/>
+<text text-anchor="middle" x="505" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_unfragmented_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_edge15" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl</title>
+<path fill="none" stroke="#7f00ff" d="M271.68,-424C309.41,-424 361.51,-424 406.8,-424"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="406.96,-427.5 416.96,-424 406.96,-420.5 406.96,-427.5"/>
+</g>
+<!-- proc~write_vibrational_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_node16" class="node">
+<title>proc~write_vibrational_json_impl</title>
+<g id="a_proc~~run_efp~~CallsGraph_node16"><a xlink:href="../proc/write_vibrational_json_impl.html" xlink:title="write_vibrational_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="583.5,-520 426.5,-520 426.5,-496 583.5,-496 583.5,-520"/>
+<text text-anchor="middle" x="505" y="-505.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_vibrational_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl -->
+<g id="proc~~run_efp~~CallsGraph_edge16" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl</title>
+<path fill="none" stroke="#7f00ff" d="M245.86,-436.01C277.74,-450.09 333.3,-473.26 383,-487 393.73,-489.97 405.11,-492.6 416.44,-494.9"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="415.88,-498.36 426.36,-496.85 417.22,-491.49 415.88,-498.36"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge17" class="edge">
+<title>proc~write_fragment_table&#45;&gt;error</title>
+<path fill="none" stroke="#48ff00" d="M568.07,-233.31C610.43,-241.03 665.06,-250.98 700.43,-257.43"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="699.84,-260.88 710.31,-259.23 701.1,-253.99 699.84,-260.88"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;info -->
+<g id="proc~~run_efp~~CallsGraph_edge19" class="edge">
+<title>proc~write_fragment_table&#45;&gt;info</title>
+<path fill="none" stroke="#48ff00" d="M528.94,-234.14C570.36,-256.07 657.69,-302.29 704.79,-327.22"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="703.17,-330.32 713.65,-331.91 706.45,-324.13 703.17,-330.32"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;to_char -->
+<g id="proc~~run_efp~~CallsGraph_edge24" class="edge">
+<title>proc~write_fragment_table&#45;&gt;to_char</title>
+<path fill="none" stroke="#48ff00" d="M568.12,-221.82C589.31,-218.65 611.53,-211.38 627,-196 679.61,-143.69 612.16,-87.03 663,-33 672.64,-22.76 686.89,-17.39 700.29,-14.63"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="700.98,-18.06 710.28,-12.98 699.84,-11.16 700.98,-18.06"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="proc~~run_efp~~CallsGraph_node21" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="790.5,-192 684.5,-192 684.5,-168 790.5,-168 790.5,-192"/>
+<text text-anchor="middle" x="737.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;get_elapsed_time -->
+<g id="proc~~run_efp~~CallsGraph_edge18" class="edge">
+<title>proc~write_fragment_table&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#48ff00" d="M568.07,-210.69C601.06,-204.68 641.5,-197.31 674.48,-191.3"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="675.25,-194.72 684.46,-189.48 673.99,-187.83 675.25,-194.72"/>
+</g>
+<!-- proc~fragment_table_filename -->
+<g id="proc~~run_efp~~CallsGraph_node23" class="node">
+<title>proc~fragment_table_filename</title>
+<g id="a_proc~~run_efp~~CallsGraph_node23"><a xlink:href="../proc/fragment_table_filename.html" xlink:title="fragment_table_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="811,-234 664,-234 664,-210 811,-210 811,-234"/>
+<text text-anchor="middle" x="737.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_table_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~fragment_table_filename -->
+<g id="proc~~run_efp~~CallsGraph_edge20" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~fragment_table_filename</title>
+<path fill="none" stroke="#48ff00" d="M568.07,-222C594.32,-222 625.28,-222 653.44,-222"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="653.68,-225.5 663.68,-222 653.68,-218.5 653.68,-225.5"/>
+</g>
+<!-- proc~scf_status_label -->
+<g id="proc~~run_efp~~CallsGraph_node27" class="node">
+<title>proc~scf_status_label</title>
+<g id="a_proc~~run_efp~~CallsGraph_node27"><a xlink:href="../proc/scf_status_label.html" xlink:title="scf_status_label">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="785.5,-150 689.5,-150 689.5,-126 785.5,-126 785.5,-150"/>
+<text text-anchor="middle" x="737.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">scf_status_label</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~scf_status_label -->
+<g id="proc~~run_efp~~CallsGraph_edge21" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~scf_status_label</title>
+<path fill="none" stroke="#48ff00" d="M568.19,-215.81C587.87,-212.01 609.14,-205.88 627,-196 647.08,-184.89 643.31,-170.77 663,-159 668.18,-155.9 673.84,-153.24 679.65,-150.96"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="681.24,-154.11 689.5,-147.48 678.9,-147.52 681.24,-154.11"/>
+</g>
+<!-- proc~write_optional_value -->
+<g id="proc~~run_efp~~CallsGraph_node28" class="node">
+<title>proc~write_optional_value</title>
+<g id="a_proc~~run_efp~~CallsGraph_node28"><a xlink:href="../proc/write_optional_value.html" xlink:title="write_optional_value">
+<polygon fill="#d9534f" stroke="#d9534f" points="798.5,-108 676.5,-108 676.5,-84 798.5,-84 798.5,-108"/>
+<text text-anchor="middle" x="737.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_optional_value</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~write_optional_value -->
+<g id="proc~~run_efp~~CallsGraph_edge22" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~write_optional_value</title>
+<path fill="none" stroke="#48ff00" d="M568.01,-219.7C588.57,-216.24 610.43,-209.33 627,-196 657.06,-171.82 633.76,-142.17 663,-117 664.55,-115.67 666.17,-114.42 667.86,-113.25"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="669.91,-116.11 676.78,-108.05 666.38,-110.07 669.91,-116.11"/>
+</g>
+<!-- start -->
+<g id="proc~~run_efp~~CallsGraph_node29" class="node">
+<title>start</title>
+<polygon fill="#777777" stroke="#777777" points="764.5,-66 710.5,-66 710.5,-42 764.5,-42 764.5,-66"/>
+<text text-anchor="middle" x="737.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;start -->
+<g id="proc~~run_efp~~CallsGraph_edge23" class="edge">
+<title>proc~write_fragment_table&#45;&gt;start</title>
+<path fill="none" stroke="#48ff00" d="M568.15,-221.11C589.1,-217.82 611.15,-210.67 627,-196 668.18,-157.89 623.11,-114.46 663,-75 672.92,-65.18 687.1,-59.89 700.36,-57.06"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="700.99,-60.5 710.24,-55.34 699.79,-53.6 700.99,-60.5"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge29" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#00ff91" d="M581.19,-465.9C597.88,-462.57 614.34,-456.28 627,-445 669.21,-407.39 631.52,-369.96 663,-323 674.2,-306.3 691.58,-292.04 706.63,-281.72"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="708.73,-284.53 715.16,-276.11 704.88,-278.68 708.73,-284.53"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;info -->
+<g id="proc~~run_efp~~CallsGraph_edge30" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#00ff91" d="M581.22,-464.15C597.53,-460.83 613.82,-454.97 627,-445 656.49,-422.7 635.49,-394.7 663,-370 673.51,-360.56 687.67,-354.5 700.76,-350.62"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="701.7,-354 710.48,-348.07 699.92,-347.23 701.7,-354"/>
+</g>
+<!-- add -->
+<g id="proc~~run_efp~~CallsGraph_node17" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="764.5,-604 710.5,-604 710.5,-580 764.5,-580 764.5,-604"/>
+<text text-anchor="middle" x="737.5" y="-589.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;add -->
+<g id="proc~~run_efp~~CallsGraph_edge25" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#00ff91" d="M581.22,-467.38C597.62,-470.71 613.95,-476.69 627,-487 658.87,-512.19 632.52,-544.15 663,-571 673.29,-580.07 687.26,-585.24 700.25,-588.18"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="699.9,-591.67 710.37,-590.09 701.2,-584.79 699.9,-591.67"/>
+</g>
+<!-- create_array -->
+<g id="proc~~run_efp~~CallsGraph_node18" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="777.5,-684 697.5,-684 697.5,-660 777.5,-660 777.5,-684"/>
+<text text-anchor="middle" x="737.5" y="-669.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_array -->
+<g id="proc~~run_efp~~CallsGraph_edge26" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#00ff91" d="M581.26,-466.02C597.95,-469.35 614.39,-475.67 627,-487 670.32,-525.93 630.77,-564.49 663,-613 674.13,-629.75 691.51,-644.01 706.57,-654.32"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="704.83,-657.36 715.11,-659.92 708.67,-651.51 704.83,-657.36"/>
+</g>
+<!-- create_object -->
+<g id="proc~~run_efp~~CallsGraph_node19" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="780,-520 695,-520 695,-496 780,-496 780,-520"/>
+<text text-anchor="middle" x="737.5" y="-505.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_efp~~CallsGraph_edge27" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#00ff91" d="M576.42,-478.01C593.02,-480.9 610.64,-484.01 627,-487 645.96,-490.46 666.73,-494.41 685.04,-497.94"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="684.45,-501.39 694.94,-499.85 685.78,-494.52 684.45,-501.39"/>
+</g>
+<!-- destroy -->
+<g id="proc~~run_efp~~CallsGraph_node20" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="764.5,-478 710.5,-478 710.5,-454 764.5,-454 764.5,-478"/>
+<text text-anchor="middle" x="737.5" y="-463.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_efp~~CallsGraph_edge28" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#00ff91" d="M581.16,-466C621.05,-466 668.27,-466 700.09,-466"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="700.26,-469.5 710.26,-466 700.26,-462.5 700.26,-469.5"/>
+</g>
+<!-- initialize -->
+<g id="proc~~run_efp~~CallsGraph_node22" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="766,-436 709,-436 709,-412 766,-412 766,-436"/>
+<text text-anchor="middle" x="737.5" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_efp~~CallsGraph_edge31" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#00ff91" d="M576.42,-453.99C593.02,-451.1 610.64,-447.99 627,-445 650.89,-440.64 677.67,-435.51 698.76,-431.41"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="699.48,-434.83 708.62,-429.49 698.14,-427.96 699.48,-434.83"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~run_efp~~CallsGraph_node24" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~run_efp~~CallsGraph_node24"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="939,-396 848,-396 848,-372 939,-372 939,-396"/>
+<text text-anchor="middle" x="893.5" y="-381.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_efp~~CallsGraph_edge32" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#00ff91" d="M581.08,-461.2C596.96,-457.98 613.1,-452.9 627,-445 648.37,-432.85 641.11,-414.19 663,-403 717.68,-375.06 789.35,-373.81 837.94,-377.27"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="837.7,-380.77 847.95,-378.08 838.26,-373.79 837.7,-380.77"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~run_efp~~CallsGraph_node26" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~run_efp~~CallsGraph_node26"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="812,-562 663,-562 663,-538 812,-538 812,-562"/>
+<text text-anchor="middle" x="737.5" y="-547.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_efp~~CallsGraph_edge33" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#00ff91" d="M581.08,-470.8C596.96,-474.02 613.1,-479.1 627,-487 648.37,-499.15 642.3,-515.73 663,-529 665.74,-530.76 668.62,-532.37 671.61,-533.85"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="670.22,-537.06 680.78,-537.9 673.05,-530.66 670.22,-537.06"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge38" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#0091ff" d="M598.51,-546.39C609.13,-542.56 619,-536.99 627,-529 692.76,-463.32 615.72,-403.02 663,-323 673.09,-305.92 690.1,-291.79 705.22,-281.64"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="707.3,-284.47 713.84,-276.14 703.53,-278.57 707.3,-284.47"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;info -->
+<g id="proc~~run_efp~~CallsGraph_edge39" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#0091ff" d="M598.65,-545.26C609.06,-541.58 618.83,-536.34 627,-529 670.32,-490.07 630.77,-451.51 663,-403 674.13,-386.25 691.51,-371.99 706.57,-361.68"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="708.67,-364.49 715.11,-356.08 704.83,-358.64 708.67,-364.49"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;add -->
+<g id="proc~~run_efp~~CallsGraph_edge34" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#0091ff" d="M572.05,-562.04C613.77,-569.64 666.07,-579.17 700.34,-585.41"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="699.9,-588.89 710.37,-587.24 701.15,-582 699.9,-588.89"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_array -->
+<g id="proc~~run_efp~~CallsGraph_edge35" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#0091ff" d="M523.22,-562.19C551.41,-581.77 609.64,-620.59 663,-646 670.99,-649.81 679.7,-653.36 688.23,-656.55"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="687.14,-659.88 697.74,-659.99 689.52,-653.3 687.14,-659.88"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_efp~~CallsGraph_edge36" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#0091ff" d="M576.42,-537.99C593.02,-535.1 610.64,-531.99 627,-529 645.96,-525.54 666.73,-521.59 685.04,-518.06"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="685.78,-521.48 694.94,-516.15 684.45,-514.61 685.78,-521.48"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_efp~~CallsGraph_edge37" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#0091ff" d="M598.53,-540.86C608.49,-537.88 618.2,-534.01 627,-529 648.37,-516.85 642.3,-500.27 663,-487 674.28,-479.76 688.1,-474.97 700.7,-471.82"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="701.48,-475.23 710.47,-469.62 699.95,-468.4 701.48,-475.23"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_efp~~CallsGraph_edge40" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#0091ff" d="M598.71,-543.93C608.92,-540.44 618.64,-535.61 627,-529 658.87,-503.81 632.52,-471.85 663,-445 672.98,-436.21 686.41,-431.08 699.06,-428.1"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="699.83,-431.52 708.95,-426.14 698.46,-424.65 699.83,-431.52"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_efp~~CallsGraph_edge41" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#0091ff" d="M509.86,-562.2C523.26,-602.16 571.97,-729.28 663,-777 721.65,-807.75 760.69,-818.87 812,-777 870.26,-729.47 887.51,-482.55 891.48,-406.39"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="894.99,-406.22 891.99,-396.06 888,-405.88 894.99,-406.22"/>
+</g>
+<!-- proc~get_frag_level_name -->
+<g id="proc~~run_efp~~CallsGraph_node25" class="node">
+<title>proc~get_frag_level_name</title>
+<g id="a_proc~~run_efp~~CallsGraph_node25"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="799.5,-768 675.5,-768 675.5,-744 799.5,-744 799.5,-768"/>
+<text text-anchor="middle" x="737.5" y="-753.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name -->
+<g id="proc~~run_efp~~CallsGraph_edge42" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name</title>
+<path fill="none" stroke="#0091ff" d="M512.72,-562.06C531.74,-595.07 589.36,-687.52 663,-735 665.73,-736.76 668.62,-738.38 671.59,-739.86"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="670.21,-743.08 680.77,-743.93 673.04,-736.68 670.21,-743.08"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_efp~~CallsGraph_edge43" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#0091ff" d="M598.76,-550C616.53,-550 635.05,-550 652.54,-550"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="652.7,-553.5 662.7,-550 652.7,-546.5 652.7,-553.5"/>
+</g>
+<!-- warning -->
+<g id="proc~~run_efp~~CallsGraph_node30" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="765,-726 710,-726 710,-702 765,-702 765,-726"/>
+<text text-anchor="middle" x="737.5" y="-711.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;warning -->
+<g id="proc~~run_efp~~CallsGraph_edge44" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;warning</title>
+<path fill="none" stroke="#0091ff" d="M516.01,-562.38C539,-590.01 598.59,-657.1 663,-693 674.32,-699.31 687.7,-703.86 699.92,-707.08"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="699.3,-710.53 709.84,-709.48 700.94,-703.73 699.3,-710.53"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge48" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#4800ff" d="M561.86,-411.96C584.42,-404.72 609.26,-393.41 627,-376 656.57,-346.98 632.89,-318.46 663,-290 673.27,-280.29 687.38,-274.18 700.5,-270.34"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="701.45,-273.72 710.26,-267.83 699.7,-266.94 701.45,-273.72"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;info -->
+<g id="proc~~run_efp~~CallsGraph_edge49" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#4800ff" d="M541.01,-411.85C584.24,-396.85 657.37,-371.46 700.88,-356.36"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="702.18,-359.62 710.48,-353.03 699.89,-353 702.18,-359.62"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;add -->
+<g id="proc~~run_efp~~CallsGraph_edge45" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#4800ff" d="M593.14,-426.95C605.59,-430.66 617.41,-436.38 627,-445 670.32,-483.93 621.82,-529.82 663,-571 672.87,-580.87 687.04,-586.18 700.31,-589"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="699.74,-592.45 710.19,-590.71 700.93,-585.56 699.74,-592.45"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_efp~~CallsGraph_edge46" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#4800ff" d="M593.16,-431.62C604.99,-434.77 616.62,-439.1 627,-445 648.37,-457.15 642.3,-473.73 663,-487 669.68,-491.28 677.24,-494.71 684.92,-497.45"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="684.05,-500.84 694.64,-500.56 686.18,-494.18 684.05,-500.84"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_efp~~CallsGraph_edge47" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#4800ff" d="M576.42,-436.01C593.02,-438.9 610.64,-442.01 627,-445 651.55,-449.48 679.14,-454.78 700.48,-458.93"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="699.93,-462.39 710.42,-460.86 701.27,-455.51 699.93,-462.39"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_efp~~CallsGraph_edge50" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#4800ff" d="M593.14,-424C629.54,-424 669.93,-424 698.53,-424"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="698.89,-427.5 708.89,-424 698.89,-420.5 698.89,-427.5"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_efp~~CallsGraph_edge51" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#4800ff" d="M554.84,-411.93C578.4,-404.38 606.02,-392.82 627,-376 649.22,-358.19 637.84,-336.33 663,-323 721.52,-292.01 749.23,-301.9 812,-323 836.49,-331.23 859.45,-350.19 874.53,-364.8"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="872.13,-367.35 881.67,-371.97 877.09,-362.41 872.13,-367.35"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_efp~~CallsGraph_edge52" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#4800ff" d="M593.15,-428.31C605.38,-431.88 617.13,-437.2 627,-445 658.87,-470.19 632.52,-502.15 663,-529 664.49,-530.32 666.06,-531.55 667.7,-532.71"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="665.95,-535.74 676.33,-537.87 669.55,-529.73 665.95,-535.74"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;error -->
+<g id="proc~~run_efp~~CallsGraph_edge56" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#ff00da" d="M583.66,-508.14C599.67,-504.69 615.21,-498.28 627,-487 680.92,-435.41 623.66,-386.41 663,-323 673.53,-306.03 690.72,-291.83 705.84,-281.62"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="707.92,-284.44 714.43,-276.07 704.13,-278.55 707.92,-284.44"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;info -->
+<g id="proc~~run_efp~~CallsGraph_edge57" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#ff00da" d="M583.75,-506.08C599.29,-502.67 614.62,-496.78 627,-487 658.87,-461.81 638.43,-435.34 663,-403 675.33,-386.77 693.06,-372.37 708.02,-361.85"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="710.14,-364.65 716.44,-356.13 706.2,-358.86 710.14,-364.65"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;add -->
+<g id="proc~~run_efp~~CallsGraph_edge53" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#ff00da" d="M583.62,-513.33C598.67,-516.57 613.84,-521.52 627,-529 648.37,-541.15 642.3,-557.73 663,-571 674.28,-578.24 688.1,-583.03 700.7,-586.18"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="699.95,-589.6 710.47,-588.38 701.48,-582.77 699.95,-589.6"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_efp~~CallsGraph_edge54" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff00da" d="M583.72,-508C617.04,-508 655.05,-508 684.83,-508"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="685,-511.5 695,-508 685,-504.5 685,-511.5"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_efp~~CallsGraph_edge55" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff00da" d="M576.42,-495.99C593.02,-493.1 610.64,-489.99 627,-487 651.55,-482.52 679.14,-477.22 700.48,-473.07"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="701.27,-476.49 710.42,-471.14 699.93,-469.61 701.27,-476.49"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_efp~~CallsGraph_edge58" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff00da" d="M583.62,-502.67C598.67,-499.43 613.84,-494.48 627,-487 648.37,-474.85 642.3,-458.27 663,-445 673.73,-438.12 686.77,-433.44 698.86,-430.29"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="699.78,-433.66 708.72,-427.98 698.19,-426.85 699.78,-433.66"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_efp~~CallsGraph_edge59" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#ff00da" d="M583.75,-509.92C599.29,-513.33 614.62,-519.22 627,-529 658.87,-554.19 629.09,-590.64 663,-613 718.29,-649.45 757.96,-651.28 812,-613 880.13,-564.74 891.02,-454.02 892.46,-406.43"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="895.97,-406.32 892.65,-396.26 888.97,-406.19 895.97,-406.32"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_efp~~CallsGraph_edge60" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#ff00da" d="M576.42,-520.01C593.02,-522.9 610.64,-526.01 627,-529 639.25,-531.24 652.25,-533.67 664.86,-536.07"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="664.38,-539.54 674.86,-537.98 665.69,-532.67 664.38,-539.54"/>
+</g>
+<!-- proc~fragment_table_filename&#45;&gt;proc~get_basename -->
+<g id="proc~~run_efp~~CallsGraph_edge61" class="edge">
+<title>proc~fragment_table_filename&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#00ff91" d="M797.15,-234.11C802.45,-236.55 807.51,-239.48 812,-243 851.68,-274.12 875.21,-330.61 885.79,-361.81"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="882.59,-363.27 889,-371.71 889.24,-361.11 882.59,-363.27"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_efpCallsGraph = svgPanZoom('#procrun_efpCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_efp~~CalledByGraph Pages: 1 -->
+<svg id="procrun_efpCalledByGraph" width="641pt" height="182pt"
+ viewBox="0.00 0.00 641.00 182.31" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_efp~~CalledByGraph" class="graph" transform="scale(0.58 0.58) rotate(0) translate(4 310)">
+<title>proc~~run_efp~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-310 1100,-310 1100,4 -4,4"/>
+<!-- proc~run_efp -->
+<g id="proc~~run_efp~~CalledByGraph_node1" class="node">
+<title>proc~run_efp</title>
+<polygon fill="none" stroke="black" points="1096,-208 1042,-208 1042,-184 1096,-184 1096,-208"/>
+<text text-anchor="middle" x="1069" y="-193.6" font-family="Helvetica,sans-Serif" font-size="10.50">run_efp</text>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_node2" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node2"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1006,-208 912,-208 912,-184 1006,-184 1006,-208"/>
+<text text-anchor="middle" x="959" y="-193.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_efp -->
+<g id="proc~~run_efp~~CalledByGraph_edge1" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_efp</title>
+<path fill="none" stroke="#ff0000" d="M1006.11,-196C1014.74,-196 1023.64,-196 1031.91,-196"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1031.98,-199.5 1041.98,-196 1031.98,-192.5 1031.98,-199.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~run_efp~~CalledByGraph_node3" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node3"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="876,-306 710,-306 710,-282 876,-282 876,-306"/>
+<text text-anchor="middle" x="793" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M843.52,-281.93C854.58,-278.26 865.99,-273.65 876,-268 900.81,-254 924.77,-231.6 940.32,-215.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="942.92,-217.84 947.24,-208.17 937.83,-213.04 942.92,-217.84"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~run_efp~~CalledByGraph_node4" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node4"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-226 90,-226 90,-202 277,-202 277,-226"/>
+<text text-anchor="middle" x="183.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M277.03,-211.85C439.06,-208.08 769.46,-200.39 901.57,-197.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="901.94,-200.81 911.86,-197.07 901.78,-193.81 901.94,-200.81"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~run_efp~~CalledByGraph_node5" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node5"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="822,-168 764,-168 764,-144 822,-144 822,-168"/>
+<text text-anchor="middle" x="793" y="-153.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_edge4" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M822.19,-162.88C844.04,-168.2 875,-175.76 901.85,-182.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="901.37,-185.79 911.91,-184.76 903.03,-178.99 901.37,-185.79"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~run_efp~~CalledByGraph_node6" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node6"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="873.5,-106 712.5,-106 712.5,-82 873.5,-82 873.5,-106"/>
+<text text-anchor="middle" x="793" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_edge5" class="edge">
+<title>proc~session_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M821.23,-106.14C837.51,-113.75 858.38,-124.16 876,-135 896.91,-147.87 919.17,-164.65 935.22,-177.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="933.45,-180.42 943.44,-183.94 937.83,-174.95 933.45,-180.42"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~run_efp~~CalledByGraph_node7" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node7"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="829.5,-54 756.5,-54 756.5,-30 829.5,-30 829.5,-54"/>
+<text text-anchor="middle" x="793" y="-39.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_edge6" class="edge">
+<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M829.58,-50.19C844.99,-55 862.54,-62.29 876,-73 910.72,-100.63 935.95,-147.05 948.67,-174.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="945.61,-176.01 952.92,-183.68 951.99,-173.13 945.61,-176.01"/>
+</g>
+<!-- program~main -->
+<g id="proc~~run_efp~~CalledByGraph_node8" class="node">
+<title>program~main</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-226 0,-226 0,-202 54,-202 54,-226"/>
+<text text-anchor="middle" x="27" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_efp~~CalledByGraph_edge7" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.13,-224.57C65.04,-228.53 77.96,-232.63 90,-235 224.79,-261.49 261.13,-254 398.5,-254 398.5,-254 398.5,-254 599,-254 707.92,-254 833.07,-227.66 903.11,-210.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="904.18,-213.82 913.04,-208.02 902.49,-207.03 904.18,-213.82"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~run_efp~~CalledByGraph_edge8" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#ffff00" d="M54.21,-214C61.73,-214 70.43,-214 79.67,-214"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="79.89,-217.5 89.89,-214 79.89,-210.5 79.89,-217.5"/>
+</g>
+<!-- proc~run_geometry_optimization -->
+<g id="proc~~run_efp~~CalledByGraph_node15" class="node">
+<title>proc~run_geometry_optimization</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node15"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
+<polygon fill="#d9534f" stroke="#d9534f" points="263,-167 104,-167 104,-143 263,-143 263,-167"/>
+<text text-anchor="middle" x="183.5" y="-152.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_geometry_optimization -->
+<g id="proc~~run_efp~~CalledByGraph_edge19" class="edge">
+<title>program~main&#45;&gt;proc~run_geometry_optimization</title>
+<path fill="none" stroke="#00ff00" d="M54.21,-203.99C78.08,-194.87 113.73,-181.26 141.39,-170.7"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="142.72,-173.94 150.81,-167.1 140.22,-167.4 142.72,-173.94"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="proc~~run_efp~~CalledByGraph_node9" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node9"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="674,-108 522,-108 522,-84 674,-84 674,-108"/>
+<text text-anchor="middle" x="598" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
+<g id="proc~~run_efp~~CalledByGraph_edge9" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M638.06,-108.14C671.9,-118.66 720.55,-133.79 754.06,-144.21"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="753.35,-147.65 763.94,-147.28 755.43,-140.97 753.35,-147.65"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~run_efp~~CalledByGraph_node10" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node10"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="627.5,-66 568.5,-66 568.5,-42 627.5,-42 627.5,-66"/>
+<text text-anchor="middle" x="598" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~run_efp~~CalledByGraph_edge12" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#00ffff" d="M627.89,-59.99C653.15,-65.22 690.82,-73.03 723.7,-79.84"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="723.23,-83.32 733.73,-81.92 724.65,-76.47 723.23,-83.32"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~run_efp~~CalledByGraph_node11" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node11"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
+<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<g id="proc~~run_efp~~CalledByGraph_edge13" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M637.13,-17.93C668.49,-22.8 713.03,-29.72 746.29,-34.9"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="745.81,-38.36 756.23,-36.44 746.89,-31.45 745.81,-38.36"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~run_efp~~CalledByGraph_node12" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-188 559,-188 559,-164 637,-164 637,-188"/>
+<text text-anchor="middle" x="598" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<g id="proc~~run_efp~~CalledByGraph_edge10" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M637.13,-172.05C670.98,-168.54 720.18,-163.44 753.99,-159.94"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="754.37,-163.42 763.96,-158.91 753.65,-156.46 754.37,-163.42"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="proc~~run_efp~~CalledByGraph_node13" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node13"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="467.5,-149 331.5,-149 331.5,-125 467.5,-125 467.5,-149"/>
+<text text-anchor="middle" x="399.5" y="-134.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
+<g id="proc~~run_efp~~CalledByGraph_edge11" class="edge">
+<title>proc~write_final_single_point&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M467.8,-140.27C550.4,-144.27 687.61,-150.93 753.87,-154.15"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="753.72,-157.65 763.88,-154.64 754.06,-150.65 753.72,-157.65"/>
+</g>
+<!-- proc~probe_gradient -->
+<g id="proc~~run_efp~~CalledByGraph_node14" class="node">
+<title>proc~probe_gradient</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node14"><a xlink:href="../proc/probe_gradient.html" xlink:title="probe_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="446.5,-107 352.5,-107 352.5,-83 446.5,-83 446.5,-107"/>
+<text text-anchor="middle" x="399.5" y="-92.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">probe_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient -->
+<g id="proc~~run_efp~~CalledByGraph_edge14" class="edge">
+<title>proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient</title>
+<path fill="none" stroke="#ff0000" d="M446.57,-95.23C465.95,-95.33 489.14,-95.45 511.45,-95.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="511.6,-99.07 521.62,-95.62 511.64,-92.07 511.6,-99.07"/>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~run_efp~~CalledByGraph_edge16" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0066ff" d="M263.06,-159C347.22,-163.28 478.13,-169.95 548.44,-173.53"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="548.61,-177.04 558.77,-174.05 548.97,-170.05 548.61,-177.04"/>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
+<g id="proc~~run_efp~~CalledByGraph_edge17" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point</title>
+<path fill="none" stroke="#cc00ff" d="M263.27,-148.37C282.27,-146.78 302.54,-145.07 321.45,-143.48"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="321.83,-146.96 331.5,-142.64 321.24,-139.99 321.83,-146.96"/>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~probe_gradient -->
+<g id="proc~~run_efp~~CalledByGraph_edge18" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~probe_gradient</title>
+<path fill="none" stroke="#ff0000" d="M222.3,-142.94C247.82,-134.95 282.31,-124.42 313,-116 322.51,-113.39 332.65,-110.76 342.51,-108.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="343.37,-111.69 352.23,-105.88 341.69,-104.89 343.37,-111.69"/>
+</g>
+<!-- proc~session_begin -->
+<g id="proc~~run_efp~~CalledByGraph_node16" class="node">
+<title>proc~session_begin</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node16"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
+<polygon fill="#d9534f" stroke="#d9534f" points="486,-24 313,-24 313,0 486,0 486,-24"/>
+<text text-anchor="middle" x="399.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~run_efp~~CalledByGraph_edge15" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ff66" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
+</g>
+<!-- proc~mqc_session_begin -->
+<g id="proc~~run_efp~~CalledByGraph_node17" class="node">
+<title>proc~mqc_session_begin</title>
+<g id="a_proc~~run_efp~~CalledByGraph_node17"><a xlink:href="../proc/mqc_session_begin.html" xlink:title="mqc_session_begin">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="241,-24 126,-24 126,0 241,0 241,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_session_begin&#45;&gt;proc~session_begin -->
+<g id="proc~~run_efp~~CalledByGraph_edge20" class="edge">
+<title>proc~mqc_session_begin&#45;&gt;proc~session_begin</title>
+<path fill="none" stroke="#0000ff" d="M241.01,-12C259.84,-12 281.39,-12 302.37,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="302.61,-15.5 312.61,-12 302.61,-8.5 302.61,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_efpCalledByGraph = svgPanZoom('#procrun_efpCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>err</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_data~14"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_data</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~8"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~4"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong>(N_EFP_TERMS)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_efp</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! The interaction energy of a set of effective fragments</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Each fragment of the deck names a potential; the backend loads them, places</span>
+<span class="w">      </span><span class="c">!! each on the atoms the deck gave it, turns it into that orientation and</span>
+<span class="w">      </span><span class="c">!! evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were</span>
+<span class="w">      </span><span class="c">!! solved when the potentials were made.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The work itself is in `run_libcint_efp` rather than here, because all of it</span>
+<span class="w">      </span><span class="c">!! lives behind `MQC_ENABLE_LIBCINT` and this file compiles either way. The stub</span>
+<span class="w">      </span><span class="c">!! declines with the same signature and names the build option.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Rank zero only, for now. The pair loop is the obvious thing to distribute and</span>
+<span class="w">      </span><span class="c">!! is already flat, but the terms are milliseconds on a dimer and shaping that</span>
+<span class="w">      </span><span class="c">!! before there is a cluster to shape it around would be guessing.</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_libcint_efp</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_program_limits</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">N_EFP_TERMS</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_json_output_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_out</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">err</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_data</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="n">N_EFP_TERMS</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_potentials</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;EFP: no fragment carries a potential -- give &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">&quot;&#39;fragment_potentials&#39; in the deck&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_potentials</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;EFP: the deck has &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments but &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">to_char</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_potentials</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot; potentials&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">run_libcint_efp</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_potentials</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;EFP: &quot;</span><span class="o">//</span><span class="n">err</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  EFP2 interaction energy, Hartree&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    electrostatics      &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    polarization        &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    exchange repulsion  &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    dispersion          &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">4</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    charge transfer     &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    total               &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">6</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">result_out</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! In the `scf` slot because that is the one `energy_t%total()` sums as the</span>
+<span class="w">         </span><span class="c">! reference, and an EFP interaction energy has no correlation correction</span>
+<span class="w">         </span><span class="c">! sitting on top of it. It is not an SCF energy and nothing here pretends</span>
+<span class="w">         </span><span class="c">! otherwise -- there is no wavefunction solved in this routine at all.</span>
+<span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+<span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! The same summary every other run leaves behind, so a driven run or the</span>
+<span class="w">      </span><span class="c">! validation harness can read the number back rather than scrape the log.</span>
+<span class="w">      </span><span class="c">! `UNFRAGMENTED` because that is the shape of what is written -- one energy for</span>
+<span class="w">      </span><span class="c">! one system -- not a claim that the system has no fragments.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">skip_json_output</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">output_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_breakdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fragment_breakdown</span>
+<span class="w">         </span><span class="k">call </span><span class="n">write_json_output</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json_data</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">   end subroutine </span><span class="n">run_efp</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-14 22:32 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -346,6 +346,13 @@ contains
       call allow(keys, "fragments")
       call allow(keys, "fragment_charges")
       call allow(keys, "fragment_multiplicities")
+      ! One effective fragment potential per fragment, or a single one standing for all
+      ! of them when `uniform_system` says every fragment is the same species -- which
+      ! is what keeps a ten-thousand-water deck from repeating one filename ten
+      ! thousand times. A fragment with no potential named for it stays quantum, so
+      ! this is also how a mixed calculation is spelled.
+      call allow(keys, "fragment_potentials")
+      call allow(keys, "uniform_system")
       call require(keys, "molecular_charge")
       call require(keys, "molecular_multiplicity")
    end function molecule_keys

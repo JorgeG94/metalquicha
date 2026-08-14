@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">41 statements</a>
+                 title=" 0.5% of total for procedures.">79 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,11 +136,15 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-found~14">found</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-found~6">found</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-frag_path">frag_path</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-ifrag">ifrag</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-indices~2">indices</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-has_list">has_list</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-ifrag~2">ifrag</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-indices~3">indices</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-n_here">n_here</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-n_pot">n_pot</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-one">one</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-shared">shared</a>
         </div>
       </div>
     </div>
@@ -176,11 +180,21 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine read_fragments(json, prefix, natoms, nfrag, fragments, error)  
+    <h2>private  subroutine read_fragments(json, prefix, base_dir, natoms, nfrag, fragments, uniform, error)  
 </h2>
     
 
-    <p>The fragments array, with its parallel charge and multiplicity lists</p>
+    <p>The fragments array, with its parallel charge, multiplicity and potential lists</p>
+<p><code>fragment_potentials</code> is the one of those that may be given as a <strong>single
+string rather than a list</strong>, when <code>uniform_system</code> says every fragment is the
+same species. That is not sugar for its own sake: a ten-thousand-water cluster
+would otherwise repeat one filename ten thousand times, and a list that long is
+somewhere for a typo to hide rather than information.</p>
+<p>Potential paths are resolved against the deck, exactly as <code>xyz</code> is, so a
+deck refers to the potential beside it and works from any directory.</p>
+<p><code>uniform_system</code> is checked rather than believed. Fragments claimed uniform
+must agree in atom count, so a deck that mixes species and says otherwise is
+refused here instead of being handed the wrong potential and run.</p>
 
 
     <h3>Arguments</h3>
@@ -196,7 +210,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~9"></span>
+              <span class="anchor" id="variable-json~12"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -226,7 +240,22 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~5"></span>
+              <span class="anchor" id="variable-base_dir~4"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>base_dir</strong></td>
+            <td>
+                <p>For resolving relative potential paths</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-natoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -241,7 +270,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~6"></span>
+              <span class="anchor" id="variable-nfrag~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -256,7 +285,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~7"></span>
+              <span class="anchor" id="variable-fragments~2"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -271,7 +300,22 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~43"></span>
+              <span class="anchor" id="variable-uniform~2"></span>
+              logical,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>uniform</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~28"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -299,91 +343,127 @@
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~read_fragments~~CallsGraph Pages: 1 -->
-<svg id="procread_fragmentsCallsGraph" width="336pt" height="180pt"
- viewBox="0.00 0.00 336.00 179.59" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~read_fragments~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 175.59)">
+<svg id="procread_fragmentsCallsGraph" width="336pt" height="269pt"
+ viewBox="0.00 0.00 336.00 269.31" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_fragments~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 265.31)">
 <title>proc~~read_fragments~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-175.59 332,-175.59 332,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-265.31 332,-265.31 332,4 -4,4"/>
 <!-- proc~read_fragments -->
 <g id="proc~~read_fragments~~CallsGraph_node1" class="node">
 <title>proc~read_fragments</title>
-<polygon fill="none" stroke="black" points="97,-108 0,-108 0,-84 97,-84 97,-108"/>
-<text text-anchor="middle" x="48.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_fragments</text>
+<polygon fill="none" stroke="black" points="97,-150 0,-150 0,-126 97,-126 97,-150"/>
+<text text-anchor="middle" x="48.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_fragments</text>
 </g>
 <!-- get -->
 <g id="proc~~read_fragments~~CallsGraph_node2" class="node">
 <title>get</title>
-<polygon fill="#777777" stroke="#777777" points="328,-107 274,-107 274,-83 328,-83 328,-107"/>
-<text text-anchor="middle" x="301" y="-92.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
+<polygon fill="#777777" stroke="#777777" points="328,-66 274,-66 274,-42 328,-42 328,-66"/>
+<text text-anchor="middle" x="301" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
 </g>
 <!-- proc~read_fragments&#45;&gt;get -->
 <g id="proc~~read_fragments~~CallsGraph_edge1" class="edge">
 <title>proc~read_fragments&#45;&gt;get</title>
-<path fill="none" stroke="#ff0000" d="M60.49,-108.16C75.23,-123.47 103.04,-148.96 133,-159 177.25,-173.82 195.03,-177.2 238,-159 258.72,-150.22 275.91,-130.76 286.89,-115.59"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="289.84,-117.48 292.62,-107.26 284.07,-113.52 289.84,-117.48"/>
+<path fill="none" stroke="#ff0000" d="M54.66,-150.04C65.34,-173.19 92.3,-223.37 133,-243 175.03,-263.28 200.21,-270.38 238,-243 291.54,-204.22 299.68,-117.74 300.37,-76.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.87,-76.5 300.41,-66.49 296.87,-76.48 303.87,-76.5"/>
 </g>
 <!-- info -->
 <g id="proc~~read_fragments~~CallsGraph_node3" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="212.5,-150 158.5,-150 158.5,-126 212.5,-126 212.5,-150"/>
-<text text-anchor="middle" x="185.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="212.5,-234 158.5,-234 158.5,-210 212.5,-210 212.5,-234"/>
+<text text-anchor="middle" x="185.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~read_fragments&#45;&gt;info -->
 <g id="proc~~read_fragments~~CallsGraph_edge2" class="edge">
 <title>proc~read_fragments&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M88.19,-108.04C107.21,-113.95 129.99,-121.04 148.61,-126.84"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="147.62,-130.19 158.21,-129.82 149.7,-123.51 147.62,-130.19"/>
+<path fill="none" stroke="#ff0000" d="M63.2,-150.12C79.13,-163.77 106.63,-186.02 133,-201 137.98,-203.83 143.43,-206.48 148.85,-208.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="147.9,-212.28 158.48,-212.91 150.6,-205.82 147.9,-212.28"/>
 </g>
 <!-- proc~error_set -->
 <g id="proc~~read_fragments~~CallsGraph_node4" class="node">
 <title>proc~error_set</title>
 <g id="a_proc~~read_fragments~~CallsGraph_node4"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="238,-108 133,-108 133,-84 238,-84 238,-108"/>
-<text text-anchor="middle" x="185.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="238,-192 133,-192 133,-168 238,-168 238,-192"/>
+<text text-anchor="middle" x="185.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~read_fragments&#45;&gt;proc~error_set -->
 <g id="proc~~read_fragments~~CallsGraph_edge3" class="edge">
 <title>proc~read_fragments&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#ff0000" d="M97.1,-96C105.39,-96 114.12,-96 122.73,-96"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="122.75,-99.5 132.75,-96 122.75,-92.5 122.75,-99.5"/>
+<path fill="none" stroke="#ff0000" d="M88.19,-150.04C103.15,-154.69 120.45,-160.07 136.22,-164.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="135.22,-168.33 145.81,-167.96 137.3,-161.65 135.22,-168.33"/>
 </g>
 <!-- proc~int_to_key -->
 <g id="proc~~read_fragments~~CallsGraph_node5" class="node">
 <title>proc~int_to_key</title>
 <g id="a_proc~~read_fragments~~CallsGraph_node5"><a xlink:href="../proc/int_to_key.html" xlink:title="int_to_key">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="218.5,-66 152.5,-66 152.5,-42 218.5,-42 218.5,-66"/>
-<text text-anchor="middle" x="185.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_key</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="218.5,-150 152.5,-150 152.5,-126 218.5,-126 218.5,-150"/>
+<text text-anchor="middle" x="185.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_key</text>
 </a>
 </g>
 </g>
 <!-- proc~read_fragments&#45;&gt;proc~int_to_key -->
 <g id="proc~~read_fragments~~CallsGraph_edge4" class="edge">
 <title>proc~read_fragments&#45;&gt;proc~int_to_key</title>
-<path fill="none" stroke="#ff0000" d="M88.19,-83.96C105.12,-78.7 125.03,-72.5 142.34,-67.12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="143.68,-70.36 152.19,-64.05 141.61,-63.68 143.68,-70.36"/>
+<path fill="none" stroke="#ff0000" d="M97.1,-138C111.76,-138 127.79,-138 142.08,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="142.13,-141.5 152.13,-138 142.13,-134.5 142.13,-141.5"/>
+</g>
+<!-- proc~join_path -->
+<g id="proc~~read_fragments~~CallsGraph_node6" class="node">
+<title>proc~join_path</title>
+<g id="a_proc~~read_fragments~~CallsGraph_node6"><a xlink:href="../proc/join_path.html" xlink:title="join_path">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="216,-108 155,-108 155,-84 216,-84 216,-108"/>
+<text text-anchor="middle" x="185.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">join_path</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fragments&#45;&gt;proc~join_path -->
+<g id="proc~~read_fragments~~CallsGraph_edge5" class="edge">
+<title>proc~read_fragments&#45;&gt;proc~join_path</title>
+<path fill="none" stroke="#ff0000" d="M88.19,-125.96C106.07,-120.4 127.27,-113.81 145.22,-108.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="146.31,-111.55 154.82,-105.23 144.23,-104.86 146.31,-111.55"/>
 </g>
 <!-- proc~optional_int -->
-<g id="proc~~read_fragments~~CallsGraph_node6" class="node">
+<g id="proc~~read_fragments~~CallsGraph_node7" class="node">
 <title>proc~optional_int</title>
-<g id="a_proc~~read_fragments~~CallsGraph_node6"><a xlink:href="../proc/optional_int.html" xlink:title="optional_int">
-<polygon fill="#d9534f" stroke="#d9534f" points="223,-24 148,-24 148,0 223,0 223,-24"/>
-<text text-anchor="middle" x="185.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_int</text>
+<g id="a_proc~~read_fragments~~CallsGraph_node7"><a xlink:href="../proc/optional_int.html" xlink:title="optional_int">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-66 148,-66 148,-42 223,-42 223,-66"/>
+<text text-anchor="middle" x="185.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_int</text>
 </a>
 </g>
 </g>
 <!-- proc~read_fragments&#45;&gt;proc~optional_int -->
-<g id="proc~~read_fragments~~CallsGraph_edge5" class="edge">
+<g id="proc~~read_fragments~~CallsGraph_edge6" class="edge">
 <title>proc~read_fragments&#45;&gt;proc~optional_int</title>
-<path fill="none" stroke="#ff0000" d="M63.2,-83.88C79.13,-70.23 106.63,-47.98 133,-33 135.85,-31.38 138.86,-29.82 141.92,-28.33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="143.56,-31.43 151.21,-24.09 140.66,-25.06 143.56,-31.43"/>
+<path fill="none" stroke="#ff0000" d="M63.2,-125.88C79.13,-112.23 106.63,-89.98 133,-75 135.85,-73.38 138.86,-71.82 141.92,-70.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="143.56,-73.43 151.21,-66.09 140.66,-67.06 143.56,-73.43"/>
+</g>
+<!-- proc~optional_logical -->
+<g id="proc~~read_fragments~~CallsGraph_node8" class="node">
+<title>proc~optional_logical</title>
+<g id="a_proc~~read_fragments~~CallsGraph_node8"><a xlink:href="../proc/optional_logical.html" xlink:title="optional_logical">
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 137,-24 137,0 234,0 234,-24"/>
+<text text-anchor="middle" x="185.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_logical</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fragments&#45;&gt;proc~optional_logical -->
+<g id="proc~~read_fragments~~CallsGraph_edge7" class="edge">
+<title>proc~read_fragments&#45;&gt;proc~optional_logical</title>
+<path fill="none" stroke="#ff0000" d="M56.23,-125.95C68.74,-104.52 97.59,-59.54 133,-33 134.85,-31.61 136.81,-30.3 138.83,-29.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="140.9,-31.92 148.04,-24.1 137.58,-25.76 140.9,-31.92"/>
 </g>
 <!-- proc~optional_int&#45;&gt;get -->
-<g id="proc~~read_fragments~~CallsGraph_edge6" class="edge">
+<g id="proc~~read_fragments~~CallsGraph_edge8" class="edge">
 <title>proc~optional_int&#45;&gt;get</title>
-<path fill="none" stroke="#cc00ff" d="M221.54,-24.07C227.24,-26.65 232.93,-29.63 238,-33 255.43,-44.58 272.02,-61.6 283.64,-74.88"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="281.06,-77.24 290.2,-82.58 286.39,-72.7 281.06,-77.24"/>
+<path fill="none" stroke="#4800ff" d="M223.04,-54C236.13,-54 250.87,-54 263.92,-54"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="263.96,-57.5 273.96,-54 263.96,-50.5 263.96,-57.5"/>
+</g>
+<!-- proc~optional_logical&#45;&gt;get -->
+<g id="proc~~read_fragments~~CallsGraph_edge9" class="edge">
+<title>proc~optional_logical&#45;&gt;get</title>
+<path fill="none" stroke="#ff00da" d="M219.02,-24.04C233.18,-29.27 249.82,-35.43 264.31,-40.79"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="263.36,-44.17 273.95,-44.36 265.79,-37.61 263.36,-44.17"/>
 </g>
 </g>
 </svg>
@@ -610,18 +690,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M68.51,-54C78.77,-54 90.97,-54 103.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="103.91,-57.5 113.91,-54 103.91,-50.5 103.91,-57.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~read_fragments~~CalledByGraph_node10" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~read_fragments~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~read_fragments~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="78,-24 0,-24 0,0 78,0 78,-24"/>
 <text text-anchor="middle" x="39" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~read_fragments~~CalledByGraph_edge9" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M78.34,-12C99.34,-12 125.52,-12 147.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="147.75,-15.5 157.75,-12 147.75,-8.5 147.75,-15.5"/>
 </g>
@@ -729,7 +809,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~14"></span>
+              <span class="anchor" id="variable-found~6"></span>
               logical,
             </td>
               <td>private</td>
@@ -763,7 +843,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ifrag"></span>
+              <span class="anchor" id="variable-has_list"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_list</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ifrag~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -780,7 +877,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~2"></span>
+              <span class="anchor" id="variable-indices~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -812,6 +909,57 @@ large graphs.</div>
                 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pot"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pot</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-one"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>one</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shared"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>shared</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -828,24 +976,66 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_fragments</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">natoms</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! The fragments array, with its parallel charge and multiplicity lists</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_fragments</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="n">natoms</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">uniform</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! The fragments array, with its parallel charge, multiplicity and potential lists</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! `fragment_potentials` is the one of those that may be given as a **single</span>
+<span class="w">      </span><span class="c">!! string rather than a list**, when `uniform_system` says every fragment is the</span>
+<span class="w">      </span><span class="c">!! same species. That is not sugar for its own sake: a ten-thousand-water cluster</span>
+<span class="w">      </span><span class="c">!! would otherwise repeat one filename ten thousand times, and a list that long is</span>
+<span class="w">      </span><span class="c">!! somewhere for a typo to hide rather than information.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Potential paths are resolved against the deck, exactly as `xyz` is, so a</span>
+<span class="w">      </span><span class="c">!! deck refers to the potential beside it and works from any directory.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! `uniform_system` is checked rather than believed. Fragments claimed uniform</span>
+<span class="w">      </span><span class="c">!! must agree in atom count, so a deck that mixes species and says otherwise is</span>
+<span class="w">      </span><span class="c">!! refused here instead of being handed the wrong potential and run.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prefix</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">base_dir</span><span class="w">  </span><span class="c">!! For resolving relative potential paths</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">natoms</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nfrag</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">input_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragments</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">uniform</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_path</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ifrag</span><span class="p">,</span><span class="w"> </span><span class="n">n_here</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_path</span><span class="p">,</span><span class="w"> </span><span class="n">shared</span><span class="p">,</span><span class="w"> </span><span class="n">one</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ifrag</span><span class="p">,</span><span class="w"> </span><span class="n">n_here</span><span class="p">,</span><span class="w"> </span><span class="n">n_pot</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">has_list</span>
 
 <span class="w">      </span><span class="n">nfrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">uniform</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragments&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">nfrag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">nfrag</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">nfrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.uniform_system&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">uniform</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! A single string broadcasts; a list is read per fragment. Which one was written</span>
+<span class="w">      </span><span class="c">! is settled by asking for the string first -- `json%get` on a list into a scalar</span>
+<span class="w">      </span><span class="c">! does not find one, so this distinguishes the two without inspecting types.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_potentials&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">shared</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">)))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">shared</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      </span><span class="n">n_pot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_potentials&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">has_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_pot</span><span class="p">)</span>
+<span class="w">      </span><span class="n">has_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">has_list</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_list</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_pot</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">nfrag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot;: &#39;fragment_potentials&#39; has &quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">n_pot</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot; entries for &quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">nfrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">uniform</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">nfrag</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot;: &#39;fragment_potentials&#39; is a single potential for &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">nfrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments, which only makes sense with &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot;&#39;uniform_system&#39;: true&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -879,7 +1069,40 @@ large graphs.</div>
 <span class="w">                           </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">charge</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_multiplicities(&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">multiplicity</span><span class="p">)</span>
-<span class="w">      </span><span class="k">end do</span>
+
+<span class="w">         </span><span class="c">! A fragment with no potential named for it stays quantum, so an absent</span>
+<span class="w">         </span><span class="c">! entry is not an error -- it is the mixed QM/EFP case.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">potential</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">join_path</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="n">shared</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">has_list</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">one</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">one</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_potentials(&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">one</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">one</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">one</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">potential</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">join_path</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">one</span><span class="p">))</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">            end if</span>
+<span class="k">         end if</span>
+<span class="k">      end do</span>
+
+<span class="w">      </span><span class="c">! The uniformity claim, checked. Atom count is what a potential has to agree with</span>
+<span class="w">      </span><span class="c">! for its own atoms to be superposable onto a fragment&#39;s, so it is the cheap</span>
+<span class="w">      </span><span class="c">! necessary condition; the loader still has to check composition when it reads</span>
+<span class="w">      </span><span class="c">! the file, which is where the elements become known.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uniform</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         do </span><span class="n">ifrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="n">indices</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">&quot;: &#39;uniform_system&#39; is true but fragment &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; has &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">indices</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">&quot; atoms where the first has &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="n">indices</span><span class="p">)))</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end if</span>
+<span class="k">         end do</span>
+<span class="k">      end if</span>
 <span class="k">   end subroutine </span><span class="n">read_fragments</span>
 </pre></div>
 
@@ -904,7 +1127,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:56 +0000             </p>
+ on 2026-08-14 22:32 +0000             </p>
           </div>
         </div>
         <br>
