@@ -100,6 +100,18 @@ module mqc_result_types
       real(dp), allocatable :: hessian(:, :)    !! Energy hessian (future implementation)
       real(dp), allocatable :: dipole(:)        !! Dipole moment vector (3) (Debye)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3N) in a.u. for IR intensities
+      real(dp), allocatable :: bond_orders(:, :)
+         !! Wiberg-Mayer bond orders, (natoms, natoms), symmetric with a zero
+         !! diagonal.
+         !!
+         !! What a distance rule cannot tell you: whether two atoms close enough
+         !! to look bonded actually share electrons. A hydrogen bond and a long
+         !! covalent one are the same distance argument and different numbers
+         !! here, which is why this is worth carrying rather than re-deriving
+         !! from the geometry.
+         !!
+         !! Atom indices are the fragment's own, so a fragment's matrix is
+         !! fragment-local and includes its caps.
 
       ! Fragment metadata
       real(dp) :: distance = 0.0_dp      !! Minimal atomic distance between monomers (Angstrom, 0 for monomers)
@@ -111,6 +123,7 @@ module mqc_result_types
       logical :: has_hessian = .false.   !! Hessian has been computed
       logical :: has_dipole = .false.    !! Dipole moment has been computed
       logical :: has_dipole_derivatives = .false.  !! Dipole derivatives have been computed
+      logical :: has_bond_orders = .false.  !! Bond orders have been computed
 
       ! Frontier orbitals
       !
