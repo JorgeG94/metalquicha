@@ -57,10 +57,18 @@ module mqc_libcint_fmo
    !! everything outside it, `dD_IJ` being the dimer density less the two
    !! monomer densities laid side by side.
    !!
-   !! **Non-covalent fragments only, deliberately.** Every fragment is a whole
-   !! molecule, so no bond is cut and none of the machinery for cutting one --
-   !! adjusted fragment orbitals, hybrid orbital projection, hydrogen caps -- is
-   !! present or needed.
+   !! **Non-covalent fragments only, and this is enforced.** Every fragment must
+   !! be a whole molecule. None of the machinery for cutting a bond -- adjusted
+   !! fragment orbitals, hybrid orbital projection, hydrogen caps -- is present,
+   !! so a partition that severs one is refused rather than answered.
+   !!
+   !! The check is not a formality. Cutting a single bond leaves both fragments
+   !! with an odd electron count, which the closed-shell check would catch on
+   !! its own; but cut an even number per fragment -- a ring, a double bond --
+   !! and every count stays even. Cyclopropane split into three CH2 used to come
+   !! back 0.28 Hartree low, which is 176 kcal/mol in the shape of an answer.
+   !! Connectivity is therefore checked directly, with the criterion
+   !! [[mqc_bond_perception]] uses everywhere else.
    !!
    !! **Why two fragments is the test that matters.** With two fragments nothing
    !! lies outside the dimer, so `u_12` vanishes, the monomer terms cancel
@@ -73,6 +81,8 @@ module mqc_libcint_fmo
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_vdw_radius
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_bond_perception, only: connected_components
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
    use mqc_libcint_esp, only: esp_matrices
@@ -449,6 +459,9 @@ contains
          return
       end if
 
+      call refuse_severed_bonds(z, coords, owner, n_atoms, error)
+      if (error%has_error()) return
+
       allocate (frag(n_frag))
       do f = 1, n_frag
          frag(f)%atoms = pack([(i, i=1, n_atoms)], owner == f)
@@ -478,6 +491,58 @@ contains
       call logger%verbose("  fmo: fragment 1 treats "//to_char(size(frag(1)%near))// &
                           " of "//to_char(n_frag - 1)//" neighbours exactly")
    end subroutine build_fragments
+
+   subroutine refuse_severed_bonds(z, coords, owner, n_atoms, error)
+      !! Refuse a partition that cuts a covalent bond
+      !!
+      !! This method has no way to represent a cut bond -- no adjusted fragment
+      !! orbitals, no hybrid orbital projection, no caps -- so a fragment with a
+      !! dangling valence is not an approximation it makes, it is a question it
+      !! cannot be asked.
+      !!
+      !! Worth checking explicitly rather than trusting, because the failure is
+      !! quiet in exactly the cases that matter. Cutting a single bond leaves
+      !! both fragments with an odd electron count, and the closed-shell check
+      !! catches that by accident. Cut an even number per fragment -- a ring, a
+      !! double bond -- and every count stays even, nothing objects, and the
+      !! answer is wrong by a large margin: cyclopropane split into three CH2
+      !! comes back 0.28 Hartree low, which is 176 kcal/mol and looks like a
+      !! number rather than a mistake.
+      !!
+      !! The criterion is the one [[mqc_bond_perception]] uses everywhere else,
+      !! reused rather than restated so the two cannot drift.
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: owner(:)
+      integer, intent(in) :: n_atoms
+      type(error_t), intent(inout) :: error
+
+      type(system_geometry_t) :: geom
+      integer, allocatable :: component(:)
+      integer :: n_components, i, j
+
+      geom%total_atoms = n_atoms
+      allocate (geom%element_numbers(n_atoms), source=z)
+      allocate (geom%coordinates(3, n_atoms), source=coords)
+      call connected_components(geom, component, n_components)
+
+      ! A covalently connected group spanning two fragments is a severed bond.
+      ! Reported by naming one offending pair rather than counting them: the
+      ! first one is enough to see what was done wrong.
+      do i = 1, n_atoms
+         do j = i + 1, n_atoms
+            if (component(i) /= component(j)) cycle
+            if (owner(i) == owner(j)) cycle
+            call error%set(ERROR_VALIDATION, "fmo: the partition cuts a covalent "// &
+                           "molecule -- atoms "//to_char(i)//" and "//to_char(j)// &
+                           " are covalently connected but were put in fragments "// &
+                           to_char(owner(i))//" and "//to_char(owner(j))//". This "// &
+                           "method has no way to cap a cut bond, so it cannot answer "// &
+                           "for that partition; fragment on whole molecules")
+            return
+         end do
+      end do
+   end subroutine refuse_severed_bonds
 
    function effective_resppc(opts) result(r)
       !! The cutoff actually in force

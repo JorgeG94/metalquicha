@@ -36,6 +36,10 @@ program check_fmo
    integer, parameter :: N_DIM = 3
    !> Water plus ammonia, for the unequal-fragment case
    integer, parameter :: N_MIXED = 7
+   !> Atom counts for the bond-cutting partition cases
+   integer, parameter :: N_ETHANE = 8
+   integer, parameter :: N_RING = 9
+   integer, parameter :: N_DIMER = 6
    real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
    integer :: n_bad
 
@@ -47,6 +51,7 @@ program check_fmo
    call mixed_case(1.0e-7_dp, n_bad)
    call separated_case(1.0e-9_dp, n_bad)
    call trimer_case(5.0e-3_dp, n_bad)
+   call partition_cases(n_bad)
 
    if (n_bad == 0) then
       call logger%info("")
@@ -400,6 +405,138 @@ contains
          n_bad = n_bad + 1
       end if
    end subroutine trimer_case
+
+   subroutine partition_cases(n_bad)
+      !! A partition that cuts a covalent bond has to be refused, not answered
+      !!
+      !! There is no capping here -- no adjusted fragment orbitals, no hybrid
+      !! orbital projection, no hydrogen caps -- so a fragment with a dangling
+      !! valence is a question the method cannot be asked. The reason to test it
+      !! rather than trust it is that the failure used to be quiet in exactly
+      !! the cases that matter:
+      !!
+      !!   * Cutting one bond leaves both fragments with an odd electron count,
+      !!     and the closed-shell check caught that by accident.
+      !!   * Cutting an even number per fragment -- a ring, a double bond --
+      !!     left every count even, nothing objected, and cyclopropane split
+      !!     into three CH2 came back 0.28 Hartree low. That is 176 kcal/mol
+      !!     wearing the shape of an answer.
+      !!
+      !! The third case is the one that keeps the check honest in the other
+      !! direction: a hydrogen bond is not a covalent one, and a tightly bound
+      !! water dimer must still be accepted. A check that refused those would be
+      !! useless in precisely the systems this method is for.
+      integer, intent(inout) :: n_bad
+
+      real(dp) :: ethane(N_DIM, N_ETHANE)
+      real(dp) :: ring(N_DIM, N_RING)
+      real(dp) :: dimer(N_DIM, N_DIMER)
+
+      call logger%info("")
+      call logger%info("== partitions that cut bonds")
+
+      ethane = reshape([0.000_dp, 0.000_dp, 0.768_dp, &
+                        -1.019_dp, 0.000_dp, 1.157_dp, &
+                        0.510_dp, 0.883_dp, 1.157_dp, &
+                        0.510_dp, -0.883_dp, 1.157_dp, &
+                        0.000_dp, 0.000_dp, -0.768_dp, &
+                        1.019_dp, 0.000_dp, -1.157_dp, &
+                        -0.510_dp, -0.883_dp, -1.157_dp, &
+                        -0.510_dp, 0.883_dp, -1.157_dp], [N_DIM, N_ETHANE])
+      call must_refuse("ethane cut at C-C", [6, 1, 1, 1, 6, 1, 1, 1], ethane, &
+                       [1, 1, 1, 1, 2, 2, 2, 2], n_bad)
+
+      ! Three CH2, eight electrons each: every count even, so nothing but a
+      ! connectivity check stands between this and a confident wrong answer.
+      ring = reshape([0.8718_dp, 0.0000_dp, 0.0000_dp, &
+                      1.3818_dp, 0.0000_dp, 0.9500_dp, &
+                      1.3818_dp, 0.0000_dp, -0.9500_dp, &
+                      -0.4359_dp, 0.7550_dp, 0.0000_dp, &
+                      -0.6909_dp, 1.1967_dp, 0.9500_dp, &
+                      -0.6909_dp, 1.1967_dp, -0.9500_dp, &
+                      -0.4359_dp, -0.7550_dp, 0.0000_dp, &
+                      -0.6909_dp, -1.1967_dp, 0.9500_dp, &
+                      -0.6909_dp, -1.1967_dp, -0.9500_dp], [N_DIM, N_RING])
+      call must_refuse("cyclopropane cut into three CH2", [6, 1, 1, 6, 1, 1, 6, 1, 1], &
+                       ring, [1, 1, 1, 2, 2, 2, 3, 3, 3], n_bad)
+
+      ! And the other direction: 2.5 Angstrom is tighter than any hydrogen bond
+      ! these tests use, and must still be allowed through.
+      dimer = reshape([0.0000_dp, 0.0000_dp, 0.0000_dp, &
+                       0.0000_dp, -0.7572_dp, 0.5865_dp, &
+                       0.0000_dp, 0.7572_dp, 0.5865_dp, &
+                       0.0000_dp, 0.0000_dp, 2.5000_dp, &
+                       0.0000_dp, -0.7572_dp, 3.0865_dp, &
+                       0.0000_dp, 0.7572_dp, 3.0865_dp], [N_DIM, N_DIMER])
+      call must_allow("two waters 2.5 A apart", [8, 1, 1, 8, 1, 1], dimer, &
+                      [1, 1, 1, 2, 2, 2], n_bad)
+   end subroutine partition_cases
+
+   subroutine must_refuse(label, z, coords_ang, owner, n_bad)
+      character(len=*), intent(in) :: label
+      integer, intent(in) :: z(:), owner(:)
+      real(dp), intent(in) :: coords_ang(:, :)
+      integer, intent(inout) :: n_bad
+
+      type(error_t) :: error
+
+      call attempt(z, coords_ang, owner, error)
+      if (error%has_error()) then
+         call logger%info("   ok   "//label//" is refused")
+         call error%clear()
+      else
+         call logger%error("   FAIL "//label//" was answered rather than refused")
+         n_bad = n_bad + 1
+      end if
+   end subroutine must_refuse
+
+   subroutine must_allow(label, z, coords_ang, owner, n_bad)
+      character(len=*), intent(in) :: label
+      integer, intent(in) :: z(:), owner(:)
+      real(dp), intent(in) :: coords_ang(:, :)
+      integer, intent(inout) :: n_bad
+
+      type(error_t) :: error
+
+      call attempt(z, coords_ang, owner, error)
+      if (error%has_error()) then
+         call logger%error("   FAIL "//label//" was refused: "//error%get_message())
+         call error%clear()
+         n_bad = n_bad + 1
+      else
+         call logger%info("   ok   "//label//" is allowed, a hydrogen bond is not a cut")
+      end if
+   end subroutine must_allow
+
+   subroutine attempt(z, coords_ang, owner, error)
+      integer, intent(in) :: z(:), owner(:)
+      real(dp), intent(in) :: coords_ang(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      character(len=2), allocatable :: symbols(:)
+      real(dp), allocatable :: coords(:, :)
+      integer :: i
+
+      allocate (symbols(size(z)))
+      do i = 1, size(z)
+         select case (z(i))
+         case (6)
+            symbols(i) = "C "
+         case (7)
+            symbols(i) = "N "
+         case (8)
+            symbols(i) = "O "
+         case default
+            symbols(i) = "H "
+         end select
+      end do
+      coords = coords_ang*ANGSTROM_TO_BOHR
+
+      opts%basis = "sto-3g"
+      call run_fmo2(z, symbols, coords, owner, opts, res, error)
+   end subroutine attempt
 
    subroutine supermolecule(z, symbols, coords, basis, energy, n_bad, error)
       !! The answer FMO2 is trying to reproduce
