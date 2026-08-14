@@ -557,6 +557,12 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_mp2_gradient PRIVATE ${main_lib} cint_fortran
                                                    cint)
 
+  add_executable(check_charges
+                 ${PROJECT_SOURCE_DIR}/validation/check_charges.f90)
+  target_include_directories(check_charges
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_charges PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)

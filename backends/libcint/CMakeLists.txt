@@ -23,6 +23,7 @@ target_sources(
           mqc_libcint_cphf.f90
           mqc_libcint_dma.f90
           mqc_libcint_esp.f90
+          mqc_libcint_charges.f90
           mqc_libcint_screening.f90
           mqc_libcint_projection.f90
           mqc_libcint_rhf.f90
