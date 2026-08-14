@@ -14,6 +14,9 @@ module mqc_libcint_rhf
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
+   use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
@@ -58,6 +61,9 @@ module mqc_libcint_rhf
    !> comparing their iteration counts means nothing.
    real(dp), parameter :: GWH_K = 1.75_dp
 
+   !> Buffer length for a formatted table line handed to the logger.
+   integer, parameter :: LINE_LEN = 160
+
    public :: rhf_result_t
    public :: run_libcint_rhf
    public :: run_libcint_uhf
@@ -86,7 +92,81 @@ module mqc_libcint_rhf
       real(dp) :: spin_squared = 0.0_dp        !! <S^2>, unrestricted only
    end type rhf_result_t
 
+   !> Stage labels, named once so the per-iteration column and the summary table
+   !> cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
+   !>
+   !> The split is by what a change would move. The Fock build is the integral
+   !> work and the only stage anything in `INTEGRALS_MQC.md` touches; the
+   !> diagonalisation is LAPACK and n^3 regardless; setup is the one-time 1e
+   !> integrals, screening bounds and guess. Reporting them apart is what makes
+   !> "the integrals got 20% faster" a statement about the integrals rather than
+   !> about the whole run.
+   character(len=*), parameter :: STAGE_SETUP = "setup (1e, bounds, guess)"
+   character(len=*), parameter :: STAGE_FOCK = "Fock builds"
+   character(len=*), parameter :: STAGE_DIAG = "diagonalisation"
+   character(len=*), parameter :: STAGE_DIIS = "DIIS"
+   character(len=*), parameter :: STAGE_XC = "XC quadrature"
+
 contains
+
+   subroutine scf_table_header(verbose)
+      !! Column headings for the per-iteration table
+      !!
+      !! Through the logger like everything else the program says: the level
+      !! decides whether it is seen, and a run redirected to a log file gets the
+      !! table with it rather than only on a terminal that is no longer there.
+      logical, intent(in) :: verbose
+
+      if (.not. verbose) return
+      call logger%info("")
+      call logger%info("  SCF iterations")
+      call logger%info("  "//repeat("-", 84))
+      call logger%info("    iter                 energy          dE          dD"// &
+                       "   diis       Fock       rest")
+      call logger%info("  "//repeat("-", 84))
+   end subroutine scf_table_header
+
+   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_rest)
+      !! One iteration's line, with the time that iteration took
+      !!
+      !! Per-iteration rather than only a total because the first iterations of a
+      !! direct SCF are not the same price as the last: screening tightens as the
+      !! density settles, so a run whose Fock build is flat across iterations is
+      !! telling you the density-weighted screening of `INTEGRALS_MQC.md` §6.1 is
+      !! missing, which is exactly the case here.
+      logical, intent(in) :: verbose
+      integer, intent(in) :: iter, ndiis
+      real(dp), intent(in) :: energy, de, drms, t_fock, t_rest
+
+      character(len=LINE_LEN) :: line
+
+      if (.not. verbose) return
+      write (line, "(i8,f23.12,2es12.3,i7,2(f9.2,a))") &
+         iter, energy, de, drms, ndiis, t_fock, " s", t_rest, " s"
+      call logger%info(trim(line))
+   end subroutine scf_table_row
+
+   subroutine scf_table_footer(verbose, converged, iterations)
+      !! Close the per-iteration table
+      !!
+      !! The timing summary is `clk%report(...)`, which counts calls itself --
+      !! the Fock stage runs `iterations + 1` times because the converged energy
+      !! is rebuilt after the loop, and dividing by `iterations` reported a
+      !! per-build cost about 12% high.
+      logical, intent(in) :: verbose, converged
+      integer, intent(in) :: iterations
+
+      character(len=LINE_LEN) :: line
+
+      if (.not. verbose) return
+      call logger%info("  "//repeat("-", 84))
+      if (converged) then
+         write (line, "(a,i0,a)") "  converged in ", iterations, " iterations"
+      else
+         write (line, "(a,i0,a)") "  NOT converged after ", iterations, " iterations"
+      end if
+      call logger%info(trim(line))
+   end subroutine scf_table_footer
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
@@ -154,6 +234,8 @@ contains
       logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
       integer :: n_ao, n_mo, n_occ, iter
+      type(timing_report_t) :: clk
+      real(dp) :: t_fock_iter, t_rest_iter
 
       if (mod(nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "RHF needs an even electron count; this "// &
@@ -180,14 +262,19 @@ contains
       ! Cartesian -- one basis function short and 1.4 mHartree out -- and
       ! neither the iterations nor the final energy look wrong on their own.
       ! The count and the angular form together are what name the basis.
+      ! Still gated on `verbose` rather than on the logger level alone: the atomic
+      ! guess runs one of these per element, and those are not runs anyone wants a
+      ! table for. The level decides how loud a reported run is; `verbose` decides
+      ! whether this run reports at all.
       if (verbose) then
          if (mol%cartesian) then
-            write (*, "(a,i0,a)") "  basis functions: ", n_ao, "  (Cartesian, 6d/10f)"
+            call logger%info("  basis functions: "//to_char(n_ao)//"  (Cartesian, 6d/10f)")
          else
-            write (*, "(a,i0,a)") "  basis functions: ", n_ao, "  (spherical, 5d/7f)"
+            call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
       end if
 
+      call clk%start()
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
       if (present(h_extra)) then
@@ -260,14 +347,23 @@ contains
       e_old = 0.0_dp
       result%converged = .false.
 
+      ! Everything from the top of the routine to here is one-time cost: the 1e
+      ! integrals, the screening bounds or the fitted/in-core tensor, the
+      ! orthogonaliser and the guess.
+      call clk%lap(STAGE_SETUP)
+      call scf_table_header(verbose)
+
       do iter = 1, max_iter
          density_old = density
          ! The energy belongs to the Fock built from this density, so both come
          ! back together and before extrapolation. A DIIS-mixed Fock is a
          ! convergence device, not a state anything is the energy of.
          call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error)
+                            fock, e_elec, error, clk=clk)
          if (error%has_error()) return
+         t_fock_iter = clk%seconds_of(STAGE_FOCK)
+         call clk%lap(STAGE_FOCK)
+         t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
 
          ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
          ! when F and D commute, which is what convergence means, so it is the
@@ -277,18 +373,21 @@ contains
          call diis%push(fock_flat, reshape(err, [n_mo*n_mo]))
          call diis%extrapolate(fock_flat, extrapolated)
          if (extrapolated) fock = reshape(fock_flat, [n_ao, n_ao])
+         t_rest_iter = clk%seconds_of(STAGE_DIIS)
+         call clk%lap(STAGE_DIIS)
+         t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
 
          call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
          if (error%has_error()) return
          call build_density(coeff, n_occ, density)
+         t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
+         call clk%lap(STAGE_DIAG)
+         t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
 
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
-         if (verbose) then
-            write (*, "(a,i4,a,f20.12,a,es10.3,a,es10.3,a,i0)") &
-               "  iter ", iter, "  E = ", e_elec + mol%nuclear_repulsion(), &
-               "  dE = ", de, "  dD = ", drms, "  diis ", diis%count()
-         end if
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
+                            diis%count(), t_fock_iter, t_rest_iter)
 
          e_old = e_elec
          result%iterations = iter
@@ -302,7 +401,7 @@ contains
       ! satisfied the test, so it is recomputed from the final Fock rather
       ! than carried over from the loop.
       call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                         fock, result%electronic, error)
+                         fock, result%electronic, error, clk=clk)
       if (error%has_error()) return
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
@@ -311,6 +410,13 @@ contains
       call move_alloc(coeff, result%orbitals)
       call move_alloc(density, result%density)
       call diis%destroy()
+
+      ! The final rebuild above is a Fock build like any other, so it lands in the
+      ! same bucket; `wall` closes over everything including it.
+      call clk%lap(STAGE_FOCK)
+      call clk%finish()
+      call scf_table_footer(verbose, result%converged, result%iterations)
+      call clk%report("RHF", verbose)
    end subroutine run_libcint_rhf
 
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
@@ -374,6 +480,9 @@ contains
       logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
+      type(timing_report_t) :: clk
+      real(dp) :: t_fock_iter, t_rest_iter
+      character(len=LINE_LEN) :: line
 
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
@@ -411,13 +520,15 @@ contains
       n_ao = mol%nao
       if (verbose) then
          if (mol%cartesian) then
-            write (*, "(a,i0,a)") "  basis functions: ", n_ao, "  (Cartesian, 6d/10f)"
+            call logger%info("  basis functions: "//to_char(n_ao)//"  (Cartesian, 6d/10f)")
          else
-            write (*, "(a,i0,a)") "  basis functions: ", n_ao, "  (spherical, 5d/7f)"
+            call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
-         write (*, "(a,i0,a,i0)") "  unrestricted: n_alpha = ", n_alpha, "  n_beta = ", n_beta
+         call logger%info("  unrestricted: n_alpha = "//to_char(n_alpha)// &
+                          "  n_beta = "//to_char(n_beta))
       end if
 
+      call clk%start()
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
       if (use_in_core) then
@@ -492,6 +603,9 @@ contains
       e_old = 0.0_dp
       result%converged = .false.
 
+      call clk%lap(STAGE_SETUP)
+      call scf_table_header(verbose)
+
       do iter = 1, max_iter
          d_a_old = d_a
          d_b_old = d_b
@@ -499,6 +613,9 @@ contains
          call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                 e_elec, error)
          if (error%has_error()) return
+         t_fock_iter = clk%seconds_of(STAGE_FOCK)
+         call clk%lap(STAGE_FOCK)
+         t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
 
          call commutator(fock_a, d_a, s, x, err_a)
          call commutator(fock_b, d_b, s, x, err_b)
@@ -513,6 +630,9 @@ contains
             fock_a = reshape(fock_flat(1:nsq), [n_ao, n_ao])
             fock_b = reshape(fock_flat(nsq + 1:2*nsq), [n_ao, n_ao])
          end if
+         t_rest_iter = clk%seconds_of(STAGE_DIIS)
+         call clk%lap(STAGE_DIIS)
+         t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
 
          call diagonalize(fock_a, x, n_ao, n_mo, coeff_a, eig_a, error)
          if (error%has_error()) return
@@ -520,14 +640,14 @@ contains
          if (error%has_error()) return
          call build_density_spin(coeff_a, n_alpha, d_a)
          call build_density_spin(coeff_b, n_beta, d_b)
+         t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
+         call clk%lap(STAGE_DIAG)
+         t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
 
          de = abs(e_elec - e_old)
          drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
-         if (verbose) then
-            write (*, "(a,i4,a,f20.12,a,es10.3,a,es10.3,a,i0)") &
-               "  iter ", iter, "  E = ", e_elec + mol%nuclear_repulsion(), &
-               "  dE = ", de, "  dD = ", drms, "  diis ", diis%count()
-         end if
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
+                            diis%count(), t_fock_iter, t_rest_iter)
 
          e_old = e_elec
          result%iterations = iter
@@ -547,9 +667,14 @@ contains
       result%n_occupied = n_alpha
       result%n_occupied_beta = n_beta
       result%spin_squared = spin_contamination(coeff_a, coeff_b, s, n_alpha, n_beta)
+      call clk%lap(STAGE_FOCK)
+      call clk%finish()
+      call scf_table_footer(verbose, result%converged, result%iterations)
+      call clk%report("RHF", verbose)
       if (verbose) then
-         write (*, "(a,f12.8,a,f12.8)") "  <S^2> = ", result%spin_squared, &
+         write (line, "(a,f12.8,a,f12.8)") "  <S^2> = ", result%spin_squared, &
             "   exact = ", 0.25_dp*real(n_alpha - n_beta, dp)*real(n_alpha - n_beta + 2, dp)
+         call logger%info(trim(line))
       end if
       call move_alloc(eig_a, result%orbital_energies)
       call move_alloc(coeff_a, result%orbitals)
@@ -561,7 +686,7 @@ contains
    end subroutine run_libcint_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error)
+                            fock, e_elec, error, clk)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! One place, because there used to be two: the iteration built its Fock
@@ -586,6 +711,10 @@ contains
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(out) :: e_elec
       type(error_t), intent(inout) :: error
+      type(timing_report_t), intent(inout), optional :: clk
+         !! Present from the SCF loop, so the exchange-correlation quadrature is
+         !! reported apart from the Coulomb/exchange build rather than inside it.
+         !! Absent from the guess and gradient callers, which do not report.
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: v_xc(:, :)
@@ -662,6 +791,7 @@ contains
          if (error%has_error()) return
          fock = fock + v_xc
          e_elec = e_elec + e_xc
+         if (present(clk)) call clk%lap(STAGE_XC)
          deallocate (v_xc)
       end if
    end subroutine assemble_fock

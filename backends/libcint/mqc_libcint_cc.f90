@@ -44,10 +44,13 @@ module mqc_libcint_cc
    !! `run_libcint_ccsd`.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_block
    use mqc_libcint_mp2, only: transform_block
+   use pic_logger, only: logger => global_logger
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -365,6 +368,10 @@ contains
       integer :: i, a, s
       real(dp) :: e_corr, e_old, de
 
+      character(len=MAX_LINE_LENGTH) :: line
+
+      type(timing_report_t) :: clk
+
       n_ao = size(coeff, 1)
       n_mo = size(coeff, 2)
 
@@ -390,19 +397,24 @@ contains
       if (present(diis_vectors)) diis_size = diis_vectors
 
       if (verbose) then
-         write (*, "(a,i0,a,i0,a,i0,a)") "  coupled cluster: ", n_so, " spin orbitals, ", &
-            no, " occupied, ", nv, " virtual"
-         if (frozen > 0) write (*, "(a,i0,a)") "  frozen core: ", frozen, " spatial orbitals"
+         write (line, "(a,i0,a,i0,a,i0,a)") "  coupled cluster: ", n_so, " spin orbitals, ", no, &
+            " occupied, ", nv, " virtual"
+         call logger%info(trim(line))
+         if (frozen > 0) then
+            write (line, "(a,i0,a)") "  frozen core: ", frozen, " spatial orbitals"
+            call logger%info(trim(line))
+         end if
          ! Reported because the memory is the interesting constraint here, and
          ! because the number makes the claim checkable rather than asserted. The
          ! comparison worth knowing is the whole spin-orbital tensor, n_so^4, which
          ! is what this used to build and no longer does.
-         write (*, "(a,f0.1,a,f0.1,a)") "  integrals: ", integral_megabytes(no, nv), &
-            " MB in blocks, against ", real(n_so, dp)**4*8.0_dp/1.0e6_dp, &
-            " MB for the full tensor"
+         write (line, "(a,f0.1,a,f0.1,a)") "  integrals: ", integral_megabytes(no, nv), &
+            " MB in blocks, against ", real(n_so, dp)**4*8.0_dp/1.0e6_dp, " MB for the full tensor"
+         call logger%info(trim(line))
       end if
 
       ! ---- integrals --------------------------------------------------------
+      call clk%start()
       allocate (c_act(n_ao, n_act))
       c_act = coeff(:, frozen + 1:n_mo)
       if (present(aux)) then
@@ -417,7 +429,9 @@ contains
 
       ! Blocks rather than the whole (2 n_act)^4 tensor, and `mo` is kept because
       ! the particle-particle ladder assembles its own from it in batches.
+      call clk%lap("AO->MO integrals")
       call build_cc_eris(mo, no, nv, eris)
+      call clk%lap("CC integral blocks")
 
       ! Spin-orbital energies. Canonical, so the Fock matrix is this diagonal and
       ! nothing else -- which is what lets every denominator below be a sum of
@@ -431,7 +445,11 @@ contains
       allocate (t1(nv, no), t2(nv, nv, no, no))
       t1 = 0.0_dp
       call mp2_amplitudes(eris, eps, no, nv, t2, result%e_mp2)
-      if (verbose) write (*, "(a,f20.12)") "  MP2 (spin orbital) = ", result%e_mp2
+      call clk%lap("MP2 amplitudes")
+      if (verbose) then
+         write (line, "(a,f20.12)") "  MP2 (spin orbital) = ", result%e_mp2
+         call logger%info(trim(line))
+      end if
 
       ! ---- CCSD -------------------------------------------------------------
       allocate (t1n(nv, no), t2n(nv, nv, no, no))
@@ -442,6 +460,7 @@ contains
       result%converged = .false.
       do iter = 1, max_iter
          call ccsd_iteration(mo, eris, eps, no, nv, t1, t2, t1n, t2n)
+         call clk%lap("CCSD iterations")
 
          ! Extrapolate on the amplitudes with the step as the error vector, which
          ! is the same trick `mqc_diis` already plays on the Fock matrix: the
@@ -459,9 +478,11 @@ contains
          call ccsd_energy(eris, t1, t2, no, nv, result%e_singles, result%e_doubles)
          e_corr = result%e_singles + result%e_doubles
          de = abs(e_corr - e_old)
-         if (verbose) write (*, "(a,i4,a,f20.12,a,es10.3,a,i0)") &
-            "  cc iter ", iter, "  E_corr = ", e_corr, "  dE = ", de, &
-            "  diis ", diis%count()
+         if (verbose) then
+            write (line, "(a,i4,a,f20.12,a,es10.3,a,i0)") "  cc iter ", iter, &
+               "  E_corr = ", e_corr, "  dE = ", de, "  diis ", diis%count()
+            call logger%info(trim(line))
+         end if
 
          e_old = e_corr
          result%iterations = iter
@@ -480,8 +501,15 @@ contains
       ! ---- (T) --------------------------------------------------------------
       if (want_triples) then
          call triples_correction(eris, eps, t1, t2, no, nv, result%e_triples)
-         if (verbose) write (*, "(a,f20.12)") "  (T) = ", result%e_triples
+         call clk%lap("(T) correction")
+         if (verbose) then
+            write (line, "(a,f20.12)") "  (T) = ", result%e_triples
+            call logger%info(trim(line))
+         end if
       end if
+
+      call clk%finish()
+      call clk%report("CCSD", verbose)
 
       result%e_correlation = result%e_singles + result%e_doubles + result%e_triples
    end subroutine run_libcint_ccsd
