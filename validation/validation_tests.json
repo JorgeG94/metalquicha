@@ -156,6 +156,46 @@
             "expected_gradient_norm": 0.14143204695418,
             "expected_hessian_frobenius_norm": 4.0776686049517386,
             "type": "fragmented"
+        },
+        {
+            "name": "Optimize water GFN2 (DL-FIND)",
+            "input": "inputs/cpu/tblite/gfn2/w1_optimize.json",
+            "expected_energy": -5.070544354,
+            "type": "unfragmented",
+            "requires": "dlfind",
+            "tolerance": 1e-06,
+            "expected_distances": [
+                0.959191,
+                0.959191,
+                1.545018
+            ],
+            "distance_tolerance": 0.005
+        },
+        {
+            "name": "Optimize water dimer MBE(2) GFN2 (DL-FIND)",
+            "input": "inputs/cpu/tblite/gfn2/w2_dimer_optimize.json",
+            "expected_energy": -10.149006723,
+            "type": "fragmented",
+            "requires": "dlfind",
+            "tolerance": 1e-05,
+            "expected_distances": [
+                0.958281,
+                0.960065,
+                0.960077,
+                0.968899,
+                1.54154,
+                1.545933,
+                1.877971,
+                2.315467,
+                2.319953,
+                2.836487,
+                3.188391,
+                3.193073,
+                3.33063,
+                3.783561,
+                3.784614
+            ],
+            "distance_tolerance": 0.02
         }
     ]
 }

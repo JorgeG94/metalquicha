@@ -173,6 +173,23 @@ Gradient Calculations
 - **Units**: Hartree/Bohr
 - **Applications**: Geometry optimization, molecular dynamics
 
+Geometry Optimization
+---------------------
+
+- **Optimizer**: DL-FIND, through libdlfind, behind ``MQC_ENABLE_DLFIND`` (off by
+  default -- it is LGPL and this program is MIT)
+- **Algorithms**: L-BFGS, conjugate gradient, steepest descent
+- **Coordinates**: Cartesian, HDLC (internals within each monomer, Cartesians
+  between them), DLC
+- **Fragmented systems**: MBE and GMBE gradients drive it unchanged. The term list
+  is frozen at the starting geometry so distance screening cannot change the energy
+  expression mid-run
+- **Backends**: any method with a gradient. xTB today; the CPU ab initio backend has
+  no gradients and is refused up front
+- **Output**: optimized structure, a trajectory, and a machine-readable record of
+  the run
+- See :doc:`geometry_optimization`
+
 Hessian Calculations
 --------------------
 

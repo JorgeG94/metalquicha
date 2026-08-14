@@ -1,0 +1,24 @@
+{
+    "schema": {
+        "name": "w1-optimize",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/w1.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "gfn2"
+    },
+    "keywords": {
+        "optimization": {
+            "max_steps": 100,
+            "algorithm": "lbfgs",
+            "coordinates": "cartesian"
+        }
+    },
+    "driver": "Optimize"
+}

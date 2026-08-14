@@ -10,6 +10,7 @@ module mqc_calc_types
    ! Public constants
    public :: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    public :: CALC_TYPE_MAKEFP
+   public :: CALC_TYPE_OPTIMIZE
    public :: CALC_TYPE_UNKNOWN
 
    ! Public functions
@@ -22,6 +23,9 @@ module mqc_calc_types
    integer(int32), parameter :: CALC_TYPE_HESSIAN = 3
    !> Build an effective fragment potential and write it, computing no energy.
    integer(int32), parameter :: CALC_TYPE_MAKEFP = 4
+   !> Minimize the geometry, which is a loop over gradient calculations rather
+   !> than a calculation. Handled above `run_calculation`, not inside it.
+   integer(int32), parameter :: CALC_TYPE_OPTIMIZE = 5
 
 contains
 
@@ -56,6 +60,10 @@ contains
          ! people type when they are thinking of the file it produces.
       case ("makefp", "makeefp")
          calc_type = CALC_TYPE_MAKEFP
+         ! "optimize" is what the QCSchema-shaped decks here already use for a
+         ! driver; the other two are what people type.
+      case ("optimize", "optimization", "opt")
+         calc_type = CALC_TYPE_OPTIMIZE
       case default
          calc_type = CALC_TYPE_UNKNOWN
       end select
@@ -78,6 +86,8 @@ contains
          calc_type_str = "hessian"
       case (CALC_TYPE_MAKEFP)
          calc_type_str = "makefp"
+      case (CALC_TYPE_OPTIMIZE)
+         calc_type_str = "optimize"
       case default
          calc_type_str = "unknown"
       end select

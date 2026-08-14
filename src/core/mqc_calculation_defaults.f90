@@ -30,6 +30,25 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_AIMD_OUTPUT_FREQ = 1
 
    ! =========================================================================
+   ! Geometry optimization
+   ! =========================================================================
+   integer, parameter, public :: DEFAULT_OPT_MAX_STEPS = 100
+
+   !> Convergence on the largest gradient component, Hartree/Bohr.
+   !> DL-FIND's own default, restated here so a deck that never mentions it
+   !> still gets a number this program can print and a user can look up.
+   real(dp), parameter, public :: DEFAULT_OPT_GRADIENT_TOLERANCE = 4.5e-4_dp
+
+   !> Negative means "leave the engine's own default alone". Used for the
+   !> settings where DL-FIND's choice is better than a second one invented
+   !> here: the step cap and the curvature history depend on the coordinate
+   !> system, which this program does not want to reason about.
+   real(dp), parameter, public :: DEFAULT_OPT_ENERGY_TOLERANCE = -1.0_dp
+   real(dp), parameter, public :: DEFAULT_OPT_MAX_STEP = -1.0_dp
+   integer, parameter, public :: DEFAULT_OPT_LBFGS_MEMORY = -1
+   integer, parameter, public :: DEFAULT_OPT_PRINT_LEVEL = -1
+
+   ! =========================================================================
    ! XTB
    ! =========================================================================
    real(dp), parameter, public :: DEFAULT_XTB_ACCURACY = 0.01_dp

@@ -5,6 +5,7 @@ Runs calculations and validates total energies against expected values
 """
 
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -218,12 +219,21 @@ def validate_energy(calculated: float, expected: float, tolerance: float) -> boo
 
 
 def cleanup_output_files(verbose: bool = False) -> None:
-    """Remove any existing output_*.json files to ensure clean test runs"""
-    output_files = list(Path(".").glob("output_*.json"))
+    """Remove any existing output files to ensure clean test runs
+
+    Not only the JSON. A `driver: "Optimize"` case also leaves a trajectory and
+    an optimized geometry beside it, and a stale one of those is worse than a
+    stale energy: `validate_structure` reads the optimization record, so a
+    leftover from a previous run would be checked as though this run had
+    produced it.
+    """
+    output_files = sorted(set(Path(".").glob("output_*.json"))
+                          | set(Path(".").glob("output_*.xyz"))
+                          | set(Path(".").glob("output_*.csv")))
 
     if not output_files:
         if verbose:
-            print("No output_*.json files to clean up.\n")
+            print("No output files to clean up.\n")
         return
 
     print(f"{Colors.BOLD}Cleaning up {len(output_files)} existing output file(s)...{Colors.RESET}")
@@ -237,6 +247,86 @@ def cleanup_output_files(verbose: bool = False) -> None:
             print(f"  {Colors.YELLOW}Warning: Could not remove {output_file}: {e}{Colors.RESET}")
 
     print()
+
+
+
+def binary_features(exe_path: str) -> Dict[str, bool]:
+    """Which optional backends this binary was built with.
+
+    Asked of the binary rather than inferred from the build directory, because
+    the same checkout is configured several ways and a validation run has no
+    way to know which one it is pointed at. `mqc --version` prints a line
+    "features: libcint=yes dlfind=no"; anything older prints no such line and
+    every feature reads as absent, which skips the gated cases rather than
+    failing them.
+    """
+    try:
+        result = subprocess.run([exe_path, "--version"], capture_output=True,
+                                text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+
+    features: Dict[str, bool] = {}
+    for line in result.stdout.splitlines():
+        if "features:" not in line:
+            continue
+        for token in line.split("features:", 1)[1].split():
+            if "=" in token:
+                name, _, value = token.partition("=")
+                features[name.strip()] = value.strip() == "yes"
+    return features
+
+
+def sorted_distances(coords: List[float]) -> List[float]:
+    """Every interatomic distance, sorted.
+
+    The invariant a converged structure should be checked against. Raw
+    coordinates are not comparable between runs: nothing fixes the molecule's
+    position or orientation, so two identical structures differ by a rigid
+    motion and comparing them elementwise fails on a correct answer. The
+    sorted distance list is unchanged by translation and rotation and still
+    detects the failures worth detecting -- a broken bond, a dissociated
+    fragment, the wrong isomer.
+    """
+    n = len(coords) // 3
+    out = []
+    for a in range(n):
+        for b in range(a + 1, n):
+            out.append(math.dist(coords[3 * a:3 * a + 3], coords[3 * b:3 * b + 3]))
+    return sorted(out)
+
+
+def validate_structure(input_file: str, test: Dict) -> Optional[str]:
+    """Check the optimized structure. Returns a message on failure, else None."""
+    record_path = Path(get_output_filename(input_file)).with_suffix("")
+    record_path = record_path.parent / (record_path.name + "_optimization.json")
+    if not record_path.exists():
+        return f"no optimization record at {record_path}"
+
+    with open(record_path) as handle:
+        record = json.load(handle).get("optimization", {})
+
+    if test.get("expect_converged", True) and not record.get("converged", False):
+        return (f"did not converge (largest gradient component "
+                f"{record.get('final_gradient_max', float('nan')):.2e})")
+
+    expected = test.get("expected_distances")
+    if not expected:
+        return None
+
+    coords = record.get("final_geometry", {}).get("coordinates")
+    if not coords:
+        return "the optimization record carries no final geometry"
+
+    got = sorted_distances(coords)
+    if len(got) != len(expected):
+        return f"expected {len(expected)} interatomic distances, got {len(got)}"
+
+    tol = test.get("distance_tolerance", 5.0e-3)
+    worst = max(abs(g - e) for g, e in zip(got, expected))
+    if worst > tol:
+        return f"structure differs by {worst:.2e} A (tolerance {tol:.2e})"
+    return None
 
 
 def run_validation_tests(manifest_file: str = "validation_tests.json",
@@ -265,9 +355,32 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
             print(f"{Colors.YELLOW}No tests matching '{test_filter}'{Colors.RESET}")
             return 0, 0, []
 
+    # Cases that name a backend this binary does not have are skipped, not run.
+    # Optional backends are off by default -- the geometry optimizer among them
+    # -- so without this a default build fails every gated case and the real
+    # failures are lost in the noise.
+    features = binary_features(exe_path)
+    # Partitioned in one pass rather than by filtering with `not in`: two cases
+    # that happen to be identical dictionaries compare equal, so a membership
+    # test would drop both when only one was gated.
+    runnable, skipped_tests = [], []
+    for t in tests:
+        needs = t.get("requires")
+        if needs and not features.get(needs, False):
+            skipped_tests.append(t)
+        else:
+            runnable.append(t)
+    tests = runnable
+
     passed = 0
     failed = 0
     errors = []
+
+    for test in skipped_tests:
+        print(f"{Colors.YELLOW}skipped{Colors.RESET}: {test['name']} "
+              f"(needs {test['requires']}, this build has none)")
+    if skipped_tests:
+        print()
 
     print(f"\n{Colors.BOLD}Running {len(tests)} validation tests...{Colors.RESET}")
     print(f"Tolerance: {tolerance}")
@@ -371,6 +484,20 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                 print(f"    Difference: {diff:.2e} (tolerance: {tolerance:.2e})")
                 test_passed = False
                 failure_reasons.append(f"Energy mismatch (diff: {diff:.2e})")
+
+            # Validate the optimized structure, for a `driver: "Optimize"` case
+            #
+            # Checked in addition to the energy, not instead of it: an
+            # optimization that stopped somewhere else on the surface can still
+            # land within the energy tolerance -- floppy clusters have minima
+            # separated by microhartrees -- while the structure is plainly not
+            # the one the reference describes.
+            if test.get("requires") == "dlfind" or "expected_distances" in test:
+                structure_problem = validate_structure(input_file, test)
+                if structure_problem:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - {structure_problem}")
+                    test_passed = False
+                    failure_reasons.append(structure_problem)
 
             # Validate gradient norm if present
             if "expected_gradient_norm" in test:

@@ -15,12 +15,14 @@ module mqc_driver
    use mqc_validate, only: validate_system, validate_terms
    use mqc_fraglist, only: fraglist_t
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
-                             gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, sort_fragments_by_size
+                             gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, &
+                             sort_fragments_by_size, generate_mbe_term_list
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
+                             CALC_TYPE_OPTIMIZE, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
@@ -127,6 +129,25 @@ contains
          call logger%info("  Fragment level: "//to_char(max_level))
          call logger%info("  Total atoms: "//to_char(sys_geom%total_atoms))
          call logger%info("============================================")
+      end if
+
+      ! An optimization is a loop over calculations and is driven from above
+      ! this routine, so reaching here with one means a caller took a path that
+      ! does not know about it -- the multi-molecule loop, a session, the C
+      ! API. Refused by name rather than left to fall through: `calc_type`
+      ! reaches the method layer as an unhandled value, and what that produced
+      ! was a backtrace out of `unfragmented_calculation` rather than anything
+      ! a user could act on.
+      if (config%calc_type == CALC_TYPE_OPTIMIZE) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            call logger%error('driver "Optimize" is not available on this path.')
+            call logger%error("  It is driven above run_calculation, so it works for a "// &
+                              "single molecule")
+            call logger%error("  from an input deck, and not yet from a multi-molecule "// &
+                              "deck, a session")
+            call logger%error("  or the C API.")
+         end if
+         call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
 
       ! MAKEFP writes a file and returns no energy, so it takes neither the
@@ -462,42 +483,11 @@ contains
             ! For now: total_fragments = n_pie_terms (each PIE term is a subsystem to evaluate)
             total_fragments = n_pie_terms
          else
-            ! Standard MBE mode
-            ! Calculate expected number of fragments
-            n_expected_frags = get_nfrags(sys_geom%n_monomers, max_level)
-            n_rows = n_expected_frags
-
-            ! Allocate monomer list and polymers array
-            allocate (monomers(sys_geom%n_monomers))
-            allocate (polymers(n_rows, max_level))
-            polymers = 0
-
-            ! Create monomer list [1, 2, 3, ..., n_monomers]
-            call create_monomer_list(monomers)
-
-            ! Generate all fragments (includes monomers in polymers array)
-            total_fragments = 0_int64
-
-            ! First add monomers
-            do i = 1, sys_geom%n_monomers
-               total_fragments = total_fragments + 1_int64
-               polymers(total_fragments, 1) = i
-            end do
-
-            ! Then add n-mers for n >= 2
-            call generate_fragment_list(monomers, max_level, polymers, total_fragments)
-
-            deallocate (monomers)
-
-            ! Apply distance-based screening if cutoffs are provided
-            call apply_distance_screening(polymers, total_fragments, sys_geom, config, max_level)
-
-            ! Sort fragments by size (largest first) for better load balancing
-            ! TODO: Currently disabled - MBE assembly is now order-independent (uses nested loops),
-            ! but sorting still causes "Subset not found" errors in real validation cases.
-            ! Unit tests pass with arbitrary order, so there may be an issue with the hash table
-            ! or fragment generation in production code. Needs investigation.
-            call sort_fragments_by_size(polymers, total_fragments, max_level)
+            ! Standard MBE mode. Monomers, then n-mers, then screening, then
+            ! the size sort -- all of it in `generate_mbe_term_list`, which a
+            ! geometry optimization also calls so that the list it freezes is
+            ! the same one this would have built.
+            call generate_mbe_term_list(sys_geom, config, max_level, polymers, total_fragments)
 
             call logger%info("Generated fragments:")
             call logger%info("  Total fragments: "//to_char(total_fragments))

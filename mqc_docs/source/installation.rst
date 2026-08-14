@@ -55,6 +55,56 @@ Then, to build Metalquicha, you can use the following commands:
 
 An example path to your INSTALL can be `$HOME/install/metalquicha`.
 
+Optional components
+===================
+
+Some backends are chosen at configure time. To see what a binary actually ended up
+with, run ``mqc --version``, which prints a ``features:`` line.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 12 60
+
+   * - Option
+     - Default
+     - What it adds
+   * - ``MQC_ENABLE_TBLITE``
+     - ``ON``
+     - xTB (GFN1, GFN2) through tblite
+   * - ``MQC_ENABLE_LIBCINT``
+     - ``ON``
+     - CPU Gaussian integrals: Hartree-Fock, MP2, coupled cluster
+   * - ``MQC_ENABLE_LIBXC``
+     - ``ON``
+     - Exchange-correlation functionals, for CPU DFT
+   * - ``MQC_ENABLE_DLFIND``
+     - ``OFF``
+     - Geometry optimization, through DL-FIND
+   * - ``MQC_ENABLE_CUEST``
+     - ``OFF``
+     - GPU integrals (needs ``CUEST_ROOT`` and an sm_80 card)
+   * - ``MQC_ENABLE_HDF5``
+     - ``OFF``
+     - Binary checkpoints carrying gradients and Hessians
+
+``MQC_ENABLE_DLFIND`` is off for a licensing reason rather than a technical one:
+DL-FIND is LGPL-3 and metalquicha is MIT. It is fetched and linked as a shared
+library so the two stay separable, and turning it on is a choice the person
+building makes. See :doc:`geometry_optimization`.
+
+.. code-block:: bash
+
+   cmake -B build -DMQC_ENABLE_DLFIND=ON
+
+Each of the fetched dependencies can be pointed at a local clone instead of being
+downloaded, which is how to configure on a cluster node with no network:
+
+.. code-block:: bash
+
+   cmake -B build -DMQC_ENABLE_DLFIND=ON \
+         -DFETCHCONTENT_SOURCE_DIR_LIBDLFIND=/path/to/libdlfind \
+         -DFETCHCONTENT_SOURCE_DIR_LIBCINT=/path/to/libcint
+
 Building with the Fortran Package Manager (fpm)
 ===============================================
 

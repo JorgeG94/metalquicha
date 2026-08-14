@@ -31,6 +31,7 @@ module mqc_bond_perception
    public :: perceive_bonds        !! Connectivity implied by the geometry
    public :: missing_broken_bonds  !! Cut bonds a caller's list does not mention
    public :: auto_monomers         !! Partition into covalently connected molecules
+   public :: connected_components  !! Which covalently connected group each atom is in
    public :: DEFAULT_BOND_TOLERANCE
 
    real(dp), parameter :: DEFAULT_BOND_TOLERANCE = 1.2_dp
@@ -178,6 +179,63 @@ contains
       end do
    end function is_declared
 
+   subroutine connected_components(sys_geom, component, n_components, tolerance)
+      !! Label each atom with the covalently connected group it belongs to
+      !!
+      !! Components are numbered 1..n in first-atom order, so a group's number
+      !! reflects where it appears in the geometry rather than where the
+      !! union-find happened to root it.
+      !!
+      !! Separate from `auto_monomers` because two callers want the labelling and
+      !! only one of them wants a partition: an internal-coordinate scheme needs
+      !! to know which atoms are bonded to which so it can build coordinates per
+      !! group, and that is true whether or not the *energy* is being fragmented.
+      !! Those are different questions about the same geometry.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, allocatable, intent(out) :: component(:)
+      integer, intent(out) :: n_components
+      real(dp), intent(in), optional :: tolerance
+
+      type(bond_t), allocatable :: bonds(:)
+      integer :: n_bonds, iatom, ibond, root_i, root_j
+
+      n_components = 0
+      if (sys_geom%total_atoms <= 0) then
+         allocate (component(0))
+         return
+      end if
+
+      call perceive_bonds(sys_geom, bonds, n_bonds, tolerance)
+
+      ! Union-find over the bond graph. Every atom starts as its own component;
+      ! a bond merges two.
+      allocate (component(sys_geom%total_atoms))
+      do iatom = 1, sys_geom%total_atoms
+         component(iatom) = iatom
+      end do
+      do ibond = 1, n_bonds
+         root_i = find_root(component, bonds(ibond)%atom_i + 1)
+         root_j = find_root(component, bonds(ibond)%atom_j + 1)
+         if (root_i /= root_j) component(root_j) = root_i
+      end do
+      deallocate (bonds)
+
+      ! Flatten to component ids, then renumber them 1..n in first-atom order.
+      do iatom = 1, sys_geom%total_atoms
+         component(iatom) = find_root(component, iatom)
+      end do
+      do iatom = 1, sys_geom%total_atoms
+         if (component(iatom) /= iatom) cycle
+         n_components = n_components + 1
+         ! Temporarily negative so a renumbered id is not mistaken for a root.
+         component(iatom) = -n_components
+      end do
+      do iatom = 1, sys_geom%total_atoms
+         if (component(iatom) > 0) component(iatom) = component(component(iatom))
+      end do
+      component = -component
+   end subroutine connected_components
+
    subroutine auto_monomers(sys_geom, error, tolerance)
       !! Make each covalently connected molecule a monomer
       !!
@@ -212,37 +270,7 @@ contains
          return
       end if
 
-      call perceive_bonds(sys_geom, bonds, n_bonds, tolerance)
-
-      ! Union-find over the bond graph. Every atom starts as its own component;
-      ! a bond merges two.
-      allocate (component(sys_geom%total_atoms))
-      do iatom = 1, sys_geom%total_atoms
-         component(iatom) = iatom
-      end do
-      do ibond = 1, n_bonds
-         root_i = find_root(component, bonds(ibond)%atom_i + 1)
-         root_j = find_root(component, bonds(ibond)%atom_j + 1)
-         if (root_i /= root_j) component(root_j) = root_i
-      end do
-      deallocate (bonds)
-
-      ! Flatten to component ids, then renumber them 1..n in first-atom order
-      ! so a monomer's number reflects where it appears in the geometry.
-      do iatom = 1, sys_geom%total_atoms
-         component(iatom) = find_root(component, iatom)
-      end do
-      n_components = 0
-      do iatom = 1, sys_geom%total_atoms
-         if (component(iatom) /= iatom) cycle
-         n_components = n_components + 1
-         ! Temporarily negative so a renumbered id is not mistaken for a root.
-         component(iatom) = -n_components
-      end do
-      do iatom = 1, sys_geom%total_atoms
-         if (component(iatom) > 0) component(iatom) = component(component(iatom))
-      end do
-      component = -component
+      call connected_components(sys_geom, component, n_components, tolerance)
 
       if (n_components < 2) then
          deallocate (component)

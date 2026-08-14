@@ -47,6 +47,11 @@ build/*
 validation_logs/
 output_*.json
 output_*_fragments.csv
+# Written beside the output document by driver "Optimize": the optimized
+# geometry, the path taken to it, and the machine-readable record of both.
+output_*_optimized.xyz
+output_*_trajectory.xyz
+output_*_optimization.json
 
 # Out-of-source build directories
 build*/

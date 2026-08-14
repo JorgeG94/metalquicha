@@ -257,6 +257,25 @@ contains
       call optional_int(json, "keywords.aimd.output_frequency", config%aimd_output_frequency)
       call optional_int(json, "keywords.aimd.output_freq", config%aimd_output_frequency)
 
+      ! Geometry optimization. Both spellings of the two that have an obvious
+      ! synonym, the way the hessian and aimd blocks above accept theirs.
+      call optional_int(json, "keywords.optimization.max_steps", config%opt_max_steps)
+      call optional_int(json, "keywords.optimization.steps", config%opt_max_steps)
+      call optional_real(json, "keywords.optimization.gradient_tolerance", &
+                         config%opt_gradient_tolerance)
+      call optional_real(json, "keywords.optimization.tolerance", config%opt_gradient_tolerance)
+      call optional_real(json, "keywords.optimization.energy_tolerance", &
+                         config%opt_energy_tolerance)
+      call optional_real(json, "keywords.optimization.max_step", config%opt_max_step)
+      call optional_string(json, "keywords.optimization.coordinates", config%opt_coordinates)
+      call optional_string(json, "keywords.optimization.coordinate_system", config%opt_coordinates)
+      call optional_string(json, "keywords.optimization.algorithm", config%opt_algorithm)
+      call optional_string(json, "keywords.optimization.optimizer", config%opt_algorithm)
+      call optional_int(json, "keywords.optimization.lbfgs_memory", config%opt_lbfgs_memory)
+      call optional_int(json, "keywords.optimization.print_level", config%opt_print_level)
+      call optional_logical(json, "keywords.optimization.trajectory", config%opt_trajectory)
+      call optional_logical(json, "keywords.optimization.freeze_terms", config%opt_freeze_terms)
+
       call optional_string(json, "keywords.xtb.solvent", config%solvent)
       call optional_string(json, "keywords.xtb.solvation_model", config%solvation_model)
       ! Before 0.2.0 these were reachable only from a hand-written .mqc deck --

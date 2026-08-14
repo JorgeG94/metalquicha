@@ -167,6 +167,13 @@ addtest(mqc_vibrational_analysis)
 addtest(mqc_thermochemistry)
 addtest(mqc_method_types)
 addtest(mqc_method_placeholders)
+# The optimizer's vocabulary, not the DL-FIND bridge: mqc_optimizer_types is
+# compiled whether or not MQC_ENABLE_DLFIND is on, so this runs in CI, where the
+# optimizer backend is off.
+addtest(mqc_optimizer_types)
+# The term list a frozen optimization is built on. Fragment layer, so this runs
+# regardless of MQC_ENABLE_DLFIND.
+addtest(mqc_term_list)
 addtest(mqc_work_queue)
 
 # C-API / external-interface layer. These call the bind(C) entry points the way

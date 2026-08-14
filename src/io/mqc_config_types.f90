@@ -22,6 +22,9 @@ module mqc_config_types
                                        DEFAULT_PRESSURE, DEFAULT_AIMD_DT, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
+                                       DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
+                                       DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
+                                       DEFAULT_OPT_LBFGS_MEMORY, DEFAULT_OPT_PRINT_LEVEL, &
                                        DEFAULT_CPCM_NANG, DEFAULT_CPCM_RSCALE, &
                                        DEFAULT_PCM_NANG, DEFAULT_PCM_RSCALE, &
                                        DEFAULT_PCM_ZETA, &
@@ -189,6 +192,22 @@ module mqc_config_types
       integer :: aimd_nsteps = DEFAULT_AIMD_NSTEPS                   !! Number of MD steps (0 = no AIMD)
       real(dp) :: aimd_initial_temperature = DEFAULT_AIMD_TEMPERATURE  !! Initial temperature for velocity init (K)
       integer :: aimd_output_frequency = DEFAULT_AIMD_OUTPUT_FREQ    !! Write output every N steps
+
+      ! Geometry optimization settings
+      !
+      ! The two spelled ones stay strings here and are parsed in the adapter,
+      ! where a misspelling can be refused by name. Parsing them in the reader
+      ! instead would put the vocabulary in two places.
+      integer :: opt_max_steps = DEFAULT_OPT_MAX_STEPS
+      real(dp) :: opt_gradient_tolerance = DEFAULT_OPT_GRADIENT_TOLERANCE  !! Hartree/Bohr
+      real(dp) :: opt_energy_tolerance = DEFAULT_OPT_ENERGY_TOLERANCE      !! Hartree; <0 = engine default
+      real(dp) :: opt_max_step = DEFAULT_OPT_MAX_STEP                      !! Bohr; <0 = engine default
+      integer :: opt_lbfgs_memory = DEFAULT_OPT_LBFGS_MEMORY               !! <0 = engine default
+      integer :: opt_print_level = DEFAULT_OPT_PRINT_LEVEL                 !! <0 = engine default
+      character(len=:), allocatable :: opt_coordinates  !! cartesian, hdlc, dlc
+      character(len=:), allocatable :: opt_algorithm    !! lbfgs, cg, sd, prfo
+      logical :: opt_trajectory = .true.               !! Record the path taken
+      logical :: opt_freeze_terms = .true.             !! Fix the MBE term list for the run
 
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.

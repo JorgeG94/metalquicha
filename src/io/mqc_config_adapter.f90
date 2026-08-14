@@ -8,6 +8,9 @@ module mqc_config_adapter
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
+   use mqc_optimizer_types, only: optimizer_settings_t, &
+                                  coordinates_from_string, algorithm_from_string, &
+                                  OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T
    use pic_logger, only: logger => global_logger
@@ -39,6 +42,7 @@ module mqc_config_adapter
       ! Calculation-specific keywords (structured)
       type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
       type(aimd_keywords_t) :: aimd        !! AIMD calculation keywords
+      type(optimizer_settings_t) :: optimization  !! Geometry optimization keywords
       type(scf_keywords_t) :: scf          !! SCF calculation keywords
 
       ! Output control
@@ -49,7 +53,8 @@ module mqc_config_adapter
 
 contains
 
-   subroutine config_to_driver(mqc_config, driver_config, molecule_index, node_rank, n_fragments)
+   subroutine config_to_driver(mqc_config, driver_config, molecule_index, node_rank, &
+                               n_fragments, error)
       !! Convert mqc_config_t to minimal driver_config_t
       !! Extracts only the fields needed by the driver
       !! If molecule_index is provided, uses that molecule's fragment count
@@ -57,6 +62,12 @@ contains
       type(driver_config_t), intent(out) :: driver_config
       integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
       integer, intent(in), optional :: node_rank  !! Node-local MPI rank, for GPU binding
+      type(error_t), intent(inout), optional :: error
+         !! Refuses a setting spelled in a way this program does not know.
+         !! Optional so that the callers which cannot fail -- the tests, the
+         !! session, the multi-molecule loop -- are unchanged; an unrecognised
+         !! spelling still reaches `run_geometry_optimization`, which refuses
+         !! it there rather than optimizing in whatever the default was.
       integer, intent(in), optional :: n_fragments
          !! How many fragments the system actually has, when the config does
          !! not say. A settings-only document -- the form a session broadcasts
@@ -147,6 +158,16 @@ contains
       driver_config%aimd%nsteps = mqc_config%aimd_nsteps
       driver_config%aimd%initial_temperature = mqc_config%aimd_initial_temperature
       driver_config%aimd%output_frequency = mqc_config%aimd_output_frequency
+      driver_config%optimization%max_steps = mqc_config%opt_max_steps
+      driver_config%optimization%gradient_tolerance = mqc_config%opt_gradient_tolerance
+      driver_config%optimization%energy_tolerance = mqc_config%opt_energy_tolerance
+      driver_config%optimization%max_step = mqc_config%opt_max_step
+      driver_config%optimization%lbfgs_memory = mqc_config%opt_lbfgs_memory
+      driver_config%optimization%print_level = mqc_config%opt_print_level
+      driver_config%optimization%trajectory = mqc_config%opt_trajectory
+      driver_config%optimization%freeze_terms = mqc_config%opt_freeze_terms
+      call set_optimization_vocabulary(mqc_config, driver_config, error)
+
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
       driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
       ! And again into the method's own SCF settings, which is the copy every
@@ -212,6 +233,48 @@ contains
       end if
 
    end subroutine config_to_driver
+
+   subroutine set_optimization_vocabulary(mqc_config, driver_config, error)
+      !! Turn the two spelled optimization settings into constants
+      !!
+      !! Kept out of the reader on purpose: the reader's job is to get the
+      !! document's values into the config, and the vocabulary of what those
+      !! values may say belongs with the type that holds the constants. An
+      !! unrecognised spelling is refused here by name, which is the only place
+      !! that still has the string the user typed.
+      type(mqc_config_t), intent(in) :: mqc_config
+      type(driver_config_t), intent(inout) :: driver_config
+      type(error_t), intent(inout), optional :: error
+
+      if (allocated(mqc_config%opt_coordinates)) then
+         driver_config%optimization%coordinates = &
+            coordinates_from_string(mqc_config%opt_coordinates)
+         if (driver_config%optimization%coordinates == OPT_COORDS_UNKNOWN) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "Unknown keywords.optimization.coordinates: '"// &
+                              trim(mqc_config%opt_coordinates)// &
+                              "'. Use cartesian, hdlc or dlc.")
+            end if
+            return
+         end if
+      end if
+
+      if (allocated(mqc_config%opt_algorithm)) then
+         driver_config%optimization%algorithm = &
+            algorithm_from_string(mqc_config%opt_algorithm)
+         if (driver_config%optimization%algorithm == OPT_ALGO_UNKNOWN) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "Unknown keywords.optimization.algorithm: '"// &
+                              trim(mqc_config%opt_algorithm)// &
+                              "'. Use lbfgs, cg, sd or prfo.")
+            end if
+            return
+         end if
+      end if
+
+   end subroutine set_optimization_vocabulary
 
    subroutine config_to_system_geometry(mqc_config, sys_geom, error, molecule_index)
       !! Convert mqc_config_t geometry to system_geometry_t
