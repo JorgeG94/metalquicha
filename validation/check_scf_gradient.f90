@@ -25,10 +25,31 @@ program check_scf_gradient
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use omp_lib, only: omp_set_num_threads, omp_get_max_threads
+   use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
    integer, parameter :: N_DIM = 3
+   integer, parameter :: BENCH_THREADS = 4
+      !! Every molecule here is three or four atoms in a minimal basis, where
+      !! the threaded gradient contraction is nearly all overhead: measured on
+      !! water/sto-3g, forty threads bought a 1.4x wall speedup for 47x the CPU
+      !! time. Four keeps most of that and leaves the machine usable, which
+      !! matters because this suite runs for minutes on a shared box.
    integer :: n_bad
+   character(len=128) :: filter
+   integer :: filter_len, arg_status
+
+   call omp_set_num_threads(min(BENCH_THREADS, omp_get_max_threads()))
+
+   ! One optional argument: a substring of the case label. Without it every
+   ! case runs, which is what CI wants; with it, one case runs, which is what
+   ! anyone developing a new gradient wants. The whole suite is a few hundred
+   ! converged SCFs -- re-running all of it to test one new case is the reason
+   ! iterating on the GGA term was slow.
+   filter = ""
+   call get_command_argument(1, filter, length=filter_len, status=arg_status)
+   if (arg_status /= 0) filter = ""
 
    n_bad = 0
 
@@ -198,6 +219,10 @@ contains
 
       natm = size(numbers)
 
+      if (len_trim(filter) > 0) then
+         if (index(label, trim(filter)) == 0) return
+      end if
+
       write (*, "(a)") ""
       write (*, "(a,a)") "== ", label
 
@@ -237,6 +262,11 @@ contains
          write (*, "(a)") "  FAIL: not translationally invariant"
          n_bad = n_bad + 1
       end if
+
+      ! gfortran block-buffers stdout below libc, so `stdbuf` cannot reach it
+      ! and a long run looks hung rather than slow. Flushing per case is the
+      ! portable fix; GFORTRAN_UNBUFFERED_ALL=1 is the environment one.
+      flush (output_unit)
    end subroutine check_case
 
    subroutine check_unrestricted_df_channels(n_bad)
@@ -265,12 +295,21 @@ contains
       real(dp), allocatable :: half_density(:, :)
       real(dp) :: worst
 
+      character(len=*), parameter :: label = &
+                                     "unrestricted DF branch against the restricted one (H2O / sto-3g)"
+
       coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                         0.0_dp, -1.4308_dp, 1.1078_dp, &
                         0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3])
 
+      ! Same filter the labelled cases honour, so a filtered run is one case
+      ! rather than one case and this.
+      if (len_trim(filter) > 0) then
+         if (index(label, trim(filter)) == 0) return
+      end if
+
       write (*, "(a)") ""
-      write (*, "(a)") "== unrestricted DF branch against the restricted one (H2O / sto-3g)"
+      write (*, "(a,a)") "== ", label
 
       call build_libcint_molecule(numbers, symbols, coords, "sto-3g", mol, error)
       if (error%has_error()) then

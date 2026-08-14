@@ -28,6 +28,7 @@ module mqc_libcint_bridge
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -170,32 +171,47 @@ contains
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in), optional :: want_gradient
 
-      type(libcint_molecule_t) :: mol, aux, corr_aux
+      ! `aux` and `xc` are targets because the gradient takes both as optional
+      ! arguments, and a disassociated pointer is how "this SCF fitted nothing"
+      ! and "this SCF had no functional" are said without four spellings of the
+      ! same call.
+      type(libcint_molecule_t) :: mol, corr_aux
+      type(libcint_molecule_t), target :: aux
+      type(libcint_molecule_t), pointer :: aux_arg
       type(rhf_result_t) :: scf
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size, guess_kind
-      logical :: unrestricted
+      logical :: unrestricted, do_gradient
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
       ! argument, so the SCF calls below need no branching on which guess ran.
       real(dp), allocatable :: guess_a(:, :), guess_b(:, :), guess_total(:, :)
       type(error_t) :: guess_error
-      type(xc_context_t) :: xc
+      type(xc_context_t), target :: xc
+      type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
 
       character(len=MAX_LINE_LENGTH) :: line
 
-      if (present(want_gradient)) then
-         if (want_gradient) then
-            ! libcint has the derivative entry points -- ip1 and ipovlp -- so
-            ! this is a gap rather than a wall, but an untested gradient is
-            ! worse than an absent one.
-            call result%error%set(ERROR_VALIDATION, "the CPU backend has no gradients "// &
-                                  "yet; run an energy, or build with cuEST")
-            result%has_error = .true.
-            return
-         end if
+      do_gradient = .false.
+      if (present(want_gradient)) do_gradient = want_gradient
+
+      ! What is differentiated here is the SCF energy, and nothing above it. A
+      ! correlated method asked for alongside a gradient would get the
+      ! reference gradient reported against a correlated energy -- of the right
+      ! magnitude, and wrong by the whole relaxation, with nothing in the
+      ! output to say which of the two numbers the other belongs to. The
+      ! functional-side gaps (range separation, meta-GGA) are refused inside
+      ! the gradient itself, where the functional is known.
+      if (do_gradient .and. (settings%run_mp2 .or. settings%run_cc)) then
+         call result%error%set(ERROR_VALIDATION, "the CPU gradient differentiates the "// &
+                               "SCF energy: MP2 and coupled cluster gradients need a "// &
+                               "relaxed density and a response solve, which are not "// &
+                               "written yet. Run the gradient at the reference level, "// &
+                               "or the correlated method as an energy.")
+         result%has_error = .true.
+         return
       end if
 
       ! Same rule the GPU backend applies, so a deck does not change meaning
@@ -438,7 +454,8 @@ contains
                               settings%density_tol, settings%verbose, scf, error, &
                               aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density=guess_total, xc=xc)
-         call aux%destroy()
+         ! Kept alive: the gradient below has to be told the same auxiliary
+         ! basis this SCF fitted with. Released once past it.
       else if (unrestricted) then
          call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
                               settings%energy_tol, settings%density_tol, settings%verbose, &
@@ -453,6 +470,7 @@ contains
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
+         call aux%destroy()
          call mol%destroy()
          return
       end if
@@ -470,12 +488,56 @@ contains
          call result%error%set(ERROR_VALIDATION, "SCF not converged in "// &
                                to_text(scf%iterations)//" cycles")
          result%has_error = .true.
+         call aux%destroy()
          call mol%destroy()
          return
       end if
 
       result%energy%scf = scf%energy
       result%has_energy = .true.
+
+      ! ---- dE/dR, analytically ----------------------------------------------
+      !
+      ! Differentiating the energy that was just converged, which is why the
+      ! auxiliary basis handed over is the one the SCF fitted with rather than
+      ! whatever the deck names: a fitted energy differentiated as an exact one
+      ! is a gradient of a function nobody computed.
+      if (do_gradient) then
+         aux_arg => null()
+         xc_arg => null()
+         if (settings%density_fitting) aux_arg => aux
+         if (kohn_sham) xc_arg => xc
+
+         if (unrestricted) then
+            call libcint_scf_gradient(mol, scf%density, density_beta=scf%density_beta, &
+                                      orbitals=scf%orbitals, orbitals_beta=scf%orbitals_beta, &
+                                      orbital_energies=scf%orbital_energies, &
+                                      orbital_energies_beta=scf%orbital_energies_beta, &
+                                      n_occupied=scf%n_occupied, &
+                                      n_occupied_beta=scf%n_occupied_beta, &
+                                      gradient=result%gradient, error=error, &
+                                      aux=aux_arg, xc=xc_arg)
+         else
+            call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                                      orbital_energies=scf%orbital_energies, &
+                                      n_occupied=scf%n_occupied, &
+                                      gradient=result%gradient, error=error, &
+                                      aux=aux_arg, xc=xc_arg)
+         end if
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, "gradient: "//error%get_message())
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call aux%destroy()
+            call mol%destroy()
+            return
+         end if
+         result%has_gradient = .true.
+         if (settings%verbose) then
+            write (*, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+         end if
+      end if
+      call aux%destroy()
 
       if (settings%run_mp2) then
          block

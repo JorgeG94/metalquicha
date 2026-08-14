@@ -23,7 +23,7 @@
         {
             "name": "RHF BH3 sto-3g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_bh3_sto-3g.json",
-            "expected_energy": -26.068995738523,
+            "expected_energy": -26.068995738524,
             "type": "unfragmented"
         },
         {
@@ -47,7 +47,7 @@
         {
             "name": "RHF HF sto-3g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_hf_sto-3g.json",
-            "expected_energy": -98.570757663479,
+            "expected_energy": -98.570757663478,
             "type": "unfragmented"
         },
         {
@@ -83,7 +83,7 @@
         {
             "name": "RHF PH3 sto-3g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ph3_sto-3g.json",
-            "expected_energy": -338.633614017913,
+            "expected_energy": -338.633614017912,
             "type": "unfragmented"
         },
         {
@@ -101,7 +101,7 @@
         {
             "name": "RHF Ar sto-3g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ar_sto-3g.json",
-            "expected_energy": -521.22288080353,
+            "expected_energy": -521.222880803531,
             "type": "unfragmented"
         },
         {
@@ -191,7 +191,7 @@
         {
             "name": "RHF H2S 3-21g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_h2s_3-21g.json",
-            "expected_energy": -396.703944112624,
+            "expected_energy": -396.703944112623,
             "type": "unfragmented"
         },
         {
@@ -245,7 +245,7 @@
         {
             "name": "RHF H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_water_6-31g.json",
-            "expected_energy": -75.984779843968,
+            "expected_energy": -75.984779843967,
             "type": "unfragmented"
         },
         {
@@ -287,7 +287,7 @@
         {
             "name": "RHF PH3 6-31g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ph3_6-31g.json",
-            "expected_energy": -342.395943319632,
+            "expected_energy": -342.395943319633,
             "type": "unfragmented"
         },
         {
@@ -299,7 +299,7 @@
         {
             "name": "RHF HCl 6-31g (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_hcl_6-31g.json",
-            "expected_energy": -460.036920612294,
+            "expected_energy": -460.036920612293,
             "type": "unfragmented"
         },
         {
@@ -377,7 +377,7 @@
         {
             "name": "RHF AlH3 cc-pvdz (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_alh3_cc-pvdz.json",
-            "expected_energy": -243.631755712986,
+            "expected_energy": -243.631755712985,
             "type": "unfragmented"
         },
         {
@@ -473,7 +473,7 @@
         {
             "name": "RHF CH4 aug-cc-pvdz (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ch4_aug-cc-pvdz.json",
-            "expected_energy": -40.199617623934,
+            "expected_energy": -40.199617623933,
             "type": "unfragmented"
         },
         {
@@ -503,7 +503,7 @@
         {
             "name": "RHF H2S aug-cc-pvdz (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_h2s_aug-cc-pvdz.json",
-            "expected_energy": -398.698035963355,
+            "expected_energy": -398.698035963353,
             "type": "unfragmented"
         },
         {
@@ -551,7 +551,7 @@
         {
             "name": "RHF SiH4 def2-svp (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_sih4_def2-svp.json",
-            "expected_energy": -291.153923860553,
+            "expected_energy": -291.153923860552,
             "type": "unfragmented"
         },
         {
@@ -605,7 +605,7 @@
         {
             "name": "RHF CH4 def2-tzvp (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ch4_def2-tzvp.json",
-            "expected_energy": -40.213055304866,
+            "expected_energy": -40.213055304865,
             "type": "unfragmented"
         },
         {
@@ -647,13 +647,13 @@
         {
             "name": "RHF AlH3 def2-tzvp (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_alh3_def2-tzvp.json",
-            "expected_energy": -243.641284905954,
+            "expected_energy": -243.641284905955,
             "type": "unfragmented"
         },
         {
             "name": "RHF SiH4 def2-tzvp (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_sih4_def2-tzvp.json",
-            "expected_energy": -291.257893577066,
+            "expected_energy": -291.257893577067,
             "type": "unfragmented"
         },
         {
@@ -701,13 +701,13 @@
         {
             "name": "RHF BH3 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_bh3_6-31g_st_.json",
-            "expected_energy": -26.390003144425,
+            "expected_energy": -26.390003144424,
             "type": "unfragmented"
         },
         {
             "name": "RHF CH4 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ch4_6-31g_st_.json",
-            "expected_energy": -40.195141002378,
+            "expected_energy": -40.195141002379,
             "type": "unfragmented"
         },
         {
@@ -743,13 +743,13 @@
         {
             "name": "RHF MgH2 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_mgh2_6-31g_st_.json",
-            "expected_energy": -200.715451153879,
+            "expected_energy": -200.71545115388,
             "type": "unfragmented"
         },
         {
             "name": "RHF AlH3 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_alh3_6-31g_st_.json",
-            "expected_energy": -243.616255399695,
+            "expected_energy": -243.616255399696,
             "type": "unfragmented"
         },
         {
@@ -761,13 +761,13 @@
         {
             "name": "RHF PH3 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ph3_6-31g_st_.json",
-            "expected_energy": -342.447342229633,
+            "expected_energy": -342.447342229634,
             "type": "unfragmented"
         },
         {
             "name": "RHF H2S 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_h2s_6-31g_st_.json",
-            "expected_energy": -398.66707086397,
+            "expected_energy": -398.667070863969,
             "type": "unfragmented"
         },
         {
@@ -779,7 +779,7 @@
         {
             "name": "RHF Ar 6-31g* (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_ar_6-31g_st_.json",
-            "expected_energy": -526.773744920984,
+            "expected_energy": -526.773744920985,
             "type": "unfragmented"
         },
         {
@@ -909,6 +909,296 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF gradient H2O sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_grad.json",
+            "expected_energy": -74.962005712275,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    3.17e-10,
+                    -0.067617391053
+                ],
+                [
+                    0.0,
+                    -0.016791268482,
+                    0.033808695648
+                ],
+                [
+                    0.0,
+                    0.016791268166,
+                    0.033808695405
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF gradient CH4 6-31g** (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_ch4_6-31g_st__st__grad.json",
+            "expected_energy": -40.20167213402,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    0.001437398944,
+                    0.001437398944,
+                    0.001437398944
+                ],
+                [
+                    0.001437398944,
+                    -0.001437398944,
+                    -0.001437398944
+                ],
+                [
+                    -0.001437398944,
+                    0.001437398944,
+                    -0.001437398944
+                ],
+                [
+                    -0.001437398944,
+                    -0.001437398944,
+                    0.001437398944
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF gradient NH3 cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_nh3_cc-pvdz_grad.json",
+            "expected_energy": -56.195620015857,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    -0.002056418604
+                ],
+                [
+                    0.005193307714,
+                    -0.0,
+                    0.000685472868
+                ],
+                [
+                    -0.002596653857,
+                    0.00449753641,
+                    0.000685472868
+                ],
+                [
+                    -0.002596653857,
+                    -0.00449753641,
+                    0.000685472868
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UHF gradient CH3 cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_ch3_cc-pvdz_grad.json",
+            "expected_energy": -39.563806767208,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                [
+                    -0.00167984256,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    0.00083992128,
+                    -0.001454786332,
+                    -0.0
+                ],
+                [
+                    0.00083992128,
+                    0.001454786332,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_df_grad.json",
+            "expected_energy": -76.027511701606,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.31e-10,
+                    0.01008181498
+                ],
+                [
+                    0.0,
+                    0.015838424428,
+                    -0.005040907405
+                ],
+                [
+                    -0.0,
+                    -0.015838424659,
+                    -0.005040907575
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SVWN gradient H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_svwn_grad.json",
+            "expected_energy": -75.854445341479,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.28e-10,
+                    -0.026683880803
+                ],
+                [
+                    -0.0,
+                    -0.008465018573,
+                    0.013341940487
+                ],
+                [
+                    -0.0,
+                    0.008465018345,
+                    0.013341940316
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "PBE gradient H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_pbe_grad.json",
+            "expected_energy": -76.333065668911,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.24e-10,
+                    -0.028383098209
+                ],
+                [
+                    -0.0,
+                    -0.007020546936,
+                    0.014191549189
+                ],
+                [
+                    -0.0,
+                    0.007020546712,
+                    0.01419154902
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "B3LYP gradient H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_b3lyp_grad.json",
+            "expected_energy": -76.420035465696,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.24e-10,
+                    -0.018529027149
+                ],
+                [
+                    0.0,
+                    -0.001754068653,
+                    0.009264513658
+                ],
+                [
+                    -0.0,
+                    0.00175406843,
+                    0.00926451349
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "PBE gradient CH3 cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_ch3_cc-pvdz_pbe_grad.json",
+            "expected_energy": -39.769139688915,
+            "expected_gradient": [
+                [
+                    -1.25558e-07,
+                    0.0,
+                    -0.0
+                ],
+                [
+                    -0.013273613865,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    0.006636869712,
+                    -0.011494995164,
+                    0.0
+                ],
+                [
+                    0.006636869712,
+                    0.011494995164,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MBE(2) RHF gradient (H2O)2 cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_w2dimer_cc-pvdz_grad_mbe2.json",
+            "expected_energy": -152.056781852646,
+            "expected_gradient": [
+                [
+                    -0.030361505386,
+                    -0.002937044307,
+                    0.03430925928
+                ],
+                [
+                    0.005120740756,
+                    -0.003913870952,
+                    -0.025693361708
+                ],
+                [
+                    0.01311961193,
+                    0.012041480777,
+                    -0.007558260211
+                ],
+                [
+                    -0.016719024023,
+                    0.016713876951,
+                    -0.01542924636
+                ],
+                [
+                    -0.009415355265,
+                    -0.003692597292,
+                    0.012723378969
+                ],
+                [
+                    0.038255531988,
+                    -0.018211845177,
+                    0.00164823003
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "fragmented"
+        },
+        {
             "name": "UHF OH sto-3g multiplicity 2 (CPU)",
             "input": "inputs/cpu/mqc/uhf/cpu_oh_sto-3g_m2.json",
             "expected_energy": -74.362637545612,
@@ -965,7 +1255,7 @@
         {
             "name": "MP2 H2O def2-svp frozen 1 (CPU)",
             "input": "inputs/cpu/mqc/mp2/cpu_water_def2-svp_mp2_f1.json",
-            "expected_energy": -76.161689337976,
+            "expected_energy": -76.161689337977,
             "type": "unfragmented"
         },
         {
@@ -1007,7 +1297,7 @@
         {
             "name": "CCSD(T) CH4 sto-3g frozen 1 (CPU)",
             "input": "inputs/cpu/mqc/ccsd-t/cpu_ch4_sto-3g_ccsdt_f1.json",
-            "expected_energy": -39.805169969882,
+            "expected_energy": -39.805169969925,
             "type": "unfragmented"
         },
         {
@@ -1124,7 +1414,7 @@
         {
             "name": "RI-CCSD H2O sto-3g/cc-pvdz-rifit frozen 0 (CPU)",
             "input": "inputs/cpu/mqc/ri-ccsd/cpu_water_sto-3g_riccsd_f0.json",
-            "expected_energy": -75.011179195171,
+            "expected_energy": -75.01117919517,
             "type": "unfragmented"
         },
         {
@@ -1136,7 +1426,7 @@
         {
             "name": "RI-CCSD(T) H2O cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
             "input": "inputs/cpu/mqc/ri-ccsd-t/cpu_water_cc-pvdz_riccsdt_f1.json",
-            "expected_energy": -76.240689531948,
+            "expected_energy": -76.240689531951,
             "type": "unfragmented"
         },
         {

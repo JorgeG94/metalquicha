@@ -634,6 +634,40 @@ The ``validation_tests.json`` file has the following structure:
 - ``expected_energy``: Expected total energy (for single molecule tests)
 - ``expected_energies``: Dictionary of expected energies (for multi-molecule tests)
 - ``type``: Test type (``unfragmented``, ``fragmented``, or ``multi_molecule``)
+- ``expected_gradient``: Expected nuclear gradient, one ``[x, y, z]`` triple per
+  atom in Hartree/Bohr, compared component by component
+- ``gradient_tolerance``: Bound on each gradient component (default ``1.0e-7``)
+- ``check_translation``: Fail the case when :math:`\sum_A \partial E/\partial R_A`
+  exceeds ``translation_tolerance`` (default ``1.0e-8``). Off by default, where
+  a non-zero residual is only reported
+
+Gradients
+---------
+
+A gradient case pins every component rather than ``expected_gradient_norm``,
+which is still read and still passes but cannot distinguish a correct gradient
+from one with a sign error, a swapped pair of atoms, or a wrong component that
+preserves the magnitude.
+
+The translational residual is free -- it needs no reference value -- and is
+printed for any case whose output carries gradient components. Treat it as a
+smoke test rather than a criterion: it is structurally blind to
+exchange-correlation terms, because a rigid translation leaves the Becke
+partition unchanged, and it has passed at 2e-15 over an exchange-correlation
+gradient term wrong by 0.77 Hartree/Bohr.
+
+Set the SCF convergence tighter than usual in a gradient deck. The gradient is
+a derivative of the converged energy, so an unconverged density shows up in it
+linearly rather than quadratically: the CPU gradient cases stop the SCF at
+``1e-11``, and at the suite default of ``1e-8`` they sat ~1e-7 from PySCF for
+that reason alone.
+
+The CPU gradient cases are generated, not hand-written -- see
+``tools/cpu_validation/gen_cpu_validation.py``, whose ``GRADIENT_CASES`` table
+adds one case per code path. Their references come from PySCF with
+``grid_response = True``, which is not its default: without it PySCF omits the
+derivative of the quadrature weights while metalquicha includes it, and the two
+disagree by ~1e-4 with nothing wrong on either side.
 
 Contributing New Tests
 ======================
