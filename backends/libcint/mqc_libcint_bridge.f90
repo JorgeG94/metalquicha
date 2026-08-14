@@ -29,6 +29,7 @@ module mqc_libcint_bridge
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -182,6 +183,8 @@ contains
       type(xc_context_t) :: xc
       logical :: kohn_sham
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       if (present(want_gradient)) then
          if (want_gradient) then
             ! libcint has the derivative entry points -- ip1 and ipovlp -- so
@@ -330,8 +333,8 @@ contains
             return
          end if
          if (settings%verbose) then
-            write (*, "(a,a,a,i0)") "  functional: ", trim(settings%functional), &
-               ", grid level ", settings%grid_level
+            write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), ", grid level ", settings%grid_level
+            call logger%info(trim(line))
          end if
       end if
 
@@ -486,17 +489,23 @@ contains
             result%energy%mp2%ss_scale = settings%scs_ss
             result%energy%mp2%os_scale = settings%scs_os
             if (settings%verbose) then
-               write (*, "(a,i0,a,i0,a,i0)") "  MP2: frozen ", mp2%n_frozen, &
-                  "  occupied ", mp2%n_occupied, "  virtual ", mp2%n_virtual
-               write (*, "(a,f20.12)") "  E(OS)          ", mp2%opposite_spin
-               write (*, "(a,f20.12)") "  E(SS)          ", mp2%same_spin
-               write (*, "(a,f20.12)") "  E(corr)        ", mp2%correlation
+               write (line, "(a,i0,a,i0,a,i0)") "  MP2: frozen ", mp2%n_frozen, "  occupied ", &
+                  mp2%n_occupied, "  virtual ", mp2%n_virtual
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E(OS)          ", mp2%opposite_spin
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E(SS)          ", mp2%same_spin
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E(corr)        ", mp2%correlation
+               call logger%info(trim(line))
                if (settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp) then
-                  write (*, "(a,f6.3,a,f6.3)") "  spin scaling:  SS x", settings%scs_ss, &
-                     "   OS x", settings%scs_os
-                  write (*, "(a,f20.12)") "  E(corr) scaled ", result%energy%mp2%total()
+                  write (line, "(a,f6.3,a,f6.3)") "  spin scaling:  SS x", settings%scs_ss, "   OS x", settings%scs_os
+                  call logger%info(trim(line))
+                  write (line, "(a,f20.12)") "  E(corr) scaled ", result%energy%mp2%total()
+                  call logger%info(trim(line))
                end if
-               write (*, "(a,f20.12)") "  E total        ", result%energy%total()
+               write (line, "(a,f20.12)") "  E total        ", result%energy%total()
+               call logger%info(trim(line))
             end if
          end block
       end if
@@ -550,16 +559,22 @@ contains
             result%energy%cc%doubles = cc%e_doubles
             result%energy%cc%triples = cc%e_triples
             if (settings%verbose) then
-               write (*, "(a,i0,a,l1)") "  CCSD: iterations ", cc%iterations, &
-                  "  converged ", cc%converged
-               write (*, "(a,f20.12)") "  E(MP2)         ", cc%e_mp2
-               write (*, "(a,f20.12)") "  E(singles)     ", cc%e_singles
-               write (*, "(a,f20.12)") "  E(doubles)     ", cc%e_doubles
+               write (line, "(a,i0,a,l1)") "  CCSD: iterations ", cc%iterations, "  converged ", cc%converged
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E(MP2)         ", cc%e_mp2
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E(singles)     ", cc%e_singles
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E(doubles)     ", cc%e_doubles
+               call logger%info(trim(line))
                if (settings%cc_triples) then
-                  write (*, "(a,f20.12)") "  E(T)           ", cc%e_triples
+                  write (line, "(a,f20.12)") "  E(T)           ", cc%e_triples
+                  call logger%info(trim(line))
                end if
-               write (*, "(a,f20.12)") "  E(corr)        ", result%energy%cc%total()
-               write (*, "(a,f20.12)") "  E total        ", result%energy%total()
+               write (line, "(a,f20.12)") "  E(corr)        ", result%energy%cc%total()
+               call logger%info(trim(line))
+               write (line, "(a,f20.12)") "  E total        ", result%energy%total()
+               call logger%info(trim(line))
             end if
          end block
       end if
@@ -618,9 +633,10 @@ contains
                ! `mp2` would double count the moment a deck asked for MP2 as well.
                result%energy%dh_pt2 = xc%pt2_fraction*dh_mp2%correlation
                if (settings%verbose) then
-                  write (*, "(a,f6.3,a,f20.12)") "  double hybrid: PT2 x", &
-                     xc%pt2_fraction, " = ", result%energy%dh_pt2
-                  write (*, "(a,f20.12)") "  E total        ", result%energy%total()
+                  write (line, "(a,f6.3,a,f20.12)") "  double hybrid: PT2 x", xc%pt2_fraction, " = ", result%energy%dh_pt2
+                  call logger%info(trim(line))
+                  write (line, "(a,f20.12)") "  E total        ", result%energy%total()
+                  call logger%info(trim(line))
                end if
             end block
          end if

@@ -23,6 +23,8 @@ module cuda_helpers
                            cudaMalloc, cudaFree, cudaMemcpy, &
                            cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost, &
                            cudaDeviceProp, cudaGetDeviceCount, cudaGetDeviceProperties
+   use pic_logger, only: logger => global_logger
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -88,10 +90,12 @@ contains
    subroutine cuda_check(code, what)
       integer(c_int), intent(in) :: code
       character(*), intent(in) :: what
+      character(len=MAX_LINE_LENGTH) :: line
+
       if (code /= cudaSuccess) then
-         write (*, "(A,A,A,I0,A,A,A,A)") "CUDA FAILED: ", what, &
-            " (code ", code, ", ", cuda_error_name(code), "): ", &
-            cuda_error_string(code)
+         write (line, "(A,A,A,I0,A,A,A,A)") "CUDA FAILED: ", what, " (code ", code, ", ", &
+            cuda_error_name(code), "): ", cuda_error_string(code)
+         call logger%info(trim(line))
          error stop 1
       end if
    end subroutine cuda_check
@@ -209,16 +213,18 @@ contains
    subroutine cuda_report_devices()
       integer(c_int) :: ist, ndev, i
       type(cudaDeviceProp) :: prop
+      character(len=MAX_LINE_LENGTH) :: line
+
       ist = cudaGetDeviceCount(ndev)
       call cuda_check(ist, "cudaGetDeviceCount")
-      write (*, "(A,I0,A)") "CUDA devices visible: ", ndev
+      write (line, "(A,I0,A)") "CUDA devices visible: ", ndev
+      call logger%info(trim(line))
       do i = 0, ndev - 1
          ist = cudaGetDeviceProperties(prop, i)
          call cuda_check(ist, "cudaGetDeviceProperties")
-         write (*, "(2X,A,I0,A,A,A,I0,A,F6.1,A)") &
-            "[", i, "] ", cuda_device_name(prop), &
-            "  sm_", cuda_capability(prop), &
-            "  ", real(prop%totalGlobalMem)/1024.0_c_double**3, " GiB"
+         write (line, "(2X,A,I0,A,A,A,I0,A,F6.1,A)") "[", i, "] ", cuda_device_name(prop), "  sm_", &
+            cuda_capability(prop), "  ", real(prop%totalGlobalMem)/1024.0_c_double**3, " GiB"
+         call logger%info(trim(line))
       end do
    end subroutine cuda_report_devices
 

@@ -33,6 +33,7 @@ module mqc_libcint_mp2
    !! D = e_i + e_j - e_a - e_b.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_tensor, pair_index
    implicit none
@@ -83,6 +84,8 @@ contains
       integer :: i, j, a, b
       real(dp) :: iajb, ibja, denom, e_ss, e_os
 
+      type(timing_report_t) :: clk
+
       n_ao = mol%nao
       n_mo = size(coeff, 2)
 
@@ -107,9 +110,12 @@ contains
          return
       end if
 
+      call clk%start()
       call mol%eris_packed(ao_eri)
+      call clk%lap("AO integrals")
       call transform_ovov(ao_eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       deallocate (ao_eri)
+      call clk%lap("AO->MO transform")
 
       ! The denominators are all strictly negative for a stable reference, so a
       ! non-negative one means the SCF solution is not a minimum. Rather than
@@ -132,6 +138,10 @@ contains
             end do
          end do
       end do
+
+      call clk%lap("energy denominators")
+      call clk%finish()
+      call clk%report("MP2")
 
       result%same_spin = e_ss
       result%opposite_spin = e_os
@@ -179,6 +189,8 @@ contains
       integer :: i, j, a, bb
       real(dp) :: iajb, ibja, denom, e_ss, e_os, weight
 
+      type(timing_report_t) :: clk
+
       n_ao = mol%nao
       n_mo = size(coeff, 2)
 
@@ -205,9 +217,11 @@ contains
       ! `build_df_mo_tensor`. Fitting the whole AO pair space first and reading
       ! the occupied-virtual corner out of it costs the same answer several
       ! times over.
+      call clk%start()
       call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error)
       deallocate (c_occ, c_vir)
       if (error%has_error()) return
+      call clk%lap("B tensor (3c/2c fit)")
       n_aux = size(bia, 2)
 
       ! One gemm per occupied pair rebuilds that pair's whole (a,b) block:
@@ -238,6 +252,9 @@ contains
          end do
       end do
       deallocate (g, bia)
+      call clk%lap("gemm + denominators")
+      call clk%finish()
+      call clk%report("RI-MP2")
 
       result%same_spin = e_ss
       result%opposite_spin = e_os

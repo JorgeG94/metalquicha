@@ -77,6 +77,7 @@ module mqc_cuest_scf
                      CUBLAS_FILL_MODE_UPPER
    use cusolver, only: cusolverDnDsyevd, cusolverDnDsyevd_bufferSize, &
                        CUSOLVER_EIG_MODE_VECTOR
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -373,6 +374,8 @@ contains
       real(dp) :: xc_energy, pcm_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       guess_type = SCF_GUESS_GWH
       if (present(guess)) guess_type = guess
 
@@ -445,24 +448,29 @@ contains
 
       if (verbose) then
          if (system%has_xc) then
-            write (*, "(A)") "  cuEST RKS (density-fitted J/K, grid XC)"
+            write (line, "(A)") "  cuEST RKS (density-fitted J/K, grid XC)"
+            call logger%info(trim(line))
          else
-            write (*, "(A)") "  cuEST RHF (density-fitted J/K)"
+            write (line, "(A)") "  cuEST RHF (density-fitted J/K)"
+            call logger%info(trim(line))
          end if
-         write (*, "(A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
-            "   n_occ = ", n_occ
+         write (line, "(A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, "   n_occ = ", n_occ
+         call logger%info(trim(line))
          ! The cavity, when there is one. Worth printing rather than inferring:
          ! how many surface points survived the switching function is the first
          ! thing to look at if a solvation energy comes out wrong, and it is not
          ! recoverable from the total.
          if (system%has_pcm) then
-            write (*, "(A,F10.4,A,I0,A,F6.3,A,F7.3)") "    continuum: eps = ", &
-               system%pcm_dielectric, "   angular points ", system%pcm_angular_points, &
-               "   radii x ", system%pcm_radii_scale, "   zeta ", system%pcm_zeta
-            write (*, "(A,I0,A,I0)") "    continuum: ", system%n_pcm_points, &
+            write (line, "(A,F10.4,A,I0,A,F6.3,A,F7.3)") "    continuum: eps = ", system%pcm_dielectric, &
+               "   angular points ", system%pcm_angular_points, "   radii x ", system%pcm_radii_scale, &
+               "   zeta ", system%pcm_zeta
+            call logger%info(trim(line))
+            write (line, "(A,I0,A,I0)") "    continuum: ", system%n_pcm_points, &
                " surface points, active ", system%n_pcm_active
+            call logger%info(trim(line))
          end if
-         write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
+         write (line, "(A)") "    iter            energy (Ha)          dE        DIIS error"
+         call logger%info(trim(line))
       end if
 
       ! Everything the loop reads goes up here, and nothing of size n_ao^2 goes
@@ -564,8 +572,9 @@ contains
          end if
 
          if (verbose) then
-            write (*, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
+            write (line, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
                electronic_energy + result%nuclear_repulsion, energy_change, error_norm
+            call logger%info(trim(line))
          end if
 
          if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
@@ -624,9 +633,9 @@ contains
       result%pcm_solved = system%pcm_solved
       result%pcm_points = int(system%n_pcm_points)
       if (verbose .and. system%has_pcm) then
-         write (*, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
-            "  charge-solve iterations ", system%pcm_iterations, &
-            "  residual ", system%pcm_residual
+         write (line, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
+            "  charge-solve iterations ", system%pcm_iterations, "  residual ", system%pcm_residual
+         call logger%info(trim(line))
       end if
       ! A continuum that never solved makes the total wrong by however far
       ! the surface charges were off, and the SCF above would still report
@@ -765,6 +774,8 @@ contains
       real(dp) :: trace_h, trace_j, trace_ka, trace_kb
       logical :: diis_ok, occupations_ok, beta_exchange
 
+      character(len=MAX_LINE_LENGTH) :: line
+
       guess_type = SCF_GUESS_GWH
       if (present(guess)) guess_type = guess
 
@@ -851,13 +862,17 @@ contains
 
       if (verbose) then
          if (system%has_xc) then
-            write (*, "(A)") "  cuEST UKS (density-fitted J/K, grid XC)"
+            write (line, "(A)") "  cuEST UKS (density-fitted J/K, grid XC)"
+            call logger%info(trim(line))
          else
-            write (*, "(A)") "  cuEST UHF (density-fitted J/K)"
+            write (line, "(A)") "  cuEST UHF (density-fitted J/K)"
+            call logger%info(trim(line))
          end if
-         write (*, "(A,I0,A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
-            "   n_alpha = ", n_alpha, "   n_beta = ", n_beta
-         write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
+         write (line, "(A,I0,A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, "   n_alpha = ", &
+            n_alpha, "   n_beta = ", n_beta
+         call logger%info(trim(line))
+         write (line, "(A)") "    iter            energy (Ha)          dE        DIIS error"
+         call logger%info(trim(line))
       end if
 
       ! Everything the loop reads goes up here, and nothing of size n_ao^2 goes
@@ -969,8 +984,9 @@ contains
          end if
 
          if (verbose) then
-            write (*, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
+            write (line, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
                electronic_energy + result%nuclear_repulsion, energy_change, error_norm
+            call logger%info(trim(line))
          end if
 
          if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
@@ -1034,9 +1050,9 @@ contains
       result%pcm_solved = system%pcm_solved
       result%pcm_points = int(system%n_pcm_points)
       if (verbose .and. system%has_pcm) then
-         write (*, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
-            "  charge-solve iterations ", system%pcm_iterations, &
-            "  residual ", system%pcm_residual
+         write (line, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
+            "  charge-solve iterations ", system%pcm_iterations, "  residual ", system%pcm_residual
+         call logger%info(trim(line))
       end if
       ! A continuum that never solved makes the total wrong by however far
       ! the surface charges were off, and the SCF above would still report
@@ -1063,8 +1079,9 @@ contains
       result%spin_squared = spin_contamination(occ_a, occ_b, overlap, n_alpha, n_beta)
 
       if (verbose) then
-         write (*, "(A,F12.6,A,F12.6,A)") "    <S^2> = ", result%spin_squared, &
-            "   (exact ", 0.25_dp*real(n_alpha - n_beta, dp)*(real(n_alpha - n_beta, dp) + 2.0_dp), ")"
+         write (line, "(A,F12.6,A,F12.6,A)") "    <S^2> = ", result%spin_squared, "   (exact ", &
+            0.25_dp*real(n_alpha - n_beta, dp)*(real(n_alpha - n_beta, dp) + 2.0_dp), ")"
+         call logger%info(trim(line))
          call logger%info("  "//frontier_orbital_text("HOMO alpha", "LUMO alpha", &
                                                       result%orbital_energies, n_alpha))
          call logger%info("  "//frontier_orbital_text("HOMO beta", "LUMO beta", &

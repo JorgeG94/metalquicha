@@ -28,6 +28,7 @@ module mqc_libcint_integrals
    !! else. Direct or density-fitted assembly is a different backend.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_basis_utils, only: find_basis_file
@@ -610,6 +611,8 @@ contains
       ! Cartesian for all three at once. A Cartesian orbital basis fitted with
       ! a spherical auxiliary one cannot be expressed, and guessing which side
       ! to honour would silently fit in a basis neither deck asked for.
+      type(timing_report_t) :: clk
+
       if (orb%cartesian .neqv. aux%cartesian) then
          call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
                         angular_form_name(orb%cartesian)//" and the auxiliary basis is "// &
@@ -622,14 +625,21 @@ contains
       nao = orb%nao
       naux = aux%nao
 
+      call clk%start()
       call two_centre(aux, metric)
+      call clk%lap("2-centre metric")
       call three_centre(orb, aux, three)
+      call clk%lap("3-centre integrals")
 
       call metric_inverse_sqrt(metric, half, error)
+      call clk%lap("metric^-1/2")
       if (error%has_error()) return
 
       allocate (b(nao*nao, naux))
       call pic_gemm(three, half, b)
+      call clk%lap("B = (mn|Q) J^-1/2")
+      call clk%finish()
+      call clk%report("density fitting")
    end subroutine build_df_tensor
 
    subroutine metric_inverse_sqrt(metric, half, error)
