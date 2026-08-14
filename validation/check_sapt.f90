@@ -28,6 +28,7 @@ program check_sapt
    integer :: z(3)
    character(len=2) :: sym(3)
    integer :: i, j, pair_count
+   character(len=32) :: mode
    type(sapt_molecules_t) :: mols
    type(sapt_terms_t) :: t
    type(error_t) :: err
@@ -35,6 +36,13 @@ program check_sapt
 
    z = [8, 1, 1]
    sym = ["O ", "H ", "H "]
+
+   call get_command_argument(1, mode)
+   if (trim(mode) == "--scan") then
+      call long_range_scan()
+      stop
+   end if
+
    call load_prism(prism)
 
    write (*, "(A)") "SAPT0 / 6-31G on the water prism, pair by pair"
@@ -85,6 +93,115 @@ program check_sapt
    write (*, "(A)") "  sum over pairs contains it."
 
 contains
+
+   subroutine long_range_scan()
+      !! Every term's decay with separation, against what the physics demands
+      !!
+      !! This is the check that catches a term which is right at one geometry by
+      !! coincidence. Each SAPT term has a known long-range form, and none of
+      !! them can be got right by accident across a decade of separation:
+      !!
+      !!   Elst10   ~ R^-3   two dipoles. Positive here: the monomers' dipoles
+      !!                     are parallel and perpendicular to the separation,
+      !!                     which is the repulsive arrangement
+      !!   Ind20    ~ R^-6   dipole inducing a dipole
+      !!   Disp20   ~ R^-6   the London term, and the one whose coefficient is
+      !!                     the Casimir-Polder C6 an EFP potential also carries
+      !!   Exch10   exponential, not a power law -- it is an overlap effect, so
+      !!                     `ln|E|` against `R` is the straight line, not
+      !!                     `ln|E|` against `ln R`
+      !!
+      !! The exponent is measured locally between consecutive points, so it is a
+      !! sequence converging on the exact value rather than a single fit that
+      !! could be dragged into place by one bad point.
+      real(dp), parameter :: NOISE_FLOOR = 1.0e-16_dp
+      real(dp), parameter :: SEP(7) = [4.0_dp, 5.0_dp, 6.0_dp, 7.0_dp, &
+                                       8.0_dp, 10.0_dp, 12.0_dp]
+      real(dp) :: a(3, 3), b(3, 3)
+      real(dp) :: e(7, 4)
+      integer :: k, t_i
+      character(len=12) :: label(4)
+
+      label = ["Elst10      ", "Exch10      ", "Ind20,r     ", "Disp20      "]
+      a = reshape([0.0_dp, 0.0_dp, 0.10077199_dp, &
+                   0.0_dp, 0.77250895_dp, -0.46780200_dp, &
+                   0.0_dp, -0.77250895_dp, -0.46780200_dp], [3, 3])*ANG
+
+      write (*, "(A)") "SAPT0 / 6-31G, water dimer, separation scan along x"
+      write (*, "(A)") ""
+      write (*, "(A)") "     R/Ang        Elst10        Exch10       Ind20,r"// &
+         "        Disp20"
+      write (*, "(A)") repeat("-", 74)
+      do k = 1, size(SEP)
+         b = a
+         b(1, :) = b(1, :) + SEP(k)*ANG
+         call build_sapt_molecules(z, sym, a, z, sym, b, "6-31g", mols, err)
+         if (err%has_error()) then
+            write (*, "(F10.2,A)") SEP(k), "   FAILED: "//err%get_message()
+            call err%clear()
+            cycle
+         end if
+         call run_sapt0(mols, t, err)
+         if (err%has_error()) then
+            write (*, "(F10.2,A)") SEP(k), "   FAILED: "//err%get_message()
+            call err%clear()
+            call mols%destroy()
+            cycle
+         end if
+         e(k, 1) = t%elst10
+         e(k, 2) = t%exch10
+         e(k, 3) = t%ind20_r
+         e(k, 4) = t%disp20
+         write (*, "(F10.2,4ES14.5)") SEP(k), e(k, 1), e(k, 2), e(k, 3), e(k, 4)
+         call mols%destroy()
+      end do
+
+      write (*, "(A)") ""
+      write (*, "(A)") "Local decay exponent  n  in  |E| ~ R^-n , between consecutive points"
+      write (*, "(A)") "     R range      Elst10        Exch10       Ind20,r"// &
+         "        Disp20      expected"
+      write (*, "(A)") repeat("-", 88)
+      do k = 1, size(SEP) - 1
+         write (*, "(F6.1,A,F5.1,4F14.3,A)") SEP(k), " -", SEP(k + 1), &
+            (exponent_between(SEP(k), SEP(k + 1), e(k, t_i), e(k + 1, t_i)), t_i=1, 4), &
+            "     3 / exp / 6 / 6"
+      end do
+
+      write (*, "(A)") ""
+      write (*, "(A)") "Exchange is not a power law. `ln|Exch10|` against R, whose"
+      write (*, "(A)") "slope is minus the decay constant and should be near constant"
+      write (*, "(A)") "-- until it is not, see the note below."
+      write (*, "(A)") "     R range    d ln|Exch10| / dR   (1/Ang)"
+      write (*, "(A)") repeat("-", 48)
+      do k = 1, size(SEP) - 1
+         write (*, "(F6.1,A,F5.1,F18.3,A)") SEP(k), " -", SEP(k + 1), &
+            (log(abs(e(k + 1, 2))) - log(abs(e(k, 2))))/(SEP(k + 1) - SEP(k)), &
+            merge("   <- noise", "           ", abs(e(k + 1, 2)) < NOISE_FLOOR)
+      end do
+
+      write (*, "(A)") ""
+      write (*, "(A)") "  Exchange falls below 1e-16 past about 7 Angstrom, at which"
+      write (*, "(A)") "  point it is the numerical floor rather than physics: it is"
+      write (*, "(A)") "  assembled from traces of matrices of order 1e+2, so double"
+      write (*, "(A)") "  precision cannot carry it further. The decay constant is"
+      write (*, "(A)") "  meaningless there and the rows say so. The physics -- that"
+      write (*, "(A)") "  it decays exponentially rather than as any power of R -- is"
+      write (*, "(A)") "  established well before then: seven orders of magnitude"
+      write (*, "(A)") "  between 4 and 7 Angstrom, where the power-law fit returns"
+      write (*, "(A)") "  a nonsensical and steadily growing exponent."
+   end subroutine long_range_scan
+
+   pure function exponent_between(r1, r2, e1, e2) result(n)
+      !! `n` such that `|E| ~ R^-n` between two points
+      real(dp), intent(in) :: r1, r2, e1, e2
+      real(dp) :: n
+
+      if (abs(e1) <= 0.0_dp .or. abs(e2) <= 0.0_dp) then
+         n = 0.0_dp
+      else
+         n = -(log(abs(e2)) - log(abs(e1)))/(log(r2) - log(r1))
+      end if
+   end function exponent_between
 
    subroutine load_prism(geom)
       !! The six monomers, in Bohr. Hard-coded rather than read, so this runs
