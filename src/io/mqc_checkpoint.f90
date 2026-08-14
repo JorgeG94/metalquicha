@@ -29,6 +29,7 @@ module mqc_checkpoint
    use mqc_result_types, only: SCF_UNKNOWN
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use mqc_io_helpers, only: ends_with
    use mqc_hdf5_checkpoint, only: hdf5_checkpoint_t, hdf5_checkpoint_available
    implicit none
    private
@@ -380,36 +381,6 @@ contains
          end if
       end do
    end subroutine checkpoint_lookup
-
-   pure function ends_with(text, suffix) result(matches)
-      !! Case-insensitive suffix test, for choosing a backend by filename
-      character(len=*), intent(in) :: text, suffix
-      logical :: matches
-
-      integer :: n, m
-
-      n = len_trim(text)
-      m = len_trim(suffix)
-      matches = .false.
-      if (m > n) return
-      matches = (lower(text(n - m + 1:n)) == lower(suffix))
-   end function ends_with
-
-   pure function lower(text) result(out)
-      character(len=*), intent(in) :: text
-      character(len=len(text)) :: out
-
-      integer :: i, code
-
-      do i = 1, len(text)
-         code = iachar(text(i:i))
-         if (code >= iachar("A") .and. code <= iachar("Z")) then
-            out(i:i) = achar(code + 32)
-         else
-            out(i:i) = text(i:i)
-         end if
-      end do
-   end function lower
 
    pure function compare(a, b, n) result(order)
       !! Lexicographic order on two zero-padded monomer rows

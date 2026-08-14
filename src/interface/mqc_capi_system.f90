@@ -35,6 +35,7 @@ module mqc_capi_system
    use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &
                                   auto_monomers, DEFAULT_BOND_TOLERANCE
    use mqc_error, only: error_t
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -407,7 +408,7 @@ contains
          if (is_broken(ibond) /= 0) cycle
          if (monomer_of(h%geom, atom_i(ibond)) /= monomer_of(h%geom, atom_j(ibond))) then
             last_message = "mqc_system_set_bonds: the bond between atoms "// &
-                           int_text(atom_i(ibond))//" and "//int_text(atom_j(ibond))// &
+                           int_to_text(atom_i(ibond))//" and "//int_to_text(atom_j(ibond))// &
                            " crosses a monomer boundary but is not marked broken; "// &
                            "fragmenting it would leave an uncapped valence"
             status = MQC_FAIL
@@ -610,15 +611,6 @@ contains
          end if
       end do
    end function monomer_of
-
-   pure function int_text(value) result(text)
-      integer(c_int), intent(in) :: value
-      character(len=:), allocatable :: text
-      character(len=16) :: buffer
-
-      write (buffer, "(I0)") value
-      text = trim(adjustl(buffer))
-   end function int_text
 
    function mqc_system_n_atoms(handle) result(n) bind(C, name="mqc_system_n_atoms")
       !! Atoms in the system, or -1 for a bad handle

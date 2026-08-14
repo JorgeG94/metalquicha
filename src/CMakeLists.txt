@@ -8,6 +8,7 @@ add_subdirectory(mcscf)
 add_subdirectory(methods)
 add_subdirectory(optimization)
 add_subdirectory(parallel)
+add_subdirectory(scf)
 add_subdirectory(utils)
 add_subdirectory(vibrational)
 target_sources(${main_lib} PRIVATE mqc_calc_types.f90 mqc_method_types.f90

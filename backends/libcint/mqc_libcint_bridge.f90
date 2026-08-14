@@ -22,7 +22,8 @@ module mqc_libcint_bridge
    use mqc_elements, only: element_number_to_symbol
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
    use mqc_cuest_iface, only: cuest_scf_settings_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
+                                    angular_form_name
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
    use mqc_libcint_projection, only: climb_basis_ladder
@@ -1427,18 +1428,6 @@ contains
       if (kohn_sham) call xc%destroy()
       call mol%destroy()
    end subroutine run_libcint_hf
-
-   pure function angular_form_name(cartesian) result(name)
-      !! "Cartesian" or "spherical", so an error can say which basis is which
-      logical, intent(in) :: cartesian
-      character(len=:), allocatable :: name
-
-      if (cartesian) then
-         name = "Cartesian"
-      else
-         name = "spherical"
-      end if
-   end function angular_form_name
 
    subroutine resolve_active_space(settings, fragment, n_ao, space, error)
       !! Turn the deck's active space into the four integers the CI needs

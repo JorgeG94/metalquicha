@@ -3,10 +3,12 @@ target_sources(
   PRIVATE # Core modules
           mqc_calculation_defaults.f90
           mqc_calculation_keywords.f90
-          mqc_physical_constants.f90
+          mqc_physical_constants.F90
           mqc_program_limits.f90
           mqc_version.f90
           mqc_elements.f90
+          mqc_atomic_radii.f90
+          mqc_atomic_guess_common.f90
           mqc_pcm_radii.f90
           mqc_geometry.f90
           mqc_logo.f90

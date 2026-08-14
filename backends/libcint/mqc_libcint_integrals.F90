@@ -79,6 +79,7 @@ module mqc_libcint_integrals
    ! of entry points. Exported because the direct Fock build needs the same
    ! mapping, and two copies of it is two chances to route half the calls.
    public :: shell_dim
+   public :: angular_form_name
    public :: pair_index
    ! The shell set a four-centre integral loop should run over, and the
    ! Schwarz bounds re-blocked to match it. Exported because the direct Fock

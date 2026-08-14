@@ -19,6 +19,8 @@ module mqc_libcint_rhf
    use mqc_convergence_report, only: convergence_header, convergence_footer
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
+                             build_density_spin, spin_contamination
    use mqc_diis, only: diis_state_t
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                                  direct_stats_t
@@ -520,7 +522,7 @@ contains
 
       call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
       if (error%has_error()) return
-      call build_density(coeff, n_occ, density)
+      call build_density_closed_shell(coeff, n_occ, density)
 
       e_old = 0.0_dp
       result%converged = .false.
@@ -558,7 +560,7 @@ contains
 
          call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
          if (error%has_error()) return
-         call build_density(coeff, n_occ, density)
+         call build_density_closed_shell(coeff, n_occ, density)
          t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
          call clk%lap(STAGE_DIAG)
          t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
@@ -1346,45 +1348,6 @@ contains
       end do
    end subroutine density_pseudo_orbitals
 
-   subroutine build_orthogonalizer(overlap, transform, n_mo, error)
-      !! Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped
-      !!
-      !! Canonical rather than symmetric so a basis with near-linear
-      !! dependence loses the offending combinations instead of amplifying
-      !! them, which is the same choice the cuEST path makes.
-      real(dp), intent(in) :: overlap(:, :)
-      real(dp), allocatable, intent(out) :: transform(:, :)
-      integer, intent(out) :: n_mo
-      type(error_t), intent(inout) :: error
-
-      real(dp), parameter :: NULL_THRESHOLD = 1.0e-7_dp
-      real(dp), allocatable :: vectors(:, :), values(:)
-      integer :: n_ao, i, kept, info
-
-      n_ao = size(overlap, 1)
-      allocate (vectors(n_ao, n_ao), values(n_ao))
-      vectors = overlap
-      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
-      if (info /= 0) then
-         call error%set(ERROR_VALIDATION, "RHF: overlap diagonalisation failed")
-         return
-      end if
-
-      kept = count(values > NULL_THRESHOLD)
-      if (kept == 0) then
-         call error%set(ERROR_VALIDATION, "RHF: the overlap matrix is singular")
-         return
-      end if
-
-      allocate (transform(n_ao, kept))
-      n_mo = 0
-      do i = 1, n_ao
-         if (values(i) <= NULL_THRESHOLD) cycle
-         n_mo = n_mo + 1
-         transform(:, n_mo) = vectors(:, i)/sqrt(values(i))
-      end do
-   end subroutine build_orthogonalizer
-
    subroutine diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
       !! F' = X^T F X, diagonalise, and bring the orbitals back: C = X C'
       real(dp), intent(in) :: fock(:, :), x(:, :)
@@ -1411,24 +1374,6 @@ contains
       allocate (coeff(n_ao, n_mo))
       call pic_gemm(x, f_ortho, coeff)                   ! C = X C'
    end subroutine diagonalize
-
-   pure subroutine build_density(coeff, n_occ, density)
-      !! D = 2 C_occ C_occ^T, the closed-shell density
-      real(dp), intent(in) :: coeff(:, :)
-      integer, intent(in) :: n_occ
-      real(dp), intent(out) :: density(:, :)
-
-      integer :: mu, nu, i
-
-      density = 0.0_dp
-      do nu = 1, size(density, 2)
-         do mu = 1, size(density, 1)
-            do i = 1, n_occ
-               density(mu, nu) = density(mu, nu) + 2.0_dp*coeff(mu, i)*coeff(nu, i)
-            end do
-         end do
-      end do
-   end subroutine build_density
 
    subroutine build_fock(h, eri, density, fock, k_scale)
       !! `F = H + J - K/2` from a stored two-electron tensor
@@ -1587,28 +1532,6 @@ contains
       fock = h + jf*j - kf*k
    end subroutine build_fock_df
 
-   pure subroutine build_density_spin(coeff, n_occ, density)
-      !! D_sigma = C_occ C_occ^T, one electron per occupied orbital
-      !!
-      !! Deliberately not `build_density` with a factor: the closed-shell one
-      !! carries the two electrons per spatial orbital, and reusing it here
-      !! would double every spin density. That error converges.
-      real(dp), intent(in) :: coeff(:, :)
-      integer, intent(in) :: n_occ
-      real(dp), intent(out) :: density(:, :)
-
-      integer :: mu, nu, i
-
-      density = 0.0_dp
-      do nu = 1, size(density, 2)
-         do mu = 1, size(density, 1)
-            do i = 1, n_occ
-               density(mu, nu) = density(mu, nu) + coeff(mu, i)*coeff(nu, i)
-            end do
-         end do
-      end do
-   end subroutine build_density_spin
-
    pure subroutine build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale)
       !! F_sigma = H + J(D_alpha + D_beta) - K(D_sigma), straight from the ERIs
       !!
@@ -1651,38 +1574,6 @@ contains
 
       energy = 0.5_dp*(sum((d_alpha + d_beta)*h) + sum(d_alpha*fock_a) + sum(d_beta*fock_b))
    end function uhf_electronic_energy
-
-   function spin_contamination(coeff_a, coeff_b, overlap, n_a, n_b) result(s2)
-      !! <S^2> = S_z(S_z+1) + n_beta - sum_ij |<a_i|b_j>|^2
-      !!
-      !! Worth reporting rather than assuming: a UHF solution that has collapsed
-      !! onto the restricted one, or onto a badly broken-symmetry state, says so
-      !! here and nowhere else. The exact value for a pure doublet is 0.75.
-      real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :), overlap(:, :)
-      integer, intent(in) :: n_a, n_b
-      real(dp) :: s2
-
-      real(dp) :: sz, overlap_sum
-      integer :: i, j, n
-      real(dp), allocatable :: sc(:, :), ovl(:, :)
-
-      n = size(overlap, 1)
-      sz = 0.5_dp*real(n_a - n_b, dp)
-      overlap_sum = 0.0_dp
-      if (n_b > 0 .and. n_a > 0) then
-         ! S C_beta, then C_alpha^T (S C_beta): the alpha-beta MO overlap block.
-         allocate (sc(n, n_b), ovl(n_a, n_b))
-         call pic_gemm(overlap, coeff_b(:, 1:n_b), sc)
-         call pic_gemm(coeff_a(:, 1:n_a), sc, ovl, transa="T")
-         do j = 1, n_b
-            do i = 1, n_a
-               overlap_sum = overlap_sum + ovl(i, j)**2
-            end do
-         end do
-         deallocate (sc, ovl)
-      end if
-      s2 = sz*(sz + 1.0_dp) + real(n_b, dp) - overlap_sum
-   end function spin_contamination
 
    pure function electronic_energy(h, fock, density) result(energy)
       !! E = 1/2 sum_uv D_uv (H_uv + F_uv)

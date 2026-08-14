@@ -816,7 +816,7 @@ contains
                call logger%error("ERROR: Fragment contains overlapping atoms!")
                call logger%error("  Atoms "//to_char(i)//" and "//to_char(j)//" are too close together")
                call logger%error("  Distance: "//to_char(distance)//" Bohr ("// &
-                                 to_char(distance*0.529177_dp)//" Angstrom)")
+                                 to_char(to_angstrom(distance))//" Angstrom)")
                call logger%error("  Atom "//to_char(i)//": "// &
                                  element_number_to_symbol(fragment%element_numbers(i))// &
                                  " at ("//to_char(fragment%coordinates(1, i))//", "// &

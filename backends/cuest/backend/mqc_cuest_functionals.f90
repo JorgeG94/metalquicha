@@ -28,6 +28,7 @@ module mqc_cuest_functionals
                     CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_HSE06, &
                     CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_M06, &
                     CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_M062X
+   use pic_ascii, only: to_lower
    implicit none
    private
 
@@ -35,22 +36,6 @@ module mqc_cuest_functionals
    public :: supported_functionals   !! Human-readable list, for error messages
 
 contains
-
-   pure function lowercase(string) result(lower)
-      !! Lowercase a string
-      character(len=*), intent(in) :: string
-      character(len=len(string)) :: lower
-      integer :: i, code
-
-      do i = 1, len(string)
-         code = iachar(string(i:i))
-         if (code >= iachar("A") .and. code <= iachar("Z")) then
-            lower(i:i) = achar(code + 32)
-         else
-            lower(i:i) = string(i:i)
-         end if
-      end do
-   end function lowercase
 
    subroutine functional_name_to_id(name, functional_id, error)
       !! Translate a functional name into the cuEST XC plan identifier
@@ -64,7 +49,7 @@ contains
 
       character(len=len(name)) :: key
 
-      key = lowercase(adjustl(name))
+      key = to_lower(adjustl(name))
       functional_id = -1
 
       select case (trim(key))
