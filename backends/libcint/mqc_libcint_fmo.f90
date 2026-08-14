@@ -26,11 +26,25 @@ module mqc_libcint_fmo
    !!
    !! Replacing that second term with atomic point charges is the ESP-PTC
    !! approximation, available as `esp = "ptc"`. In FMO that is reserved for
-   !! *distant* fragments; applying it to all of them instead gives
-   !! electrostatically embedded MBE -- a good method, and a different one.
-   !! `esp = "none"` drops the embedding and leaves a plain many-body expansion.
-   !! All three are here because the differences are worth measuring; see
-   !! `validation/sweep_fmo`.
+   !! *distant* fragments.
+   !!
+   !! **Three methods live here, along two independent axes.** `esp` decides
+   !! what field the fragments were computed in; `expansion` decides how their
+   !! energies are assembled. The named methods are particular pairings:
+   !!
+   !!     esp = "exact", expansion = "fmo"   FMO2
+   !!     esp = "ptc",   expansion = "mbe"   electrostatically embedded MBE
+   !!     esp = "none",  expansion = "mbe"   plain MBE
+   !!
+   !! Keeping the axes apart matters because point charges alone do not make a
+   !! calculation EE-MBE. ESP-PTC under the FMO expansion is still FMO -- it
+   !! carries internal energies and the response term -- and it is a genuinely
+   !! different quantity, by
+   !! `Tr(D_I u_I) + Tr(D_J u_J) - Tr((D_I+D_J) u_IJ)`, which does not vanish.
+   !! On water trimers the two land within about 15% of each other's error, so
+   !! nothing loud goes wrong if they are confused; they are simply not the same
+   !! method, and `expansion` exists so that either can be asked for by name.
+   !! See `validation/sweep_fmo`.
    !!
    !! **The energy.** With `E'` an internal energy -- the fragment's own energy
    !! with its polarised density, not counting its interaction with the field:
@@ -119,6 +133,34 @@ module mqc_libcint_fmo
          !! stay matched for a different system.
       character(len=16) :: ptc_charges = "mulliken"
          !! Read only when `esp = "ptc"`: "mulliken" or "chelpg".
+      character(len=16) :: expansion = "fmo"
+         !! How the fragment energies are assembled into a total. Orthogonal to
+         !! `esp`, which decides what field they were computed in, because the
+         !! two choices are genuinely independent and the named methods are
+         !! particular pairings of them:
+         !!
+         !!     esp = "exact", expansion = "fmo"   FMO2
+         !!     esp = "ptc",   expansion = "mbe"   electrostatically embedded MBE
+         !!     esp = "none",  expansion = "mbe"   plain MBE
+         !!
+         !! `"fmo"` sums internal energies and adds the density-response term,
+         !! as in the module header. `"mbe"` is the ordinary many-body
+         !! expansion over the *total* embedded energies:
+         !!
+         !!     E = sum_I E_I + sum_{I<J} (E_IJ - E_I - E_J)
+         !!
+         !! with no internal-energy subtraction and no response term. The two
+         !! differ by Tr(D_I u_I) + Tr(D_J u_J) - Tr((D_I+D_J) u_IJ), which does
+         !! not vanish: `u_I` is the field on I from everything including J,
+         !! while `u_IJ` excludes both. So these are different methods and not
+         !! two spellings of one.
+         !!
+         !! A caveat that belongs to EE-MBE rather than to this implementation:
+         !! in the pair difference, the point-charge I-J interaction is removed
+         !! twice -- once with `E_I`, which was embedded in J's charges, and
+         !! once with `E_J` -- while the dimer supplies the real one. That is
+         !! inherent to the expansion, not a defect here, and it is part of why
+         !! FMO carries internal energies instead.
       integer :: max_outer = 50
          !! Cap on the outer (monomer) SCF
       real(dp) :: outer_tol = 1.0e-7_dp
@@ -156,6 +198,7 @@ module mqc_libcint_fmo
       character(len=2), allocatable :: sym(:)
       real(dp), allocatable :: xyz(:, :)
       real(dp) :: energy = 0.0_dp                !! internal, E'
+      real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
    end type fragment_t
 
@@ -251,7 +294,11 @@ contains
       end if
 
       do i = 1, n_frag
-         res%monomer_energy(i) = frag(i)%energy
+         if (opts%expansion == "mbe") then
+            res%monomer_energy(i) = frag(i)%energy_total
+         else
+            res%monomer_energy(i) = frag(i)%energy
+         end if
       end do
       res%monomer_sum = sum(res%monomer_energy)
 
@@ -495,7 +542,7 @@ contains
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :)
       logical, allocatable :: inside(:)
       integer, allocatable :: ao(:)
-      real(dp) :: e_internal, e_resp
+      real(dp) :: e_internal, e_resp, e_pair
       integer :: na, nb
 
       na = frag(a)%mol%nao
@@ -554,8 +601,16 @@ contains
          e_resp = sum((scf%density - d_split)*u)
       end if
 
-      res%pair_correction(a, b) = e_internal - frag(a)%energy - frag(b)%energy + e_resp
-      res%pair_sum = res%pair_sum + e_internal - frag(a)%energy - frag(b)%energy
+      if (opts%expansion == "mbe") then
+         ! Total embedded energies, straight difference, nothing else.
+         e_pair = scf%energy - frag(a)%energy_total - frag(b)%energy_total
+         e_resp = 0.0_dp
+      else
+         e_pair = e_internal - frag(a)%energy - frag(b)%energy
+      end if
+
+      res%pair_correction(a, b) = e_pair + e_resp
+      res%pair_sum = res%pair_sum + e_pair
       res%response_sum = res%response_sum + e_resp
    end subroutine pair_term
 
@@ -588,6 +643,7 @@ contains
       ! The internal energy: what the SCF reported, less its interaction with
       ! the field. `h_extra` enters H linearly, so that interaction is exactly
       ! Tr(D u) and nothing else has to be unpicked.
+      f%energy_total = scf%energy
       f%energy = scf%energy
       if (embedded) f%energy = f%energy - sum(scf%density*u)
       f%density = scf%density

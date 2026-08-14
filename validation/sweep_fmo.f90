@@ -53,7 +53,7 @@ program sweep_fmo
    wins_exact = 0
    total = 0
 
-   print "(a)", "  waters  sep(A)   exact-ESP err   ptc-mulliken   ptc-chelpg      no embed   closest"
+   print "(a)", "  waters  sep(A)      FMO2      EE-MBE(mull)   EE-MBE(chelpg)        MBE   closest"
    do k = 1, size(nw)
       do i = 1, size(sep)
          call one(nw(k), sep(i), e_ex, e_exact, e_mul, e_che, e_none)
@@ -67,17 +67,17 @@ program sweep_fmo
             closest(abs(e_exact - e_ex), abs(e_mul - e_ex), abs(e_che - e_ex))
       end do
    end do
-   print "(a,i0,a,i0)", "exact ESP closest in ", wins_exact, " of ", total
+   print "(a,i0,a,i0)", "FMO2 closest in ", wins_exact, " of ", total
 
 contains
 
    function closest(a, b, c) result(name)
       real(dp), intent(in) :: a, b, c
-      character(len=13) :: name
+      character(len=14) :: name
 
-      name = "   ptc-chelpg"
-      if (b <= a .and. b <= c) name = " ptc-mulliken"
-      if (a <= b .and. a <= c) name = "    exact-ESP"
+      name = "EE-MBE(chelpg)"
+      if (b <= a .and. b <= c) name = "  EE-MBE(mull)"
+      if (a <= b .and. a <= c) name = "          FMO2"
    end function closest
 
    subroutine one(n, d, e_reference, e_exact, e_mul, e_che, e_none)
@@ -134,6 +134,7 @@ contains
       end if
 
       opts%esp = "ptc"
+      opts%expansion = "mbe"
       opts%ptc_charges = "mulliken"
       call run_fmo2(z, sym, xyz, owner, opts, r, error)
       if (error%has_error()) then
@@ -143,6 +144,7 @@ contains
       end if
 
       opts%esp = "ptc"
+      opts%expansion = "mbe"
       opts%ptc_charges = "chelpg"
       call run_fmo2(z, sym, xyz, owner, opts, r, error)
       if (error%has_error()) then
@@ -152,6 +154,7 @@ contains
       end if
 
       opts%esp = "none"
+      opts%expansion = "mbe"
       call run_fmo2(z, sym, xyz, owner, opts, r, error)
       if (error%has_error()) then
          call error%clear()

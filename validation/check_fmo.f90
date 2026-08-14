@@ -105,7 +105,7 @@ contains
       integer, intent(inout) :: n_bad
 
       type(fmo_options_t) :: opts
-      type(fmo_result_t) :: fmo
+      type(fmo_result_t) :: fmo, eembe
       type(error_t) :: error
       integer, allocatable :: z(:), owner(:)
       character(len=2), allocatable :: symbols(:)
@@ -135,6 +135,17 @@ contains
       ! embedding is leaking into a calculation that should have none.
       call report("no external field on the dimer", abs(fmo%response_sum), 1.0e-12_dp, n_bad)
       call report("FMO2 reproduces the supermolecule", abs(fmo%energy - exact), tol, n_bad)
+
+      ! The same argument holds for the other expansion, and for the same
+      ! reason: whatever the monomers were computed in, they cancel. So this
+      ! says the many-body assembly is right too, not just FMO's.
+      opts%esp = "ptc"
+      opts%expansion = "mbe"
+      call run_fmo2(z, symbols, coords, owner, opts, eembe, error)
+      if (failed(error, "ee-mbe", n_bad)) return
+      write (line, "(a,f18.10)") "   EE-MBE               ", eembe%energy
+      call logger%info(trim(line))
+      call report("EE-MBE reproduces it too", abs(eembe%energy - exact), tol, n_bad)
    end subroutine dimer_case
 
    subroutine mixed_case(tol, n_bad)
@@ -234,8 +245,9 @@ contains
       if (failed(error, "fmo ptc", n_bad)) return
 
       opts%esp = "none"
+      opts%expansion = "mbe"
       call run_fmo2(z, symbols, coords, owner, opts, bare, error)
-      if (failed(error, "fmo unembedded", n_bad)) return
+      if (failed(error, "plain mbe", n_bad)) return
 
       write (line, "(a,es11.3)") "   exact ESP      err ", exact_esp%energy - exact
       call logger%info(trim(line))
@@ -280,7 +292,7 @@ contains
       integer, intent(inout) :: n_bad
 
       type(fmo_options_t) :: opts
-      type(fmo_result_t) :: embedded, bare, fitted
+      type(fmo_result_t) :: embedded, bare, fitted, eembe
       type(error_t) :: error
       integer, allocatable :: z(:), owner(:)
       character(len=2), allocatable :: symbols(:)
@@ -305,9 +317,16 @@ contains
       call run_fmo2(z, symbols, coords, owner, opts, fitted, error)
       if (failed(error, "fmo ptc chelpg", n_bad)) return
 
+      opts%esp = "ptc"
+      opts%expansion = "mbe"
+      opts%ptc_charges = "mulliken"
+      call run_fmo2(z, symbols, coords, owner, opts, eembe, error)
+      if (failed(error, "ee-mbe", n_bad)) return
+
       opts%esp = "none"
+      opts%expansion = "mbe"
       call run_fmo2(z, symbols, coords, owner, opts, bare, error)
-      if (failed(error, "fmo unembedded", n_bad)) return
+      if (failed(error, "plain mbe", n_bad)) return
 
       write (line, "(a,f18.10)") "   supermolecular RHF        ", exact
       call logger%info(trim(line))
@@ -319,7 +338,11 @@ contains
          fitted%energy, "   err ", fitted%energy - exact, &
          "   (", fitted%outer_iterations, " outer)"
       call logger%info(trim(line))
-      write (line, "(a,f18.10,a,es10.2)") "   FMO2, no embedding        ", &
+      write (line, "(a,f18.10,a,es10.2,a,i0,a)") "   EE-MBE, mulliken          ", &
+         eembe%energy, "   err ", eembe%energy - exact, &
+         "   (", eembe%outer_iterations, " outer)"
+      call logger%info(trim(line))
+      write (line, "(a,f18.10,a,es10.2)") "   plain MBE, no embedding   ", &
          bare%energy, "   err ", bare%energy - exact
       call logger%info(trim(line))
       write (line, "(a,f14.8)") "   the response term contributes ", embedded%response_sum
