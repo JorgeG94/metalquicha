@@ -7,6 +7,7 @@ module mqc_method_types
    implicit none
    private
 
+   public :: needs_serial_execution
    ! Public constants - Semi-empirical
    public :: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    ! Public constants - SCF methods
@@ -57,6 +58,27 @@ module mqc_method_types
    integer(int32), parameter :: METHOD_TYPE_CCSD_T_F12 = 43  !! CCSD(T)-F12
 
 contains
+
+   pure function needs_serial_execution(method_type) result(serial)
+      !! Whether this method has to be run on one thread
+      !!
+      !! An allow-list of the safe ones would be the tempting shape and the
+      !! wrong one: a method added later would default to "safe" and inherit a
+      !! silent data race. Naming the unsafe ones means a new method is clamped
+      !! until someone looks at it, which is the failure that costs an hour
+      !! rather than a week.
+      !!
+      !! Lives here rather than in the driver because two places need it and one
+      !! of them -- the fragment workers -- is used *by* the driver, so it cannot
+      !! reach back. It used to be in the driver alone, and the worker path
+      !! clamped everything instead of asking.
+      integer, intent(in) :: method_type
+      logical :: serial
+
+      ! tblite. Threaded it corrupts a result rather than stopping, which is
+      ! why this is not merely a performance choice.
+      serial = (method_type == METHOD_TYPE_GFN1 .or. method_type == METHOD_TYPE_GFN2)
+   end function needs_serial_execution
 
    pure function method_type_from_string(method_str) result(method_type)
       !! Convert method type string to integer constant

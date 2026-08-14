@@ -8,6 +8,7 @@ module mqc_driver
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
+   use mqc_method_types, only: needs_serial_execution
    use mqc_mbe_fragment_distribution_scheme, only: unfragmented_calculation, distributed_unfragmented_hessian
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t
    use mqc_method_config, only: method_config_t
@@ -41,23 +42,6 @@ module mqc_driver
    public :: run_multi_molecule_calculations  !! Multi-molecule calculation dispatcher
 
 contains
-
-   pure function needs_serial_execution(method_type) result(serial)
-      !! Whether this method has to be run on one thread
-      !!
-      !! An allow-list of the safe ones would be the tempting shape and the
-      !! wrong one: a method added later would default to "safe" and inherit a
-      !! silent data race. Naming the unsafe ones means a new method is clamped
-      !! until someone looks at it, which is the failure that costs an hour
-      !! rather than a week.
-      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
-      integer, intent(in) :: method_type
-      logical :: serial
-
-      ! tblite. Threaded it corrupts a result rather than stopping, which is
-      ! why this is not merely a performance choice.
-      serial = (method_type == METHOD_TYPE_GFN1 .or. method_type == METHOD_TYPE_GFN2)
-   end function needs_serial_execution
 
    subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json, &
                               supplied_terms, n_supplied_terms, write_output)
