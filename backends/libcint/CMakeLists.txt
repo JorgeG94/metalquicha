@@ -17,9 +17,16 @@ target_sources(
           mqc_libcint_bridge.f90
           mqc_libcint_direct.f90
           mqc_libcint_integrals.f90
+          mqc_libcint_multipole.f90
+          mqc_libcint_localize.f90
+          mqc_libcint_cphf.f90
+          mqc_libcint_dma.f90
+          mqc_libcint_esp.f90
+          mqc_libcint_screening.f90
           mqc_libcint_rhf.f90
           mqc_libcint_mp2.f90
           mqc_libcint_cc.f90
           mqc_libcint_ao_data.f90
           mqc_libcint_ao.f90
-          mqc_libcint_xc.F90)
+          mqc_libcint_xc.F90
+          mqc_efp_potential.f90)

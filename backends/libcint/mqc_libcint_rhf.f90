@@ -62,6 +62,7 @@ module mqc_libcint_rhf
    public :: run_libcint_rhf
    public :: run_libcint_uhf
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
+   public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
 
    type :: rhf_result_t
@@ -89,7 +90,7 @@ contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
-                              guess, guess_density, xc)
+                              guess, guess_density, xc, h_extra)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -127,6 +128,18 @@ contains
          !! and ignored otherwise. Built by `mqc_libcint_atomic_guess`, which
          !! cannot be reached from here: it runs free-atom SCFs through this
          !! very module.
+      real(dp), intent(in), optional :: h_extra(:, :)
+         !! An extra one-electron operator, added to H before the first Fock
+         !! build and kept there. A uniform electric field is what it is for:
+         !! `F . r` makes this SCF the finite-field reference that `..._cphf`
+         !! is checked against, and a response property computed two ways from
+         !! one code path is worth more than either alone.
+         !!
+         !! `result%energy` then includes the interaction with whatever this
+         !! is, which is why the finite-field check differentiates the *dipole*
+         !! and not the energy: the dipole is unambiguous, one derivative
+         !! better conditioned, and needs no bookkeeping about what the total
+         !! is supposed to contain.
 
       integer :: diis_size, guess_kind
       logical :: use_in_core
@@ -177,6 +190,13 @@ contains
 
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
+      if (present(h_extra)) then
+         if (size(h_extra, 1) /= n_ao .or. size(h_extra, 2) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "RHF: h_extra is not n_ao square")
+            return
+         end if
+         h = h + h_extra
+      end if
       if (present(aux)) then
          call build_df_tensor(mol, aux, bmat, error)
          if (error%has_error()) return
@@ -958,32 +978,51 @@ contains
       end do
    end subroutine build_density
 
-   pure subroutine build_fock(h, eri, density, fock, k_scale)
-      !! F = H + J - K/2, with J and K contracted straight from the ERIs
+   subroutine build_fock(h, eri, density, fock, k_scale)
+      !! `F = H + J - K/2` from a stored two-electron tensor
+      !!
+      !! Threaded over the target element, which needs no reduction: each `(mu, nu)`
+      !! accumulates into its own entry. That is worth doing because the response
+      !! solver applies this thousands of times -- once per iteration of an inner
+      !! solve inside every iteration of an outer one -- so it, and not the integrals,
+      !! is where an in-core run spends its time. Not `pure` any more for the sake of
+      !! the directive.
+      !!
+      !! Correct for an antisymmetric density as well as a symmetric one: nothing
+      !! here assumes either, and the Coulomb term vanishes of its own accord when
+      !! the density is antisymmetric because the integral is symmetric in the
+      !! contracted pair.
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
 
       integer :: mu, nu, la, si, n
-      real(dp) :: kf
+      real(dp) :: kf, acc
 
       n = size(h, 1)
       kf = 0.5_dp
       if (present(k_scale)) kf = 0.5_dp*k_scale
-      fock = h
+      ! The `if` keeps genuinely tiny systems serial. The response solver enters
+      ! this region tens of thousands of times, so for a handful of basis functions
+      ! the barriers cost more than the arithmetic; by a few dozen they do not.
+      !$omp parallel do collapse(2) default(none) private(mu, nu, la, si, acc) &
+      !$omp shared(n, h, eri, density, fock, kf) schedule(static) if(n >= 16)
       do nu = 1, n
          do mu = 1, n
+            acc = 0.0_dp
             do si = 1, n
                do la = 1, n
                   ! (mu nu | la si) is Coulomb, (mu la | nu si) is exchange,
                   ! and the half is the closed-shell factor -- D already
                   ! carries the two electrons per orbital.
-                  fock(mu, nu) = fock(mu, nu) + density(la, si) &
-                                 *(eri(mu, nu, la, si) - kf*eri(mu, la, nu, si))
+                  acc = acc + density(la, si) &
+                        *(eri(mu, nu, la, si) - kf*eri(mu, la, nu, si))
                end do
             end do
+            fock(mu, nu) = h(mu, nu) + acc
          end do
       end do
+      !$omp end parallel do
    end subroutine build_fock
 
    subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale)

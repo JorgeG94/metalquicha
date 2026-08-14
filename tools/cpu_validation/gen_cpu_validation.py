@@ -279,6 +279,13 @@ MP2_CASES = [
 # sweep below and vanish on the next regeneration.
 HAND_MAINTAINED = {
     "cpu/mqc/rhf/cpu_peptide46_sto-3g.json",
+    # MAKEFP writes a fragment potential rather than returning an energy, so there
+    # is no reference number for this script to generate or compare against. These
+    # are examples of the deck shape, kept here so they are found where every other
+    # CPU case is, and listed so a regeneration does not sweep them away.
+    "cpu/mqc/makefp/water_makefp.json",
+    "cpu/mqc/makefp/water_makefp_df.json",
+    "cpu/mqc/makefp/hydronium_makefp.json",
 }
 
 # Coupled cluster. Small on purpose: the spin-orbital tensor is (2 n_act)^4, so

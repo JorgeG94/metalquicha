@@ -113,6 +113,19 @@ if(MQC_ENABLE_LIBCINT)
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_libcint_mp2)
   target_link_libraries(test_mqc_libcint_mp2 PRIVATE cint_fortran cint)
+
+  # CPHF, which is the one response property needing no external reference: the
+  # analytical polarizability is differenced out of the same SCF in a field, so
+  # this belongs in the suite rather than in validation/.
+  addtest(mqc_libcint_cphf)
+  target_link_libraries(test_mqc_libcint_cphf PRIVATE cint_fortran cint)
+
+  # Which density symmetry each direct two-electron build may be given. The fast
+  # one folds permutations into a multiplicity factor and is valid only for a
+  # symmetric density; asserting that it is genuinely wrong otherwise is what
+  # stops the general build being deleted as redundant.
+  addtest(mqc_libcint_direct)
+  target_link_libraries(test_mqc_libcint_direct PRIVATE cint_fortran cint)
 endif()
 
 # Only meaningful with the cuEST backend compiled in.

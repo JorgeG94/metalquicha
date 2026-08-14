@@ -1,0 +1,18 @@
+{
+    "schema": {
+        "name": "cpu_hydronium_makefp",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/h3op.xyz",
+            "molecular_charge": 1,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "hf",
+        "basis": "6-31g*"
+    },
+    "driver": "MakeFP"
+}

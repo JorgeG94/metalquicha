@@ -451,6 +451,10 @@ Specifies the calculation type:
 
 - ``Energy``: Single-point energy calculation
 - ``Gradient``: Energy + analytical gradient (if method supports it)
+- ``Hessian``: Second derivatives by finite difference, plus vibrational analysis
+- ``MakeFP``: Build an effective fragment potential and write it as a ``.efp``
+  file, computing no energy. ``MakeEFP`` is accepted for the same thing. See
+  :doc:`makefp`.
 
 Keywords Section
 ----------------

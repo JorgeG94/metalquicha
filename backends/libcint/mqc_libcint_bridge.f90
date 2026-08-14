@@ -33,6 +33,7 @@ module mqc_libcint_bridge
    private
 
    public :: run_libcint_hf
+   public :: run_libcint_makefp
    public :: libcint_backend_available
 
 contains
@@ -42,6 +43,46 @@ contains
       logical :: available
       available = .true.
    end function libcint_backend_available
+
+   subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
+                                 basis_name, name, path, error, charge, verbose, &
+                                 aux_basis)
+      !! Build an effective fragment potential and write it
+      !!
+      !! Here rather than in the driver so the driver needs no knowledge of whether
+      !! this build has an integral backend -- the stub next to it declines with the
+      !! same signature.
+      use pic_types, only: dp
+      use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                   write_efp_potential
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)     !! (3, natm), Bohr
+      character(len=*), intent(in) :: basis_name
+      character(len=*), intent(in) :: name          !! Fragment name for `$FRAGNAME`
+      character(len=*), intent(in) :: path
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: charge   !! Net charge; a fragment may be an ion
+      logical, intent(in), optional :: verbose
+      character(len=*), intent(in), optional :: aux_basis
+         !! Fit the response Hessian against this basis instead of building it
+         !! exactly. Absent, the build is exact.
+
+      type(efp_potential_t) :: pot
+
+      if (present(aux_basis)) then
+         call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
+                                 basis_name, name, pot, error, charge=charge, &
+                                 verbose=verbose, aux_basis=aux_basis)
+      else
+         call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
+                                 basis_name, name, pot, error, charge=charge, &
+                                 verbose=verbose)
+      end if
+      if (error%has_error()) return
+      call write_efp_potential(pot, path, error)
+      call pot%destroy()
+   end subroutine run_libcint_makefp
 
    subroutine run_libcint_hf(settings, fragment, result, want_gradient)
       !! Closed-shell HF for one fragment, on the CPU

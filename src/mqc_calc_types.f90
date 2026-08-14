@@ -9,6 +9,7 @@ module mqc_calc_types
 
    ! Public constants
    public :: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+   public :: CALC_TYPE_MAKEFP
    public :: CALC_TYPE_UNKNOWN
 
    ! Public functions
@@ -19,6 +20,8 @@ module mqc_calc_types
    integer(int32), parameter :: CALC_TYPE_ENERGY = 1
    integer(int32), parameter :: CALC_TYPE_GRADIENT = 2
    integer(int32), parameter :: CALC_TYPE_HESSIAN = 3
+   !> Build an effective fragment potential and write it, computing no energy.
+   integer(int32), parameter :: CALC_TYPE_MAKEFP = 4
 
 contains
 
@@ -49,6 +52,10 @@ contains
          calc_type = CALC_TYPE_GRADIENT
       case ("hessian")
          calc_type = CALC_TYPE_HESSIAN
+         ! Both spellings: GAMESS calls the run type MAKEFP, and "makeefp" is what
+         ! people type when they are thinking of the file it produces.
+      case ("makefp", "makeefp")
+         calc_type = CALC_TYPE_MAKEFP
       case default
          calc_type = CALC_TYPE_UNKNOWN
       end select
@@ -69,6 +76,8 @@ contains
          calc_type_str = "gradient"
       case (CALC_TYPE_HESSIAN)
          calc_type_str = "hessian"
+      case (CALC_TYPE_MAKEFP)
+         calc_type_str = "makefp"
       case default
          calc_type_str = "unknown"
       end select

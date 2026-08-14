@@ -141,19 +141,27 @@ contains
 
       call mol%overlap(s)
 
-      ! Every basis function is normalised, whatever shell it came from -- but
-      ! only to about 1e-6, and that is the basis file rather than the code.
-      ! Basis Set Exchange writes contraction coefficients to ten significant
-      ! figures, so a contracted function's norm is only as good as the digits
-      ! it was built from; the uncontracted shells here sit at exactly one and
-      ! the contracted ones are off by ~3e-7. The split build gives the same
-      ! diagonal to 2.2e-16, so this is not something merging introduced, and a
-      ! tolerance tight enough to call it a bug would only be flagging the file.
+      ! Every basis function is normalised, exactly, whatever shell it came from.
+      !
+      ! This check used to allow 1e-5, on the reasoning that a contracted
+      ! function's norm is only as good as the ten significant figures Basis Set
+      ! Exchange publishes. That reasoning was wrong, and it argued a real bug
+      ! into looking like a property of the input: ten digits buys ~1e-9, not the
+      ! ~1e-6 that was actually being seen. The cause was that the *contraction*
+      ! normalisation was never applied at all -- only the per-primitive one that
+      ! libcint requires -- so `<chi|chi>` came out 1.000001 for every contracted
+      ! shell and exactly 1 for every single primitive, which is the fingerprint
+      ! that gave it away.
+      !
+      ! Nothing in an energy could have caught it: an SCF energy is invariant to
+      ! the normalisation of a basis function, since scaling one does not change
+      ! the space the basis spans. It surfaced only when multipole integrals gave
+      ! the first per-AO quantity anyone compared against PySCF.
       worst = 0.0_dp
       do i = 1, mol%nao
          worst = max(worst, abs(s(i, i) - 1.0_dp))
       end do
-      call check(error, worst < 1.0e-5_dp, "the overlap diagonal must be one")
+      call check(error, worst < 1.0e-12_dp, "the overlap diagonal must be one")
       if (allocated(error)) return
 
       call check(error, maxval(abs(s - transpose(s))) < 1.0e-14_dp, &
@@ -161,18 +169,20 @@ contains
       if (allocated(error)) return
 
       ! Functions 1-3 are oxygen's s contractions, the block merging collapses
-      ! into one shell. These two values were measured from the split build --
-      ! the code as it was before merging existed -- and the whole 24x24 matrix
-      ! agreed to 2.2e-16 across all 576 elements. That is the evidence that
-      ! merging preserves the order; these two are the sentinels that keep it.
+      ! into one shell. These two values are **PySCF's**, on this geometry and
+      ! this basis, which is better provenance than what was here before: they
+      ! used to be measured from our own split build, so when the contraction
+      ! normalisation was fixed they were the only thing that failed -- a
+      ! reference that tracks our own output cannot tell a fix from a
+      ! regression. An external one can.
       !
       ! S(2,3) is the one that matters. It is 0.93, so a permutation moves it
       ! somewhere obvious, whereas S(1,2) is 1.1e-6 -- the two contractions are
       ! nearly orthogonal, being close to atomic 1s and 2s -- and a great many
       ! wrong matrices also have something near zero there.
-      call check(error, s(2, 3), 0.93332363057511081_dp, thr=1.0e-12_dp)
+      call check(error, s(2, 3), 0.9333237202898537_dp, thr=1.0e-8_dp)
       if (allocated(error)) return
-      call check(error, s(1, 3), 0.19189613335190803_dp, thr=1.0e-12_dp)
+      call check(error, s(1, 3), 0.19189620099353646_dp, thr=1.0e-8_dp)
    end subroutine test_overlap
 
    subroutine test_sp_untouched(error)
