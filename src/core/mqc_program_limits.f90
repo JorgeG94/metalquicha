@@ -14,6 +14,13 @@ module mqc_program_limits
    !> Higher orders require factorial growth in fragment combinations
    integer, parameter, public :: MAX_MBE_LEVEL = 10
 
+   !> Terms in an EFP2 interaction energy: electrostatics, polarization,
+   !> exchange repulsion, dispersion, charge transfer, and their total. Here
+   !> rather than beside the EFP code because the real CPU bridge and the stub
+   !> that stands in for it must agree, and only one of those is compiled with
+   !> the backend present.
+   integer, parameter, public :: N_EFP_TERMS = 6
+
    !> Group-global result batching size for MPI MBE (multi-global coordinator)
    integer, parameter, public :: GROUP_RESULT_BATCH_SIZE = 256
 

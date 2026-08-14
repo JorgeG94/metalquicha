@@ -297,8 +297,9 @@ contains
       integer :: n, k
       logical :: any_potential
 
-      if (allocated(driver_config%fragment_potentials)) &
+      if (allocated(driver_config%fragment_potentials)) then
          deallocate (driver_config%fragment_potentials)
+      end if
 
       if (present(molecule_index)) then
          if (molecule_index < 1 .or. molecule_index > mqc_config%nmol) return

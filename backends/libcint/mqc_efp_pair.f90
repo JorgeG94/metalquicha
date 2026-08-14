@@ -21,7 +21,7 @@ module mqc_efp_pair
    use mqc_cgto, only: molecular_basis_type, ANGULAR_FORM_CARTESIAN
    use mqc_elements, only: element_number_to_symbol
    use mqc_libcint_integrals, only: libcint_molecule_t
-   use mqc_efp_read, only: efp_fragment_t
+   use mqc_efp_read, only: efp_fragment_t, N_QUADRUPOLE
    use mqc_efp_interaction, only: CP_WEIGHT
    use mqc_libcint_esp, only: esp_matrices, drinv_matrices, ddrinv_matrices
    use mqc_efp_potential, only: from_gamess_ao_order, frozen_core
@@ -38,6 +38,10 @@ module mqc_efp_pair
    public :: dispersion_e8_damped
    public :: lmo_overlap
    public :: charge_transfer
+   !> Slot counts of the two higher dispersion records. Exposed because
+   !> anything unpacking one needs the same number, and two files agreeing by
+   !> coincidence is how a packing convention drifts apart.
+   public :: N_DQ_SLOTS, N_QQ_SLOTS
 
    real(dp), parameter :: PI = 3.141592653589793_dp
 
@@ -326,7 +330,7 @@ contains
       !! The tracelessness is not cosmetic here. `grad_a grad_b (1/r_C)` is traceless
       !! away from `C` but carries a delta function at it, so a trace left in `Q` would
       !! contribute through that contact term rather than cancelling.
-      real(dp), intent(in) :: stored(6)   !! `XX YY ZZ XY XZ YZ`
+      real(dp), intent(in) :: stored(N_QUADRUPOLE)   !! `XX YY ZZ XY XZ YZ`
       real(dp) :: quad(3, 3)
 
       real(dp) :: trace

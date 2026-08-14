@@ -29,11 +29,11 @@ module mqc_efp_rotate
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_efp_read, only: efp_fragment_t
+   use mqc_efp_read, only: efp_fragment_t, N_QUADRUPOLE, N_OCTUPOLE
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_ANG_OF
    use mqc_efp_potential, only: from_gamess_ao_order, to_gamess_ao_order
-   use mqc_efp_pair, only: fragment_molecule
+   use mqc_efp_pair, only: fragment_molecule, N_DQ_SLOTS, N_QQ_SLOTS
    implicit none
    private
 
@@ -145,7 +145,8 @@ contains
       real(dp), intent(out) :: t(3, 3)
       logical, intent(out) :: ok
 
-      real(dp) :: e1(3), e2(3), e3(3), n1, n2, n3, overlap
+      real(dp) :: e1(3), e2(3), e3(3)
+      real(dp) :: n1, n2, n3, overlap
       real(dp), parameter :: TINY_AXIS = 1.0e-10_dp
 
       ok = .false.
@@ -343,21 +344,21 @@ contains
 
    pure function rotate_packed_quadrupole(packed, rot) result(out)
       !! Six stored components, ordered `xx yy zz xy xz yz`
-      real(dp), intent(in) :: packed(6), rot(3, 3)
-      real(dp) :: out(6)
+      real(dp), intent(in) :: packed(N_QUADRUPOLE), rot(3, 3)
+      real(dp) :: out(N_QUADRUPOLE)
 
-      integer, parameter :: QI(6) = [1, 2, 3, 1, 1, 2]
-      integer, parameter :: QJ(6) = [1, 2, 3, 2, 3, 3]
+      integer, parameter :: QI(N_QUADRUPOLE) = [1, 2, 3, 1, 1, 2]
+      integer, parameter :: QJ(N_QUADRUPOLE) = [1, 2, 3, 2, 3, 3]
       real(dp) :: full(3, 3)
       integer :: s
 
       full = 0.0_dp
-      do s = 1, 6
+      do s = 1, N_QUADRUPOLE
          full(QI(s), QJ(s)) = packed(s)
          full(QJ(s), QI(s)) = packed(s)
       end do
       full = rank2(full, rot)
-      do s = 1, 6
+      do s = 1, N_QUADRUPOLE
          out(s) = full(QI(s), QJ(s))
       end do
    end function rotate_packed_quadrupole
@@ -368,17 +369,17 @@ contains
       !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT` -- the same order
       !! `mqc_efp_interaction` spreads into a full tensor, and repeated here rather
       !! than shared because a rotation needs the full tensor anyway.
-      real(dp), intent(in) :: packed(10), rot(3, 3)
-      real(dp) :: out(10)
+      real(dp), intent(in) :: packed(N_OCTUPOLE), rot(3, 3)
+      real(dp) :: out(N_OCTUPOLE)
 
-      integer, parameter :: OI(10) = [1, 2, 3, 1, 1, 1, 2, 1, 2, 1]
-      integer, parameter :: OJ(10) = [1, 2, 3, 1, 1, 2, 2, 3, 3, 2]
-      integer, parameter :: OK(10) = [1, 2, 3, 2, 3, 2, 3, 3, 3, 3]
+      integer, parameter :: OI(N_OCTUPOLE) = [1, 2, 3, 1, 1, 1, 2, 1, 2, 1]
+      integer, parameter :: OJ(N_OCTUPOLE) = [1, 2, 3, 1, 1, 2, 2, 3, 3, 2]
+      integer, parameter :: OK(N_OCTUPOLE) = [1, 2, 3, 2, 3, 2, 3, 3, 3, 3]
       real(dp) :: full(3, 3, 3), spun(3, 3, 3)
       integer :: s, i, j, k
 
       full = 0.0_dp
-      do s = 1, 10
+      do s = 1, N_OCTUPOLE
          call spread_symmetric(full, OI(s), OJ(s), OK(s), packed(s))
       end do
       spun = 0.0_dp
@@ -389,7 +390,7 @@ contains
             end do
          end do
       end do
-      do s = 1, 10
+      do s = 1, N_OCTUPOLE
          out(s) = spun(OI(s), OJ(s), OK(s))
       end do
    end function rotate_packed_octopole
@@ -426,8 +427,8 @@ contains
 
    pure function rotate_flat_rank3(flat, rot) result(out)
       !! 27 slots, `slot = (i-1)*9 + (j-1)*3 + k`
-      real(dp), intent(in) :: flat(27), rot(3, 3)
-      real(dp) :: out(27)
+      real(dp), intent(in) :: flat(N_DQ_SLOTS), rot(3, 3)
+      real(dp) :: out(N_DQ_SLOTS)
 
       real(dp) :: full(3, 3, 3)
       integer :: i, j, k
@@ -450,8 +451,8 @@ contains
 
    pure function rotate_flat_rank4(flat, rot) result(out)
       !! 81 slots, `slot = (i-1)*27 + (j-1)*9 + (k-1)*3 + l`
-      real(dp), intent(in) :: flat(81), rot(3, 3)
-      real(dp) :: out(81)
+      real(dp), intent(in) :: flat(N_QQ_SLOTS), rot(3, 3)
+      real(dp) :: out(N_QQ_SLOTS)
 
       real(dp) :: full(3, 3, 3, 3), step1(3, 3, 3, 3)
       integer :: a, b, c, e, i, j, k, l
@@ -611,7 +612,8 @@ contains
 
    pure function exponent_slot(l, e, expo) result(slot)
       !! Which component carries these exponents
-      integer, intent(in) :: l, e(3)
+      integer, intent(in) :: l
+      integer, intent(in) :: e(3)
       integer, intent(in) :: expo(:, :)
       integer :: slot
 

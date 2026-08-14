@@ -58,6 +58,7 @@ contains
       !! a type would have to exist on both sides of that gate and there is nothing
       !! for it to hold that six reals do not.
       use pic_types, only: dp
+      use mqc_program_limits, only: N_EFP_TERMS
       use mqc_efp_read, only: efp_fragment_t, read_efp_potential
       use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy, place_fragment
       use mqc_efp_rotate, only: rotate_fragment
@@ -65,7 +66,7 @@ contains
       integer, intent(in) :: fragment_sizes(:)
       integer, intent(in) :: fragment_atoms(:, :)      !! (max_size, n_frag), 0-based
       real(dp), intent(in) :: coordinates(:, :)        !! (3, n_atoms), Bohr
-      real(dp), intent(out) :: terms(6)
+      real(dp), intent(out) :: terms(N_EFP_TERMS)
          !! electrostatics, polarization, exchange repulsion, dispersion,
          !! charge transfer, total
       type(error_t), intent(inout) :: error

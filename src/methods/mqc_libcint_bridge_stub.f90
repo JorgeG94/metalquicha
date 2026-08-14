@@ -34,12 +34,13 @@ contains
       !! integrals two fragments' basis sets share, and the potential reader itself
       !! all live behind `MQC_ENABLE_LIBCINT`.
       use pic_types, only: dp
+      use mqc_program_limits, only: N_EFP_TERMS
       use mqc_error, only: error_t
       character(len=*), intent(in) :: potentials(:)
       integer, intent(in) :: fragment_sizes(:)
       integer, intent(in) :: fragment_atoms(:, :)
       real(dp), intent(in) :: coordinates(:, :)
-      real(dp), intent(out) :: terms(6)
+      real(dp), intent(out) :: terms(N_EFP_TERMS)
       type(error_t), intent(inout) :: error
 
       terms = 0.0_dp

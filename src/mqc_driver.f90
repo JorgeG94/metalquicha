@@ -916,6 +916,7 @@ contains
       !! is already flat, but the terms are milliseconds on a dimer and shaping that
       !! before there is a cluster to shape it around would be guessing.
       use mqc_libcint_bridge, only: run_libcint_efp
+      use mqc_program_limits, only: N_EFP_TERMS
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
@@ -924,7 +925,7 @@ contains
 
       type(error_t) :: err
       type(json_output_data_t) :: json_data
-      real(dp) :: terms(6)
+      real(dp) :: terms(N_EFP_TERMS)
       integer :: n
 
       if (rank /= 0) return
