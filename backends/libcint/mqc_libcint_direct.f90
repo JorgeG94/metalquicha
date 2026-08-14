@@ -276,7 +276,7 @@ contains
    end function pair_degeneracy
 
    subroutine build_fock_direct(mol, h, density, bounds, fock, stats, error, screen_tol, &
-                                k_scale, j_scale, omega)
+                                k_scale, j_scale, omega, density_screen)
       !! F = H + J - K/2, without forming the integral tensor
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian
@@ -307,6 +307,18 @@ contains
          !! here without being rebuilt: erf(omega r)/r <= 1/r pointwise, so an
          !! attenuated quartet is never larger than the bound screening it, and
          !! the screening can only become conservative rather than wrong.
+      logical, intent(in), optional :: density_screen
+         !! Weight the Schwarz bound by the density it multiplies before screening
+         !! (default true). An SCF wants it: a quartet whose six density elements
+         !! are all negligible contributes nothing however large its integral, so
+         !! dropping it is free accuracy. A CPHF response build must pass false.
+         !! Its `density` is a Krylov trial vector the solver drives towards zero,
+         !! so a screen keyed on the density's magnitude tightens as the solve
+         !! proceeds -- the operator stops being the same linear map from one
+         !! matvec to the next and the iteration cannot converge. False recovers
+         !! the plain Schwarz screen, which depends on the basis alone and leaves
+         !! the operator fixed. Bit-for-bit equal to `build_fock_direct_many` with
+         !! one density, which is the invariant the response path relies on.
 
       real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
       real(dp), allocatable :: dsh(:, :)
@@ -326,6 +338,7 @@ contains
       real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
       real(dp) :: kq
+      logical :: weight_density
 
       n = mol%nao
       if (size(h, 1) /= n .or. size(density, 1) /= n .or. size(fock, 1) /= n) then
@@ -335,6 +348,9 @@ contains
 
       tol = DEFAULT_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
+
+      weight_density = .true.
+      if (present(density_screen)) weight_density = density_screen
 
       ! Shell dimensions and offsets up front. Both are needed inside the
       ! parallel region, and looking them up there would mean every thread
@@ -377,8 +393,14 @@ contains
 
       ! Built from `d_half` rather than `density` because `d_half` is what the six
       ! updates below actually multiply -- a bound has to be on the quantity that
-      ! is used, not on a factor of two away from it.
-      call shell_density_max(mol, d_half, dsh)
+      ! is used, not on a factor of two away from it. Skipped when the caller has
+      ! opted out: `dsh` is then never read, so a zero-size placeholder keeps the
+      ! `shared` clause legal without paying for the pass over the density.
+      if (weight_density) then
+         call shell_density_max(mol, d_half, dsh)
+      else
+         allocate (dsh(0, 0))
+      end if
 
       ! The four exchange updates below carry a quarter each, so folding the
       ! exchange fraction in here scales all four at once at no per-quartet cost.
@@ -435,7 +457,7 @@ contains
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
       !$omp    shared(mol, bounds, dsh, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
-      !$omp           block_max, kq, jf, env_local) &
+      !$omp           block_max, kq, jf, env_local, weight_density) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
       !$omp            buf, g_local, thread_clock, t_thread) &
@@ -474,14 +496,22 @@ contains
             ! whether the Schwarz bound alone would have been enough to reach it.
             deg = pair_degeneracy(s1, s2, s3, s4)
             schwarz = bounds(s1, s2)*bounds(s3, s4)
-            if (schwarz*density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) < tol) then
-               n_screened = n_screened + 1_int64
-               if (schwarz < tol) then
-                  n_schwarz = n_schwarz + 1_int64
-               else
-                  n_density = n_density + 1_int64
+            if (weight_density) then
+               if (schwarz*density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) < tol) then
+                  n_screened = n_screened + 1_int64
+                  if (schwarz < tol) then
+                     n_schwarz = n_schwarz + 1_int64
+                  else
+                     n_density = n_density + 1_int64
+                  end if
+                  cycle
                end if
-               cycle
+            else
+               if (schwarz < tol) then
+                  n_screened = n_screened + 1_int64
+                  n_schwarz = n_schwarz + 1_int64
+                  cycle
+               end if
             end if
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
