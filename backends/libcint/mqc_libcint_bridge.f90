@@ -147,8 +147,7 @@ contains
       real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
       character(len=*), intent(in) :: basis_name
       real(dp), intent(out) :: terms(N_SAPT_TERMS)
-         !! elst10, exch10, ind20,r, exch-ind20,r, disp20, exch-disp20,
-         !! dHF(2), E_int^HF, total
+         !! Ordered by `SAPT_TERM_NAMES`
       type(error_t), intent(inout) :: error
 
       type(sapt_molecules_t) :: mols
@@ -164,8 +163,9 @@ contains
          return
       end if
 
-      terms = [t%elst10, t%exch10, t%ind20_r, t%exch_ind20_r, t%disp20, &
-               t%exch_disp20, t%delta_hf, t%e_int_hf, t%total]
+      terms = [t%elst10, t%exch10_s2, t%exch10, t%ind20_u, t%ind20_r, &
+               t%exch_ind20_u, t%exch_ind20_r, t%disp20, t%exch_disp20, &
+               t%delta_hf, t%e_int_hf, t%total]
       call mols%destroy()
    end subroutine run_libcint_sapt0
 

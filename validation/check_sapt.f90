@@ -114,15 +114,15 @@ contains
       !! The exponent is measured locally between consecutive points, so it is a
       !! sequence converging on the exact value rather than a single fit that
       !! could be dragged into place by one bad point.
+      integer, parameter :: N_SEP = 7          !! Separations in the scan
+      integer, parameter :: N_TRACKED = 4      !! Terms whose decay is followed
       real(dp), parameter :: NOISE_FLOOR = 1.0e-16_dp
-      real(dp), parameter :: SEP(7) = [4.0_dp, 5.0_dp, 6.0_dp, 7.0_dp, &
-                                       8.0_dp, 10.0_dp, 12.0_dp]
+      real(dp), parameter :: SEP(N_SEP) = [4.0_dp, 5.0_dp, 6.0_dp, 7.0_dp, &
+                                           8.0_dp, 10.0_dp, 12.0_dp]
       real(dp) :: a(3, 3), b(3, 3)
-      real(dp) :: e(7, 4)
+      real(dp) :: e(N_SEP, N_TRACKED)
       integer :: k, t_i
-      character(len=12) :: label(4)
 
-      label = ["Elst10      ", "Exch10      ", "Ind20,r     ", "Disp20      "]
       a = reshape([0.0_dp, 0.0_dp, 0.10077199_dp, &
                    0.0_dp, 0.77250895_dp, -0.46780200_dp, &
                    0.0_dp, -0.77250895_dp, -0.46780200_dp], [3, 3])*ANG
@@ -163,7 +163,8 @@ contains
       write (*, "(A)") repeat("-", 88)
       do k = 1, size(SEP) - 1
          write (*, "(F6.1,A,F5.1,4F14.3,A)") SEP(k), " -", SEP(k + 1), &
-            (exponent_between(SEP(k), SEP(k + 1), e(k, t_i), e(k + 1, t_i)), t_i=1, 4), &
+            (exponent_between(SEP(k), SEP(k + 1), e(k, t_i), e(k + 1, t_i)), &
+             t_i=1, N_TRACKED), &
             "     3 / exp / 6 / 6"
       end do
 

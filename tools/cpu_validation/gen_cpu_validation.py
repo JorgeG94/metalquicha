@@ -293,6 +293,21 @@ HAND_MAINTAINED = {
     "cpu/mqc/efp/water_dimer_efp_turned.json",
 }
 
+# SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
+# ordinary dimer xyz and the partition is the atom count of the first monomer.
+#
+# The reference is `validation/check_sapt0.py` rather than PySCF directly:
+# PySCF has no SAPT, and psi4 -- which does -- cannot produce a conventional
+# four-index SAPT0 at all, its closed-shell SAPT being density-fitted by
+# construction. So the reference is a second implementation written against the
+# literature and checked against psi4's *own* density-fitted numbers under
+# psi4's settings, which is a weaker provenance than the rest of this file has
+# and is stated here rather than hidden.
+SAPT_CASES = [
+    ("w2dimer", "sto-3g", 3),
+    ("w2dimer", "6-31g", 3),
+]
+
 # Coupled cluster. Small on purpose: the spin-orbital tensor is (2 n_act)^4, so
 # water/cc-pVDZ is 42 MB and anything much larger stops being a validation case
 # and starts being a benchmark. Both spellings appear because they are separate
@@ -673,6 +688,22 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
     if cc:
         deck["keywords"]["cc"] = cc
     return deck
+
+
+def pyscf_sapt0(atoms, basis, n_a):
+    """Reference SAPT0 interaction energy, from validation/check_sapt0.py.
+
+    `n_a` is how many of the leading atoms are monomer A; the rest are B, which
+    is exactly what the deck's `fragments` says.
+    """
+    sys.path.insert(0, str(VALIDATION))
+    import check_sapt0
+
+    def block(rows):
+        return "\n".join(f"{s} {x} {y} {z}" for s, x, y, z in rows)
+
+    _, t = check_sapt0.run(basis, geom=(block(atoms[:n_a]), block(atoms[n_a:])))
+    return t["Total SAPT0"], t
 
 
 def pyscf_ri_mp2(atoms, basis, aux, frozen):
@@ -1420,6 +1451,26 @@ def main():
             "type": "fragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} MBE({len(fragments)})  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, n_a in SAPT_CASES:
+        mol = MOLECULES[name]
+        energy, terms = pyscf_sapt0(mol.atoms, basis, n_a)
+        deck = deck_for(f"{CPU_MQC}/sapt", f"cpu_{name}_{normalize_basis_name(basis)}_sapt0")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="sapt0")
+            d["molecules"][0]["fragments"] = [list(range(n_a)),
+                                              list(range(n_a, len(mol.atoms)))]
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"SAPT0 {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} sapt0    "
+              f"elst={terms['Elst10,r']:+.9f} exch={terms['Exch10']:+.9f} "
+              f"E={energy:.12f}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

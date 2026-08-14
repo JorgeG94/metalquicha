@@ -28,6 +28,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    vibrational_analysis
    geometry_optimization
    makefp
+   sapt
 
 .. toctree::
    :maxdepth: 2

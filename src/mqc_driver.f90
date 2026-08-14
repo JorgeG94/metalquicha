@@ -998,6 +998,10 @@ contains
          return
       end if
 
+      ! The response terms are what enters the total; the uncoupled ones and
+      ! the S^2 exchange are printed beside them because they are what another
+      ! code's output is quoted in, and a term can only be checked against the
+      ! same term.
       call logger%info("============================================")
       call logger%info("  EFP2 interaction energy, Hartree")
       call logger%info("    electrostatics      "//to_char(terms(1)))
@@ -1026,28 +1030,33 @@ contains
          json_data%total_energy = terms(6)
       call logger%info("  SAPT0 interaction energy, Hartree")
       call logger%info("    electrostatics        "//to_char(terms(1)))
-      call logger%info("    exchange              "//to_char(terms(2)))
-      call logger%info("    induction             "//to_char(terms(3)))
-      call logger%info("    exchange-induction    "//to_char(terms(4)))
-      call logger%info("    dispersion            "//to_char(terms(5)))
-      call logger%info("    exchange-dispersion   "//to_char(terms(6)))
-      call logger%info("    delta HF              "//to_char(terms(7)))
+      call logger%info("    exchange              "//to_char(terms(3)))
+      call logger%info("      (S^2 approximation) "//to_char(terms(2)))
+      call logger%info("    induction             "//to_char(terms(5)))
+      call logger%info("      (uncoupled)         "//to_char(terms(4)))
+      call logger%info("    exchange-induction    "//to_char(terms(7)))
+      call logger%info("      (uncoupled)         "//to_char(terms(6)))
+      call logger%info("    dispersion            "//to_char(terms(8)))
+      call logger%info("    exchange-dispersion   "//to_char(terms(9)))
+      call logger%info("    delta HF              "//to_char(terms(10)))
       call logger%info("    --")
-      call logger%info("    supermolecular HF     "//to_char(terms(8)))
-      call logger%info("    total                 "//to_char(terms(9)))
+      call logger%info("    supermolecular HF     "//to_char(terms(11)))
+      call logger%info("    total                 "//to_char(terms(12)))
       call logger%info("============================================")
 
       if (present(result_out)) then
          ! The `scf` slot, being the reference `energy_t%total()` sums. This is an
          ! interaction energy and not an SCF energy; nothing here pretends otherwise.
-         result_out%energy%scf = terms(9)
+         result_out%energy%scf = terms(N_SAPT_TERMS)
          result_out%has_energy = .true.
       end if
 
       if (.not. config%skip_json_output) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
-         json_data%total_energy = terms(9)
+         json_data%total_energy = terms(N_SAPT_TERMS)
          json_data%has_energy = .true.
+         json_data%sapt_terms = terms
+         json_data%has_sapt = .true.
          json_data%fragment_breakdown = config%fragment_breakdown
          call write_json_output(json_data)
          call json_data%destroy()

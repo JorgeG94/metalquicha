@@ -88,6 +88,10 @@ against PySCF on the same geometries and the same basis data.
   meta-GGAs are refused rather than approximated. Grids are Treutler-Ahlrichs
   radial times Lebedev angular with a Becke partition, from the same level tables
   PySCF uses.
+- **SAPT0**: the interaction energy of two monomers, decomposed into
+  electrostatics, exchange, induction, dispersion and their exchange
+  counterparts, in the dimer-centred basis. Two fragments exactly -- see
+  :doc:`sapt`.
 
 Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
 whether a set is Cartesian or spherical is taken from the file rather than assumed.
