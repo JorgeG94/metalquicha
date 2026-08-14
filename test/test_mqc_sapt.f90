@@ -16,7 +16,7 @@ module test_mqc_sapt
    use pic_types, only: dp
    use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, &
                        sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2, sapt_exch10, &
-                       sapt_induction, sapt_terms_t, sapt_disp20, sapt_exch_disp20
+                       sapt_induction, sapt_terms_t, sapt_disp20, sapt_exch_disp20, run_sapt0
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use pic_blas_interfaces, only: pic_gemm
@@ -42,7 +42,8 @@ contains
                   new_unittest("sapt_exch10_sinf", test_exch10), &
                   new_unittest("sapt_induction", test_induction), &
                   new_unittest("sapt_disp20", test_disp20), &
-                  new_unittest("sapt_exch_disp20", test_exch_disp20) &
+                  new_unittest("sapt_exch_disp20", test_exch_disp20), &
+                  new_unittest("sapt_total_and_dhf", test_total) &
                   ]
    end subroutine collect_mqc_sapt_tests
 
@@ -415,6 +416,64 @@ contains
       call cache%destroy()
       call mols%destroy()
    end subroutine test_exch_disp20
+
+   subroutine test_total(error)
+      !! `dHF(2)`, the total, and the identity that validates four terms at once
+      !!
+      !! `dHF` is *defined* as the residual, so
+      !!
+      !!     Elst10 + Exch10 + Ind20,r + Exch-Ind20,r + dHF == E_int^HF(CP)
+      !!
+      !! holds by construction. That makes it a check on those four *collectively*
+      !! against a supermolecular Hartree-Fock number, to machine precision, with
+      !! no SAPT reference involved -- the sharpest thing available here. It costs
+      !! one dimer SCF, the monomers having already been run in the dimer basis.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_terms_t) :: t
+      type(error_t) :: err
+      real(dp) :: four, assembled
+
+      call water_dimer(mols, err)
+      call check(error,.not. err%has_error(), "building the molecules failed")
+      if (allocated(error)) return
+
+      call run_sapt0(mols, t, err)
+      call check(error,.not. err%has_error(), "SAPT0 failed")
+      if (allocated(error)) return
+
+      ! The identity, first: it needs no reference and localises a fault to the
+      ! four terms as a set before any of the stored numbers are consulted.
+      four = t%elst10 + t%exch10 + t%ind20_r + t%exch_ind20_r
+      call check(error, abs(four + t%delta_hf - t%e_int_hf) < 1.0e-12_dp, &
+                 "the four terms plus dHF must be the supermolecular HF energy")
+      if (allocated(error)) return
+
+      call check(error, t%e_int_hf, 0.009315543651_dp, thr=1.0e-8_dp, &
+                 message="E_int^HF disagrees with the PySCF reference")
+      if (allocated(error)) return
+      call check(error, t%delta_hf, -0.000124862284_dp, thr=1.0e-8_dp, &
+                 message="dHF(2) disagrees with the PySCF reference")
+      if (allocated(error)) return
+      call check(error, t%total, 0.009115918750_dp, thr=1.0e-8_dp, &
+                 message="the SAPT0 total disagrees with the PySCF reference")
+      if (allocated(error)) return
+
+      ! And that the total really is the sum of what it claims, with Exch10 and
+      ! not Exch10(S^2) -- a total built from the S^2 form is comparable to
+      ! nothing published, and the two differ by only 6e-6 here so the wrong one
+      ! looks entirely reasonable.
+      assembled = four + t%delta_hf + t%disp20 + t%exch_disp20
+      call check(error, abs(assembled - t%total) < 1.0e-14_dp, &
+                 "the total is not the sum of its stated parts")
+      if (allocated(error)) return
+      call check(error, abs(t%exch10 - t%exch10_s2) > 1.0e-7_dp, &
+                 "S^2 and S^inf exchange should differ measurably, so that using "// &
+                 "the wrong one in the total would be detectable")
+
+      call mols%destroy()
+   end subroutine test_total
 
 end module test_mqc_sapt
 

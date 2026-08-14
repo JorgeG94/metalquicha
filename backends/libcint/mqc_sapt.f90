@@ -41,6 +41,7 @@ module mqc_sapt
    public :: sapt_induction
    public :: sapt_disp20
    public :: sapt_exch_disp20
+   public :: run_sapt0
    public :: sapt_terms_t
 
    type :: sapt_molecules_t
@@ -65,6 +66,7 @@ module mqc_sapt
       real(dp) :: exch_ind20_u = 0.0_dp, exch_ind20_r = 0.0_dp
       real(dp) :: disp20 = 0.0_dp
       real(dp) :: exch_disp20 = 0.0_dp
+      real(dp) :: e_int_hf = 0.0_dp   !! Counterpoise-corrected supermolecular HF
       real(dp) :: delta_hf = 0.0_dp
       real(dp) :: total = 0.0_dp
    end type sapt_terms_t
@@ -882,6 +884,69 @@ contains
          call pic_gemm(c%c_b(:, nocc + 1:nmo), c%c_b(:, nocc + 1:nmo), p, transb="T")
       end if
    end function p_of
+
+   subroutine run_sapt0(mols, terms, error)
+      !! Every SAPT0 term, and the total
+      !!
+      !!     E(SAPT0) = Elst10,r + Exch10 + Ind20,r + Exch-Ind20,r + dHF(2)
+      !!                + Disp20 + Exch-Disp20
+      !!
+      !! from `sapt0.cc:229-231`. Three things in that are not guessable and each
+      !! changes the answer:
+      !!
+      !! * **`dHF(2)` is in the total, unconditionally.** There is no option to
+      !!   disable it, so every SAPT0 number in the literature includes it. On a
+      !!   water dimer it is worth around a sixth of the total.
+      !! * **The total uses `Exch10`, not `Exch10(S^2)`.** The `S^2` form is
+      !!   computed and printed but only forms the ratio sSAPT0's exchange scaling
+      !!   needs, so a total built from it is comparable to nothing.
+      !! * **`Ind20,r`, the response form** -- `COUPLED_INDUCTION` defaults true.
+      !!   But `Exch-Ind20` and `Exch-Disp20` are always the `S^2` approximation
+      !!   in SAPT0; their `S^inf` variants are not implemented in psi4 at all.
+      !!
+      !! `dHF(2)` is *defined* as the residual, so the first four terms plus it
+      !! are the counterpoise-corrected supermolecular Hartree-Fock interaction
+      !! energy by construction. That identity is the sharpest check available on
+      !! those four collectively, and it needs no SAPT reference -- see
+      !! `test_mqc_sapt`.
+      type(sapt_molecules_t), intent(inout) :: mols
+      type(sapt_terms_t), intent(out) :: terms
+      type(error_t), intent(inout) :: error
+
+      type(sapt_cache_t) :: c
+      type(rhf_result_t) :: scf_d
+      real(dp) :: four
+
+      call build_sapt_cache(mols, c, error)
+      if (error%has_error()) return
+
+      terms%elst10 = sapt_elst10(c)
+      terms%exch10_s2 = sapt_exch10_s2(c)
+      terms%exch10 = sapt_exch10(c, error)
+      if (error%has_error()) return
+      call sapt_induction(mols, c, terms, error)
+      if (error%has_error()) return
+      terms%disp20 = sapt_disp20(c)
+      terms%exch_disp20 = sapt_exch_disp20(c)
+
+      ! The supermolecular reference. Counterpoise-corrected for free: the
+      ! monomer energies already came from SCFs in the dimer basis.
+      call run_libcint_rhf(mols%dimer, mols%n_elec_a + mols%n_elec_b, 200, &
+                           1.0e-12_dp, 1.0e-11_dp, .false., scf_d, error, &
+                           in_core=.true.)
+      if (error%has_error()) return
+      if (.not. scf_d%converged) then
+         call error%set(ERROR_VALIDATION, "sapt: the dimer SCF did not converge")
+         return
+      end if
+      terms%e_int_hf = scf_d%energy - c%e_scf_a - c%e_scf_b
+
+      four = terms%elst10 + terms%exch10 + terms%ind20_r + terms%exch_ind20_r
+      terms%delta_hf = terms%e_int_hf - four
+      terms%total = four + terms%delta_hf + terms%disp20 + terms%exch_disp20
+
+      call c%destroy()
+   end subroutine run_sapt0
 
    pure function sapt_elst10(c) result(energy)
       !! `Elst10,r` -- the classical Coulomb interaction of the two unperturbed
