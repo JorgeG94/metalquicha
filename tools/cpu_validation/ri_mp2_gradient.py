@@ -358,7 +358,7 @@ def finite_difference(atoms, basis, auxbasis, step=2.5e-3):
     return de
 
 
-def build(atoms, basis, auxbasis):
+def build(atoms, basis, auxbasis, unit="Bohr"):
     """The two molecules, both bases read out of ``basis_sets/``.
 
     Not PySCF's own tables. They and this repository's JSON differ around the
@@ -368,13 +368,29 @@ def build(atoms, basis, auxbasis):
     discrepancy from a basis one. Reading the same file both codes read removes
     the question.
     """
-    from gen_cpu_validation import bse_to_pyscf
+    from gen_cpu_validation import CARTESIAN, bse_to_pyscf, molecule_form
 
     symbols = {a[0] for a in atoms}
+
+    # `make_auxmol` inherits `mol.cart`, so PySCF will quietly build a
+    # spherical auxiliary set in Cartesian form if asked. metalquicha refuses
+    # that combination outright -- libcint builds all three centres of a
+    # fitting integral in one form -- so a reference for it would be a
+    # reference for a deck that cannot run. Refuse it here too, and for the
+    # same reason.
+    orbital_form = molecule_form(basis, symbols)
+    aux_form = molecule_form(auxbasis, symbols)
+    if CARTESIAN in (orbital_form, aux_form) and orbital_form != aux_form:
+        raise SystemExit(
+            f"{basis} is {orbital_form} and {auxbasis} is {aux_form}; "
+            "metalquicha refuses a fitting integral whose centres disagree, so "
+            "there is nothing here to be a reference for")
+
     mol = gto.Mole()
     mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
-    mol.unit = "Bohr"
+    mol.unit = unit
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.cart = orbital_form == CARTESIAN
     mol.verbose = 0
     mol.build()
     auxmol = df.addons.make_auxmol(

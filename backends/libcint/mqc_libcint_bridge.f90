@@ -30,6 +30,7 @@ module mqc_libcint_bridge
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -213,9 +214,11 @@ contains
       if (do_gradient .and. settings%run_mp2) then
          if (settings%density_fitting) then
             call result%error%set(ERROR_VALIDATION, "the MP2 gradient differentiates an "// &
-                                  "exact-ERI reference: with density_fitting on it would "// &
-                                  "be the derivative of an energy nothing computed. Run "// &
-                                  "the MP2 gradient without density fitting.")
+                                  "exact-ERI reference: with keywords.scf.density_fitting "// &
+                                  "on it would be the derivative of an energy nothing "// &
+                                  "computed. Fitting the correlation instead -- an "// &
+                                  "`ri-mp2` method, which fits nothing in the SCF -- is "// &
+                                  "implemented and differentiated exactly.")
             result%has_error = .true.
             return
          end if
@@ -608,9 +611,29 @@ contains
                   call mol%destroy()
                   return
                end if
-               call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                         fragment%nelec/2, result%gradient, error, &
-                                         n_frozen=frozen)
+               ! Fitted correlation gets the fitted gradient. Not a refinement:
+               ! `run_libcint_ri_mp2` above computed a fitted energy, and the
+               ! conventional gradient is the derivative of a different one.
+               ! The auxiliary basis is rebuilt here rather than held from the
+               ! energy step, so each branch owns and destroys its own and no
+               ! error return in between has to remember to.
+               if (settings%corr_density_fitting) then
+                  call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+                  if (error%has_error()) then
+                     call result%error%set(ERROR_VALIDATION, error%get_message())
+                     result%has_error = .true.
+                     call mol%destroy()
+                     return
+                  end if
+                  call libcint_ri_mp2_gradient(mol, corr_aux, scf%orbitals, &
+                                               scf%orbital_energies, fragment%nelec/2, &
+                                               result%gradient, error, n_frozen=frozen)
+                  call corr_aux%destroy()
+               else
+                  call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                                            fragment%nelec/2, result%gradient, error, &
+                                            n_frozen=frozen)
+               end if
                if (error%has_error()) then
                   call result%error%set(ERROR_VALIDATION, "MP2 gradient: "// &
                                         error%get_message())
