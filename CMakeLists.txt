@@ -563,6 +563,10 @@ if(MQC_ENABLE_LIBCINT)
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_charges PRIVATE ${main_lib} cint_fortran cint)
 
+  add_executable(probe_esp ${PROJECT_SOURCE_DIR}/validation/probe_esp.f90)
+  target_include_directories(probe_esp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(probe_esp PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(sweep_fmo ${PROJECT_SOURCE_DIR}/validation/sweep_fmo.f90)
   target_include_directories(sweep_fmo PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(sweep_fmo PRIVATE ${main_lib} cint_fortran cint)

@@ -34,6 +34,7 @@ module mqc_libcint_charges
    implicit none
    private
 
+   public :: ao_to_atom
    public :: mulliken_charges
    public :: chelpg_charges
    public :: chelpg_grid
@@ -52,7 +53,11 @@ module mqc_libcint_charges
 contains
 
    subroutine ao_to_atom(mol, owner)
-      !! Which atom each basis function belongs to
+      !! Which atom each basis function belongs to, 1-based
+      !!
+      !! Public because partitioning a matrix by fragment needs it too -- see
+      !! [[mqc_libcint_fmo]], which uses it to find a fragment's block of a
+      !! whole-system Coulomb matrix.
       type(libcint_molecule_t), intent(in) :: mol
       integer, allocatable, intent(out) :: owner(:)
 

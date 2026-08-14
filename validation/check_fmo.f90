@@ -45,6 +45,7 @@ program check_fmo
    call dimer_case("water dimer", 0.0_dp, 1.0e-7_dp, n_bad)
    call dimer_case("two waters 12 A apart", 12.0_dp, 1.0e-7_dp, n_bad)
    call mixed_case(1.0e-7_dp, n_bad)
+   call separated_case(1.0e-9_dp, n_bad)
    call trimer_case(5.0e-3_dp, n_bad)
 
    if (n_bad == 0) then
@@ -126,7 +127,7 @@ contains
       write (line, "(a,f18.10)") "   supermolecular RHF   ", exact
       call logger%info(trim(line))
       write (line, "(a,f18.10,a,i0,a)") "   FMO2                 ", fmo%energy, &
-         "   (", fmo%scc_iterations, " scc passes)"
+         "   (", fmo%outer_iterations, " outer passes)"
       call logger%info(trim(line))
 
       ! With two fragments the dimer has no external field, so the response
@@ -188,6 +189,91 @@ contains
                   abs(fmo%energy - exact), tol, n_bad)
    end subroutine mixed_case
 
+   subroutine separated_case(tol, n_bad)
+      !! Three fragments far enough apart that only the embedding is left
+      !!
+      !! The sharpest test of the embedding operator there is. At 9 Angstrom
+      !! the fragments still see each other electrostatically -- an unembedded
+      !! expansion is out by 1e-06 here -- but exchange and charge transfer
+      !! between them have died, so the three-body term FMO2 cannot represent
+      !! has died with them. What is left is the embedding, alone.
+      !!
+      !! An exact ESP therefore has to reproduce the supermolecule to
+      !! essentially SCF precision, and it does: 1e-13. Nothing but a correct
+      !! embedding operator gets that. Point charges plateau five orders of
+      !! magnitude short however far apart the fragments are moved, because the
+      !! residual is the charge approximation itself and not a distance effect.
+      real(dp), intent(in) :: tol
+      integer, intent(inout) :: n_bad
+
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: exact_esp, ptc, bare
+      type(error_t) :: error
+      integer, allocatable :: z(:), owner(:)
+      character(len=2), allocatable :: symbols(:)
+      real(dp), allocatable :: coords(:, :)
+      real(dp) :: exact
+      character(len=200) :: line
+
+      call logger%info("")
+      call logger%info("== three waters 9 A apart")
+
+      ! water_geometry spaces them at 2.9 + push.
+      call water_geometry(3, 6.1_dp, z, symbols, coords, owner)
+      call supermolecule(z, symbols, coords, "6-31g", exact, n_bad, error)
+      if (error%has_error()) return
+
+      opts%basis = "6-31g"
+      opts%esp = "exact"
+      call run_fmo2(z, symbols, coords, owner, opts, exact_esp, error)
+      if (failed(error, "fmo exact esp", n_bad)) return
+
+      opts%esp = "ptc"
+      opts%ptc_charges = "mulliken"
+      call run_fmo2(z, symbols, coords, owner, opts, ptc, error)
+      if (failed(error, "fmo ptc", n_bad)) return
+
+      opts%esp = "none"
+      call run_fmo2(z, symbols, coords, owner, opts, bare, error)
+      if (failed(error, "fmo unembedded", n_bad)) return
+
+      write (line, "(a,es11.3)") "   exact ESP      err ", exact_esp%energy - exact
+      call logger%info(trim(line))
+      write (line, "(a,es11.3)") "   ptc, mulliken  err ", ptc%energy - exact
+      call logger%info(trim(line))
+      write (line, "(a,es11.3)") "   no embedding   err ", bare%energy - exact
+      call logger%info(trim(line))
+
+      call report("exact ESP is exact once 3-body effects have died", &
+                  abs(exact_esp%energy - exact), tol, n_bad)
+
+      ! The point of separating them: the field is still real at this distance,
+      ! so an expansion that ignores it is visibly wrong. Were that to stop
+      ! holding, the case would have gone slack -- everything would agree
+      ! because there was nothing left to get right -- and it would no longer
+      ! be testing the embedding at all.
+      if (abs(bare%energy - exact) > 1.0e-7_dp) then
+         write (line, "(a,es9.2,a)") "   ok   the field is still real: ignoring it costs ", &
+            abs(bare%energy - exact), " Hartree"
+         call logger%info(trim(line))
+      else
+         call logger%error("   FAIL the fragments are now too far apart to be testing "// &
+                           "anything; move them closer")
+         n_bad = n_bad + 1
+      end if
+
+      ! Point charges cannot get here however far apart the fragments go.
+      if (abs(ptc%energy - exact) <= abs(exact_esp%energy - exact)) then
+         call logger%error("   FAIL point charges matched the exact ESP at long range, "// &
+                           "where the exact one should be exact")
+         n_bad = n_bad + 1
+      else
+         write (line, "(a,es9.2,a)") "   ok   point charges plateau at ", &
+            abs(ptc%energy - exact), ", the charge approximation itself"
+         call logger%info(trim(line))
+      end if
+   end subroutine separated_case
+
    subroutine trimer_case(tol, n_bad)
       !! Three fragments, where the embedding starts to matter
       real(dp), intent(in) :: tol
@@ -210,27 +296,28 @@ contains
       if (error%has_error()) return
 
       opts%basis = "6-31g"
-      opts%embedding = "mulliken"
+      opts%esp = "exact"
       call run_fmo2(z, symbols, coords, owner, opts, embedded, error)
-      if (failed(error, "fmo mulliken", n_bad)) return
+      if (failed(error, "fmo exact esp", n_bad)) return
 
-      opts%embedding = "chelpg"
+      opts%esp = "ptc"
+      opts%ptc_charges = "chelpg"
       call run_fmo2(z, symbols, coords, owner, opts, fitted, error)
-      if (failed(error, "fmo chelpg", n_bad)) return
+      if (failed(error, "fmo ptc chelpg", n_bad)) return
 
-      opts%embedding = "none"
+      opts%esp = "none"
       call run_fmo2(z, symbols, coords, owner, opts, bare, error)
       if (failed(error, "fmo unembedded", n_bad)) return
 
       write (line, "(a,f18.10)") "   supermolecular RHF        ", exact
       call logger%info(trim(line))
-      write (line, "(a,f18.10,a,es10.2,a,i0,a)") "   FMO2, mulliken embedding  ", &
+      write (line, "(a,f18.10,a,es10.2,a,i0,a)") "   FMO2, exact ESP           ", &
          embedded%energy, "   err ", embedded%energy - exact, &
-         "   (", embedded%scc_iterations, " scc)"
+         "   (", embedded%outer_iterations, " outer)"
       call logger%info(trim(line))
-      write (line, "(a,f18.10,a,es10.2,a,i0,a)") "   FMO2, chelpg embedding    ", &
+      write (line, "(a,f18.10,a,es10.2,a,i0,a)") "   FMO2, ptc chelpg          ", &
          fitted%energy, "   err ", fitted%energy - exact, &
-         "   (", fitted%scc_iterations, " scc)"
+         "   (", fitted%outer_iterations, " outer)"
       call logger%info(trim(line))
       write (line, "(a,f18.10,a,es10.2)") "   FMO2, no embedding        ", &
          bare%energy, "   err ", bare%energy - exact
@@ -238,8 +325,8 @@ contains
       write (line, "(a,f14.8)") "   the response term contributes ", embedded%response_sum
       call logger%info(trim(line))
 
-      call report("embedded FMO2 is close to exact", abs(embedded%energy - exact), tol, n_bad)
-      call report("chelpg-embedded FMO2 is close to exact", abs(fitted%energy - exact), &
+      call report("exact-ESP FMO2 is close to exact", abs(embedded%energy - exact), tol, n_bad)
+      call report("ptc-chelpg FMO2 is close to exact", abs(fitted%energy - exact), &
                   tol, n_bad)
 
       ! The point of the whole exercise. If embedding did not help, there would
