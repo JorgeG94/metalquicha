@@ -286,6 +286,11 @@ HAND_MAINTAINED = {
     "cpu/mqc/makefp/water_makefp.json",
     "cpu/mqc/makefp/water_makefp_df.json",
     "cpu/mqc/makefp/hydronium_makefp.json",
+    # The EFP2 interaction energy. Its reference is GAMESS rather than PySCF, so this
+    # script cannot generate it either. It consumes the potential that
+    # water_makefp.json writes beside itself, so that deck runs first.
+    "cpu/mqc/efp/water_dimer_efp.json",
+    "cpu/mqc/efp/water_dimer_efp_turned.json",
 }
 
 # Coupled cluster. Small on purpose: the spin-orbital tensor is (2 n_act)^4, so

@@ -76,6 +76,36 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_uhf)
   target_link_libraries(test_mqc_libcint_uhf PRIVATE cint_fortran cint)
 
+  # A fragment potential written and read back. The format is GAMESS's, so
+  # writer and reader are two halves of one thing and a round trip is what pins
+  # them.
+  addtest(mqc_efp_read)
+  target_link_libraries(test_mqc_efp_read PRIVATE cint_fortran cint)
+
+  # The electrostatic interaction between two fragments, against the energy
+  # GAMESS reports for the same dimer. Chiefly a guard on the charge-dipole
+  # sign, which both ways round gives a plausible-looking answer.
+  addtest(mqc_efp_interaction)
+  target_link_libraries(test_mqc_efp_interaction PRIVATE cint_fortran cint)
+
+  # A molecule spanning two fragments, checked by the block structure of its own
+  # overlap: the diagonal blocks must be each fragment's overlap exactly.
+  addtest(mqc_efp_pair)
+  target_link_libraries(test_mqc_efp_pair PRIVATE cint_fortran cint)
+
+  # All five EFP2 terms assembled into one energy. Each was pinned against
+  # GAMESS on its own, so what this checks is the bookkeeping: no term dropped,
+  # none counted twice, dispersion totalled damped rather than undamped.
+  addtest(mqc_efp_energy)
+  target_link_libraries(test_mqc_efp_energy PRIVATE cint_fortran cint)
+
+  # Placing a fragment in an arbitrary orientation, piece by piece: the frame
+  # construction, the Cartesian shell rotation as a group representation, and
+  # the invariants a rotated fragment must keep. The energy test asserts the
+  # same thing end to end but cannot say which piece broke.
+  addtest(mqc_efp_rotate)
+  target_link_libraries(test_mqc_efp_rotate PRIVATE cint_fortran cint)
+
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.
@@ -101,6 +131,12 @@ if(MQC_ENABLE_LIBCINT)
   # evaluate basis functions -- so the quadrature is the check.
   addtest(mqc_libcint_ao)
   target_link_libraries(test_mqc_libcint_ao PRIVATE cint_fortran cint)
+
+  # The potential integral against its own centre-gradient. This is what fixes
+  # the sign of libcint's `nabla-rinv` for every caller, charge transfer's
+  # dipole rank being the first.
+  addtest(mqc_libcint_esp)
+  target_link_libraries(test_mqc_libcint_esp PRIVATE cint_fortran cint)
 
   # Coupled cluster, against the identities a reference energy cannot see:
   # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the

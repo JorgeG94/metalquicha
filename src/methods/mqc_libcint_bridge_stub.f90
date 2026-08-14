@@ -15,6 +15,7 @@ module mqc_libcint_bridge
 
    public :: run_libcint_hf
    public :: run_libcint_makefp
+   public :: run_libcint_efp
    public :: libcint_backend_available
 
 contains
@@ -24,6 +25,32 @@ contains
       logical :: available
       available = .false.
    end function libcint_backend_available
+
+   subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
+                              coordinates, terms, error)
+      !! No-op stand-in: an EFP interaction energy needs the CPU backend
+      !!
+      !! Every piece of it does -- the multipole and polarizability machinery, the
+      !! integrals two fragments' basis sets share, and the potential reader itself
+      !! all live behind `MQC_ENABLE_LIBCINT`.
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_EFP_TERMS
+      use mqc_error, only: error_t
+      character(len=*), intent(in) :: potentials(:)
+      integer, intent(in) :: fragment_sizes(:)
+      integer, intent(in) :: fragment_atoms(:, :)
+      real(dp), intent(in) :: coordinates(:, :)
+      real(dp), intent(out) :: terms(N_EFP_TERMS)
+      type(error_t), intent(inout) :: error
+
+      terms = 0.0_dp
+      call error%set(ERROR_VALIDATION, &
+                     "EFP needs the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_LIBCINT=ON")
+      if (len_trim(potentials(1)) < 0) return
+      if (size(fragment_sizes) < 0 .or. size(fragment_atoms) < 0) return
+      if (size(coordinates) < 0) return
+   end subroutine run_libcint_efp
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &

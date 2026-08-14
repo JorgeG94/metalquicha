@@ -45,6 +45,11 @@ module mqc_config_adapter
       type(optimizer_settings_t) :: optimization  !! Geometry optimization keywords
       type(scf_keywords_t) :: scf          !! SCF calculation keywords
 
+      !> The effective fragment potential describing each fragment, in fragment
+      !> order and empty where a fragment carries none. Fixed-length because this is
+      !> a flat array of paths and a deferred-length one cannot be.
+      character(len=256), allocatable :: fragment_potentials(:)
+
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
       logical :: unchecked_input = .false.   !! Validation warns instead of refusing
@@ -126,6 +131,10 @@ contains
          ! Single molecule mode (backward compatible)
          nfrag_to_use = mqc_config%nfrag
       end if
+
+      ! Carry each fragment's potential through, in fragment order. Blank where a
+      ! fragment has none, which is a quantum fragment rather than a missing entry.
+      call copy_fragment_potentials(mqc_config, driver_config, molecule_index)
 
       ! Set fragmentation level
       ! For unfragmented calculations (nfrag=0), nlevel must be 0
@@ -275,6 +284,51 @@ contains
       end if
 
    end subroutine set_optimization_vocabulary
+   subroutine copy_fragment_potentials(mqc_config, driver_config, molecule_index)
+      !! The per-fragment potential paths, in fragment order
+      !!
+      !! Left unallocated when no fragment carries one, so the driver can tell "not an
+      !! EFP calculation" from "an EFP calculation whose potentials are all blank"
+      !! without a second flag.
+      type(mqc_config_t), intent(in) :: mqc_config
+      type(driver_config_t), intent(inout) :: driver_config
+      integer, intent(in), optional :: molecule_index
+
+      integer :: n, k
+      logical :: any_potential
+
+      if (allocated(driver_config%fragment_potentials)) then
+         deallocate (driver_config%fragment_potentials)
+      end if
+
+      if (present(molecule_index)) then
+         if (molecule_index < 1 .or. molecule_index > mqc_config%nmol) return
+         n = mqc_config%molecules(molecule_index)%nfrag
+         if (n == 0) return
+         allocate (driver_config%fragment_potentials(n))
+         driver_config%fragment_potentials = ""
+         any_potential = .false.
+         do k = 1, n
+            if (.not. allocated(mqc_config%molecules(molecule_index)%fragments(k)%potential)) cycle
+            driver_config%fragment_potentials(k) = &
+               mqc_config%molecules(molecule_index)%fragments(k)%potential
+            any_potential = .true.
+         end do
+      else
+         n = mqc_config%nfrag
+         if (n == 0) return
+         allocate (driver_config%fragment_potentials(n))
+         driver_config%fragment_potentials = ""
+         any_potential = .false.
+         do k = 1, n
+            if (.not. allocated(mqc_config%fragments(k)%potential)) cycle
+            driver_config%fragment_potentials(k) = mqc_config%fragments(k)%potential
+            any_potential = .true.
+         end do
+      end if
+
+      if (.not. any_potential) deallocate (driver_config%fragment_potentials)
+   end subroutine copy_fragment_potentials
 
    subroutine config_to_system_geometry(mqc_config, sys_geom, error, molecule_index)
       !! Convert mqc_config_t geometry to system_geometry_t

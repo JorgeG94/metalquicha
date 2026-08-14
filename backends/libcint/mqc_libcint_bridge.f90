@@ -34,6 +34,7 @@ module mqc_libcint_bridge
 
    public :: run_libcint_hf
    public :: run_libcint_makefp
+   public :: run_libcint_efp
    public :: libcint_backend_available
 
 contains
@@ -43,6 +44,82 @@ contains
       logical :: available
       available = .true.
    end function libcint_backend_available
+
+   subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
+                              coordinates, terms, error)
+      !! The EFP2 interaction energy of a set of fragments the deck has placed
+      !!
+      !! Here rather than in the driver for the same reason `run_libcint_makefp` is:
+      !! every module this needs lives in the CPU backend, so a driver reaching for
+      !! them directly does not compile in a build without one. The stub beside this
+      !! declines with the same signature.
+      !!
+      !! `terms` comes back as plain numbers rather than a derived type, because such
+      !! a type would have to exist on both sides of that gate and there is nothing
+      !! for it to hold that six reals do not.
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_EFP_TERMS
+      use mqc_efp_read, only: efp_fragment_t, read_efp_potential
+      use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy, place_fragment
+      use mqc_efp_rotate, only: rotate_fragment
+      character(len=*), intent(in) :: potentials(:)    !! One path per fragment
+      integer, intent(in) :: fragment_sizes(:)
+      integer, intent(in) :: fragment_atoms(:, :)      !! (max_size, n_frag), 0-based
+      real(dp), intent(in) :: coordinates(:, :)        !! (3, n_atoms), Bohr
+      real(dp), intent(out) :: terms(N_EFP_TERMS)
+         !! electrostatics, polarization, exchange repulsion, dispersion,
+         !! charge transfer, total
+      type(error_t), intent(inout) :: error
+
+      type(efp_fragment_t), allocatable :: frags(:)
+      type(efp_energy_t) :: energy
+      real(dp), allocatable :: shifts(:, :), own(:, :)
+      real(dp) :: rot(3, 3)
+      integer :: n, k, a, natom, i
+
+      terms = 0.0_dp
+      n = size(potentials)
+      allocate (frags(n), shifts(3, n))
+
+      do k = 1, n
+         if (len_trim(potentials(k)) == 0) then
+            call error%set(ERROR_VALIDATION, "efp: a fragment carries no potential. "// &
+                           "A mixed quantum/EFP system is not supported yet -- every "// &
+                           "fragment needs one.")
+            return
+         end if
+         call read_efp_potential(trim(potentials(k)), frags(k), error)
+         if (error%has_error()) return
+
+         natom = fragment_sizes(k)
+         allocate (own(3, natom))
+         do i = 1, natom
+            a = fragment_atoms(i, k) + 1        ! stored 0-based
+            own(:, i) = coordinates(:, a)
+         end do
+         call place_fragment(frags(k), own, rot, shifts(:, k), error)
+         deallocate (own)
+         if (error%has_error()) return
+
+         ! Turn the fragment into the deck's orientation before anything reads it.
+         ! Everything a potential carries is in its own frame -- the multipoles, the
+         ! polarizabilities at every rank, and the localized orbitals -- so this is
+         ! not optional for any term.
+         call rotate_fragment(frags(k), rot, error)
+         if (error%has_error()) return
+      end do
+
+      energy = efp_interaction_energy(frags, shifts, error)
+      if (error%has_error()) return
+
+      terms = [energy%electrostatics, energy%polarization, energy%exchange_repulsion, &
+               energy%dispersion, energy%charge_transfer, energy%total]
+
+      do k = 1, n
+         call frags(k)%destroy()
+      end do
+      deallocate (frags, shifts)
+   end subroutine run_libcint_efp
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &

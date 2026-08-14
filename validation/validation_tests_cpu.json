@@ -1168,6 +1168,18 @@
             "input": "inputs/cpu/mqc/mp2/cpu_w2dimer_cc-pvdz_mp2_mbe2.json",
             "expected_energy": -152.466588405967,
             "type": "fragmented"
+        },
+        {
+            "name": "EFP2 water dimer 6-31G* (CPU)",
+            "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
+            "expected_energy": 0.0030795778,
+            "type": "unfragmented"
+        },
+        {
+            "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
+            "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
+            "expected_energy": 0.0030795778,
+            "type": "unfragmented"
         }
     ]
 }

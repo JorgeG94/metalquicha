@@ -315,8 +315,8 @@ contains
          config%nmol = 0
          call read_molecule(json, "molecules(1)", base_dir, config%charge, &
                             config%multiplicity, config%geometry, config%nfrag, &
-                            config%fragments, config%nbonds, config%nbroken, &
-                            config%bonds, error)
+                            config%fragments, config%uniform_system, config%nbonds, &
+                            config%nbroken, config%bonds, error)
          if (error%has_error()) return
       else
          config%nmol = n_mol
@@ -328,6 +328,7 @@ contains
                                config%molecules(imol)%geometry, &
                                config%molecules(imol)%nfrag, &
                                config%molecules(imol)%fragments, &
+                               config%molecules(imol)%uniform_system, &
                                config%molecules(imol)%nbonds, &
                                config%molecules(imol)%nbroken, &
                                config%molecules(imol)%bonds, error)
@@ -459,7 +460,7 @@ contains
    end function nmer_name
 
    subroutine read_molecule(json, prefix, base_dir, charge, multiplicity, geom, &
-                            nfrag, fragments, nbonds, nbroken, bonds, error)
+                            nfrag, fragments, uniform, nbonds, nbroken, bonds, error)
       !! One entry of the molecules array
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: prefix    !! e.g. "molecules(1)"
@@ -468,6 +469,7 @@ contains
       type(geometry_type), intent(inout) :: geom
       integer, intent(out) :: nfrag
       type(input_fragment_t), allocatable, intent(out) :: fragments(:)
+      logical, intent(out) :: uniform
       integer, intent(out) :: nbonds, nbroken
       type(bond_t), allocatable, intent(out) :: bonds(:)
       type(error_t), intent(out) :: error
@@ -490,7 +492,7 @@ contains
          return
       end if
 
-      call read_fragments(json, prefix, geom%natoms, nfrag, fragments, error)
+      call read_fragments(json, prefix, base_dir, geom%natoms, nfrag, fragments, uniform, error)
       if (error%has_error()) return
 
       call read_connectivity(json, prefix, geom%natoms, nfrag, fragments, &
@@ -556,24 +558,66 @@ contains
       end do
    end subroutine read_molecule_geometry
 
-   subroutine read_fragments(json, prefix, natoms, nfrag, fragments, error)
-      !! The fragments array, with its parallel charge and multiplicity lists
+   subroutine read_fragments(json, prefix, base_dir, natoms, nfrag, fragments, uniform, error)
+      !! The fragments array, with its parallel charge, multiplicity and potential lists
+      !!
+      !! `fragment_potentials` is the one of those that may be given as a **single
+      !! string rather than a list**, when `uniform_system` says every fragment is the
+      !! same species. That is not sugar for its own sake: a ten-thousand-water cluster
+      !! would otherwise repeat one filename ten thousand times, and a list that long is
+      !! somewhere for a typo to hide rather than information.
+      !!
+      !! Potential paths are resolved against the deck, exactly as `xyz` is, so a
+      !! deck refers to the potential beside it and works from any directory.
+      !!
+      !! `uniform_system` is checked rather than believed. Fragments claimed uniform
+      !! must agree in atom count, so a deck that mixes species and says otherwise is
+      !! refused here instead of being handed the wrong potential and run.
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: prefix
+      character(len=*), intent(in) :: base_dir  !! For resolving relative potential paths
       integer, intent(in) :: natoms
       integer, intent(out) :: nfrag
       type(input_fragment_t), allocatable, intent(out) :: fragments(:)
+      logical, intent(out) :: uniform
       type(error_t), intent(out) :: error
 
       integer, allocatable :: indices(:)
-      character(len=:), allocatable :: frag_path
-      integer :: ifrag, n_here
-      logical :: found
+      character(len=:), allocatable :: frag_path, shared, one
+      integer :: ifrag, n_here, n_pot
+      logical :: found, has_list
 
       nfrag = 0
+      uniform = .false.
       call json%info(prefix//".fragments", found=found, n_children=nfrag)
       if (.not. found .or. nfrag <= 0) then
          nfrag = 0
+         return
+      end if
+
+      call optional_logical(json, prefix//".uniform_system", uniform)
+
+      ! A single string broadcasts; a list is read per fragment. Which one was written
+      ! is settled by asking for the string first -- `json%get` on a list into a scalar
+      ! does not find one, so this distinguishes the two without inspecting types.
+      call json%get(prefix//".fragment_potentials", shared, found)
+      if (.not. (found .and. allocated(shared))) then
+         if (allocated(shared)) deallocate (shared)
+      end if
+      n_pot = 0
+      call json%info(prefix//".fragment_potentials", found=has_list, n_children=n_pot)
+      has_list = has_list .and. .not. allocated(shared)
+      if (has_list .and. n_pot /= nfrag) then
+         call error%set(ERROR_VALIDATION, prefix// &
+                        ": 'fragment_potentials' has "//int_to_key(n_pot)// &
+                        " entries for "//int_to_key(nfrag)//" fragments")
+         return
+      end if
+      if (allocated(shared) .and. .not. uniform .and. nfrag > 1) then
+         call error%set(ERROR_VALIDATION, prefix// &
+                        ": 'fragment_potentials' is a single potential for "// &
+                        int_to_key(nfrag)//" fragments, which only makes sense with "// &
+                        "'uniform_system': true")
          return
       end if
 
@@ -607,7 +651,40 @@ contains
                            fragments(ifrag)%charge)
          call optional_int(json, prefix//".fragment_multiplicities("//int_to_key(ifrag)//")", &
                            fragments(ifrag)%multiplicity)
+
+         ! A fragment with no potential named for it stays quantum, so an absent
+         ! entry is not an error -- it is the mixed QM/EFP case.
+         if (allocated(shared)) then
+            fragments(ifrag)%potential = join_path(base_dir, shared)
+         else if (has_list) then
+            if (allocated(one)) deallocate (one)
+            call json%get(prefix//".fragment_potentials("//int_to_key(ifrag)//")", &
+                          one, found)
+            if (found .and. allocated(one)) then
+               if (len_trim(one) > 0) then
+                  fragments(ifrag)%potential = join_path(base_dir, trim(one))
+               end if
+            end if
+         end if
       end do
+
+      ! The uniformity claim, checked. Atom count is what a potential has to agree with
+      ! for its own atoms to be superposable onto a fragment's, so it is the cheap
+      ! necessary condition; the loader still has to check composition when it reads
+      ! the file, which is where the elements become known.
+      if (uniform) then
+         do ifrag = 2, nfrag
+            if (size(fragments(ifrag)%indices) /= size(fragments(1)%indices)) then
+               call error%set(ERROR_VALIDATION, prefix// &
+                              ": 'uniform_system' is true but fragment "// &
+                              int_to_key(ifrag)//" has "// &
+                              int_to_key(size(fragments(ifrag)%indices))// &
+                              " atoms where the first has "// &
+                              int_to_key(size(fragments(1)%indices)))
+               return
+            end if
+         end do
+      end if
    end subroutine read_fragments
 
    subroutine read_connectivity(json, prefix, natoms, nfrag, fragments, &

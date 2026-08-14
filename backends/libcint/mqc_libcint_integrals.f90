@@ -96,6 +96,7 @@ module mqc_libcint_integrals
       procedure :: build => molecule_build
       procedure :: overlap => molecule_overlap
       procedure :: core_hamiltonian => molecule_core_hamiltonian
+      procedure :: kinetic => molecule_kinetic
       procedure :: eris => molecule_eris
       procedure :: eris_packed => molecule_eris_packed
       procedure :: nuclear_repulsion => molecule_nuclear_repulsion
@@ -488,6 +489,17 @@ contains
 
       call one_electron(this, s, 1)
    end subroutine molecule_overlap
+
+   subroutine molecule_kinetic(this, t)
+      !! T on its own
+      !!
+      !! Exchange repulsion between two fragments needs the kinetic energy separately;
+      !! the core Hamiltonian folds the nuclear attraction in with it and cannot serve.
+      class(libcint_molecule_t), intent(in) :: this
+      real(dp), allocatable, intent(out) :: t(:, :)
+
+      call one_electron(this, t, 2)
+   end subroutine molecule_kinetic
 
    subroutine molecule_core_hamiltonian(this, h)
       !! H = T + V, the one-electron part of the Fock matrix
