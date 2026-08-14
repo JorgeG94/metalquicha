@@ -493,6 +493,12 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_partition_deriv PRIVATE ${main_lib} cint_fortran
                                                       cint)
 
+  add_executable(check_ao_deriv2
+                 ${PROJECT_SOURCE_DIR}/validation/check_ao_deriv2.f90)
+  target_include_directories(check_ao_deriv2
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_ao_deriv2 PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_df_deriv
                  ${PROJECT_SOURCE_DIR}/validation/check_df_deriv.f90)
   target_include_directories(check_df_deriv
