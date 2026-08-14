@@ -1,0 +1,596 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>optimizer_settings_t &ndash; metalquicha </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>optimizer_settings_t
+      <small>Derived Type</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title="<p> 1.3% of total for derived types.</p>Including implementation: 12 statements,  0.4% of total for derived types.">12 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_optimizer_types.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_optimizer_types.f90.html'>mqc_optimizer_types.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
+            <li class="breadcrumb-item active" aria-current="page">optimizer_settings_t</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-algorithm">algorithm</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates">coordinates</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-energy_tolerance">energy_tolerance</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-freeze_terms">freeze_terms</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance">gradient_tolerance</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-lbfgs_memory">lbfgs_memory</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-max_step">max_step</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-max_steps">max_steps</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-print_level">print_level</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-trajectory">trajectory</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../type/optimizer_settings_t.html#src">optimizer_settings_t</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2 id="type-def-statement">
+        type, public :: optimizer_settings_t</h2>
+    <p>One optimization&rsquo;s settings, as the deck asked for them</p>
+<p>A negative real or integer means &ldquo;leave the engine&rsquo;s own default
+alone&rdquo;, which is DL-FIND&rsquo;s own convention internally and is why it is
+used here rather than transcribing every default twice. The two
+settings a user actually reads back &ndash; the step cap and the gradient
+threshold &ndash; are given real defaults anyway, because a run that stops
+should be able to say what it stopped on.</p>
+<br>      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherited by</h3>
+        </div>
+        <div class="card-body">
+          <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~optimizer_settings_t~~InheritedByGraph Pages: 1 -->
+<svg id="typeoptimizer_settings_tInheritedByGraph" width="641pt" height="69pt"
+ viewBox="0.00 0.00 641.00 68.94" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~optimizer_settings_t~~InheritedByGraph" class="graph" transform="scale(0.93 0.93) rotate(0) translate(4 70)">
+<title>type~~optimizer_settings_t~~InheritedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 684,-70 684,4 -4,4"/>
+<!-- type~optimizer_settings_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_node1" class="node">
+<title>type~optimizer_settings_t</title>
+<polygon fill="none" stroke="black" points="118,-66 0,-66 0,-42 118,-42 118,-66"/>
+<text text-anchor="middle" x="59" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">optimizer_settings_t</text>
+</g>
+<!-- type~driver_config_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_node2" class="node">
+<title>type~driver_config_t</title>
+<g id="a_type~~optimizer_settings_t~~InheritedByGraph_node2"><a xlink:href="../type/driver_config_t.html" xlink:title="driver_config_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="306,-66 215,-66 215,-42 306,-42 306,-66"/>
+<text text-anchor="middle" x="260.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">driver_config_t</text>
+</a>
+</g>
+</g>
+<!-- type~driver_config_t&#45;&gt;type~optimizer_settings_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge1" class="edge">
+<title>type~driver_config_t&#45;&gt;type~optimizer_settings_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M214.73,-54C189.35,-54 157.08,-54 128.58,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="128.27,-50.5 118.27,-54 128.27,-57.5 128.27,-50.5"/>
+<text text-anchor="middle" x="166.5" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">optimization</text>
+</g>
+<!-- type~many_body_expansion_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_node3" class="node">
+<title>type~many_body_expansion_t</title>
+<g id="a_type~~optimizer_settings_t~~InheritedByGraph_node3"><a xlink:href="../type/many_body_expansion_t.html" xlink:title="many_body_expansion_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="546,-66 404,-66 404,-42 546,-42 546,-66"/>
+<text text-anchor="middle" x="475" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">many_body_expansion_t</text>
+</a>
+</g>
+</g>
+<!-- type~many_body_expansion_t&#45;&gt;type~driver_config_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge2" class="edge">
+<title>type~many_body_expansion_t&#45;&gt;type~driver_config_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M403.83,-54C375.44,-54 343.15,-54 316.51,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="316.23,-50.5 306.23,-54 316.23,-57.5 316.23,-50.5"/>
+<text text-anchor="middle" x="355" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">driver_config</text>
+</g>
+<!-- type~gmbe_context_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_node4" class="node">
+<title>type~gmbe_context_t</title>
+<g id="a_type~~optimizer_settings_t~~InheritedByGraph_node4"><a xlink:href="../type/gmbe_context_t.html" xlink:title="gmbe_context_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="680,-66 583,-66 583,-42 680,-42 680,-66"/>
+<text text-anchor="middle" x="631.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t</text>
+</a>
+</g>
+</g>
+<!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
+<title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
+<path fill="none" stroke="#ff0000" d="M582.79,-52.31C576.78,-52.59 570.73,-53.12 565,-54"/>
+</g>
+<!-- type~mbe_context_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_node5" class="node">
+<title>type~mbe_context_t</title>
+<g id="a_type~~optimizer_settings_t~~InheritedByGraph_node5"><a xlink:href="../type/mbe_context_t.html" xlink:title="mbe_context_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="676.5,-24 586.5,-24 586.5,0 676.5,0 676.5,-24"/>
+<text text-anchor="middle" x="631.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t</text>
+</a>
+</g>
+</g>
+<!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge4" class="edge">
+<title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
+<path fill="none" stroke="#ff0000" d="M597.74,-24.16C592.59,-26.71 587.49,-29.67 583,-33 573.13,-40.33 577.15,-52.14 565,-54"/>
+<path fill="none" stroke="#ff0000" d="M564,-54C561.49,-54.38 558.93,-54.72 556.35,-55.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="555.92,-51.53 546.27,-55.91 556.55,-58.5 555.92,-51.53"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pantypeoptimizer_settings_tInheritedByGraph = svgPanZoom('#typeoptimizer_settings_tInheritedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#InheritedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="InheritedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    <br>
+
+    <section>
+    <h2>Components</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-algorithm"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>algorithm</strong></td>
+<td> =</td>
+                <td>OPT_ALGO_LBFGS</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coordinates"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coordinates</strong></td>
+<td> =</td>
+                <td>OPT_COORDS_CARTESIAN</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_tolerance"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_tolerance</strong></td>
+<td> =</td>
+                <td>DEFAULT_OPT_ENERGY_TOLERANCE</td>
+            <td>
+                <p>Convergence on the energy change, Hartree. Negative: engine default</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-freeze_terms"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>freeze_terms</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Choose the MBE term list once, at the starting geometry, and keep
+it for every step. See <code>mqc_geometry_optimizer</code> for why an
+optimization on a re-screened list is optimizing a moving target.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gradient_tolerance"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gradient_tolerance</strong></td>
+<td> =</td>
+                <td>DEFAULT_OPT_GRADIENT_TOLERANCE</td>
+            <td>
+                <p>Convergence on the largest gradient component, Hartree/Bohr</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lbfgs_memory"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lbfgs_memory</strong></td>
+<td> =</td>
+                <td>DEFAULT_OPT_LBFGS_MEMORY</td>
+            <td>
+                <p>Steps of curvature history. Negative: engine default</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_step"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_step</strong></td>
+<td> =</td>
+                <td>DEFAULT_OPT_MAX_STEP</td>
+            <td>
+                <p>Longest step the engine may take, Bohr. Negative: engine default</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_steps"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_steps</strong></td>
+<td> =</td>
+                <td>DEFAULT_OPT_MAX_STEPS</td>
+            <td>
+                <p>Give up after this many steps without converging</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-print_level"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>print_level</strong></td>
+<td> =</td>
+                <td>DEFAULT_OPT_PRINT_LEVEL</td>
+            <td>
+                <p>How much the engine itself prints. Negative: engine default</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-trajectory"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>trajectory</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Record every accepted geometry, for analysing the path afterwards.
+Worth turning off for a large system optimized over many steps:
+the geometries are held until the run ends so they can be written
+as one document, which is 3N doubles per step of memory.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+
+
+
+    <section>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">optimizer_settings_t</span>
+<span class="w">      </span><span class="c">!! One optimization&#39;s settings, as the deck asked for them</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! A negative real or integer means &quot;leave the engine&#39;s own default</span>
+<span class="w">      </span><span class="c">!! alone&quot;, which is DL-FIND&#39;s own convention internally and is why it is</span>
+<span class="w">      </span><span class="c">!! used here rather than transcribing every default twice. The two</span>
+<span class="w">      </span><span class="c">!! settings a user actually reads back -- the step cap and the gradient</span>
+<span class="w">      </span><span class="c">!! threshold -- are given real defaults anyway, because a run that stops</span>
+<span class="w">      </span><span class="c">!! should be able to say what it stopped on.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_MAX_STEPS</span>
+<span class="w">         </span><span class="c">!! Give up after this many steps without converging</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gradient_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_GRADIENT_TOLERANCE</span>
+<span class="w">         </span><span class="c">!! Convergence on the largest gradient component, Hartree/Bohr</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_ENERGY_TOLERANCE</span>
+<span class="w">         </span><span class="c">!! Convergence on the energy change, Hartree. Negative: engine default</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_MAX_STEP</span>
+<span class="w">         </span><span class="c">!! Longest step the engine may take, Bohr. Negative: engine default</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_CARTESIAN</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_LBFGS</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lbfgs_memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_LBFGS_MEMORY</span>
+<span class="w">         </span><span class="c">!! Steps of curvature history. Negative: engine default</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">print_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_PRINT_LEVEL</span>
+<span class="w">         </span><span class="c">!! How much the engine itself prints. Negative: engine default</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">freeze_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Choose the MBE term list once, at the starting geometry, and keep</span>
+<span class="w">         </span><span class="c">!! it for every step. See `mqc_geometry_optimizer` for why an</span>
+<span class="w">         </span><span class="c">!! optimization on a re-screened list is optimizing a moving target.</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">trajectory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Record every accepted geometry, for analysing the path afterwards.</span>
+<span class="w">         </span><span class="c">!! Worth turning off for a large system optimized over many steps:</span>
+<span class="w">         </span><span class="c">!! the geometries are held until the run ends so they can be written</span>
+<span class="w">         </span><span class="c">!! as one document, which is 3N doubles per step of memory.</span>
+<span class="w">   </span><span class="k">end type </span><span class="n">optimizer_settings_t</span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-14 05:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

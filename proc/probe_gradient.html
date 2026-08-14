@@ -1,0 +1,1607 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>probe_gradient &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>probe_gradient
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">12 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_geometry_optimizer.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_geometry_optimizer.f90.html'>mqc_geometry_optimizer.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">probe_gradient</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/probe_gradient.html#variable-energy~10">energy</a>
+            <a class="list-group-item" href="../proc/probe_gradient.html#variable-gradient~7">gradient</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/probe_gradient.html#src">probe_gradient</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine probe_gradient(n_atoms, coords, status)  
+</h2>
+    
+
+    <p>Ask for one gradient, and report only whether it worked</p>
+<p>Collective in the same way an ordinary step is: rank 0 calls this and
+the workers service it from <code>worker_loop</code>, which they are already
+sitting in.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coords~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coords</strong>(3,n_atoms)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-status~6"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>status</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~probe_gradient~~CallsGraph Pages: 1 -->
+<svg id="procprobe_gradientCallsGraph" width="641pt" height="758pt"
+ viewBox="0.00 0.00 641.00 758.39" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~probe_gradient~~CallsGraph" class="graph" transform="scale(0.47 0.47) rotate(0) translate(4 1624)">
+<title>proc~~probe_gradient~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1624 1372,-1624 1372,4 -4,4"/>
+<!-- proc~probe_gradient -->
+<g id="proc~~probe_gradient~~CallsGraph_node1" class="node">
+<title>proc~probe_gradient</title>
+<polygon fill="none" stroke="black" points="94,-719 0,-719 0,-695 94,-695 94,-719"/>
+<text text-anchor="middle" x="47" y="-704.6" font-family="Helvetica,sans-Serif" font-size="10.50">probe_gradient</text>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="proc~~probe_gradient~~CallsGraph_node2" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node2"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="282,-719 130,-719 130,-695 282,-695 282,-719"/>
+<text text-anchor="middle" x="206" y="-704.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient -->
+<g id="proc~~probe_gradient~~CallsGraph_edge1" class="edge">
+<title>proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient</title>
+<path fill="none" stroke="#ff0000" d="M94.26,-707C102.32,-707 110.93,-707 119.65,-707"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="119.92,-710.5 129.92,-707 119.92,-703.5 119.92,-710.5"/>
+</g>
+<!-- configure -->
+<g id="proc~~probe_gradient~~CallsGraph_node3" class="node">
+<title>configure</title>
+<polygon fill="#777777" stroke="#777777" points="417.5,-1415 354.5,-1415 354.5,-1391 417.5,-1391 417.5,-1415"/>
+<text text-anchor="middle" x="386" y="-1400.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure</text>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;configure -->
+<g id="proc~~probe_gradient~~CallsGraph_edge2" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;configure</title>
+<path fill="none" stroke="#ff0000" d="M207.41,-719.14C210.39,-800.82 231.19,-1270.17 318,-1377 324.8,-1385.37 334.64,-1391.05 344.69,-1394.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="343.71,-1398.26 354.31,-1398.06 345.9,-1391.61 343.71,-1398.26"/>
+</g>
+<!-- error -->
+<g id="proc~~probe_gradient~~CallsGraph_node4" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1119,-1368 1065,-1368 1065,-1344 1119,-1344 1119,-1368"/>
+<text text-anchor="middle" x="1092" y="-1353.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge3" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M210.35,-719.19C221.47,-758.41 259.78,-884.01 318,-974 432.51,-1151 481.58,-1204.93 677,-1284 809.14,-1337.46 980.74,-1351.26 1054.59,-1354.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1054.62,-1358.3 1064.76,-1355.24 1054.93,-1351.31 1054.62,-1358.3"/>
+</g>
+<!-- info -->
+<g id="proc~~probe_gradient~~CallsGraph_node5" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="1119,-318 1065,-318 1065,-294 1119,-294 1119,-318"/>
+<text text-anchor="middle" x="1092" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge4" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M225.85,-694.99C309.41,-642.34 656.08,-429.97 970,-327 997.71,-317.91 1030.34,-312.54 1054.73,-309.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1055.45,-312.95 1064.98,-308.31 1054.64,-306 1055.45,-312.95"/>
+</g>
+<!-- proc~energy_total -->
+<g id="proc~~probe_gradient~~CallsGraph_node6" class="node">
+<title>proc~energy_total</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node6"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="454,-73 318,-73 318,-49 454,-49 454,-73"/>
+<text text-anchor="middle" x="386" y="-58.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~energy_total -->
+<g id="proc~~probe_gradient~~CallsGraph_edge5" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff0000" d="M207.59,-694.77C211.61,-616.41 237.19,-185.13 318,-87 320.72,-83.7 323.92,-80.81 327.41,-78.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="329.3,-81.24 336.02,-73.05 325.66,-75.26 329.3,-81.24"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~probe_gradient~~CallsGraph_node7" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node7"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1172,-1326 1012,-1326 1012,-1302 1172,-1302 1172,-1326"/>
+<text text-anchor="middle" x="1092" y="-1311.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~error_get_message -->
+<g id="proc~~probe_gradient~~CallsGraph_edge6" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M214,-719.39C251.51,-784.62 436.19,-1090.43 677,-1230 778.02,-1288.54 913.49,-1306.76 1001.51,-1312.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1001.55,-1315.67 1011.74,-1312.75 1001.95,-1308.68 1001.55,-1315.67"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~probe_gradient~~CallsGraph_node8" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node8"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="415,-719 357,-719 357,-695 415,-695 415,-719"/>
+<text text-anchor="middle" x="386" y="-704.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
+<g id="proc~~probe_gradient~~CallsGraph_edge7" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#ff0000" d="M282.23,-707C304.38,-707 327.7,-707 346.52,-707"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="346.75,-710.5 356.75,-707 346.75,-703.5 346.75,-710.5"/>
+</g>
+<!-- proc~send_geometry -->
+<g id="proc~~probe_gradient~~CallsGraph_node9" class="node">
+<title>proc~send_geometry</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node9"><a xlink:href="../proc/send_geometry.html" xlink:title="send_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="613,-1580 518,-1580 518,-1556 613,-1556 613,-1580"/>
+<text text-anchor="middle" x="565.5" y="-1565.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~send_geometry -->
+<g id="proc~~probe_gradient~~CallsGraph_edge8" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~send_geometry</title>
+<path fill="none" stroke="#ff0000" d="M207.46,-719.02C210.69,-797.92 232.5,-1241.36 318,-1339 359.76,-1386.69 404.33,-1342.61 454,-1382 509.95,-1426.37 543.74,-1507.43 557.43,-1546.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="554.22,-1547.62 560.76,-1555.95 560.84,-1545.36 554.22,-1547.62"/>
+</g>
+<!-- proc~step_label -->
+<g id="proc~~probe_gradient~~CallsGraph_node10" class="node">
+<title>proc~step_label</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node10"><a xlink:href="../proc/step_label.html" xlink:title="step_label">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="599,-292 532,-292 532,-268 599,-268 599,-292"/>
+<text text-anchor="middle" x="565.5" y="-277.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">step_label</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~step_label -->
+<g id="proc~~probe_gradient~~CallsGraph_edge9" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~step_label</title>
+<path fill="none" stroke="#ff0000" d="M208.24,-694.98C213.38,-650.79 236.74,-495.18 318,-404 373.51,-341.71 467.58,-306.79 522.05,-290.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="523.08,-294.16 531.74,-288.06 521.17,-287.43 523.08,-294.16"/>
+</g>
+<!-- to_char -->
+<g id="proc~~probe_gradient~~CallsGraph_node11" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1119,-108 1065,-108 1065,-84 1119,-84 1119,-108"/>
+<text text-anchor="middle" x="1092" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;to_char -->
+<g id="proc~~probe_gradient~~CallsGraph_edge10" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M207.09,-694.79C208.08,-642.53 218.41,-434.77 318,-311 506.79,-76.37 928.03,-84.7 1054.45,-92.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1054.52,-96.47 1064.73,-93.68 1055,-89.49 1054.52,-96.47"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="proc~~probe_gradient~~CallsGraph_node13" class="node">
+<title>proc~mp2_total</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node13"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="641,-73 490,-73 490,-49 641,-49 641,-73"/>
+<text text-anchor="middle" x="565.5" y="-58.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="proc~~probe_gradient~~CallsGraph_edge11" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#00ff00" d="M454.11,-61C462.5,-61 471.17,-61 479.8,-61"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="479.87,-64.5 489.87,-61 479.87,-57.5 479.87,-64.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_node14" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node14"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="612.5,-719 518.5,-719 518.5,-695 612.5,-695 612.5,-719"/>
+<text text-anchor="middle" x="565.5" y="-704.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_edge12" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00a9ff" d="M415.13,-707C439.98,-707 476.99,-707 507.95,-707"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="508.19,-710.5 518.19,-707 508.19,-703.5 508.19,-710.5"/>
+</g>
+<!-- bcast -->
+<g id="proc~~probe_gradient~~CallsGraph_node12" class="node">
+<title>bcast</title>
+<polygon fill="#777777" stroke="#777777" points="1119,-1620 1065,-1620 1065,-1596 1119,-1596 1119,-1620"/>
+<text text-anchor="middle" x="1092" y="-1605.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
+</g>
+<!-- proc~send_geometry&#45;&gt;bcast -->
+<g id="proc~~probe_gradient~~CallsGraph_edge13" class="edge">
+<title>proc~send_geometry&#45;&gt;bcast</title>
+<path fill="none" stroke="#0000ff" d="M613.05,-1578.37C632.69,-1582.34 655.86,-1586.52 677,-1589 815.66,-1605.27 981.97,-1607.79 1054.35,-1608.06"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1054.73,-1611.56 1064.74,-1608.08 1054.75,-1604.56 1054.73,-1611.56"/>
+</g>
+<!-- proc~send_final_geometry -->
+<g id="proc~~probe_gradient~~CallsGraph_node15" class="node">
+<title>proc~send_final_geometry</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node15"><a xlink:href="../proc/send_final_geometry.html" xlink:title="send_final_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="867.5,-1580 743.5,-1580 743.5,-1556 867.5,-1556 867.5,-1580"/>
+<text text-anchor="middle" x="805.5" y="-1565.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_final_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~send_geometry&#45;&gt;proc~send_final_geometry -->
+<g id="proc~~probe_gradient~~CallsGraph_edge14" class="edge">
+<title>proc~send_geometry&#45;&gt;proc~send_final_geometry</title>
+<path fill="none" stroke="#0000ff" d="M613.24,-1568C647.41,-1568 694.38,-1568 733.22,-1568"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="733.43,-1571.5 743.43,-1568 733.43,-1564.5 733.43,-1571.5"/>
+</g>
+<!-- proc~step_label&#45;&gt;to_char -->
+<g id="proc~~probe_gradient~~CallsGraph_edge15" class="edge">
+<title>proc~step_label&#45;&gt;to_char</title>
+<path fill="none" stroke="#aa00ff" d="M580.02,-267.92C599.8,-250.95 638.47,-220.43 677,-205 784.5,-161.93 834.13,-220.64 934,-162 956.09,-149.03 947.95,-130.04 970,-117 995.53,-101.9 1029.05,-97.01 1054.33,-95.69"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="1054.75,-99.18 1064.62,-95.33 1054.5,-92.19 1054.75,-99.18"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge17" class="edge">
+<title>proc~run_calculation&#45;&gt;error</title>
+<path fill="none" stroke="#00ffff" d="M567.43,-719.18C573.1,-790.22 605.13,-1150.79 677,-1230 757.47,-1318.69 825.99,-1259.27 934,-1311 951.34,-1319.31 952.14,-1327.87 970,-1335 997.2,-1345.86 1030.05,-1351.11 1054.66,-1353.65"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1054.38,-1357.14 1064.66,-1354.58 1055.02,-1350.17 1054.38,-1357.14"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge18" class="edge">
+<title>proc~run_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#00ffff" d="M575.91,-694.8C593.29,-673.25 632.7,-628.79 677,-608 781.53,-558.96 852.34,-651.63 934,-570 1011.21,-492.81 893.76,-405.15 970,-327 991.56,-304.9 1027.43,-301.08 1054.54,-301.94"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1054.64,-305.45 1064.81,-302.49 1055.01,-298.46 1054.64,-305.45"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;to_char -->
+<g id="proc~~probe_gradient~~CallsGraph_edge29" class="edge">
+<title>proc~run_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ffff" d="M568.52,-694.94C580.38,-624.76 641.69,-270.82 677,-238 761.73,-159.26 842.14,-267.28 934,-197 964.97,-173.31 939.2,-140.9 970,-117 993.84,-98.5 1028.29,-94.04 1054.34,-93.75"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1054.55,-97.25 1064.58,-93.84 1054.61,-90.25 1054.55,-97.25"/>
+</g>
+<!-- abort_comm -->
+<g id="proc~~probe_gradient~~CallsGraph_node16" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="1132,-402 1052,-402 1052,-378 1132,-378 1132,-402"/>
+<text text-anchor="middle" x="1092" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;abort_comm -->
+<g id="proc~~probe_gradient~~CallsGraph_edge16" class="edge">
+<title>proc~run_calculation&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#00ffff" d="M612.76,-710.92C701.02,-717.31 888.71,-725.38 934,-683 1023.04,-599.68 885.53,-498.94 970,-411 988.17,-392.08 1016.83,-386.5 1041.7,-385.8"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1041.73,-389.3 1051.72,-385.77 1041.71,-382.3 1041.73,-389.3"/>
+</g>
+<!-- omp_set_num_threads -->
+<g id="proc~~probe_gradient~~CallsGraph_node17" class="node">
+<title>omp_set_num_threads</title>
+<polygon fill="#777777" stroke="#777777" points="871.5,-641 739.5,-641 739.5,-617 871.5,-617 871.5,-641"/>
+<text text-anchor="middle" x="805.5" y="-626.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_set_num_threads</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;omp_set_num_threads -->
+<g id="proc~~probe_gradient~~CallsGraph_edge19" class="edge">
+<title>proc~run_calculation&#45;&gt;omp_set_num_threads</title>
+<path fill="none" stroke="#00ffff" d="M588.29,-694.84C610.13,-683.11 645.01,-665.62 677,-655 693.58,-649.5 711.77,-644.95 729.1,-641.27"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="730.08,-644.65 739.18,-639.21 728.68,-637.79 730.08,-644.65"/>
+</g>
+<!-- proc~calculation_fingerprint -->
+<g id="proc~~probe_gradient~~CallsGraph_node18" class="node">
+<title>proc~calculation_fingerprint</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node18"><a xlink:href="../proc/calculation_fingerprint.html" xlink:title="calculation_fingerprint">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1158.5,-360 1025.5,-360 1025.5,-336 1158.5,-336 1158.5,-360"/>
+<text text-anchor="middle" x="1092" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_fingerprint</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~calculation_fingerprint -->
+<g id="proc~~probe_gradient~~CallsGraph_edge20" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~calculation_fingerprint</title>
+<path fill="none" stroke="#00ffff" d="M612.56,-696.07C632.33,-691.62 655.72,-686.67 677,-683 733.74,-673.21 893.29,-690.72 934,-650 1023.02,-560.96 882.97,-459.99 970,-369 981.95,-356.51 998.47,-349.82 1015.46,-346.52"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1016.16,-349.95 1025.5,-344.94 1015.07,-343.04 1016.16,-349.95"/>
+</g>
+<!-- proc~config_log_settings -->
+<g id="proc~~probe_gradient~~CallsGraph_node19" class="node">
+<title>proc~config_log_settings</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node19"><a xlink:href="../proc/config_log_settings.html" xlink:title="method_config_t%config_log_settings">
+<polygon fill="#d9534f" stroke="#d9534f" points="911.5,-153 699.5,-153 699.5,-129 911.5,-129 911.5,-153"/>
+<text text-anchor="middle" x="805.5" y="-138.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_config_t%config_log_settings</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~config_log_settings -->
+<g id="proc~~probe_gradient~~CallsGraph_edge21" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~config_log_settings</title>
+<path fill="none" stroke="#00ffff" d="M568.55,-694.74C580.85,-621.69 645.36,-245.68 677,-205 695,-181.86 723.62,-166.43 749.18,-156.54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="750.62,-159.74 758.8,-153.01 748.21,-153.17 750.62,-159.74"/>
+</g>
+<!-- proc~json_output_data_destroy -->
+<g id="proc~~probe_gradient~~CallsGraph_node20" class="node">
+<title>proc~json_output_data_destroy</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node20"><a xlink:href="../proc/json_output_data_destroy.html" xlink:title="json_output_data_t%json_output_data_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="934,-1047 677,-1047 677,-1023 934,-1023 934,-1047"/>
+<text text-anchor="middle" x="805.5" y="-1032.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~json_output_data_destroy -->
+<g id="proc~~probe_gradient~~CallsGraph_edge22" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~json_output_data_destroy</title>
+<path fill="none" stroke="#00ffff" d="M570.02,-719.23C581,-755.76 617.45,-866.1 677,-939 704.36,-972.5 745.77,-1000.84 773.91,-1017.86"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="772.16,-1020.89 782.55,-1022.98 775.73,-1014.87 772.16,-1020.89"/>
+</g>
+<!-- proc~needs_serial_execution -->
+<g id="proc~~probe_gradient~~CallsGraph_node21" class="node">
+<title>proc~needs_serial_execution</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node21"><a xlink:href="../proc/needs_serial_execution.html" xlink:title="needs_serial_execution">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="873.5,-561 737.5,-561 737.5,-537 873.5,-537 873.5,-561"/>
+<text text-anchor="middle" x="805.5" y="-546.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">needs_serial_execution</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~needs_serial_execution -->
+<g id="proc~~probe_gradient~~CallsGraph_edge23" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~needs_serial_execution</title>
+<path fill="none" stroke="#00ffff" d="M572.9,-694.81C587.48,-668.32 625.91,-605.45 677,-575 692.09,-566.01 709.77,-560.08 727.08,-556.18"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="728.11,-559.55 737.2,-554.12 726.71,-552.69 728.11,-559.55"/>
+</g>
+<!-- proc~result_from_json -->
+<g id="proc~~probe_gradient~~CallsGraph_node22" class="node">
+<title>proc~result_from_json</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node22"><a xlink:href="../proc/result_from_json.html" xlink:title="result_from_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="855,-1221 756,-1221 756,-1197 855,-1197 855,-1221"/>
+<text text-anchor="middle" x="805.5" y="-1206.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_from_json</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~result_from_json -->
+<g id="proc~~probe_gradient~~CallsGraph_edge24" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~result_from_json</title>
+<path fill="none" stroke="#00ffff" d="M567.5,-719.23C573.36,-787.49 605.34,-1120.69 677,-1188 695.17,-1205.07 721.59,-1211.27 745.67,-1212.83"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="745.69,-1216.34 755.82,-1213.24 745.97,-1209.34 745.69,-1216.34"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_node23" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node23"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="887,-759 724,-759 724,-735 887,-735 887,-759"/>
+<text text-anchor="middle" x="805.5" y="-744.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_edge25" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#00ffff" d="M612.67,-714.76C643.81,-719.99 685.76,-727.04 722.48,-733.22"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="722.25,-736.73 732.69,-734.93 723.41,-729.82 722.25,-736.73"/>
+</g>
+<!-- proc~run_makefp -->
+<g id="proc~~probe_gradient~~CallsGraph_node24" class="node">
+<title>proc~run_makefp</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node24"><a xlink:href="../proc/run_makefp.html" xlink:title="run_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="843.5,-1179 767.5,-1179 767.5,-1155 843.5,-1155 843.5,-1179"/>
+<text text-anchor="middle" x="805.5" y="-1164.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_makefp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_makefp -->
+<g id="proc~~probe_gradient~~CallsGraph_edge26" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_makefp</title>
+<path fill="none" stroke="#00ffff" d="M567.93,-719.15C573.94,-766.16 600.48,-939.35 677,-1056 703.11,-1095.81 747.33,-1129.74 776.22,-1149.25"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="774.38,-1152.24 784.65,-1154.84 778.25,-1146.4 774.38,-1152.24"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_node25" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node25"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="893.5,-271 717.5,-271 717.5,-247 893.5,-247 893.5,-271"/>
+<text text-anchor="middle" x="805.5" y="-256.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_edge27" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
+<path fill="none" stroke="#00ffff" d="M573.11,-694.55C605.94,-632.75 751.49,-358.79 793.26,-280.16"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="796.43,-281.65 798.03,-271.18 790.25,-278.37 796.43,-281.65"/>
+</g>
+<!-- proc~write_json_output -->
+<g id="proc~~probe_gradient~~CallsGraph_node26" class="node">
+<title>proc~write_json_output</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node26"><a xlink:href="../proc/write_json_output.html" xlink:title="write_json_output">
+<polygon fill="#d9534f" stroke="#d9534f" points="858.5,-1452 752.5,-1452 752.5,-1428 858.5,-1428 858.5,-1452"/>
+<text text-anchor="middle" x="805.5" y="-1437.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_json_output</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~write_json_output -->
+<g id="proc~~probe_gradient~~CallsGraph_edge28" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#00ffff" d="M566.34,-719.08C565.98,-783.03 570.16,-1087.03 677,-1301 702.16,-1351.4 751.08,-1396.83 780.46,-1421.21"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="778.59,-1424.2 788.55,-1427.8 783.01,-1418.77 778.59,-1424.2"/>
+</g>
+<!-- warning -->
+<g id="proc~~probe_gradient~~CallsGraph_node27" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="1119.5,-1074 1064.5,-1074 1064.5,-1050 1119.5,-1050 1119.5,-1074"/>
+<text text-anchor="middle" x="1092" y="-1059.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;warning -->
+<g id="proc~~probe_gradient~~CallsGraph_edge30" class="edge">
+<title>proc~run_calculation&#45;&gt;warning</title>
+<path fill="none" stroke="#00ffff" d="M580.87,-719.07C651.44,-778.3 958.31,-1035.61 970,-1041 996.6,-1053.25 1029.5,-1058.4 1054.27,-1060.54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1054.12,-1064.04 1064.35,-1061.29 1054.63,-1057.06 1054.12,-1064.04"/>
+</g>
+<!-- proc~send_final_geometry&#45;&gt;bcast -->
+<g id="proc~~probe_gradient~~CallsGraph_edge31" class="edge">
+<title>proc~send_final_geometry&#45;&gt;bcast</title>
+<path fill="none" stroke="#7f00ff" d="M867.53,-1576.58C924.45,-1584.58 1007.47,-1596.26 1054.65,-1602.89"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1054.32,-1606.38 1064.71,-1604.3 1055.3,-1599.45 1054.32,-1606.38"/>
+</g>
+<!-- proc~add_method -->
+<g id="proc~~probe_gradient~~CallsGraph_node32" class="node">
+<title>proc~add_method</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node32"><a xlink:href="../proc/add_method.html" xlink:title="add_method">
+<polygon fill="#d9534f" stroke="#d9534f" points="1348.5,-423 1269.5,-423 1269.5,-399 1348.5,-399 1348.5,-423"/>
+<text text-anchor="middle" x="1309" y="-408.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_method</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~add_method -->
+<g id="proc~~probe_gradient~~CallsGraph_edge32" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~add_method</title>
+<path fill="none" stroke="#ffff00" d="M1158.79,-355.06C1177.02,-358.18 1196.58,-362.64 1214,-369 1231.4,-375.35 1233.22,-382.15 1250,-390 1253.87,-391.81 1257.95,-393.57 1262.07,-395.25"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1261.11,-398.63 1271.7,-399 1263.65,-392.11 1261.11,-398.63"/>
+</g>
+<!-- proc~add_system -->
+<g id="proc~~probe_gradient~~CallsGraph_node33" class="node">
+<title>proc~add_system</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node33"><a xlink:href="../proc/add_system.html" xlink:title="add_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="1347,-381 1271,-381 1271,-357 1347,-357 1347,-381"/>
+<text text-anchor="middle" x="1309" y="-366.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_system</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~add_system -->
+<g id="proc~~probe_gradient~~CallsGraph_edge33" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~add_system</title>
+<path fill="none" stroke="#ffff00" d="M1158.68,-354.41C1191.59,-357.63 1230.71,-361.45 1260.65,-364.38"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1260.54,-367.88 1270.83,-365.37 1261.22,-360.91 1260.54,-367.88"/>
+</g>
+<!-- proc~hash_hex -->
+<g id="proc~~probe_gradient~~CallsGraph_node46" class="node">
+<title>proc~hash_hex</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node46"><a xlink:href="../proc/hash_hex.html" xlink:title="hasher_t%hash_hex">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1368,-339 1250,-339 1250,-315 1368,-315 1368,-339"/>
+<text text-anchor="middle" x="1309" y="-324.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_hex</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~hash_hex -->
+<g id="proc~~probe_gradient~~CallsGraph_edge34" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~hash_hex</title>
+<path fill="none" stroke="#ffff00" d="M1158.68,-341.59C1184.29,-339.08 1213.67,-336.21 1239.55,-333.69"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1240.04,-337.15 1249.65,-332.7 1239.36,-330.19 1240.04,-337.15"/>
+</g>
+<!-- proc~hash_text -->
+<g id="proc~~probe_gradient~~CallsGraph_node47" class="node">
+<title>proc~hash_text</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node47"><a xlink:href="../proc/hash_text.html" xlink:title="hasher_t%hash_text">
+<polygon fill="#d9534f" stroke="#d9534f" points="1368,-297 1250,-297 1250,-273 1368,-273 1368,-297"/>
+<text text-anchor="middle" x="1309" y="-282.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_text</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~hash_text -->
+<g id="proc~~probe_gradient~~CallsGraph_edge35" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~hash_text</title>
+<path fill="none" stroke="#ffff00" d="M1158.79,-340.94C1177.02,-337.82 1196.58,-333.36 1214,-327 1231.4,-320.65 1233.22,-313.85 1250,-306 1253.87,-304.19 1257.95,-302.43 1262.07,-300.75"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1263.65,-303.89 1271.7,-297 1261.11,-297.37 1263.65,-303.89"/>
+</g>
+<!-- proc~config_log_settings&#45;&gt;info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge36" class="edge">
+<title>proc~config_log_settings&#45;&gt;info</title>
+<path fill="none" stroke="#7fff00" d="M825.47,-153.08C851.53,-170.18 899.13,-203.25 934,-238 952.64,-256.58 947.49,-271.37 970,-285 995.37,-300.37 1028.9,-305.23 1054.23,-306.47"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1054.43,-309.98 1064.54,-306.8 1054.66,-302.98 1054.43,-309.98"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="proc~~probe_gradient~~CallsGraph_node49" class="node">
+<title>proc~method_type_to_string</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node49"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1158.5,-66 1025.5,-66 1025.5,-42 1158.5,-42 1158.5,-66"/>
+<text text-anchor="middle" x="1092" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~config_log_settings&#45;&gt;proc~method_type_to_string -->
+<g id="proc~~probe_gradient~~CallsGraph_edge37" class="edge">
+<title>proc~config_log_settings&#45;&gt;proc~method_type_to_string</title>
+<path fill="none" stroke="#7fff00" d="M831.68,-128.88C863.29,-114.12 919.51,-89.39 970,-75 984.55,-70.85 1000.33,-67.39 1015.54,-64.55"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1016.21,-67.99 1025.43,-62.78 1014.97,-61.1 1016.21,-67.99"/>
+</g>
+<!-- proc~xtb_get_solvation_info -->
+<g id="proc~~probe_gradient~~CallsGraph_node59" class="node">
+<title>proc~xtb_get_solvation_info</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node59"><a xlink:href="../proc/xtb_get_solvation_info.html" xlink:title="xtb_config_t%xtb_get_solvation_info">
+<polygon fill="#d9534f" stroke="#d9534f" points="1194,-24 990,-24 990,0 1194,0 1194,-24"/>
+<text text-anchor="middle" x="1092" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_get_solvation_info</text>
+</a>
+</g>
+</g>
+<!-- proc~config_log_settings&#45;&gt;proc~xtb_get_solvation_info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge38" class="edge">
+<title>proc~config_log_settings&#45;&gt;proc~xtb_get_solvation_info</title>
+<path fill="none" stroke="#7fff00" d="M820.24,-129C847.03,-106.3 908.97,-57.22 970,-33 975.85,-30.68 981.96,-28.61 988.2,-26.77"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="989.36,-30.09 998.08,-24.07 987.51,-23.33 989.36,-30.09"/>
+</g>
+<!-- proc~json_output_data_reset -->
+<g id="proc~~probe_gradient~~CallsGraph_node48" class="node">
+<title>proc~json_output_data_reset</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node48"><a xlink:href="../proc/json_output_data_reset.html" xlink:title="json_output_data_t%json_output_data_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="1214,-1116 970,-1116 970,-1092 1214,-1092 1214,-1116"/>
+<text text-anchor="middle" x="1092" y="-1101.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset -->
+<g id="proc~~probe_gradient~~CallsGraph_edge39" class="edge">
+<title>proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset</title>
+<path fill="none" stroke="#00ff00" d="M843.2,-1047.07C876.13,-1057.6 925.92,-1072.74 970,-1083 980.92,-1085.54 992.46,-1087.93 1003.91,-1090.11"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1003.45,-1093.58 1013.92,-1091.98 1004.73,-1086.7 1003.45,-1093.58"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge43" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;error</title>
+<path fill="none" stroke="#007fff" d="M814.17,-759.19C836.91,-795.98 904.19,-909.79 934,-1014 953.74,-1083.01 920.79,-1282.74 970,-1335 991.23,-1357.54 1027.31,-1361.27 1054.56,-1360.27"/>
+<polygon fill="#007fff" stroke="#007fff" points="1055.12,-1363.74 1064.89,-1359.66 1054.7,-1356.76 1055.12,-1363.74"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge44" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#007fff" d="M833.17,-734.9C863.25,-719.72 910.96,-690.65 934,-650 969.62,-587.17 920.51,-379.6 970,-327 991.22,-304.45 1027.3,-300.73 1054.56,-301.73"/>
+<polygon fill="#007fff" stroke="#007fff" points="1054.7,-305.24 1064.89,-302.34 1055.11,-298.25 1054.7,-305.24"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~error_get_message -->
+<g id="proc~~probe_gradient~~CallsGraph_edge51" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#007fff" d="M814.09,-759.21C836.6,-796.07 903.33,-910.04 934,-1014 951.69,-1073.96 926.77,-1247.84 970,-1293 978.78,-1302.17 990.03,-1308.22 1002.12,-1312.09"/>
+<polygon fill="#007fff" stroke="#007fff" points="1001.4,-1315.52 1011.97,-1314.74 1003.23,-1308.76 1001.4,-1315.52"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~probe_gradient~~CallsGraph_edge62" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#007fff" d="M833.76,-734.94C864.15,-719.89 911.91,-691.02 934,-650 990.28,-545.48 890.55,-205.21 970,-117 990.88,-93.82 1027.41,-90.28 1054.89,-91.5"/>
+<polygon fill="#007fff" stroke="#007fff" points="1054.72,-94.99 1064.93,-92.17 1055.18,-88.01 1054.72,-94.99"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;bcast -->
+<g id="proc~~probe_gradient~~CallsGraph_edge42" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;bcast</title>
+<path fill="none" stroke="#007fff" d="M814.41,-759.13C837.81,-795.74 906.75,-909.09 934,-1014 950.04,-1075.74 927.42,-1539.5 970,-1587 990.82,-1610.23 1027.37,-1613.76 1054.86,-1612.53"/>
+<polygon fill="#007fff" stroke="#007fff" points="1055.16,-1616.02 1064.9,-1611.86 1054.69,-1609.03 1055.16,-1616.02"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;abort_comm -->
+<g id="proc~~probe_gradient~~CallsGraph_edge40" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#007fff" d="M887.1,-745.91C904.74,-741.85 921.78,-734.31 934,-721 1027.79,-618.82 874.72,-511.8 970,-411 988.09,-391.87 1016.88,-386.31 1041.84,-385.68"/>
+<polygon fill="#007fff" stroke="#007fff" points="1041.9,-389.18 1051.9,-385.67 1041.9,-382.18 1041.9,-389.18"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~calculation_fingerprint -->
+<g id="proc~~probe_gradient~~CallsGraph_edge48" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~calculation_fingerprint</title>
+<path fill="none" stroke="#007fff" d="M855.35,-734.93C882.97,-725.48 915.56,-709.39 934,-683 1014.46,-567.85 873.58,-471.15 970,-369 981.87,-356.43 998.36,-349.71 1015.35,-346.41"/>
+<polygon fill="#007fff" stroke="#007fff" points="1016.04,-349.84 1025.38,-344.83 1014.96,-342.92 1016.04,-349.84"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;warning -->
+<g id="proc~~probe_gradient~~CallsGraph_edge63" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;warning</title>
+<path fill="none" stroke="#007fff" d="M818.61,-759C843.8,-784.62 902.11,-847.51 934,-911 960.91,-964.57 925.58,-1000.74 970,-1041 992.59,-1061.48 1027.71,-1065.63 1054.3,-1065.3"/>
+<polygon fill="#007fff" stroke="#007fff" points="1054.51,-1068.8 1064.39,-1064.97 1054.28,-1061.8 1054.51,-1068.8"/>
+</g>
+<!-- allgather -->
+<g id="proc~~probe_gradient~~CallsGraph_node28" class="node">
+<title>allgather</title>
+<polygon fill="#777777" stroke="#777777" points="1122.5,-864 1061.5,-864 1061.5,-840 1122.5,-840 1122.5,-864"/>
+<text text-anchor="middle" x="1092" y="-849.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">allgather</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;allgather -->
+<g id="proc~~probe_gradient~~CallsGraph_edge41" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;allgather</title>
+<path fill="none" stroke="#007fff" d="M825.29,-759.07C854.87,-777.5 914.62,-812.45 970,-831 996.24,-839.79 1026.98,-845.06 1050.9,-848.13"/>
+<polygon fill="#007fff" stroke="#007fff" points="1050.7,-851.63 1061.04,-849.35 1051.53,-844.68 1050.7,-851.63"/>
+</g>
+<!-- init -->
+<g id="proc~~probe_gradient~~CallsGraph_node29" class="node">
+<title>init</title>
+<polygon fill="#777777" stroke="#777777" points="1119,-822 1065,-822 1065,-798 1119,-798 1119,-822"/>
+<text text-anchor="middle" x="1092" y="-807.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">init</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;init -->
+<g id="proc~~probe_gradient~~CallsGraph_edge45" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;init</title>
+<path fill="none" stroke="#007fff" d="M849.65,-759.09C882.49,-768.04 928.88,-780.17 970,-789 998.33,-795.09 1030.68,-800.63 1054.79,-804.49"/>
+<polygon fill="#007fff" stroke="#007fff" points="1054.5,-807.99 1064.92,-806.09 1055.59,-801.07 1054.5,-807.99"/>
+</g>
+<!-- proc~apply_distance_screening -->
+<g id="proc~~probe_gradient~~CallsGraph_node34" class="node">
+<title>proc~apply_distance_screening</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node34"><a xlink:href="../proc/apply_distance_screening.html" xlink:title="apply_distance_screening">
+<polygon fill="#d9534f" stroke="#d9534f" points="1166.5,-780 1017.5,-780 1017.5,-756 1166.5,-756 1166.5,-780"/>
+<text text-anchor="middle" x="1092" y="-765.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply_distance_screening</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~apply_distance_screening -->
+<g id="proc~~probe_gradient~~CallsGraph_edge46" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~apply_distance_screening</title>
+<path fill="none" stroke="#007fff" d="M887.27,-752.96C924.82,-755.73 969.44,-759.03 1007.35,-761.83"/>
+<polygon fill="#007fff" stroke="#007fff" points="1007.1,-765.32 1017.34,-762.56 1007.62,-758.34 1007.1,-765.32"/>
+</g>
+<!-- proc~binomial -->
+<g id="proc~~probe_gradient~~CallsGraph_node35" class="node">
+<title>proc~binomial</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node35"><a xlink:href="../proc/binomial.html" xlink:title="binomial">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1121.5,-738 1062.5,-738 1062.5,-714 1121.5,-714 1121.5,-738"/>
+<text text-anchor="middle" x="1092" y="-723.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~binomial -->
+<g id="proc~~probe_gradient~~CallsGraph_edge47" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#007fff" d="M887.27,-741.04C941.33,-737.05 1010.07,-731.97 1052.28,-728.86"/>
+<polygon fill="#007fff" stroke="#007fff" points="1052.7,-732.34 1062.41,-728.11 1052.18,-725.36 1052.7,-732.34"/>
+</g>
+<!-- proc~combine -->
+<g id="proc~~probe_gradient~~CallsGraph_node37" class="node">
+<title>proc~combine</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node37"><a xlink:href="../proc/combine.html" xlink:title="combine">
+<polygon fill="#d9534f" stroke="#d9534f" points="1121.5,-696 1062.5,-696 1062.5,-672 1121.5,-672 1121.5,-696"/>
+<text text-anchor="middle" x="1092" y="-681.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~combine -->
+<g id="proc~~probe_gradient~~CallsGraph_edge49" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~combine</title>
+<path fill="none" stroke="#007fff" d="M879.35,-734.98C897.41,-731.23 916.57,-726.58 934,-721 950.68,-715.66 953.25,-710.09 970,-705 996.83,-696.85 1028.04,-691.53 1052.03,-688.28"/>
+<polygon fill="#007fff" stroke="#007fff" points="1052.71,-691.72 1062.18,-686.98 1051.81,-684.78 1052.71,-691.72"/>
+</g>
+<!-- proc~create_monomer_list -->
+<g id="proc~~probe_gradient~~CallsGraph_node38" class="node">
+<title>proc~create_monomer_list</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node38"><a xlink:href="../proc/create_monomer_list.html" xlink:title="create_monomer_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="1154,-612 1030,-612 1030,-588 1154,-588 1154,-612"/>
+<text text-anchor="middle" x="1092" y="-597.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_monomer_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~create_monomer_list -->
+<g id="proc~~probe_gradient~~CallsGraph_edge50" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~create_monomer_list</title>
+<path fill="none" stroke="#007fff" d="M887.04,-743.33C904.07,-739.27 920.84,-732.38 934,-721 969.72,-690.09 933.83,-651.38 970,-621 983.91,-609.32 1001.97,-603.08 1019.87,-599.97"/>
+<polygon fill="#007fff" stroke="#007fff" points="1020.38,-603.43 1029.78,-598.54 1019.38,-596.5 1020.38,-603.43"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~probe_gradient~~CallsGraph_node40" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node40"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1161.5,-1158 1022.5,-1158 1022.5,-1134 1161.5,-1134 1161.5,-1158"/>
+<text text-anchor="middle" x="1092" y="-1143.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~error_has_error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge52" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#007fff" d="M813.07,-759.25C832.98,-796.67 893.75,-913.09 934,-1014 953.22,-1062.17 930.82,-1091.02 970,-1125 981.82,-1135.26 996.82,-1141.36 1012.19,-1144.84"/>
+<polygon fill="#007fff" stroke="#007fff" points="1011.84,-1148.34 1022.32,-1146.77 1013.15,-1141.46 1011.84,-1148.34"/>
+</g>
+<!-- proc~fraglist_destroy -->
+<g id="proc~~probe_gradient~~CallsGraph_node41" class="node">
+<title>proc~fraglist_destroy</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node41"><a xlink:href="../proc/fraglist_destroy.html" xlink:title="fraglist_t%fraglist_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1166.5,-570 1017.5,-570 1017.5,-546 1166.5,-546 1166.5,-570"/>
+<text text-anchor="middle" x="1092" y="-555.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~fraglist_destroy -->
+<g id="proc~~probe_gradient~~CallsGraph_edge53" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~fraglist_destroy</title>
+<path fill="none" stroke="#007fff" d="M887.21,-744.41C904.43,-740.33 921.25,-733.16 934,-721 981.11,-676.06 922.24,-623.25 970,-579 980.38,-569.38 993.52,-563.34 1007.28,-559.67"/>
+<polygon fill="#007fff" stroke="#007fff" points="1008.39,-563 1017.38,-557.39 1006.86,-556.17 1008.39,-563"/>
+</g>
+<!-- proc~fraglist_replace -->
+<g id="proc~~probe_gradient~~CallsGraph_node42" class="node">
+<title>proc~fraglist_replace</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node42"><a xlink:href="../proc/fraglist_replace.html" xlink:title="fraglist_t%fraglist_replace">
+<polygon fill="#d9534f" stroke="#d9534f" points="1167,-654 1017,-654 1017,-630 1167,-630 1167,-654"/>
+<text text-anchor="middle" x="1092" y="-639.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_replace</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~fraglist_replace -->
+<g id="proc~~probe_gradient~~CallsGraph_edge54" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~fraglist_replace</title>
+<path fill="none" stroke="#007fff" d="M887.06,-740.83C903.62,-736.84 920.19,-730.62 934,-721 958.9,-703.66 944.85,-679.97 970,-663 980.99,-655.59 993.77,-650.54 1006.83,-647.14"/>
+<polygon fill="#007fff" stroke="#007fff" points="1007.88,-650.49 1016.85,-644.85 1006.32,-643.66 1007.88,-650.49"/>
+</g>
+<!-- proc~generate_mbe_term_list -->
+<g id="proc~~probe_gradient~~CallsGraph_node43" class="node">
+<title>proc~generate_mbe_term_list</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node43"><a xlink:href="../proc/generate_mbe_term_list.html" xlink:title="generate_mbe_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="1163,-528 1021,-528 1021,-504 1163,-504 1163,-528"/>
+<text text-anchor="middle" x="1092" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_mbe_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~probe_gradient~~CallsGraph_edge55" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#007fff" d="M887.04,-745.07C904.48,-741 921.43,-733.67 934,-721 992.69,-661.84 910.45,-595.29 970,-537 981.06,-526.17 995.58,-519.8 1010.71,-516.22"/>
+<polygon fill="#007fff" stroke="#007fff" points="1011.57,-519.62 1020.7,-514.25 1010.21,-512.75 1011.57,-519.62"/>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms -->
+<g id="proc~~probe_gradient~~CallsGraph_node45" class="node">
+<title>proc~gmbe_enumerate_pie_terms</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node45"><a xlink:href="../proc/gmbe_enumerate_pie_terms.html" xlink:title="gmbe_enumerate_pie_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="1175,-486 1009,-486 1009,-462 1175,-462 1175,-486"/>
+<text text-anchor="middle" x="1092" y="-471.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_enumerate_pie_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_enumerate_pie_terms -->
+<g id="proc~~probe_gradient~~CallsGraph_edge56" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_enumerate_pie_terms</title>
+<path fill="none" stroke="#007fff" d="M887.03,-745.46C904.57,-741.39 921.58,-733.97 934,-721 1004.35,-647.54 898.58,-567.42 970,-495 978.11,-486.78 988.19,-481.1 999.07,-477.25"/>
+<polygon fill="#007fff" stroke="#007fff" points="1000.22,-480.56 1008.79,-474.32 998.21,-473.85 1000.22,-480.56"/>
+</g>
+<!-- proc~sort_fragments_by_size -->
+<g id="proc~~probe_gradient~~CallsGraph_node51" class="node">
+<title>proc~sort_fragments_by_size</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node51"><a xlink:href="../proc/sort_fragments_by_size.html" xlink:title="sort_fragments_by_size">
+<polygon fill="#d9534f" stroke="#d9534f" points="1160,-444 1024,-444 1024,-420 1160,-420 1160,-444"/>
+<text text-anchor="middle" x="1092" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort_fragments_by_size</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~sort_fragments_by_size -->
+<g id="proc~~probe_gradient~~CallsGraph_edge57" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~sort_fragments_by_size</title>
+<path fill="none" stroke="#007fff" d="M887.26,-745.68C904.79,-741.6 921.74,-734.12 934,-721 1016.06,-633.19 886.66,-539.59 970,-453 981.57,-440.98 997.37,-434.34 1013.74,-430.93"/>
+<polygon fill="#007fff" stroke="#007fff" points="1014.7,-434.31 1023.97,-429.2 1013.53,-427.41 1014.7,-434.31"/>
+</g>
+<!-- proc~validate_system -->
+<g id="proc~~probe_gradient~~CallsGraph_node52" class="node">
+<title>proc~validate_system</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node52"><a xlink:href="../proc/validate_system.html" xlink:title="validate_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="1141,-1032 1043,-1032 1043,-1008 1141,-1008 1141,-1032"/>
+<text text-anchor="middle" x="1092" y="-1017.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_system</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_system -->
+<g id="proc~~probe_gradient~~CallsGraph_edge58" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#007fff" d="M818.03,-759.32C842.1,-785.54 898.42,-849.51 934,-911 955.16,-947.58 937.07,-972.52 970,-999 987.5,-1013.07 1011.08,-1019.12 1032.78,-1021.36"/>
+<polygon fill="#007fff" stroke="#007fff" points="1032.67,-1024.86 1042.91,-1022.16 1033.22,-1017.89 1032.67,-1024.86"/>
+</g>
+<!-- proc~validate_terms -->
+<g id="proc~~probe_gradient~~CallsGraph_node53" class="node">
+<title>proc~validate_terms</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node53"><a xlink:href="../proc/validate_terms.html" xlink:title="validate_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="1137.5,-990 1046.5,-990 1046.5,-966 1137.5,-966 1137.5,-990"/>
+<text text-anchor="middle" x="1092" y="-975.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_terms -->
+<g id="proc~~probe_gradient~~CallsGraph_edge59" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_terms</title>
+<path fill="none" stroke="#007fff" d="M815.95,-759.17C850.69,-803.9 969.32,-956.59 970,-957 989.73,-968.84 1014.32,-974.43 1036.18,-976.93"/>
+<polygon fill="#007fff" stroke="#007fff" points="1036.04,-980.44 1046.32,-977.9 1036.7,-973.47 1036.04,-980.44"/>
+</g>
+<!-- run_distributed -->
+<g id="proc~~probe_gradient~~CallsGraph_node60" class="node">
+<title>run_distributed</title>
+<polygon fill="#777777" stroke="#777777" points="1138.5,-948 1045.5,-948 1045.5,-924 1138.5,-924 1138.5,-948"/>
+<text text-anchor="middle" x="1092" y="-933.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_distributed</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;run_distributed -->
+<g id="proc~~probe_gradient~~CallsGraph_edge60" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;run_distributed</title>
+<path fill="none" stroke="#007fff" d="M814.29,-759.25C835.16,-790.94 895.84,-875.88 970,-915 989.94,-925.52 1014.06,-930.93 1035.49,-933.66"/>
+<polygon fill="#007fff" stroke="#007fff" points="1035.12,-937.14 1045.45,-934.77 1035.9,-930.18 1035.12,-937.14"/>
+</g>
+<!-- run_serial -->
+<g id="proc~~probe_gradient~~CallsGraph_node61" class="node">
+<title>run_serial</title>
+<polygon fill="#777777" stroke="#777777" points="1124.5,-906 1059.5,-906 1059.5,-882 1124.5,-882 1124.5,-906"/>
+<text text-anchor="middle" x="1092" y="-891.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_serial</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;run_serial -->
+<g id="proc~~probe_gradient~~CallsGraph_edge61" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;run_serial</title>
+<path fill="none" stroke="#007fff" d="M817.87,-759.07C842.76,-784.69 905.04,-844.44 970,-873 994.99,-883.99 1025.26,-889.24 1049.27,-891.74"/>
+<polygon fill="#007fff" stroke="#007fff" points="1049.2,-895.25 1059.48,-892.68 1049.84,-888.28 1049.2,-895.25"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge64" class="edge">
+<title>proc~run_makefp&#45;&gt;error</title>
+<path fill="none" stroke="#0000ff" d="M843.58,-1162.97C871.88,-1162.05 909.97,-1165.75 934,-1188 983.36,-1233.7 920.84,-1289.09 970,-1335 992.42,-1355.94 1027.87,-1359.97 1054.61,-1359.49"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1054.9,-1362.98 1064.75,-1359.09 1054.62,-1355.99 1054.9,-1362.98"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge65" class="edge">
+<title>proc~run_makefp&#45;&gt;info</title>
+<path fill="none" stroke="#0000ff" d="M829.46,-1154.87C859.64,-1137.51 911.44,-1102.47 934,-1056 969.41,-983.04 916.27,-387.75 970,-327 990.67,-303.63 1027.23,-300.12 1054.77,-301.39"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1054.62,-304.89 1064.84,-302.08 1055.1,-297.91 1054.62,-304.89"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~error_get_message -->
+<g id="proc~~probe_gradient~~CallsGraph_edge67" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#0000ff" d="M843.61,-1163.58C871.55,-1163.05 909.16,-1167 934,-1188 971.67,-1219.85 932.46,-1260.99 970,-1293 979.19,-1300.84 990.23,-1306.23 1001.87,-1309.89"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1001.18,-1313.33 1011.75,-1312.56 1003.01,-1306.57 1001.18,-1313.33"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~probe_gradient~~CallsGraph_node39" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node39"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1173.5,-1200 1010.5,-1200 1010.5,-1176 1173.5,-1176 1173.5,-1200"/>
+<text text-anchor="middle" x="1092" y="-1185.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~probe_gradient~~CallsGraph_edge66" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#0000ff" d="M843.69,-1169.75C883.24,-1172.66 947.27,-1177.39 1000.27,-1181.3"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1000.14,-1184.8 1010.37,-1182.05 1000.65,-1177.82 1000.14,-1184.8"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~error_has_error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge68" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0000ff" d="M843.69,-1164.25C886.3,-1161.11 957.33,-1155.87 1012.35,-1151.81"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1012.72,-1155.29 1022.43,-1151.06 1012.2,-1148.31 1012.72,-1155.29"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~probe_gradient~~CallsGraph_node44" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node44"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1137.5,-1284 1046.5,-1284 1046.5,-1260 1137.5,-1260 1137.5,-1284"/>
+<text text-anchor="middle" x="1092" y="-1269.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~get_basename -->
+<g id="proc~~probe_gradient~~CallsGraph_edge69" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#0000ff" d="M843.7,-1164.96C870.96,-1165.28 907.66,-1169.69 934,-1188 960.48,-1206.41 943.6,-1232.48 970,-1251 989.15,-1264.43 1014.1,-1270.21 1036.37,-1272.42"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1036.14,-1275.92 1046.39,-1273.21 1036.69,-1268.94 1036.14,-1275.92"/>
+</g>
+<!-- proc~run_libcint_makefp -->
+<g id="proc~~probe_gradient~~CallsGraph_node50" class="node">
+<title>proc~run_libcint_makefp</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node50"><a xlink:href="../proc/run_libcint_makefp.html" xlink:title="run_libcint_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="1149,-1242 1035,-1242 1035,-1218 1149,-1218 1149,-1242"/>
+<text text-anchor="middle" x="1092" y="-1227.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_makefp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~run_libcint_makefp -->
+<g id="proc~~probe_gradient~~CallsGraph_edge70" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~run_libcint_makefp</title>
+<path fill="none" stroke="#0000ff" d="M843.67,-1169.53C869.59,-1172.15 904.66,-1177.43 934,-1188 951.43,-1194.28 952.6,-1202.65 970,-1209 987.32,-1215.32 1006.75,-1219.77 1024.88,-1222.89"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1024.37,-1226.35 1034.8,-1224.49 1025.49,-1219.44 1024.37,-1226.35"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;info -->
+<g id="proc~~probe_gradient~~CallsGraph_edge71" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#7f00ff" d="M879.4,-271.04C935.64,-280.33 1011.03,-292.79 1054.98,-300.05"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1054.48,-303.51 1064.92,-301.69 1055.62,-296.61 1054.48,-303.51"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~probe_gradient~~CallsGraph_edge75" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#7f00ff" d="M893.69,-254.11C908.48,-249.88 922.69,-243.23 934,-233 974.03,-196.78 929.45,-152.63 970,-117 992.91,-96.87 1027.98,-92.68 1054.48,-92.9"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1054.44,-96.4 1064.53,-93.19 1054.64,-89.4 1054.44,-96.4"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian -->
+<g id="proc~~probe_gradient~~CallsGraph_node30" class="node">
+<title>interface~distributed_unfragmented_hessian</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node30"><a xlink:href="../interface/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#a7506f" stroke="#a7506f" points="1190.5,-192 993.5,-192 993.5,-168 1190.5,-168 1190.5,-192"/>
+<text text-anchor="middle" x="1092" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian -->
+<g id="proc~~probe_gradient~~CallsGraph_edge72" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#7f00ff" d="M893.61,-247.63C907.54,-244.02 921.47,-239.27 934,-233 953.14,-223.42 950.72,-210.3 970,-201 974.39,-198.88 978.96,-196.98 983.65,-195.26"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="985.03,-198.49 993.4,-192 982.81,-191.85 985.03,-198.49"/>
+</g>
+<!-- interface~unfragmented_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_node31" class="node">
+<title>interface~unfragmented_calculation</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node31"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#a7506f" stroke="#a7506f" points="1168.5,-150 1015.5,-150 1015.5,-126 1168.5,-126 1168.5,-150"/>
+<text text-anchor="middle" x="1092" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation -->
+<g id="proc~~probe_gradient~~CallsGraph_edge73" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation</title>
+<path fill="none" stroke="#7f00ff" d="M893.81,-252.3C908.25,-248.2 922.31,-242.07 934,-233 962.9,-210.59 940.77,-180.99 970,-159 980.45,-151.14 992.85,-145.83 1005.65,-142.32"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1006.59,-145.7 1015.5,-139.97 1004.96,-138.89 1006.59,-145.7"/>
+</g>
+<!-- proc~calc_type_to_string -->
+<g id="proc~~probe_gradient~~CallsGraph_node36" class="node">
+<title>proc~calc_type_to_string</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node36"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1149,-276 1035,-276 1035,-252 1149,-252 1149,-276"/>
+<text text-anchor="middle" x="1092" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~probe_gradient~~CallsGraph_edge74" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#7f00ff" d="M893.79,-260.53C935.93,-261.27 985.66,-262.15 1024.64,-262.83"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1024.76,-266.34 1034.82,-263.01 1024.89,-259.34 1024.76,-266.34"/>
+</g>
+<!-- verbose -->
+<g id="proc~~probe_gradient~~CallsGraph_node62" class="node">
+<title>verbose</title>
+<polygon fill="#777777" stroke="#777777" points="1119.5,-234 1064.5,-234 1064.5,-210 1119.5,-210 1119.5,-234"/>
+<text text-anchor="middle" x="1092" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;verbose -->
+<g id="proc~~probe_gradient~~CallsGraph_edge76" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;verbose</title>
+<path fill="none" stroke="#7f00ff" d="M893.79,-247.65C947.74,-240.63 1014.14,-232 1054.48,-226.75"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1054.94,-230.22 1064.4,-225.46 1054.04,-223.28 1054.94,-230.22"/>
+</g>
+<!-- proc~write_json_output&#45;&gt;error -->
+<g id="proc~~probe_gradient~~CallsGraph_edge77" class="edge">
+<title>proc~write_json_output&#45;&gt;error</title>
+<path fill="none" stroke="#ff00ff" d="M832.86,-1427.99C864.74,-1413.91 920.3,-1390.74 970,-1377 997.92,-1369.28 1030.3,-1363.84 1054.53,-1360.43"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1055.27,-1363.86 1064.71,-1359.05 1054.33,-1356.93 1055.27,-1363.86"/>
+</g>
+<!-- proc~write_fragment_table -->
+<g id="proc~~probe_gradient~~CallsGraph_node54" class="node">
+<title>proc~write_fragment_table</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node54"><a xlink:href="../proc/write_fragment_table.html" xlink:title="write_fragment_table">
+<polygon fill="#d9534f" stroke="#d9534f" points="1155,-1578 1029,-1578 1029,-1554 1155,-1554 1155,-1578"/>
+<text text-anchor="middle" x="1092" y="-1563.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fragment_table</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_fragment_table -->
+<g id="proc~~probe_gradient~~CallsGraph_edge78" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_fragment_table</title>
+<path fill="none" stroke="#ff00ff" d="M821.16,-1452.35C848.5,-1474.68 909.96,-1521.62 970,-1545 985.3,-1550.96 1002.35,-1555.23 1018.7,-1558.3"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1018.32,-1561.78 1028.78,-1560.05 1019.53,-1554.89 1018.32,-1561.78"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_node55" class="node">
+<title>proc~write_gmbe_pie_json_impl</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node55"><a xlink:href="../proc/write_gmbe_pie_json_impl.html" xlink:title="write_gmbe_pie_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1168,-1536 1016,-1536 1016,-1512 1168,-1512 1168,-1536"/>
+<text text-anchor="middle" x="1092" y="-1521.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_gmbe_pie_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_edge79" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl</title>
+<path fill="none" stroke="#ff00ff" d="M832.86,-1452.01C864.74,-1466.09 920.3,-1489.26 970,-1503 981.48,-1506.17 993.71,-1508.96 1005.82,-1511.38"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1005.46,-1514.88 1015.94,-1513.33 1006.78,-1508.01 1005.46,-1514.88"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_node56" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node56"><a xlink:href="../proc/write_mbe_breakdown_json_impl.html" xlink:title="write_mbe_breakdown_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1185.5,-1494 998.5,-1494 998.5,-1470 1185.5,-1470 1185.5,-1494"/>
+<text text-anchor="middle" x="1092" y="-1479.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_mbe_breakdown_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_edge80" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl</title>
+<path fill="none" stroke="#ff00ff" d="M858.68,-1447.7C897.99,-1453.51 952.88,-1461.61 999.43,-1468.48"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="999.14,-1471.98 1009.54,-1469.97 1000.16,-1465.05 999.14,-1471.98"/>
+</g>
+<!-- proc~write_unfragmented_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_node57" class="node">
+<title>proc~write_unfragmented_json_impl</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node57"><a xlink:href="../proc/write_unfragmented_json_impl.html" xlink:title="write_unfragmented_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1180,-1452 1004,-1452 1004,-1428 1180,-1428 1180,-1452"/>
+<text text-anchor="middle" x="1092" y="-1437.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_unfragmented_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_edge81" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl</title>
+<path fill="none" stroke="#ff00ff" d="M858.68,-1440C896.41,-1440 948.51,-1440 993.8,-1440"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="993.96,-1443.5 1003.96,-1440 993.96,-1436.5 993.96,-1443.5"/>
+</g>
+<!-- proc~write_vibrational_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_node58" class="node">
+<title>proc~write_vibrational_json_impl</title>
+<g id="a_proc~~probe_gradient~~CallsGraph_node58"><a xlink:href="../proc/write_vibrational_json_impl.html" xlink:title="write_vibrational_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1170.5,-1410 1013.5,-1410 1013.5,-1386 1170.5,-1386 1170.5,-1410"/>
+<text text-anchor="middle" x="1092" y="-1395.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_vibrational_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl -->
+<g id="proc~~probe_gradient~~CallsGraph_edge82" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl</title>
+<path fill="none" stroke="#ff00ff" d="M858.68,-1432.3C899.12,-1426.33 956.05,-1417.92 1003.43,-1410.93"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1004.01,-1414.38 1013.39,-1409.46 1002.98,-1407.46 1004.01,-1414.38"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocprobe_gradientCallsGraph = svgPanZoom('#procprobe_gradientCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~probe_gradient~~CalledByGraph Pages: 1 -->
+<svg id="procprobe_gradientCalledByGraph" width="387pt" height="32pt"
+ viewBox="0.00 0.00 387.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~probe_gradient~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~probe_gradient~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 383,-28 383,4 -4,4"/>
+<!-- proc~probe_gradient -->
+<g id="proc~~probe_gradient~~CalledByGraph_node1" class="node">
+<title>proc~probe_gradient</title>
+<polygon fill="none" stroke="black" points="379,-24 285,-24 285,0 379,0 379,-24"/>
+<text text-anchor="middle" x="332" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">probe_gradient</text>
+</g>
+<!-- proc~run_geometry_optimization -->
+<g id="proc~~probe_gradient~~CalledByGraph_node2" class="node">
+<title>proc~run_geometry_optimization</title>
+<g id="a_proc~~probe_gradient~~CalledByGraph_node2"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
+<polygon fill="#d9534f" stroke="#d9534f" points="249,-24 90,-24 90,0 249,0 249,-24"/>
+<text text-anchor="middle" x="169.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
+</a>
+</g>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~probe_gradient -->
+<g id="proc~~probe_gradient~~CalledByGraph_edge1" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~probe_gradient</title>
+<path fill="none" stroke="#ff0000" d="M249.34,-12C257.92,-12 266.53,-12 274.76,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="274.97,-15.5 284.97,-12 274.97,-8.5 274.97,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~probe_gradient~~CalledByGraph_node3" class="node">
+<title>program~main</title>
+<g id="a_proc~~probe_gradient~~CalledByGraph_node3"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_geometry_optimization -->
+<g id="proc~~probe_gradient~~CalledByGraph_edge2" class="edge">
+<title>program~main&#45;&gt;proc~run_geometry_optimization</title>
+<path fill="none" stroke="#ff0000" d="M54.1,-12C61.67,-12 70.4,-12 79.59,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.71,-15.5 89.71,-12 79.71,-8.5 79.71,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy~10"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gradient~7"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>gradient</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">probe_gradient</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Ask for one gradient, and report only whether it worked</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Collective in the same way an ordinary step is: rank 0 calls this and</span>
+<span class="w">      </span><span class="c">!! the workers service it from `worker_loop`, which they are already</span>
+<span class="w">      </span><span class="c">!! sitting in.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coords</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">gradient</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="n">ctx_probing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">evaluate_energy_gradient</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">      </span><span class="n">ctx_probing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">probe_gradient</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-14 05:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -56,9 +56,63 @@ module mqc_frag_utils
 
    ! Local utilities
    public :: apply_distance_screening
+   public :: generate_mbe_term_list
    public :: sort_fragments_by_size
 
 contains
+
+   subroutine generate_mbe_term_list(sys_geom, driver_config, max_level, polymers, total_fragments)
+      !! The term list a plain MBE run evaluates, at this geometry
+      !!
+      !! Monomers first, then every n-mer up to `max_level`, then distance
+      !! screening, then the size sort. Extracted from the driver so that a
+      !! caller who needs to know the list *before* running -- a geometry
+      !! optimization freezing it against the surface moving underneath -- gets
+      !! the same list the driver would have generated rather than a
+      !! reimplementation of it that drifts the first time screening changes.
+      !!
+      !! Monomers are part of the list here, unlike `fraglist_t`, which starts
+      !! at pairs. That difference is the reason this exists rather than the
+      !! two being merged: `supplied_terms` is fed straight into the expansion
+      !! and the expansion expects the monomers to be in it.
+      !!
+      !! Screening leaves the list closed under subsets already:
+      !! `fragment_should_be_screened` drops an n-mer if *any* of its k-subsets
+      !! exceeds the k-mer cutoff, so a surviving trimer's dimers all survived
+      !! too. Nothing further has to close it.
+      use mqc_config_adapter, only: driver_config_t
+
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(driver_config_t), intent(in) :: driver_config
+      integer, intent(in) :: max_level
+      integer, allocatable, intent(out) :: polymers(:, :)
+      integer(int64), intent(out) :: total_fragments
+
+      integer, allocatable :: monomers(:)
+      integer(int64) :: n_rows
+      integer :: imon
+
+      n_rows = get_nfrags(sys_geom%n_monomers, max_level)
+
+      allocate (monomers(sys_geom%n_monomers))
+      allocate (polymers(n_rows, max_level))
+      polymers = 0
+
+      call create_monomer_list(monomers)
+
+      total_fragments = 0_int64
+      do imon = 1, sys_geom%n_monomers
+         total_fragments = total_fragments + 1_int64
+         polymers(total_fragments, 1) = imon
+      end do
+
+      call generate_fragment_list(monomers, max_level, polymers, total_fragments)
+      deallocate (monomers)
+
+      call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
+      call sort_fragments_by_size(polymers, total_fragments, max_level)
+
+   end subroutine generate_mbe_term_list
 
    subroutine apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
       !! Apply distance-based screening to filter out fragments that exceed cutoff distances

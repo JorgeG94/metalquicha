@@ -1,0 +1,1073 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_optimization_output &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_optimization_output
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.6% of total for modules and submodules.">109 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_optimization_output.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_optimization_output.f90.html'>mqc_optimization_output.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_optimization_output</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_optimization_output.html#type-optimization_record_t">optimization_record_t</a>
+        </div>
+      </div>
+    </div>
+
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_optimization_output.html#proc-write_optimization_json">write_optimization_json</a>
+            <a class="list-group-item" href="../module/mqc_optimization_output.html#proc-write_trajectory_xyz">write_trajectory_xyz</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>Writes <code>output_&lt;name&gt;_optimization.json</code> and
+<code>output_&lt;name&gt;_trajectory.xyz</code>.</p>
+<p>Its own document rather than a section of <code>output_&lt;name&gt;.json</code>, for the
+reason the per-fragment breakdown gets its own file: what belongs in the
+main document is the answer, and this is the working. A hundred
+geometries would also change the shape of a document that every existing
+reader of it expects to be one calculation&rsquo;s result.</p>
+<p><strong>Why both formats.</strong> The .xyz is what a viewer opens and what ASE or
+MDAnalysis read without being told anything; the JSON is what a test
+asserts on. Neither substitutes for the other, and the trajectory is
+small next to the calculations that produced it.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">json_module</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_optimization_output~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_optimization_outputUsesGraph" width="641pt" height="292pt"
+ viewBox="0.00 0.00 641.00 291.68" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_optimization_output~~UsesGraph" class="graph" transform="scale(0.87 0.87) rotate(0) translate(4 330)">
+<title>module~~mqc_optimization_output~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-330 730,-330 730,4 -4,4"/>
+<!-- module~mqc_optimization_output -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node1" class="node">
+<title>module~mqc_optimization_output</title>
+<polygon fill="none" stroke="black" points="726,-125 579,-125 579,-101 726,-101 726,-125"/>
+<text text-anchor="middle" x="652.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_optimization_output</text>
+</g>
+<!-- json_module -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node2" class="node">
+<title>json_module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="513.5,-326 433.5,-326 433.5,-302 513.5,-302 513.5,-326"/>
+<text text-anchor="middle" x="473.5" y="-311.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_module</text>
+</g>
+<!-- module~mqc_optimization_output&#45;&gt;json_module -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge1" class="edge">
+<title>module~mqc_optimization_output&#45;&gt;json_module</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M647.2,-125.06C635.45,-156.39 599.83,-241.17 543,-288 537.2,-292.78 530.42,-296.74 523.43,-300.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="521.7,-296.94 513.83,-304.04 524.41,-303.39 521.7,-296.94"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node3" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node3"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-246 252,-246 252,-222 343,-222 343,-246"/>
+<text text-anchor="middle" x="297.5" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_optimization_output&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge2" class="edge">
+<title>module~mqc_optimization_output&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M643.84,-125.08C622.21,-157.84 556.79,-247.67 474.5,-274"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-274C448.6,-281.65 385.35,-263.63 342.07,-249.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.94,-245.94 332.35,-246.09 340.72,-252.58 342.94,-245.94"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node4" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node4"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-44 111,-44 111,-20 178,-20 178,-44"/>
+<text text-anchor="middle" x="144.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_optimization_output&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge3" class="edge">
+<title>module~mqc_optimization_output&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M591.01,-100.97C575.39,-97.95 558.58,-94.78 543,-92 434.6,-72.65 407.36,-68.54 298.5,-52"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M296.5,-52C260.25,-45.07 218.66,-39.76 188.31,-36.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="188.4,-32.84 178.07,-35.23 187.63,-39.8 188.4,-32.84"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node5" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node5"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="543,-125 404,-125 404,-101 543,-101 543,-125"/>
+<text text-anchor="middle" x="473.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_optimization_output&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge4" class="edge">
+<title>module~mqc_optimization_output&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M579,-113C570.49,-113 561.77,-113 553.19,-113"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="553.18,-109.5 543.18,-113 553.18,-116.5 553.18,-109.5"/>
+</g>
+<!-- pic_logger -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node6" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="507.5,-24 439.5,-24 439.5,0 507.5,0 507.5,-24"/>
+<text text-anchor="middle" x="473.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_optimization_output&#45;&gt;pic_logger -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge5" class="edge">
+<title>module~mqc_optimization_output&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M636.44,-100.82C616.15,-84.84 578.47,-56.64 543,-38 534.81,-33.7 525.75,-29.74 516.97,-26.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="518.2,-23.01 507.61,-22.73 515.72,-29.55 518.2,-23.01"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node7" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-166 0,-166 0,-142 62,-142 62,-166"/>
+<text text-anchor="middle" x="31" y="-151.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_optimization_output&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge6" class="edge">
+<title>module~mqc_optimization_output&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-274C403.29,-296.15 213.97,-298.34 145.5,-274"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge8" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M259.78,-246.05C218.64,-259.18 156.3,-277.84 145.5,-274"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M143.5,-274C122.85,-266.66 114.85,-269.01 98,-255 71.74,-233.16 52.16,-198.18 41.4,-175.65"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="44.45,-173.89 37.09,-166.26 38.09,-176.81 44.45,-173.89"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node12" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173.5,-246 115.5,-246 115.5,-222 173.5,-222 173.5,-246"/>
+<text text-anchor="middle" x="144.5" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge7" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M251.6,-234C230.13,-234 204.69,-234 184.1,-234"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="183.83,-230.5 173.83,-234 183.83,-237.5 183.83,-230.5"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge10" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M462.07,-125.1C444.45,-144.86 406.93,-184.24 368,-208 361.8,-211.78 354.96,-215.16 348.06,-218.13"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="346.64,-214.93 338.68,-221.92 349.26,-221.42 346.64,-214.93"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge11" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M447.61,-100.94C414.51,-85.69 353.73,-60.39 298.5,-52"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-194C208.2,-201.59 184.83,-192.76 98,-175 89.45,-173.25 80.44,-170.81 71.92,-168.2"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="72.79,-164.8 62.2,-165.1 70.66,-171.47 72.79,-164.8"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node8" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node8"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="176.5,-166 112.5,-166 112.5,-142 176.5,-142 176.5,-166"/>
+<text text-anchor="middle" x="144.5" y="-151.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge9" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-194C255.3,-197.54 209.6,-182.67 179.38,-170.07"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="180.71,-166.83 170.14,-166.08 177.94,-173.25 180.71,-166.83"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node9" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node9"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-124 98,-124 98,-100 191,-100 191,-124"/>
+<text text-anchor="middle" x="144.5" y="-109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M456.35,-125.29C426.87,-146.59 361.58,-188.58 298.5,-194"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-194C242.54,-198.64 238.78,-158.51 191,-133 188.25,-131.53 185.38,-130.06 182.47,-128.62"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="183.71,-125.33 173.18,-124.15 180.68,-131.64 183.71,-125.33"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node10" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node10"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="368,-146 227,-146 227,-122 368,-122 368,-146"/>
+<text text-anchor="middle" x="297.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M403.73,-121.3C395.33,-122.31 386.7,-123.36 378.16,-124.39"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="377.7,-120.92 368.2,-125.59 378.54,-127.86 377.7,-120.92"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_optimization_output~~UsesGraph_node11" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_optimization_output~~UsesGraph_node11"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-104 248,-104 248,-80 347,-80 347,-104"/>
+<text text-anchor="middle" x="297.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M403.73,-104.7C388.37,-102.85 372.22,-100.9 357.31,-99.1"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="357.55,-95.6 347.2,-97.88 356.71,-102.55 357.55,-95.6"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge16" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M112.44,-154C100.03,-154 85.58,-154 72.38,-154"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.12,-150.5 62.12,-154 72.12,-157.5 72.12,-150.5"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge17" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M111.55,-124.04C99.14,-128.71 84.79,-134.11 71.73,-139.04"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="70.17,-135.88 62.04,-142.68 72.63,-142.43 70.17,-135.88"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge18" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M250.65,-121.97C242.64,-119.35 234.48,-116.35 227,-113 189.99,-96.43 185.38,-64.66 145.5,-72"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge19" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M263.52,-79.95C251.94,-75.64 238.86,-70.69 227,-66 212.66,-60.33 197.01,-53.87 183.29,-48.11"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="184.26,-44.72 173.68,-44.06 181.54,-51.17 184.26,-44.72"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge21" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M256.91,-79.99C226.35,-72.35 183.08,-65.09 145.5,-72"/>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M143.5,-72C121.95,-75.96 116.34,-79.01 98,-91 79.55,-103.06 61.66,-120.62 49.17,-134.14"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="46.23,-132.17 42.14,-141.95 51.43,-136.86 46.23,-132.17"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_optimization_output~~UsesGraph_edge20" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M247.89,-98.44C233.11,-100.4 216.75,-102.56 201.52,-104.58"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="200.65,-101.17 191.19,-105.95 201.57,-108.1 200.65,-101.17"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_optimization_outputUsesGraph = svgPanZoom('#modulemqc_optimization_outputUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_optimization_output~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_optimization_outputUsedByGraph" width="429pt" height="32pt"
+ viewBox="0.00 0.00 429.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_optimization_output~~UsedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>module~~mqc_optimization_output~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 425,-28 425,4 -4,4"/>
+<!-- module~mqc_optimization_output -->
+<g id="module~~mqc_optimization_output~~UsedByGraph_node1" class="node">
+<title>module~mqc_optimization_output</title>
+<polygon fill="none" stroke="black" points="147,-24 0,-24 0,0 147,0 147,-24"/>
+<text text-anchor="middle" x="73.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_optimization_output</text>
+</g>
+<!-- module~mqc_geometry_optimizer -->
+<g id="module~~mqc_optimization_output~~UsedByGraph_node2" class="node">
+<title>module~mqc_geometry_optimizer</title>
+<g id="a_module~~mqc_optimization_output~~UsedByGraph_node2"><a xlink:href="../module/mqc_geometry_optimizer.html" xlink:title="mqc_geometry_optimizer">
+<polygon fill="#337ab7" stroke="#337ab7" points="331,-24 183,-24 183,0 331,0 331,-24"/>
+<text text-anchor="middle" x="257" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry_optimizer</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_geometry_optimizer&#45;&gt;module~mqc_optimization_output -->
+<g id="module~~mqc_optimization_output~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_geometry_optimizer&#45;&gt;module~mqc_optimization_output</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M182.96,-12C174.47,-12 165.75,-12 157.14,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="157.09,-8.5 147.09,-12 157.09,-15.5 157.09,-8.5"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_optimization_output~~UsedByGraph_node3" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_optimization_output~~UsedByGraph_node3"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="421,-24 367,-24 367,0 421,0 421,-24"/>
+<text text-anchor="middle" x="394" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_geometry_optimizer -->
+<g id="module~~mqc_optimization_output~~UsedByGraph_edge2" class="edge">
+<title>program~main&#45;&gt;module~mqc_geometry_optimizer</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M366.97,-12C359.32,-12 350.5,-12 341.27,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="341.13,-8.5 331.13,-12 341.13,-15.5 341.13,-8.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+
+
+
+
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-optimization_record_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/optimization_record_t.html'>optimization_record_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>Everything an optimization is worth reporting afterwards</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-algorithm~4"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>algorithm</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-converged~5"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>converged</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coordinates~10"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>coordinates</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>cartesian, hdlc, dlc</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_numbers~9"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>element_numbers</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>(n_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-final_coordinates"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>final_coordinates</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>(3, n_atoms), Bohr</p><a href="../type/optimization_record_t.html#variable-final_coordinates" class="pull-right"><emph>Read more&hellip;</emph></a>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-final_energy~6"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>final_energy</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-final_gradient_max"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>final_gradient_max</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gradient_tolerance~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gradient_tolerance</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_evaluations"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_evaluations</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+<p>Energy and gradient calculations run</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_steps"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_steps</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+<p>Geometries the optimizer accepted</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-trajectory~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>trajectory</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-trajectory_energies"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>trajectory_energies</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-write_optimization_json"></span> <h3>public  subroutine <a href='../proc/write_optimization_json.html'>write_optimization_json</a>(path, record, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Write the optimization record as a JSON document</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-path~18"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>path</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-record~4"></span>
+              type(<a href='../type/optimization_record_t.html'>optimization_record_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>record</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~67"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-write_trajectory_xyz"></span> <h3>public  subroutine <a href='../proc/write_trajectory_xyz.html'>write_trajectory_xyz</a>(path, record, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Write the path the optimization took, as a multi-frame .xyz</p><a href="../proc/write_trajectory_xyz.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-path~19"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>path</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-record~5"></span>
+              type(<a href='../type/optimization_record_t.html'>optimization_record_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>record</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~68"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-14 05:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

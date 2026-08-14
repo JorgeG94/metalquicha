@@ -139,6 +139,18 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/algorithm_from_string.html'>algorithm_from_string</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Parse the stepping algorithm a deck asked for</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/algorithm_to_string.html'>algorithm_to_string</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Name a stepping algorithm, for the log and the output document</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/allocate_basis_shells.html'>allocate_basis_shells</a></td>
                  <td><a href='../module/mqc_cgto.html'>mqc_cgto</a></td>
                  <td>Subroutine</td>
@@ -242,6 +254,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Make each covalently connected molecule a monomer</p><a href="../proc/auto_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/available.html'>available</a></td>
+                 <td><a href='../module/mqc_version.html'>mqc_version</a></td>
+                 <td>Function</td>
+                 <td><p>&ldquo;yes&rdquo; or &ldquo;no&rdquo;, in the shape a script can split on</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/basis_search_path.html'>basis_search_path</a></td>
                  <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
                  <td>Function</td>
@@ -320,6 +338,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Partition weight at each grid point, for the atom that owns it</p><a href="../proc/becke_partition_weights.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/begin_context.html'>begin_context</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Put this optimization where the evaluator can reach it</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/binomial.html'>binomial</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
@@ -390,6 +414,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Build a per-atom ECP set for a list of atoms</p><a href="../proc/build_molecular_ecp_json.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_residues.html'>build_residues</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Group the atoms the way an internal-coordinate scheme needs them</p><a href="../proc/build_residues.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_task_payload_from_row.html'>build_task_payload_from_row</a></td>
@@ -830,10 +860,28 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                  <td><p>Configure an XTB method instance from config%xtb</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/connected_components.html'>connected_components</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Label each atom with the covalently connected group it belongs to</p><a href="../proc/connected_components.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/contains_term.html'>contains_term</a></td>
                  <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
                  <td>Function</td>
                  <td><p>Whether a term with exactly these monomers is in the list</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/coordinates_from_string.html'>coordinates_from_string</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Parse the coordinate system a deck asked for</p><a href="../proc/coordinates_from_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/coordinates_to_string.html'>coordinates_to_string</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Name a coordinate system, for the log and the output document</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/copy_and_displace_geometry.html'>copy_and_displace_geometry</a></td>
@@ -993,6 +1041,18 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/dlfind_available.html'>dlfind_available</a></td>
+                 <td><a href='../module/mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this build can optimize a geometry</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dlfind_optimize.html'>dlfind_optimize</a></td>
+                 <td><a href='../module/mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: optimizing a geometry needs the DL-FIND backend</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/do_fragment_work.html'>do_fragment_work</a></td>
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
@@ -1042,6 +1102,12 @@ Covers the complete periodic table (elements 1-118)</p></td>
                  <td>Function</td>
                  <td><p>Convert element symbol to atomic number
 Covers the complete periodic table (elements 1-118)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/end_context.html'>end_context</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Let go of the system, so the next optimization starts clean</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
@@ -1124,6 +1190,12 @@ If unit not specified, prints to stdout (unit 6)</p></td>
                  <td>Subroutine</td>
                  <td><p>Set an error with code and message
 Resets the stack trace</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/evaluate_energy_gradient.html'>evaluate_energy_gradient</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One energy and gradient, at the geometry the engine asked for</p><a href="../proc/evaluate_energy_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/expand_orbit.html'>expand_orbit</a></td>
@@ -1320,6 +1392,12 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/freeze_term_list.html'>freeze_term_list</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Choose the MBE term list once, here, and keep it for the whole run</p><a href="../proc/freeze_term_list.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/frontier_orbitals.html'>frontier_orbitals</a></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
@@ -1356,6 +1434,12 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Generate all k-way intersections from atom lists</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/generate_mbe_term_list.html'>generate_mbe_term_list</a></td>
+                 <td><a href='../module/mqc_frag_utils.html'>mqc_frag_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The term list a plain MBE run evaluates, at this geometry</p><a href="../proc/generate_mbe_term_list.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/generate_perturbed_geometries.html'>generate_perturbed_geometries</a></td>
@@ -1780,15 +1864,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
-                 <td>Function</td>
-                 <td><p>An integer as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
                  <td><p>Atomic number as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -1885,6 +1969,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/lowercase.html'>lowercase</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Case-insensitive comparison, the way mqc_calc_types does it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mass_weight_hessian.html'>mass_weight_hessian</a></td>
@@ -2087,15 +2177,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2394,6 +2484,24 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Normalized contraction coefficients for a single shell</p><a href="../proc/normalized_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/optimization_keys.html'>optimization_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/optimization_path.html'>optimization_path</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Function</td>
+                 <td><p>A file beside the output document, named for it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/optimized_xyz_path.html'>optimized_xyz_path</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Function</td>
+                 <td><p>Where the optimized geometry goes: beside the output document</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/optional_int.html'>optional_int</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -2562,13 +2670,19 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><a href='../proc/print_version.html'>print_version</a></td>
                  <td><a href='../module/mqc_version.html'>mqc_version</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Version, and which optional backends this binary actually has</p><a href="../proc/print_version.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/print_vibrational_analysis.html'>print_vibrational_analysis</a></td>
                  <td><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></td>
                  <td>Subroutine</td>
                  <td><p>Print vibrational analysis results in a formatted table.</p><a href="../proc/print_vibrational_analysis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/probe_gradient.html'>probe_gradient</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Ask for one gradient, and report only whether it worked</p><a href="../proc/probe_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/process_intersection_derivatives.html'>process_intersection_derivatives</a></td>
@@ -2716,6 +2830,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Parse molecular geometry from XYZ format string</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/receive_geometry.html'>receive_geometry</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>A worker&rsquo;s half of moving a geometry from rank 0</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/receive_group_assignment_matrix.html'>receive_group_assignment_matrix</a></td>
                  <td><a href='../module/mqc_group_shard_io.html'>mqc_group_shard_io</a></td>
                  <td>Subroutine</td>
@@ -2726,6 +2846,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td>Subroutine</td>
                  <td><p>Turn a tblite context error into a failed &ndash; or merely flagged &ndash; result</p><a href="../proc/record_context_failure.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/record_step.html'>record_step</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Keep one accepted geometry, growing the trajectory to fit</p><a href="../proc/record_step.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/record_task.html'>record_task</a></td>
@@ -2774,6 +2900,18 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
                  <td>Function</td>
                  <td><p>Turn an error_t into a status, keeping the message for the caller</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_result.html'>report_result</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Say where it ended up, and whether that is a minimum</p><a href="../proc/report_result.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_settings.html'>report_settings</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Say what is about to be optimized, and how</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/report_translational_sum_rule.html'>report_translational_sum_rule</a></td>
@@ -2888,6 +3026,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td><p>Handle fragmented calculation (nlevel &gt; 0)</p><a href="../proc/run_fragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_geometry_optimization.html'>run_geometry_optimization</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Optimize <code>sys_geom</code> in place. Every rank calls this.</p><a href="../proc/run_geometry_optimization.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_libcint_hf.html'>run_libcint_hf</a></td>
                  <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
                  <td>Subroutine</td>
@@ -2911,6 +3055,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td>Subroutine</td>
                  <td><p>Run calculations for multiple molecules with MPI parallelization
 Each molecule is independent, so assign one molecule per rank</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_step.html'>run_step</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One calculation at the current geometry, on the frozen term list</p><a href="../proc/run_step.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/run_unfragmented_calculation.html'>run_unfragmented_calculation</a></td>
@@ -2941,6 +3091,18 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Send the failure flag, code and trace that travel with a result</p><a href="../proc/send_error_state.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/send_final_geometry.html'>send_final_geometry</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Move a geometry to the workers, with the command already sent</p><a href="../proc/send_final_geometry.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/send_geometry.html'>send_geometry</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Rank 0&rsquo;s half of an ordinary optimization step</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/send_group_assignment_matrix.html'>send_group_assignment_matrix</a></td>
@@ -3013,6 +3175,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td>Subroutine</td>
                  <td><p>Append a suffix to the output filename (e.g., for multi-molecule mode)
 Example: suffix=&rdquo;_mol1&rdquo; -&gt; &ldquo;output_multi_structure_mol1.json&rdquo;</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/set_optimization_vocabulary.html'>set_optimization_vocabulary</a></td>
+                 <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Turn the two spelled optimization settings into constants</p><a href="../proc/set_optimization_vocabulary.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/set_output_json_filename.html'>set_output_json_filename</a></td>
@@ -3089,6 +3257,18 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
                  <td>Subroutine</td>
                  <td><p>Split input text into lines based on CR, LF, or CRLF line endings
 Trailing newlines do not create empty lines</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/step_label.html'>step_label</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Function</td>
+                 <td><p>How to name the evaluation that just failed</p><a href="../proc/step_label.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/stop_workers.html'>stop_workers</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release the workers from <code>worker_loop</code></p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/stratmann_cutoff.html'>stratmann_cutoff</a></td>
@@ -3188,10 +3368,22 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
                  <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
                  <td><p>A worker&rsquo;s half of a calculation</p><a href="../proc/worker_run.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_final_single_point.html'>write_final_single_point</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One energy at the optimized geometry, written out properly</p><a href="../proc/write_final_single_point.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/write_fragment_table.html'>write_fragment_table</a></td>
@@ -3218,10 +3410,34 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>Write detailed MBE energy breakdown to JSON file</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/write_optimization_json.html'>write_optimization_json</a></td>
+                 <td><a href='../module/mqc_optimization_output.html'>mqc_optimization_output</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write the optimization record as a JSON document</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_optimization_record.html'>write_optimization_record</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write what the optimization did, for a reader that is not a person</p><a href="../proc/write_optimization_record.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_optimized_xyz.html'>write_optimized_xyz</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write the optimized geometry beside the input, in Angstrom</p><a href="../proc/write_optimized_xyz.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/write_optional_value.html'>write_optional_value</a></td>
                  <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
                  <td>Subroutine</td>
                  <td><p>Emit one comma-separated value, or an empty cell if the column is absent</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_trajectory_xyz.html'>write_trajectory_xyz</a></td>
+                 <td><a href='../module/mqc_optimization_output.html'>mqc_optimization_output</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write the path the optimization took, as a multi-frame .xyz</p><a href="../proc/write_trajectory_xyz.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/write_unfragmented_json_impl.html'>write_unfragmented_json_impl</a></td>
@@ -3302,7 +3518,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 00:51 +0000             </p>
+ on 2026-08-14 05:28 +0000             </p>
           </div>
         </div>
         <br>

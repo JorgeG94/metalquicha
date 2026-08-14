@@ -1,0 +1,944 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>freeze_term_list &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>freeze_term_list
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">40 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_geometry_optimizer.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_geometry_optimizer.f90.html'>mqc_geometry_optimizer.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">freeze_term_list</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/freeze_term_list.html#variable-n_generated">n_generated</a>
+            <a class="list-group-item" href="../proc/freeze_term_list.html#variable-polymers~6">polymers</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/freeze_term_list.html#src">freeze_term_list</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine freeze_term_list(sys_geom, config)  
+</h2>
+    
+
+    <p>Choose the MBE term list once, here, and keep it for the whole run</p>
+<p><strong>The problem.</strong> A fragmented run generates its term list from the
+geometry it was handed, screening out the n-mers whose monomers are
+further apart than the cutoff. Regenerate that at every step of an
+optimization and the list changes as the molecules move: a dimer
+crossing the cutoff enters or leaves the sum, and the total energy
+jumps by that dimer&rsquo;s whole interaction. The optimizer has no way to
+know that the function changed shape rather than the geometry being
+bad &ndash; it reads the jump as real, rejects the step, shrinks the trust
+radius, and either stalls or converges to a point that is not a
+stationary point of anything. Nothing fails; the numbers all look
+plausible.</p>
+<p><strong>The fix.</strong> Generate the list once at the starting geometry and hand
+the same one to every step through <code>supplied_terms</code>, which
+<code>run_calculation</code> takes as given and does not re-screen. The energy is
+then a fixed sum of a fixed set of subsystems &ndash; a smooth function of
+the coordinates &ndash; and its gradient is that function&rsquo;s actual
+derivative, which is what makes the optimization well posed at all.</p>
+<p><strong>What is given up.</strong> A term screened out at the start stays out even
+if the molecules later approach. That is the right trade: it is a
+definite approximation, fixed and reportable, rather than a surface
+that changes underneath the optimizer. A run whose fragments move far
+is better served by looser cutoffs, or by <code>freeze_terms: false</code> and
+the knowledge that convergence is then not guaranteed.</p>
+<p>Only for plain MBE. GMBE derives its PIE terms from overlapping
+primaries rather than taking a supplied list, so there is nothing to
+freeze through this route and the honest thing is to say so.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~21"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~8"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~freeze_term_list~~CallsGraph Pages: 1 -->
+<svg id="procfreeze_term_listCallsGraph" width="641pt" height="199pt"
+ viewBox="0.00 0.00 641.00 198.89" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~freeze_term_list~~CallsGraph" class="graph" transform="scale(0.64 0.64) rotate(0) translate(4 305.98)">
+<title>proc~~freeze_term_list~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-305.98 995,-305.98 995,4 -4,4"/>
+<!-- proc~freeze_term_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_node1" class="node">
+<title>proc~freeze_term_list</title>
+<polygon fill="none" stroke="black" points="97,-105 0,-105 0,-81 97,-81 97,-105"/>
+<text text-anchor="middle" x="48.5" y="-90.6" font-family="Helvetica,sans-Serif" font-size="10.50">freeze_term_list</text>
+</g>
+<!-- info -->
+<g id="proc~~freeze_term_list~~CallsGraph_node2" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="610.5,-62 556.5,-62 556.5,-38 610.5,-38 610.5,-62"/>
+<text text-anchor="middle" x="583.5" y="-47.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~freeze_term_list&#45;&gt;info -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge1" class="edge">
+<title>proc~freeze_term_list&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M97.21,-88.89C149.62,-84.4 236.3,-77.03 311,-71 395.2,-64.2 494.14,-56.66 546.21,-52.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="546.58,-56.21 556.29,-51.97 546.05,-49.23 546.58,-56.21"/>
+</g>
+<!-- proc~generate_mbe_term_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_node3" class="node">
+<title>proc~generate_mbe_term_list</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node3"><a xlink:href="../proc/generate_mbe_term_list.html" xlink:title="generate_mbe_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="275,-167 133,-167 133,-143 275,-143 275,-167"/>
+<text text-anchor="middle" x="204" y="-152.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_mbe_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge2" class="edge">
+<title>proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#ff0000" d="M79.46,-105.1C103.55,-114.83 137.58,-128.58 163.83,-139.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="162.53,-142.43 173.11,-142.93 165.15,-135.94 162.53,-142.43"/>
+</g>
+<!-- to_char -->
+<g id="proc~~freeze_term_list~~CallsGraph_node4" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="610.5,-188 556.5,-188 556.5,-164 610.5,-164 610.5,-188"/>
+<text text-anchor="middle" x="583.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~freeze_term_list&#45;&gt;to_char -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge3" class="edge">
+<title>proc~freeze_term_list&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M60.12,-105.24C92.85,-141.85 196.92,-249.86 311,-281 374.88,-298.44 404.71,-317.45 460,-281 493.91,-258.64 464.99,-223.23 496,-197 509.88,-185.26 529.25,-179.88 546.15,-177.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="546.74,-180.94 556.29,-176.35 545.96,-173.99 546.74,-180.94"/>
+</g>
+<!-- warning -->
+<g id="proc~~freeze_term_list~~CallsGraph_node5" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="231.5,-24 176.5,-24 176.5,0 231.5,0 231.5,-24"/>
+<text text-anchor="middle" x="204" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~freeze_term_list&#45;&gt;warning -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge4" class="edge">
+<title>proc~freeze_term_list&#45;&gt;warning</title>
+<path fill="none" stroke="#ff0000" d="M65.47,-80.89C81.8,-68.9 108.23,-50.55 133,-38 143.73,-32.56 155.88,-27.65 167.01,-23.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="168.2,-26.89 176.47,-20.26 165.88,-20.29 168.2,-26.89"/>
+</g>
+<!-- proc~apply_distance_screening -->
+<g id="proc~~freeze_term_list~~CallsGraph_node6" class="node">
+<title>proc~apply_distance_screening</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node6"><a xlink:href="../proc/apply_distance_screening.html" xlink:title="apply_distance_screening">
+<polygon fill="#d9534f" stroke="#d9534f" points="460,-146 311,-146 311,-122 460,-122 460,-146"/>
+<text text-anchor="middle" x="385.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply_distance_screening</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~apply_distance_screening -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge5" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~apply_distance_screening</title>
+<path fill="none" stroke="#7fff00" d="M275.17,-146.79C283.58,-145.81 292.23,-144.79 300.81,-143.79"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="301.3,-147.26 310.83,-142.62 300.49,-140.31 301.3,-147.26"/>
+</g>
+<!-- proc~create_monomer_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_node7" class="node">
+<title>proc~create_monomer_list</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node7"><a xlink:href="../proc/create_monomer_list.html" xlink:title="create_monomer_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="447.5,-230 323.5,-230 323.5,-206 447.5,-206 447.5,-230"/>
+<text text-anchor="middle" x="385.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_monomer_list</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~create_monomer_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge6" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~create_monomer_list</title>
+<path fill="none" stroke="#7fff00" d="M233.51,-167.18C254.68,-176.02 284.39,-187.95 311,-197 317.02,-199.05 323.36,-201.06 329.69,-202.99"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="329,-206.43 339.58,-205.93 330.99,-199.72 329,-206.43"/>
+</g>
+<!-- proc~generate_fragment_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_node8" class="node">
+<title>proc~generate_fragment_list</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node8"><a xlink:href="../proc/generate_fragment_list.html" xlink:title="generate_fragment_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="453.5,-272 317.5,-272 317.5,-248 453.5,-248 453.5,-272"/>
+<text text-anchor="middle" x="385.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_fragment_list</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~generate_fragment_list -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge7" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~generate_fragment_list</title>
+<path fill="none" stroke="#7fff00" d="M216.92,-167.11C235.44,-185.26 272.98,-219.49 311,-239 314.79,-240.94 318.78,-242.73 322.86,-244.37"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="321.92,-247.75 332.51,-247.92 324.34,-241.18 321.92,-247.75"/>
+</g>
+<!-- proc~get_nfrags -->
+<g id="proc~~freeze_term_list~~CallsGraph_node9" class="node">
+<title>proc~get_nfrags</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node9"><a xlink:href="../proc/get_nfrags.html" xlink:title="get_nfrags">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="420,-188 351,-188 351,-164 420,-164 420,-188"/>
+<text text-anchor="middle" x="385.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_nfrags</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge8" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags</title>
+<path fill="none" stroke="#7fff00" d="M275.17,-163.21C297.17,-165.78 320.83,-168.55 340.49,-170.85"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="340.33,-174.36 350.67,-172.04 341.14,-167.4 340.33,-174.36"/>
+</g>
+<!-- proc~sort_fragments_by_size -->
+<g id="proc~~freeze_term_list~~CallsGraph_node10" class="node">
+<title>proc~sort_fragments_by_size</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node10"><a xlink:href="../proc/sort_fragments_by_size.html" xlink:title="sort_fragments_by_size">
+<polygon fill="#d9534f" stroke="#d9534f" points="453.5,-104 317.5,-104 317.5,-80 453.5,-80 453.5,-104"/>
+<text text-anchor="middle" x="385.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort_fragments_by_size</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~sort_fragments_by_size -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge9" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~sort_fragments_by_size</title>
+<path fill="none" stroke="#7fff00" d="M233.51,-142.82C254.68,-133.98 284.39,-122.05 311,-113 317.02,-110.95 323.36,-108.94 329.69,-107.01"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="330.99,-110.28 339.58,-104.07 329,-103.57 330.99,-110.28"/>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;info -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge10" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M442.22,-121.9C448.45,-119.45 454.53,-116.51 460,-113 480.7,-99.73 475.04,-83.85 496,-71 511.02,-61.79 529.82,-56.62 546.05,-53.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="546.95,-57.12 556.29,-52.11 545.86,-50.2 546.95,-57.12"/>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;to_char -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge12" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M442.67,-146.04C476.01,-153.18 517.32,-162.03 546.36,-168.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="545.96,-171.75 556.47,-170.42 547.42,-164.9 545.96,-171.75"/>
+</g>
+<!-- proc~fragment_should_be_screened -->
+<g id="proc~~freeze_term_list~~CallsGraph_node13" class="node">
+<title>proc~fragment_should_be_screened</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node13"><a xlink:href="../proc/fragment_should_be_screened.html" xlink:title="fragment_should_be_screened">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="671,-146 496,-146 496,-122 671,-122 671,-146"/>
+<text text-anchor="middle" x="583.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_should_be_screened</text>
+</a>
+</g>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;proc~fragment_should_be_screened -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge11" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;proc~fragment_should_be_screened</title>
+<path fill="none" stroke="#ff0000" d="M460.04,-134C468.39,-134 477,-134 485.6,-134"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="485.67,-137.5 495.67,-134 485.67,-130.5 485.67,-137.5"/>
+</g>
+<!-- proc~combine -->
+<g id="proc~~freeze_term_list~~CallsGraph_node12" class="node">
+<title>proc~combine</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node12"><a xlink:href="../proc/combine.html" xlink:title="combine">
+<polygon fill="#d9534f" stroke="#d9534f" points="613,-272 554,-272 554,-248 613,-248 613,-272"/>
+<text text-anchor="middle" x="583.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_fragment_list&#45;&gt;proc~combine -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge13" class="edge">
+<title>proc~generate_fragment_list&#45;&gt;proc~combine</title>
+<path fill="none" stroke="#00ff66" d="M453.68,-260C483.77,-260 518.19,-260 543.87,-260"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="543.95,-263.5 553.95,-260 543.95,-256.5 543.95,-263.5"/>
+</g>
+<!-- proc~binomial -->
+<g id="proc~~freeze_term_list~~CallsGraph_node11" class="node">
+<title>proc~binomial</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node11"><a xlink:href="../proc/binomial.html" xlink:title="binomial">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="613,-230 554,-230 554,-206 613,-206 613,-230"/>
+<text text-anchor="middle" x="583.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- proc~get_nfrags&#45;&gt;proc~binomial -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge14" class="edge">
+<title>proc~get_nfrags&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#0066ff" d="M420.19,-183.22C454.46,-190.56 507.51,-201.93 543.56,-209.66"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="543.19,-213.16 553.7,-211.83 544.66,-206.31 543.19,-213.16"/>
+</g>
+<!-- proc~sort_fragments_by_size&#45;&gt;info -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge15" class="edge">
+<title>proc~sort_fragments_by_size&#45;&gt;info</title>
+<path fill="none" stroke="#cc00ff" d="M442.67,-79.96C476.01,-72.82 517.32,-63.97 546.36,-57.74"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="547.42,-61.1 556.47,-55.58 545.96,-54.25 547.42,-61.1"/>
+</g>
+<!-- sort_index -->
+<g id="proc~~freeze_term_list~~CallsGraph_node14" class="node">
+<title>sort_index</title>
+<polygon fill="#777777" stroke="#777777" points="617,-104 550,-104 550,-80 617,-80 617,-104"/>
+<text text-anchor="middle" x="583.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort_index</text>
+</g>
+<!-- proc~sort_fragments_by_size&#45;&gt;sort_index -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge16" class="edge">
+<title>proc~sort_fragments_by_size&#45;&gt;sort_index</title>
+<path fill="none" stroke="#cc00ff" d="M453.68,-92C482.09,-92 514.35,-92 539.48,-92"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="539.78,-95.5 549.78,-92 539.78,-88.5 539.78,-95.5"/>
+</g>
+<!-- proc~combine_util -->
+<g id="proc~~freeze_term_list~~CallsGraph_node16" class="node">
+<title>proc~combine_util</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node16"><a xlink:href="../proc/combine_util.html" xlink:title="combine_util">
+<polygon fill="#d9534f" stroke="#d9534f" points="832,-272 751,-272 751,-248 832,-248 832,-272"/>
+<text text-anchor="middle" x="791.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine_util</text>
+</a>
+</g>
+</g>
+<!-- proc~combine&#45;&gt;proc~combine_util -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge17" class="edge">
+<title>proc~combine&#45;&gt;proc~combine_util</title>
+<path fill="none" stroke="#7fff00" d="M613.14,-260C646.09,-260 700.78,-260 740.74,-260"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="740.81,-263.5 750.81,-260 740.81,-256.5 740.81,-263.5"/>
+</g>
+<!-- proc~calculate_monomer_distance -->
+<g id="proc~~freeze_term_list~~CallsGraph_node15" class="node">
+<title>proc~calculate_monomer_distance</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node15"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="876,-125 707,-125 707,-101 876,-101 876,-125"/>
+<text text-anchor="middle" x="791.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_should_be_screened&#45;&gt;proc~calculate_monomer_distance -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge18" class="edge">
+<title>proc~fragment_should_be_screened&#45;&gt;proc~calculate_monomer_distance</title>
+<path fill="none" stroke="#00ffff" d="M671.27,-125.15C679.63,-124.3 688.14,-123.43 696.57,-122.58"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="697.2,-126.03 706.8,-121.53 696.49,-119.07 697.2,-126.03"/>
+</g>
+<!-- proc~get_next_combination -->
+<g id="proc~~freeze_term_list~~CallsGraph_node17" class="node">
+<title>proc~get_next_combination</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node17"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
+<polygon fill="#d9534f" stroke="#d9534f" points="856.5,-167 726.5,-167 726.5,-143 856.5,-143 856.5,-167"/>
+<text text-anchor="middle" x="791.5" y="-152.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_should_be_screened&#45;&gt;proc~get_next_combination -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge19" class="edge">
+<title>proc~fragment_should_be_screened&#45;&gt;proc~get_next_combination</title>
+<path fill="none" stroke="#00ffff" d="M671.27,-142.85C686.27,-144.38 701.76,-145.95 716.39,-147.45"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="716.07,-150.93 726.37,-148.46 716.78,-143.97 716.07,-150.93"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~freeze_term_list~~CallsGraph_node18" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~freeze_term_list~~CallsGraph_node18"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="991,-125 912,-125 912,-101 991,-101 991,-125"/>
+<text text-anchor="middle" x="951.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge20" class="edge">
+<title>proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#ff0000" d="M876.13,-113C884.87,-113 893.54,-113 901.7,-113"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="901.74,-116.5 911.74,-113 901.74,-109.5 901.74,-116.5"/>
+</g>
+<!-- proc~combine_util&#45;&gt;proc~combine_util -->
+<g id="proc~~freeze_term_list~~CallsGraph_edge21" class="edge">
+<title>proc~combine_util&#45;&gt;proc~combine_util</title>
+<path fill="none" stroke="#00ff00" d="M765.38,-272.01C756.25,-280.97 764.96,-290 791.5,-290 808.09,-290 817.71,-286.47 820.37,-281.64"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="823.73,-280.67 817.62,-272.01 817,-282.59 823.73,-280.67"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocfreeze_term_listCallsGraph = svgPanZoom('#procfreeze_term_listCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~freeze_term_list~~CalledByGraph Pages: 1 -->
+<svg id="procfreeze_term_listCalledByGraph" width="390pt" height="32pt"
+ viewBox="0.00 0.00 390.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~freeze_term_list~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~freeze_term_list~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 386,-28 386,4 -4,4"/>
+<!-- proc~freeze_term_list -->
+<g id="proc~~freeze_term_list~~CalledByGraph_node1" class="node">
+<title>proc~freeze_term_list</title>
+<polygon fill="none" stroke="black" points="382,-24 285,-24 285,0 382,0 382,-24"/>
+<text text-anchor="middle" x="333.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">freeze_term_list</text>
+</g>
+<!-- proc~run_geometry_optimization -->
+<g id="proc~~freeze_term_list~~CalledByGraph_node2" class="node">
+<title>proc~run_geometry_optimization</title>
+<g id="a_proc~~freeze_term_list~~CalledByGraph_node2"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
+<polygon fill="#d9534f" stroke="#d9534f" points="249,-24 90,-24 90,0 249,0 249,-24"/>
+<text text-anchor="middle" x="169.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
+</a>
+</g>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list -->
+<g id="proc~~freeze_term_list~~CalledByGraph_edge1" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list</title>
+<path fill="none" stroke="#ff0000" d="M249.13,-12C257.84,-12 266.59,-12 274.97,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="274.98,-15.5 284.98,-12 274.98,-8.5 274.98,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~freeze_term_list~~CalledByGraph_node3" class="node">
+<title>program~main</title>
+<g id="a_proc~~freeze_term_list~~CalledByGraph_node3"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_geometry_optimization -->
+<g id="proc~~freeze_term_list~~CalledByGraph_edge2" class="edge">
+<title>program~main&#45;&gt;proc~run_geometry_optimization</title>
+<path fill="none" stroke="#ff0000" d="M54.1,-12C61.67,-12 70.4,-12 79.59,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.71,-15.5 89.71,-12 79.71,-8.5 79.71,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_generated"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_generated</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~6"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">freeze_term_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Choose the MBE term list once, here, and keep it for the whole run</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **The problem.** A fragmented run generates its term list from the</span>
+<span class="w">      </span><span class="c">!! geometry it was handed, screening out the n-mers whose monomers are</span>
+<span class="w">      </span><span class="c">!! further apart than the cutoff. Regenerate that at every step of an</span>
+<span class="w">      </span><span class="c">!! optimization and the list changes as the molecules move: a dimer</span>
+<span class="w">      </span><span class="c">!! crossing the cutoff enters or leaves the sum, and the total energy</span>
+<span class="w">      </span><span class="c">!! jumps by that dimer&#39;s whole interaction. The optimizer has no way to</span>
+<span class="w">      </span><span class="c">!! know that the function changed shape rather than the geometry being</span>
+<span class="w">      </span><span class="c">!! bad -- it reads the jump as real, rejects the step, shrinks the trust</span>
+<span class="w">      </span><span class="c">!! radius, and either stalls or converges to a point that is not a</span>
+<span class="w">      </span><span class="c">!! stationary point of anything. Nothing fails; the numbers all look</span>
+<span class="w">      </span><span class="c">!! plausible.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **The fix.** Generate the list once at the starting geometry and hand</span>
+<span class="w">      </span><span class="c">!! the same one to every step through `supplied_terms`, which</span>
+<span class="w">      </span><span class="c">!! `run_calculation` takes as given and does not re-screen. The energy is</span>
+<span class="w">      </span><span class="c">!! then a fixed sum of a fixed set of subsystems -- a smooth function of</span>
+<span class="w">      </span><span class="c">!! the coordinates -- and its gradient is that function&#39;s actual</span>
+<span class="w">      </span><span class="c">!! derivative, which is what makes the optimization well posed at all.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **What is given up.** A term screened out at the start stays out even</span>
+<span class="w">      </span><span class="c">!! if the molecules later approach. That is the right trade: it is a</span>
+<span class="w">      </span><span class="c">!! definite approximation, fixed and reportable, rather than a surface</span>
+<span class="w">      </span><span class="c">!! that changes underneath the optimizer. A run whose fragments move far</span>
+<span class="w">      </span><span class="c">!! is better served by looser cutoffs, or by `freeze_terms: false` and</span>
+<span class="w">      </span><span class="c">!! the knowledge that convergence is then not guaranteed.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Only for plain MBE. GMBE derives its PIE terms from overlapping</span>
+<span class="w">      </span><span class="c">!! primaries rather than taking a supplied list, so there is nothing to</span>
+<span class="w">      </span><span class="c">!! freeze through this route and the honest thing is to say so.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_generated</span>
+
+<span class="w">      </span><span class="n">ctx_terms_frozen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="n">ctx_n_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">allow_overlapping_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;GMBE term lists cannot be frozen, and screening is active.&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  The intersection terms are rederived at every step, so a&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  fragment crossing a cutoff changes the energy expression&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  mid-optimization. Remove the cutoffs if this stalls.&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         return</span>
+<span class="k">      end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">freeze_terms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;freeze_terms is off and distance screening is active.&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  The term list will be rebuilt at every geometry, which puts&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  steps in the energy the optimizer reads as real.&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! The same call the driver makes, so the frozen list is the list this</span>
+<span class="w">      </span><span class="c">! run would have used anyway -- not a reimplementation that agrees today.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">generate_mbe_term_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">n_generated</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_generated</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">ctx_terms</span><span class="p">(</span><span class="n">n_generated</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="p">))</span>
+<span class="w">      </span><span class="n">ctx_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_generated</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="p">)</span>
+<span class="w">      </span><span class="n">ctx_n_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_generated</span>
+<span class="w">      </span><span class="n">ctx_terms_frozen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Term list frozen at the starting geometry: &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">to_char</span><span class="p">(</span><span class="n">ctx_n_terms</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; terms&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    (distance screening applied once, not per step)&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">   end subroutine </span><span class="n">freeze_term_list</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-14 05:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
