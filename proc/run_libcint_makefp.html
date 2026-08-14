@@ -314,7 +314,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers"></span>
+              <span class="anchor" id="variable-atomic_numbers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -329,7 +329,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols"></span>
+              <span class="anchor" id="variable-element_symbols~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -344,7 +344,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~2"></span>
+              <span class="anchor" id="variable-coordinates~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -374,7 +374,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name"></span>
+              <span class="anchor" id="variable-name~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -389,7 +389,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path"></span>
+              <span class="anchor" id="variable-path~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -404,7 +404,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~14"></span>
+              <span class="anchor" id="variable-error~51"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -419,7 +419,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~2"></span>
+              <span class="anchor" id="variable-charge~7"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -434,7 +434,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose~6"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -768,31 +768,31 @@ large graphs.</div>
 <g id="proc~~run_libcint_makefp~~CalledByGraph_node12" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~run_libcint_makefp~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
-<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_edge14" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M324.28,-14.07C358.12,-15.9 407.57,-18.57 443.55,-20.52"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="443.61,-24.02 453.78,-21.07 443.99,-17.03 443.61,-24.02"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_node13" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~run_libcint_makefp~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-150 246,-150 246,-126 324,-126 324,-150"/>
 <text text-anchor="middle" x="285" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~run_libcint_makefp~~CalledByGraph_edge11" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M324.28,-138C360.53,-138 414.7,-138 451.02,-138"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="451.22,-141.5 461.22,-138 451.22,-134.5 451.22,-141.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_node13" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_libcint_makefp~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
+<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_edge14" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M324.28,-14.07C358.12,-15.9 407.57,-18.57 443.55,-20.52"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="443.61,-24.02 453.78,-21.07 443.99,-17.03 443.61,-24.02"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~run_libcint_makefp~~CalledByGraph_node14" class="node">
@@ -833,11 +833,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_edge17" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0066ff" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_edge16" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ff66" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~run_libcint_makefp~~CalledByGraph_edge18" class="edge">
@@ -854,11 +854,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_edge16" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ff66" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_edge17" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0066ff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
 </g>
 </g>
 </svg>
@@ -1007,7 +1007,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 22:32 +0000             </p>
+ on 2026-08-14 22:57 +0000             </p>
           </div>
         </div>
         <br>

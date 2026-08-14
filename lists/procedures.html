@@ -1659,15 +1659,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1677,27 +1677,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1707,15 +1707,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1845,14 +1845,20 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Clean up allocated memory in input_fragment_t</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/int_str.html'>int_str</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Function</td>
+                 <td><p>Small integer to text, so the warning above needs no io module</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -1870,15 +1876,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
-                 <td>Function</td>
-                 <td><p>An integer as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
                  <td><p>Atomic number as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -2183,15 +2189,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2548,6 +2554,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
                  <td>Function</td>
                  <td><p>Position of an order in the prunable sequence, or 0 if absent</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pad_name.html'>pad_name</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Function</td>
+                 <td><p>Stage label in a fixed column, truncated if it will not fit</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/parse_backend_name.html'>parse_backend_name</a></td>
@@ -2908,16 +2920,52 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Turn an error_t into a status, keeping the message for the caller</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/report_emit.html'>report_emit</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Print the table</p><a href="../proc/report_emit.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_finish.html'>report_finish</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Stop the total clock. Stages are whatever the laps recorded.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_lap.html'>report_lap</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Attribute the time since the previous lap to <code>name</code></p><a href="../proc/report_lap.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/report_result.html'>report_result</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
                  <td><p>Say where it ended up, and whether that is a minimum</p><a href="../proc/report_result.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/report_seconds_of.html'>report_seconds_of</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Function</td>
+                 <td><p>Wall seconds accumulated against one stage, or zero if never lapped</p><a href="../proc/report_seconds_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/report_settings.html'>report_settings</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
                  <td><p>Say what is about to be optimized, and how</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_start.html'>report_start</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Begin timing. Clears any previous stages.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_total.html'>report_total</a></td>
+                 <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
+                 <td>Function</td>
+                 <td><p>Wall seconds between <code>start</code> and <code>finish</code></p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/report_translational_sum_rule.html'>report_translational_sum_rule</a></td>
@@ -3381,15 +3429,15 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -3536,7 +3584,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 22:32 +0000             </p>
+ on 2026-08-14 22:57 +0000             </p>
           </div>
         </div>
         <br>

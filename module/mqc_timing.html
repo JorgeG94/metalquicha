@@ -1,0 +1,1196 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_timing &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_timing
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.8% of total for modules and submodules.">147 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_timing.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_timing.f90.html'>mqc_timing.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_timing</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_timing.html#variable-max_stage_name">MAX_STAGE_NAME</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#variable-max_timed_stages">MAX_TIMED_STAGES</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#variable-table_width">TABLE_WIDTH</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_timing.html#type-timing_report_t">timing_report_t</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#type-stage_t">stage_t</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-int_str">int_str</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-pad_name">pad_name</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-report_seconds_of">report_seconds_of</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-report_total">report_total</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-report_emit">report_emit</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-report_finish">report_finish</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-report_lap">report_lap</a>
+            <a class="list-group-item" href="../module/mqc_timing.html#proc-report_start">report_start</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>One accumulator per named stage, and one table at the end.</p>
+<p><strong>Why this exists.</strong> A direct-SCF cholesterol run spends 88% of its wall
+clock in Fock builds and 0.4% in diagonalisation. Nothing in the program
+said so until it was measured, and &ldquo;which part is slow&rdquo; is not a question
+that should need a rebuild to answer. Every method that takes long enough
+to notice should be able to answer it for itself.</p>
+<p><strong>Wall, not CPU.</strong> <code>pic_timer</code> reads <code>omp_get_wtime</code> when PIC is built
+threaded and <code>system_clock</code> otherwise &ndash; both are elapsed real time. CPU
+seconds would report thread count multiplied by duration, which is the
+wrong number for every threaded stage here.</p>
+<p><strong>The shape is lap timing.</strong> One clock runs from <code>start</code> to <code>finish</code>, and
+each <code>lap</code> attributes everything since the previous lap to a named stage:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="p">(</span><span class="n">timing_report_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">clk</span>
+<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">start</span><span class="p">()</span>
+<span class="k">call </span><span class="n">build_integrals</span><span class="p">(...)</span>
+<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">lap</span><span class="p">(</span><span class="s2">&quot;integrals&quot;</span><span class="p">)</span>
+<span class="k">do </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">   </span><span class="k">call </span><span class="n">amplitude_equations</span><span class="p">(...)</span>
+<span class="w">   </span><span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">lap</span><span class="p">(</span><span class="s2">&quot;amplitudes&quot;</span><span class="p">)</span><span class="w">     </span><span class="c">! accumulates, one entry not n</span>
+<span class="k">end do</span>
+<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">finish</span><span class="p">()</span>
+<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">report</span><span class="p">(</span><span class="s2">&quot;CCSD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Stages are created on first mention, so a caller adds one by naming it and
+nothing has to be declared up front. Laps accumulate, so a stage inside a
+loop reports its total and its call count rather than the last pass.</p>
+<p><strong>Nothing is silently unaccounted.</strong> <code>report</code> prints the residual between
+the total and the sum of the stages as <code>other</code>. A missing <code>lap</code> shows up
+there rather than vanishing, which is the property that makes the table
+worth believing.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_timing~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_timingUsesGraph" width="338pt" height="136pt"
+ viewBox="0.00 0.00 338.00 136.06" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_timing~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 132.06)">
+<title>module~~mqc_timing~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-132.06 334,-132.06 334,4 -4,4"/>
+<!-- module~mqc_timing -->
+<g id="module~~mqc_timing~~UsesGraph_node1" class="node">
+<title>module~mqc_timing</title>
+<polygon fill="none" stroke="black" points="330,-65.06 255,-65.06 255,-41.06 330,-41.06 330,-65.06"/>
+<text text-anchor="middle" x="292.5" y="-50.66" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_timing</text>
+</g>
+<!-- module~mqc_program_limits -->
+<g id="module~~mqc_timing~~UsesGraph_node2" class="node">
+<title>module~mqc_program_limits</title>
+<g id="a_module~~mqc_timing~~UsesGraph_node2"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
+<polygon fill="#337ab7" stroke="#337ab7" points="219,-128.06 98,-128.06 98,-104.06 219,-104.06 219,-128.06"/>
+<text text-anchor="middle" x="158.5" y="-113.66" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_timing&#45;&gt;module~mqc_program_limits -->
+<g id="module~~mqc_timing~~UsesGraph_edge1" class="edge">
+<title>module~mqc_timing&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M272.93,-65.11C258.58,-74.09 238.02,-86.29 219,-95.06 214.97,-96.92 210.73,-98.71 206.45,-100.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="205.16,-97.16 197.06,-104 207.65,-103.71 205.16,-97.16"/>
+</g>
+<!-- pic_logger -->
+<g id="module~~mqc_timing~~UsesGraph_node3" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="192.5,-86.06 124.5,-86.06 124.5,-62.06 192.5,-62.06 192.5,-86.06"/>
+<text text-anchor="middle" x="158.5" y="-71.66" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_timing&#45;&gt;pic_logger -->
+<g id="module~~mqc_timing~~UsesGraph_edge2" class="edge">
+<title>module~mqc_timing&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M254.73,-58.91C238.68,-61.46 219.75,-64.48 203.01,-67.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="202.24,-63.72 192.91,-68.74 203.34,-70.63 202.24,-63.72"/>
+</g>
+<!-- pic_timer -->
+<g id="module~~mqc_timing~~UsesGraph_node4" class="node">
+<title>pic_timer</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="189.5,-44.06 127.5,-44.06 127.5,-20.06 189.5,-20.06 189.5,-44.06"/>
+<text text-anchor="middle" x="158.5" y="-29.66" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_timer</text>
+</g>
+<!-- module~mqc_timing&#45;&gt;pic_timer -->
+<g id="module~~mqc_timing~~UsesGraph_edge3" class="edge">
+<title>module~mqc_timing&#45;&gt;pic_timer</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M254.73,-47.21C237.64,-44.49 217.27,-41.25 199.77,-38.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="200.27,-35 189.84,-36.89 199.17,-41.92 200.27,-35"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_timing~~UsesGraph_node5" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-66.06 0,-66.06 0,-42.06 62,-42.06 62,-66.06"/>
+<text text-anchor="middle" x="31" y="-51.66" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_timing&#45;&gt;pic_types -->
+<g id="module~~mqc_timing~~UsesGraph_edge4" class="edge">
+<title>module~mqc_timing&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M276.17,-40.94C262.19,-30.71 240.49,-16.84 219,-11.06 167.06,2.9 149.55,4.25 98,-11.06 81.75,-15.89 65.77,-26.12 53.6,-35.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="51.1,-32.9 45.47,-41.88 55.47,-38.38 51.1,-32.9"/>
+</g>
+<!-- module~mqc_program_limits&#45;&gt;pic_types -->
+<g id="module~~mqc_timing~~UsesGraph_edge5" class="edge">
+<title>module~mqc_program_limits&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M119.54,-104.05C112.28,-101.37 104.81,-98.33 98,-95.06 84.14,-88.41 69.54,-79.55 57.61,-71.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="59.33,-68.71 49.06,-66.09 55.45,-74.54 59.33,-68.71"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_stage_name"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MAX_STAGE_NAME</strong></td>
+<td> =</td>
+                <td>28</td>
+            <td>
+                <p>Longest stage label kept. Longer names are truncated for the table.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_timed_stages"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MAX_TIMED_STAGES</strong></td>
+<td> =</td>
+                <td>24</td>
+            <td>
+                <p>Most stages one method may name. Exceeding it drops the extras into
+<code>other</code> rather than failing: a timer must never be the reason a
+calculation stops.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-table_width"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>TABLE_WIDTH</strong></td>
+<td> =</td>
+                <td>4+MAX_STAGE_NAME+12+10+14</td>
+            <td>
+                <p>Rule width, matching the row format: 4 indent + name + 12 + 10 + 14.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-timing_report_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/timing_report_t.html'>timing_report_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>Lap timer over named stages, plus the report</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lap_clock"></span>
+              type(timer_type),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lap_clock</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Reset at every lap</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_stages"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_stages</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-overflowed"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>overflowed</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-running"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>running</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stage"></span>
+              type(<a href='../type/stage_t.html'>stage_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stage</strong>(MAX_TIMED_STAGES)</td>
+                <td></td>
+                <td></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_clock"></span>
+              type(timer_type),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_clock</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Runs start to finish</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_seconds"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_seconds</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+        <h4>Type-Bound Procedures</h4>
+        <table class="table table-striped varlist">
+          <tbody>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/timing_report_t.html#boundprocedure-finish'>finish</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_finish.html'>report_finish</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/timing_report_t.html#boundprocedure-lap'>lap</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_lap.html'>report_lap</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/timing_report_t.html#boundprocedure-report'>report</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_emit.html'>report_emit</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/timing_report_t.html#boundprocedure-seconds_of'>seconds_of</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_seconds_of.html'>report_seconds_of</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/timing_report_t.html#boundprocedure-start'>start</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_start.html'>report_start</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/timing_report_t.html#boundprocedure-total~3'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_total.html'>report_total</a></td>
+                  <td></td>
+              </tr>
+          </tbody>
+        </table>
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-stage_t"></span>
+      <h3>
+        type, private&nbsp;::&nbsp;
+        <a href='../type/stage_t.html'>stage_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>One named accumulator</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-calls"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>calls</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~19"></span>
+              character(len=MAX_STAGE_NAME),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+<td> =</td>
+                <td>&#34;&#34;</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-seconds"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>seconds</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-int_str"></span> <h3>private pure function <a href='../proc/int_str.html'>int_str</a>(value) result(text)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Small integer to text, so the warning above needs no io module</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~16"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=12)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-pad_name"></span> <h3>private pure function <a href='../proc/pad_name.html'>pad_name</a>(name) result(padded)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Stage label in a fixed column, truncated if it will not fit</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~22"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=MAX_STAGE_NAME)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_seconds_of"></span> <h3>private pure function <a href='../proc/report_seconds_of.html'>report_seconds_of</a>(self, name) result(seconds)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Wall seconds accumulated against one stage, or zero if never lapped</p><a href="../proc/report_seconds_of.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~15"></span>
+              class(<a href='../type/timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~21"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_total"></span> <h3>private pure function <a href='../proc/report_total.html'>report_total</a>(self) result(seconds)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Wall seconds between <code>start</code> and <code>finish</code></p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~14"></span>
+              class(<a href='../type/timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_emit"></span> <h3>private  subroutine <a href='../proc/report_emit.html'>report_emit</a>(self, title, verbose)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Print the table</p><a href="../proc/report_emit.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~16"></span>
+              class(<a href='../type/timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-title"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>title</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-verbose~7"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>verbose</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_finish"></span> <h3>private  subroutine <a href='../proc/report_finish.html'>report_finish</a>(self)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Stop the total clock. Stages are whatever the laps recorded.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~13"></span>
+              class(<a href='../type/timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_lap"></span> <h3>private  subroutine <a href='../proc/report_lap.html'>report_lap</a>(self, name)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Attribute the time since the previous lap to <code>name</code></p><a href="../proc/report_lap.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~12"></span>
+              class(<a href='../type/timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~20"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_start"></span> <h3>private  subroutine <a href='../proc/report_start.html'>report_start</a>(self)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Begin timing. Clears any previous stages.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~11"></span>
+              class(<a href='../type/timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-14 22:57 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
