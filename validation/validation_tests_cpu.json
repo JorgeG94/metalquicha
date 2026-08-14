@@ -1859,6 +1859,12 @@
             "input": "inputs/cpu/mqc/fmo/eembe_water3.json",
             "expected_energy": -227.9704573337,
             "type": "fragmented"
+        },
+        {
+            "name": "FMO3 water trimer 6-31g, exact at full level (CPU)",
+            "input": "inputs/cpu/mqc/fmo/fmo3_water3.json",
+            "expected_energy": -227.970497639,
+            "type": "fragmented"
         }
     ]
 }

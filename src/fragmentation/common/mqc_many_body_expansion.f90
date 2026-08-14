@@ -172,6 +172,10 @@ module mqc_many_body_expansion
       real(dp) :: resppc = 2.0_dp
          !! Separation past which a neighbour becomes point charges. Negative
          !! disables the approximation.
+      integer :: level = 2
+         !! Fragments at a time: 2 is FMO2, 3 is FMO3. Taken from the
+         !! fragmentation level the deck already gives, since it means the same
+         !! thing here as it does for MBE.
       integer :: max_outer = 50
       real(dp) :: outer_tol = 1.0e-7_dp
       real(dp) :: energy = 0.0_dp
@@ -305,8 +309,8 @@ contains
       call run_libcint_fmo(this%sys_geom%element_numbers, symbols, &
                            this%sys_geom%coordinates, this%owner, &
                            trim(this%basis), trim(this%esp), trim(this%expansion), &
-                           trim(this%far_field), this%resppc, this%max_outer, &
-                           this%outer_tol, this%energy, error)
+                           trim(this%far_field), this%resppc, this%level, &
+                           this%max_outer, this%outer_tol, this%energy, error)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -376,8 +380,8 @@ contains
       call run_libcint_fmo(this%sys_geom%element_numbers, symbols, &
                            this%sys_geom%coordinates, this%owner, &
                            trim(this%basis), trim(this%esp), trim(this%expansion), &
-                           trim(this%far_field), this%resppc, this%max_outer, &
-                           this%outer_tol, this%energy, error, &
+                           trim(this%far_field), this%resppc, this%level, &
+                           this%max_outer, this%outer_tol, this%energy, error, &
                            comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())

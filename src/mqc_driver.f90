@@ -587,6 +587,9 @@ contains
                expansion%expansion = "mbe"
             end if
             expansion%far_field = config%fmo_far_field
+            ! The deck's fragmentation level means the same thing here as it
+            ! does for MBE: how many fragments at a time.
+            expansion%level = max_level
             expansion%resppc = config%fmo_resppc
             expansion%max_outer = config%fmo_max_outer
             expansion%outer_tol = config%fmo_tolerance

@@ -27,6 +27,8 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    validation
    vibrational_analysis
    geometry_optimization
+   fmo
+   charges_and_bond_orders
    makefp
    sapt
 

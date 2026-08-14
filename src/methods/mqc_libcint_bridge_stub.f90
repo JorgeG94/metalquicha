@@ -104,7 +104,7 @@ contains
    end subroutine run_libcint_efp
    subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
                               basis_name, esp, expansion, far_field, resppc, &
-                              max_outer, outer_tol, energy, error, comm)
+                              level, max_outer, outer_tol, energy, error, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -120,6 +120,7 @@ contains
       integer, intent(in) :: owner(:)
       character(len=*), intent(in) :: basis_name, esp, expansion, far_field
       real(dp), intent(in) :: resppc
+      integer, intent(in) :: level
       integer, intent(in) :: max_outer
       real(dp), intent(in) :: outer_tol
       real(dp), intent(out) :: energy
@@ -135,7 +136,8 @@ contains
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(owner) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(esp)*len_trim(expansion)*len_trim(far_field) < 0) return
-      if (resppc < -huge(1.0_dp) .or. max_outer < 0 .or. outer_tol < 0.0_dp) return
+      if (resppc < -huge(1.0_dp) .or. level < 0 .or. max_outer < 0) return
+      if (outer_tol < 0.0_dp) return
       if (present(comm)) return
    end subroutine run_libcint_fmo
 

@@ -1,6 +1,6 @@
-!! The fragment molecular orbital method, two-body, for non-covalent fragments
+!! The fragment molecular orbital method, to any order, for non-covalent fragments
 module mqc_libcint_fmo
-   !! FMO2: two nested self-consistencies, then a pass over pairs.
+   !! FMO_n: two nested self-consistencies, then a pass over every n-mer.
    !!
    !! **The inner SCF** is an ordinary fragment SCF -- orbitals converged
    !! against a fixed external potential.
@@ -47,15 +47,29 @@ module mqc_libcint_fmo
    !! See `validation/sweep_fmo`.
    !!
    !! **The energy.** With `E'` an internal energy -- the fragment's own energy
-   !! with its polarised density, not counting its interaction with the field:
+   !! with its polarised density, not counting its interaction with the field --
+   !! every group of fragments `S` contributes what its own subsets did not:
    !!
-   !!     E = sum_I E'_I + sum_{I<J} (E'_IJ - E'_I - E'_J)
-   !!                    + sum_{I<J} Tr(dD_IJ u_IJ)
+   !!     dE_S = E'_S + Tr(dD_S u_S) - sum over proper subsets T of S of dE_T
    !!
-   !! The pair term carries the whole I-J interaction, since the dimer is solved
-   !! with both present. The last is the pair's density response to the field of
-   !! everything outside it, `dD_IJ` being the dimer density less the two
-   !! monomer densities laid side by side.
+   !!     E = sum over all S up to the level of dE_S
+   !!
+   !! For a pair that unrolls to `E'_IJ - E'_I - E'_J` plus the pair's density
+   !! response to the field outside it, and for a trimer to the usual three-body
+   !! expression, neither being written down anywhere. `dD_S` is the n-mer's
+   !! density less its members' densities laid side by side.
+   !!
+   !! The response belongs inside the recursion. Left outside it, a pair's
+   !! response is never cancelled by a trimer containing that pair, and the
+   !! total misses exactness by precisely the sum of them -- invisible at level
+   !! two, where nothing contains a pair.
+   !!
+   !! **Level `n` on `n` fragments is not an approximation.** The corrections
+   !! telescope to the supermolecular energy, the same way FMO2 on two fragments
+   !! does. `check_fmo` climbs the ladder and ends on that equality rather than
+   !! on a tolerance, which is what pins the many-body coefficients down: a
+   !! wrong one still looks plausible at level two and cannot survive being
+   !! asked to cancel exactly.
    !!
    !! **Non-covalent fragments only, and this is enforced.** Every fragment must
    !! be a whole molecule. None of the machinery for cutting a bond -- adjusted
@@ -70,12 +84,10 @@ module mqc_libcint_fmo
    !! Connectivity is therefore checked directly, with the criterion
    !! [[mqc_bond_perception]] uses everywhere else.
    !!
-   !! **Why two fragments is the test that matters.** With two fragments nothing
-   !! lies outside the dimer, so `u_12` vanishes, the monomer terms cancel
-   !! algebraically, and `E = E'_12` -- an ordinary supermolecular SCF. FMO2 on
-   !! two fragments is therefore not an approximation at all, and disagreement
-   !! with a plain RHF is a bug in how fragments are built rather than an error
-   !! in the method. See `validation/check_fmo`.
+   !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
+   !! 1140 SCFs against 190 for level two. Nothing here refuses a high level --
+   !! the expansion is generic and a cap would be arbitrary -- but the binomial
+   !! is the whole story and it is not gentle.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -229,6 +241,20 @@ module mqc_libcint_fmo
          !! to matter, near contact, the cutoff has not engaged and costs
          !! nothing. Precision is being given up precisely where precision is
          !! not the binding constraint, which is the whole bargain.
+      integer :: level = 2
+         !! How many fragments at a time. Two is FMO2, three is FMO3, and the
+         !! expansion is truncated there.
+         !!
+         !! The cost is the binomial: with N fragments there are C(N,n) n-mers,
+         !! so level 3 on twenty fragments is 1140 SCFs against 190 for level 2,
+         !! and level 7 is not a good idea on anything. It is allowed because
+         !! the expansion is generic and refusing it would be arbitrary, not
+         !! because it is advisable.
+         !!
+         !! Level equal to the fragment count is the whole expansion and so is
+         !! exact -- the corrections telescope to the supermolecular energy.
+         !! That is a useful thing to be able to ask for, and `check_fmo`
+         !! asserts it at every level a small system allows.
       character(len=16) :: expansion = "fmo"
          !! How the fragment energies are assembled into a total. Orthogonal to
          !! `esp`, which decides what field they were computed in, because the
@@ -273,13 +299,12 @@ module mqc_libcint_fmo
       !! The energy, and enough of the parts to see where it came from
       real(dp) :: energy = 0.0_dp                !! The FMO2 total
       real(dp) :: monomer_sum = 0.0_dp           !! sum_I E'_I
-      real(dp) :: pair_sum = 0.0_dp              !! sum of the pair corrections
+      real(dp) :: pair_sum = 0.0_dp              !! sum of every n-mer correction
       real(dp) :: response_sum = 0.0_dp          !! sum of Tr(dD u), the last term
       integer :: outer_iterations = 0            !! passes of the monomer SCF
       real(dp) :: outer_change = 0.0_dp          !! last movement of the monomer sum
       logical :: converged = .false.
       real(dp), allocatable :: monomer_energy(:)     !! E'_I
-      real(dp), allocatable :: pair_correction(:, :)  !! the (I,J) term, upper triangle
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
    end type fmo_result_t
 
@@ -345,7 +370,6 @@ contains
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
-      allocate (res%pair_correction(n_frag, n_frag), source=0.0_dp)
       all_converged = .true.
 
       call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
@@ -365,7 +389,8 @@ contains
                               all_converged, error, comm)
       if (error%has_error()) return
 
-      res%energy = res%monomer_sum + res%pair_sum + res%response_sum
+      ! `response_sum` is inside `pair_sum` already; it is reported, not added.
+      res%energy = res%monomer_sum + res%pair_sum
 
       ! Reported, not used. What the fragments look like once the field has
       ! settled is the first thing to look at when a number seems wrong.
@@ -655,79 +680,95 @@ contains
       u = u + j_near
    end subroutine embedding_operator
 
-   subroutine pair_term(frag, n_frag, a, b, z, coords, q_all, opts, res, &
-                        all_converged, error)
-      !! One dimer, in the field of every fragment outside it
+   subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, &
+                        e_internal, e_resp, all_converged, error)
+      !! One n-mer, in the field of every fragment outside it
+      !!
+      !! The pair case generalised: nothing here knew that a group was two
+      !! fragments except the block bookkeeping, and that was always a running
+      !! offset rather than a front half and a back half.
       type(fragment_t), intent(in) :: frag(:)
-      integer, intent(in) :: n_frag, a, b
+      integer, intent(in) :: n_frag
+      integer, intent(in) :: members(:)
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       real(dp), allocatable, intent(in) :: q_all(:)
       type(fmo_options_t), intent(in) :: opts
-      type(fmo_result_t), intent(inout) :: res
+      real(dp), intent(out) :: e_internal, e_resp
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :)
-      real(dp), allocatable :: pair_xyz(:, :)
+      real(dp), allocatable :: xyz(:, :)
       logical, allocatable :: inside(:)
-      integer, allocatable :: near(:)
-      integer, allocatable :: pair_z(:)
-      character(len=2), allocatable :: pair_sym(:)
-      real(dp) :: e_internal, e_resp, e_pair
-      integer :: na, nb
+      integer, allocatable :: near(:), zz(:)
+      character(len=2), allocatable :: sym(:)
+      integer :: m, at, nao_m, expect, nelec, n_atoms, n_here
 
-      na = frag(a)%nao
-      nb = frag(b)%nao
+      ! The n-mer's geometry, its fragments end to end in the order given.
+      ! Sized first and filled once, rather than grown a fragment at a time.
+      n_atoms = 0
+      expect = 0
+      nelec = 0
+      do m = 1, size(members)
+         n_atoms = n_atoms + size(frag(members(m))%z)
+         expect = expect + frag(members(m))%nao
+         nelec = nelec + frag(members(m))%nelec
+      end do
+      allocate (zz(n_atoms), sym(n_atoms), xyz(3, n_atoms))
+      at = 0
+      do m = 1, size(members)
+         n_here = size(frag(members(m))%z)
+         zz(at + 1:at + n_here) = frag(members(m))%z
+         sym(at + 1:at + n_here) = frag(members(m))%sym
+         xyz(:, at + 1:at + n_here) = frag(members(m))%xyz
+         at = at + n_here
+      end do
 
-      pair_z = [frag(a)%z, frag(b)%z]
-      pair_sym = [frag(a)%sym, frag(b)%sym]
-      pair_xyz = reshape([frag(a)%xyz, frag(b)%xyz], [3, size(pair_z)])
-      call build_libcint_molecule(pair_z, pair_sym, pair_xyz, trim(opts%basis), mol, error)
+      call open_fragment(zz, sym, xyz, opts, mol, bounds, error)
       if (error%has_error()) return
 
-      ! The dimer is fragment a's atoms then fragment b's, and libcint orders
-      ! functions by atom, so the monomer blocks sit contiguously front and
-      ! back. Worth checking rather than assuming: a silent mismatch here would
-      ! be a plausible-looking wrong answer rather than a failure.
-      if (mol%nao /= na + nb) then
-         call error%set(ERROR_VALIDATION, "fmo: the dimer basis is not the two monomer "// &
-                        "bases end to end ("//to_char(na)//" + "//to_char(nb)//" /= "// &
+      ! libcint orders functions by atom and the atoms went in fragment by
+      ! fragment, so each member owns a contiguous run. Worth checking rather
+      ! than assuming: a silent mismatch would be a plausible wrong answer
+      ! rather than a failure.
+      if (mol%nao /= expect) then
+         call error%set(ERROR_VALIDATION, "fmo: the n-mer basis is not its fragments' "// &
+                        "bases end to end ("//to_char(expect)//" /= "// &
                         to_char(mol%nao)//")")
          return
       end if
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
 
-      ! The two monomer densities side by side: what the dimer's own Coulomb
-      ! contribution is subtracted with, and what dD is measured against.
+      ! The member densities side by side: what the n-mer's own Coulomb
+      ! contribution is removed with, and what dD is measured against.
       allocate (d_split(mol%nao, mol%nao), source=0.0_dp)
-      d_split(1:na, 1:na) = frag(a)%density
-      d_split(na + 1:, na + 1:) = frag(b)%density
+      at = 0
+      do m = 1, size(members)
+         nao_m = frag(members(m))%nao
+         d_split(at + 1:at + nao_m, at + 1:at + nao_m) = frag(members(m))%density
+         at = at + nao_m
+      end do
 
       allocate (inside(size(z)), source=.false.)
-      inside(frag(a)%atoms) = .true.
-      inside(frag(b)%atoms) = .true.
+      do m = 1, size(members)
+         inside(frag(members(m))%atoms) = .true.
+      end do
 
-      ! The pair's own near set, not the union of the two monomers': a fragment
-      ! near either one is near the pair.
-      call near_fragments(frag, n_frag, [a, b], effective_resppc(opts), near, error)
+      call near_fragments(frag, n_frag, members, effective_resppc(opts), near, error)
       if (error%has_error()) return
 
-      call embedding_operator(mol, pair_z, pair_sym, pair_xyz, near, frag, n_frag, &
-                              inside, z, coords, q_all, opts, u, error)
+      call embedding_operator(mol, zz, sym, xyz, near, frag, n_frag, inside, z, &
+                              coords, q_all, opts, u, error)
       if (error%has_error()) return
 
       if (allocated(u)) then
-         call run_libcint_rhf(mol, frag(a)%nelec + frag(b)%nelec, opts%scf_max_iter, &
-                              opts%scf_energy_tol, opts%scf_density_tol, .false., &
-                              scf, error, h_extra=u)
+         call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                              opts%scf_density_tol, .false., scf, error, h_extra=u)
       else
-         call run_libcint_rhf(mol, frag(a)%nelec + frag(b)%nelec, opts%scf_max_iter, &
-                              opts%scf_energy_tol, opts%scf_density_tol, .false., &
-                              scf, error)
+         call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                              opts%scf_density_tol, .false., scf, error)
       end if
       if (error%has_error()) return
       if (.not. scf%converged) all_converged = .false.
@@ -735,22 +776,12 @@ contains
       e_internal = scf%energy
       e_resp = 0.0_dp
       if (allocated(u)) then
-         e_internal = e_internal - sum(scf%density*u)
-         e_resp = sum((scf%density - d_split)*u)
+         if (opts%expansion /= "mbe") then
+            e_internal = e_internal - sum(scf%density*u)
+            e_resp = sum((scf%density - d_split)*u)
+         end if
       end if
-
-      if (opts%expansion == "mbe") then
-         ! Total embedded energies, straight difference, nothing else.
-         e_pair = scf%energy - frag(a)%energy_total - frag(b)%energy_total
-         e_resp = 0.0_dp
-      else
-         e_pair = e_internal - frag(a)%energy - frag(b)%energy
-      end if
-
-      res%pair_correction(a, b) = e_pair + e_resp
-      res%pair_sum = res%pair_sum + e_pair
-      res%response_sum = res%response_sum + e_resp
-   end subroutine pair_term
+   end subroutine nmer_term
 
    subroutine near_fragments(frag, n_frag, group, resppc, near, error)
       !! Which fragments outside `group` are close enough to need the exact term
@@ -1015,12 +1046,29 @@ contains
    end subroutine calculate_monomers
 
    subroutine calculate_polymers(frag, n_frag, z, coords, opts, res, all_converged, error, comm)
-      !! Every pair, in the field the converged monomers make
+      !! Every n-mer from pairs up to the truncation level
       !!
       !! Independent of each other and of everything else once the monomers have
-      !! settled, so this is a single bag of tasks with no barrier inside it --
-      !! the easy half to distribute, and the expensive one, being quadratic in
-      !! the fragment count where the monomer loop is linear.
+      !! settled, so one bag of tasks with no barrier inside it -- and the
+      !! expensive part, since the count is C(N,n) rather than N.
+      !!
+      !! **The correction each n-mer contributes** is its internal energy less
+      !! everything its own subsets already accounted for:
+      !!
+      !!     dE_S = E'_S - sum over proper non-empty subsets T of S of dE_T
+      !!
+      !! which unrolls to `E'_IJ - E'_I - E'_J` for a pair and to the usual
+      !! three-body expression for a trimer, without either being written down.
+      !! Summing dE over every subset up to the level *is* the truncated
+      !! expansion, so the total is one sum and not a per-level formula. When
+      !! the level reaches the fragment count the corrections telescope and the
+      !! result is the supermolecular energy exactly.
+      !!
+      !! The response term of an n-mer is part of that n-mer's correction and so
+      !! sits inside the recursion. Left outside it, a pair's response would
+      !! never be cancelled by the trimer containing it, and the total would
+      !! miss exactness by exactly the sum of them -- which is how this was
+      !! found. `response_sum` is reported separately but is not added again.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: z(:)
@@ -1032,38 +1080,181 @@ contains
       type(comm_t), intent(in), optional :: comm
 
       real(dp), allocatable :: q_all(:), totals(:)
-      integer :: i, j, pair_index
+      integer, allocatable :: terms(:, :), term_size(:)
+      real(dp), allocatable :: correction(:)
+      real(dp) :: e_internal, e_resp
+      integer :: n_terms, t, task, level
+
+      level = min(opts%level, n_frag)
+      if (level < 2) return
 
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
 
-      ! One bag of tasks, no barrier inside it: nothing here feeds anything
-      ! else here. Quadratic in the fragment count where the monomer loop is
-      ! linear, so this is the half worth spreading.
-      pair_index = 0
-      do i = 1, n_frag
-         do j = i + 1, n_frag
-            pair_index = pair_index + 1
-            if (.not. mine(pair_index, comm)) cycle
-            call pair_term(frag, n_frag, i, j, z, coords, q_all, opts, res, &
-                           all_converged, error)
-            if (error%has_error()) return
-         end do
+      call enumerate_terms(n_frag, level, terms, term_size, n_terms)
+      allocate (correction(n_terms), source=0.0_dp)
+
+      ! Monomers are level one and already solved; their correction is just
+      ! their energy, which is what the recursion below subtracts against.
+      do t = 1, n_terms
+         if (term_size(t) /= 1) cycle
+         if (opts%expansion == "mbe") then
+            correction(t) = frag(terms(1, t))%energy_total
+         else
+            correction(t) = frag(terms(1, t))%energy
+         end if
+      end do
+
+      task = 0
+      do t = 1, n_terms
+         if (term_size(t) < 2) cycle
+         task = task + 1
+         if (.not. mine(task, comm)) cycle
+
+         call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
+                        opts, e_internal, e_resp, all_converged, error)
+         if (error%has_error()) return
+         ! The response goes inside the correction, not alongside it. A larger
+         ! n-mer subtracts its subsets' corrections whole, so a response left
+         ! outside the recursion never gets cancelled and survives into a total
+         ! that should have telescoped exactly. At level two nothing contains a
+         ! pair so the two placements agree, which is why this only shows up
+         ! once there are trimers.
+         correction(t) = e_internal + e_resp
+         res%response_sum = res%response_sum + e_resp
       end do
 
       if (spread_over(comm)) then
-         ! Each rank accumulated only its own pairs, so the totals are partial
-         ! sums and add up to the whole.
-         allocate (totals(2 + n_frag*n_frag))
-         totals(1) = res%pair_sum
-         totals(2) = res%response_sum
-         totals(3:) = reshape(res%pair_correction, [n_frag*n_frag])
+         ! Each rank filled only its own n-mers, the rest left at zero, so a sum
+         ! gathers them. Monomer entries were filled by every rank, so they are
+         ! zeroed on all but one first or they would be counted size() times.
+         if (comm%rank() /= 0) then
+            do t = 1, n_terms
+               if (term_size(t) == 1) correction(t) = 0.0_dp
+            end do
+         end if
+         allocate (totals(n_terms + 1))
+         totals(1:n_terms) = correction
+         totals(n_terms + 1) = res%response_sum
          call allreduce(comm, totals, size(totals), MPI_SUM)
-         res%pair_sum = totals(1)
-         res%response_sum = totals(2)
-         res%pair_correction = reshape(totals(3:), [n_frag, n_frag])
+         correction = totals(1:n_terms)
+         res%response_sum = totals(n_terms + 1)
       end if
+
+      ! Subtract what the subsets already covered. Ordered by size, so every
+      ! subset of a term is final before the term is reduced.
+      call subtract_subsets(terms, term_size, n_terms, correction)
+
+      res%pair_sum = 0.0_dp
+      do t = 1, n_terms
+         if (term_size(t) >= 2) res%pair_sum = res%pair_sum + correction(t)
+      end do
    end subroutine calculate_polymers
+
+   subroutine enumerate_terms(n_frag, level, terms, term_size, n_terms)
+      !! Every combination of fragments from one up to `level`, smallest first
+      !!
+      !! Size order matters: the correction for a term is reduced by its
+      !! subsets, so each subset has to be final before anything containing it
+      !! is touched.
+      integer, intent(in) :: n_frag, level
+      integer, allocatable, intent(out) :: terms(:, :), term_size(:)
+      integer, intent(out) :: n_terms
+
+      integer, allocatable :: pick(:)
+      integer :: m, total, k
+
+      total = 0
+      do m = 1, level
+         total = total + n_choose(n_frag, m)
+      end do
+      allocate (terms(level, total), source=0)
+      allocate (term_size(total), source=0)
+
+      n_terms = 0
+      do m = 1, level
+         allocate (pick(m))
+         do k = 1, m
+            pick(k) = k
+         end do
+         do
+            n_terms = n_terms + 1
+            terms(1:m, n_terms) = pick
+            term_size(n_terms) = m
+            if (.not. step_combination(pick, m, n_frag)) exit
+         end do
+         deallocate (pick)
+      end do
+   end subroutine enumerate_terms
+
+   function step_combination(pick, m, n) result(more)
+      !! Advance a combination in lexicographic order; false when exhausted
+      integer, intent(inout) :: pick(:)
+      integer, intent(in) :: m, n
+      logical :: more
+
+      integer :: i, k
+
+      more = .false.
+      do i = m, 1, -1
+         if (pick(i) < n - m + i) then
+            pick(i) = pick(i) + 1
+            do k = i + 1, m
+               pick(k) = pick(k - 1) + 1
+            end do
+            more = .true.
+            return
+         end if
+      end do
+   end function step_combination
+
+   function n_choose(n, k) result(c)
+      !! Binomial coefficient, built up rather than from factorials
+      integer, intent(in) :: n, k
+      integer :: c
+
+      integer :: i
+
+      c = 1
+      do i = 1, k
+         c = c*(n - k + i)/i
+      end do
+   end function n_choose
+
+   subroutine subtract_subsets(terms, term_size, n_terms, correction)
+      !! Reduce each term by the corrections its own subsets already carry
+      integer, intent(in) :: terms(:, :)
+      integer, intent(in) :: term_size(:)
+      integer, intent(in) :: n_terms
+      real(dp), intent(inout) :: correction(:)
+
+      integer :: t, u
+
+      do t = 1, n_terms
+         if (term_size(t) < 2) cycle
+         do u = 1, n_terms
+            if (term_size(u) >= term_size(t)) cycle
+            if (.not. is_subset(terms(1:term_size(u), u), terms(1:term_size(t), t))) cycle
+            correction(t) = correction(t) - correction(u)
+         end do
+      end do
+   end subroutine subtract_subsets
+
+   function is_subset(small, big) result(inside)
+      !! Whether every member of `small` appears in `big`
+      integer, intent(in) :: small(:), big(:)
+      logical :: inside
+
+      integer :: i
+
+      inside = .true.
+      do i = 1, size(small)
+         if (.not. any(big == small(i))) then
+            inside = .false.
+            return
+         end if
+      end do
+   end function is_subset
 
    function spread_over(comm) result(many)
       !! Whether there is more than one rank to spread over

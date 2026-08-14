@@ -52,6 +52,7 @@ program check_fmo
    call separated_case(1.0e-9_dp, n_bad)
    call trimer_case(5.0e-3_dp, n_bad)
    call partition_cases(n_bad)
+   call level_ladder(n_bad)
 
    if (n_bad == 0) then
       call logger%info("")
@@ -406,6 +407,69 @@ contains
       end if
    end subroutine trimer_case
 
+   subroutine level_ladder(n_bad)
+      !! Climbing the expansion level has to converge on the exact answer
+      !!
+      !! FMO_n truncates the many-body expansion at n fragments at a time. When
+      !! n reaches the number of fragments there is nothing left to truncate:
+      !! the corrections telescope and the result is the supermolecular energy,
+      !! by the same argument that makes FMO2 exact on two fragments. So the
+      !! ladder ends on an equality, not on a tolerance, and every rung below it
+      !! should be closer than the one before.
+      !!
+      !! That upper rung is the real test of the recursion. A wrong many-body
+      !! coefficient still gives plausible numbers at level 2, where the formula
+      !! is short enough to be right by accident; it cannot survive being asked
+      !! to cancel exactly.
+      integer, intent(inout) :: n_bad
+
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(error_t) :: error
+      integer, allocatable :: z(:), owner(:)
+      character(len=2), allocatable :: symbols(:)
+      real(dp), allocatable :: coords(:, :)
+      real(dp) :: exact, err, previous
+      character(len=200) :: line
+      integer :: n_waters, lvl
+
+      do n_waters = 3, 4
+         call logger%info("")
+         write (line, "(a,i0,a)") "== ", n_waters, " waters, level by level"
+         call logger%info(trim(line))
+
+         call water_geometry(n_waters, 0.0_dp, z, symbols, coords, owner)
+         call supermolecule(z, symbols, coords, "sto-3g", exact, n_bad, error)
+         if (error%has_error()) return
+
+         previous = huge(1.0_dp)
+         do lvl = 2, n_waters
+            opts%basis = "sto-3g"
+            opts%esp = "exact"
+            opts%expansion = "fmo"
+            opts%resppc = -1.0_dp     !! no cutoff: this is about the expansion
+            opts%level = lvl
+            call run_fmo2(z, symbols, coords, owner, opts, res, error)
+            if (failed(error, "fmo level", n_bad)) return
+
+            err = abs(res%energy - exact)
+            write (line, "(a,i0,a,f18.10,a,es11.3)") "   level ", lvl, "   E = ", &
+               res%energy, "   err ", err
+            call logger%info(trim(line))
+
+            if (err > previous) then
+               call logger%error("   FAIL raising the level made it worse")
+               n_bad = n_bad + 1
+            end if
+            previous = err
+         end do
+
+         ! The last rung used every fragment at once, so it is not an
+         ! approximation and the tolerance is SCF convergence, not chemistry.
+         call report("the full expansion is the supermolecule", err, 1.0e-9_dp, n_bad)
+      end do
+   end subroutine level_ladder
+
    subroutine partition_cases(n_bad)
       !! A partition that cuts a covalent bond has to be refused, not answered
       !!
@@ -552,7 +616,7 @@ contains
       type(rhf_result_t) :: scf
 
       energy = 0.0_dp
-      call build_libcint_molecule(z, symbols, coords, "6-31g", mol, error)
+      call build_libcint_molecule(z, symbols, coords, basis, mol, error)
       if (failed(error, "supermolecule", n_bad)) return
       call run_libcint_rhf(mol, sum(z), 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       if (failed(error, "supermolecular scf", n_bad)) return
