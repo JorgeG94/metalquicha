@@ -586,7 +586,7 @@ contains
       call gmbe_enumerate_pie_terms(sys_geom, primaries, 3, 1, 1, &
                                     pie_atom_sets, pie_coefficients, n_pie_terms, &
                                     pie_error, initial_max_terms=2_int64)
-      call check(error,.not. pie_error%has_error(), "PIE enumeration should not fail")
+      call check(error,.not. pie_error%has_error(), "PIE enumeration should not fail: "//pie_error%get_full_trace())
       if (allocated(error)) then
          call sys_geom%destroy()
          deallocate (primaries)

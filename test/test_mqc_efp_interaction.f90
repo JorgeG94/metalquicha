@@ -155,7 +155,7 @@ contains
       type(error_t) :: err
 
       call dimer(system, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, electrostatic_energy(system, 0), E_RANK0, thr=REF_TOL, &
                  message="the charge-charge energy disagrees with GAMESS")
@@ -169,7 +169,7 @@ contains
       type(error_t) :: err
 
       call dimer(system, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, electrostatic_energy(system, 1), E_RANK1, thr=REF_TOL, &
                  message="the energy through the dipole disagrees with GAMESS")
@@ -187,7 +187,7 @@ contains
       type(error_t) :: err
 
       call dimer(system, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, electrostatic_energy(system, 2), E_RANK2, thr=REF_TOL, &
                  message="the energy through the quadrupole disagrees with GAMESS")
@@ -206,7 +206,7 @@ contains
       type(error_t) :: err
 
       call dimer(system, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, electrostatic_energy(system, 3), E_RANK3, thr=REF_TOL, &
                  message="the full multipole energy disagrees with GAMESS")
@@ -224,7 +224,7 @@ contains
       type(error_t) :: err
 
       call dimer(system, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, electrostatic_energy(system, 3, screen=.true.), E_SCREENED, &
                  thr=REF_TOL, &
@@ -256,7 +256,7 @@ contains
       real(dp) :: e6
 
       call dimer_with_fragments(system, frags, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, frags(1)%has_dynamic, "the dynamic polarizabilities were not read")
       if (allocated(error)) return
@@ -291,7 +291,7 @@ contains
       type(error_t) :: err
 
       call dimer_with_fragments(system, frags, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, frags(1)%has_static_pol, "no static polarizabilities")
       if (allocated(error)) return
@@ -299,7 +299,7 @@ contains
       call check(error, polarization_energy(system, frags, err), E_POL, thr=REF_TOL, &
                  message="the polarization energy disagrees with GAMESS")
       if (allocated(error)) return
-      call check(error,.not. err%has_error(), "the induced dipoles did not converge")
+      call check(error,.not. err%has_error(), "the induced dipoles did not converge: "//err%get_full_trace())
 
       call frags(1)%destroy()
       call frags(2)%destroy()
@@ -352,10 +352,10 @@ contains
       type(error_t) :: err
 
       call dimer(here, err)
-      call check(error,.not. err%has_error(), "building the dimer failed")
+      call check(error,.not. err%has_error(), "building the dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call dimer(there, err, shift=17.0_dp)
-      call check(error,.not. err%has_error(), "building the shifted dimer failed")
+      call check(error,.not. err%has_error(), "building the shifted dimer failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, electrostatic_energy(there, 1), &
@@ -394,16 +394,16 @@ contains
                    0.00000000000000_dp, -0.77250895280218_dp, -0.46780199748881_dp], &
                   [3, 3])*ANG
       call make_efp_potential(z, symbols, c, "6-31g*", "WATER", pot, err)
-      call check(error,.not. err%has_error(), "building the potential failed")
+      call check(error,.not. err%has_error(), "building the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call write_efp_potential(pot, path, err)
       call read_efp_potential(path, frag(1), err)
-      call check(error,.not. err%has_error(), "reading the potential failed")
+      call check(error,.not. err%has_error(), "reading the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       translations = 0.0_dp
       call build_efp_system(frag, translations, system, err)
-      call check(error,.not. err%has_error(), "building the one-fragment system failed")
+      call check(error,.not. err%has_error(), "building the one-fragment system failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, electrostatic_energy(system, 3), 0.0_dp, thr=1.0e-14_dp, &
                  message="a lone fragment interacted with itself")

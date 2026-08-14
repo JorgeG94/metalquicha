@@ -80,14 +80,14 @@ contains
       integer :: i, k
 
       call water(pot, err)
-      call check(error,.not. err%has_error(), "building the potential failed")
+      call check(error,.not. err%has_error(), "building the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call write_efp_potential(pot, path, err)
-      call check(error,.not. err%has_error(), "writing the potential failed")
+      call check(error,.not. err%has_error(), "writing the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call read_efp_potential(path, frag, err)
-      call check(error,.not. err%has_error(), "reading it back failed")
+      call check(error,.not. err%has_error(), "reading it back failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, frag%n_points == pot%n_points, "point count changed")
@@ -162,13 +162,13 @@ contains
       character(len=*), parameter :: path = "test_efp_charge.efp"
 
       call water(pot, err)
-      call check(error,.not. err%has_error(), "building the potential failed")
+      call check(error,.not. err%has_error(), "building the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call write_efp_potential(pot, path, err)
-      call check(error,.not. err%has_error(), "writing the potential failed")
+      call check(error,.not. err%has_error(), "writing the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call read_efp_potential(path, frag, err)
-      call check(error,.not. err%has_error(), "reading it back failed")
+      call check(error,.not. err%has_error(), "reading it back failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, frag%net_charge(), 0.0_dp, thr=1.0e-8_dp, &
@@ -202,11 +202,11 @@ contains
       integer :: i
 
       call water(pot, err)
-      call check(error,.not. err%has_error(), "building the potential failed")
+      call check(error,.not. err%has_error(), "building the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call write_efp_potential(pot, path, err)
       call read_efp_potential(path, frag, err)
-      call check(error,.not. err%has_error(), "reading the potential failed")
+      call check(error,.not. err%has_error(), "reading the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, frag%has_static_pol, "the static polarizabilities were not read")
@@ -293,20 +293,20 @@ contains
 
       symbols = ["O ", "H ", "H "]
       call water(pot, err)
-      call check(error,.not. err%has_error(), "building the potential failed")
+      call check(error,.not. err%has_error(), "building the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call write_efp_potential(pot, path, err)
       call read_efp_potential(path, frag, err)
-      call check(error,.not. err%has_error(), "reading the potential failed")
+      call check(error,.not. err%has_error(), "reading the potential failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, frag%has_basis, "the projection basis was not read")
       if (allocated(error)) return
 
       call find_basis_file("6-31g*", path_json, err)
-      call check(error,.not. err%has_error(), "cannot find the basis file")
+      call check(error,.not. err%has_error(), "cannot find the basis file: "//err%get_full_trace())
       if (allocated(error)) return
       call build_molecular_basis_json(path_json, symbols, basis, err)
-      call check(error,.not. err%has_error(), "cannot read the basis file")
+      call check(error,.not. err%has_error(), "cannot read the basis file: "//err%get_full_trace())
       if (allocated(error)) return
 
       want = 0

@@ -59,7 +59,7 @@ contains
       end if
 
       if (.not. parse_error%has_error()) then
-         call check(error,.not. parse_error%has_error(), "Minimal XYZ should parse")
+         call check(error,.not. parse_error%has_error(), "Minimal XYZ should parse: "//parse_error%get_full_trace())
       else
          call check(error,.not. parse_error%has_error(), "Minimal XYZ should parse: "//parse_error%get_message())
       end if
@@ -89,7 +89,7 @@ contains
       call read_xyz_string(spaced_xyz, geom, parse_error)
 
       if (.not. parse_error%has_error()) then
-         call check(error,.not. parse_error%has_error(), "Whitespace XYZ should parse")
+         call check(error,.not. parse_error%has_error(), "Whitespace XYZ should parse: "//parse_error%get_full_trace())
       else
          call check(error,.not. parse_error%has_error(), "Whitespace XYZ should parse: "//parse_error%get_message())
       end if
@@ -131,7 +131,7 @@ contains
       if (parse_error%has_error()) write (*, *) "DEBUG: Final error: ", parse_error%get_message()
 
       if (.not. parse_error%has_error()) then
-         call check(error,.not. parse_error%has_error(), "Debug XYZ should parse")
+         call check(error,.not. parse_error%has_error(), "Debug XYZ should parse: "//parse_error%get_full_trace())
       else
          call check(error,.not. parse_error%has_error(), "Debug XYZ should parse: "//parse_error%get_message())
       end if
@@ -199,7 +199,7 @@ contains
       ! Test LF only
       call read_xyz_string(lf_xyz, geom, parse_error)
       if (.not. parse_error%has_error()) then
-         call check(error,.not. parse_error%has_error(), "LF-only XYZ should parse")
+         call check(error,.not. parse_error%has_error(), "LF-only XYZ should parse: "//parse_error%get_full_trace())
       else
          call check(error,.not. parse_error%has_error(), "LF-only XYZ should parse: "//parse_error%get_message())
       end if
@@ -209,7 +209,7 @@ contains
       ! Test CRLF
       call read_xyz_string(crlf_xyz, geom, parse_error)
       if (.not. parse_error%has_error()) then
-         call check(error,.not. parse_error%has_error(), "CRLF XYZ should parse")
+         call check(error,.not. parse_error%has_error(), "CRLF XYZ should parse: "//parse_error%get_full_trace())
       else
          call check(error,.not. parse_error%has_error(), "CRLF XYZ should parse: "//parse_error%get_message())
       end if
@@ -242,7 +242,7 @@ contains
       if (parse_error%has_error()) write (*, *) "DEBUG: Error message: ", parse_error%get_message()
 
       if (.not. parse_error%has_error()) then
-         call check(error,.not. parse_error%has_error(), "Original water test should work")
+        call check(error,.not. parse_error%has_error(), "Original water test should work: "//parse_error%get_full_trace())
       else
          call check(error,.not. parse_error%has_error(), "Original water test should work: "//parse_error%get_message())
       end if

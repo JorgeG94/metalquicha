@@ -77,15 +77,15 @@ contains
                    0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
       call clear_atomic_cache()
       call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, "sto-3g", mol, err)
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAD, d_a, d_b, err)
-      call check(error,.not. err%has_error(), "the SAD guess must build")
+      call check(error,.not. err%has_error(), "the SAD guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call schwarz_bounds(mol, bounds, err)
-      call check(error,.not. err%has_error(), "the Schwarz bounds must build")
+      call check(error,.not. err%has_error(), "the Schwarz bounds must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (density(mol%nao, mol%nao), h_zero(mol%nao, mol%nao), k(mol%nao, mol%nao))
@@ -94,7 +94,7 @@ contains
 
       call build_fock_direct(mol, h_zero, density, bounds, k, stats, err, &
                              k_scale=1.0_dp, j_scale=0.0_dp, omega=omega)
-      call check(error,.not. err%has_error(), "the exchange build must succeed")
+      call check(error,.not. err%has_error(), "the exchange build must succeed: "//err%get_full_trace())
       if (allocated(error)) return
 
       peak = maxval(abs(k))

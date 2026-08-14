@@ -65,7 +65,7 @@ contains
 
       call model_overlap(4, 0.25_dp, overlap)
       call build_orthogonalizer(overlap, x, n_mo, err)
-      call check(error,.not. err%has_error(), "a well-conditioned overlap must succeed")
+      call check(error,.not. err%has_error(), "a well-conditioned overlap must succeed: "//err%get_full_trace())
       if (allocated(error)) return
 
       product = matmul(transpose(x), matmul(overlap, x))
@@ -91,7 +91,7 @@ contains
 
       call model_overlap(5, 0.1_dp, overlap)
       call build_orthogonalizer(overlap, x, n_mo, err)
-      call check(error,.not. err%has_error(), "a well-conditioned overlap must succeed")
+      call check(error,.not. err%has_error(), "a well-conditioned overlap must succeed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, n_mo, 5)
       if (allocated(error)) return
@@ -115,7 +115,7 @@ contains
                          0.0_dp, 1.0_dp, 1.0_dp, &
                          0.0_dp, 1.0_dp, 1.0_dp], [3, 3])
       call build_orthogonalizer(overlap, x, n_mo, err)
-      call check(error,.not. err%has_error(), "a rank-deficient overlap is survivable")
+      call check(error,.not. err%has_error(), "a rank-deficient overlap is survivable: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, n_mo, 2)
    end subroutine test_orth_drops_null
@@ -144,7 +144,7 @@ contains
 
       call model_overlap(4, 0.2_dp, overlap)
       call build_orthogonalizer(overlap, x, n_mo, err)
-      call check(error,.not. err%has_error(), "orthogonaliser must succeed")
+      call check(error,.not. err%has_error(), "orthogonaliser must succeed: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! Orthonormal columns of X are legitimate orbitals for this overlap.
@@ -171,7 +171,7 @@ contains
 
       call model_overlap(4, 0.15_dp, overlap)
       call build_orthogonalizer(overlap, x, n_mo, err)
-      call check(error,.not. err%has_error(), "orthogonaliser must succeed")
+      call check(error,.not. err%has_error(), "orthogonaliser must succeed: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (density(4, 4))

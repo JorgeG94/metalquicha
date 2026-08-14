@@ -46,7 +46,7 @@ contains
       call mesh(8, 40, r)
       allocate (orders(size(r)))
       call prune_angular_orders(PRUNE_NONE, 8, r, 302, orders, err)
-      call check(error,.not. err%has_error(), "no pruning must be allowed")
+      call check(error,.not. err%has_error(), "no pruning must be allowed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, all(orders == 302), "without pruning every shell keeps the target")
    end subroutine test_none
@@ -73,7 +73,7 @@ contains
             if (allocated(orders)) deallocate (orders)
             allocate (orders(size(r)))
             call prune_angular_orders(PRUNE_NWCHEM, z_list(i), r, targets(j), orders, err)
-            call check(error,.not. err%has_error(), "pruning must succeed")
+            call check(error,.not. err%has_error(), "pruning must succeed: "//err%get_full_trace())
             if (allocated(error)) return
             do k = 1, size(orders)
                call check(error, lebedev_is_available(orders(k)), &
@@ -144,7 +144,7 @@ contains
       call mesh(1, 30, r)
       allocate (orders(size(r)))
       call prune_angular_orders(PRUNE_NWCHEM, 1, r, 38, orders, err)
-      call check(error,.not. err%has_error(), "a small target must be accepted")
+      call check(error,.not. err%has_error(), "a small target must be accepted: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, all(orders == 38), "a grid below the floor is left alone")
    end subroutine test_small_untouched
