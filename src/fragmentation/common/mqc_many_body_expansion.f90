@@ -15,6 +15,7 @@ module mqc_many_body_expansion
    public :: many_body_expansion_t
    public :: mbe_context_t
    public :: gmbe_context_t
+   public :: fmo_context_t
 
    !============================================================================
    ! Abstract base type for all many-body expansion methods
@@ -287,11 +288,6 @@ contains
       character(len=2), allocatable :: symbols(:)
       integer :: i
 
-      if (present(json_data)) then
-         ! Nothing to report yet; the deck path is not wired.
-         continue
-      end if
-
       if (.not. this%has_geometry()) then
          call logger%error("fmo_run_serial: sys_geom required but not set")
          return
@@ -316,7 +312,26 @@ contains
          return
       end if
       call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+      call fmo_report(this, json_data)
    end subroutine fmo_run_serial
+
+   subroutine fmo_report(this, json_data)
+      !! Hand the total to whatever writes the output file
+      !!
+      !! Reported as a fragmented total, which is what it is: the expansion is
+      !! different from MBE's but the shape of the answer -- one energy for the
+      !! whole system, assembled from fragments -- is the same, and a reader
+      !! should not have to learn a third format to find it.
+      use mqc_json_output_types, only: OUTPUT_MODE_MBE
+
+      class(fmo_context_t), intent(in) :: this
+      type(json_output_data_t), intent(inout), optional :: json_data
+
+      if (.not. present(json_data)) return
+      json_data%output_mode = OUTPUT_MODE_MBE
+      json_data%total_energy = this%energy
+      json_data%has_energy = .true.
+   end subroutine fmo_report
 
    subroutine fmo_run_distributed(this, json_data)
       !! Run FMO across ranks
@@ -339,8 +354,6 @@ contains
       type(error_t) :: error
       character(len=2), allocatable :: symbols(:)
       integer :: i
-
-      if (present(json_data)) continue
 
       if (.not. this%has_mpi()) then
          call logger%error("fmo_run_distributed: resources not set in context")
@@ -373,6 +386,8 @@ contains
       if (this%resources%mpi_comms%world_comm%leader()) then
          call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
       end if
+      ! Every rank has the same total, but only the leader writes a file.
+      if (this%resources%mpi_comms%world_comm%leader()) call fmo_report(this, json_data)
    end subroutine fmo_run_distributed
 
    function element_symbol_of(z) result(sym)

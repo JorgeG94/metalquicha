@@ -1,0 +1,39 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/w3.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1,
+            "fragments": [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8]
+            ]
+        }
+    ],
+    "model": {
+        "method": "hf",
+        "basis": "6-31g"
+    },
+    "keywords": {
+        "fragmentation": {
+            "method": "mbe",
+            "level": 2,
+            "expansion": "ee-mbe"
+        },
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-08
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Info"
+        }
+    },
+    "driver": "Energy"
+}

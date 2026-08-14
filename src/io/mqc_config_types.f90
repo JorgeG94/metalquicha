@@ -261,6 +261,18 @@ module mqc_config_types
       character(len=:), allocatable :: frag_method  !! MBE, etc.
       integer :: frag_level = DEFAULT_FRAG_LEVEL
       logical :: allow_overlapping_fragments = .false.
+      character(len=:), allocatable :: expansion_kind
+         !! Which expansion runs: "mbe" (default), "fmo" or "ee-mbe".
+         !! GMBE is selected by `allow_overlapping_fragments` instead, which
+         !! predates this and stays as it was.
+      character(len=:), allocatable :: fmo_far_field
+         !! What a distant fragment contributes: mulliken, chelpg or ignore
+      real(dp) :: fmo_resppc = 2.0_dp
+         !! Separation past which a fragment becomes point charges; negative
+         !! turns the approximation off and makes every neighbour exact
+      integer :: fmo_max_outer = 50
+      real(dp) :: fmo_tolerance = 1.0e-7_dp
+         !! Outer (monomer) SCF convergence, on the monomer energy sum
       integer :: max_intersection_level = DEFAULT_MAX_INTERSECTION  !! Maximum k-way intersection depth for GMBE
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method

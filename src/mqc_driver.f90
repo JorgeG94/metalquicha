@@ -10,7 +10,8 @@ module mqc_driver
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_method_types, only: needs_serial_execution
    use mqc_mbe_fragment_distribution_scheme, only: unfragmented_calculation, distributed_unfragmented_hessian
-   use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t
+   use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t, &
+                                      fmo_context_t
    use mqc_method_config, only: method_config_t
    ! GMBE functions are now called via type-bound procedures in gmbe_context_t
    use mqc_validate, only: validate_system, validate_terms
@@ -562,7 +563,42 @@ contains
       end if
 
       ! Build polymorphic expansion context
-      if (allow_overlapping_fragments) then
+      if (config%expansion_kind == "fmo" .or. config%expansion_kind == "ee-mbe") then
+         ! FMO or electrostatically embedded MBE. Both are the same machinery
+         ! and differ only in what a fragment sees of its neighbours and how
+         ! the pieces are added up, so one context serves both and the deck
+         ! chooses by name rather than by setting two switches consistently.
+         allocate (fmo_context_t :: expansion)
+         select type (expansion)
+         type is (fmo_context_t)
+            call expansion%init(config%method_config, config%calc_type)
+            allocate (expansion%sys_geom, source=sys_geom)
+            if (present(bonds)) then
+               if (allocated(expansion%sys_geom%bonds)) deallocate (expansion%sys_geom%bonds)
+               allocate (expansion%sys_geom%bonds, source=bonds)
+            end if
+            call fragment_owner_map(sys_geom, expansion%owner, expansion%n_fragments)
+            expansion%basis = config%method_config%basis_set
+            if (config%expansion_kind == "fmo") then
+               expansion%esp = "exact"
+               expansion%expansion = "fmo"
+            else
+               expansion%esp = "ptc"
+               expansion%expansion = "mbe"
+            end if
+            expansion%far_field = config%fmo_far_field
+            expansion%resppc = config%fmo_resppc
+            expansion%max_outer = config%fmo_max_outer
+            expansion%outer_tol = config%fmo_tolerance
+            expansion%resources => resources
+            expansion%node_leader_ranks = node_leader_ranks
+            expansion%num_nodes = num_nodes
+            expansion%global_groups = global_groups
+            expansion%nodes_per_group = nodes_per_group
+            expansion%group_leader_ranks = group_leader_ranks
+            expansion%group_ids = group_ids
+         end select
+      else if (allow_overlapping_fragments) then
          ! GMBE: allocate gmbe_context_t
          allocate (gmbe_context_t :: expansion)
          select type (expansion)
@@ -665,6 +701,8 @@ contains
          call expansion%destroy()
       type is (gmbe_context_t)
          call expansion%destroy()
+      type is (fmo_context_t)
+         call expansion%destroy()
       end select
       deallocate (expansion)
 
@@ -679,6 +717,26 @@ contains
       end if
 
    end subroutine run_fragmented_calculation
+
+   subroutine fragment_owner_map(sys_geom, owner, n_fragments)
+      !! Which fragment each atom belongs to, from the declared monomers
+      !!
+      !! `fragment_atoms` is 0-indexed and padded to the widest fragment, so
+      !! only the first `fragment_sizes(f)` entries of a column mean anything.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, allocatable, intent(out) :: owner(:)
+      integer, intent(out) :: n_fragments
+
+      integer :: f, k
+
+      n_fragments = sys_geom%n_monomers
+      allocate (owner(sys_geom%total_atoms), source=0)
+      do f = 1, n_fragments
+         do k = 1, sys_geom%fragment_sizes(f)
+            owner(sys_geom%fragment_atoms(k, f) + 1) = f
+         end do
+      end do
+   end subroutine fragment_owner_map
 
    subroutine run_multi_molecule_calculations(resources, mqc_config)
       !! Run calculations for multiple molecules with MPI parallelization

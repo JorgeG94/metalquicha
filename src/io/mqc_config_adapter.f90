@@ -34,6 +34,11 @@ module mqc_config_adapter
       ! Fragmentation settings
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
+      character(len=16) :: expansion_kind = "mbe"  !! "mbe", "fmo" or "ee-mbe"
+      character(len=16) :: fmo_far_field = "mulliken"  !! mulliken, chelpg or ignore
+      real(dp) :: fmo_resppc = 2.0_dp    !! Point-charge cutoff; negative disables it
+      integer :: fmo_max_outer = 50
+      real(dp) :: fmo_tolerance = 1.0e-7_dp
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
       integer :: global_groups = 0
@@ -146,6 +151,15 @@ contains
 
       ! Set GMBE overlapping fragments flag
       driver_config%allow_overlapping_fragments = mqc_config%allow_overlapping_fragments
+      if (allocated(mqc_config%expansion_kind)) then
+         driver_config%expansion_kind = mqc_config%expansion_kind
+      end if
+      if (allocated(mqc_config%fmo_far_field)) then
+         driver_config%fmo_far_field = mqc_config%fmo_far_field
+      end if
+      driver_config%fmo_resppc = mqc_config%fmo_resppc
+      driver_config%fmo_max_outer = mqc_config%fmo_max_outer
+      driver_config%fmo_tolerance = mqc_config%fmo_tolerance
 
       ! Set GMBE maximum intersection level
       driver_config%max_intersection_level = mqc_config%max_intersection_level
