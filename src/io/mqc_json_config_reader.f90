@@ -492,7 +492,7 @@ contains
          return
       end if
 
-      call read_fragments(json, prefix, geom%natoms, nfrag, fragments, uniform, error)
+      call read_fragments(json, prefix, base_dir, geom%natoms, nfrag, fragments, uniform, error)
       if (error%has_error()) return
 
       call read_connectivity(json, prefix, geom%natoms, nfrag, fragments, &
@@ -558,7 +558,7 @@ contains
       end do
    end subroutine read_molecule_geometry
 
-   subroutine read_fragments(json, prefix, natoms, nfrag, fragments, uniform, error)
+   subroutine read_fragments(json, prefix, base_dir, natoms, nfrag, fragments, uniform, error)
       !! The fragments array, with its parallel charge, multiplicity and potential lists
       !!
       !! `fragment_potentials` is the one of those that may be given as a **single
@@ -567,11 +567,15 @@ contains
       !! would otherwise repeat one filename ten thousand times, and a list that long is
       !! somewhere for a typo to hide rather than information.
       !!
+      !! Potential paths are resolved against the deck, exactly as `xyz` is, so a
+      !! deck refers to the potential beside it and works from any directory.
+      !!
       !! `uniform_system` is checked rather than believed. Fragments claimed uniform
       !! must agree in atom count, so a deck that mixes species and says otherwise is
       !! refused here instead of being handed the wrong potential and run.
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: prefix
+      character(len=*), intent(in) :: base_dir  !! For resolving relative potential paths
       integer, intent(in) :: natoms
       integer, intent(out) :: nfrag
       type(input_fragment_t), allocatable, intent(out) :: fragments(:)
@@ -651,13 +655,15 @@ contains
          ! A fragment with no potential named for it stays quantum, so an absent
          ! entry is not an error -- it is the mixed QM/EFP case.
          if (allocated(shared)) then
-            fragments(ifrag)%potential = shared
+            fragments(ifrag)%potential = join_path(base_dir, shared)
          else if (has_list) then
             if (allocated(one)) deallocate (one)
             call json%get(prefix//".fragment_potentials("//int_to_key(ifrag)//")", &
                           one, found)
             if (found .and. allocated(one)) then
-               if (len_trim(one) > 0) fragments(ifrag)%potential = trim(one)
+               if (len_trim(one) > 0) then
+                  fragments(ifrag)%potential = join_path(base_dir, trim(one))
+               end if
             end if
          end if
       end do

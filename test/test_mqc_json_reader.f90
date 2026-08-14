@@ -775,7 +775,10 @@ contains
       call check(error, allocated(config%fragments(1)%potential), &
                  "the first fragment should carry a potential")
       if (allocated(error)) return
-      call check(error, config%fragments(1)%potential, "water.efp")
+      ! Resolved against the deck's own directory, exactly as `xyz` is, so a deck
+      ! names the potential beside it and runs from anywhere. The test deck lives in
+      ! the working directory, hence the "./".
+      call check(error, config%fragments(1)%potential, "./water.efp")
       if (allocated(error)) return
       call check(error,.not. allocated(config%fragments(2)%potential), &
                  "an empty entry should leave the fragment quantum")
@@ -805,9 +808,11 @@ contains
       if (allocated(error)) return
       call check(error, config%uniform_system, "uniform_system should be set")
       if (allocated(error)) return
-      call check(error, config%fragments(1)%potential, "water.efp")
+      ! Both resolved against the deck, not just the first -- broadcasting must not
+      ! bypass the path handling.
+      call check(error, config%fragments(1)%potential, "./water.efp")
       if (allocated(error)) return
-      call check(error, config%fragments(2)%potential, "water.efp")
+      call check(error, config%fragments(2)%potential, "./water.efp")
    end subroutine test_uniform_system
 
    subroutine test_uniform_rejected(error)
