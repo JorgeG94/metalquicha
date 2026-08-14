@@ -31,7 +31,8 @@ module mqc_libcint_direct
    !! equality, and why getting it wrong produces a Fock matrix that is wrong by
    !! a factor of two on its diagonal blocks only. `check_direct` compares
    !! against the in-core build elementwise, which catches exactly that.
-   use pic_types, only: dp, int64
+   use pic_types, only: dp, int64, int_index
+   use pic_sorting, only: sort_index
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, &
@@ -140,6 +141,47 @@ contains
 
       deallocate (buf)
    end subroutine schwarz_bounds
+
+   subroutine pair_work_order(pair_i, pair_j, dims, order)
+      !! Task indices sorted by descending cost
+      !!
+      !! Task `ij` runs `kl = 1..ij`, so its cost is the block size of pair `ij`
+      !! times the block sizes of every pair at or before it -- growing roughly
+      !! linearly in `ij`, but not monotonically, because a pair of two d shells
+      !! is thirty-six function pairs where two s shells are one.
+      !!
+      !! `schedule(dynamic)` hands tasks out in order, so ascending order
+      !! dispatches the most expensive task last and finishes with every other
+      !! thread idle behind it. Reversing fixes the trend but not the variation
+      !! within it; sorting on the actual cost fixes both, and `pic_sorting`'s
+      !! `sort_index` is an introsort that returns the permutation rather than
+      !! the sorted values, which is exactly the question being asked.
+      !!
+      !! The cost is the unscreened function-quartet count. Screening will remove
+      !! some of it unevenly, so this is an estimate -- but it is the estimate
+      !! available before the work is done, and the ordering only has to be
+      !! roughly right for the tail to disappear.
+      integer, intent(in) :: pair_i(:), pair_j(:), dims(:)
+      integer, allocatable, intent(out) :: order(:)
+
+      integer(int64), allocatable :: cost(:)
+      integer(int_index), allocatable :: perm(:)
+      integer(int64) :: cumulative, block
+      integer :: k, npair
+
+      npair = size(pair_i)
+      allocate (cost(npair), perm(npair), order(npair))
+
+      cumulative = 0_int64
+      do k = 1, npair
+         block = int(dims(pair_i(k)), int64)*int(dims(pair_j(k)), int64)
+         cumulative = cumulative + block
+         cost(k) = block*cumulative
+      end do
+
+      call sort_index(cost, perm, reverse=.true.)
+      order = int(perm)
+   end subroutine pair_work_order
 
    subroutine shell_density_max(mol, density, dsh)
       !! The largest |D| in each shell-pair block
@@ -261,7 +303,8 @@ contains
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n
       integer :: ij, kl, npair, ipair
-      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
+      integer :: itask
       integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
       real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
@@ -304,6 +347,7 @@ contains
             pair_j(ipair) = s2
          end do
       end do
+      call pair_work_order(pair_i, pair_j, dims, order)
 
       allocate (g(n, n), d_half(n, n))
       g = 0.0_dp
@@ -371,9 +415,9 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, dsh, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, &
+      !$omp    shared(mol, bounds, dsh, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, kq, jf, env_local) &
-      !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
       !$omp            buf, g_local) &
       !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density)
@@ -382,7 +426,8 @@ contains
       g_local = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do ij = 1, npair
+      do itask = 1, npair
+         ij = order(itask)
          s1 = pair_i(ij)
          s2 = pair_j(ij)
          d1 = dims(s1)
@@ -400,16 +445,21 @@ contains
 
             n_total = n_total + 1_int64
 
+            ! One criterion, not two. The quantity that must be small is the
+            ! *contribution*, so that is what the test compares; screening on the
+            ! bare Schwarz bound as well would discard quartets whose weight
+            ! exceeds one -- `deg` reaches eight -- and those are exactly the ones
+            ! that matter most. The two counters only attribute the decision:
+            ! whether the Schwarz bound alone would have been enough to reach it.
             deg = pair_degeneracy(s1, s2, s3, s4)
             schwarz = bounds(s1, s2)*bounds(s3, s4)
-            if (schwarz < tol) then
-               n_screened = n_screened + 1_int64
-               n_schwarz = n_schwarz + 1_int64
-               cycle
-            end if
             if (schwarz*density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) < tol) then
                n_screened = n_screened + 1_int64
-               n_density = n_density + 1_int64
+               if (schwarz < tol) then
+                  n_schwarz = n_schwarz + 1_int64
+               else
+                  n_density = n_density + 1_int64
+               end if
                cycle
             end if
 
@@ -534,7 +584,8 @@ contains
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
       integer :: ij, kl, npair, ipair
-      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
+      integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
       real(dp) :: tol, deg, value, scaled
 
@@ -581,6 +632,7 @@ contains
             pair_j(ipair) = s2
          end do
       end do
+      call pair_work_order(pair_i, pair_j, dims, order)
 
       allocate (g(n, n, n_set), d_half(n, n, n_set))
       g = 0.0_dp
@@ -621,9 +673,9 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, &
+      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, n_set) &
-      !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
       !$omp            buf, g_local, iset) &
       !$omp    reduction(+:n_total, n_computed, n_screened)
@@ -632,7 +684,8 @@ contains
       g_local = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do ij = 1, npair
+      do itask = 1, npair
+         ij = order(itask)
          s1 = pair_i(ij)
          s2 = pair_j(ij)
          d1 = dims(s1)
@@ -787,7 +840,8 @@ contains
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
       integer :: ij, kl, npair, ipair, i1, i2, i3, pp, qq, rr, ss, tmp
-      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
+      integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
       real(dp) :: tol, value
       logical :: swap_bra, swap_ket, swap_pairs
@@ -825,6 +879,7 @@ contains
             pair_j(ipair) = s2
          end do
       end do
+      call pair_work_order(pair_i, pair_j, dims, order)
 
       allocate (g(n, n, n_set))
       g = 0.0_dp
@@ -838,9 +893,9 @@ contains
       n_screened = 0_int64
 
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, densities, g, dims, offs, pair_i, pair_j, npair, tol, &
+      !$omp    shared(mol, bounds, densities, g, dims, offs, pair_i, pair_j, order, npair, tol, &
       !$omp           opt, n, block_max, n_set) &
-      !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, value, &
       !$omp            buf, g_local, iset, i1, i2, i3, pp, qq, rr, ss, tmp, &
       !$omp            swap_bra, swap_ket, swap_pairs) &
@@ -850,7 +905,8 @@ contains
       g_local = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do ij = 1, npair
+      do itask = 1, npair
+         ij = order(itask)
          s1 = pair_i(ij)
          s2 = pair_j(ij)
          d1 = dims(s1)
@@ -1020,7 +1076,8 @@ contains
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n
       integer :: ij, kl, npair, ipair
-      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
+      integer :: itask
       integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
       real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
@@ -1063,6 +1120,7 @@ contains
             pair_j(ipair) = s2
          end do
       end do
+      call pair_work_order(pair_i, pair_j, dims, order)
 
       allocate (ga(n, n), gb(n, n), d_coul(n, n))
       ga = 0.0_dp
@@ -1130,8 +1188,9 @@ contains
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
       !$omp    shared(mol, bounds, dsh, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
+      !$omp            order, &
       !$omp            npair, tol, opt, n, block_max, kq, env_local) &
-      !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
       !$omp            buf, ga_local, gb_local) &
       !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density)
@@ -1141,7 +1200,8 @@ contains
       gb_local = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do ij = 1, npair
+      do itask = 1, npair
+         ij = order(itask)
          s1 = pair_i(ij)
          s2 = pair_j(ij)
          d1 = dims(s1)
@@ -1162,16 +1222,21 @@ contains
             ! One rather than `jf` for the Coulomb weight: this path folded `jf`
             ! into `d_coul` before the loop, so `dsh` already carries it and
             ! passing it again would square it.
+            ! One criterion, not two. The quantity that must be small is the
+            ! *contribution*, so that is what the test compares; screening on the
+            ! bare Schwarz bound as well would discard quartets whose weight
+            ! exceeds one -- `deg` reaches eight -- and those are exactly the ones
+            ! that matter most. The two counters only attribute the decision:
+            ! whether the Schwarz bound alone would have been enough to reach it.
             deg = pair_degeneracy(s1, s2, s3, s4)
             schwarz = bounds(s1, s2)*bounds(s3, s4)
-            if (schwarz < tol) then
-               n_screened = n_screened + 1_int64
-               n_schwarz = n_schwarz + 1_int64
-               cycle
-            end if
             if (schwarz*density_weight(dsh, s1, s2, s3, s4, 1.0_dp, kq, deg) < tol) then
                n_screened = n_screened + 1_int64
-               n_density = n_density + 1_int64
+               if (schwarz < tol) then
+                  n_schwarz = n_schwarz + 1_int64
+               else
+                  n_density = n_density + 1_int64
+               end if
                cycle
             end if
 
