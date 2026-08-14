@@ -20,6 +20,12 @@ module mqc_program_limits
    !> that stands in for it must agree, and only one of those is compiled with
    !> the backend present.
    integer, parameter, public :: N_EFP_TERMS = 6
+   !> Terms a SAPT0 interaction energy is reported as: electrostatics, exchange,
+   !> induction, exchange-induction, dispersion, exchange-dispersion, the
+   !> delta-HF correction, the supermolecular HF reference, and the total. Here
+   !> rather than beside the SAPT code because the real CPU bridge and the stub
+   !> standing in for it must agree, and only one is compiled with the backend.
+   integer, parameter, public :: N_SAPT_TERMS = 9
 
    !> Group-global result batching size for MPI MBE (multi-global coordinator)
    integer, parameter, public :: GROUP_RESULT_BATCH_SIZE = 256
