@@ -72,10 +72,11 @@ module mqc_libcint_fmo
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_elements, only: element_vdw_radius
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
    use mqc_libcint_esp, only: esp_matrices
-   use mqc_libcint_charges, only: ao_to_atom, mulliken_charges, chelpg_charges
+   use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
    private
@@ -131,8 +132,92 @@ module mqc_libcint_fmo
          !! cancellation flatters it. That is luck, not accuracy -- and it is
          !! not something to rely on, because the two errors have no reason to
          !! stay matched for a different system.
-      character(len=16) :: ptc_charges = "mulliken"
-         !! Read only when `esp = "ptc"`: "mulliken" or "chelpg".
+      character(len=16) :: far_field = "mulliken"
+         !! What a distant fragment contributes to the embedding: the level of
+         !! theory the long-range part is evaluated at.
+         !!
+         !! `"mulliken"` -- point charges from Mulliken populations. The
+         !! default, and what production FMO codes use. The approximation being
+         !! made is specifically a population one: the distant fragment's
+         !! `sum_ls D_ls (mn|ls)` is replaced by its atomic populations, and
+         !! Mulliken populations are what that term reduces to.
+         !!
+         !! `"chelpg"` -- point charges from an ESP fit. Production FMO codes
+         !! do not use these and the choice is not a studied one, so what
+         !! follows is a measurement rather than a citation.
+         !!
+         !! At long separation, where the point-charge approximation is the
+         !! *only* error left -- no three-body term to cancel against -- CHELPG
+         !! is better than Mulliken by one to two orders of magnitude
+         !! (`validation/sweep_fmo`, error against supermolecular RHF, Hartree):
+         !!
+         !!     3 waters at 9 A     mulliken 2.50e-08    chelpg -5.53e-10
+         !!     5 waters at 9 A     mulliken 1.05e-07    chelpg  1.33e-08
+         !!
+         !! That regime is exactly the one the far field operates in, so the
+         !! signal is on point and in the direction the charges themselves
+         !! predict: CHELPG is fitted to reproduce a potential, and reproducing
+         !! a potential is the job. Near contact the comparison is muddied by
+         !! cancellation against the three-body term and should not be read.
+         !!
+         !! Measured on stacked water clusters in one basis. Promising, not
+         !! established -- if it matters to a result, check it there.
+         !!
+         !! `"ignore"` -- distant fragments contribute nothing at all, nuclei
+         !! included. Not an approximation to the field so much as a decision
+         !! not to have one past the cutoff, which makes it the honest way to
+         !! ask what the long-range field is worth: set the cutoff where you
+         !! mean to and compare. It is also the cheapest, since no charges need
+         !! computing and no integrals evaluating for the distant atoms.
+         !!
+         !! Read whenever any fragment is distant -- so with `esp = "ptc"`,
+         !! which makes all of them distant, and with `esp = "exact"` for those
+         !! beyond `resppc`.
+      real(dp) :: resppc = 2.0_dp
+         !! Where the exact ESP gives way to point charges, as a unitless
+         !! separation. Read only when `esp = "exact"`.
+         !!
+         !! FMO does not evaluate the four-index Coulomb term between every
+         !! pair of fragments. Beyond a separation it approximates the distant
+         !! fragment's electron density by its atomic populations, which is what
+         !! makes the method scale: the exact term is needed only within a
+         !! neighbourhood, so the cost per fragment stops growing once the
+         !! system is larger than that neighbourhood.
+         !!
+         !! The separation is measured the way FMO measures it -- the smallest
+         !! interatomic distance between the two fragments, divided by the sum
+         !! of the two atoms' van der Waals radii:
+         !!
+         !!     R_IJ = min over A in I, B in J of |R_A - R_B| / (vdw_A + vdw_B)
+         !!
+         !! so it is a contact distance rather than a centre-of-mass one, and a
+         !! large flat fragment does not count as far away merely because its
+         !! middle is. The 2.0 default is GAMESS's RESPPC.
+         !!
+         !! Negative disables the approximation and makes every fragment exact.
+         !! Zero makes every fragment distant, which is then identical to
+         !! `esp = "ptc"` -- and is asserted to be, in `check_fmo`, since the
+         !! two paths reach it by quite different routes.
+         !!
+         !! **What the default costs**, against the same calculation with the
+         !! approximation off (`validation/sweep_fmo`, 5 waters, Hartree):
+         !!
+         !!     O-O sep    RESPPC = 2      no cutoff
+         !!     2.70 A     -4.90e-04      -4.93e-04     nothing is beyond it yet
+         !!     2.90 A     -1.08e-04      -1.11e-04
+         !!     3.20 A      1.23e-05      -1.03e-06     it starts to bite
+         !!     4.00 A      2.51e-06       8.64e-07
+         !!     6.00 A     -1.81e-08       1.36e-12     fully engaged
+         !!     9.00 A      8.07e-08       1.71e-13
+         !!
+         !! Read as ratios that looks alarming -- five orders of magnitude at
+         !! 9 Angstrom. Read as energies it is the approximation working as
+         !! designed: where the cutoff costs most in relative terms, the
+         !! absolute error it leaves is 8e-08 Hartree, which is five hundredths
+         !! of a millikcal and nothing at all. Where the error is large enough
+         !! to matter, near contact, the cutoff has not engaged and costs
+         !! nothing. Precision is being given up precisely where precision is
+         !! not the binding constraint, which is the whole bargain.
       character(len=16) :: expansion = "fmo"
          !! How the fragment energies are assembled into a total. Orthogonal to
          !! `esp`, which decides what field they were computed in, because the
@@ -192,7 +277,6 @@ module mqc_libcint_fmo
       type(libcint_molecule_t) :: mol
       real(dp), allocatable :: bounds(:, :)      !! Schwarz, for its own Coulomb build
       real(dp), allocatable :: density(:, :)
-      integer, allocatable :: ao(:)              !! its AOs, as supersystem indices
       integer, allocatable :: atoms(:)           !! its atoms, as system indices
       integer, allocatable :: z(:)
       character(len=2), allocatable :: sym(:)
@@ -200,6 +284,7 @@ module mqc_libcint_fmo
       real(dp) :: energy = 0.0_dp                !! internal, E'
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
+      integer, allocatable :: near(:)            !! fragments close enough for the exact term
    end type fragment_t
 
 contains
@@ -219,8 +304,7 @@ contains
       type(error_t), intent(inout) :: error
 
       type(fragment_t), allocatable :: frag(:)
-      type(libcint_molecule_t) :: super
-      real(dp), allocatable :: super_bounds(:, :), j_total(:, :), q_all(:), u(:, :)
+      real(dp), allocatable :: q_all(:), u(:, :)
       logical, allocatable :: inside(:)
       real(dp) :: e_sum, e_prev
       integer :: n_atoms, n_frag, i, j, outer
@@ -234,7 +318,7 @@ contains
       end if
 
       call build_fragments(atomic_numbers, symbols, coordinates, owner, opts, &
-                           super, super_bounds, frag, n_frag, error)
+                           frag, n_frag, error)
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
@@ -258,16 +342,16 @@ contains
       else
          e_prev = sum(frag(:)%energy)
          do outer = 1, opts%max_outer
-            call field_source(super, super_bounds, frag, n_frag, opts, j_total, &
-                              q_all, n_atoms, error)
+            call all_charges(frag, n_frag, n_atoms, opts, q_all, error)
             if (error%has_error()) return
 
             do i = 1, n_frag
                inside = .false.
                inside(frag(i)%atoms) = .true.
-               call embedding_operator(frag(i)%mol, frag(i)%bounds, frag(i)%ao, &
-                                       frag(i)%density, inside, atomic_numbers, &
-                                       coordinates, j_total, q_all, opts, u, error)
+               call embedding_operator(frag(i)%mol, frag(i)%z, frag(i)%sym, &
+                                       frag(i)%xyz, frag(i)%near, frag, n_frag, &
+                                       inside, atomic_numbers, coordinates, &
+                                       q_all, opts, u, error)
                if (error%has_error()) return
                call inner_scf(frag(i), opts, error, u, all_converged)
                if (error%has_error()) return
@@ -303,13 +387,12 @@ contains
       res%monomer_sum = sum(res%monomer_energy)
 
       ! -- the pairs, in the field the converged monomers make ----------------
-      call field_source(super, super_bounds, frag, n_frag, opts, j_total, q_all, &
-                        n_atoms, error)
+      call all_charges(frag, n_frag, n_atoms, opts, q_all, error)
       if (error%has_error()) return
 
       do i = 1, n_frag
          do j = i + 1, n_frag
-            call pair_term(frag, i, j, atomic_numbers, coordinates, j_total, q_all, &
+            call pair_term(frag, n_frag, i, j, atomic_numbers, coordinates, q_all, &
                            opts, res, all_converged, error)
             if (error%has_error()) return
          end do
@@ -330,27 +413,19 @@ contains
       end if
    end subroutine run_fmo2
 
-   subroutine build_fragments(z, symbols, coords, owner, opts, super, super_bounds, &
-                              frag, n_frag, error)
-      !! The supersystem, and each fragment with its place in it
-      !!
-      !! The supersystem exists to hold one Coulomb matrix over the whole basis.
-      !! `frag%ao` records which of its functions belong to a fragment -- not a
-      !! contiguous range in general, since nothing requires a fragment's atoms
-      !! to be listed together.
+   subroutine build_fragments(z, symbols, coords, owner, opts, frag, n_frag, error)
+      !! Each fragment, and which of the others it needs the exact term for
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       integer, intent(in) :: owner(:)
       type(fmo_options_t), intent(in) :: opts
-      type(libcint_molecule_t), intent(out) :: super
-      real(dp), allocatable, intent(out) :: super_bounds(:, :)
       type(fragment_t), allocatable, intent(out) :: frag(:)
       integer, intent(out) :: n_frag
       type(error_t), intent(inout) :: error
 
-      integer, allocatable :: super_ao_atom(:), count_per(:)
-      integer :: n_atoms, i, f, k
+      integer, allocatable :: count_per(:)
+      integer :: n_atoms, i, f
 
       n_atoms = size(z)
       n_frag = maxval(owner)
@@ -374,12 +449,6 @@ contains
          return
       end if
 
-      call build_libcint_molecule(z, symbols, coords, trim(opts%basis), super, error)
-      if (error%has_error()) return
-      call schwarz_bounds(super, super_bounds, error)
-      if (error%has_error()) return
-      call ao_to_atom(super, super_ao_atom)
-
       allocate (frag(n_frag))
       do f = 1, n_frag
          frag(f)%atoms = pack([(i, i=1, n_atoms)], owner == f)
@@ -398,140 +467,152 @@ contains
          if (error%has_error()) return
          call schwarz_bounds(frag(f)%mol, frag(f)%bounds, error)
          if (error%has_error()) return
-
-         ! Its functions inside the supersystem, in the order the fragment
-         ! itself has them: both are built atom by atom in increasing index.
-         frag(f)%ao = pack([(k, k=1, super%nao)], owner(super_ao_atom) == f)
-         if (size(frag(f)%ao) /= frag(f)%mol%nao) then
-            call error%set(ERROR_VALIDATION, "fmo: fragment "//to_char(f)//" has "// &
-                           to_char(frag(f)%mol%nao)//" basis functions on its own but "// &
-                           to_char(size(frag(f)%ao))//" inside the supersystem")
-            return
-         end if
       end do
+
+      ! Geometry fixes the near sets, so they are found once rather than each
+      ! outer pass.
+      do f = 1, n_frag
+         call near_fragments(frag, n_frag, [f], effective_resppc(opts), frag(f)%near, error)
+         if (error%has_error()) return
+      end do
+      call logger%verbose("  fmo: fragment 1 treats "//to_char(size(frag(1)%near))// &
+                          " of "//to_char(n_frag - 1)//" neighbours exactly")
    end subroutine build_fragments
 
-   subroutine field_source(super, super_bounds, frag, n_frag, opts, j_total, q_all, &
-                           n_atoms, error)
-      !! Whatever the embedding is built out of this pass
+   function effective_resppc(opts) result(r)
+      !! The cutoff actually in force
       !!
-      !! For the exact ESP that is one Coulomb matrix over the whole basis,
-      !! built from every fragment's density. It serves every fragment: the
-      !! field on X is this matrix restricted to X, less the part X's own
-      !! density contributed, which is a small build over X's own basis. The
-      !! alternative is a supersystem build per fragment per pass, and the
-      !! subtraction is exact because a four-index integral over X's functions
-      !! does not care which molecule object it was computed through.
+      !! With `esp = "ptc"` every fragment is distant by construction, which is
+      !! a cutoff of zero -- so the two ways of asking for an all-point-charge
+      !! embedding meet here rather than in two separate code paths that could
+      !! drift apart.
+      type(fmo_options_t), intent(in) :: opts
+      real(dp) :: r
+
+      r = opts%resppc
+      if (opts%esp == "ptc") r = 0.0_dp
+      if (opts%esp == "none") r = 0.0_dp
+   end function effective_resppc
+
+   subroutine all_charges(frag, n_frag, n_atoms, opts, q_all, error)
+      !! One partial charge per atom, from the fragment densities on hand
       !!
-      !! For ESP-PTC it is instead one partial charge per atom.
-      type(libcint_molecule_t), intent(in) :: super
-      real(dp), intent(in) :: super_bounds(:, :)
+      !! Needed whenever any fragment is distant enough to be approximated,
+      !! which under the default `resppc` is most of them in a large system.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag, n_atoms
       type(fmo_options_t), intent(in) :: opts
-      real(dp), allocatable, intent(out) :: j_total(:, :), q_all(:)
+      real(dp), allocatable, intent(out) :: q_all(:)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: d_total(:, :), zero_h(:, :), q(:)
-      type(direct_stats_t) :: stats
+      real(dp), allocatable :: q(:)
       integer :: f
 
-      if (opts%esp == "ptc") then
-         allocate (q_all(n_atoms), source=0.0_dp)
-         do f = 1, n_frag
-            call fragment_charges(frag(f), opts%ptc_charges, q, error)
-            if (error%has_error()) return
-            q_all(frag(f)%atoms) = q
-         end do
-         return
-      end if
-      if (opts%esp /= "exact") return
-
-      allocate (d_total(super%nao, super%nao), source=0.0_dp)
+      allocate (q_all(n_atoms), source=0.0_dp)
+      if (opts%esp == "none") return
+      ! Nothing reads these if distant fragments contribute nothing, and for
+      ! CHELPG they are not cheap enough to compute on the off chance.
+      if (opts%far_field == "ignore") return
       do f = 1, n_frag
-         d_total(frag(f)%ao, frag(f)%ao) = frag(f)%density
+         call fragment_charges(frag(f), opts%far_field, q, error)
+         if (error%has_error()) return
+         q_all(frag(f)%atoms) = q
       end do
+   end subroutine all_charges
 
-      allocate (zero_h(super%nao, super%nao), source=0.0_dp)
-      allocate (j_total(super%nao, super%nao))
-      ! No core Hamiltonian and no exchange, so what comes back is J alone.
-      call build_fock_direct(super, zero_h, d_total, super_bounds, j_total, stats, &
-                             error, k_scale=0.0_dp, j_scale=1.0_dp)
-   end subroutine field_source
-
-   subroutine embedding_operator(mol, bounds, ao, own_density, inside, z, coords, &
-                                 j_total, q_all, opts, u, error)
+   subroutine embedding_operator(mol, group_z, group_sym, group_xyz, near, frag, &
+                                 n_frag, inside, z, coords, q_all, opts, u, error)
       !! The field the atoms marked `inside` sit in, over `mol`'s basis
       !!
-      !! Works for a monomer and a dimer alike -- `inside` is what changes.
-      !! Comes back unallocated when there is no field, which is how the caller
-      !! knows the SCF energy needs no correction.
+      !! Works for a monomer and a dimer alike -- `inside` and `near` are what
+      !! change. Comes back unallocated when there is no field, which is how the
+      !! caller knows the SCF energy needs no correction.
+      !!
+      !! Two kinds of outside atom contribute, and the split is what `resppc`
+      !! decides. A near fragment gives its bare nuclei here and its electrons
+      !! through the exact Coulomb operator below. A distant one gives a single
+      !! partial charge per atom, which already carries both -- that is what
+      !! `q_A = Z_A - population_A` means, and why the point-charge form is an
+      !! approximation to the electron term alone rather than to the whole
+      !! interaction.
       type(libcint_molecule_t), intent(in) :: mol
-      real(dp), intent(in) :: bounds(:, :)
-      integer, intent(in) :: ao(:)
-      real(dp), intent(in) :: own_density(:, :)
+      integer, intent(in) :: group_z(:)
+      character(len=2), intent(in) :: group_sym(:)
+      real(dp), intent(in) :: group_xyz(:, :)
+      integer, intent(in) :: near(:)
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: n_frag
       logical, intent(in) :: inside(:)
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
-      real(dp), allocatable, intent(in) :: j_total(:, :), q_all(:)
+      real(dp), allocatable, intent(in) :: q_all(:)
       type(fmo_options_t), intent(in) :: opts
       real(dp), allocatable, intent(out) :: u(:, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: matrices(:, :, :), points(:, :), weight(:)
-      real(dp), allocatable :: j_own(:, :), zero_h(:, :)
-      type(direct_stats_t) :: stats
-      integer :: n_atoms, i, g, n_out
+      real(dp), allocatable :: matrices(:, :, :), points(:, :), weight(:), j_near(:, :)
+      logical, allocatable :: is_near(:)
+      integer :: n_atoms, i, k, g, n_out
 
       if (opts%esp == "none") return
       n_atoms = size(z)
       n_out = count(.not. inside)
       if (n_out == 0) return
 
-      allocate (u(mol%nao, mol%nao), source=0.0_dp)
+      ! Which outside atoms belong to a fragment being treated exactly.
+      allocate (is_near(n_atoms), source=.false.)
+      do k = 1, size(near)
+         is_near(frag(near(k))%atoms) = .true.
+      end do
+
+      ! Distant atoms drop out entirely when they are being ignored, so the
+      ! integrals for them are never evaluated rather than evaluated and scaled
+      ! by nothing.
       allocate (points(3, n_out), weight(n_out))
       g = 0
       do i = 1, n_atoms
          if (inside(i)) cycle
+         if (.not. is_near(i) .and. opts%far_field == "ignore") cycle
          g = g + 1
          points(:, g) = coords(:, i)
-         ! Exact ESP: the bare nuclei here, their electrons through J below.
-         ! ESP-PTC: the whole neighbour atom as one partial charge, nuclei and
-         ! electrons together, and no J term at all.
-         if (opts%esp == "ptc") then
-            weight(g) = q_all(i)
+         if (is_near(i)) then
+            weight(g) = real(z(i), dp)      !! nucleus only; electrons via J below
          else
-            weight(g) = real(z(i), dp)
+            weight(g) = q_all(i)            !! nucleus and electrons, approximated
          end if
       end do
 
-      ! An electron carries charge -1, so a positive charge lowers its energy:
-      ! the operator is -sum_g w_g/|r - R_g|.
-      call esp_matrices(mol, points, matrices, error)
-      if (error%has_error()) return
-      do g = 1, n_out
-         u = u - weight(g)*matrices(:, :, g)
-      end do
-      if (opts%esp == "ptc") return
+      ! Nothing near and nothing distant that counts: there is no field, and
+      ! saying so with an unallocated result spares the caller a zero matrix it
+      ! would have to add to everything anyway.
+      if (g == 0 .and. size(near) == 0) return
 
-      ! The outside electrons, exactly: the whole-basis Coulomb matrix
-      ! restricted here, less what this group's own density put into it.
-      allocate (zero_h(mol%nao, mol%nao), source=0.0_dp)
-      allocate (j_own(mol%nao, mol%nao))
-      call build_fock_direct(mol, zero_h, own_density, bounds, j_own, stats, error, &
-                             k_scale=0.0_dp, j_scale=1.0_dp)
+      allocate (u(mol%nao, mol%nao), source=0.0_dp)
+      if (g > 0) then
+         ! An electron carries charge -1, so a positive charge lowers its
+         ! energy: the operator is -sum_g w_g/|r - R_g|.
+         call esp_matrices(mol, points(:, 1:g), matrices, error)
+         if (error%has_error()) return
+         do i = 1, g
+            u = u - weight(i)*matrices(:, :, i)
+         end do
+      end if
+      if (size(near) == 0) return
+
+      call local_coulomb(frag, group_z, group_sym, group_xyz, mol%nao, near, opts, &
+                         j_near, error)
       if (error%has_error()) return
-      u = u + j_total(ao, ao) - j_own
+      u = u + j_near
    end subroutine embedding_operator
 
-   subroutine pair_term(frag, a, b, z, coords, j_total, q_all, opts, res, &
+   subroutine pair_term(frag, n_frag, a, b, z, coords, q_all, opts, res, &
                         all_converged, error)
       !! One dimer, in the field of every fragment outside it
       type(fragment_t), intent(in) :: frag(:)
-      integer, intent(in) :: a, b
+      integer, intent(in) :: n_frag, a, b
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
-      real(dp), allocatable, intent(in) :: j_total(:, :), q_all(:)
+      real(dp), allocatable, intent(in) :: q_all(:)
       type(fmo_options_t), intent(in) :: opts
       type(fmo_result_t), intent(inout) :: res
       logical, intent(inout) :: all_converged
@@ -540,18 +621,21 @@ contains
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :)
+      real(dp), allocatable :: pair_xyz(:, :)
       logical, allocatable :: inside(:)
-      integer, allocatable :: ao(:)
+      integer, allocatable :: near(:)
+      integer, allocatable :: pair_z(:)
+      character(len=2), allocatable :: pair_sym(:)
       real(dp) :: e_internal, e_resp, e_pair
       integer :: na, nb
 
       na = frag(a)%mol%nao
       nb = frag(b)%mol%nao
 
-      call build_libcint_molecule([frag(a)%z, frag(b)%z], [frag(a)%sym, frag(b)%sym], &
-                                  reshape([frag(a)%xyz, frag(b)%xyz], &
-                                          [3, size(frag(a)%z) + size(frag(b)%z)]), &
-                                  trim(opts%basis), mol, error)
+      pair_z = [frag(a)%z, frag(b)%z]
+      pair_sym = [frag(a)%sym, frag(b)%sym]
+      pair_xyz = reshape([frag(a)%xyz, frag(b)%xyz], [3, size(pair_z)])
+      call build_libcint_molecule(pair_z, pair_sym, pair_xyz, trim(opts%basis), mol, error)
       if (error%has_error()) return
 
       ! The dimer is fragment a's atoms then fragment b's, and libcint orders
@@ -576,10 +660,14 @@ contains
       allocate (inside(size(z)), source=.false.)
       inside(frag(a)%atoms) = .true.
       inside(frag(b)%atoms) = .true.
-      ao = [frag(a)%ao, frag(b)%ao]
 
-      call embedding_operator(mol, bounds, ao, d_split, inside, z, coords, &
-                              j_total, q_all, opts, u, error)
+      ! The pair's own near set, not the union of the two monomers': a fragment
+      ! near either one is near the pair.
+      call near_fragments(frag, n_frag, [a, b], effective_resppc(opts), near, error)
+      if (error%has_error()) return
+
+      call embedding_operator(mol, pair_z, pair_sym, pair_xyz, near, frag, n_frag, &
+                              inside, z, coords, q_all, opts, u, error)
       if (error%has_error()) return
 
       if (allocated(u)) then
@@ -613,6 +701,139 @@ contains
       res%pair_sum = res%pair_sum + e_pair
       res%response_sum = res%response_sum + e_resp
    end subroutine pair_term
+
+   subroutine near_fragments(frag, n_frag, group, resppc, near, error)
+      !! Which fragments outside `group` are close enough to need the exact term
+      !!
+      !! FMO's separation measure: the smallest interatomic distance between the
+      !! two fragments, over the sum of those two atoms' van der Waals radii.
+      !! Contact distance, not centre-to-centre, so an extended fragment counts
+      !! as near if any part of it is.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: n_frag
+      integer, intent(in) :: group(:)
+      real(dp), intent(in) :: resppc
+      integer, allocatable, intent(out) :: near(:)
+      type(error_t), intent(inout) :: error
+
+      logical, allocatable :: keep(:)
+      real(dp) :: r, best
+      integer :: k, g, ia, ib
+
+      allocate (keep(n_frag), source=.false.)
+      do k = 1, n_frag
+         if (any(group == k)) cycle
+         if (resppc < 0.0_dp) then
+            keep(k) = .true.          !! approximation disabled: everything exact
+            cycle
+         end if
+
+         best = huge(1.0_dp)
+         do g = 1, size(group)
+            do ia = 1, size(frag(group(g))%atoms)
+               do ib = 1, size(frag(k)%atoms)
+                  call unitless_distance(frag(group(g)), ia, frag(k), ib, r, error)
+                  if (error%has_error()) return
+                  best = min(best, r)
+               end do
+            end do
+         end do
+         keep(k) = best <= resppc
+      end do
+
+      near = pack([(k, k=1, n_frag)], keep)
+   end subroutine near_fragments
+
+   subroutine unitless_distance(fa, ia, fb, ib, r, error)
+      !! |R_A - R_B| / (vdw_A + vdw_B), the separation FMO measures in
+      real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
+      type(fragment_t), intent(in) :: fa, fb
+      integer, intent(in) :: ia, ib
+      real(dp), intent(out) :: r
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: scale
+
+      scale = (element_vdw_radius(fa%z(ia)) + element_vdw_radius(fb%z(ib)))*ANGSTROM_TO_BOHR
+      if (scale <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "fmo: no van der Waals radius for element "// &
+                        to_char(fa%z(ia))//" or "//to_char(fb%z(ib))//", so the "// &
+                        "separation the point-charge cutoff is measured in is undefined")
+         return
+      end if
+      r = norm2(fa%xyz(:, ia) - fb%xyz(:, ib))/scale
+   end subroutine unitless_distance
+
+   subroutine local_coulomb(frag, group_z, group_sym, group_xyz, group_nao, near, &
+                            opts, j_near, error)
+      !! The exact Coulomb operator of the near fragments, on the group's basis
+      !!
+      !! Built over a molecule holding the group and its near neighbours only,
+      !! with the group's own density zeroed -- so what comes back on the
+      !! group's block is `sum_{K near} sum_{ls in K} D^K_ls (mn|ls)` and
+      !! nothing else. No subtraction, and no dependence on the size of the
+      !! system beyond the neighbourhood, which is the point of having a cutoff
+      !! at all.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: group_z(:)
+      character(len=2), intent(in) :: group_sym(:)
+      real(dp), intent(in) :: group_xyz(:, :)
+      integer, intent(in) :: group_nao
+      integer, intent(in) :: near(:)
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: j_near(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(libcint_molecule_t) :: local
+      type(direct_stats_t) :: stats
+      integer, allocatable :: z(:)
+      character(len=2), allocatable :: sym(:)
+      real(dp), allocatable :: xyz(:, :), d(:, :), zero_h(:, :), bounds(:, :), j_full(:, :)
+      integer :: k, at, nao_k, expect
+
+      allocate (j_near(group_nao, group_nao), source=0.0_dp)
+      if (size(near) == 0) return
+
+      z = group_z
+      sym = group_sym
+      xyz = group_xyz
+      expect = group_nao
+      do k = 1, size(near)
+         z = [z, frag(near(k))%z]
+         sym = [sym, frag(near(k))%sym]
+         xyz = reshape([xyz, frag(near(k))%xyz], [3, size(z)])
+         expect = expect + frag(near(k))%mol%nao
+      end do
+
+      call build_libcint_molecule(z, sym, xyz, trim(opts%basis), local, error)
+      if (error%has_error()) return
+      if (local%nao /= expect) then
+         call error%set(ERROR_VALIDATION, "fmo: the local supersystem has "// &
+                        to_char(local%nao)//" basis functions where its parts have "// &
+                        to_char(expect)//"; the atom ordering is not what the block "// &
+                        "layout assumes")
+         return
+      end if
+      call schwarz_bounds(local, bounds, error)
+      if (error%has_error()) return
+
+      ! Only the neighbours carry density. The group's own block stays zero, so
+      ! its own Coulomb contribution never enters and needs no removing.
+      allocate (d(local%nao, local%nao), source=0.0_dp)
+      at = group_nao
+      do k = 1, size(near)
+         nao_k = frag(near(k))%mol%nao
+         d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
+         at = at + nao_k
+      end do
+
+      allocate (zero_h(local%nao, local%nao), source=0.0_dp)
+      allocate (j_full(local%nao, local%nao))
+      call build_fock_direct(local, zero_h, d, bounds, j_full, stats, error, &
+                             k_scale=0.0_dp, j_scale=1.0_dp)
+      if (error%has_error()) return
+      j_near = j_full(1:group_nao, 1:group_nao)
+   end subroutine local_coulomb
 
    subroutine inner_scf(f, opts, error, u, all_converged)
       !! The inner SCF: this fragment's orbitals, against a fixed external field

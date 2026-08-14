@@ -218,7 +218,7 @@ contains
       integer, intent(inout) :: n_bad
 
       type(fmo_options_t) :: opts
-      type(fmo_result_t) :: exact_esp, ptc, bare
+      type(fmo_result_t) :: exact_esp, ptc, bare, cutoff, ignored
       type(error_t) :: error
       integer, allocatable :: z(:), owner(:)
       character(len=2), allocatable :: symbols(:)
@@ -236,18 +236,41 @@ contains
 
       opts%basis = "6-31g"
       opts%esp = "exact"
+      ! 9 Angstrom over the summed van der Waals radii is a unitless separation
+      ! near 3, so under the default RESPPC of 2 these fragments are distant and
+      ! would be approximated. This case is about the exact operator, so it asks
+      ! for it: a negative cutoff turns the approximation off.
+      opts%resppc = -1.0_dp
       call run_fmo2(z, symbols, coords, owner, opts, exact_esp, error)
       if (failed(error, "fmo exact esp", n_bad)) return
 
       opts%esp = "ptc"
-      opts%ptc_charges = "mulliken"
+      opts%far_field = "mulliken"
       call run_fmo2(z, symbols, coords, owner, opts, ptc, error)
       if (failed(error, "fmo ptc", n_bad)) return
+
+      ! And the default cutoff must agree with the point-charge run here, since
+      ! at this separation it should be choosing point charges for everything.
+      opts%esp = "exact"
+      opts%resppc = 2.0_dp
+      call run_fmo2(z, symbols, coords, owner, opts, cutoff, error)
+      if (failed(error, "fmo default cutoff", n_bad)) return
 
       opts%esp = "none"
       opts%expansion = "mbe"
       call run_fmo2(z, symbols, coords, owner, opts, bare, error)
       if (failed(error, "plain mbe", n_bad)) return
+
+      ! Every fragment distant, and distant fragments ignored: there is then no
+      ! embedding left anywhere, so this has to be plain MBE exactly. It reaches
+      ! that through the near/far machinery rather than the no-embedding branch,
+      ! which is why it is worth asking.
+      opts%esp = "ptc"
+      opts%expansion = "mbe"
+      opts%far_field = "ignore"
+      call run_fmo2(z, symbols, coords, owner, opts, ignored, error)
+      if (failed(error, "far field ignored", n_bad)) return
+      opts%far_field = "mulliken"
 
       write (line, "(a,es11.3)") "   exact ESP      err ", exact_esp%energy - exact
       call logger%info(trim(line))
@@ -256,8 +279,20 @@ contains
       write (line, "(a,es11.3)") "   no embedding   err ", bare%energy - exact
       call logger%info(trim(line))
 
+      write (line, "(a,es11.3)") "   default cutoff err ", cutoff%energy - exact
+      call logger%info(trim(line))
+
       call report("exact ESP is exact once 3-body effects have died", &
                   abs(exact_esp%energy - exact), tol, n_bad)
+
+      ! At this separation the cutoff should have classified every fragment as
+      ! distant, so it must land exactly on the point-charge answer -- reached
+      ! by a different route, through the near/far split rather than through the
+      ! all-point-charge branch.
+      call report("the default cutoff picks point charges out here", &
+                  abs(cutoff%energy - ptc%energy), 1.0e-12_dp, n_bad)
+      call report("ignoring every distant fragment leaves plain MBE", &
+                  abs(ignored%energy - bare%energy), 1.0e-12_dp, n_bad)
 
       ! The point of separating them: the field is still real at this distance,
       ! so an expansion that ignores it is visibly wrong. Were that to stop
@@ -313,13 +348,13 @@ contains
       if (failed(error, "fmo exact esp", n_bad)) return
 
       opts%esp = "ptc"
-      opts%ptc_charges = "chelpg"
+      opts%far_field = "chelpg"
       call run_fmo2(z, symbols, coords, owner, opts, fitted, error)
       if (failed(error, "fmo ptc chelpg", n_bad)) return
 
       opts%esp = "ptc"
       opts%expansion = "mbe"
-      opts%ptc_charges = "mulliken"
+      opts%far_field = "mulliken"
       call run_fmo2(z, symbols, coords, owner, opts, eembe, error)
       if (failed(error, "ee-mbe", n_bad)) return
 

@@ -2,37 +2,38 @@ program sweep_fmo
    !! How should a fragment's neighbours be represented to it?
    !!
    !! A measurement, not a test: it prints a table and asserts nothing, because
-   !! what it measures is a property of the method and would be a brittle thing
-   !! to pin an inequality on. `check_fmo` holds the assertions -- including the
-   !! long-separation one, which is the sharpest conclusion drawn here.
+   !! what it measures is a property of the methods and would be a brittle thing
+   !! to pin an inequality on. `check_fmo` holds the assertions.
    !!
    !! Stacked water clusters of 3, 4 and 5 monomers at six separations, each run
-   !! four ways against a supermolecular RHF in the same basis. What it found:
+   !! five ways against a supermolecular RHF in the same basis. What it found:
    !!
    !!   * **The exact ESP is exact where it can be.** At 6 to 9 Angstrom, where
    !!     exchange and charge transfer between fragments have died but the
-   !!     electrostatic field has not, FMO2 with the density-based embedding
+   !!     electrostatic field has not, FMO2 with the cutoff switched off
    !!     reproduces the supermolecule to 1e-13. Only a correct embedding
    !!     operator does that, which makes those rows the real verification of
-   !!     the method and not merely a comparison between variants.
-   !!   * **Point charges plateau.** ESP-PTC stops improving at about 1e-08
-   !!     (Mulliken) or 1e-10 (CHELPG) no matter how far apart the fragments are
-   !!     moved. That floor is the charge approximation itself, and it is what
-   !!     separates electrostatically embedded MBE from FMO.
-   !!   * **Do not read the short-separation rows as favouring point charges.**
+   !!     the method rather than a comparison between variants.
+   !!   * **The RESPPC cutoff costs nothing where it matters.** Near contact
+   !!     nothing is beyond it and the two columns agree; past it, the default
+   !!     gives up several orders of relative accuracy but the absolute error it
+   !!     leaves is under 1e-07 Hartree. The approximation surrenders precision
+   !!     exactly where precision is not the binding constraint.
+   !!   * **CHELPG beats Mulliken in the far field**, by one to two orders at
+   !!     long separation, which is the regime the far field operates in. Not
+   !!     what production FMO codes do, and worth knowing.
+   !!   * **Do not read the short-separation rows as ranking the embeddings.**
    !!     The exact ESP's residual near contact is the genuine three-body term,
    !!     which FMO2 does not contain; it is negative throughout and shrinks
-   !!     monotonically as that term dies. The point-charge error changes sign
-   !!     across the range, so near contact it cancels against the three-body
-   !!     term and looks better than it is. Two unrelated errors happening to
-   !!     have opposite signs is not accuracy, and nothing keeps them matched
-   !!     for a different system.
-   !!   * Embedding of either kind beats none by one to three orders of
-   !!     magnitude everywhere, which is the argument for FMO over an
-   !!     unembedded expansion.
+   !!     monotonically as that term dies. The point-charge errors change sign
+   !!     across the range, so near contact they cancel against the three-body
+   !!     term and flatter themselves. Two unrelated errors happening to oppose
+   !!     each other is not accuracy.
+   !!   * Embedding of any kind beats none by one to three orders everywhere,
+   !!     which is the argument for FMO over an unembedded expansion.
    !!
-   !! Rerun after touching the embedding, the charges, or the ESP integrals: the
-   !! pattern above is what would break.
+   !! Rerun after touching the embedding, the charges, the cutoff, or the ESP
+   !! integrals: the pattern above is what would break.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, warning_level
    use mqc_error, only: error_t
@@ -47,43 +48,33 @@ program sweep_fmo
    real(dp) :: sep(N_SEP) = [2.7_dp, 2.9_dp, 3.2_dp, 4.0_dp, 6.0_dp, 9.0_dp]
    integer :: nw(N_SIZE) = [3, 4, 5]
    integer :: i, k, wins_exact, total
-   real(dp) :: e_ex, e_exact, e_mul, e_che, e_none
+   real(dp) :: e_ex, e_cut, e_exact, e_mul, e_che, e_none
 
    call logger%configure(warning_level)
    wins_exact = 0
    total = 0
 
-   print "(a)", "  waters  sep(A)      FMO2      EE-MBE(mull)   EE-MBE(chelpg)        MBE   closest"
+   print "(a)", "  waters  sep(A)  FMO2(RESPPC=2)  FMO2(no cut)   EE-MBE(mull) EE-MBE(chelpg)          MBE"
    do k = 1, size(nw)
       do i = 1, size(sep)
-         call one(nw(k), sep(i), e_ex, e_exact, e_mul, e_che, e_none)
+         call one(nw(k), sep(i), e_ex, e_cut, e_exact, e_mul, e_che, e_none)
          if (e_ex == 0.0_dp) cycle
          total = total + 1
          if (abs(e_exact - e_ex) <= min(abs(e_mul - e_ex), abs(e_che - e_ex))) then
             wins_exact = wins_exact + 1
          end if
-         print "(i6,f9.2,4es15.2,a)", nw(k), sep(i), &
-            e_exact - e_ex, e_mul - e_ex, e_che - e_ex, e_none - e_ex, &
-            closest(abs(e_exact - e_ex), abs(e_mul - e_ex), abs(e_che - e_ex))
+         print "(i6,f9.2,5es15.2)", nw(k), sep(i), &
+            e_cut - e_ex, e_exact - e_ex, e_mul - e_ex, e_che - e_ex, e_none - e_ex
       end do
    end do
    print "(a,i0,a,i0)", "FMO2 closest in ", wins_exact, " of ", total
 
 contains
 
-   function closest(a, b, c) result(name)
-      real(dp), intent(in) :: a, b, c
-      character(len=14) :: name
-
-      name = "EE-MBE(chelpg)"
-      if (b <= a .and. b <= c) name = "  EE-MBE(mull)"
-      if (a <= b .and. a <= c) name = "          FMO2"
-   end function closest
-
-   subroutine one(n, d, e_reference, e_exact, e_mul, e_che, e_none)
+   subroutine one(n, d, e_reference, e_cut, e_exact, e_mul, e_che, e_none)
       integer, intent(in) :: n
       real(dp), intent(in) :: d
-      real(dp), intent(out) :: e_reference, e_exact, e_mul, e_che, e_none
+      real(dp), intent(out) :: e_reference, e_cut, e_exact, e_mul, e_che, e_none
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: r
@@ -97,6 +88,7 @@ contains
       integer :: w, j, at
 
       e_reference = 0.0_dp
+      e_cut = 0.0_dp
       e_exact = 0.0_dp
       e_mul = 0.0_dp
       e_che = 0.0_dp
@@ -130,12 +122,22 @@ contains
       if (error%has_error()) then
          call error%clear()
       else
+         e_cut = r%energy
+      end if
+
+      opts%esp = "exact"
+      opts%resppc = -1.0_dp
+      call run_fmo2(z, sym, xyz, owner, opts, r, error)
+      if (error%has_error()) then
+         call error%clear()
+      else
          e_exact = r%energy
       end if
+      opts%resppc = 2.0_dp
 
       opts%esp = "ptc"
       opts%expansion = "mbe"
-      opts%ptc_charges = "mulliken"
+      opts%far_field = "mulliken"
       call run_fmo2(z, sym, xyz, owner, opts, r, error)
       if (error%has_error()) then
          call error%clear()
@@ -145,7 +147,7 @@ contains
 
       opts%esp = "ptc"
       opts%expansion = "mbe"
-      opts%ptc_charges = "chelpg"
+      opts%far_field = "chelpg"
       call run_fmo2(z, sym, xyz, owner, opts, r, error)
       if (error%has_error()) then
          call error%clear()

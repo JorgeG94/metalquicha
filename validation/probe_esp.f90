@@ -1,17 +1,21 @@
 program probe_esp
-   !! Is the fast embedding really the slow one?
+   !! Is a neighbour's contribution to the embedding really local?
    !!
-   !! The exact ESP needs, for fragment X, the Coulomb operator of every *other*
-   !! fragment's density. Built the obvious way that is one supersystem Coulomb
-   !! matrix per fragment per outer pass, from a density with X's block zeroed.
-   !! [[mqc_libcint_fmo]] instead builds one supersystem matrix from the total
-   !! density and subtracts a small one over X's own basis, which is the same
-   !! thing only if a four-index integral over X's functions is independent of
-   !! which molecule object computed it.
+   !! With a `resppc` cutoff, [[mqc_libcint_fmo]] builds the exact part of the
+   !! embedding over a molecule holding only the fragment and its near
+   !! neighbours -- not the whole system. That is what stops the cost per
+   !! fragment growing once the system is bigger than a neighbourhood, and it is
+   !! correct only if the Coulomb operator that neighbour K exerts on fragment X
+   !! is unchanged by the existence of some third fragment L elsewhere.
    !!
-   !! That identity is the load-bearing assumption of the whole embedding, so it
-   !! is checked here directly rather than inferred from an energy coming out
-   !! plausible.
+   !! It should be: the integrals are (mn|ls) with mn on X and ls on K, and L's
+   !! basis functions appear in neither. But "should be" is exactly the kind of
+   !! assumption that is worth one direct measurement, because if it were wrong
+   !! the failure would look like a slightly-off energy rather than anything
+   !! obviously broken.
+   !!
+   !! So: three waters. Fragment 1's embedding from fragment 2 alone, computed
+   !! once over the pair and once over all three, and the two compared.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, info_level
    use mqc_error, only: error_t
@@ -81,32 +85,54 @@ program probe_esp
    call build_fock_direct(super, zero_s, d_tot, sb, j_tot, stats, error, &
                           k_scale=0.0_dp, j_scale=1.0_dp)
 
+   ! Fragment 1's AO block, and fragment 2's density alone in the supersystem.
    worst = 0.0_dp
    allocate (j_env(super%nao, super%nao), j_own(frag%nao, frag%nao))
-   do f = 1, NW
-      ao = pack([(i, i=1, super%nao)], owner(ao_atom) == f)
+   allocate (d_env(super%nao, super%nao))
+   do f = 2, NW
+      ao = pack([(i, i=1, super%nao)], owner(ao_atom) == 1)
 
-      ! The slow, obvious way: J from the environment density alone.
-      d_env = d_tot
-      d_env(ao, ao) = 0.0_dp
+      ! Over all three waters, with only fragment f carrying density.
+      d_env = 0.0_dp
+      block
+         integer, allocatable :: ao_f(:)
+         ao_f = pack([(i, i=1, super%nao)], owner(ao_atom) == f)
+         d_env(ao_f, ao_f) = d_frag(:, :, f)
+      end block
       call build_fock_direct(super, zero_s, d_env, sb, j_env, stats, error, &
                              k_scale=0.0_dp, j_scale=1.0_dp)
 
-      ! The way the module does it.
-      call build_fock_direct(frag, zero_f, d_frag(:, :, f), fb, j_own, stats, error, &
-                             k_scale=0.0_dp, j_scale=1.0_dp)
+      ! Over the pair {1, f} alone, laid out the way the module lays it out:
+      ! the embedded fragment first, its neighbour after.
+      block
+         type(libcint_molecule_t) :: local
+         real(dp), allocatable :: lb(:, :), dl(:, :), zl(:, :), jl(:, :)
+         integer, allocatable :: pair(:)
+         integer :: n1, nf
+         pair = [(i, i=1, 3), (i, i=3*(f - 1) + 1, 3*f)]
+         call build_libcint_molecule(z(pair), sym(pair), xyz(:, pair), "6-31g", local, error)
+         call schwarz_bounds(local, lb, error)
+         n1 = frag%nao
+         nf = frag%nao
+         allocate (dl(local%nao, local%nao), source=0.0_dp)
+         allocate (zl(local%nao, local%nao), source=0.0_dp)
+         allocate (jl(local%nao, local%nao))
+         dl(n1 + 1:n1 + nf, n1 + 1:n1 + nf) = d_frag(:, :, f)
+         call build_fock_direct(local, zl, dl, lb, jl, stats, error, &
+                                k_scale=0.0_dp, j_scale=1.0_dp)
 
-      write (line, "(a,i0,a,es12.4)") "   fragment ", f, "   largest difference ", &
-         maxval(abs(j_env(ao, ao) - (j_tot(ao, ao) - j_own)))
-      call logger%info(trim(line))
-      worst = max(worst, maxval(abs(j_env(ao, ao) - (j_tot(ao, ao) - j_own))))
+         write (line, "(a,i0,a,es12.4)") "   fragment 1 embedded by fragment ", f, &
+            "   largest difference ", maxval(abs(j_env(ao, ao) - jl(1:n1, 1:n1)))
+         call logger%info(trim(line))
+         worst = max(worst, maxval(abs(j_env(ao, ao) - jl(1:n1, 1:n1))))
+      end block
    end do
 
    write (line, "(a,es12.4)") "worst over all fragments: ", worst
    call logger%info(trim(line))
    if (worst > 1.0e-11_dp) then
-      call logger%error("the subtraction is NOT the environment Coulomb operator")
+      call logger%error("a neighbour contribution is NOT local; the cutoff is unsound")
       stop 1
    end if
-   call logger%info("the fast embedding is the slow one")
+   call logger%info("a neighbour contribution is local, so the cutoff is sound")
 end program probe_esp

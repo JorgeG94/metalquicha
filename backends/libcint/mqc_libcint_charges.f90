@@ -55,9 +55,9 @@ contains
    subroutine ao_to_atom(mol, owner)
       !! Which atom each basis function belongs to, 1-based
       !!
-      !! Public because partitioning a matrix by fragment needs it too -- see
-      !! [[mqc_libcint_fmo]], which uses it to find a fragment's block of a
-      !! whole-system Coulomb matrix.
+      !! Public because splitting a whole-system matrix into per-fragment blocks
+      !! needs it, which `validation/probe_esp` does to check that a fragment's
+      !! embedding really is local.
       type(libcint_molecule_t), intent(in) :: mol
       integer, allocatable, intent(out) :: owner(:)
 
