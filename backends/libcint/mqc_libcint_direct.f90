@@ -41,6 +41,7 @@ module mqc_libcint_direct
    private
 
    public :: schwarz_bounds
+   public :: shell_density_max
    public :: build_fock_direct
    public :: build_fock_direct_many
    public :: build_fock_direct_nosym
@@ -59,7 +60,19 @@ module mqc_libcint_direct
       !! What a Fock build did, so screening can be reported rather than assumed
       integer(int64) :: quartets_total = 0     !! Unique quartets before screening
       integer(int64) :: quartets_computed = 0  !! Quartets actually handed to libcint
-      integer(int64) :: quartets_screened = 0  !! Skipped on the Schwarz bound
+      integer(int64) :: quartets_screened = 0  !! Skipped, either test
+      integer(int64) :: screened_schwarz = 0
+         !! Skipped because the integral itself is negligible. Depends on the
+         !! basis and the geometry only, so this number is the same at every
+         !! iteration of an SCF.
+      integer(int64) :: screened_density = 0
+         !! Skipped because the *contribution* is negligible although the
+         !! integral is not -- the extra reach the density weighting buys.
+         !!
+         !! Counted separately because it is the only honest way to measure that
+         !! weighting on a shared machine: run-to-run wall time on a contended
+         !! node varies by more than the effect, but these counts are exactly
+         !! reproducible.
    contains
       procedure :: screened_fraction => stats_screened_fraction
    end type direct_stats_t
@@ -128,6 +141,83 @@ contains
       deallocate (buf)
    end subroutine schwarz_bounds
 
+   subroutine shell_density_max(mol, density, dsh)
+      !! The largest |D| in each shell-pair block
+      !!
+      !! The Schwarz bound says how big an integral can be. It says nothing about
+      !! whether that integral matters, and by the middle of an SCF most of them
+      !! do not: a quartet multiplies six density elements, and if all six are
+      !! negligible the quartet contributes nothing however large it is.
+      !!
+      !! Blocked to shells rather than kept per function because the screening
+      !! decision is made per shell quartet -- one number per pair is all the test
+      !! can use, and it has to be the largest in the block or the bound would not
+      !! be one.
+      !!
+      !! Rebuilt every Fock build, unlike the Schwarz bounds: this one is a
+      !! property of the density and the density is what changes. It costs one
+      !! pass over an n-by-n matrix against a quartet loop that is the rest of the
+      !! iteration, so the cost does not show up.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), allocatable, intent(out) :: dsh(:, :)
+
+      integer :: ish, jsh, oi, oj, di, dj
+
+      allocate (dsh(mol%nbas, mol%nbas))
+      dsh = 0.0_dp
+      do ish = 1, mol%nbas
+         oi = mol%shell_offset(ish)
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         do jsh = 1, ish
+            oj = mol%shell_offset(jsh)
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            dsh(ish, jsh) = maxval(abs(density(oi + 1:oi + di, oj + 1:oj + dj)))
+            dsh(jsh, ish) = dsh(ish, jsh)
+         end do
+      end do
+   end subroutine shell_density_max
+
+   pure function density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) result(denmax)
+      !! Largest density contribution this quartet can make, per unit integral
+      !!
+      !! The six elements are the six the Fock updates read, and the weights are
+      !! the ones they are multiplied by, so `bound * denmax` is an upper bound on
+      !! the largest change any one Fock element can see from this quartet. That
+      !! is what the screening test should compare against a tolerance -- the
+      !! Schwarz bound alone compares the integral, which is not the quantity
+      !! anyone cares about being small.
+      !!
+      !! `deg` belongs in here. The permutational factor multiplies the
+      !! contribution, so leaving it out would make the bound smaller than the
+      !! thing it bounds and the test could discard a quartet that mattered.
+      !! Including it costs a little screening and buys rigour.
+      real(dp), intent(in) :: dsh(:, :)
+      integer, intent(in) :: s1, s2, s3, s4
+      real(dp), intent(in) :: jf, kq, deg
+      real(dp) :: denmax
+
+      denmax = deg*max(jf*dsh(s1, s2), jf*dsh(s3, s4), &
+                       kq*dsh(s1, s3), kq*dsh(s1, s4), &
+                       kq*dsh(s2, s3), kq*dsh(s2, s4))
+   end function density_weight
+
+   pure function pair_degeneracy(s1, s2, s3, s4) result(deg)
+      !! The eightfold permutational weight this quartet carries
+      !!
+      !! Shell equality, not function equality: a block with s1 == s2 already
+      !! contains both orderings of its function pair, so the permutation is
+      !! covered and must not be counted again. Getting it wrong produces a Fock
+      !! matrix wrong by a factor of two on its diagonal blocks only.
+      integer, intent(in) :: s1, s2, s3, s4
+      real(dp) :: deg
+
+      deg = 1.0_dp
+      if (s1 /= s2) deg = deg*2.0_dp
+      if (s3 /= s4) deg = deg*2.0_dp
+      if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
+   end function pair_degeneracy
+
    subroutine build_fock_direct(mol, h, density, bounds, fock, stats, error, screen_tol, &
                                 k_scale, j_scale, omega)
       !! F = H + J - K/2, without forming the integral tensor
@@ -162,6 +252,7 @@ contains
          !! the screening can only become conservative rather than wrong.
 
       real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
+      real(dp), allocatable :: dsh(:, :)
       real(dp), allocatable :: env_local(:)
       real(dp) :: jf
       type(c_ptr) :: opt
@@ -171,7 +262,8 @@ contains
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n
       integer :: ij, kl, npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
-      integer(int64) :: n_total, n_computed, n_screened
+      integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
+      real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
       real(dp) :: kq
 
@@ -222,6 +314,11 @@ contains
       ! large -- an error that still converges, to a badly wrong energy.
       d_half = 0.5_dp*density
 
+      ! Built from `d_half` rather than `density` because `d_half` is what the six
+      ! updates below actually multiply -- a bound has to be on the quantity that
+      ! is used, not on a factor of two away from it.
+      call shell_density_max(mol, d_half, dsh)
+
       ! The four exchange updates below carry a quarter each, so folding the
       ! exchange fraction in here scales all four at once at no per-quartet cost.
       kq = 0.25_dp
@@ -250,6 +347,8 @@ contains
       n_total = 0_int64
       n_computed = 0_int64
       n_screened = 0_int64
+      n_schwarz = 0_int64
+      n_density = 0_int64
 
       ! Threaded over bra pairs. libcint carries no mutable state across calls
       ! -- the 2e path has no static globals, and `opt` is written once here and
@@ -272,11 +371,12 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, block_max, kq, jf, env_local) &
+      !$omp    shared(mol, bounds, dsh, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, &
+      !$omp           block_max, kq, jf, env_local) &
       !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
-      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
       !$omp            buf, g_local) &
-      !$omp    reduction(+:n_total, n_computed, n_screened)
+      !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density)
       allocate (buf(block_max**4))
       allocate (g_local(n, n))
       g_local = 0.0_dp
@@ -300,8 +400,16 @@ contains
 
             n_total = n_total + 1_int64
 
-            if (bounds(s1, s2)*bounds(s3, s4) < tol) then
+            deg = pair_degeneracy(s1, s2, s3, s4)
+            schwarz = bounds(s1, s2)*bounds(s3, s4)
+            if (schwarz < tol) then
                n_screened = n_screened + 1_int64
+               n_schwarz = n_schwarz + 1_int64
+               cycle
+            end if
+            if (schwarz*density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) < tol) then
+               n_screened = n_screened + 1_int64
+               n_density = n_density + 1_int64
                cycle
             end if
 
@@ -313,13 +421,6 @@ contains
                cycle
             end if
             n_computed = n_computed + 1_int64
-
-            ! Shell equality, not function equality: a block with s1 == s2
-            ! already contains both orderings of its function pair.
-            deg = 1.0_dp
-            if (s1 /= s2) deg = deg*2.0_dp
-            if (s3 /= s4) deg = deg*2.0_dp
-            if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
 
             do f4 = 1, d4
                b4 = o4 + f4
@@ -362,6 +463,8 @@ contains
       stats%quartets_total = n_total
       stats%quartets_computed = n_computed
       stats%quartets_screened = n_screened
+      stats%screened_schwarz = n_schwarz
+      stats%screened_density = n_density
 
       call libcint_del_optimizer(opt)
 
@@ -561,12 +664,7 @@ contains
             end if
             n_computed = n_computed + 1_int64
 
-            ! Shell equality, not function equality: a block with s1 == s2
-            ! already contains both orderings of its function pair.
-            deg = 1.0_dp
-            if (s1 /= s2) deg = deg*2.0_dp
-            if (s3 /= s4) deg = deg*2.0_dp
-            if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
+            deg = pair_degeneracy(s1, s2, s3, s4)
 
             do f4 = 1, d4
                b4 = o4 + f4
@@ -913,6 +1011,7 @@ contains
 
       real(dp), allocatable :: buf(:), ga(:, :), gb(:, :), ga_local(:, :), gb_local(:, :)
       real(dp), allocatable :: d_coul(:, :)
+      real(dp), allocatable :: dsh(:, :)
       real(dp), allocatable :: env_local(:)
       real(dp) :: kq, jf
       type(c_ptr) :: opt
@@ -922,7 +1021,8 @@ contains
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n
       integer :: ij, kl, npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
-      integer(int64) :: n_total, n_computed, n_screened
+      integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
+      real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
 
       n = mol%nao
@@ -985,6 +1085,12 @@ contains
       ! which is the same arithmetic one level out.
       d_coul = jf*0.5_dp*(d_alpha + d_beta)
 
+      ! Elementwise largest of the three matrices the updates read. Taking the
+      ! maximum rather than one of them keeps the bound a bound for every term:
+      ! the Coulomb updates read `d_coul` and the exchange updates read the two
+      ! spin densities, and any of the three can be the big one.
+      call shell_density_max(mol, max(abs(d_coul), abs(d_alpha), abs(d_beta)), dsh)
+
       ! A copy, because the range-separation parameter lives in `env` and the
       ! molecule is read-only here. See the closed-shell build for why the slot
       ! index carries a `+ 1`.
@@ -999,6 +1105,8 @@ contains
       n_total = 0_int64
       n_computed = 0_int64
       n_screened = 0_int64
+      n_schwarz = 0_int64
+      n_density = 0_int64
 
       ! Threaded over bra pairs. libcint carries no mutable state across calls
       ! -- the 2e path has no static globals, and `opt` is written once here and
@@ -1021,12 +1129,12 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
+      !$omp    shared(mol, bounds, dsh, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
       !$omp            npair, tol, opt, n, block_max, kq, env_local) &
       !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
-      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
       !$omp            buf, ga_local, gb_local) &
-      !$omp    reduction(+:n_total, n_computed, n_screened)
+      !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density)
       allocate (buf(block_max**4))
       allocate (ga_local(n, n), gb_local(n, n))
       ga_local = 0.0_dp
@@ -1051,8 +1159,19 @@ contains
 
             n_total = n_total + 1_int64
 
-            if (bounds(s1, s2)*bounds(s3, s4) < tol) then
+            ! One rather than `jf` for the Coulomb weight: this path folded `jf`
+            ! into `d_coul` before the loop, so `dsh` already carries it and
+            ! passing it again would square it.
+            deg = pair_degeneracy(s1, s2, s3, s4)
+            schwarz = bounds(s1, s2)*bounds(s3, s4)
+            if (schwarz < tol) then
                n_screened = n_screened + 1_int64
+               n_schwarz = n_schwarz + 1_int64
+               cycle
+            end if
+            if (schwarz*density_weight(dsh, s1, s2, s3, s4, 1.0_dp, kq, deg) < tol) then
+               n_screened = n_screened + 1_int64
+               n_density = n_density + 1_int64
                cycle
             end if
 
@@ -1064,13 +1183,6 @@ contains
                cycle
             end if
             n_computed = n_computed + 1_int64
-
-            ! Shell equality, not function equality: a block with s1 == s2
-            ! already contains both orderings of its function pair.
-            deg = 1.0_dp
-            if (s1 /= s2) deg = deg*2.0_dp
-            if (s3 /= s4) deg = deg*2.0_dp
-            if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
 
             do f4 = 1, d4
                b4 = o4 + f4
@@ -1121,6 +1233,8 @@ contains
       stats%quartets_total = n_total
       stats%quartets_computed = n_computed
       stats%quartets_screened = n_screened
+      stats%screened_schwarz = n_schwarz
+      stats%screened_density = n_density
 
       call libcint_del_optimizer(opt)
 
