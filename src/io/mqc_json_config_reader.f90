@@ -33,6 +33,7 @@ module mqc_json_config_reader
    !! document before any of this. That separation is why the accessors below
    !! can stay as simple as they are: by the time they run, the deck is known
    !! to contain only keys this module knows about.
+   use pic_io, only: to_char
    use pic_types, only: dp
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_MBE_LEVEL
    use mqc_geometry, only: geometry_type
@@ -194,6 +195,9 @@ contains
       call optional_real(json, "keywords.scf.tolerance", config%scf_tolerance)
       call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
+      call optional_string(json, "keywords.guess.type", config%guess_type)
+      call read_guess_steps(json, config, error)
+      if (error%has_error()) return
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
@@ -458,6 +462,41 @@ contains
          name = ""
       end select
    end function nmer_name
+
+   subroutine read_guess_steps(json, config, error)
+      !! The basis-set-projection ladder, one entry per preliminary SCF
+      !!
+      !! Order is the order written: the first step is the cheapest basis and the
+      !! last hands its density to the target one from `model.basis`, which is not
+      !! listed here. Three SCFs -- STO-3G, 6-31G, cc-pVTZ -- is two steps.
+      !!
+      !! The schema has already refused a `subscf` that does not belong to a
+      !! projection guess and a projection guess with no steps, so this only has
+      !! to read what is there.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: prefix
+      integer :: n_steps, i
+      logical :: found
+
+      call json%info("keywords.guess.subscf.steps", found=found, n_children=n_steps)
+      if (.not. found .or. n_steps < 1) return
+
+      allocate (config%guess_steps(n_steps))
+      do i = 1, n_steps
+         prefix = "keywords.guess.subscf.steps("//trim(to_char(i))//")"
+         call optional_string(json, prefix//".basis", config%guess_steps(i)%basis)
+         if (.not. allocated(config%guess_steps(i)%basis)) then
+            call error%set(ERROR_VALIDATION, "guess step "//trim(to_char(i))// &
+                           " has no basis")
+            return
+         end if
+         call optional_int(json, prefix//".maxiter", config%guess_steps(i)%maxiter)
+         call optional_real(json, prefix//".tolerance", config%guess_steps(i)%tolerance)
+      end do
+   end subroutine read_guess_steps
 
    subroutine read_molecule(json, prefix, base_dir, charge, multiplicity, geom, &
                             nfrag, fragments, uniform, nbonds, nbroken, bonds, error)

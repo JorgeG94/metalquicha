@@ -101,6 +101,10 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "pcm", pcm_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "guess", guess_keys(), error)
+      if (error%has_error()) return
+      call validate_guess_group(core, root, error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "cc", cc_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
@@ -194,7 +198,30 @@ contains
       call allow(keys, "cc")
       call allow(keys, "dft")
       call allow(keys, "pcm")
+      call allow(keys, "guess")
    end function keywords_keys
+
+   function guess_keys() result(keys)
+      type(key_set_t) :: keys
+      call allow(keys, "type")
+      call allow(keys, "subscf")
+   end function guess_keys
+
+   function subscf_keys() result(keys)
+      !! Only meaningful under `type: basis_set_projection`, which
+      !! `validate_guess_group` enforces -- a `subscf` block beside any other
+      !! guess would be read, validated and then silently ignored.
+      type(key_set_t) :: keys
+      call allow(keys, "steps")
+   end function subscf_keys
+
+   function guess_step_keys() result(keys)
+      type(key_set_t) :: keys
+      call allow(keys, "basis")
+      call allow(keys, "maxiter")
+      call allow(keys, "tolerance")
+      call require(keys, "basis")
+   end function guess_step_keys
 
    function scf_keys() result(keys)
       type(key_set_t) :: keys
@@ -431,6 +458,88 @@ contains
       if (.not. found .or. .not. associated(child)) return
       call check_object(core, child, parent_name//"."//name, keys, error)
    end subroutine check_grandchild_object
+
+   subroutine validate_guess_group(core, root, error)
+      !! The three rules that make `keywords.guess` unambiguous
+      !!
+      !!   1. `keywords.scf.guess` and `keywords.guess.type` must not both be
+      !!      set. The second supersedes the first; refusing both rather than
+      !!      picking one keeps the deck's meaning independent of reader order.
+      !!   2. `subscf` is only meaningful under `basis_set_projection`. Beside
+      !!      any other guess it would be read, validated and then ignored, which
+      !!      is the failure mode this whole schema exists to prevent.
+      !!   3. `basis_set_projection` needs at least one step. A ladder with no
+      !!      rungs is the default guess wearing a longer name.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: keywords, guess, scf, subscf, steps, step
+      character(len=:), allocatable :: gtype
+      logical :: found, has_scf_guess, is_projection
+      integer :: n_steps, i
+
+      call core%get(root, "keywords", keywords, found)
+      if (.not. found .or. .not. associated(keywords)) return
+      call core%get(keywords, "guess", guess, found)
+      if (.not. found .or. .not. associated(guess)) return
+
+      has_scf_guess = .false.
+      call core%get(keywords, "scf", scf, found)
+      if (found .and. associated(scf)) then
+         call core%get(scf, "guess", steps, has_scf_guess)
+      end if
+
+      call core%get(guess, "type", steps, found)
+      if (found .and. associated(steps)) then
+         call core%get(guess, "type", gtype)
+      end if
+
+      if (has_scf_guess .and. allocated(gtype)) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.guess and keywords.guess.type "// &
+                        "both set the initial guess. Use keywords.guess.type; "// &
+                        "keywords.scf.guess is the older spelling and is superseded.")
+         return
+      end if
+
+      is_projection = .false.
+      if (allocated(gtype)) is_projection = trim(adjustl(gtype)) == "basis_set_projection"
+
+      call core%get(guess, "subscf", subscf, found)
+      if (found .and. associated(subscf)) then
+         if (.not. is_projection) then
+            call error%set(ERROR_VALIDATION, "keywords.guess.subscf only means something "// &
+                           "for type 'basis_set_projection'; beside any other guess it "// &
+                           "would be read and then ignored")
+            return
+         end if
+         call check_object(core, subscf, "keywords.guess.subscf", subscf_keys(), error)
+         if (error%has_error()) return
+         call core%get(subscf, "steps", steps, found)
+         if (found .and. associated(steps)) then
+            call core%info(steps, n_children=n_steps)
+            do i = 1, n_steps
+               call core%get_child(steps, i, step, found)
+               if (.not. found .or. .not. associated(step)) cycle
+               call check_object(core, step, "keywords.guess.subscf.steps", &
+                                 guess_step_keys(), error)
+               if (error%has_error()) return
+            end do
+         end if
+      end if
+
+      if (is_projection) then
+         n_steps = 0
+         call core%get(guess, "subscf.steps", steps, found)
+         if (found .and. associated(steps)) call core%info(steps, n_children=n_steps)
+         if (n_steps < 1) then
+            call error%set(ERROR_VALIDATION, "guess type 'basis_set_projection' needs "// &
+                           "keywords.guess.subscf.steps with at least one basis to "// &
+                           "converge before the target one")
+            return
+         end if
+      end if
+   end subroutine validate_guess_group
 
    subroutine check_cutoffs(core, root, error)
       !! Cutoff keys are n-mer names or decimal levels, so they get their own rule
