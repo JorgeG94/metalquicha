@@ -88,13 +88,13 @@ contains
 
       call water_fragment(frags(1), err)
       call water_fragment(frags(2), err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       shifts = 0.0_dp
       shifts(1, 2) = 3.0_dp*ANG
       e = efp_interaction_energy(frags, shifts, err)
-      call check(error,.not. err%has_error(), "the interaction energy failed")
+      call check(error,.not. err%has_error(), "the interaction energy failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, e%electrostatics, 0.004959639_dp, thr=1.0e-8_dp, &
@@ -144,12 +144,12 @@ contains
       real(dp) :: shifts(3, 1)
 
       call water_fragment(frags(1), err)
-      call check(error,.not. err%has_error(), "building the fragment failed")
+      call check(error,.not. err%has_error(), "building the fragment failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       shifts = 0.0_dp
       e = efp_interaction_energy(frags, shifts, err)
-      call check(error,.not. err%has_error(), "the interaction energy failed")
+      call check(error,.not. err%has_error(), "the interaction energy failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, e%total, 0.0_dp, thr=0.0_dp, &
                  message="a lone fragment should have no interaction energy")
@@ -188,13 +188,13 @@ contains
       call water_fragment(plain(2), err)
       call water_fragment(spun(1), err)
       call water_fragment(spun(2), err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       shifts = 0.0_dp
       shifts(1, 2) = 3.0_dp*ANG
       e_plain = efp_interaction_energy(plain, shifts, err)
-      call check(error,.not. err%has_error(), "the reference energy failed")
+      call check(error,.not. err%has_error(), "the reference energy failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       rot = general_rotation()
@@ -202,10 +202,10 @@ contains
          call rotate_fragment(spun(k), rot, err)
          turned(:, k) = matmul(rot, shifts(:, k))
       end do
-      call check(error,.not. err%has_error(), "rotating the fragments failed")
+      call check(error,.not. err%has_error(), "rotating the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       e_spun = efp_interaction_energy(spun, turned, err)
-      call check(error,.not. err%has_error(), "the rotated energy failed")
+      call check(error,.not. err%has_error(), "the rotated energy failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! Tight on purpose. This is the same arithmetic on rotated inputs, not an

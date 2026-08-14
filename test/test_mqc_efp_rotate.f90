@@ -127,7 +127,7 @@ contains
       end do
 
       call superpose(own, deck, got, translation, rmsd, err)
-      call check(error,.not. err%has_error(), "superpose failed")
+      call check(error,.not. err%has_error(), "superpose failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, maxval(abs(got - rot)) < 1.0e-13_dp, &
                  "superpose did not recover the rotation")
@@ -262,12 +262,12 @@ contains
 
       call water_fragment(plain, err)
       call water_fragment(spun, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       rot = sample_rotation(0.53_dp, -1.17_dp, 0.61_dp)
       call rotate_fragment(spun, rot, err)
-      call check(error,.not. err%has_error(), "rotating failed")
+      call check(error,.not. err%has_error(), "rotating failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! The quadrupole trace, summed over points: a rotational invariant of a rank-2
@@ -342,20 +342,20 @@ contains
       integer :: i, j
 
       call water_fragment(spun, err)
-      call check(error,.not. err%has_error(), "building the fragment failed")
+      call check(error,.not. err%has_error(), "building the fragment failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       rot = sample_rotation(-0.64_dp, 1.02_dp, 0.29_dp)
       call rotate_fragment(spun, rot, err)
-      call check(error,.not. err%has_error(), "rotating failed")
+      call check(error,.not. err%has_error(), "rotating failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call fragment_molecule(spun, [0.0_dp, 0.0_dp, 0.0_dp], mol, err)
-      call check(error,.not. err%has_error(), "building the molecule failed")
+      call check(error,.not. err%has_error(), "building the molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
       call mol%overlap(s)
       call from_gamess_ao_order(mol, spun%lmo_gamess, c, err)
-      call check(error,.not. err%has_error(), "converting the orbitals failed")
+      call check(error,.not. err%has_error(), "converting the orbitals failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (sc(size(s, 1), size(c, 2)), gram(size(c, 2), size(c, 2)))

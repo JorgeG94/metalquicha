@@ -118,7 +118,7 @@ contains
       character(len=2) :: symbols(3)
 
       call water_fragment(a, err)
-      call check(error,.not. err%has_error(), "building the fragment failed")
+      call check(error,.not. err%has_error(), "building the fragment failed: "//err%get_full_trace())
       if (allocated(error)) return
       call water_fragment(b, err)
       if (allocated(error)) return
@@ -126,7 +126,7 @@ contains
       offset = [3.0_dp*ANG, 0.0_dp, 0.0_dp]
       call two_fragment_molecule(a, b, [0.0_dp, 0.0_dp, 0.0_dp], offset, pair, &
                                  n_ao_a, err)
-      call check(error,.not. err%has_error(), "building the pair molecule failed")
+      call check(error,.not. err%has_error(), "building the pair molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! One water in 6-31G* is 19 Cartesian functions, so the pair must be 38 and the
@@ -147,7 +147,7 @@ contains
                    0.00000000000000_dp, -0.77250895280218_dp, -0.46780199748881_dp], &
                   [3, 3])*ANG
       call build_libcint_molecule(z, symbols, c, "6-31g*", single, err)
-      call check(error,.not. err%has_error(), "building the single molecule failed")
+      call check(error,.not. err%has_error(), "building the single molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call pair%overlap(s_pair)
@@ -197,16 +197,16 @@ contains
       real(dp) :: near, far
 
       call water_fragment(a, err)
-      call check(error,.not. err%has_error(), "building the fragment failed")
+      call check(error,.not. err%has_error(), "building the fragment failed: "//err%get_full_trace())
       if (allocated(error)) return
       call water_fragment(b, err)
       if (allocated(error)) return
 
       near = coupling(a, b, 3.0_dp, err)
-      call check(error,.not. err%has_error(), "the near pair failed")
+      call check(error,.not. err%has_error(), "the near pair failed: "//err%get_full_trace())
       if (allocated(error)) return
       far = coupling(a, b, 6.0_dp, err)
-      call check(error,.not. err%has_error(), "the far pair failed")
+      call check(error,.not. err%has_error(), "the far pair failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, far < near, "the inter-fragment overlap did not fall off")
@@ -237,11 +237,11 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       e = exchange_repulsion(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
                              [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "exchange repulsion failed")
+      call check(error,.not. err%has_error(), "exchange repulsion failed: "//err%get_full_trace())
       if (allocated(error)) return
       ! GAMESS's own exchange repulsion for this dimer, every digit it prints. It
       ! computes this from data the potential supplies rather than from anything of its
@@ -268,11 +268,11 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       e = dispersion_e6_damped(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
                                [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "damped E6 failed")
+      call check(error,.not. err%has_error(), "damped E6 failed: "//err%get_full_trace())
       if (allocated(error)) return
       ! GAMESS's reported E6, which is the damped one. The undamped value is
       ! -5.1738e-04, so the damping is worth 0.19% here -- and that 0.19% was the whole
@@ -307,17 +307,17 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       e = dispersion_e7_damped(a, b, [0.0_dp, 0.0_dp, 0.0_dp], SEP, err)
-      call check(error,.not. err%has_error(), "damped E7 failed")
+      call check(error,.not. err%has_error(), "damped E7 failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, e, 0.0000598618_dp, thr=1.0e-10_dp, &
                  message="damped E7 disagrees with GAMESS")
       if (allocated(error)) return
 
       swapped = dispersion_e7_damped(b, a, SEP, [0.0_dp, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "swapped E7 failed")
+      call check(error,.not. err%has_error(), "swapped E7 failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, swapped, e, thr=1.0e-14_dp, &
                  message="E7 depends on which fragment is named first")
@@ -345,11 +345,11 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       e = dispersion_e8_damped(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
                                [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "damped E8 failed")
+      call check(error,.not. err%has_error(), "damped E8 failed: "//err%get_full_trace())
       if (allocated(error)) return
       ! Ours is -1.1433371035e-04, so this agrees to 1.0e-11 -- all of the residual is
       ! GAMESS rounding its own number to the ten decimals it prints. The bound is
@@ -378,7 +378,7 @@ contains
       real(dp) :: worst
 
       call water_fragment(a, err)
-      call check(error,.not. err%has_error(), "building the fragment failed")
+      call check(error,.not. err%has_error(), "building the fragment failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, a%has_ctvec, "CTVEC was not read")
       if (allocated(error)) return
@@ -392,10 +392,10 @@ contains
       end do
 
       call fragment_molecule(a, [0.0_dp, 0.0_dp, 0.0_dp], mol, err)
-      call check(error,.not. err%has_error(), "building the molecule failed")
+      call check(error,.not. err%has_error(), "building the molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
       call from_gamess_ao_order(mol, a%ctvec_gamess, ct, err)
-      call check(error,.not. err%has_error(), "converting CTVEC failed")
+      call check(error,.not. err%has_error(), "converting CTVEC failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call mol%overlap(s)
@@ -442,7 +442,7 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       ! The higher multipoles zeroed, so the monopole-only potential is the whole of it.
       a%dipole = 0.0_dp; a%quadrupole = 0.0_dp; a%octopole = 0.0_dp
@@ -450,7 +450,7 @@ contains
 
       e = charge_transfer(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
                           [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "charge transfer failed")
+      call check(error,.not. err%has_error(), "charge transfer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, e, 0.000082348_dp, thr=1.0e-9_dp, &
                  message="charge transfer disagrees with GAMESS on the monopole rung")
@@ -477,7 +477,7 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
       a%quadrupole = 0.0_dp
       a%octopole = 0.0_dp
@@ -486,7 +486,7 @@ contains
 
       e = charge_transfer(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
                           [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "charge transfer failed")
+      call check(error,.not. err%has_error(), "charge transfer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, e, 0.000060349_dp, thr=1.0e-9_dp, &
                  message="charge transfer disagrees with GAMESS on the dipole rung")
@@ -515,12 +515,12 @@ contains
 
       call water_fragment(a, err)
       call water_fragment(b, err)
-      call check(error,.not. err%has_error(), "building the fragments failed")
+      call check(error,.not. err%has_error(), "building the fragments failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       e = charge_transfer(a, b, [0.0_dp, 0.0_dp, 0.0_dp], &
                           [3.0_dp*ANG, 0.0_dp, 0.0_dp], err)
-      call check(error,.not. err%has_error(), "charge transfer failed")
+      call check(error,.not. err%has_error(), "charge transfer failed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, e, 0.000081783_dp, thr=1.0e-9_dp, &
                  message="charge transfer disagrees with GAMESS on the full potential")
@@ -547,14 +547,14 @@ contains
       real(dp) :: worst
 
       call water_fragment(a, err)
-      call check(error,.not. err%has_error(), "building the fragment failed")
+      call check(error,.not. err%has_error(), "building the fragment failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       call fragment_molecule(a, [0.0_dp, 0.0_dp, 0.0_dp], mol, err)
-      call check(error,.not. err%has_error(), "building the molecule failed")
+      call check(error,.not. err%has_error(), "building the molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
       call fragment_lmo(a, mol, lmo, err)
-      call check(error,.not. err%has_error(), "converting the orbitals failed")
+      call check(error,.not. err%has_error(), "converting the orbitals failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       n_lmo = a%n_lmo_proj
