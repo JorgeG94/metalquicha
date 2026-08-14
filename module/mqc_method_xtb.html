@@ -200,23 +200,23 @@ XTB method implementation type</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item">tblite_xtb_singlepoint</li>
+                  <li class="list-inline-item">tblite_xtb_calculator</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">tblite_container</li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">tblite_solvation</li>
-                  <li class="list-inline-item">mctc_env</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item">tblite_xtb_gfn1</li>
                   <li class="list-inline-item">tblite_context_type</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">tblite_xtb_singlepoint</li>
+                  <li class="list-inline-item">tblite_solvation</li>
                   <li class="list-inline-item">tblite_wavefunction</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">tblite_container</li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item">tblite_xtb_calculator</li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">mctc_io</li>
                   <li class="list-inline-item">tblite_xtb_gfn2</li>
+                  <li class="list-inline-item">mctc_env</li>
+                  <li class="list-inline-item">mctc_io</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1018,18 +1018,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M926.14,-385.51C880.48,-378.27 790.25,-363.97 735.36,-355.27"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="735.63,-351.77 725.2,-353.66 734.53,-358.68 735.63,-351.77"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_method_xtb~~UsedByGraph_node20" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_method_xtb~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_method_xtb~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="994.5,-360 916.5,-360 916.5,-336 994.5,-336 994.5,-360"/>
 <text text-anchor="middle" x="955.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_xtb~~UsedByGraph_edge18" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M916.25,-348C868.38,-348 786.47,-348 735.31,-348"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="735.19,-344.5 725.19,-348 735.19,-351.5 735.19,-344.5"/>
 </g>
@@ -1227,7 +1227,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~2"></span>
+              <span class="anchor" id="variable-allow_crap_scf~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -1244,7 +1244,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang"></span>
+              <span class="anchor" id="variable-cpcm_nang~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1261,7 +1261,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale"></span>
+              <span class="anchor" id="variable-cpcm_rscale~2"></span>
               real(kind=wp),
             </td>
               <td>public</td>
@@ -1278,7 +1278,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric"></span>
+              <span class="anchor" id="variable-dielectric~2"></span>
               real(kind=wp),
             </td>
               <td>public</td>
@@ -1312,7 +1312,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1333,7 +1333,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model"></span>
+              <span class="anchor" id="variable-solvation_model~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1350,7 +1350,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent"></span>
+              <span class="anchor" id="variable-solvent~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1367,7 +1367,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds"></span>
+              <span class="anchor" id="variable-use_cds~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1384,7 +1384,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift"></span>
+              <span class="anchor" id="variable-use_shift~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1418,7 +1418,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -1444,17 +1444,17 @@ here changes nothing until a deck says otherwise.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_energy~2'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
                   <td><p>Energy-only calculation</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_gradient~2'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a></td>
                   <td><p>Energy + gradient calculation</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_hessian~2'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a></td>
                   <td><p>Placeholder for Hessian calculation</p></td>
               </tr>
           </tbody>
@@ -1552,7 +1552,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~3"></span>
+              <span class="anchor" id="variable-mol~4"></span>
               type(structure_type),
             </td>
 <td>intent(in)</td>
@@ -1567,7 +1567,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~2"></span>
+              <span class="anchor" id="variable-solvent~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1582,7 +1582,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~2"></span>
+              <span class="anchor" id="variable-solvation_model~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1597,7 +1597,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method"></span>
+              <span class="anchor" id="variable-method~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1612,7 +1612,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~2"></span>
+              <span class="anchor" id="variable-use_cds~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1627,7 +1627,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~2"></span>
+              <span class="anchor" id="variable-use_shift~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1642,7 +1642,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~2"></span>
+              <span class="anchor" id="variable-dielectric~3"></span>
               real(kind=wp),
             </td>
 <td>intent(in)</td>
@@ -1657,7 +1657,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~2"></span>
+              <span class="anchor" id="variable-cpcm_nang~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1672,7 +1672,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~2"></span>
+              <span class="anchor" id="variable-cpcm_rscale~3"></span>
               real(kind=wp),
             </td>
 <td>intent(in)</td>
@@ -1687,7 +1687,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~17"></span>
+              <span class="anchor" id="variable-error~51"></span>
               type(error_type),
             </td>
 <td>intent(out),</td>
@@ -1727,7 +1727,7 @@ here changes nothing until a deck says otherwise.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~3"></span>
+              <span class="anchor" id="variable-ctx~19"></span>
               type(context_type),
             </td>
 <td>intent(inout)</td>
@@ -1742,7 +1742,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~9"></span>
+              <span class="anchor" id="variable-result~26"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1757,7 +1757,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              <span class="anchor" id="variable-allow_crap_scf~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1797,7 +1797,7 @@ here changes nothing until a deck says otherwise.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~37"></span>
+              <span class="anchor" id="variable-this~43"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1812,7 +1812,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~19"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1827,7 +1827,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~6"></span>
+              <span class="anchor" id="variable-result~23"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1867,7 +1867,7 @@ here changes nothing until a deck says otherwise.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~38"></span>
+              <span class="anchor" id="variable-this~44"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1882,7 +1882,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~20"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1897,7 +1897,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~7"></span>
+              <span class="anchor" id="variable-result~24"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1937,7 +1937,7 @@ here changes nothing until a deck says otherwise.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~39"></span>
+              <span class="anchor" id="variable-this~45"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1952,7 +1952,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~12"></span>
+              <span class="anchor" id="variable-fragment~21"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1967,7 +1967,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~8"></span>
+              <span class="anchor" id="variable-result~25"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2010,7 +2010,7 @@ here changes nothing until a deck says otherwise.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

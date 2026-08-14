@@ -201,15 +201,15 @@ Convenience function</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">mctc_env</li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
                   <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
                   <li class="list-inline-item"><a href='mqc_method_dft.html'>mqc_method_dft</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item">mctc_env</li>
                   <li class="list-inline-item"><a href='mqc_method_mcscf.html'>mqc_method_mcscf</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1453,18 +1453,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M786.14,-385.51C740.48,-378.27 650.25,-363.97 595.36,-355.27"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="595.63,-351.77 585.2,-353.66 594.53,-358.68 595.63,-351.77"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_method_factory~~UsedByGraph_node19" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_method_factory~~UsedByGraph_node19"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_method_factory~~UsedByGraph_node19"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="854.5,-360 776.5,-360 776.5,-336 854.5,-336 854.5,-360"/>
 <text text-anchor="middle" x="815.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_factory~~UsedByGraph_edge17" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M776.25,-348C728.38,-348 646.47,-348 595.31,-348"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="595.19,-344.5 585.19,-348 595.19,-351.5 595.19,-344.5"/>
 </g>
@@ -1679,7 +1679,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~30"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1724,7 +1724,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~69"></span>
+              <span class="anchor" id="variable-this~95"></span>
               class(<a href='../type/method_factory_t.html'>method_factory_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1739,7 +1739,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config~25"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1804,7 +1804,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~24"></span>
+              <span class="anchor" id="variable-config~28"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1859,7 +1859,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~23"></span>
+              <span class="anchor" id="variable-config~27"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1949,7 +1949,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~29"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2004,7 +2004,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~22"></span>
+              <span class="anchor" id="variable-config~26"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2047,7 +2047,7 @@ reach the same code.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

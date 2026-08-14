@@ -183,7 +183,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~30"></span>
+              <span class="anchor" id="variable-this~101"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -201,7 +201,7 @@
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-message~3"></span>
+          <span class="anchor" id="variable-message~5"></span>
           character(len=:), allocatable
         </small>
       </h3>
@@ -1081,20 +1081,20 @@
 <path fill="none" stroke="#ff00aa" d="M226.78,-426.44C261.07,-436.22 309.57,-450.04 346.29,-460.51"/>
 <polygon fill="#ff00aa" stroke="#ff00aa" points="345.73,-463.99 356.31,-463.36 347.65,-457.26 345.73,-463.99"/>
 </g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~error_get_message~~CalledByGraph_node59" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~error_get_message~~CalledByGraph_node59"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<!-- proc~worker_loop -->
+<g id="proc~~error_get_message~~CalledByGraph_node58" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~error_get_message~~CalledByGraph_node58"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="637,-446.39 559,-446.39 559,-422.39 637,-422.39 637,-446.39"/>
 <text text-anchor="middle" x="598" y="-431.99" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~error_get_message~~CalledByGraph_edge79" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0000ff" d="M263.06,-418.2C347.22,-422.28 478.13,-428.63 548.44,-432.04"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="548.62,-435.55 558.77,-432.54 548.96,-428.56 548.62,-435.55"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~error_get_message~~CalledByGraph_edge78" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ffff" d="M263.06,-418.2C347.22,-422.28 478.13,-428.63 548.44,-432.04"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="548.62,-435.55 558.77,-432.54 548.96,-428.56 548.62,-435.55"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~error_get_message~~CalledByGraph_node60" class="node">
@@ -1207,26 +1207,26 @@
 <path fill="none" stroke="#ffff00" d="M1128.28,-758.5C1149.95,-760.82 1172.24,-763.21 1192.08,-765.33"/>
 <polygon fill="#ffff00" stroke="#ffff00" points="1191.91,-768.84 1202.22,-766.42 1192.65,-761.87 1191.91,-768.84"/>
 </g>
-<!-- proc~worker_loop -->
-<g id="proc~~error_get_message~~CalledByGraph_node58" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~error_get_message~~CalledByGraph_node58"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="proc~~error_get_message~~CalledByGraph_edge71" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#0000ff" d="M637.13,-430.44C670.98,-426.93 720.18,-421.83 753.99,-418.33"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="754.37,-421.81 763.96,-417.3 753.65,-414.85 754.37,-421.81"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~error_get_message~~CalledByGraph_node59" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~error_get_message~~CalledByGraph_node59"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="637,-364.39 559,-364.39 559,-340.39 637,-340.39 637,-364.39"/>
 <text text-anchor="middle" x="598" y="-349.99" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~error_get_message~~CalledByGraph_edge75" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#ff007f" d="M637.13,-352.39C668.36,-352.39 712.64,-352.39 745.86,-352.39"/>
 <polygon fill="#ff007f" stroke="#ff007f" points="746.23,-355.89 756.23,-352.39 746.23,-348.89 746.23,-355.89"/>
-</g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
-<g id="proc~~error_get_message~~CalledByGraph_edge71" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#0000ff" d="M637.13,-430.44C670.98,-426.93 720.18,-421.83 753.99,-418.33"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="754.37,-421.81 763.96,-417.3 753.65,-414.85 754.37,-421.81"/>
 </g>
 <!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
 <g id="proc~~error_get_message~~CalledByGraph_edge72" class="edge">
@@ -1243,11 +1243,11 @@
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~error_get_message~~CalledByGraph_edge78" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ffff" d="M486.12,-352.39C507.58,-352.39 529.87,-352.39 548.78,-352.39"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="548.91,-355.89 558.91,-352.39 548.91,-348.89 548.91,-355.89"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~error_get_message~~CalledByGraph_edge79" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0000ff" d="M486.12,-352.39C507.58,-352.39 529.87,-352.39 548.78,-352.39"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="548.91,-355.89 558.91,-352.39 548.91,-348.89 548.91,-355.89"/>
 </g>
 </g>
 </svg>
@@ -1383,7 +1383,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

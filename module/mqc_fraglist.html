@@ -232,9 +232,9 @@ differently, and the CSV is the one to check against.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -733,18 +733,18 @@ large graphs.</div>
 <path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M418.85,-144.95C403,-148.93 382.85,-154.09 365,-159 356.48,-161.34 347.42,-163.93 338.71,-166.46"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="337.68,-163.12 329.07,-169.29 339.65,-169.83 337.68,-163.12"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_fraglist~~UsedByGraph_node11" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_fraglist~~UsedByGraph_node11"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_fraglist~~UsedByGraph_node11"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="487,-108 409,-108 409,-84 487,-84 487,-108"/>
 <text text-anchor="middle" x="448" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_fraglist~~UsedByGraph_edge10" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M408.89,-101.86C394.58,-105.05 378.51,-109.85 365,-117 344.22,-127.99 324.47,-146.19 311.02,-160.21"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="308.12,-158.2 303.87,-167.9 313.24,-162.96 308.12,-158.2"/>
 </g>
@@ -931,7 +931,7 @@ a loop that runs once per term.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances"></span>
+              <span class="anchor" id="variable-distances~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -967,7 +967,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~10"></span>
+              <span class="anchor" id="variable-max_level~17"></span>
               integer(kind=default_int),
             </td>
               <td>public</td>
@@ -1001,7 +1001,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~4"></span>
+              <span class="anchor" id="variable-terms~8"></span>
               integer(kind=default_int),
             </td>
               <td>public,</td>
@@ -1037,7 +1037,7 @@ distances until it is asked for them.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fraglist_t.html#boundprocedure-destroy~9'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fraglist_destroy.html'>fraglist_destroy</a></td>
+  <strong><a href='../type/fraglist_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fraglist_destroy.html'>fraglist_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -1090,7 +1090,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~58"></span>
+              <span class="anchor" id="variable-this~78"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1105,7 +1105,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~3"></span>
+              <span class="anchor" id="variable-iterm~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1170,7 +1170,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored"></span>
+              <span class="anchor" id="variable-n_stored~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1185,7 +1185,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~20"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1200,7 +1200,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-candidate~2"></span>
+              <span class="anchor" id="variable-candidate~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1215,7 +1215,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~4"></span>
+              <span class="anchor" id="variable-level~14"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1255,7 +1255,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~4"></span>
+              <span class="anchor" id="variable-indices~5"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -1270,7 +1270,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~7"></span>
+              <span class="anchor" id="variable-k~14"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1310,7 +1310,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~57"></span>
+              <span class="anchor" id="variable-this~77"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1325,7 +1325,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~33"></span>
+              <span class="anchor" id="variable-error~80"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1365,7 +1365,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~53"></span>
+              <span class="anchor" id="variable-this~73"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1380,7 +1380,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~3"></span>
+              <span class="anchor" id="variable-n_monomers~5"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1395,7 +1395,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~11"></span>
+              <span class="anchor" id="variable-max_level~18"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1410,7 +1410,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~29"></span>
+              <span class="anchor" id="variable-error~76"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1450,7 +1450,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~59"></span>
+              <span class="anchor" id="variable-this~79"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1490,7 +1490,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~56"></span>
+              <span class="anchor" id="variable-this~76"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1520,7 +1520,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~32"></span>
+              <span class="anchor" id="variable-error~79"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1560,7 +1560,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~55"></span>
+              <span class="anchor" id="variable-this~75"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1575,7 +1575,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~58"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1590,7 +1590,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~31"></span>
+              <span class="anchor" id="variable-error~78"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1630,7 +1630,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~54"></span>
+              <span class="anchor" id="variable-this~74"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1645,7 +1645,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~5"></span>
+              <span class="anchor" id="variable-terms~9"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1675,7 +1675,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~19"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1690,7 +1690,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~30"></span>
+              <span class="anchor" id="variable-error~77"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1730,7 +1730,7 @@ distances until it is asked for them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~5"></span>
+              <span class="anchor" id="variable-indices~6"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -1745,7 +1745,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~8"></span>
+              <span class="anchor" id="variable-k~15"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1760,7 +1760,7 @@ distances until it is asked for them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
+              <span class="anchor" id="variable-n~29"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1818,7 +1818,7 @@ distances until it is asked for them.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

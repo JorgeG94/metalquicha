@@ -214,12 +214,12 @@ Output follows Gaussian-style formatting for compatibility.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
                   <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_lapack_interfaces</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1159,18 +1159,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1210.43,-464.75C1187.88,-468.14 1155.53,-473.86 1128,-482 1085.64,-494.53 1038.92,-514.48 1008.07,-528.57"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="1006.25,-525.56 998.64,-532.93 1009.18,-531.92 1006.25,-525.56"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_thermochemistry~~UsedByGraph_node42" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_thermochemistry~~UsedByGraph_node42"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_thermochemistry~~UsedByGraph_node42"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1278.5,-431 1200.5,-431 1200.5,-407 1278.5,-407 1278.5,-431"/>
 <text text-anchor="middle" x="1239.5" y="-416.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_thermochemistry~~UsedByGraph_edge35" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1200.32,-422.37C1178.5,-425.23 1151.01,-430.48 1128,-440 1075.91,-461.56 1023.32,-502.26 994.93,-526.16"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="992.59,-523.56 987.25,-532.71 997.13,-528.88 992.59,-523.56"/>
 </g>
@@ -1731,7 +1731,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~2"></span>
+              <span class="anchor" id="variable-pressure"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1850,7 +1850,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~2"></span>
+              <span class="anchor" id="variable-temperature"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2057,7 +2057,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~7"></span>
+              <span class="anchor" id="variable-coords~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2072,7 +2072,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~4"></span>
+              <span class="anchor" id="variable-atomic_numbers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2087,7 +2087,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~21"></span>
+              <span class="anchor" id="variable-n_atoms~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2287,7 +2287,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~4"></span>
+              <span class="anchor" id="variable-temperature~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2402,7 +2402,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~8"></span>
+              <span class="anchor" id="variable-coords~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2417,7 +2417,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~5"></span>
+              <span class="anchor" id="variable-atomic_numbers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2447,7 +2447,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~22"></span>
+              <span class="anchor" id="variable-n_atoms~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2477,7 +2477,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~21"></span>
+              <span class="anchor" id="variable-result~15"></span>
               type(<a href='../type/thermochemistry_result_t.html'>thermochemistry_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2492,7 +2492,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~7"></span>
+              <span class="anchor" id="variable-temperature~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2507,7 +2507,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~5"></span>
+              <span class="anchor" id="variable-pressure~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2592,7 +2592,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~3"></span>
+              <span class="anchor" id="variable-temperature~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2607,7 +2607,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~3"></span>
+              <span class="anchor" id="variable-pressure~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2722,7 +2722,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~5"></span>
+              <span class="anchor" id="variable-temperature~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2907,7 +2907,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~22"></span>
+              <span class="anchor" id="variable-result~16"></span>
               type(<a href='../type/thermochemistry_result_t.html'>thermochemistry_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2937,7 +2937,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~6"></span>
+              <span class="anchor" id="variable-unit~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -3037,7 +3037,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~6"></span>
+              <span class="anchor" id="variable-temperature~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3052,7 +3052,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~4"></span>
+              <span class="anchor" id="variable-pressure~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3067,7 +3067,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~3"></span>
+              <span class="anchor" id="variable-sigma~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3170,7 +3170,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

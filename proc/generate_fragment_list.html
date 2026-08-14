@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-n~27">n</a>
-            <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-r~4">r</a>
+            <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-n~22">n</a>
+            <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-r~2">r</a>
         </div>
       </div>
     </div>
@@ -194,7 +194,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~7"></span>
+              <span class="anchor" id="variable-monomers~5"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -209,7 +209,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~22"></span>
+              <span class="anchor" id="variable-max_level~13"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -224,7 +224,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~11"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -660,31 +660,31 @@ large graphs.</div>
 <g id="proc~~generate_fragment_list~~CalledByGraph_node17" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~generate_fragment_list~~CalledByGraph_node17"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
-<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~generate_fragment_list~~CalledByGraph_edge20" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M115.28,-12.19C149.12,-12.35 198.57,-12.6 234.55,-12.77"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="234.76,-16.28 244.78,-12.82 234.8,-9.28 234.76,-16.28"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~generate_fragment_list~~CalledByGraph_node18" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~generate_fragment_list~~CalledByGraph_node18"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
 <text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~generate_fragment_list~~CalledByGraph_edge17" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M115.28,-130.29C151.53,-122.98 205.7,-112.07 242.02,-104.75"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="243.11,-108.1 252.22,-102.7 241.73,-101.24 243.11,-108.1"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~generate_fragment_list~~CalledByGraph_node18" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~generate_fragment_list~~CalledByGraph_node18"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
+<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~generate_fragment_list~~CalledByGraph_edge20" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M115.28,-12.19C149.12,-12.35 198.57,-12.6 234.55,-12.77"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="234.76,-16.28 244.78,-12.82 234.8,-9.28 234.76,-16.28"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~generate_fragment_list~~CalledByGraph_node19" class="node">
@@ -805,7 +805,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~27"></span>
+              <span class="anchor" id="variable-n~22"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -822,7 +822,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~4"></span>
+              <span class="anchor" id="variable-r~2"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -890,7 +890,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

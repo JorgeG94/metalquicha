@@ -206,13 +206,13 @@ Print debug information about GMBE intersections</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -917,18 +917,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1082.14,-135.75C1036.48,-132.13 946.25,-124.98 891.36,-120.63"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="891.45,-117.13 881.2,-119.83 890.9,-124.11 891.45,-117.13"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_gmbe_utils~~UsedByGraph_node21" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node21"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1150.5,-108 1072.5,-108 1072.5,-84 1150.5,-84 1150.5,-108"/>
 <text text-anchor="middle" x="1111.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_gmbe_utils~~UsedByGraph_edge14" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1072.25,-99.03C1024.38,-102.82 942.47,-109.32 891.31,-113.37"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="890.88,-109.89 881.19,-114.17 891.44,-116.87 890.88,-109.89"/>
 </g>
@@ -1207,7 +1207,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersect~2"></span>
+              <span class="anchor" id="variable-n_intersect"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1282,7 +1282,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~41"></span>
+              <span class="anchor" id="variable-n_atoms~35"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1333,7 +1333,7 @@ polymer(:) contains base fragment indices (1-based)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~68"></span>
+              <span class="anchor" id="variable-sys_geom~64"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1378,7 +1378,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_list~2"></span>
+              <span class="anchor" id="variable-atom_list~5"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1393,7 +1393,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~40"></span>
+              <span class="anchor" id="variable-n_atoms~34"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1433,7 +1433,7 @@ polymer(:) contains base fragment indices (1-based)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~66"></span>
+              <span class="anchor" id="variable-sys_geom~62"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1448,7 +1448,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~9"></span>
+              <span class="anchor" id="variable-monomers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1478,7 +1478,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~9"></span>
+              <span class="anchor" id="variable-n_monomers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1523,7 +1523,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~3"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1538,7 +1538,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~2"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1553,7 +1553,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~2"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1594,7 +1594,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~69"></span>
+              <span class="anchor" id="variable-sys_geom~65"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1639,7 +1639,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~28"></span>
+              <span class="anchor" id="variable-max_level~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1669,7 +1669,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~4"></span>
+              <span class="anchor" id="variable-intersection_sets~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1684,7 +1684,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~3"></span>
+              <span class="anchor" id="variable-intersection_levels~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1699,7 +1699,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~3"></span>
+              <span class="anchor" id="variable-n_intersections~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1740,7 +1740,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~70"></span>
+              <span class="anchor" id="variable-sys_geom~66"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1815,7 +1815,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~9"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1830,7 +1830,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~6"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1845,7 +1845,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -1860,7 +1860,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~94"></span>
+              <span class="anchor" id="variable-error~86"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1915,7 +1915,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_energy~2"></span>
+              <span class="anchor" id="variable-monomer_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1930,7 +1930,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~11"></span>
+              <span class="anchor" id="variable-n_monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1945,7 +1945,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_energies~2"></span>
+              <span class="anchor" id="variable-level_energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1960,7 +1960,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_counts~2"></span>
+              <span class="anchor" id="variable-level_counts"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1975,7 +1975,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~29"></span>
+              <span class="anchor" id="variable-max_level~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2005,7 +2005,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_intersections~2"></span>
+              <span class="anchor" id="variable-has_intersections"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2045,7 +2045,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~4"></span>
+              <span class="anchor" id="variable-total_gradient~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2060,7 +2060,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~71"></span>
+              <span class="anchor" id="variable-sys_geom~67"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2075,7 +2075,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~6"></span>
+              <span class="anchor" id="variable-current_log_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2115,7 +2115,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~5"></span>
+              <span class="anchor" id="variable-n_intersections~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2130,7 +2130,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~12"></span>
+              <span class="anchor" id="variable-n_monomers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2145,7 +2145,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~6"></span>
+              <span class="anchor" id="variable-intersection_sets~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2160,7 +2160,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~5"></span>
+              <span class="anchor" id="variable-intersection_levels~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2175,7 +2175,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~3"></span>
+              <span class="anchor" id="variable-intersection_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2260,7 +2260,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~7"></span>
+              <span class="anchor" id="variable-max_atoms~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2305,7 +2305,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_atoms~3"></span>
+              <span class="anchor" id="variable-current_atoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2380,7 +2380,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_sets"></span>
+              <span class="anchor" id="variable-atom_sets~3"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -2395,7 +2395,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~4"></span>
+              <span class="anchor" id="variable-coefficients~7"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -2410,7 +2410,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~7"></span>
+              <span class="anchor" id="variable-n_terms~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -2440,7 +2440,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~87"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2496,7 +2496,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms_list"></span>
+              <span class="anchor" id="variable-n_atoms_list~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2556,7 +2556,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~5"></span>
+              <span class="anchor" id="variable-intersection_sets~3"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2571,7 +2571,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~4"></span>
+              <span class="anchor" id="variable-intersection_levels~3"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2586,7 +2586,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~4"></span>
+              <span class="anchor" id="variable-n_intersections~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2626,7 +2626,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~67"></span>
+              <span class="anchor" id="variable-sys_geom~63"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2641,7 +2641,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~10"></span>
+              <span class="anchor" id="variable-monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2656,7 +2656,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~10"></span>
+              <span class="anchor" id="variable-n_monomers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2671,7 +2671,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~24"></span>
+              <span class="anchor" id="variable-k~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2701,7 +2701,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~3"></span>
+              <span class="anchor" id="variable-max_atoms~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2816,7 +2816,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms_list~2"></span>
+              <span class="anchor" id="variable-n_atoms_list~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2846,7 +2846,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~26"></span>
+              <span class="anchor" id="variable-k~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2876,7 +2876,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~5"></span>
+              <span class="anchor" id="variable-max_atoms~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2976,7 +2976,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_sets~2"></span>
+              <span class="anchor" id="variable-atom_sets~4"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -2991,7 +2991,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~5"></span>
+              <span class="anchor" id="variable-coefficients~8"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -3021,7 +3021,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~8"></span>
+              <span class="anchor" id="variable-max_atoms~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3036,7 +3036,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~96"></span>
+              <span class="anchor" id="variable-error~88"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3151,7 +3151,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersect~3"></span>
+              <span class="anchor" id="variable-n_intersect~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3194,7 +3194,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>

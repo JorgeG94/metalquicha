@@ -243,8 +243,8 @@ Receive result over MPI</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -1361,18 +1361,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M1655.14,-1069.51C1609.48,-1062.27 1519.25,-1047.97 1464.36,-1039.27"/>
 <polygon fill="#ffda00" stroke="#ffda00" points="1464.63,-1035.77 1454.2,-1037.66 1463.53,-1042.68 1464.63,-1035.77"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_result_types~~UsedByGraph_node50" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_result_types~~UsedByGraph_node50"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_result_types~~UsedByGraph_node50"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1723.5,-1044 1645.5,-1044 1645.5,-1020 1723.5,-1020 1723.5,-1044"/>
 <text text-anchor="middle" x="1684.5" y="-1029.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_result_types~~UsedByGraph_edge38" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M1645.25,-1032C1597.38,-1032 1515.47,-1032 1464.31,-1032"/>
 <polygon fill="#ffda00" stroke="#ffda00" points="1464.19,-1028.5 1454.19,-1032 1464.19,-1035.5 1464.19,-1028.5"/>
 </g>
@@ -1830,7 +1830,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~5"></span>
+              <span class="anchor" id="variable-dipole_derivatives~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1864,7 +1864,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~13"></span>
+              <span class="anchor" id="variable-energy~11"></span>
               type(<a href='../type/energy_t.html'>energy_t</a>),
             </td>
               <td>public</td>
@@ -1881,7 +1881,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~76"></span>
+              <span class="anchor" id="variable-error~73"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>public</td>
@@ -1898,7 +1898,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~10"></span>
+              <span class="anchor" id="variable-gradient~8"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1966,7 +1966,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_error~2"></span>
+              <span class="anchor" id="variable-has_error"></span>
               logical,
             </td>
               <td>public</td>
@@ -2051,7 +2051,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~11"></span>
+              <span class="anchor" id="variable-hessian~7"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2119,7 +2119,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~7"></span>
+              <span class="anchor" id="variable-scf_status~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2162,12 +2162,12 @@ parameter
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/calculation_result_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_destroy.html'>result_destroy</a></td>
+  <strong><a href='../type/calculation_result_t.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_destroy.html'>result_destroy</a></td>
                   <td><p>Clean up allocated memory</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/calculation_result_t.html#boundprocedure-reset~6'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_reset.html'>result_reset</a></td>
+  <strong><a href='../type/calculation_result_t.html#boundprocedure-reset~5'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_reset.html'>result_reset</a></td>
                   <td><p>Reset all values and flags</p></td>
               </tr>
           </tbody>
@@ -2265,12 +2265,12 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/cc_energy_t.html#boundprocedure-reset~4'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_reset.html'>cc_reset</a></td>
+  <strong><a href='../type/cc_energy_t.html#boundprocedure-reset~3'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_reset.html'>cc_reset</a></td>
                   <td><p>Reset all components to zero</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/cc_energy_t.html#boundprocedure-total~5'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_total.html'>cc_total</a></td>
+  <strong><a href='../type/cc_energy_t.html#boundprocedure-total~6'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_total.html'>cc_total</a></td>
                   <td><p>Compute total CC correlation</p></td>
               </tr>
           </tbody>
@@ -2303,7 +2303,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc~2"></span>
+              <span class="anchor" id="variable-cc"></span>
               type(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
               <td>public</td>
@@ -2380,12 +2380,12 @@ parameter
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/energy_t.html#boundprocedure-reset~5'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_reset.html'>energy_reset</a></td>
+  <strong><a href='../type/energy_t.html#boundprocedure-reset~4'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_reset.html'>energy_reset</a></td>
                   <td><p>Reset all components to zero</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/energy_t.html#boundprocedure-total~6'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_total.html'>energy_total</a></td>
+  <strong><a href='../type/energy_t.html#boundprocedure-total~7'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_total.html'>energy_total</a></td>
                   <td><p>Compute total energy from components</p></td>
               </tr>
           </tbody>
@@ -2435,7 +2435,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~6"></span>
+              <span class="anchor" id="variable-dipole_derivatives~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2452,7 +2452,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~11"></span>
+              <span class="anchor" id="variable-gradient~9"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2554,7 +2554,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~12"></span>
+              <span class="anchor" id="variable-hessian~8"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2612,12 +2612,12 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_result_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_destroy.html'>mbe_result_destroy</a></td>
+  <strong><a href='../type/mbe_result_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_destroy.html'>mbe_result_destroy</a></td>
                   <td><p>Clean up allocated memory</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_result_t.html#boundprocedure-reset~7'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_reset.html'>mbe_result_reset</a></td>
+  <strong><a href='../type/mbe_result_t.html#boundprocedure-reset~6'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_reset.html'>mbe_result_reset</a></td>
                   <td><p>Reset all values and flags</p></td>
               </tr>
           </tbody>
@@ -2732,7 +2732,7 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mp2_energy_t.html#boundprocedure-reset~3'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_reset.html'>mp2_reset</a></td>
+  <strong><a href='../type/mp2_energy_t.html#boundprocedure-reset~2'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_reset.html'>mp2_reset</a></td>
                   <td><p>Reset both components to zero</p></td>
               </tr>
               <tr>
@@ -2742,7 +2742,7 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mp2_energy_t.html#boundprocedure-total~4'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_total.html'>mp2_total</a></td>
+  <strong><a href='../type/mp2_energy_t.html#boundprocedure-total~5'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_total.html'>mp2_total</a></td>
                   <td><p>Compute total MP2 correlation</p></td>
               </tr>
           </tbody>
@@ -2775,7 +2775,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~27"></span>
+              <span class="anchor" id="variable-status~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2820,7 +2820,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~91"></span>
+              <span class="anchor" id="variable-this~61"></span>
               class(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2865,7 +2865,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~94"></span>
+              <span class="anchor" id="variable-this~64"></span>
               class(<a href='../type/energy_t.html'>energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2910,7 +2910,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~88"></span>
+              <span class="anchor" id="variable-this~58"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2955,7 +2955,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~87"></span>
+              <span class="anchor" id="variable-this~57"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3005,7 +3005,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~5"></span>
+              <span class="anchor" id="variable-energies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3065,7 +3065,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~29"></span>
+              <span class="anchor" id="variable-found~31"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -3106,7 +3106,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~33"></span>
+              <span class="anchor" id="variable-result~40"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3121,7 +3121,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~19"></span>
+              <span class="anchor" id="variable-comm~16"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3136,7 +3136,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~4"></span>
+              <span class="anchor" id="variable-source~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3151,7 +3151,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~6"></span>
+              <span class="anchor" id="variable-tag~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3166,7 +3166,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~10"></span>
+              <span class="anchor" id="variable-req~23"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -3207,7 +3207,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~31"></span>
+              <span class="anchor" id="variable-result~38"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3222,7 +3222,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~17"></span>
+              <span class="anchor" id="variable-comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3237,7 +3237,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~4"></span>
+              <span class="anchor" id="variable-dest~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3252,7 +3252,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~4"></span>
+              <span class="anchor" id="variable-tag~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3267,7 +3267,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~9"></span>
+              <span class="anchor" id="variable-req~22"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -3308,7 +3308,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~32"></span>
+              <span class="anchor" id="variable-result~39"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3323,7 +3323,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~18"></span>
+              <span class="anchor" id="variable-comm~15"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3338,7 +3338,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~3"></span>
+              <span class="anchor" id="variable-source~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3353,7 +3353,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~5"></span>
+              <span class="anchor" id="variable-tag~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3368,7 +3368,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~25"></span>
+              <span class="anchor" id="variable-status~22"></span>
               type(MPI_Status),
             </td>
 <td>intent(out)</td>
@@ -3409,7 +3409,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~30"></span>
+              <span class="anchor" id="variable-result~37"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3424,7 +3424,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~16"></span>
+              <span class="anchor" id="variable-comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3439,7 +3439,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~3"></span>
+              <span class="anchor" id="variable-dest~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3454,7 +3454,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~3"></span>
+              <span class="anchor" id="variable-tag~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3495,7 +3495,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~93"></span>
+              <span class="anchor" id="variable-this~63"></span>
               class(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3535,7 +3535,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~92"></span>
+              <span class="anchor" id="variable-this~62"></span>
               class(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3575,7 +3575,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~95"></span>
+              <span class="anchor" id="variable-this~65"></span>
               class(<a href='../type/energy_t.html'>energy_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3615,7 +3615,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~102"></span>
+              <span class="anchor" id="variable-this~72"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3655,7 +3655,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~100"></span>
+              <span class="anchor" id="variable-this~70"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3670,7 +3670,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~2"></span>
+              <span class="anchor" id="variable-total_atoms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3710,7 +3710,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~101"></span>
+              <span class="anchor" id="variable-this~71"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3725,7 +3725,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~3"></span>
+              <span class="anchor" id="variable-total_atoms~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3765,7 +3765,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~98"></span>
+              <span class="anchor" id="variable-this~68"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3805,7 +3805,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~99"></span>
+              <span class="anchor" id="variable-this~69"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3846,7 +3846,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~90"></span>
+              <span class="anchor" id="variable-this~60"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3886,7 +3886,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~89"></span>
+              <span class="anchor" id="variable-this~59"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3926,7 +3926,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~29"></span>
+              <span class="anchor" id="variable-result~36"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3941,7 +3941,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~15"></span>
+              <span class="anchor" id="variable-comm~12"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3956,7 +3956,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~2"></span>
+              <span class="anchor" id="variable-source~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3971,7 +3971,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~2"></span>
+              <span class="anchor" id="variable-tag~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4011,7 +4011,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~96"></span>
+              <span class="anchor" id="variable-this~66"></span>
               class(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4051,7 +4051,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~97"></span>
+              <span class="anchor" id="variable-this~67"></span>
               class(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4091,7 +4091,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~28"></span>
+              <span class="anchor" id="variable-result~35"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4106,7 +4106,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~14"></span>
+              <span class="anchor" id="variable-comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4121,7 +4121,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~2"></span>
+              <span class="anchor" id="variable-dest~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4136,7 +4136,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag"></span>
+              <span class="anchor" id="variable-tag~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4179,7 +4179,7 @@ Correlation energies should be negative; positive values indicate instability</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 05:28 +0000             </p>
+ on 2026-08-14 05:56 +0000             </p>
           </div>
         </div>
         <br>
