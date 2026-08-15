@@ -301,13 +301,13 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: density_beta(:, :)
 
-      real(dp), allocatable :: rho(:), exc(:), vrho(:)
+      real(dp), allocatable :: rho(:), exc(:), vrho(:), vtau(:)
       real(dp), allocatable :: rho_beta(:), vrho_beta(:)
       real(dp), allocatable :: gcoef(:, :), gcoef_beta(:, :)
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
       real(dp), allocatable :: dchi(:, :), dchi_beta(:, :)
       real(dp), allocatable :: dgchi(:, :, :), dgchi_beta(:, :, :)
-      logical :: gga
+      logical :: gga, mgga
       real(dp), allocatable :: dpart(:, :, :)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: contrib(3)
@@ -322,9 +322,17 @@ contains
       natm = mol%natm
       npts = ctx%grid%n_points
 
-      gga = ctx%any_gga
+      gga = ctx%any_gga .or. ctx%any_mgga
+      mgga = ctx%any_mgga
 
-      if (gga) then
+      if (mgga) then
+         ! `vtau` is what makes this legal: `xc_grid_gga_quantities` refuses a
+         ! meta-GGA outright when the caller cannot take it, because its own
+         ! per-functional dispatch would otherwise fall through to the LDA
+         ! branch. Unrestricted is refused in there for a separate reason.
+         call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
+                                     vtau=vtau)
+      else if (gga) then
          if (unrestricted) then
             call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
                                         density_beta=density_beta, rho_beta=rho_beta, &
@@ -398,6 +406,11 @@ contains
                call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, &
                                            ctx%grid%weights(gg)*gcoef(gg, :), scale, &
                                            offsets, counts, natm, own, gradient)
+            end if
+            if (mgga) then
+               call accumulate_mgga_channel(ao_grad, ao_hess, dgchi, ig, nao, &
+                                            ctx%grid%weights(gg)*vtau(gg), scale, &
+                                            offsets, counts, natm, own, gradient)
             end if
             if (unrestricted) then
                wv = ctx%grid%weights(gg)*vrho_beta(gg)
@@ -553,6 +566,73 @@ contains
          end do
       end do
    end subroutine density_times_ao_grad
+
+   subroutine accumulate_mgga_channel(ao_grad, ao_hess, dgchi, ig, nao, wt, scale, &
+                                      offsets, counts, natm, own, gradient)
+      !! The kinetic-energy-density term at one grid point
+      !!
+      !! A meta-GGA reads `tau` as well, and moving a nucleus moves the
+      !! functions it is built from:
+      !!
+      !!     tau = 1/2 sum_j sum_uv D_uv d_j chi_u d_j chi_v
+      !!     dtau/dR_{A,k} = -sum_{mu in A} sum_j d2chi_mu/dx_k dx_j (D grad chi)_mu,j
+      !!
+      !! **The half is already gone by the time it is written that way**, and
+      !! that is the factor to be careful about. `tau` carries libxc's 1/2, and
+      !! differentiating pairs the moving function with either the bra or the
+      !! ket, which are equal by the symmetry of D -- so the two cancel and the
+      !! net coefficient is one, not one half and not two. It is applied through
+      !! `scale` and an explicit half below so that both appear where the
+      !! corresponding factors in `accumulate_xc_matrix` do, rather than being
+      !! silently folded into a single constant nobody can check.
+      !!
+      !! Only one contraction, unlike the GGA term next door: `tau` pairs a
+      !! first derivative with a first derivative, so differentiating it gives a
+      !! second derivative against `(D grad chi)` and nothing against `chi`.
+      real(dp), intent(in) :: ao_grad(:, :, :)
+      real(dp), intent(in) :: ao_hess(:, :, :)
+      real(dp), intent(in) :: dgchi(:, :, :)
+      integer, intent(in) :: ig, nao, natm, own
+      real(dp), intent(in) :: wt          !! weight times dE/dtau
+      real(dp), intent(in) :: scale
+      integer, intent(in) :: offsets(:), counts(:)
+      real(dp), intent(inout) :: gradient(:, :)
+
+      ! Which packed component holds d2/dx_k dx_j, as `accumulate_gga_channel`.
+      integer, parameter :: HESS_INDEX(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+
+      integer :: ia, mu, j, k, p0, p1
+      real(dp) :: block_sum(3)
+      real(dp) :: total(3)
+      real(dp) :: acc, factor
+
+      factor = 0.5_dp*scale*wt
+      total = 0.0_dp
+      do ia = 1, natm
+         p0 = offsets(ia) + 1
+         p1 = offsets(ia) + counts(ia)
+         block_sum = 0.0_dp
+         do mu = p0, p1
+            do k = 1, 3
+               acc = 0.0_dp
+               do j = 1, 3
+                  acc = acc + ao_hess(ig, mu, HESS_INDEX(k, j))*dgchi(ig, mu, j)
+               end do
+               block_sum(k) = block_sum(k) + acc
+            end do
+         end do
+         do k = 1, 3
+            gradient(k, ia) = gradient(k, ia) - factor*block_sum(k)
+            total(k) = total(k) + block_sum(k)
+         end do
+      end do
+
+      ! The point travels with the atom that owns it, exactly as the other two.
+      do k = 1, 3
+         gradient(k, own) = gradient(k, own) + factor*total(k)
+      end do
+      if (nao < 0) return
+   end subroutine accumulate_mgga_channel
 
    subroutine accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, wg, scale, &
                                      offsets, counts, natm, own, gradient)

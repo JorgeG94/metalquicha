@@ -414,7 +414,8 @@ contains
    end subroutine xc_grid_lda_quantities
 
    subroutine xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, grad_coeff, error, &
-                                     density_beta, rho_beta, vrho_beta, grad_coeff_beta)
+                                     density_beta, rho_beta, vrho_beta, grad_coeff_beta, &
+                                     vtau)
       !! rho, eps_xc, dE/drho and dE/d(grad rho) at every grid point, for a GGA
       !!
       !! The counterpart of `xc_grid_lda_quantities` for a functional that reads
@@ -449,10 +450,15 @@ contains
       real(dp), allocatable, intent(out), optional :: rho_beta(:)
       real(dp), allocatable, intent(out), optional :: vrho_beta(:)
       real(dp), allocatable, intent(out), optional :: grad_coeff_beta(:, :)
+      real(dp), allocatable, intent(out), optional :: vtau(:)
+         !! `dE/dtau` per point, for a meta-GGA. Absent, a meta-GGA is refused
+         !! rather than evaluated without it -- see the check below, and note
+         !! that the dispatch further down would otherwise treat one as an LDA.
 
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: rho_blk(:), sigma(:), exc_i(:), vrho_i(:), vsigma_i(:)
       real(dp), allocatable :: vsigma(:)
+      real(dp), allocatable :: tau_blk(:), lapl(:), vlapl(:), vtau_i(:)
       real(dp), allocatable :: rho_a_blk(:), rho_b_blk(:), grad_a(:, :), grad_b(:, :)
       real(dp), allocatable :: rho_grad(:, :)
       integer :: g0, g1, nb, i, ig, id, npts
@@ -478,11 +484,23 @@ contains
          call error%set(ERROR_VALIDATION, "no libxc in this build")
          return
       end if
-      if (ctx%any_mgga) then
-         call error%set(ERROR_VALIDATION, "the exchange-correlation gradient is "// &
-                        "implemented for LDA and GGA functionals; this one needs "// &
-                        "the kinetic energy density")
+      if (ctx%any_mgga .and. .not. present(vtau)) then
+         call error%set(ERROR_VALIDATION, "this functional needs the kinetic energy "// &
+                        "density, and the caller asked for no `vtau`. Refused rather "// &
+                        "than evaluated without it: the dispatch below would fall "// &
+                        "through to the LDA branch and return a converged, wrong "// &
+                        "answer.")
          return
+      end if
+      if (ctx%any_mgga .and. unrestricted) then
+         call error%set(ERROR_VALIDATION, "the meta-GGA gradient is implemented for a "// &
+                        "restricted reference only; the unrestricted kinetic energy "// &
+                        "density carries a term per spin that is not built here.")
+         return
+      end if
+      if (present(vtau)) then
+         allocate (vtau(npts))
+         vtau = 0.0_dp
       end if
       if (unrestricted .neqv. ctx%polarized) then
          call error%set(ERROR_VALIDATION, "xc_grid_gga_quantities: the spin case does "// &
@@ -557,10 +575,21 @@ contains
                end do
             end do
          else
-            call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad)
+            if (ctx%any_mgga) then
+               call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad, &
+                             tau=tau_blk)
+            else
+               call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad)
+            end if
 
             allocate (sigma(nb), exc_i(nb), vrho_i(nb), vsigma_i(nb), vsigma(nb))
             vsigma = 0.0_dp
+            if (ctx%any_mgga) then
+               allocate (lapl(nb), vlapl(nb), vtau_i(nb))
+               ! Zero, and read only by functionals that do not need it: the
+               ! Laplacian-dependent ones were refused at construction.
+               lapl = 0.0_dp
+            end if
             do ig = 1, nb
                sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
             end do
@@ -574,6 +603,15 @@ contains
                ! commonly is -- so the family is per functional rather than per
                ! context, and `any_gga` only says at least one needs sigma.
                select case (ctx%family(i))
+               case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+                  vtau_i = 0.0_dp
+                  call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
+                                           lapl, tau_blk, exc_i, vrho_i, vsigma_i, &
+                                           vlapl, vtau_i)
+                  vsigma = vsigma + ctx%weight(i)*vsigma_i
+                  do ig = 1, nb
+                     vtau(g0 + ig - 1) = vtau(g0 + ig - 1) + ctx%weight(i)*vtau_i(ig)
+                  end do
                case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
                   call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
                                           exc_i, vrho_i, vsigma_i)
@@ -586,6 +624,7 @@ contains
                   vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(ig)
                end do
             end do
+            if (ctx%any_mgga) deallocate (lapl, vlapl, vtau_i)
 
             do ig = 1, nb
                rho(g0 + ig - 1) = rho_blk(ig)

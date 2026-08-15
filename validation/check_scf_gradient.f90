@@ -175,6 +175,44 @@ program check_scf_gradient
                                -1.02_dp, -1.78_dp, 0.3_dp], [N_DIM, 4]), &
                       "sto-3g", 9, 2, n_bad, functional="pbe")
 
+      ! Meta-GGA. TPSS reads the kinetic energy density on top of the density
+      ! and its gradient, and tau's term is the one this branch adds -- so a
+      ! finite difference here is the check that decides it. Restricted only:
+      ! the unrestricted kinetic energy density carries a term per spin that is
+      ! refused rather than approximated.
+      call check_case("H2O / sto-3g, TPSS (RKS, meta-GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, functional="tpss")
+
+      ! Asymmetric, so a term wrong in a way symmetry hides shows up.
+      call check_case("HCN / sto-3g, TPSS (RKS, meta-GGA)", [1, 6, 7], &
+                      ["H", "C", "N"], &
+                      reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                               0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                      "sto-3g", 14, 1, n_bad, functional="tpss")
+
+      ! A second meta-GGA, different in kind: M06-L is heavily parametrised
+      ! where TPSS is constraint-derived, so the two exercise different parts of
+      ! libxc's tau dependence rather than the same one twice.
+      call check_case("H2O / sto-3g, M06-L (RKS, meta-GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, functional="m06l")
+
+      ! A larger basis, so tau is exercised over more than a minimal set.
+      call check_case("H2O / 6-31g, TPSS (RKS, meta-GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "6-31g", 10, 1, n_bad, functional="tpss")
+
       call check_case("CH3 doublet / sto-3g, B3LYP (UKS, hybrid GGA)", [6, 1, 1, 1], &
                       ["C", "H", "H", "H"], &
                       reshape([0.0_dp, 0.0_dp, 0.0_dp, &
@@ -218,7 +256,6 @@ contains
       type(error_t) :: error
 
       natm = size(numbers)
-
       if (len_trim(filter) > 0) then
          if (index(label, trim(filter)) == 0) return
       end if
