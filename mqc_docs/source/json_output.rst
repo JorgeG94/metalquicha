@@ -47,6 +47,12 @@ Several fields appear across multiple output types:
    * - ``total_energy``
      - float
      - Total electronic energy in Hartree
+   * - ``gradient``
+     - array
+     - Nuclear gradient, one ``[x, y, z]`` triple per atom in input order (Hartree/Bohr)
+   * - ``gradient_units``
+     - string
+     - Units the components are written in; always ``hartree/bohr``
    * - ``gradient_norm``
      - float
      - Euclidean norm of the nuclear gradient (Hartree/Bohr)
@@ -77,6 +83,12 @@ Schema
          "magnitude_debye": 1.923456789012
        },
        "gradient_norm": 0.012345678901,
+       "gradient_units": "hartree/bohr",
+       "gradient": [
+         [0.0, 0.0, -0.067617391054],
+         [0.0, -0.016791268486, 0.033808695649],
+         [0.0, 0.016791268169, 0.033808695405]
+       ],
        "hessian_frobenius_norm": 1.234567890123
      }
    }
@@ -88,8 +100,17 @@ All fields are optional depending on the calculation type:
 
 - ``total_energy``: Present for Energy, Gradient, and Hessian calculations
 - ``dipole``: Present when dipole moments are computed
-- ``gradient_norm``: Present for Gradient and Hessian calculations
+- ``gradient``, ``gradient_units``, ``gradient_norm``: Present for Gradient and
+  Hessian calculations
 - ``hessian_frobenius_norm``: Present for Hessian calculations
+
+The components are what a validation case compares. A norm cannot tell a
+correct gradient from one with a sign error, a swapped pair of atoms, or a
+wrong component that happens to preserve the magnitude, so
+``validation/run_validation.py`` reads ``gradient`` and compares element by
+element against ``expected_gradient`` in the manifest -- and reports the
+translational residual, :math:`\sum_A \partial E/\partial R_A`, which should
+vanish, while it is there.
 
 MBE Detailed Breakdown
 ======================

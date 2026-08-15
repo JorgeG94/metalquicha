@@ -384,6 +384,66 @@ FRAGMENTED_CASES = [
     ("w2dimer", "cc-pvdz", "mp2", 2, [[0, 1, 2], [3, 4, 5]]),
 ]
 
+# Analytic nuclear gradients, as (molecule, basis, aux, functional, multiplicity).
+# An empty aux means exact ERIs, an empty functional means Hartree-Fock.
+#
+# These are the only cases in the suite whose reference is a vector, and they
+# exist because a total energy says nothing about a derivative: both times an
+# exchange-correlation gradient term was wrong during development, the
+# converged energy still matched PySCF to all ten printed digits. The manifest
+# carries every component, not `gradient_norm` -- a norm cannot separate a sign
+# error, a swapped pair of atoms, or a wrong component that preserves the
+# magnitude.
+#
+# One case per code path rather than a sweep: exact ERIs restricted and
+# unrestricted, density fitting, and each rung of the functional ladder that is
+# implemented. Meta-GGA and range-separated hybrids are absent because their
+# gradients are refused rather than approximated -- tau and the screened
+# exchange derivative are not written -- so a case here would be pinning a
+# refusal.
+GRADIENT_CASES = [
+    ("water", "sto-3g", "", "", 1),
+    ("ch4", "6-31g**", "", "", 1),       # Cartesian d functions
+    ("nh3", "cc-pvdz", "", "", 1),
+    ("ch3", "cc-pvdz", "", "", 2),       # unrestricted
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "", 1),   # density fitted
+    ("water", "cc-pvdz", "", "svwn", 1),            # LDA
+    ("water", "cc-pvdz", "", "pbe", 1),             # GGA
+    ("water", "cc-pvdz", "", "b3lyp", 1),           # hybrid GGA
+    ("ch3", "cc-pvdz", "", "pbe", 2),               # unrestricted GGA
+]
+
+# The same gradient through the many-body expansion, as
+# (molecule, basis, fragments). Its reference is the supermolecule and that is
+# exact rather than tolerated: over two fragments the expansion collapses term
+# by term, E_1 + E_2 + (E_12 - E_1 - E_2) = E_12, and differentiating a term-by-term
+# identity leaves it one. So the fragmented gradient has to reproduce the
+# supermolecular one to machine precision, and the case covers what no
+# unfragmented one does -- per-fragment gradients surviving assembly, and the
+# MPI distribution the runner gives a fragmented case.
+GRADIENT_FRAGMENTED_CASES = [
+    ("w2dimer", "cc-pvdz", [[0, 1, 2], [3, 4, 5]]),
+]
+
+# Ten times looser than the unfragmented cases, and not because the expansion
+# is approximate here -- it is exact. Three SCFs are converged independently
+# and each contributes its own stopping residue, and the assembly subtracts the
+# monomer gradients from the dimer one, so what cancels in the energy does not
+# cancel in the residues. Measured 1.5e-8 with the SCF stopped at 1e-11 and
+# 6.8e-9 at 1e-13, which is the shape of a convergence floor rather than a term
+# that is wrong.
+GRADIENT_FRAGMENTED_TOLERANCE = 1.0e-7
+
+# Looser than the energy tolerance, and for a reason rather than to make the
+# cases pass: the reference is another program's assembly of the same terms in
+# another order, and the exchange-correlation ones are quadratures. Measured
+# agreement over these nine cases is 4e-12 to 3e-9 without a functional and
+# 7e-10 to 7e-9 with one, so each bound keeps a factor of a few in hand. That
+# is enough: a term going missing is a 1e-3 event, not a 1e-8 one.
+GRADIENT_TOLERANCE = 1.0e-8
+GRADIENT_DFT_TOLERANCE = 1.0e-7
+GRADIENT_GRID_LEVEL = 3
+
 DF_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit"),
     ("water", "def2-svp", "def2-universal-jkfit"),
@@ -776,6 +836,55 @@ def pyscf_ri_cc(atoms, basis, aux, method, frozen):
     return float(escf + ecorr), mol.nao
 
 
+def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
+                   level=GRADIENT_GRID_LEVEL):
+    """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
+
+    Two things here are not defaults and both matter. The gradient modules have
+    to be imported by name -- `mf.Gradients()` raises NotImplementedError
+    otherwise, which reads like the method having no gradient rather than a
+    missing import. And `grid_response` is switched on for the functionals:
+    PySCF leaves out the derivative of the quadrature weights by default, while
+    metalquicha includes it, so the two disagree by ~1e-4 with nothing wrong on
+    either side. That term is also the one that hides best -- translational
+    invariance is blind to it, because a rigid translation leaves the Becke
+    partition unchanged.
+    """
+    from pyscf import df, dft, gto, scf
+    from pyscf.grad import rhf as _rhf_grad, rks as _rks_grad  # noqa: F401
+    from pyscf.grad import uhf as _uhf_grad, uks as _uks_grad  # noqa: F401
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = multiplicity - 1
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+
+    unrestricted = multiplicity != 1
+    if functional:
+        mf = dft.UKS(mol) if unrestricted else dft.RKS(mol)
+        mf.xc = functional
+        mf.grids.level = level
+    else:
+        mf = scf.UHF(mol) if unrestricted else scf.RHF(mol)
+    if aux:
+        mf = df.density_fit(mf, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
+    mf.conv_tol = 1e-12
+    energy = mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF did not converge for {basis} {functional}")
+
+    grad = mf.Gradients()
+    if functional:
+        grad.grid_response = True
+    return float(energy), grad.kernel().tolist(), mol.nao
+
+
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
     from pyscf import df, gto, scf
 
@@ -876,6 +985,82 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} df={aux:22s} E={energy:.12f}", flush=True)
+
+    for name, basis, aux, functional, mult in GRADIENT_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_gradient(mol.atoms, basis, aux=aux,
+                                               functional=functional, multiplicity=mult)
+        tag = normalize_basis_name(basis)
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        if aux:
+            tag += "_df"
+        deck = deck_for(f"{CPU_MQC}/gradient", f"cpu_{name}_{tag}_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, multiplicity=mult,
+                          method="dft" if functional else "hf")
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
+            # Tighter than the suite default, because a gradient is a
+            # derivative of the converged energy and an unconverged density
+            # shows up in it linearly rather than quadratically. At the default
+            # 1e-8 these cases sat ~1e-7 from PySCF -- which is the SCF
+            # stopping point, not the gradient.
+            d["keywords"]["scf"]["tolerance"] = 1e-11
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        theory = functional.upper() if functional else ("UHF" if mult != 1 else "RHF")
+        label = f"{theory} gradient {mol.label} {basis}"
+        if aux:
+            label += f" density fitted with {aux}"
+        tests.append({
+            "name": label + " (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_DFT_TOLERANCE if functional else GRADIENT_TOLERANCE,
+            # Exact here, and worth failing on: every term in these gradients is
+            # translationally invariant, so a residual is a real defect even
+            # though the converse does not hold.
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {theory:8s} grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, fragments in GRADIENT_FRAGMENTED_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_gradient(mol.atoms, basis)
+        deck = deck_for(f"{CPU_MQC}/gradient",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_grad_mbe{len(fragments)}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis)
+            d["molecules"][0]["fragments"] = fragments
+            d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
+            d["molecules"][0]["fragment_multiplicities"] = [1]*len(fragments)
+            d["keywords"]["fragmentation"] = {
+                "method": "MBE", "level": len(fragments),
+                "allow_overlapping_fragments": False, "embedding": "none",
+            }
+            d["keywords"]["scf"]["tolerance"] = 1e-11
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"MBE({len(fragments)}) RHF gradient {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_FRAGMENTED_TOLERANCE,
+            "check_translation": True,
+            "type": "fragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {'RHF':8s} grad MBE({len(fragments)}) "
+              f"|g|={norm:.10f} nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, mult in OPEN_SHELL:
         mol = MOLECULES[name]

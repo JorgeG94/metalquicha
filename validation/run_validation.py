@@ -131,6 +131,57 @@ def extract_gradient_norm(json_data: Dict) -> Optional[float]:
     return None
 
 
+def extract_gradient(json_data: Dict) -> Optional[List[List[float]]]:
+    """Extract the gradient components (Hartree/Bohr, one [x, y, z] per atom)"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "gradient" not in data:
+        return None
+
+    return [[float(c) for c in atom] for atom in data["gradient"]]
+
+
+def compare_gradients(calculated: List[List[float]],
+                      expected: List[List[float]],
+                      tolerance: float) -> tuple:
+    """Compare two gradients element by element
+
+    Returns (ok, max_diff, worst) where `worst` lists the offending
+    (atom, component, expected, calculated, diff) tuples, largest first. A norm
+    cannot distinguish a sign error or a swapped pair of atoms from a correct
+    gradient, which is the whole reason this compares components.
+    """
+    axes = ("x", "y", "z")
+    offenders = []
+    max_diff = 0.0
+
+    for iatom, (calc_atom, exp_atom) in enumerate(zip(calculated, expected), start=1):
+        for icomp, (calc, exp) in enumerate(zip(calc_atom, exp_atom)):
+            diff = abs(calc - exp)
+            max_diff = max(max_diff, diff)
+            if diff >= tolerance:
+                offenders.append((iatom, axes[icomp], exp, calc, diff))
+
+    offenders.sort(key=lambda row: row[4], reverse=True)
+    return (not offenders, max_diff, offenders)
+
+
+def translational_residual(gradient: List[List[float]]) -> float:
+    """Largest |sum over atoms of dE/dR| component; zero for an exact gradient
+
+    Free, and needs no reference value. But it is structurally blind to
+    exchange-correlation terms -- a rigid translation leaves the Becke
+    partition unchanged -- so it has passed at 2e-15 over an XC weight
+    derivative wrong by 0.77 Hartree/Bohr. A smoke test, never a pass criterion
+    on its own.
+    """
+    return max(abs(sum(atom[icomp] for atom in gradient)) for icomp in range(3))
+
+
 def extract_hessian_norm(json_data: Dict) -> Optional[float]:
     """Extract hessian_frobenius_norm from JSON output"""
     if not json_data:
@@ -519,6 +570,64 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                         failure_reasons.append(f"Gradient mismatch (diff: {grad_diff:.2e})")
                     elif verbose:
                         print(f"    Gradient norm: {calculated_grad:.12f} (diff: {grad_diff:.2e})")
+
+            # Validate the gradient element by element if a reference is given
+            if "expected_gradient" in test:
+                expected_components = test["expected_gradient"]
+                calc_components = extract_gradient(output_data)
+
+                # Gradients are looser than energies by construction: the
+                # reference is usually an external code, and a converged energy
+                # agreeing to ten digits says nothing about the derivative.
+                grad_tol = test.get("gradient_tolerance", 1.0e-7)
+
+                if calc_components is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - No gradient components in JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing gradient components")
+                elif len(calc_components) != len(expected_components):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Gradient atom count mismatch")
+                    print(f"    Expected:   {len(expected_components)} atoms")
+                    print(f"    Calculated: {len(calc_components)} atoms")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"Gradient size mismatch ({len(calc_components)} vs {len(expected_components)} atoms)")
+                else:
+                    ok, max_diff, offenders = compare_gradients(
+                        calc_components, expected_components, grad_tol)
+                    if not ok:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Gradient mismatch "
+                              f"({len(offenders)} component(s), tolerance: {grad_tol:.2e})")
+                        for iatom, axis, exp_c, calc_c, diff in offenders[:10]:
+                            print(f"    atom {iatom:>4} {axis}: expected {exp_c: .12f}  "
+                                  f"calculated {calc_c: .12f}  diff {diff:.2e}")
+                        if len(offenders) > 10:
+                            print(f"    ... and {len(offenders) - 10} more")
+                        test_passed = False
+                        failure_reasons.append(f"Gradient mismatch (max diff: {max_diff:.2e})")
+                    elif verbose:
+                        print(f"    Gradient: {len(expected_components)} atoms "
+                              f"(max component diff: {max_diff:.2e})")
+
+            # Translational invariance, whenever components are available.
+            # Reported always because it is free; fails the case only where the
+            # deck asks for it, since it is blind to XC terms and a fragmented
+            # gradient carries cap-redistribution residue.
+            calc_components = extract_gradient(output_data)
+            if calc_components:
+                residual = translational_residual(calc_components)
+                trans_tol = test.get("translation_tolerance", 1.0e-8)
+                if residual >= trans_tol:
+                    if test.get("check_translation", False):
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Translational invariance")
+                        print(f"    |sum over atoms|: {residual:.2e} (tolerance: {trans_tol:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Translation residual {residual:.2e}")
+                    else:
+                        print(f"  {Colors.YELLOW}! translational residual "
+                              f"{residual:.2e}{Colors.RESET}")
+                elif verbose:
+                    print(f"    Translational residual: {residual:.2e}")
 
             # Validate Hessian Frobenius norm if present
             if "expected_hessian_frobenius_norm" in test:

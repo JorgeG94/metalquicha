@@ -1,4 +1,20 @@
+!! What the method objects promise, now that most of them are not placeholders
+!!
+!! Hartree-Fock and Kohn-Sham are real calculations on this path: analytic
+!! gradients and finite-difference Hessians both exist for them. Only MCSCF is
+!! still a stub, and its tests below are the only ones that assert stub
+!! behaviour. The file keeps its name because the target does.
+!!
+!! **The contract every test here shares** is not that a particular number comes
+!! back. It is that exactly one of "produced a result" and "reported an error"
+!! is true. Which one depends on the build and the machine -- these fragments
+!! carry no basis set, and the test environment has no `basis_sets/` in its
+!! working directory -- so asserting success would make the suite a test of the
+!! environment. Asserting the exclusive-or tests the thing that must hold
+!! everywhere: nothing is ever invented, and nothing that succeeded is ever
+!! reported as failed.
 module test_mqc_method_placeholders
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_method_hf, only: hf_method_t, hf_options_t
    use mqc_method_dft, only: dft_method_t, dft_options_t
@@ -88,14 +104,22 @@ contains
       call create_test_fragment(fragment)
       call method%calc_gradient(fragment, result)
 
-      ! Analytic HF gradients are not implemented yet. The contract is that
-      ! this is reported, not that a zero gradient is handed back as if real.
-      call check(error, result%has_error, &
-                 "HF gradients are unimplemented and must report an error")
+      ! The analytic HF gradient is implemented. What this asserts is the
+      ! contract around it rather than its value, which
+      ! `validation/check_scf_gradient` covers against PySCF and finite
+      ! differences: one of a gradient and an error, never both, never neither,
+      ! and never a zero gradient passed off as real.
+      call check(error, result%has_error .neqv. result%has_gradient, &
+                 "HF must either produce a gradient or report an error, not both "// &
+                 "or neither")
       if (allocated(error)) return
 
-      call check(error,.not. result%has_gradient, &
-                 "An unimplemented HF gradient must not claim to have one")
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed HF gradient must carry a diagnostic message")
+      else
+         call check_gradient_shape(error, result, fragment%n_atoms, "HF")
+      end if
 
       call fragment%destroy()
    end subroutine test_hf_gradient
@@ -109,8 +133,19 @@ contains
       call create_test_fragment(fragment)
       call method%calc_hessian(fragment, result)
 
-      call check(error,.not. result%has_hessian, &
-                 "HF Hessian placeholder should report not implemented")
+      ! Built by finite differences of the analytic gradient, so it exists
+      ! wherever that does.
+      call check(error, result%has_error .neqv. result%has_hessian, &
+                 "HF must either produce a Hessian or report an error, not both "// &
+                 "or neither")
+      if (allocated(error)) return
+
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed HF Hessian must carry a diagnostic message")
+      else
+         call check_hessian_shape(error, result, fragment%n_atoms, "HF")
+      end if
 
       call fragment%destroy()
    end subroutine test_hf_hessian
@@ -163,14 +198,20 @@ contains
 
       call method%calc_gradient(fragment, result)
 
-      ! Analytic DFT gradients are not implemented; the contract is that this
-      ! is reported rather than a zero gradient being passed off as real.
-      call check(error, result%has_error, &
-                 "DFT gradients are unimplemented and must report an error")
+      ! Implemented through hybrid GGA. Meta-GGAs and range-separated hybrids
+      ! are refused rather than approximated, which is an error and so is
+      ! covered by the same exclusive-or.
+      call check(error, result%has_error .neqv. result%has_gradient, &
+                 "DFT must either produce a gradient or report an error, not both "// &
+                 "or neither")
       if (allocated(error)) return
 
-      call check(error,.not. result%has_gradient, &
-                 "An unimplemented DFT gradient must not claim to have one")
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed DFT gradient must carry a diagnostic message")
+      else
+         call check_gradient_shape(error, result, fragment%n_atoms, "DFT")
+      end if
 
       call fragment%destroy()
    end subroutine test_dft_gradient
@@ -186,16 +227,66 @@ contains
 
       call method%calc_hessian(fragment, result)
 
-      ! Analytic DFT Hessians are not implemented; report, never fabricate.
-      call check(error, result%has_error, &
-                 "DFT Hessians are unimplemented and must report an error")
+      call check(error, result%has_error .neqv. result%has_hessian, &
+                 "DFT must either produce a Hessian or report an error, not both "// &
+                 "or neither")
       if (allocated(error)) return
 
-      call check(error,.not. result%has_hessian, &
-                 "An unimplemented DFT Hessian must not claim to have one")
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed DFT Hessian must carry a diagnostic message")
+      else
+         call check_hessian_shape(error, result, fragment%n_atoms, "DFT")
+      end if
 
       call fragment%destroy()
    end subroutine test_dft_hessian
+
+   subroutine check_gradient_shape(error, result, n_atoms, label)
+      !! A gradient that claims to exist has to be one
+      !!
+      !! Shape and finiteness rather than value. An unallocated array behind a
+      !! true `has_gradient`, or a NaN in it, is the failure this catches -- and
+      !! it is exactly what a zero-initialised placeholder would *not* have been
+      !! caught doing by the old assertion, which only asked whether the flag
+      !! was false.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t), intent(in) :: result
+      integer, intent(in) :: n_atoms
+      character(len=*), intent(in) :: label
+
+      call check(error, allocated(result%gradient), &
+                 label//" claims a gradient but did not allocate one")
+      if (allocated(error)) return
+
+      call check(error, size(result%gradient, 1) == 3 .and. &
+                 size(result%gradient, 2) == n_atoms, &
+                 label//" gradient is not (3, n_atoms)")
+      if (allocated(error)) return
+
+      call check(error, all(ieee_is_finite(result%gradient)), &
+                 label//" gradient contains a non-finite element")
+   end subroutine check_gradient_shape
+
+   subroutine check_hessian_shape(error, result, n_atoms, label)
+      !! The same, for the second derivatives
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t), intent(in) :: result
+      integer, intent(in) :: n_atoms
+      character(len=*), intent(in) :: label
+
+      call check(error, allocated(result%hessian), &
+                 label//" claims a Hessian but did not allocate one")
+      if (allocated(error)) return
+
+      call check(error, size(result%hessian, 1) == 3*n_atoms .and. &
+                 size(result%hessian, 2) == 3*n_atoms, &
+                 label//" Hessian is not (3 n_atoms, 3 n_atoms)")
+      if (allocated(error)) return
+
+      call check(error, all(ieee_is_finite(result%hessian)), &
+                 label//" Hessian contains a non-finite element")
+   end subroutine check_hessian_shape
 
    subroutine test_mcscf_no_active(error)
       type(error_type), allocatable, intent(out) :: error

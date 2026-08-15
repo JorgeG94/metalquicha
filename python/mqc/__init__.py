@@ -333,6 +333,19 @@ class Result:
             return None
         return document.get("homo_lumo_gap_ev")
 
+    @property
+    def gradient_norm(self):
+        """Norm of the nuclear gradient in Hartree/Bohr, or None.
+
+        Only a run that asked for one and wrote its output has this. The JSON
+        carries the norm rather than the full array, which is enough to tell a
+        correct gradient from a wrong one without moving 3N numbers through it.
+        """
+        document = self._output_document()
+        if not document:
+            return None
+        return document.get("gradient_norm")
+
     def _output_document(self):
         if not self.wrote:
             return None
