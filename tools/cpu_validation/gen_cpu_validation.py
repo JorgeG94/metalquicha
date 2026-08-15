@@ -291,6 +291,16 @@ HAND_MAINTAINED = {
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
+    # FMO2/FMO3 and EE-MBE. This script generates single-determinant references
+    # from PySCF, which has no FMO, so it cannot produce these and would sweep the
+    # decks away while leaving their manifest entries pointing at nothing. The two
+    # "at full level" cases are self-references in the strict sense -- an expansion
+    # carried to the number of fragments must reproduce the unfragmented energy, so
+    # what they pin is the identity rather than an outside number.
+    "cpu/mqc/fmo/fmo_water3.json",
+    "cpu/mqc/fmo/eembe_water3.json",
+    "cpu/mqc/fmo/fmo3_water3.json",
+    "cpu/mqc/fmo/eembe3_water3.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
