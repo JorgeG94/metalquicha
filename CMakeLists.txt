@@ -345,11 +345,14 @@ if(MQC_ENABLE_LIBCINT)
     # which a Cartesian basis such as 6-31G* can reach the exact four-index path
     # but not the density-fitted one. It also carries the three- and two-centre
     # optimizers: libcint exports them, the Fortran interface had no way to make
-    # one, so every fitting integral rebuilt its shell-pair data per call. Worth
+    # one, so every fitting integral rebuilt its shell-pair data per call. This
+    # hash also carries the nuclear-derivative integrals -- ipkin, ipnuc and
+    # iprinv, plus the three-centre and two-centre derivative pairs -- without
+    # which there is no analytic gradient on this backend at all. Worth
     # replacing with a tag once the fork has one -- a tag says what it is, a
     # hash does not, and a tag also lets GIT_SHALLOW come back, which a bare
     # hash cannot resolve.
-    GIT_TAG 525cab503f6134502cf69de42234b5897276dbf8)
+    GIT_TAG 3c78069d6c92e9d7f4db792ea2a33779b21539cc)
   # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone and
   # no network is touched. Compute nodes on most clusters have none, and a
   # configure step that reaches for GitHub fails there in a way that reads like
@@ -468,9 +471,27 @@ if(MQC_ENABLE_LIBXC)
 endif()
 
 if(MQC_ENABLE_LIBCINT)
+  add_executable(bench_scf_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/bench_scf_gradient.f90)
+  target_include_directories(bench_scf_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(bench_scf_gradient PRIVATE ${main_lib} cint_fortran
+                                                   cint)
+
   add_executable(bench_df_k ${PROJECT_SOURCE_DIR}/validation/bench_df_k.f90)
   target_include_directories(bench_df_k PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(bench_df_k PRIVATE ${main_lib} cint_fortran cint)
+
+  # The analytic gradient against finite differences of its own energy, and
+  # against translational invariance. Not a ctest case: it converges an SCF per
+  # displaced coordinate, which is seconds rather than the milliseconds the unit
+  # suite is meant to take.
+  add_executable(check_scf_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_scf_gradient.f90)
+  target_include_directories(check_scf_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_scf_gradient PRIVATE ${main_lib} cint_fortran
+                                                   cint)
 
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
