@@ -197,6 +197,7 @@ contains
       m%options%density_fitting = config%scf%density_fitting
       m%options%unrestricted = config%scf%unrestricted
       m%options%guess = config%scf%guess
+      if (allocated(config%scf%guess_steps)) m%options%guess_steps = config%scf%guess_steps
       m%options%max_iter = config%scf%max_iter
       m%options%allow_crap_scf = config%scf%allow_crap_scf
       m%options%conv_tol = config%scf%energy_convergence
@@ -219,6 +220,7 @@ contains
       ! SCF settings from shared config%scf
       m%options%unrestricted = config%scf%unrestricted
       m%options%guess = config%scf%guess
+      if (allocated(config%scf%guess_steps)) m%options%guess_steps = config%scf%guess_steps
       m%options%max_iter = config%scf%max_iter
       m%options%energy_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence

@@ -4,6 +4,7 @@ module mqc_method_config
    !! Uses composition pattern: method_config_t contains nested config types
    !! for each method family. The factory reads from the appropriate nested type.
    use pic_types, only: int32, dp
+   use mqc_config_types, only: guess_step_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    implicit none
    private
@@ -28,13 +29,18 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
-      character(len=16) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', or 'auto'
+      character(len=32) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
+         !! or 'auto'
          !!
          !! 'auto' means the backend picks, because the best starting point
          !! is a property of the backend rather than of the request: the CPU
          !! path resolves it to 'sad', and cuEST to 'gwh', each having
          !! measured its own. An explicit spelling always wins over both.
+      type(guess_step_t), allocatable :: guess_steps(:)
+         !! The basis ladder for 'basis_set_projection', one entry per
+         !! preliminary SCF in order. The target basis is the model's and is not
+         !! repeated here.
       logical :: allow_crap_scf = .false.
          !! Accept a non-converged SCF rather than stopping. See mqc_config_types.
       logical :: unrestricted = .false.

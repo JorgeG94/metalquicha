@@ -15,6 +15,7 @@ module mqc_method_dft
    !! it is queried from cuEST's XC plan and handed to the DF plan, so a hybrid
    !! cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
+   use mqc_config_types, only: guess_step_t
    use mqc_method_config, only: pcm_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
@@ -50,8 +51,12 @@ module mqc_method_dft
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
-      character(len=16) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', or 'auto'
+      character(len=32) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
+         !! or 'auto'
+      type(guess_step_t), allocatable :: guess_steps(:)
+         !! The basis ladder for 'basis_set_projection', one entry per
+         !! preliminary SCF in order.
          !!
          !! 'auto' means the backend picks, because the best starting point
          !! is a property of the backend rather than of the request: the CPU
@@ -153,6 +158,7 @@ contains
       end if
       settings%unrestricted = this%options%unrestricted
       settings%guess = this%options%guess
+      if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
       settings%max_iter = this%options%max_iter
       settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol

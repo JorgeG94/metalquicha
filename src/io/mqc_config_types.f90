@@ -36,6 +36,7 @@ module mqc_config_types
    public :: molecule_t         !! One molecule of a multi-molecule input
    public :: input_fragment_t   !! One fragment definition, as written in the input
    public :: bond_t             !! Re-exported so consumers need only this module
+   public :: guess_step_t       !! One rung of a basis-set-projection ladder
 
    type :: input_fragment_t
       !! Input fragment definition with charge, multiplicity, and atom indices
@@ -88,6 +89,20 @@ module mqc_config_types
       procedure :: destroy => molecule_destroy
    end type molecule_t
 
+   type :: guess_step_t
+      !! One rung of a basis-set-projection ladder
+      !!
+      !! Each rung converges an SCF in its own basis and hands the result to the
+      !! next as a starting density. The convergence settings are per rung
+      !! because the rungs are not doing the same job: an early one only has to
+      !! land in the right basin and can stop loosely, where the last one before
+      !! the target may as well be tight since it is cheap relative to what
+      !! follows.
+      character(len=:), allocatable :: basis
+      integer :: maxiter = 50
+      real(dp) :: tolerance = 1.0e-5_dp
+   end type guess_step_t
+
    type :: mqc_config_t
       !! Complete configuration from .mqc file
 
@@ -103,7 +118,20 @@ module mqc_config_types
       character(len=:), allocatable :: aux_basis
       character(len=:), allocatable :: functional
       character(len=:), allocatable :: scf_guess
-         !! Initial guess name from %scf
+         !! Initial guess name from `keywords.scf.guess`.
+         !!
+         !! Superseded by `keywords.guess.type`. Still read so existing decks
+         !! keep working, and setting both is an error rather than a precedence
+         !! rule: two keys naming one thing is confusing enough without the
+         !! answer depending on which one the reader happened to reach first.
+      character(len=:), allocatable :: guess_type
+         !! Initial guess name from `keywords.guess.type`, the current spelling.
+      type(guess_step_t), allocatable :: guess_steps(:)
+         !! The projection ladder, from `keywords.guess.subscf.steps`.
+         !!
+         !! One entry per preliminary SCF, in order. The target basis is
+         !! `model.basis` and is not repeated here, so three SCFs -- STO-3G, then
+         !! 6-31G, then cc-pVTZ -- is two steps and a model basis.
       logical :: scf_unrestricted = .false.
       logical :: allow_crap_scf = .false.
       logical :: scf_density_fitting = .false.

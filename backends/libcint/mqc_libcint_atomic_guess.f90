@@ -55,7 +55,7 @@ module mqc_libcint_atomic_guess
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks, subshell_layout
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf, &
+   use mqc_libcint_rhf, only: SCF_GUESS_PROJ, rhf_result_t, run_libcint_uhf, &
                               SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
    implicit none
    private
@@ -179,10 +179,13 @@ contains
          kind = SCF_GUESS_SAC
       case ("sad")
          kind = SCF_GUESS_SAD
+      case ("basis_set_projection", "projection")
+         kind = SCF_GUESS_PROJ
       case default
          kind = SCF_GUESS_SAD
          call error%set(ERROR_VALIDATION, "unknown initial guess '"//trim(adjustl(text))// &
-                        "'; the CPU backend has core, gwh, sac and sad")
+                        "'; the CPU backend has core, gwh, sac, sad and "// &
+                        "basis_set_projection")
       end select
    end subroutine parse_guess_name
 
@@ -198,6 +201,8 @@ contains
          name = "gwh"
       case (SCF_GUESS_SAC)
          name = "sac"
+      case (SCF_GUESS_PROJ)
+         name = "basis_set_projection"
       case (SCF_GUESS_SAD)
          name = "sad"
       case default

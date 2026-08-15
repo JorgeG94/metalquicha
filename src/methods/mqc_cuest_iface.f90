@@ -11,6 +11,7 @@ module mqc_cuest_iface
    !! which has a stub form fpm compiles and a real form CMake compiles -- lets
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
+   use mqc_config_types, only: guess_step_t
    use mqc_method_config, only: pcm_config_t
    implicit none
    private
@@ -73,8 +74,18 @@ module mqc_cuest_iface
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
-      character(len=16) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', or 'auto'
+      character(len=32) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
+         !! or 'auto'
+      type(guess_step_t), allocatable :: guess_steps(:)
+         !! The basis ladder for 'basis_set_projection', one entry per
+         !! preliminary SCF in order. The target basis is `basis_set` and is not
+         !! repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.
+         !!
+         !! Carried on the shared settings type because that is where every
+         !! other SCF setting lives, but only the libcint backend acts on it --
+         !! the projection is built from `libcint_molecule_t` and the cuEST path
+         !! refuses the guess rather than silently running a different one.
          !!
          !! 'auto' means the backend picks, because the best starting point
          !! is a property of the backend rather than of the request: the CPU

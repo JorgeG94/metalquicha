@@ -230,8 +230,17 @@ contains
       if (mqc_config%cc_triples_set) then
          driver_config%method_config%cc%include_triples = mqc_config%cc_triples
       end if
+      ! `guess_type` is the current spelling and `scf_guess` the superseded one.
+      ! The schema has already refused a deck that sets both, so whichever is
+      ! allocated is the one the user meant.
       if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess
+      end if
+      if (allocated(mqc_config%guess_type)) then
+         driver_config%method_config%scf%guess = mqc_config%guess_type
+      end if
+      if (allocated(mqc_config%guess_steps)) then
+         driver_config%method_config%scf%guess_steps = mqc_config%guess_steps
       end if
 
       ! Output control

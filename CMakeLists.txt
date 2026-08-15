@@ -476,6 +476,12 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)
 
+  add_executable(check_projection
+                 ${PROJECT_SOURCE_DIR}/validation/check_projection.f90)
+  target_include_directories(check_projection
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_projection PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_libcint
                  ${PROJECT_SOURCE_DIR}/validation/check_libcint.f90)
   target_include_directories(check_libcint
