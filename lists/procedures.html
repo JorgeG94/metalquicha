@@ -1634,6 +1634,18 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Grow PIE term storage arrays when capacity is exceeded.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/guess_keys.html'>guess_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/guess_step_keys.html'>guess_step_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/h5ck_close.html'>h5ck_close</a></td>
                  <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
                  <td>Subroutine</td>
@@ -1659,15 +1671,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1677,27 +1689,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1707,15 +1719,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1876,15 +1888,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
-                 <td>Function</td>
-                 <td><p>An integer as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
                  <td><p>Atomic number as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -2412,7 +2424,7 @@ Correlation energies should be negative; positive values indicate instability</p
                </tr>
 			   <tr>
                  <td><a href='../proc/needs_serial_execution.html'>needs_serial_execution</a></td>
-                 <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
+                 <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td>Function</td>
                  <td><p>Whether this method has to be run on one thread</p><a href="../proc/needs_serial_execution.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
@@ -2791,6 +2803,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>The fragments array, with its parallel charge, multiplicity and potential lists</p><a href="../proc/read_fragments.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_guess_steps.html'>read_guess_steps</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The basis-set-projection ladder, one entry per preliminary SCF</p><a href="../proc/read_guess_steps.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_json_basis_element.html'>read_json_basis_element</a></td>
@@ -3256,6 +3274,12 @@ Example: suffix=&rdquo;_mol1&rdquo; -&gt; &ldquo;output_multi_structure_mol1.jso
 Example: &ldquo;water.mqc&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/set_worker_threads.html'>set_worker_threads</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Give a worker rank its threads, and say what it got</p><a href="../proc/set_worker_threads.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/shell_angular_form.html'>shell_angular_form</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
@@ -3343,6 +3367,14 @@ Trailing newlines do not create empty lines</p></td>
                  <td><p>Stratmann&rsquo;s cutoff, exactly 1 or 0 outside |mu| &gt;= a</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/subscf_keys.html'>subscf_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Only meaningful under <code>type: basis_set_projection</code>, which
+<code>validate_guess_group</code> enforces &ndash; a <code>subscf</code> block beside any other
+guess would be read, validated and then silently ignored.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/sum_integer_array.html'>sum_integer_array</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -3408,6 +3440,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_guess_group.html'>validate_guess_group</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The three rules that make <code>keywords.guess</code> unambiguous</p><a href="../proc/validate_guess_group.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/validate_system.html'>validate_system</a></td>
@@ -3584,7 +3622,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 01:55 +0000             </p>
+ on 2026-08-15 02:16 +0000             </p>
           </div>
         </div>
         <br>

@@ -246,7 +246,8 @@ contains
           this%resources%mpi_comms%node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
-         call logger%verbose("Rank 0: Acting as global coordinator")
+         call logger%verbose("Rank 0: global coordinator, "// &
+                             to_char(omp_get_max_threads())//" thread(s)")
          call global_coordinator(this, json_data)
       else if (this%resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
@@ -255,9 +256,7 @@ contains
          call node_coordinator(this)
       else
          ! Worker
-         call omp_set_num_threads(1)
-         call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
-                             ": Acting as worker")
+         call set_worker_threads(this, "worker")
          call node_worker(this)
       end if
    end subroutine mbe_run_distributed
@@ -328,7 +327,8 @@ contains
           this%resources%mpi_comms%node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
-         call logger%verbose("Rank 0: Acting as GMBE PIE coordinator")
+         call logger%verbose("Rank 0: GMBE PIE coordinator, "// &
+                             to_char(omp_get_max_threads())//" thread(s)")
          call gmbe_pie_coordinator(this%resources, this%pie_atom_sets, this%pie_coefficients, &
                                    this%n_pie_terms, this%node_leader_ranks, this%num_nodes, &
                                    this%group_leader_ranks, this%group_ids, this%global_groups, &
@@ -357,12 +357,41 @@ contains
          end block
       else
          ! Worker
-         call omp_set_num_threads(1)
-         call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
-                             ": Acting as worker")
+         call set_worker_threads(this, "worker")
          ! Note: node_worker works for both MBE and GMBE (fragment_type distinguishes)
          call node_worker(this)
       end if
    end subroutine gmbe_run_distributed
+
+   subroutine set_worker_threads(this, role)
+      !! Give a worker rank its threads, and say what it got
+      !!
+      !! This used to be an unconditional `omp_set_num_threads(1)`, which made
+      !! "one fragment per rank, several threads per rank" impossible: the ranks
+      !! that run the chemistry were clamped to one thread whatever the launcher
+      !! asked for, so raising OMP_NUM_THREADS did nothing and the cause was
+      !! nowhere near the command line.
+      !!
+      !! The clamp exists for tblite, which corrupts a result when threaded
+      !! rather than failing, so it is kept for exactly that -- and the ranks
+      !! running anything else now use the threads they were given. A libcint
+      !! Fock build threads its own quartet loop, which is where they go.
+      !!
+      !! Every rank reports its role and thread count because the failure this
+      !! replaces was invisible: nothing in the output distinguished "four
+      !! threads, no speedup" from "one thread all along".
+      use omp_lib, only: omp_set_num_threads, omp_get_max_threads
+      use mqc_method_types, only: needs_serial_execution
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+      class(many_body_expansion_t), intent(inout) :: this
+      character(len=*), intent(in) :: role
+
+      if (needs_serial_execution(this%method_config%method_type)) then
+         call omp_set_num_threads(1)
+      end if
+      call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
+                          ": "//role//", "//to_char(omp_get_max_threads())//" thread(s)")
+   end subroutine set_worker_threads
 
 end module mqc_many_body_expansion
