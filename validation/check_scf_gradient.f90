@@ -65,6 +65,29 @@ program check_scf_gradient
                             -1.02_dp, -1.78_dp, 0.3_dp], [N_DIM, 4]), &
                    "sto-3g", 9, 2, n_bad)
 
+   ! Density fitting. Only the two-electron term changes -- a fitted SCF is
+   ! still variational -- so these exercise the three-centre and metric
+   ! derivatives against the fitted energy they belong to.
+   call check_case("H2O / sto-3g + cc-pvdz-rifit (DF)", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit")
+
+   call check_case("H2O / 6-31g + cc-pvdz-rifit (DF)", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "6-31g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit")
+
+   call check_case("HCN / sto-3g + cc-pvdz-rifit (DF)", [1, 6, 7], ["H", "C", "N"], &
+                   reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                            0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                   "sto-3g", 14, 1, n_bad, aux_basis="cc-pvdz-rifit")
+
+   call check_unrestricted_df_channels(n_bad)
+
    write (*, "(a)") ""
    if (n_bad == 0) then
       write (*, "(a)") "all gradient checks passed"
@@ -75,7 +98,8 @@ program check_scf_gradient
 
 contains
 
-   subroutine check_case(label, numbers, symbols, coords, basis, nelec, multiplicity, n_bad)
+   subroutine check_case(label, numbers, symbols, coords, basis, nelec, multiplicity, &
+                         n_bad, aux_basis)
       character(len=*), intent(in) :: label
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -83,6 +107,8 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec, multiplicity
       integer, intent(inout) :: n_bad
+      character(len=*), intent(in), optional :: aux_basis
+         !! Present fits J and K, and differentiates the fitted energy
 
       real(dp), allocatable :: analytic(:, :), numeric(:, :)
       real(dp) :: translation(3)
@@ -96,7 +122,7 @@ contains
       write (*, "(a,a)") "== ", label
 
       call gradient_at(numbers, symbols, coords, basis, nelec, multiplicity, &
-                       analytic, error)
+                       analytic, error, aux_basis)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
@@ -104,7 +130,7 @@ contains
       end if
 
       call numeric_gradient(numbers, symbols, coords, basis, nelec, multiplicity, &
-                            numeric, error)
+                            numeric, error, aux_basis)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL (finite difference): ", error%get_message()
          n_bad = n_bad + 1
@@ -133,8 +159,101 @@ contains
       end if
    end subroutine check_case
 
+   subroutine check_unrestricted_df_channels(n_bad)
+      !! The unrestricted density-fitted branch, on a closed shell
+      !!
+      !! mqc has no unrestricted density-fitted SCF -- `run_libcint_uhf` says
+      !! so itself -- so there is no open-shell fitted energy to differentiate
+      !! and no finite difference to check the unrestricted branch against.
+      !!
+      !! What can still be checked is the part that is easy to get wrong: the
+      !! channel weights. Feed a closed-shell system through the unrestricted
+      !! path as two identical half-filled spin channels, and the result must
+      !! equal the restricted one exactly. The restricted expression carries a
+      !! factor of two on the exchange density and one on the metric term; the
+      !! unrestricted one carries one and a half per channel. If either is
+      !! wrong the two disagree, and this is the only thing that would notice.
+      integer, intent(inout) :: n_bad
+
+      integer, parameter :: numbers(3) = [8, 1, 1]
+      character(len=1), parameter :: symbols(3) = ["O", "H", "H"]
+      real(dp) :: coords(N_DIM, 3)
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: error
+      real(dp), allocatable :: restricted(:, :), unrestricted(:, :)
+      real(dp), allocatable :: half_density(:, :)
+      real(dp) :: worst
+
+      coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                        0.0_dp, -1.4308_dp, 1.1078_dp, &
+                        0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3])
+
+      write (*, "(a)") ""
+      write (*, "(a)") "== unrestricted DF branch against the restricted one (H2O / sto-3g)"
+
+      call build_libcint_molecule(numbers, symbols, coords, "sto-3g", mol, error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+      call build_libcint_molecule(numbers, symbols, coords, "cc-pvdz-rifit", aux, error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, aux=aux)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      call libcint_scf_gradient(mol, scf%density, &
+                                orbitals=scf%orbitals, &
+                                orbital_energies=scf%orbital_energies, &
+                                n_occupied=scf%n_occupied, &
+                                gradient=restricted, error=error, aux=aux)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      ! One electron per spin orbital rather than two, the same orbitals in
+      ! both channels: physically the same closed shell, expressed the way an
+      ! unrestricted reference would.
+      allocate (half_density(mol%nao, mol%nao))
+      half_density = 0.5_dp*scf%density
+
+      call libcint_scf_gradient(mol, half_density, &
+                                density_beta=half_density, &
+                                orbitals=scf%orbitals, &
+                                orbitals_beta=scf%orbitals, &
+                                orbital_energies=scf%orbital_energies, &
+                                orbital_energies_beta=scf%orbital_energies, &
+                                n_occupied=scf%n_occupied, &
+                                n_occupied_beta=scf%n_occupied, &
+                                gradient=unrestricted, error=error, aux=aux)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      worst = maxval(abs(restricted - unrestricted))
+      write (*, "(a,es12.4)") "  largest difference between the two paths: ", worst
+      if (worst > 1.0e-11_dp) then
+         write (*, "(a)") "  FAIL: the unrestricted channel weights do not reproduce the restricted result"
+         n_bad = n_bad + 1
+      end if
+   end subroutine check_unrestricted_df_channels
+
    subroutine gradient_at(numbers, symbols, coords, basis, nelec, multiplicity, &
-                          gradient, error)
+                          gradient, error, aux_basis)
       !! Converge an SCF at this geometry and differentiate it
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -143,14 +262,30 @@ contains
       integer, intent(in) :: nelec, multiplicity
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: aux_basis
 
-      type(libcint_molecule_t) :: mol
+      type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
 
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
+      if (present(aux_basis)) then
+         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         if (error%has_error()) return
+      end if
 
       if (multiplicity == 1) then
+         if (present(aux_basis)) then
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                                 error, aux=aux)
+            if (error%has_error()) return
+            call libcint_scf_gradient(mol, scf%density, &
+                                      orbitals=scf%orbitals, &
+                                      orbital_energies=scf%orbital_energies, &
+                                      n_occupied=scf%n_occupied, &
+                                      gradient=gradient, error=error, aux=aux)
+            return
+         end if
          call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
          if (error%has_error()) return
          call libcint_scf_gradient(mol, scf%density, &
@@ -174,7 +309,8 @@ contains
       end if
    end subroutine gradient_at
 
-   subroutine energy_at(numbers, symbols, coords, basis, nelec, multiplicity, energy, error)
+   subroutine energy_at(numbers, symbols, coords, basis, nelec, multiplicity, energy, &
+                        error, aux_basis)
       !! One converged SCF energy, for the finite difference
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -183,16 +319,26 @@ contains
       integer, intent(in) :: nelec, multiplicity
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: aux_basis
 
-      type(libcint_molecule_t) :: mol
+      type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
 
       energy = 0.0_dp
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
+      if (present(aux_basis)) then
+         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         if (error%has_error()) return
+      end if
 
       if (multiplicity == 1) then
-         call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
+         if (present(aux_basis)) then
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                                 error, aux=aux)
+         else
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
+         end if
       else
          call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
                               .false., scf, error)
@@ -202,7 +348,7 @@ contains
    end subroutine energy_at
 
    subroutine numeric_gradient(numbers, symbols, coords, basis, nelec, multiplicity, &
-                               gradient, error)
+                               gradient, error, aux_basis)
       !! Central differences on the SCF energy
       !!
       !! The step is a compromise the tolerance above is set from: too large
@@ -216,6 +362,7 @@ contains
       integer, intent(in) :: nelec, multiplicity
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: aux_basis
 
       real(dp), parameter :: step = 0.002_dp
       real(dp), allocatable :: shifted(:, :)
@@ -231,12 +378,14 @@ contains
          do ic = 1, 3
             shifted = coords
             shifted(ic, ia) = coords(ic, ia) + step
-            call energy_at(numbers, symbols, shifted, basis, nelec, multiplicity, e_plus, error)
+            call energy_at(numbers, symbols, shifted, basis, nelec, multiplicity, e_plus, &
+                           error, aux_basis)
             if (error%has_error()) return
 
             shifted = coords
             shifted(ic, ia) = coords(ic, ia) - step
-            call energy_at(numbers, symbols, shifted, basis, nelec, multiplicity, e_minus, error)
+            call energy_at(numbers, symbols, shifted, basis, nelec, multiplicity, e_minus, &
+                           error, aux_basis)
             if (error%has_error()) return
 
             gradient(ic, ia) = (e_plus - e_minus)/(2.0_dp*step)

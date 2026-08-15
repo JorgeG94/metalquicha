@@ -28,12 +28,18 @@ module mqc_libcint_gradient
    !! checking, and is checked in the tests.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
+                                    build_df_shell_table, three_centre, two_centre, &
+                                    metric_inverse_sqrt
+   use pic_blas_interfaces, only: pic_gemm
    use libcint_fortran, only: libcint_1e_ipovlp_sph, libcint_1e_ipovlp_cart, &
                               libcint_1e_ipkin_sph, libcint_1e_ipkin_cart, &
                               libcint_1e_ipnuc_sph, libcint_1e_ipnuc_cart, &
                               libcint_1e_iprinv_sph, libcint_1e_iprinv_cart, &
                               libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
+                              libcint_3c2e_ip1_sph, libcint_3c2e_ip1_cart, &
+                              libcint_3c2e_ip2_sph, libcint_3c2e_ip2_cart, &
+                              libcint_2c2e_ip1_sph, libcint_2c2e_ip1_cart, &
                               libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
                               libcint_del_optimizer, LIBCINT_PTR_RINV_ORIG
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
@@ -42,6 +48,8 @@ module mqc_libcint_gradient
 
    public :: libcint_scf_gradient
    public :: nuclear_repulsion_gradient   !! Exposed for the tests
+   public :: three_centre_deriv           !! Exposed for the tests
+   public :: two_centre_deriv             !! Exposed for the tests
 
    ! Which one-electron derivative `one_electron_deriv` should build.
    integer, parameter :: DERIV_OVLP = 1
@@ -52,7 +60,7 @@ contains
 
    subroutine libcint_scf_gradient(mol, density, density_beta, orbitals, orbitals_beta, &
                                    orbital_energies, orbital_energies_beta, &
-                                   n_occupied, n_occupied_beta, gradient, error)
+                                   n_occupied, n_occupied_beta, gradient, error, aux)
       !! dE/dR for a converged SCF, in Hartree/Bohr
       !!
       !! The beta arguments are what makes this one routine rather than two.
@@ -60,6 +68,14 @@ contains
       !! density and exchange from each spin separately, which is the only
       !! place the two paths differ. Absent means closed shell, where the
       !! density already carries its factor of two.
+      !!
+      !! `aux` present means the SCF being differentiated fitted its J and K,
+      !! and only the two-electron term changes: a density-fitted SCF is still
+      !! variational, so the one-electron, Pulay and nuclear-repulsion terms
+      !! are the same integrals contracted with the same densities. Passing an
+      !! auxiliary basis that the SCF did not use would differentiate a
+      !! different energy, which nothing here can detect -- it is the caller's
+      !! job to pass the one it converged with.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)          !! Alpha, or the total for RHF
       real(dp), intent(in), optional :: density_beta(:, :)
@@ -71,6 +87,8 @@ contains
       integer, intent(in), optional :: n_occupied_beta
       real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, natm)
       type(error_t), intent(inout) :: error
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! The auxiliary basis the SCF fitted with. Absent means exact ERIs.
 
       real(dp), allocatable :: total_density(:, :), weighted(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
@@ -79,6 +97,7 @@ contains
       integer, allocatable :: offsets(:), counts(:)
       integer :: nao, iatom, comp, p0, p1
       logical :: unrestricted
+      logical :: fitted
 
       unrestricted = present(density_beta)
       nao = mol%nao
@@ -121,7 +140,23 @@ contains
       h1 = -(kin + h1)
       deallocate (kin)
 
-      if (unrestricted) then
+      ! The fitted two-electron gradient does not factor into a `vhf` matrix
+      ! the way the exact one does -- it contracts three- and two-centre
+      ! derivatives against densities of its own -- so it accumulates straight
+      ! into `gradient` here and the per-atom loop below skips its term.
+      fitted = present(aux)
+      if (fitted) then
+         if (unrestricted) then
+            call df_two_electron_gradient(mol, aux, total_density, orbitals, n_occupied, &
+                                          orbitals_beta=orbitals_beta, &
+                                          n_occupied_beta=n_occupied_beta, &
+                                          gradient=gradient, error=error)
+         else
+            call df_two_electron_gradient(mol, aux, total_density, orbitals, n_occupied, &
+                                          gradient=gradient, error=error)
+         end if
+         if (error%has_error()) return
+      else if (unrestricted) then
          call two_electron_deriv(mol, total_density, vhf, error, &
                                  exchange_density=density)
          if (error%has_error()) return
@@ -169,13 +204,15 @@ contains
          ! the same number by the symmetry of the integrals, so it is counted
          ! rather than computed.
          do comp = 1, 3
-            if (unrestricted) then
-               gradient(comp, iatom) = gradient(comp, iatom) &
-                                       + 2.0_dp*sum(vhf(p0:p1, :, comp)*density(p0:p1, :)) &
-                                       + 2.0_dp*sum(vhf_beta(p0:p1, :, comp)*density_beta(p0:p1, :))
-            else
-               gradient(comp, iatom) = gradient(comp, iatom) &
-                                       + 2.0_dp*sum(vhf(p0:p1, :, comp)*total_density(p0:p1, :))
+            if (.not. fitted) then
+               if (unrestricted) then
+                  gradient(comp, iatom) = gradient(comp, iatom) &
+                                          + 2.0_dp*sum(vhf(p0:p1, :, comp)*density(p0:p1, :)) &
+                                          + 2.0_dp*sum(vhf_beta(p0:p1, :, comp)*density_beta(p0:p1, :))
+               else
+                  gradient(comp, iatom) = gradient(comp, iatom) &
+                                          + 2.0_dp*sum(vhf(p0:p1, :, comp)*total_density(p0:p1, :))
+               end if
             end if
             gradient(comp, iatom) = gradient(comp, iatom) &
                                     - 2.0_dp*sum(s1(p0:p1, :, comp)*weighted(p0:p1, :))
@@ -505,6 +542,349 @@ contains
       vhf = -(vj - k_scale*vk)
 
    end subroutine two_electron_deriv
+
+   subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &
+                                       orbitals_beta, n_occupied_beta, gradient, error)
+      !! The two-electron gradient when J and K are density-fitted
+      !!
+      !! **What is being differentiated.** The fitted energy is
+      !!
+      !!    E_2e = (1/2) g^T J^-1 g  -  (exchange, below)
+      !!
+      !! with `g_P = sum_uv (P|uv) D_uv` and `J_PQ = (P|Q)`. Only the integrals
+      !! depend on the geometry -- the SCF is stationary in its orbitals, so
+      !! their derivatives are already accounted for by the Pulay term -- and
+      !! `d(J^-1)/dx = -J^-1 J^x J^-1` turns the Coulomb derivative into
+      !!
+      !!    rho^T g^x  -  (1/2) rho^T J^x rho,      rho = J^-1 g
+      !!
+      !! Exchange has the same two shapes over the fully transformed
+      !! `e^P_ij = sum_ul C_ui C_lj (ul|P)` and `f = J^-1 e`.
+      !!
+      !! **Everything collapses into two densities**, so the expensive
+      !! derivative integrals are each contracted once:
+      !!
+      !!    Gamma^P_uv = rho_P D_uv - sum_spin c_s Z^{s,P}_uv
+      !!    Omega_PQ   = -(1/2) rho_P rho_Q + sum_spin (c_s/2) sum_ij f^s_ij f^s_ij
+      !!
+      !! with `Z^{s,P}_uv = sum_ij C_ui f^{s,P}_ij C_vj`, and `c_s` the channel
+      !! weight: two for the single closed-shell channel, one for each of the
+      !! two unrestricted ones. That the ratio between the two terms is the
+      !! same either way is why one routine covers both.
+      !!
+      !! **The pseudo-inverse must be the SCF's.** `J^-1` is formed as
+      !! `J^-1/2 J^-1/2` from `metric_inverse_sqrt`, the same routine and the
+      !! same eigenvalue threshold `build_df_tensor` uses. A fitting set is
+      !! near-linearly-dependent by construction, so a `J^-1` that kept
+      !! different modes would be differentiating a slightly different energy
+      !! than the one that converged -- which shows up as a gradient that
+      !! disagrees with finite differences by a little, in a way that looks
+      !! like a factor being wrong somewhere.
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      real(dp), intent(in) :: total_density(:, :)
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: n_occupied
+      real(dp), intent(in), optional :: orbitals_beta(:, :)
+      integer, intent(in), optional :: n_occupied_beta
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: three(:, :), metric(:, :), half(:, :), jinv(:, :)
+      real(dp), allocatable :: g(:), rho(:)
+      real(dp), allocatable :: gamma(:, :, :), omega(:, :)
+      real(dp), allocatable :: ip1(:, :, :, :), ip2(:, :, :, :), d2c(:, :, :)
+      integer, allocatable :: orb_off(:), orb_cnt(:), aux_off(:), aux_cnt(:)
+      integer :: nao, naux, iatom, comp, p0, p1, q0, q1, ip
+      logical :: unrestricted
+
+      nao = orb%nao
+      naux = aux%nao
+      unrestricted = present(orbitals_beta)
+
+      ! The auxiliary basis sits on the same nuclei as the orbital one, and the
+      ! per-atom accumulation below indexes both by the same atom number. A
+      ! mismatch would silently attribute an auxiliary function's derivative to
+      ! the wrong nucleus, which translational invariance would catch but only
+      ! after the fact.
+      if (aux%natm /= orb%natm) then
+         call error%set(ERROR_VALIDATION, &
+                        "density-fitted gradient: the auxiliary basis is on a "// &
+                        "different set of atoms than the orbital basis")
+         return
+      end if
+
+      call three_centre(orb, aux, three)
+      call two_centre(aux, metric)
+      call metric_inverse_sqrt(metric, half, error)
+      if (error%has_error()) return
+
+      ! J^-1 from the square root, for the reason in the header.
+      allocate (jinv(naux, naux))
+      jinv = 0.0_dp
+      call pic_gemm(half, half, jinv)
+
+      allocate (g(naux), rho(naux))
+      do ip = 1, naux
+         g(ip) = sum(reshape(three(:, ip), [nao, nao])*total_density)
+      end do
+      rho = matmul(jinv, g)
+
+      allocate (gamma(nao, nao, naux), omega(naux, naux))
+      do ip = 1, naux
+         gamma(:, :, ip) = rho(ip)*total_density
+      end do
+      omega = -0.5_dp*outer(rho, rho)
+
+      if (unrestricted) then
+         call add_exchange_channel(three, jinv, orbitals, n_occupied, 1.0_dp, gamma, omega)
+         call add_exchange_channel(three, jinv, orbitals_beta, n_occupied_beta, 1.0_dp, &
+                                   gamma, omega)
+      else
+         call add_exchange_channel(three, jinv, orbitals, n_occupied, 2.0_dp, gamma, omega)
+      end if
+
+      deallocate (three, metric, half, jinv, g, rho)
+
+      call three_centre_deriv(orb, aux, 1, ip1)
+      call three_centre_deriv(orb, aux, 2, ip2)
+      call two_centre_deriv(aux, d2c)
+
+      allocate (orb_off(orb%natm), orb_cnt(orb%natm))
+      allocate (aux_off(aux%natm), aux_cnt(aux%natm))
+      call atom_ao_blocks(orb, orb_off, orb_cnt)
+      call atom_ao_blocks(aux, aux_off, aux_cnt)
+
+      do iatom = 1, orb%natm
+         p0 = orb_off(iatom) + 1
+         p1 = orb_off(iatom) + orb_cnt(iatom)
+         q0 = aux_off(iatom) + 1
+         q1 = aux_off(iatom) + aux_cnt(iatom)
+
+         do comp = 1, 3
+            ! Orbital indices. Twice: ip1 differentiates the first index only,
+            ! and the second index contributes the transpose -- which is the
+            ! same number because both (uv|P) and Gamma^P are symmetric in u
+            ! and v. Minus, because libcint's nabla is on the bra.
+            if (orb_cnt(iatom) > 0) then
+               gradient(comp, iatom) = gradient(comp, iatom) &
+                                       - 2.0_dp*sum(ip1(p0:p1, :, :, comp)*gamma(p0:p1, :, :))
+            end if
+
+            ! The auxiliary index. Once, because P appears once.
+            if (aux_cnt(iatom) > 0) then
+               gradient(comp, iatom) = gradient(comp, iatom) &
+                                       - sum(ip2(:, :, q0:q1, comp)*gamma(:, :, q0:q1))
+
+               ! The metric. Twice, for the same reason as the orbital pair:
+               ! (P|Q) is symmetric and so is Omega.
+               gradient(comp, iatom) = gradient(comp, iatom) &
+                                       - 2.0_dp*sum(d2c(q0:q1, :, comp)*omega(q0:q1, :))
+            end if
+         end do
+      end do
+
+   end subroutine df_two_electron_gradient
+
+   subroutine add_exchange_channel(three, jinv, orbitals, n_occ, weight, gamma, omega)
+      !! One spin channel's exchange contribution to Gamma and Omega
+      !!
+      !! `weight` is two for a closed shell, where the single channel carries
+      !! both spins, and one for each channel of an unrestricted reference. The
+      !! metric term takes half of it, which is the factor that makes the
+      !! restricted and unrestricted expressions agree when the two spins are
+      !! identical -- and the one worth checking by feeding a closed-shell
+      !! system through the unrestricted path.
+      real(dp), intent(in) :: three(:, :)     !! (nao*nao, naux)
+      real(dp), intent(in) :: jinv(:, :)      !! (naux, naux)
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: weight
+      real(dp), intent(inout) :: gamma(:, :, :)   !! (nao, nao, naux)
+      real(dp), intent(inout) :: omega(:, :)      !! (naux, naux)
+
+      real(dp), allocatable :: c_occ(:, :), e(:, :, :), f(:, :, :)
+      real(dp), allocatable :: tmp(:, :), block(:, :), zp(:, :)
+      integer :: nao, naux, ip, iq
+
+      nao = size(orbitals, 1)
+      naux = size(jinv, 1)
+
+      if (n_occ <= 0) return
+
+      allocate (c_occ(nao, n_occ), source=orbitals(:, 1:n_occ))
+      allocate (e(n_occ, n_occ, naux), f(n_occ, n_occ, naux))
+      allocate (tmp(nao, n_occ), block(nao, nao), zp(nao, nao))
+
+      ! e^P_ij = C^T (uv|P) C, one auxiliary function at a time.
+      do ip = 1, naux
+         block = reshape(three(:, ip), [nao, nao])
+         tmp = 0.0_dp
+         call pic_gemm(block, c_occ, tmp)
+         e(:, :, ip) = 0.0_dp
+         call pic_gemm(c_occ, tmp, e(:, :, ip), transa="T")
+      end do
+
+      ! f = J^-1 e, over the auxiliary index for every occupied pair.
+      f = 0.0_dp
+      do ip = 1, naux
+         do iq = 1, naux
+            if (jinv(ip, iq) == 0.0_dp) cycle
+            f(:, :, ip) = f(:, :, ip) + jinv(ip, iq)*e(:, :, iq)
+         end do
+      end do
+
+      ! Z^P = C f^P C^T, back in the AO basis, subtracted from Gamma.
+      do ip = 1, naux
+         tmp = 0.0_dp
+         call pic_gemm(c_occ, f(:, :, ip), tmp)
+         zp = 0.0_dp
+         call pic_gemm(tmp, c_occ, zp, transb="T")
+         gamma(:, :, ip) = gamma(:, :, ip) - weight*zp
+      end do
+
+      ! The metric term, sum_ij f^P_ij f^Q_ij.
+      do iq = 1, naux
+         do ip = 1, naux
+            omega(ip, iq) = omega(ip, iq) &
+                            + 0.5_dp*weight*sum(f(:, :, ip)*f(:, :, iq))
+         end do
+      end do
+
+   end subroutine add_exchange_channel
+
+   pure function outer(a, b) result(m)
+      !! The outer product a b^T, which Fortran has no intrinsic for
+      real(dp), intent(in) :: a(:), b(:)
+      real(dp) :: m(size(a), size(b))
+
+      integer :: i
+
+      do i = 1, size(b)
+         m(:, i) = a*b(i)
+      end do
+   end function outer
+
+   subroutine three_centre_deriv(orb, aux, which, deriv)
+      !! d(mu nu | P) / dR, as (nao, nao, naux, 3)
+      !!
+      !! `which` selects whose centre is differentiated: 1 for the first
+      !! orbital index, through int3c2e_ip1, and 2 for the auxiliary one,
+      !! through int3c2e_ip2. The second orbital index has no entry point of
+      !! its own -- (mu nu|P) is symmetric in mu and nu, so its derivative is
+      !! the transpose of the first, which is why nothing here integrates for
+      !! it.
+      !!
+      !! No symmetry in the shell-pair loop, unlike the energy's `three_centre`
+      !! next door: ip1 differentiates mu and not nu, so the block for (ish,
+      !! jsh) is not the transpose of (jsh, ish).
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      integer, intent(in) :: which
+      real(dp), allocatable, intent(out) :: deriv(:, :, :, :)
+
+      integer, allocatable :: bas(:, :)
+      real(dp), allocatable :: env(:), buf(:)
+      integer :: shls(4)
+      integer :: dummy, nbas_orb, nbas_aux
+      integer :: ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, comp, ret, idx, mx
+
+      nbas_orb = orb%nbas
+      nbas_aux = aux%nbas
+      call build_df_shell_table(orb, aux, bas, env, dummy)
+
+      allocate (deriv(orb%nao, orb%nao, aux%nao, 3))
+      deriv = 0.0_dp
+
+      mx = max(largest_shell(orb), largest_shell(aux))
+      allocate (buf(mx**3*3))
+
+      do ish = 1, nbas_orb
+         di = shell_dim(orb%cartesian, ish - 1, bas)
+         io = orb%shell_offset(ish)
+         do jsh = 1, nbas_orb
+            dj = shell_dim(orb%cartesian, jsh - 1, bas)
+            jo = orb%shell_offset(jsh)
+            do ksh = 1, nbas_aux
+               dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
+               ko = aux%shell_offset(ksh)
+               shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
+
+               if (orb%cartesian) then
+                  if (which == 1) then
+                     ret = libcint_3c2e_ip1_cart(buf, shls, orb%atm, orb%natm, bas, &
+                                                 dummy, env)
+                  else
+                     ret = libcint_3c2e_ip2_cart(buf, shls, orb%atm, orb%natm, bas, &
+                                                 dummy, env)
+                  end if
+               else
+                  if (which == 1) then
+                     ret = libcint_3c2e_ip1_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                                dummy, env)
+                  else
+                     ret = libcint_3c2e_ip2_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                                dummy, env)
+                  end if
+               end if
+               if (ret == 0) cycle
+
+               do comp = 1, 3
+                  do k = 1, dk
+                     do j = 1, dj
+                        do i = 1, di
+                           idx = i + di*(j - 1 + dj*(k - 1 + dk*(comp - 1)))
+                           deriv(io + i, jo + j, ko + k, comp) = buf(idx)
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+   end subroutine three_centre_deriv
+
+   subroutine two_centre_deriv(aux, deriv)
+      !! d(P|Q) / dR with respect to P's centre, as (naux, naux, 3)
+      type(libcint_molecule_t), intent(in) :: aux
+      real(dp), allocatable, intent(out) :: deriv(:, :, :)
+
+      real(dp), allocatable :: buf(:)
+      integer :: shls(4)
+      integer :: ish, jsh, di, dj, io, jo, i, j, comp, ret, idx, mx
+
+      allocate (deriv(aux%nao, aux%nao, 3))
+      deriv = 0.0_dp
+
+      mx = largest_shell(aux)
+      allocate (buf(mx*mx*3))
+
+      do ish = 1, aux%nbas
+         di = shell_dim(aux%cartesian, ish - 1, aux%bas)
+         io = aux%shell_offset(ish)
+         do jsh = 1, aux%nbas
+            dj = shell_dim(aux%cartesian, jsh - 1, aux%bas)
+            jo = aux%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1, 0, 0]
+
+            if (aux%cartesian) then
+               ret = libcint_2c2e_ip1_cart(buf, shls, aux%atm, aux%natm, aux%bas, &
+                                           aux%nbas, aux%env)
+            else
+               ret = libcint_2c2e_ip1_sph(buf, shls, aux%atm, aux%natm, aux%bas, &
+                                          aux%nbas, aux%env)
+            end if
+            if (ret == 0) cycle
+
+            do comp = 1, 3
+               do j = 1, dj
+                  do i = 1, di
+                     idx = i + di*(j - 1 + dj*(comp - 1))
+                     deriv(io + i, jo + j, comp) = buf(idx)
+                  end do
+               end do
+            end do
+         end do
+      end do
+   end subroutine two_centre_deriv
 
    pure function largest_shell(mol) result(n)
       !! Functions in the biggest shell, for sizing a scratch block
