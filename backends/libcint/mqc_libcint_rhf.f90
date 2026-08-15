@@ -109,6 +109,47 @@ module mqc_libcint_rhf
 
 contains
 
+   subroutine screening_summary(verbose, stats)
+      !! How much of the quartet space each screening test removed
+      !!
+      !! From the last Fock build of the SCF, which is the converged one and so
+      !! the one whose density the screening will see for the rest of any
+      !! follow-on work.
+      !!
+      !! Split by cause because the two answer different questions. The Schwarz
+      !! count is a property of the basis and the geometry and does not move
+      !! between iterations; the density count is the extra reach that weighting
+      !! the bound by the density buys, and it is the only figure that a change
+      !! to the screening can move. Reported as counts rather than inferred from
+      !! wall time: on a shared node the run-to-run spread in seconds is larger
+      !! than the effect, and these are exactly reproducible.
+      logical, intent(in) :: verbose
+      type(direct_stats_t), intent(in) :: stats
+
+      character(len=LINE_LEN) :: line
+
+      if (.not. verbose) return
+      if (stats%quartets_total <= 0) return
+      call logger%performance("")
+      call logger%performance("  screening (last Fock build)")
+      write (line, "(a,i14)") "    unique quartets      ", stats%quartets_total
+      call logger%performance(trim(line))
+      write (line, "(a,i14,f9.1,a)") "    skipped, Schwarz     ", stats%screened_schwarz, &
+         100.0_dp*real(stats%screened_schwarz, dp)/real(stats%quartets_total, dp), " %"
+      call logger%performance(trim(line))
+      write (line, "(a,i14,f9.1,a)") "    skipped, density     ", stats%screened_density, &
+         100.0_dp*real(stats%screened_density, dp)/real(stats%quartets_total, dp), " %"
+      call logger%performance(trim(line))
+      write (line, "(a,i14,f9.1,a)") "    computed             ", stats%quartets_computed, &
+         100.0_dp*real(stats%quartets_computed, dp)/real(stats%quartets_total, dp), " %"
+      call logger%performance(trim(line))
+      ! One is perfect balance. This is the figure a work-ordering change has to
+      ! move, and unlike wall time it is a ratio inside one run, so a contended
+      ! node largely divides out of it.
+      write (line, "(a,f14.4)") "    thread imbalance     ", stats%thread_imbalance
+      call logger%performance(trim(line))
+   end subroutine screening_summary
+
    subroutine scf_table_header(verbose)
       !! Column headings for the per-iteration table
       !!
@@ -235,6 +276,7 @@ contains
       real(dp) :: e_elec, e_old, de, drms
       integer :: n_ao, n_mo, n_occ, iter
       type(timing_report_t) :: clk
+      type(direct_stats_t) :: screening
       real(dp) :: t_fock_iter, t_rest_iter
 
       if (mod(nelec, 2) /= 0) then
@@ -359,7 +401,7 @@ contains
          ! back together and before extrapolation. A DIIS-mixed Fock is a
          ! convergence device, not a state anything is the energy of.
          call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk=clk)
+                            fock, e_elec, error, clk=clk, screening=screening)
          if (error%has_error()) return
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          call clk%lap(STAGE_FOCK)
@@ -416,6 +458,7 @@ contains
       call clk%lap(STAGE_FOCK)
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
+      call screening_summary(verbose, screening)
       call clk%report("RHF", verbose)
    end subroutine run_libcint_rhf
 
@@ -686,7 +729,7 @@ contains
    end subroutine run_libcint_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk)
+                            fock, e_elec, error, clk, screening)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! One place, because there used to be two: the iteration built its Fock
@@ -715,6 +758,11 @@ contains
          !! Present from the SCF loop, so the exchange-correlation quadrature is
          !! reported apart from the Coulomb/exchange build rather than inside it.
          !! Absent from the guess and gradient callers, which do not report.
+      type(direct_stats_t), intent(out), optional :: screening
+         !! How much of the quartet space each test removed. Reported rather than
+         !! discarded because wall time on a shared node varies by more than a
+         !! screening change does -- these counts are exactly reproducible, so
+         !! they are the measurement that can actually be trusted.
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: v_xc(:, :)
@@ -794,6 +842,8 @@ contains
          if (present(clk)) call clk%lap(STAGE_XC)
          deallocate (v_xc)
       end if
+
+      if (present(screening)) screening = stats
    end subroutine assemble_fock
 
    subroutine assemble_fock_uhf(mol, h, d_alpha, d_beta, eri, bounds, xc, &

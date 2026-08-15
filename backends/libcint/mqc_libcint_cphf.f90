@@ -326,7 +326,14 @@ contains
       dtilde = dtilde + transpose(dtilde)
 
       if (direct) then
-         call build_fock_direct(mol, zero_h, dtilde, bounds, g, stats, error)
+         ! density_screen=.false. is not optional here. `dtilde` is the trial
+         ! rotation the CG solver drives towards zero, so the default
+         ! density-weighted screen would tighten as the solve converges and this
+         ! operator would stop being the fixed linear map the solver assumes --
+         ! the iteration then stalls short of tolerance. The plain Schwarz screen
+         ! depends on the basis alone and keeps the operator constant.
+         call build_fock_direct(mol, zero_h, dtilde, bounds, g, stats, error, &
+                                density_screen=.false.)
          if (error%has_error()) return
       else
          call build_fock(zero_h, eri, dtilde, g)
