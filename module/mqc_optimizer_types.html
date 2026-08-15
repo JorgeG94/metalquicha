@@ -230,8 +230,8 @@ not, and no engine has to be taught about any of them.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1032,18 +1032,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M943.14,-389.79C897.48,-389.44 807.25,-388.76 752.36,-388.35"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="752.23,-384.85 742.2,-388.27 752.18,-391.84 752.23,-384.85"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_optimizer_types~~UsedByGraph_node41" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_optimizer_types~~UsedByGraph_node41"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_optimizer_types~~UsedByGraph_node41"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1011.5,-528 933.5,-528 933.5,-504 1011.5,-504 1011.5,-528"/>
 <text text-anchor="middle" x="972.5" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_optimizer_types~~UsedByGraph_edge22" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M933.46,-517.44C910.21,-516.38 881.18,-511.35 861,-495 828.81,-468.91 857.35,-434.89 825,-409 804.75,-392.8 776.28,-387.37 752.32,-386.08"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="752.12,-382.57 742.02,-385.75 751.9,-389.57 752.12,-382.57"/>
 </g>
@@ -1416,7 +1416,7 @@ perfectly plausible small gradient.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~19"></span>
+              <span class="anchor" id="variable-n_atoms~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1431,7 +1431,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~2"></span>
+              <span class="anchor" id="variable-coords~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1446,7 +1446,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~7"></span>
+              <span class="anchor" id="variable-energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1461,7 +1461,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~6"></span>
+              <span class="anchor" id="variable-gradient~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1527,7 +1527,7 @@ document) is not the engine&rsquo;s business.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~20"></span>
+              <span class="anchor" id="variable-n_atoms~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1542,7 +1542,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~3"></span>
+              <span class="anchor" id="variable-coords~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1557,7 +1557,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~8"></span>
+              <span class="anchor" id="variable-energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1815,7 +1815,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~11"></span>
+              <span class="anchor" id="variable-text~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1905,7 +1905,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~9"></span>
+              <span class="anchor" id="variable-text~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1995,7 +1995,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~13"></span>
+              <span class="anchor" id="variable-text~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2044,7 +2044,7 @@ as one document, which is 3N doubles per step of memory.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 11:35 +0000             </p>
+ on 2026-08-15 12:06 +0000             </p>
           </div>
         </div>
         <br>
