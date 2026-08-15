@@ -58,7 +58,15 @@ HF_DIMER_STO3G = -149.922856255009
 #: against, and a tighter tolerance would be false precision.
 XTB_WATER = -5.070544
 
+#: PySCF RHF/sto-3g nuclear gradient norm on the WATER geometry, in
+#: Hartree/Bohr, from the same basis JSON this program reads. The CPU backend
+#: refused gradients when this file was written and now computes them, so what
+#: was a check that it refused cleanly is now a check that it is right --
+#: the property the refusal was standing in for.
+HF_WATER_STO3G_GRAD_NORM = 0.086151389909
+
 TOL_HF = 1.0e-6      # against PySCF
+TOL_GRAD = 1.0e-6    # against PySCF, on the gradient norm
 TOL_XTB = 1.0e-4     # against ourselves; loose on purpose
 TOL_CLOSURE = 1.0e-8 # MBE(2) against the supermolecule; exact, so tight
 
@@ -96,32 +104,42 @@ def standalone_hf_df():
 
 
 def gradient_support():
-    """Gradients work through tblite and are refused by libcint.
+    """Both backends produce a gradient, and the CPU one produces the right one.
 
-    Not a limitation being papered over -- the CPU backend says so and stops,
-    which is the right behaviour for a derivative nobody has tested. What this
-    checks is that it stays a clean refusal rather than becoming a wrong
-    number, and that asking xTB for the same thing still works.
+    This used to assert that libcint *refused*, which was correct when no CPU
+    derivative existed: a clean refusal beats a wrong number. Now that the
+    gradients are implemented the refusal is gone, and checking merely that
+    something came back would drop the guard without replacing it. So the
+    number itself is checked, against PySCF on the same geometry and the same
+    basis data -- which is what the refusal was protecting all along.
+
+    Returns (cpu_norm, cpu_ok, xtb_ok). `cpu_norm` is None if the run produced
+    no gradient at all, which is a failure now rather than the expected result.
     """
     system = mqc.System(**WATER)
     system.set_monomers([[0, 1, 2]])
 
-    refused = False
+    # write_to_file=True because the norm travels in the output document, the
+    # same route `gap_ev` takes.
+    cpu_norm = None
     try:
-        mqc.MBE(system, level=0, method="hf", basis="sto-3g", driver="gradient").run(
-            label="py_grad_hf", write_to_file=False)
-    except mqc.MQCError as exc:
-        refused = "gradient" in str(exc).lower()
+        result = mqc.MBE(system, level=0, method="hf", basis="sto-3g",
+                         driver="gradient").run(label="py_grad_hf", write_to_file=True)
+        cpu_norm = result.gradient_norm
+    except mqc.MQCError:
+        cpu_norm = None
+    cpu_ok = (cpu_norm is not None
+              and abs(cpu_norm - HF_WATER_STO3G_GRAD_NORM) <= TOL_GRAD)
 
-    worked = False
+    xtb_ok = False
     try:
         mqc.MBE(system, level=0, method="gfn2", driver="gradient").run(
             label="py_grad_xtb", write_to_file=False)
-        worked = True
+        xtb_ok = True
     except mqc.MQCError:
-        worked = False
+        xtb_ok = False
 
-    return refused, worked
+    return cpu_norm, cpu_ok, xtb_ok
 
 
 def fragmented_xtb():
@@ -194,11 +212,20 @@ def main(argv):
             if not ok:
                 failures.append(f"{name}: {energy} vs {expected}, diff {delta:.2e} > {tol:.1e}")
 
-        refused, worked = gradient_support()
-        print(f"  {'gradients':<18} libcint refuses: {refused}   tblite provides: {worked}")
-        if not refused:
-            failures.append("the CPU backend must refuse gradients, not return one")
-        if not worked:
+        cpu_norm, cpu_ok, xtb_ok = gradient_support()
+        shown = f"{cpu_norm:.9f}" if cpu_norm is not None else "none"
+        delta = (abs(cpu_norm - HF_WATER_STO3G_GRAD_NORM)
+                 if cpu_norm is not None else float("inf"))
+        print(f"  {'gradient hf':<18} {shown:>18}   ref "
+              f"{HF_WATER_STO3G_GRAD_NORM:>18.9f} (PySCF)   diff {delta:.2e}   "
+              f"{'ok' if cpu_ok else 'FAIL'}")
+        print(f"  {'gradient xtb':<18} {'provided' if xtb_ok else 'MISSING':>18}")
+        if cpu_norm is None:
+            failures.append("the CPU backend returned no gradient at all")
+        elif not cpu_ok:
+            failures.append(f"CPU gradient norm {cpu_norm} vs "
+                            f"{HF_WATER_STO3G_GRAD_NORM}, diff {delta:.2e} > {TOL_GRAD:.1e}")
+        if not xtb_ok:
             failures.append("tblite must still provide gradients")
 
     if failures:
