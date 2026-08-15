@@ -174,8 +174,9 @@ Gradient Calculations
 - **Applications**: Geometry optimization, molecular dynamics
 
 On the CPU backend the analytic gradient covers Hartree-Fock restricted and
-unrestricted, density-fitted restricted Hartree-Fock, Kohn-Sham through LDA,
-GGA, hybrid GGA and meta-GGA, and MP2 over a restricted reference -- both the
+unrestricted, Kohn-Sham through LDA, GGA, hybrid GGA and meta-GGA, any of
+those five with the Coulomb and exact-exchange builds density fitted, and MP2
+over a restricted reference -- both the
 conventional one and ``ri-mp2``, where the correlation is fitted and the
 reference is not.
 
@@ -199,6 +200,10 @@ What is refused rather than approximated, and why:
        the restricted case is implemented
    * - Range-separated hybrids
      - Needs a second exchange derivative at the screened omega
+   * - Unrestricted density fitting, Hartree-Fock or Kohn-Sham
+     - The fitted J and K are written for one density, so this is refused for
+       the energy and therefore for the gradient. The fitted *gradient* does
+       carry both spin channels already -- it is the SCF that is missing
    * - MP2 over a fitted reference (``keywords.scf.density_fitting``)
      - Would differentiate an energy nothing computed. Fitting only the
        correlation, which is what ``ri-mp2`` means, is implemented

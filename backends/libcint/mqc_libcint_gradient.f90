@@ -175,10 +175,12 @@ contains
             call df_two_electron_gradient(mol, aux, total_density, orbitals, n_occupied, &
                                           orbitals_beta=orbitals_beta, &
                                           n_occupied_beta=n_occupied_beta, &
-                                          gradient=gradient, error=error)
+                                          gradient=gradient, error=error, &
+                                          exx_fraction=exx)
          else
             call df_two_electron_gradient(mol, aux, total_density, orbitals, n_occupied, &
-                                          gradient=gradient, error=error)
+                                          gradient=gradient, error=error, &
+                                          exx_fraction=exx)
          end if
          if (error%has_error()) return
       else if (unrestricted) then
@@ -1038,7 +1040,8 @@ contains
    end subroutine two_electron_deriv
 
    subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &
-                                       orbitals_beta, n_occupied_beta, gradient, error)
+                                       orbitals_beta, n_occupied_beta, gradient, error, &
+                                       exx_fraction)
       !! The two-electron gradient when J and K are density-fitted
       !!
       !! **What is being differentiated.** The fitted energy is
@@ -1082,6 +1085,10 @@ contains
       integer, intent(in), optional :: n_occupied_beta
       real(dp), intent(inout) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: exx_fraction
+         !! Fraction of exact exchange the fitted energy kept. Absent is one,
+         !! which is Hartree-Fock; a hybrid passes its own and a pure
+         !! functional passes zero.
 
       real(dp), allocatable :: three(:, :), metric(:, :), half(:, :), jinv(:, :)
       real(dp), allocatable :: g(:), rho(:)
@@ -1090,6 +1097,7 @@ contains
       integer, allocatable :: orb_off(:), orb_cnt(:), aux_off(:), aux_cnt(:)
       integer :: nao, naux, iatom, comp, p0, p1, q0, q1, ip
       logical :: unrestricted
+      real(dp) :: kf
 
       nao = orb%nao
       naux = aux%nao
@@ -1127,14 +1135,23 @@ contains
       do ip = 1, naux
          gamma(:, :, ip) = rho(ip)*total_density
       end do
+      ! The exchange fraction rides the channel weight rather than being
+      ! applied afterwards, because both of exchange's shapes -- the one in
+      ! `gamma` and the one in `omega` -- are linear in it and
+      ! `add_exchange_channel` builds them together. A pure functional passes
+      ! zero and the whole exchange assembly is skipped, which is most of the
+      ! work in this routine rather than a small saving.
+      kf = 1.0_dp
+      if (present(exx_fraction)) kf = exx_fraction
+
       omega = -0.5_dp*outer(rho, rho)
 
       if (unrestricted) then
-         call add_exchange_channel(three, jinv, orbitals, n_occupied, 1.0_dp, gamma, omega)
-         call add_exchange_channel(three, jinv, orbitals_beta, n_occupied_beta, 1.0_dp, &
+         call add_exchange_channel(three, jinv, orbitals, n_occupied, kf, gamma, omega)
+         call add_exchange_channel(three, jinv, orbitals_beta, n_occupied_beta, kf, &
                                    gamma, omega)
       else
-         call add_exchange_channel(three, jinv, orbitals, n_occupied, 2.0_dp, gamma, omega)
+         call add_exchange_channel(three, jinv, orbitals, n_occupied, 2.0_dp*kf, gamma, omega)
       end if
 
       deallocate (three, metric, half, jinv, g, rho)

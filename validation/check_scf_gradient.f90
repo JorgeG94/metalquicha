@@ -195,6 +195,36 @@ program check_scf_gradient
                                0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
                       "sto-3g", 14, 1, n_bad, functional="tpss")
 
+      ! Kohn-Sham with the two-electron term fitted. Three rungs, because the
+      ! exchange fraction is what the fitted path had to learn: PBE keeps none
+      ! of it, B3LYP a fifth, and TPSS none again but with tau on top. A pure
+      ! functional is the sharp case -- before `exx_fraction` reached
+      ! `df_two_electron_gradient` it would have carried a full Hartree-Fock
+      ! exchange derivative that the energy never contained.
+      call check_case("H2O / sto-3g + rifit, PBE (DF, pure GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit", &
+                      functional="pbe")
+
+      call check_case("H2O / sto-3g + rifit, B3LYP (DF, hybrid)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit", &
+                      functional="b3lyp")
+
+      call check_case("H2O / sto-3g + rifit, TPSS (DF, meta-GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit", &
+                      functional="tpss")
+
       ! A second meta-GGA, different in kind: M06-L is heavily parametrised
       ! where TPSS is constraint-derived, so the two exercise different parts of
       ! libxc's tau dependence rather than the same one twice.
@@ -440,7 +470,22 @@ contains
          call xc_context_create(mol, functional, xc, error, &
                                 polarized=(multiplicity /= 1))
          if (error%has_error()) return
-         if (multiplicity == 1) then
+         if (multiplicity == 1 .and. present(aux_basis)) then
+            ! Kohn-Sham with the two-electron term fitted. This branch used to
+            ! fall through to the one below without `aux`, so a case asking for
+            ! both quietly got neither the fitted energy nor the fitted
+            ! gradient -- and agreed with finite differences perfectly, because
+            ! both halves were exact. It read as a passing test of a path that
+            ! never ran.
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                                 error, xc=xc, aux=aux)
+            if (error%has_error()) return
+            call libcint_scf_gradient(mol, scf%density, &
+                                      orbitals=scf%orbitals, &
+                                      orbital_energies=scf%orbital_energies, &
+                                      n_occupied=scf%n_occupied, &
+                                      gradient=gradient, error=error, xc=xc, aux=aux)
+         else if (multiplicity == 1) then
             call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
                                  error, xc=xc)
             if (error%has_error()) return
@@ -534,7 +579,15 @@ contains
          call xc_context_create(mol, functional, xc, error, &
                                 polarized=(multiplicity /= 1))
          if (error%has_error()) return
-         if (multiplicity == 1) then
+         ! `aux` where a case asked for it. The analytic side had the same
+         ! omission: without it the difference formula differentiates the
+         ! *exact* energy while the gradient differentiates the fitted one, and
+         ! the two disagree by the fitting error -- which reads as a broken
+         ! gradient and is a broken reference.
+         if (multiplicity == 1 .and. present(aux_basis)) then
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                                 error, xc=xc, aux=aux)
+         else if (multiplicity == 1) then
             call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
                                  error, xc=xc)
          else
