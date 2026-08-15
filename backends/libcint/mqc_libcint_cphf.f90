@@ -135,17 +135,18 @@ contains
    end subroutine hessian_destroy
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
-                         response, error, max_iter, tol, iterations, in_core)
+                         response, error, max_iter, tol, iterations, in_core, mo_rhs, &
+                         eri_in)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)     !! (n_mo), Hartree
       integer, intent(in) :: n_occ
-      real(dp), intent(in) :: perturbations(:, :, :)
+      real(dp), intent(in), optional :: perturbations(:, :, :)
          !! One-electron perturbation operators in the **AO** basis,
          !! `(n_ao, n_ao, n_perturbations)`. AO rather than MO because every
          !! caller has them that way and the occupied-virtual transform is this
-         !! routine's business.
+         !! routine's business. Exactly one of this and `mo_rhs` is given.
       real(dp), allocatable, intent(out) :: response(:, :, :)
          !! `U_ai` per perturbation, `(n_vir, n_occ, n_perturbations)`.
       type(error_t), intent(inout) :: error
@@ -158,8 +159,21 @@ contains
          !! Store every integral instead of recomputing them. Default is direct.
          !! Present and true is the reference path, not the production one -- see
          !! the note where it is used.
+      real(dp), intent(in), optional, target :: eri_in(:, :, :, :)
+         !! An already-built two-electron tensor, used in place of building one.
+         !! Implies `in_core`. A caller that has the tensor for its own reasons --
+         !! the MP2 gradient contracts it against the two-particle density --
+         !! would otherwise pay for a second identical build.
+      real(dp), intent(in), optional :: mo_rhs(:, :, :)
+         !! The right-hand side already in the occupied-virtual MO block,
+         !! `(n_vir, n_occ, n_perturbations)`. The Z-vector equation of an MP2
+         !! gradient arrives this way: its right-hand side is a Lagrangian
+         !! assembled in the MO basis, not a one-electron operator, and there is
+         !! no AO matrix it is the transform of.
 
-      real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :), bounds(:, :)
+      real(dp), allocatable, target :: eri_own(:, :, :, :)
+      real(dp), pointer :: eri(:, :, :, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), bounds(:, :)
       real(dp), allocatable :: gaps(:, :), rhs(:, :), x(:, :), r(:, :), z(:, :)
       real(dp), allocatable :: p(:, :), ap(:, :), work(:, :), zero_h(:, :)
       real(dp) :: rz, rz_new, pap, target_norm, step, use_tol
@@ -181,12 +195,25 @@ contains
          call error%set(ERROR_VALIDATION, "CPHF: one orbital energy per orbital")
          return
       end if
-      if (size(perturbations, 1) /= n_ao .or. size(perturbations, 2) /= n_ao) then
-         call error%set(ERROR_VALIDATION, "CPHF: the perturbations are not n_ao square")
+      if (present(perturbations) .eqv. present(mo_rhs)) then
+         call error%set(ERROR_VALIDATION, "CPHF: give either AO perturbations or an "// &
+                        "MO-basis right-hand side, not both and not neither")
          return
       end if
-
-      n_pert = size(perturbations, 3)
+      if (present(perturbations)) then
+         if (size(perturbations, 1) /= n_ao .or. size(perturbations, 2) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "CPHF: the perturbations are not n_ao square")
+            return
+         end if
+         n_pert = size(perturbations, 3)
+      else
+         if (size(mo_rhs, 1) /= n_vir .or. size(mo_rhs, 2) /= n_occ) then
+            call error%set(ERROR_VALIDATION, "CPHF: the right-hand side is not "// &
+                           "(n_vir, n_occ)")
+            return
+         end if
+         n_pert = size(mo_rhs, 3)
+      end if
       limit = DEFAULT_MAX_ITER
       if (present(max_iter)) limit = max_iter
       use_tol = DEFAULT_TOL
@@ -219,12 +246,21 @@ contains
       ! against, exactly as `run_libcint_rhf` keeps its own `in_core`.
       direct = .true.
       if (present(in_core)) direct = .not. in_core
-      if (direct) then
+      if (present(eri_in)) direct = .false.
+      if (present(eri_in)) then
+         ! Pointed at, not copied: the tensor is the largest object either side
+         ! of this call has, and duplicating it to pass it would cost more than
+         ! the solve.
+         eri => eri_in
+         allocate (bounds(0, 0))
+      else if (direct) then
          call schwarz_bounds(mol, bounds, error)
          if (error%has_error()) return
-         allocate (eri(0, 0, 0, 0))
+         allocate (eri_own(0, 0, 0, 0))
+         eri => eri_own
       else
-         call mol%eris(eri)
+         call mol%eris(eri_own)
+         eri => eri_own
          allocate (bounds(0, 0))
       end if
       allocate (zero_h(n_ao, n_ao))
@@ -237,9 +273,14 @@ contains
       worst = 0
 
       do ipert = 1, n_pert
-         ! h_ai, the perturbation in the occupied-virtual block.
-         call pic_gemm(perturbations(:, :, ipert), c_occ, work)
-         call pic_gemm(c_vir, work, rhs, transa="T")
+         ! h_ai, the perturbation in the occupied-virtual block -- or that
+         ! block itself, when the caller assembled it there.
+         if (present(perturbations)) then
+            call pic_gemm(perturbations(:, :, ipert), c_occ, work)
+            call pic_gemm(c_vir, work, rhs, transa="T")
+         else
+            rhs = mo_rhs(:, :, ipert)
+         end if
          rhs = -rhs
 
          target_norm = sqrt(sum(rhs*rhs))
@@ -293,7 +334,9 @@ contains
       end do
 
       if (present(iterations)) iterations = worst
-      deallocate (eri, bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
+      nullify (eri)
+      if (allocated(eri_own)) deallocate (eri_own)
+      deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
    end subroutine cphf_solve
 
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &

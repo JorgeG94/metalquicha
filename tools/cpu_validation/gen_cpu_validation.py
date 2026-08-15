@@ -413,6 +413,19 @@ GRADIENT_CASES = [
     ("ch3", "cc-pvdz", "", "pbe", 2),               # unrestricted GGA
 ]
 
+# MP2 gradients, as (molecule, basis). Small on purpose: the relaxed density
+# is assembled as a dense `n_ao^4` two-particle density, which is a memory
+# ceiling long before it is a speed problem.
+#
+# The reference needs one thing that is not a default -- see `dense_zvector` --
+# and these are the only cases in the suite whose reference implementation had
+# to be corrected before it could be used at all.
+GRADIENT_MP2_CASES = [
+    ("water", "sto-3g"),
+    ("water", "cc-pvdz"),
+    ("nh3", "6-31g"),
+]
+
 # The same gradient through the many-body expansion, as
 # (molecule, basis, fragments). Its reference is the supermolecule and that is
 # exact rather than tolerated: over two fragments the expansion collapses term
@@ -836,6 +849,61 @@ def pyscf_ri_cc(atoms, basis, aux, method, frozen):
     return float(escf + ecorr), mol.nao
 
 
+def dense_zvector(fvind, mo_energy, mo_occ, h1, s1=None, max_cycle=50, tol=1e-9, **kw):
+    """Solve the Z-vector equation densely, in place of PySCF's Krylov solver.
+
+    Not an optimisation -- a correction. `pyscf.scf.cphf.solve` returns a
+    solution carrying ~1e-6 relative error that its `tol` argument does not
+    control, and an MP2 gradient built on it is ~4e-8 off in a way that looks
+    exactly like a missing term on the other side. Measured on water/cc-pVDZ:
+    the Krylov solution gives 0.0126434122, the dense one 0.0126434488, and
+    metalquicha's own conjugate-gradient solve gives 0.012643449.
+
+    The occupied-virtual space is `n_occ * n_vir`, so for anything in this table
+    building the operator column by column and calling LAPACK is cheap.
+    """
+    import numpy
+
+    nvir, nocc = h1.shape
+    gaps = (mo_energy[mo_occ == 0][:, None] - mo_energy[mo_occ > 0][None, :]).ravel()
+    n = nvir * nocc
+    operator = numpy.zeros((n, n))
+    for k in range(n):
+        column = numpy.zeros(n)
+        column[k] = 1.0
+        operator[:, k] = fvind(column.reshape(nvir, nocc)).ravel()
+    operator += numpy.diag(gaps)
+    return numpy.linalg.solve(operator, -h1.ravel()).reshape(h1.shape), None
+
+
+def pyscf_mp2_gradient(atoms, basis):
+    """Reference MP2 energy and analytic nuclear gradient, in Hartree/Bohr."""
+    from pyscf import gto, mp, scf
+    from pyscf.grad import mp2 as mp2_grad
+
+    mp2_grad.cphf.solve = dense_zvector
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-13
+    mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF RHF did not converge for {basis}")
+    pt = mp.MP2(mf)
+    pt.kernel()
+    return float(mf.e_tot + pt.e_corr), pt.Gradients().kernel().tolist(), mol.nao
+
+
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
                    level=GRADIENT_GRID_LEVEL):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
@@ -1029,6 +1097,31 @@ def main():
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {theory:8s} grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis in GRADIENT_MP2_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_mp2_gradient(mol.atoms, basis)
+        deck = deck_for(f"{CPU_MQC}/gradient",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_mp2_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="mp2",
+                          correlation={"freeze_core": False})
+            d["keywords"]["scf"]["tolerance"] = 1e-12
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"MP2 gradient {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {'MP2':8s} grad |g|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, fragments in GRADIENT_FRAGMENTED_CASES:

@@ -46,6 +46,7 @@ module mqc_libcint_mp2
    ! (ia|jb). Lives here because this is where the two-half transform is, and a
    ! second copy of it in the CC module is a second chance to transpose a half.
    public :: transform_block
+   public :: transform_ovov   !! The MP2 gradient builds its own amplitudes from this
 
    type :: mp2_result_t
       !! What an MP2 calculation leaves behind

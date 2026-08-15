@@ -512,6 +512,20 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_scf_gradient PRIVATE ${main_lib} cint_fortran
                                                    cint)
 
+  add_executable(bench_mp2_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/bench_mp2_gradient.f90)
+  target_include_directories(bench_mp2_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(bench_mp2_gradient PRIVATE ${main_lib} cint_fortran
+                                                   cint)
+
+  add_executable(check_mp2_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_mp2_gradient.f90)
+  target_include_directories(check_mp2_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_mp2_gradient PRIVATE ${main_lib} cint_fortran
+                                                   cint)
+
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)

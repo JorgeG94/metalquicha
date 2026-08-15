@@ -29,6 +29,7 @@ module mqc_libcint_bridge
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -197,21 +198,35 @@ contains
       do_gradient = .false.
       if (present(want_gradient)) do_gradient = want_gradient
 
-      ! What is differentiated here is the SCF energy, and nothing above it. A
-      ! correlated method asked for alongside a gradient would get the
-      ! reference gradient reported against a correlated energy -- of the right
-      ! magnitude, and wrong by the whole relaxation, with nothing in the
-      ! output to say which of the two numbers the other belongs to. The
-      ! functional-side gaps (range separation, meta-GGA) are refused inside
-      ! the gradient itself, where the functional is known.
-      if (do_gradient .and. (settings%run_mp2 .or. settings%run_cc)) then
-         call result%error%set(ERROR_VALIDATION, "the CPU gradient differentiates the "// &
-                               "SCF energy: MP2 and coupled cluster gradients need a "// &
-                               "relaxed density and a response solve, which are not "// &
-                               "written yet. Run the gradient at the reference level, "// &
-                               "or the correlated method as an energy.")
+      ! Coupled cluster stops here: its gradient needs the Lambda equations,
+      ! which do not exist on this side at all. MP2's does exist, and is taken
+      ! below -- but only where the reference underneath it is one the relaxed
+      ! density was written for, which is the three refusals after this.
+      if (do_gradient .and. settings%run_cc) then
+         call result%error%set(ERROR_VALIDATION, "a coupled cluster gradient needs the "// &
+                               "Lambda amplitudes, which are not implemented. Run the "// &
+                               "gradient at the Hartree-Fock or MP2 level, or coupled "// &
+                               "cluster as an energy.")
          result%has_error = .true.
          return
+      end if
+      if (do_gradient .and. settings%run_mp2) then
+         if (settings%density_fitting) then
+            call result%error%set(ERROR_VALIDATION, "the MP2 gradient differentiates an "// &
+                                  "exact-ERI reference: with density_fitting on it would "// &
+                                  "be the derivative of an energy nothing computed. Run "// &
+                                  "the MP2 gradient without density fitting.")
+            result%has_error = .true.
+            return
+         end if
+         if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
+            call result%error%set(ERROR_VALIDATION, "the MP2 gradient does not implement "// &
+                                  "a frozen core: the relaxed density gains "// &
+                                  "occupied-frozen and virtual-frozen blocks that are not "// &
+                                  "built. Run the MP2 gradient with freeze_core off.")
+            result%has_error = .true.
+            return
+         end if
       end if
 
       ! Same rule the GPU backend applies, so a deck does not change meaning
@@ -502,7 +517,7 @@ contains
       ! auxiliary basis handed over is the one the SCF fitted with rather than
       ! whatever the deck names: a fitted energy differentiated as an exact one
       ! is a gradient of a function nobody computed.
-      if (do_gradient) then
+      if (do_gradient .and. .not. settings%run_mp2) then
          aux_arg => null()
          xc_arg => null()
          if (settings%density_fitting) aux_arg => aux
@@ -576,6 +591,40 @@ contains
             result%energy%mp2%os = mp2%opposite_spin
             result%energy%mp2%ss_scale = settings%scs_ss
             result%energy%mp2%os_scale = settings%scs_os
+
+            ! The gradient of what was just computed, and only where that is
+            ! literally true: a scaled MP2 is a different energy, and its
+            ! gradient is not this one scaled -- the amplitudes enter the
+            ! relaxed density and the Z-vector unscaled.
+            if (do_gradient) then
+               if (settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp) then
+                  call result%error%set(ERROR_VALIDATION, "a spin-scaled MP2 gradient "// &
+                                        "is not the unscaled one rescaled: the "// &
+                                        "amplitudes enter the relaxed density and the "// &
+                                        "response equations, where the two spin cases "// &
+                                        "are not separable afterwards. Run SCS-MP2 as "// &
+                                        "an energy.")
+                  result%has_error = .true.
+                  call mol%destroy()
+                  return
+               end if
+               call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                                         fragment%nelec/2, result%gradient, error, &
+                                         n_frozen=frozen)
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, "MP2 gradient: "// &
+                                        error%get_message())
+                  result%has_error = .true.
+                  call mol%destroy()
+                  return
+               end if
+               result%has_gradient = .true.
+               if (settings%verbose) then
+                  write (*, "(a,f20.12)") "  |gradient|     ", &
+                     sqrt(sum(result%gradient**2))
+               end if
+            end if
+
             if (settings%verbose) then
                write (line, "(a,i0,a,i0,a,i0)") "  MP2: frozen ", mp2%n_frozen, "  occupied ", &
                   mp2%n_occupied, "  virtual ", mp2%n_virtual

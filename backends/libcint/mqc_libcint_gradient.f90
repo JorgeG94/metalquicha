@@ -54,6 +54,14 @@ module mqc_libcint_gradient
    public :: nuclear_repulsion_gradient   !! Exposed for the tests
    public :: three_centre_deriv           !! Exposed for the tests
    public :: two_centre_deriv             !! Exposed for the tests
+   ! The pieces an MP2 gradient assembles for itself. It cannot call
+   ! `libcint_scf_gradient` and add to the answer -- the relaxed density enters
+   ! the one-electron and overlap terms in place of the reference one, not
+   ! alongside it -- so it needs the same derivative integrals rather than the
+   ! same assembly.
+   public :: one_electron_deriv
+   public :: iprinv_deriv_at
+   public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
 
    ! Which one-electron derivative `one_electron_deriv` should build.
    integer, parameter :: DERIV_OVLP = 1
