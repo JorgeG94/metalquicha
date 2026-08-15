@@ -139,11 +139,11 @@
             <a class="list-group-item" href="../proc/validate_system.html#variable-atom~4">atom</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-audit">audit</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-iatom~16">iatom</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-imon~8">imon</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-islot~4">islot</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_i~4">missing_i</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_j~4">missing_j</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-n_missing~4">n_missing</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-imon~5">imon</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-islot">islot</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_i~3">missing_i</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_j~3">missing_j</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-n_missing~3">n_missing</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-owner_count">owner_count</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-total_charge">total_charge</a>
         </div>
@@ -205,7 +205,7 @@ nothing to find.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~65"></span>
+              <span class="anchor" id="variable-sys_geom~36"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@ nothing to find.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~79"></span>
+              <span class="anchor" id="variable-error~41"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -421,18 +421,18 @@ nothing to find.</p>
 <path fill="none" stroke="#0066ff" d="M420.65,-39.88C440.35,-42.75 462.88,-46.04 481.25,-48.71"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="480.86,-52.19 491.26,-50.17 481.87,-45.27 480.86,-52.19"/>
 </g>
-<!-- proc~monomer_of -->
+<!-- proc~monomer_of~2 -->
 <g id="proc~~validate_system~~CallsGraph_node11" class="node">
-<title>proc~monomer_of</title>
-<g id="a_proc~~validate_system~~CallsGraph_node11"><a xlink:href="../proc/monomer_of.html" xlink:title="monomer_of">
+<title>proc~monomer_of~2</title>
+<g id="a_proc~~validate_system~~CallsGraph_node11"><a xlink:href="../proc/monomer_of~2.html" xlink:title="monomer_of">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="559,-24 478,-24 478,0 559,0 559,-24"/>
 <text text-anchor="middle" x="518.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">monomer_of</text>
 </a>
 </g>
 </g>
-<!-- proc~perceive_bonds&#45;&gt;proc~monomer_of -->
+<!-- proc~perceive_bonds&#45;&gt;proc~monomer_of~2 -->
 <g id="proc~~validate_system~~CallsGraph_edge10" class="edge">
-<title>proc~perceive_bonds&#45;&gt;proc~monomer_of</title>
+<title>proc~perceive_bonds&#45;&gt;proc~monomer_of~2</title>
 <path fill="none" stroke="#0066ff" d="M420.65,-26.12C435.71,-23.93 452.43,-21.49 467.67,-19.27"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="468.56,-22.67 477.95,-17.77 467.55,-15.75 468.56,-22.67"/>
 </g>
@@ -741,31 +741,31 @@ large graphs.</div>
 <g id="proc~~validate_system~~CalledByGraph_node12" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~validate_system~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-108 246,-108 246,-84 324,-84 324,-108"/>
-<text text-anchor="middle" x="285" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
-<g id="proc~~validate_system~~CalledByGraph_edge13" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ff66" d="M324.28,-96.19C360.53,-96.37 414.7,-96.63 451.02,-96.81"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="451.2,-100.31 461.22,-96.86 451.24,-93.31 451.2,-100.31"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~validate_system~~CalledByGraph_node13" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~validate_system~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
 <text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~validate_system~~CalledByGraph_edge15" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#0066ff" d="M324.28,-16.14C358.12,-19.8 407.57,-25.14 443.55,-29.03"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="443.46,-32.54 453.78,-30.14 444.22,-25.58 443.46,-32.54"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~validate_system~~CalledByGraph_node13" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~validate_system~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-108 246,-108 246,-84 324,-84 324,-108"/>
+<text text-anchor="middle" x="285" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<g id="proc~~validate_system~~CalledByGraph_edge13" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff66" d="M324.28,-96.19C360.53,-96.37 414.7,-96.63 451.02,-96.81"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="451.2,-100.31 461.22,-96.86 451.24,-93.31 451.2,-100.31"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~validate_system~~CalledByGraph_node14" class="node">
@@ -806,11 +806,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
-<g id="proc~~validate_system~~CalledByGraph_edge17" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#7fff00" d="M166.01,-83.39C189.62,-85.91 214.82,-88.61 235.84,-90.85"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="235.48,-94.33 245.79,-91.92 236.22,-87.37 235.48,-94.33"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~validate_system~~CalledByGraph_edge18" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#00ffff" d="M166.01,-83.39C189.62,-85.91 214.82,-88.61 235.84,-90.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="235.48,-94.33 245.79,-91.92 236.22,-87.37 235.48,-94.33"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~validate_system~~CalledByGraph_edge19" class="edge">
@@ -827,11 +827,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~validate_system~~CalledByGraph_edge18" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#00ffff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~validate_system~~CalledByGraph_edge17" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#7fff00" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
 </g>
 </g>
 </svg>
@@ -988,7 +988,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imon~8"></span>
+              <span class="anchor" id="variable-imon~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -1005,7 +1005,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-islot~4"></span>
+              <span class="anchor" id="variable-islot"></span>
               integer,
             </td>
               <td>private</td>
@@ -1022,7 +1022,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_i~4"></span>
+              <span class="anchor" id="variable-missing_i~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1039,7 +1039,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_j~4"></span>
+              <span class="anchor" id="variable-missing_j~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1056,7 +1056,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_missing~4"></span>
+              <span class="anchor" id="variable-n_missing~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1234,7 +1234,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 00:57 +0000             </p>
+ on 2026-08-15 01:55 +0000             </p>
           </div>
         </div>
         <br>

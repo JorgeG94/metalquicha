@@ -185,7 +185,7 @@ from there. Callers on rank 0 get control back with a live session.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~77"></span>
+              <span class="anchor" id="variable-this~74"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -200,7 +200,7 @@ from there. Callers on rank 0 get control back with a live session.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~83"></span>
+              <span class="anchor" id="variable-error~52"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -278,18 +278,18 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <path fill="none" stroke="#ff0000" d="M173.23,-995.42C230.04,-995.42 306.22,-995.42 373.5,-995.42 373.5,-995.42 373.5,-995.42 530.5,-995.42 681.06,-995.42 858.14,-995.42 949.7,-995.42"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="949.89,-998.92 959.89,-995.42 949.89,-991.92 949.89,-998.92"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~session_begin~~CallsGraph_node5" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~session_begin~~CallsGraph_node5"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~session_begin~~CallsGraph_node5"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="288.5,-967.42 210.5,-967.42 210.5,-943.42 288.5,-943.42 288.5,-967.42"/>
 <text text-anchor="middle" x="249.5" y="-953.02" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
 <g id="proc~~session_begin~~CallsGraph_edge4" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#ff0000" d="M135.81,-983.42C156.34,-978.31 180.23,-972.38 200.71,-967.29"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="201.6,-970.68 210.46,-964.87 199.91,-963.88 201.6,-970.68"/>
 </g>
@@ -311,9 +311,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <polygon fill="#777777" stroke="#777777" points="1326,-200.42 1272,-200.42 1272,-176.42 1326,-176.42 1326,-200.42"/>
 <text text-anchor="middle" x="1299" y="-186.02" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;bcast -->
+<!-- proc~worker_loop&#45;&gt;bcast -->
 <g id="proc~~session_begin~~CallsGraph_edge6" class="edge">
-<title>proc~worker_loop~2&#45;&gt;bcast</title>
+<title>proc~worker_loop&#45;&gt;bcast</title>
 <path fill="none" stroke="#0066ff" d="M280.4,-943.38C284.05,-940.88 287.4,-937.91 290,-934.42 519.1,-626.42 289.92,-432.04 459,-87.42 479.75,-45.13 481.4,-7.42 528.5,-7.42 528.5,-7.42 528.5,-7.42 743,-7.42 922.09,-7.42 993.63,31.34 1141,-70.42 1167.54,-88.74 1153.17,-111.69 1177,-133.42 1201.24,-155.51 1235.86,-170.03 1261.87,-178.57"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="1261.13,-182 1271.72,-181.66 1263.23,-175.33 1261.13,-182"/>
 </g>
@@ -323,9 +323,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <polygon fill="#777777" stroke="#777777" points="401.5,-925.42 347.5,-925.42 347.5,-901.42 401.5,-901.42 401.5,-925.42"/>
 <text text-anchor="middle" x="374.5" y="-911.02" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finalize</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;finalize -->
+<!-- proc~worker_loop&#45;&gt;finalize -->
 <g id="proc~~session_begin~~CallsGraph_edge7" class="edge">
-<title>proc~worker_loop~2&#45;&gt;finalize</title>
+<title>proc~worker_loop&#45;&gt;finalize</title>
 <path fill="none" stroke="#0066ff" d="M285.75,-943.38C301.97,-937.84 321.2,-931.28 337.51,-925.71"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="338.91,-928.93 347.24,-922.38 336.65,-922.3 338.91,-928.93"/>
 </g>
@@ -335,9 +335,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <polygon fill="#777777" stroke="#777777" points="423,-967.42 326,-967.42 326,-943.42 423,-943.42 423,-967.42"/>
 <text text-anchor="middle" x="374.5" y="-953.02" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_finalize</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;pic_mpi_finalize -->
+<!-- proc~worker_loop&#45;&gt;pic_mpi_finalize -->
 <g id="proc~~session_begin~~CallsGraph_edge8" class="edge">
-<title>proc~worker_loop~2&#45;&gt;pic_mpi_finalize</title>
+<title>proc~worker_loop&#45;&gt;pic_mpi_finalize</title>
 <path fill="none" stroke="#0066ff" d="M288.74,-955.42C297.25,-955.42 306.45,-955.42 315.55,-955.42"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="315.73,-958.92 325.73,-955.42 315.73,-951.92 315.73,-958.92"/>
 </g>
@@ -350,9 +350,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~session_begin~~CallsGraph_edge9" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#0066ff" d="M260.01,-967.48C268.74,-979.01 281.56,-997.14 290,-1014.42 329.76,-1095.82 357.56,-1200.75 368.42,-1245.56"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="365.04,-1246.46 370.76,-1255.37 371.85,-1244.83 365.04,-1246.46"/>
 </g>
@@ -2597,7 +2597,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 00:57 +0000             </p>
+ on 2026-08-15 01:55 +0000             </p>
           </div>
         </div>
         <br>
