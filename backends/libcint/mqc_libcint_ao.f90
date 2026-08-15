@@ -46,6 +46,11 @@ module mqc_libcint_ao
    !> Points per pass when a caller asks for a whole grid at once.
    integer, parameter, public :: AO_POINT_BLOCK = 4096
 
+   !> Unique components of a symmetric second-derivative tensor: xx, xy, xz,
+   !> yy, yz, zz. Public because a caller indexing `hess` has to agree with the
+   !> packing, and a bare 6 at both ends is how they stop agreeing.
+   integer, parameter, public :: AO_HESS_COMP = 6
+
 contains
 
    pure function max_ao_l(mol) result(l_max)
@@ -61,7 +66,7 @@ contains
       end do
    end function max_ao_l
 
-   subroutine eval_ao_block(mol, coords, ao, error, grad)
+   subroutine eval_ao_block(mol, coords, ao, error, grad, hess)
       !! chi_mu(r) for every basis function at every supplied point
       !!
       !! `ao` comes back as (n_points, n_ao), which is the orientation the density
@@ -78,15 +83,35 @@ contains
          !! everything expensive: the same exponentials, the same angular
          !! components, the same spherical transform. A separate `eval_ao_deriv1`
          !! would duplicate all three and have to be kept in step with them.
+      real(dp), allocatable, intent(out), optional :: hess(:, :, :)
+         !! d2 chi / d r_j d r_k, as (n_points, n_ao, 6), packed xx, xy, xz, yy,
+         !! yz, zz -- the six unique components of a symmetric tensor, in the
+         !! order PySCF's `GTOval_sph_deriv2` uses, so a comparison against it
+         !! needs no reshuffling.
+         !!
+         !! Here for the same reason `grad` is: it shares the exponentials, the
+         !! angular components and the transform with both of them. A GGA
+         !! *gradient* needs these -- the energy depends on grad rho, and
+         !! differentiating that with respect to a nuclear position differentiates
+         !! the basis functions a second time.
 
       integer :: n_points, ish, l, nprim, nctr, ic, ip, ig, off_ao
       integer :: n_cart, n_sph, n_here, comp, i, j, iatom
       integer :: exp_ptr, coef_ptr
-      real(dp) :: dx, dy, dz, r2, radial, fac, dradial
+      real(dp) :: dx, dy, dz, r2, radial, fac, dradial, d2radial
+      real(dp) :: dr(3)
+      real(dp) :: ex
       real(dp), allocatable :: cart(:), sph(:), trans(:, :)
       real(dp), allocatable :: dcart(:, :), dsph(:, :)
-      logical :: want_grad
-      integer :: id
+      real(dp), allocatable :: d2cart(:, :), d2sph(:, :)
+      logical :: want_grad, want_hess
+      integer :: id, ih, px, py, pz
+
+      ! The (j, k) each packed component stands for, and whether it is diagonal.
+      ! The delta only enters the second derivative of the radial part -- see
+      ! the assembly below -- so it is worth having rather than re-deriving.
+      integer, parameter :: HESS_J(AO_HESS_COMP) = [1, 1, 1, 2, 2, 3]
+      integer, parameter :: HESS_K(AO_HESS_COMP) = [1, 2, 3, 2, 3, 3]
 
       n_points = size(coords, 2)
 
@@ -98,22 +123,34 @@ contains
          return
       end if
 
-      want_grad = present(grad)
+      want_hess = present(hess)
+      ! The second derivative is built from the first, so asking for one
+      ! implies the other. Computing grad silently and discarding it would be
+      ! the alternative, and it is the same work.
+      want_grad = present(grad) .or. want_hess
       allocate (ao(n_points, mol%nao))
       ao = 0.0_dp
-      if (want_grad) then
+      if (present(grad)) then
          allocate (grad(n_points, mol%nao, 3))
          grad = 0.0_dp
       end if
+      if (want_hess) then
+         allocate (hess(n_points, mol%nao, AO_HESS_COMP))
+         hess = 0.0_dp
+      end if
 
-      !$omp parallel default(none) shared(mol, coords, ao, grad, n_points, want_grad) &
+      !$omp parallel default(none) &
+      !$omp    shared(mol, coords, ao, grad, hess, n_points, want_grad, want_hess) &
       !$omp    private(ish, l, nprim, nctr, ic, ip, ig, off_ao, n_cart, n_sph, &
-      !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, id, &
-      !$omp            dx, dy, dz, r2, radial, dradial, fac, cart, sph, trans, &
-      !$omp            dcart, dsph)
+      !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, id, ih, &
+      !$omp            px, py, pz, dr, ex, &
+      !$omp            dx, dy, dz, r2, radial, dradial, d2radial, fac, cart, sph, trans, &
+      !$omp            dcart, dsph, d2cart, d2sph)
       allocate (cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2), sph(2*C2S_LMAX + 1))
       allocate (trans(2*C2S_LMAX + 1, (C2S_LMAX + 1)*(C2S_LMAX + 2)/2))
       allocate (dcart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2, 3), dsph(2*C2S_LMAX + 1, 3))
+      allocate (d2cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2, AO_HESS_COMP), &
+                d2sph(2*C2S_LMAX + 1, AO_HESS_COMP))
 
       do ish = 1, mol%nbas
          l = mol%bas(LIBCINT_ANG_OF, ish)
@@ -142,6 +179,7 @@ contains
             dy = coords(2, ig) - mol%coords(2, iatom)
             dz = coords(3, ig) - mol%coords(3, iatom)
             r2 = dx*dx + dy*dy + dz*dz
+            dr = [dx, dy, dz]
 
             ! Angular part, in libcint's Cartesian order, and its gradient. The
             ! power rule term vanishes when the exponent is zero, which has to be
@@ -150,15 +188,38 @@ contains
             do i = 0, l
                do j = 0, i
                   comp = comp + 1
-                  cart(comp) = pow(dx, l - i)*pow(dy, i - j)*pow(dz, j)
+                  px = l - i
+                  py = i - j
+                  pz = j
+                  cart(comp) = pow(dx, px)*pow(dy, py)*pow(dz, pz)
                   if (want_grad) then
                      dcart(comp, :) = 0.0_dp
-                     if (l - i > 0) dcart(comp, 1) = real(l - i, dp) &
-                                                     *pow(dx, l - i - 1)*pow(dy, i - j)*pow(dz, j)
-                     if (i - j > 0) dcart(comp, 2) = real(i - j, dp) &
-                                                     *pow(dx, l - i)*pow(dy, i - j - 1)*pow(dz, j)
-                     if (j > 0) dcart(comp, 3) = real(j, dp) &
-                                                 *pow(dx, l - i)*pow(dy, i - j)*pow(dz, j - 1)
+                     if (px > 0) dcart(comp, 1) = real(px, dp) &
+                                                  *pow(dx, px - 1)*pow(dy, py)*pow(dz, pz)
+                     if (py > 0) dcart(comp, 2) = real(py, dp) &
+                                                  *pow(dx, px)*pow(dy, py - 1)*pow(dz, pz)
+                     if (pz > 0) dcart(comp, 3) = real(pz, dp) &
+                                                  *pow(dx, px)*pow(dy, py)*pow(dz, pz - 1)
+                  end if
+                  if (want_hess) then
+                     ! Same power rule applied twice. The guards are on the
+                     ! *original* exponent rather than the reduced one, because
+                     ! the prefactor already vanishes when it should: a first
+                     ! power differentiated twice gives 1*0, and `pow` would
+                     ! otherwise be asked for a negative exponent.
+                     d2cart(comp, :) = 0.0_dp
+                     if (px > 1) d2cart(comp, 1) = real(px*(px - 1), dp) &
+                                                   *pow(dx, px - 2)*pow(dy, py)*pow(dz, pz)
+                     if (px > 0 .and. py > 0) d2cart(comp, 2) = real(px*py, dp) &
+                                                                *pow(dx, px - 1)*pow(dy, py - 1)*pow(dz, pz)
+                     if (px > 0 .and. pz > 0) d2cart(comp, 3) = real(px*pz, dp) &
+                                                                *pow(dx, px - 1)*pow(dy, py)*pow(dz, pz - 1)
+                     if (py > 1) d2cart(comp, 4) = real(py*(py - 1), dp) &
+                                                   *pow(dx, px)*pow(dy, py - 2)*pow(dz, pz)
+                     if (py > 0 .and. pz > 0) d2cart(comp, 5) = real(py*pz, dp) &
+                                                                *pow(dx, px)*pow(dy, py - 1)*pow(dz, pz - 1)
+                     if (pz > 1) d2cart(comp, 6) = real(pz*(pz - 1), dp) &
+                                                   *pow(dx, px)*pow(dy, py)*pow(dz, pz - 2)
                   end if
                end do
             end do
@@ -173,6 +234,11 @@ contains
                         dsph(comp, id) = fac*sum(trans(comp, 1:n_cart)*dcart(1:n_cart, id))
                      end do
                   end if
+                  if (want_hess) then
+                     do ih = 1, AO_HESS_COMP
+                        d2sph(comp, ih) = fac*sum(trans(comp, 1:n_cart)*d2cart(1:n_cart, ih))
+                     end do
+                  end if
                end do
             end if
 
@@ -182,15 +248,22 @@ contains
             do ic = 1, nctr
                radial = 0.0_dp
                dradial = 0.0_dp
+               d2radial = 0.0_dp
                do ip = 1, nprim
                   ! d/dr_k exp(-a r^2) = -2 a r_k exp(-a r^2), so the -2a is
                   ! accumulated here and the r_k factor applied per component.
-                  radial = radial + mol%env(coef_ptr + (ic - 1)*nprim + ip) &
-                           *exp(-mol%env(exp_ptr + ip)*r2)
+                  ! Differentiating again gives 4 a^2 r_j r_k - 2 a delta_jk;
+                  ! the 4 a^2 is what accumulates below and the delta is applied
+                  ! in the assembly, where it multiplies `dradial`.
+                  ex = mol%env(coef_ptr + (ic - 1)*nprim + ip) &
+                       *exp(-mol%env(exp_ptr + ip)*r2)
+                  radial = radial + ex
                   if (want_grad) then
-                     dradial = dradial - 2.0_dp*mol%env(exp_ptr + ip) &
-                               *mol%env(coef_ptr + (ic - 1)*nprim + ip) &
-                               *exp(-mol%env(exp_ptr + ip)*r2)
+                     dradial = dradial - 2.0_dp*mol%env(exp_ptr + ip)*ex
+                  end if
+                  if (want_hess) then
+                     d2radial = d2radial + 4.0_dp*mol%env(exp_ptr + ip) &
+                                *mol%env(exp_ptr + ip)*ex
                   end if
                end do
                off_ao = mol%shell_offset(ish) + (ic - 1)*n_here
@@ -198,7 +271,7 @@ contains
                   do comp = 1, n_cart
                      ao(ig, off_ao + comp) = fac*radial*cart(comp)
                   end do
-                  if (want_grad) then
+                  if (present(grad)) then
                      do comp = 1, n_cart
                         grad(ig, off_ao + comp, 1) = fac*(dcart(comp, 1)*radial &
                                                           + cart(comp)*dradial*dx)
@@ -208,11 +281,30 @@ contains
                                                           + cart(comp)*dradial*dz)
                      end do
                   end if
+                  if (want_hess) then
+                     ! Product rule on chi = A(r) R(r^2), twice. The two cross
+                     ! terms are not one term doubled: for an off-diagonal (j,k)
+                     ! they differ, dA/dx_j pairing with dR/dx_k and vice versa.
+                     do ih = 1, AO_HESS_COMP
+                        i = HESS_J(ih)
+                        j = HESS_K(ih)
+                        hess(ig, off_ao + 1:off_ao + n_cart, ih) = &
+                           fac*(d2cart(1:n_cart, ih)*radial &
+                                + dcart(1:n_cart, i)*dradial*dr(j) &
+                                + dcart(1:n_cart, j)*dradial*dr(i) &
+                                + cart(1:n_cart)*d2radial*dr(i)*dr(j))
+                        if (i == j) then
+                           hess(ig, off_ao + 1:off_ao + n_cart, ih) = &
+                              hess(ig, off_ao + 1:off_ao + n_cart, ih) &
+                              + fac*cart(1:n_cart)*dradial
+                        end if
+                     end do
+                  end if
                else
                   do comp = 1, n_sph
                      ao(ig, off_ao + comp) = radial*sph(comp)
                   end do
-                  if (want_grad) then
+                  if (present(grad)) then
                      do comp = 1, n_sph
                         grad(ig, off_ao + comp, 1) = dsph(comp, 1)*radial &
                                                      + sph(comp)*dradial*dx
@@ -222,13 +314,31 @@ contains
                                                      + sph(comp)*dradial*dz
                      end do
                   end if
+                  if (want_hess) then
+                     ! As the Cartesian branch, with `fac` already inside sph,
+                     ! dsph and d2sph rather than applied here.
+                     do ih = 1, AO_HESS_COMP
+                        i = HESS_J(ih)
+                        j = HESS_K(ih)
+                        hess(ig, off_ao + 1:off_ao + n_sph, ih) = &
+                           d2sph(1:n_sph, ih)*radial &
+                           + dsph(1:n_sph, i)*dradial*dr(j) &
+                           + dsph(1:n_sph, j)*dradial*dr(i) &
+                           + sph(1:n_sph)*d2radial*dr(i)*dr(j)
+                        if (i == j) then
+                           hess(ig, off_ao + 1:off_ao + n_sph, ih) = &
+                              hess(ig, off_ao + 1:off_ao + n_sph, ih) &
+                              + sph(1:n_sph)*dradial
+                        end if
+                     end do
+                  end if
                end if
             end do
          end do
          !$omp end do
       end do
 
-      deallocate (cart, sph, trans, dcart, dsph)
+      deallocate (cart, sph, trans, dcart, dsph, d2cart, d2sph)
       !$omp end parallel
    end subroutine eval_ao_block
 

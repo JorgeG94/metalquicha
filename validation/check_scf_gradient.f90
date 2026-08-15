@@ -113,6 +113,54 @@ program check_scf_gradient
                                -1.02_dp, 1.78_dp, 0.0_dp, &
                                -1.02_dp, -1.78_dp, 0.3_dp], [N_DIM, 4]), &
                       "sto-3g", 9, 2, n_bad, functional="svwn")
+
+      ! GGA. PBE is a pure gradient-corrected functional, so the density
+      ! gradient term is exercised with no Fock exchange derivative mixed in;
+      ! PBE0 and B3LYP then add exact exchange on top, which is the
+      ! already-validated Hartree-Fock term scaled. The unrestricted case
+      ! matters separately because libxc's polarised GGA couples the spins
+      ! through sigma_ab, and nothing in the restricted cases exercises that.
+      call check_case("H2O / sto-3g, PBE (RKS)", [8, 1, 1], ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, functional="pbe")
+
+      call check_case("HCN / sto-3g, PBE (RKS)", [1, 6, 7], ["H", "C", "N"], &
+                      reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                               0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                      "sto-3g", 14, 1, n_bad, functional="pbe")
+
+      call check_case("H2O / sto-3g, PBE0 (RKS, hybrid GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, functional="pbe0")
+
+      call check_case("H2O / sto-3g, B3LYP (RKS, hybrid GGA)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, functional="b3lyp")
+
+      call check_case("CH3 doublet / sto-3g, PBE (UKS)", [6, 1, 1, 1], &
+                      ["C", "H", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               2.05_dp, 0.0_dp, 0.0_dp, &
+                               -1.02_dp, 1.78_dp, 0.0_dp, &
+                               -1.02_dp, -1.78_dp, 0.3_dp], [N_DIM, 4]), &
+                      "sto-3g", 9, 2, n_bad, functional="pbe")
+
+      call check_case("CH3 doublet / sto-3g, B3LYP (UKS, hybrid GGA)", [6, 1, 1, 1], &
+                      ["C", "H", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               2.05_dp, 0.0_dp, 0.0_dp, &
+                               -1.02_dp, 1.78_dp, 0.0_dp, &
+                               -1.02_dp, -1.78_dp, 0.3_dp], [N_DIM, 4]), &
+                      "sto-3g", 9, 2, n_bad, functional="b3lyp")
    else
       write (*, "(a)") ""
       write (*, "(a)") "== Kohn-Sham cases skipped: this build has no libxc"
