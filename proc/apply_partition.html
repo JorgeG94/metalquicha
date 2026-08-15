@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">12 statements</a>
+                 title=" 0.1% of total for procedures.">14 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/apply_partition.html#variable-cell~2">cell</a>
+            <a class="list-group-item" href="../proc/apply_partition.html#variable-cell">cell</a>
         </div>
       </div>
     </div>
@@ -207,7 +207,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_coords~3"></span>
+              <span class="anchor" id="variable-atom_coords~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -222,7 +222,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~9"></span>
+              <span class="anchor" id="variable-atomic_numbers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -237,7 +237,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~6"></span>
+              <span class="anchor" id="variable-scheme~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -252,7 +252,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-adjust~4"></span>
+              <span class="anchor" id="variable-adjust~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -267,7 +267,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~40"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -631,7 +631,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-cell~2"></span>
+              <span class="anchor" id="variable-cell"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -677,7 +677,11 @@ large graphs.</div>
 <span class="w">                                   </span><span class="n">grid</span><span class="p">%</span><span class="n">atom</span><span class="p">,</span><span class="w"> </span><span class="n">scheme</span><span class="p">,</span><span class="w"> </span><span class="n">adjust</span><span class="p">,</span><span class="w"> </span><span class="n">cell</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 
-<span class="k">      </span><span class="n">grid</span><span class="p">%</span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="p">%</span><span class="n">weights</span><span class="o">*</span><span class="n">cell</span>
+<span class="w">      </span><span class="c">! Before, not after: this is the quadrature weight on its own.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">grid</span><span class="p">%</span><span class="n">quad_weights</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">grid</span><span class="p">%</span><span class="n">quad_weights</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">grid</span><span class="p">%</span><span class="n">quad_weights</span><span class="p">(</span><span class="n">grid</span><span class="p">%</span><span class="n">n_points</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">grid</span><span class="p">%</span><span class="n">weights</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">grid</span><span class="p">%</span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="p">%</span><span class="n">weights</span><span class="o">*</span><span class="n">cell</span>
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">apply_partition</span>
 </pre></div>
 
@@ -702,7 +706,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 04:31 +0000             </p>
+ on 2026-08-15 05:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 0.8% of total for derived types.</p>Including implementation: 15 statements,  0.5% of total for derived types.">8 statements</a>
+                 title="<p> 1.3% of total for derived types.</p>Including implementation: 21 statements,  0.7% of total for derived types.">12 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,10 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-atom~5">atom</a>
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-coords~10">coords</a>
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-n_points~3">n_points</a>
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-weights~4">weights</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-adjust">adjust</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-atom">atom</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-coords">coords</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-n_points~6">n_points</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-numbers">numbers</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-quad_weights">quad_weights</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-scheme">scheme</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-weights~3">weights</a>
         </div>
       </div>
     </div>
@@ -166,7 +170,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/dft_grid_t.html#boundprocedure-destroy~13">destroy</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#boundprocedure-destroy~2">destroy</a>
         </div>
       </div>
     </div>
@@ -205,7 +209,24 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~5"></span>
+              <span class="anchor" id="variable-adjust"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>adjust</strong></td>
+<td> =</td>
+                <td>ADJUST_TREUTLER</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom"></span>
               integer,
             </td>
               <td>public,</td>
@@ -222,7 +243,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~10"></span>
+              <span class="anchor" id="variable-coords"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -239,7 +260,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~3"></span>
+              <span class="anchor" id="variable-n_points~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -256,7 +277,64 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weights~4"></span>
+              <span class="anchor" id="variable-numbers"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>numbers</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n_atoms), Z, for the partition radii</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-quad_weights"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>quad_weights</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n_points), the radial times angular weight <em>before</em> the Becke
+partition multiplies it in. Kept because a gradient needs the
+partition weight and the quadrature weight separately &ndash; the
+partition depends on where the nuclei are and the quadrature does
+not, so only one of the two carries a derivative. Recovering it by
+dividing <code>weights</code> by the partition would divide by zero exactly
+where the partition underflows.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scheme"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scheme</strong></td>
+<td> =</td>
+                <td>PARTITION_BECKE</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-weights~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -284,7 +362,7 @@
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~13"></span>
+      <span class="anchor" id="boundprocedure-destroy~2"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_grid_destroy.html'>dft_grid_destroy</a>
@@ -344,7 +422,22 @@
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coords</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, n_points), Bohr</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">weights</span><span class="p">(:)</span><span class="w">    </span><span class="c">!! (n_points), full volume weight</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quad_weights</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_points), the radial times angular weight *before* the Becke</span>
+<span class="w">         </span><span class="c">!! partition multiplies it in. Kept because a gradient needs the</span>
+<span class="w">         </span><span class="c">!! partition weight and the quadrature weight separately -- the</span>
+<span class="w">         </span><span class="c">!! partition depends on where the nuclei are and the quadrature does</span>
+<span class="w">         </span><span class="c">!! not, so only one of the two carries a derivative. Recovering it by</span>
+<span class="w">         </span><span class="c">!! dividing `weights` by the partition would divide by zero exactly</span>
+<span class="w">         </span><span class="c">!! where the partition underflows.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(:)</span><span class="w">        </span><span class="c">!! (n_points), owning atom</span>
+<span class="w">      </span><span class="c">! What the partition was built with. Recorded because a gradient has to</span>
+<span class="w">      </span><span class="c">! differentiate the same partition the energy integrated over, and a</span>
+<span class="w">      </span><span class="c">! caller reconstructing these from defaults would silently differentiate</span>
+<span class="w">      </span><span class="c">! a different one the moment the defaults changed.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PARTITION_BECKE</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">adjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ADJUST_TREUTLER</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">numbers</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! (n_atoms), Z, for the partition radii</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">dft_grid_destroy</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">dft_grid_t</span>
@@ -370,7 +463,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 04:31 +0000             </p>
+ on 2026-08-15 05:10 +0000             </p>
           </div>
         </div>
         <br>
