@@ -19,6 +19,37 @@ module mqc_json_writer
 
 contains
 
+   subroutine add_gradient(json, parent, gradient)
+      !! Nuclear gradient, as the norm and as the components it came from
+      !!
+      !! The norm alone cannot separate a correct gradient from one with a sign
+      !! error, a swapped pair of atoms, or a wrong component that happens to
+      !! preserve the magnitude, so validation compares the components. Written
+      !! in Hartree/Bohr, the internal unit -- unlike the optimization
+      !! trajectory, which converts to Angstrom because a viewer expects it.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      real(dp), intent(in) :: gradient(:, :)  !! (3, natoms)
+
+      type(json_value), pointer :: grad_arr, atom_arr
+      integer :: iatom, icomp
+
+      call json%add(parent, "gradient_norm", sqrt(sum(gradient**2)))
+      call json%add(parent, "gradient_units", "hartree/bohr")
+
+      ! One [x, y, z] triple per atom, in input order.
+      call json%create_array(grad_arr, "gradient")
+      call json%add(parent, grad_arr)
+      do iatom = 1, size(gradient, 2)
+         call json%create_array(atom_arr, "")
+         call json%add(grad_arr, atom_arr)
+         do icomp = 1, size(gradient, 1)
+            call json%add(atom_arr, "", gradient(icomp, iatom))
+         end do
+      end do
+
+   end subroutine add_gradient
+
    subroutine write_json_output(output_data)
       !! THE single entry point for all JSON output
       !!
@@ -104,7 +135,7 @@ contains
       end if
 
       if (data%has_gradient .and. allocated(data%gradient)) then
-         call json%add(main_obj, "gradient_norm", sqrt(sum(data%gradient**2)))
+         call add_gradient(json, main_obj, data%gradient)
       end if
       if (data%has_hessian .and. allocated(data%hessian)) then
          call json%add(main_obj, "hessian_frobenius_norm", sqrt(sum(data%hessian**2)))
@@ -224,7 +255,7 @@ contains
       end if
 
       if (data%has_gradient .and. allocated(data%gradient)) then
-         call json%add(main_obj, "gradient_norm", sqrt(sum(data%gradient**2)))
+         call add_gradient(json, main_obj, data%gradient)
       end if
 
       if (data%has_hessian .and. allocated(data%hessian)) then
@@ -274,7 +305,7 @@ contains
       call json%add(main_obj, "total_energy", data%total_energy)
 
       if (data%has_gradient .and. allocated(data%gradient)) then
-         call json%add(main_obj, "gradient_norm", sqrt(sum(data%gradient**2)))
+         call add_gradient(json, main_obj, data%gradient)
       end if
       if (data%has_hessian .and. allocated(data%hessian)) then
          call json%add(main_obj, "hessian_frobenius_norm", sqrt(sum(data%hessian**2)))
@@ -352,7 +383,7 @@ contains
       character(len=256) :: output_file, basename
       real(dp) :: pV_cal, H_vib_cal, H_rot_cal, H_trans_cal, H_total_cal
       real(dp) :: Cv_total, S_total, S_total_J, H_int_cal, Cv_int, S_int, S_int_J, Cp_trans
-      real(dp) :: grad_norm, hess_norm
+      real(dp) :: hess_norm
 
       output_file = get_output_json_filename()
       basename = get_basename()
@@ -395,8 +426,7 @@ contains
 
       ! Gradient and Hessian norms
       if (data%has_gradient .and. allocated(data%gradient)) then
-         grad_norm = sqrt(sum(data%gradient**2))
-         call json%add(main_obj, "gradient_norm", grad_norm)
+         call add_gradient(json, main_obj, data%gradient)
       end if
       if (data%has_hessian .and. allocated(data%hessian)) then
          hess_norm = sqrt(sum(data%hessian**2))

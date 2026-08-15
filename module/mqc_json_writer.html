@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.3% of total for modules and submodules.">424 statements</a>
+                 title=" 2.4% of total for modules and submodules.">441 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -147,6 +147,7 @@
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_json_output">write_json_output</a>
+            <a class="list-group-item" href="../module/mqc_json_writer.html#proc-add_gradient">add_gradient</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_gmbe_pie_json_impl">write_gmbe_pie_json_impl</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_mbe_breakdown_json_impl">write_mbe_breakdown_json_impl</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_unfragmented_json_impl">write_unfragmented_json_impl</a>
@@ -177,14 +178,14 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">json_module</li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item">json_module</li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -858,18 +859,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M297.85,-138C275.63,-138 244.2,-138 218.36,-138"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="218.04,-134.5 208.04,-138 218.04,-141.5 218.04,-134.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_json_writer~~UsedByGraph_node7" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_json_writer~~UsedByGraph_node7"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_json_writer~~UsedByGraph_node7"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="366,-108 288,-108 288,-84 366,-84 366,-108"/>
 <text text-anchor="middle" x="327" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_json_writer~~UsedByGraph_edge6" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M287.96,-105.45C274.09,-108.97 258.31,-113.07 244,-117 235.48,-119.34 226.42,-121.93 217.71,-124.46"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="216.68,-121.12 208.07,-127.29 218.65,-127.83 216.68,-121.12"/>
 </g>
@@ -1074,6 +1075,76 @@ large graphs.</div>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-add_gradient"></span> <h3>private  subroutine <a href='../proc/add_gradient.html'>add_gradient</a>(json, parent, gradient)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Nuclear gradient, as the norm and as the components it came from</p><a href="../proc/add_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json"></span>
+              type(json_core),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-parent"></span>
+              type(json_value),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>parent</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gradient~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gradient</strong>(:,:)</td>
+            <td>
+<p>(3, natoms)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-write_gmbe_pie_json_impl"></span> <h3>private  subroutine <a href='../proc/write_gmbe_pie_json_impl.html'>write_gmbe_pie_json_impl</a>(data)  
 </h3></div>
     <div class="card-body">
@@ -1256,7 +1327,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-15 07:53 +0000             </p>
+ on 2026-08-15 11:35 +0000             </p>
           </div>
         </div>
         <br>
