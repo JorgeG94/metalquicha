@@ -86,7 +86,22 @@ module mqc_dft_grid
       integer :: n_points = 0
       real(dp), allocatable :: coords(:, :)  !! (3, n_points), Bohr
       real(dp), allocatable :: weights(:)    !! (n_points), full volume weight
+      real(dp), allocatable :: quad_weights(:)
+         !! (n_points), the radial times angular weight *before* the Becke
+         !! partition multiplies it in. Kept because a gradient needs the
+         !! partition weight and the quadrature weight separately -- the
+         !! partition depends on where the nuclei are and the quadrature does
+         !! not, so only one of the two carries a derivative. Recovering it by
+         !! dividing `weights` by the partition would divide by zero exactly
+         !! where the partition underflows.
       integer, allocatable :: atom(:)        !! (n_points), owning atom
+      ! What the partition was built with. Recorded because a gradient has to
+      ! differentiate the same partition the energy integrated over, and a
+      ! caller reconstructing these from defaults would silently differentiate
+      ! a different one the moment the defaults changed.
+      integer :: scheme = PARTITION_BECKE
+      integer :: adjust = ADJUST_TREUTLER
+      integer, allocatable :: numbers(:)     !! (n_atoms), Z, for the partition radii
    contains
       procedure :: destroy => dft_grid_destroy
    end type dft_grid_t
@@ -235,6 +250,10 @@ contains
          if (allocated(sphere)) deallocate (sphere, w_ang)
       end do
 
+      grid%scheme = used_scheme
+      grid%adjust = used_adjust
+      allocate (grid%numbers(n_atoms), source=atomic_numbers)
+
       call apply_partition(grid, atom_coords, atomic_numbers, used_scheme, used_adjust, error)
    end subroutine build_dft_grid
 
@@ -268,6 +287,10 @@ contains
                                    grid%atom, scheme, adjust, cell, error)
       if (error%has_error()) return
 
+      ! Before, not after: this is the quadrature weight on its own.
+      if (allocated(grid%quad_weights)) deallocate (grid%quad_weights)
+      allocate (grid%quad_weights(grid%n_points), source=grid%weights)
+
       grid%weights = grid%weights*cell
    end subroutine apply_partition
 
@@ -278,6 +301,8 @@ contains
       this%n_points = 0
       if (allocated(this%coords)) deallocate (this%coords)
       if (allocated(this%weights)) deallocate (this%weights)
+      if (allocated(this%quad_weights)) deallocate (this%quad_weights)
+      if (allocated(this%numbers)) deallocate (this%numbers)
       if (allocated(this%atom)) deallocate (this%atom)
    end subroutine dft_grid_destroy
 

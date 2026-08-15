@@ -24,6 +24,7 @@ program check_scf_gradient
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
    use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -88,6 +89,35 @@ program check_scf_gradient
 
    call check_unrestricted_df_channels(n_bad)
 
+   ! Kohn-Sham. SVWN is Slater exchange with VWN correlation -- a pure local
+   ! functional, so the exchange-correlation gradient is exercised with no Fock
+   ! exchange derivative mixed into it. Skipped rather than failed on a build
+   ! without libxc, which is the default.
+   if (xc_available()) then
+      call check_case("H2O / sto-3g, SVWN (RKS)", [8, 1, 1], ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, functional="svwn")
+
+      call check_case("HCN / sto-3g, SVWN (RKS)", [1, 6, 7], ["H", "C", "N"], &
+                      reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                               0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                      "sto-3g", 14, 1, n_bad, functional="svwn")
+
+      call check_case("CH3 doublet / sto-3g, SVWN (UKS)", [6, 1, 1, 1], &
+                      ["C", "H", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               2.05_dp, 0.0_dp, 0.0_dp, &
+                               -1.02_dp, 1.78_dp, 0.0_dp, &
+                               -1.02_dp, -1.78_dp, 0.3_dp], [N_DIM, 4]), &
+                      "sto-3g", 9, 2, n_bad, functional="svwn")
+   else
+      write (*, "(a)") ""
+      write (*, "(a)") "== Kohn-Sham cases skipped: this build has no libxc"
+   end if
+
    write (*, "(a)") ""
    if (n_bad == 0) then
       write (*, "(a)") "all gradient checks passed"
@@ -99,7 +129,7 @@ program check_scf_gradient
 contains
 
    subroutine check_case(label, numbers, symbols, coords, basis, nelec, multiplicity, &
-                         n_bad, aux_basis)
+                         n_bad, aux_basis, functional)
       character(len=*), intent(in) :: label
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -109,6 +139,8 @@ contains
       integer, intent(inout) :: n_bad
       character(len=*), intent(in), optional :: aux_basis
          !! Present fits J and K, and differentiates the fitted energy
+      character(len=*), intent(in), optional :: functional
+         !! Present makes it Kohn-Sham, and adds the exchange-correlation term
 
       real(dp), allocatable :: analytic(:, :), numeric(:, :)
       real(dp) :: translation(3)
@@ -122,7 +154,7 @@ contains
       write (*, "(a,a)") "== ", label
 
       call gradient_at(numbers, symbols, coords, basis, nelec, multiplicity, &
-                       analytic, error, aux_basis)
+                       analytic, error, aux_basis, functional)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
@@ -130,7 +162,7 @@ contains
       end if
 
       call numeric_gradient(numbers, symbols, coords, basis, nelec, multiplicity, &
-                            numeric, error, aux_basis)
+                            numeric, error, aux_basis, functional)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL (finite difference): ", error%get_message()
          n_bad = n_bad + 1
@@ -253,7 +285,7 @@ contains
    end subroutine check_unrestricted_df_channels
 
    subroutine gradient_at(numbers, symbols, coords, basis, nelec, multiplicity, &
-                          gradient, error, aux_basis)
+                          gradient, error, aux_basis, functional)
       !! Converge an SCF at this geometry and differentiate it
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -263,15 +295,51 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
       character(len=*), intent(in), optional :: aux_basis
+      character(len=*), intent(in), optional :: functional
 
       type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
 
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
       if (present(aux_basis)) then
          call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
          if (error%has_error()) return
+      end if
+
+      ! Kohn-Sham. Kept apart from the Hartree-Fock branches below rather than
+      ! threaded through them: the SCF and the gradient both need the same
+      ! context, and building it twice would integrate the energy on one grid
+      ! and differentiate it on another.
+      if (present(functional)) then
+         call xc_context_create(mol, functional, xc, error, &
+                                polarized=(multiplicity /= 1))
+         if (error%has_error()) return
+         if (multiplicity == 1) then
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                                 error, xc=xc)
+            if (error%has_error()) return
+            call libcint_scf_gradient(mol, scf%density, &
+                                      orbitals=scf%orbitals, &
+                                      orbital_energies=scf%orbital_energies, &
+                                      n_occupied=scf%n_occupied, &
+                                      gradient=gradient, error=error, xc=xc)
+         else
+            call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
+                                 .false., scf, error, xc=xc)
+            if (error%has_error()) return
+            call libcint_scf_gradient(mol, scf%density, &
+                                      density_beta=scf%density_beta, &
+                                      orbitals=scf%orbitals, &
+                                      orbitals_beta=scf%orbitals_beta, &
+                                      orbital_energies=scf%orbital_energies, &
+                                      orbital_energies_beta=scf%orbital_energies_beta, &
+                                      n_occupied=scf%n_occupied, &
+                                      n_occupied_beta=scf%n_occupied_beta, &
+                                      gradient=gradient, error=error, xc=xc)
+         end if
+         return
       end if
 
       if (multiplicity == 1) then
@@ -310,7 +378,7 @@ contains
    end subroutine gradient_at
 
    subroutine energy_at(numbers, symbols, coords, basis, nelec, multiplicity, energy, &
-                        error, aux_basis)
+                        error, aux_basis, functional)
       !! One converged SCF energy, for the finite difference
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -320,9 +388,11 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
       character(len=*), intent(in), optional :: aux_basis
+      character(len=*), intent(in), optional :: functional
 
       type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
 
       energy = 0.0_dp
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
@@ -332,7 +402,22 @@ contains
          if (error%has_error()) return
       end if
 
-      if (multiplicity == 1) then
+      if (present(functional)) then
+         ! The same grid the analytic gradient differentiates. `xc_context_create`
+         ! builds the grid from the geometry it is handed, so a displaced point
+         ! gets a displaced grid -- which is what makes the finite difference a
+         ! test of the grid response rather than of nothing.
+         call xc_context_create(mol, functional, xc, error, &
+                                polarized=(multiplicity /= 1))
+         if (error%has_error()) return
+         if (multiplicity == 1) then
+            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                                 error, xc=xc)
+         else
+            call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
+                                 .false., scf, error, xc=xc)
+         end if
+      else if (multiplicity == 1) then
          if (present(aux_basis)) then
             call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
                                  error, aux=aux)
@@ -348,7 +433,7 @@ contains
    end subroutine energy_at
 
    subroutine numeric_gradient(numbers, symbols, coords, basis, nelec, multiplicity, &
-                               gradient, error, aux_basis)
+                               gradient, error, aux_basis, functional)
       !! Central differences on the SCF energy
       !!
       !! The step is a compromise the tolerance above is set from: too large
@@ -363,6 +448,7 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
       character(len=*), intent(in), optional :: aux_basis
+      character(len=*), intent(in), optional :: functional
 
       real(dp), parameter :: step = 0.002_dp
       real(dp), allocatable :: shifted(:, :)
@@ -379,13 +465,13 @@ contains
             shifted = coords
             shifted(ic, ia) = coords(ic, ia) + step
             call energy_at(numbers, symbols, shifted, basis, nelec, multiplicity, e_plus, &
-                           error, aux_basis)
+                           error, aux_basis, functional)
             if (error%has_error()) return
 
             shifted = coords
             shifted(ic, ia) = coords(ic, ia) - step
             call energy_at(numbers, symbols, shifted, basis, nelec, multiplicity, e_minus, &
-                           error, aux_basis)
+                           error, aux_basis, functional)
             if (error%has_error()) return
 
             gradient(ic, ia) = (e_plus - e_minus)/(2.0_dp*step)
