@@ -902,8 +902,16 @@ contains
                ! Zero for the core Hamiltonian, so this returns G(delta) and nothing
                ! has to be subtracted back out. The same device the range-separated
                ! branch below uses to get the long-range exchange on its own.
+               ! `density_screen=.false.` for the same reason the CPHF response
+               ! operator needs it: `d_delta` is a difference the SCF drives to
+               ! zero, not a real density. A screen keyed on the magnitude of
+               ! what a quartet multiplies tightens as the delta shrinks, so the
+               ! correction is systematically incomplete and gets more so every
+               ! iteration -- the accumulated G then depends on the path the SCF
+               ! took to get there, which is how a converged energy ends up
+               ! moving when the whole system is translated.
                call build_fock_direct(mol, h_zero, d_delta, bounds, g_delta, stats, error, &
-                                      k_scale=k_scale)
+                                      k_scale=k_scale, density_screen=.false.)
                if (error%has_error()) return
                incr%g_ref = incr%g_ref + g_delta
                incr%d_ref = density
