@@ -607,6 +607,7 @@ contains
 
       integer(int64) :: results_received, term_idx
       integer :: group_done_count
+      integer :: group0_done
       integer :: group0_node_count
       integer :: group0_finished_nodes
       integer :: local_finished_workers
@@ -651,6 +652,7 @@ contains
       end if
 
       group_done_count = 0
+      group0_done = 0
       group0_finished_nodes = 0
       local_finished_workers = 0
       local_node_done = 0
@@ -743,8 +745,17 @@ contains
                allocate (group0_atom_sets(max_atoms, 0))
             end if
          else if (group_leader_by_group(i) > 0) then
+            ! Transposed on the wire. send/receive_group_assignment_matrix take
+            ! the matrix as (task, width) -- the receiver allocates
+            ! (size(ids), n_cols) -- while GMBE holds atom sets as (width, task)
+            ! so that one task's atoms are contiguous. Passing the native layout
+            ! made the helper read the *task count* as the width, size its buffer
+            ! count*count instead of width*count, and hand the receiver a matrix
+            ! of the wrong shape. Group 0 never noticed: its own shard is moved
+            ! by move_alloc above and never crosses the wire.
             call send_group_assignment_matrix(resources%mpi_comms%world_comm, group_leader_by_group(i), &
-                                              group_shards(i)%term_ids, group_shards(i)%atom_sets)
+                                              group_shards(i)%term_ids, &
+                                              transpose(group_shards(i)%atom_sets))
          end if
          if (allocated(group_shards(i)%term_ids)) deallocate (group_shards(i)%term_ids)
          if (allocated(group_shards(i)%atom_sets)) deallocate (group_shards(i)%atom_sets)
@@ -816,8 +827,16 @@ contains
             end if
          end if
 
-         if (group_done_count < 1) then
+         ! On `group0_done`, not on `group_done_count < 1`. The count is also
+         ! incremented by handle_group_results for every *remote* group, so
+         ! guarding on it meant that a remote group finishing first left this
+         ! branch permanently false and group 0's own completion never counted.
+         ! The loop above exits only when group_done_count reaches global_groups,
+         ! so with two or more groups it could not terminate. Single-group runs
+         ! never saw it because there is no remote group to finish first.
+         if (group0_done == 0) then
             if (group0_finished_nodes >= group0_node_count) then
+               group0_done = 1
                group_done_count = group_done_count + 1
             end if
          end if
@@ -1358,6 +1377,7 @@ contains
 
       integer(int64), allocatable :: group_term_ids(:)
       integer, allocatable :: group_atom_sets(:, :)
+      integer, allocatable :: wire_atom_sets(:, :)
       type(queue_t) :: group_queue
       integer(int64), allocatable :: temp_ids(:)
       integer(int64) :: idx
@@ -1384,7 +1404,10 @@ contains
       end do
       group_node_count = count(group_ids == group_id)
 
-      call receive_group_assignment_matrix(resources%mpi_comms%world_comm, group_term_ids, group_atom_sets)
+      ! Arrives as (task, width); everything below indexes (width, task).
+      call receive_group_assignment_matrix(resources%mpi_comms%world_comm, group_term_ids, wire_atom_sets)
+      group_atom_sets = transpose(wire_atom_sets)
+      deallocate (wire_atom_sets)
 
       if (size(group_term_ids) > 0) then
          ! Queue stores local indices (1..N) into group_term_ids/group_atom_sets.
