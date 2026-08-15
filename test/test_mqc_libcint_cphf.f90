@@ -451,11 +451,26 @@ contains
       do i = 1, size(tensors, 3)
          total = total + tensors(:, :, i)
       end do
+
+      ! Per component the core can only lower a diagonal or leave it be, so assert
+      ! that none *grows*. Not a strict `total < alpha`: water's 1s is spherical
+      ! and, for this orientation, decoupled from y, so it contributes nothing to
+      ! alpha_yy and that diagonal returns equal to the total to the last bit. A
+      ! strict comparison there is deciding a one-ULP difference on the sign of the
+      ! summation error, which flips between toolchains -- the flake this once was.
       do k = 1, 3
-         call check(error, total(k, k) < alpha(k, k), &
-                    "excluding the core did not reduce the polarizability")
+         call check(error, total(k, k) <= alpha(k, k) + 1.0e-10_dp, &
+                    "excluding the core increased a diagonal polarizability")
          if (allocated(error)) return
       end do
+
+      ! The reduction still has to appear somewhere, or n_core did nothing. It
+      ! lands in the trace, which falls by the core's whole contribution -- about
+      ! 6e-4 here, far above the per-component rounding -- so assert that robustly.
+      call check(error, total(1, 1) + total(2, 2) + total(3, 3) < &
+                 alpha(1, 1) + alpha(2, 2) + alpha(3, 3), &
+                 "excluding the core did not reduce the total polarizability")
+      if (allocated(error)) return
       call check(error, abs(total(1, 2) - alpha(1, 2)) < 1.0e-4_dp, &
                  "excluding the core moved an off-diagonal component, but a "// &
                  "spherical core should contribute only to the diagonal")
