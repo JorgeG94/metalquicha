@@ -71,8 +71,9 @@ contains
          !! a case small enough to take either -- a threshold nothing ever
          !! crosses in a test is a threshold nothing ever tests.
 
-      real(dp), allocatable :: bia(:, :, :), bia_raw(:, :, :), metric(:, :), jm12(:, :)
-      real(dp), allocatable :: t2(:, :, :, :), xbar(:, :, :, :)
+      real(dp), allocatable :: bmat(:, :), bia_raw(:, :, :), metric(:, :), jm12(:, :)
+      real(dp), allocatable :: ovov(:, :), xm(:, :)
+      real(dp), allocatable :: t2(:, :, :, :)
       real(dp), allocatable :: gamma(:, :, :), gamma_pq(:, :), gamma_ao(:, :, :)
       real(dp), allocatable :: doo(:, :), dvv(:, :), dm1mo(:, :), zeta(:, :)
       real(dp), allocatable :: imat(:, :), im1(:, :), im1_t(:, :)
@@ -86,7 +87,7 @@ contains
       real(dp), allocatable :: de2(:, :), vhf1(:, :, :, :), eri(:, :, :, :)
       real(dp), allocatable :: bounds(:, :), gamma_null(:, :, :, :)
       integer, allocatable :: offsets(:), counts(:)
-      integer :: n_ao, n_mo, n_o, n_v, n_aux, frozen
+      integer :: n_ao, n_mo, n_o, n_v, n_aux, n_ov, frozen
       integer :: i, j, a, b, p, q, iatom, comp, p0, p1
       real(dp) :: denom
       logical :: dense
@@ -137,10 +138,11 @@ contains
       call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia_raw, error)
       if (error%has_error()) return
       n_aux = size(bia_raw, 2)
-      allocate (bia(n_o, n_v, n_aux))
+      n_ov = n_o*n_v
+      allocate (bmat(n_ov, n_aux))
       do p = 1, n_aux
          do i = 1, n_o
-            bia(i, :, p) = bia_raw(:, p, i)
+            bmat(i:n_ov:n_o, p) = bia_raw(:, p, i)
          end do
       end do
       deallocate (bia_raw)
@@ -149,6 +151,14 @@ contains
       call metric_inverse_sqrt(metric, jm12, error)
       if (error%has_error()) return
 
+      ! `(ia|jb)_RI = sum_P B^P_ia B^P_jb` is one gemm once `B` is held as a
+      ! matrix in the compound `(i,a)` index, which is the shape the repack
+      ! above produces. Written as `n_o^2 n_v^2` separate dot products it is the
+      ! same arithmetic against `B`'s longest stride, and it was the second most
+      ! expensive step in the routine.
+      allocate (ovov(n_ov, n_ov))
+      call pic_gemm(bmat, bmat, ovov, transb="T")
+
       allocate (t2(n_o, n_o, n_v, n_v))
       do b = 1, n_v
          do a = 1, n_v
@@ -156,24 +166,31 @@ contains
                do i = 1, n_o
                   denom = orbital_energies(i) + orbital_energies(j) &
                           - orbital_energies(n_occ + a) - orbital_energies(n_occ + b)
-                  t2(i, j, a, b) = sum(bia(i, a, :)*bia(j, b, :))/denom
+                  t2(i, j, a, b) = ovov(i + (a - 1)*n_o, j + (b - 1)*n_o)/denom
+               end do
+            end do
+         end do
+      end do
+      deallocate (ovov)
+
+      ! ---- the three- and two-index densities (eqs 8, 10) ------------------
+      ! `2 X^ab_ij - X^ba_ij`, in the two compound indices, so that eq 8 is a
+      ! gemm rather than the five-deep loop it reads as.
+      allocate (xm(n_ov, n_ov))
+      do b = 1, n_v
+         do a = 1, n_v
+            do j = 1, n_o
+               do i = 1, n_o
+                  xm(i + (a - 1)*n_o, j + (b - 1)*n_o) = &
+                     2.0_dp*t2(i, j, a, b) - t2(i, j, b, a)
                end do
             end do
          end do
       end do
 
-      ! ---- the three- and two-index densities (eqs 8, 10) ------------------
-      allocate (xbar(n_o, n_o, n_v, n_v))
-      xbar = 2.0_dp*t2
-      do b = 1, n_v
-         do a = 1, n_v
-            xbar(:, :, a, b) = xbar(:, :, a, b) - t2(:, :, b, a)
-         end do
-      end do
-
-      call build_gamma(xbar, bia, jm12, n_o, n_v, n_aux, gamma)
-      call build_gamma_metric(gamma, bia, jm12, n_o, n_v, n_aux, gamma_pq)
-      deallocate (xbar)
+      call build_gamma(xm, bmat, jm12, n_o, n_v, n_aux, gamma)
+      call build_gamma_metric(gamma, bmat, jm12, n_o, n_v, n_aux, gamma_pq)
+      deallocate (xm)
 
       ! ---- the unrelaxed one-particle blocks -------------------------------
       call gamma1_intermediates(t2, n_o, n_v, doo, dvv)
@@ -368,70 +385,68 @@ contains
 
    end subroutine libcint_ri_mp2_gradient
 
-   subroutine build_gamma(xbar, bia, jm12, n_o, n_v, n_aux, gamma)
+   subroutine build_gamma(xm, bmat, jm12, n_o, n_v, n_aux, gamma)
       !! `Gamma^P_ia = sum_{bjQ} (2 X^ab_ij - X^ba_ij) B^Q_jb J^{-1/2}_PQ` (eq 8)
-      real(dp), intent(in) :: xbar(:, :, :, :), bia(:, :, :), jm12(:, :)
+      !!
+      !! Two gemms over the compound `(i,a)` index. The `sum_{jb}` is the first
+      !! and the metric contraction is the second, and neither needs the rank-4
+      !! form the equation is written in -- which is the whole reason `xm` and
+      !! `bmat` are built as matrices upstream rather than reshaped here.
+      real(dp), intent(in) :: xm(:, :)      !! `2X - X^swap` as `((i,a), (j,b))`
+      real(dp), intent(in) :: bmat(:, :)    !! `B` as `((j,b), P)`
+      real(dp), intent(in) :: jm12(:, :)
       integer, intent(in) :: n_o, n_v, n_aux
       real(dp), allocatable, intent(out) :: gamma(:, :, :)
 
-      real(dp), allocatable :: half(:, :, :)
-      integer :: i, j, a, b, qq
+      real(dp), allocatable :: half(:, :), gm(:, :)
+      integer :: i, a, qq, n_ov
 
-      allocate (half(n_aux, n_o, n_v), gamma(n_aux, n_o, n_v))
-      half = 0.0_dp
-      !$omp parallel do collapse(2) default(none) &
-      !$omp    shared(half, xbar, bia, n_o, n_v, n_aux) private(i, a, j, b, qq)
+      n_ov = n_o*n_v
+      allocate (half(n_ov, n_aux), gm(n_ov, n_aux))
+      call pic_gemm(xm, bmat, half)
+      call pic_gemm(half, jm12, gm, transb="T")
+      deallocate (half)
+
+      ! Back to `(P, i, a)`, the layout the Lagrangian and the AO
+      ! back-transform read. One `n_ov` by `n_aux` transpose against two gemms
+      ! of `n_ov^2 n_aux` and `n_ov n_aux^2`.
+      allocate (gamma(n_aux, n_o, n_v))
       do a = 1, n_v
          do i = 1, n_o
-            do b = 1, n_v
-               do j = 1, n_o
-                  do qq = 1, n_aux
-                     half(qq, i, a) = half(qq, i, a) + xbar(i, j, a, b)*bia(j, b, qq)
-                  end do
-               end do
+            do qq = 1, n_aux
+               gamma(qq, i, a) = gm(i + (a - 1)*n_o, qq)
             end do
          end do
       end do
-      !$omp end parallel do
-
-      do a = 1, n_v
-         do i = 1, n_o
-            gamma(:, i, a) = matmul(jm12, half(:, i, a))
-         end do
-      end do
-      deallocate (half)
+      deallocate (gm)
    end subroutine build_gamma
 
-   subroutine build_gamma_metric(gamma, bia, jm12, n_o, n_v, n_aux, gamma_pq)
+   subroutine build_gamma_metric(gamma, bmat, jm12, n_o, n_v, n_aux, gamma_pq)
       !! `gamma_PQ = sum_{iaR} Gamma^P_ia B^R_ia J^{-1/2}_QR` (eq 10)
-      real(dp), intent(in) :: gamma(:, :, :), bia(:, :, :), jm12(:, :)
+      !!
+      !! Two gemms, in place of the `n_o n_v` rank-one updates this was: the
+      !! `sum_ia` is an inner product over the compound index and the metric
+      !! contraction follows it.
+      real(dp), intent(in) :: gamma(:, :, :), bmat(:, :), jm12(:, :)
       integer, intent(in) :: n_o, n_v, n_aux
       real(dp), allocatable, intent(out) :: gamma_pq(:, :)
 
-      real(dp), allocatable :: half(:, :)
-      integer :: i, a
+      real(dp), allocatable :: half(:, :), gflat(:, :)
+      integer :: i, a, qq, n_ov
 
-      allocate (half(n_aux, n_aux), gamma_pq(n_aux, n_aux))
-      half = 0.0_dp
+      n_ov = n_o*n_v
+      allocate (gflat(n_ov, n_aux), half(n_aux, n_aux), gamma_pq(n_aux, n_aux))
       do a = 1, n_v
          do i = 1, n_o
-            call outer_accumulate(gamma(:, i, a), bia(i, a, :), half)
+            do qq = 1, n_aux
+               gflat(i + (a - 1)*n_o, qq) = gamma(qq, i, a)
+            end do
          end do
       end do
-      gamma_pq = matmul(half, transpose(jm12))
-      deallocate (half)
+      call pic_gemm(gflat, bmat, half, transa="T")
+      call pic_gemm(half, jm12, gamma_pq, transb="T")
+      deallocate (half, gflat)
    end subroutine build_gamma_metric
-
-   subroutine outer_accumulate(u, v, m)
-      !! `m = m + u v^T`
-      real(dp), intent(in) :: u(:), v(:)
-      real(dp), intent(inout) :: m(:, :)
-      integer :: k
-
-      do k = 1, size(v)
-         m(:, k) = m(:, k) + u*v(k)
-      end do
-   end subroutine outer_accumulate
 
    subroutine build_gamma_ao(gamma, c_occ, c_vir, n_ao, n_o, n_v, n_aux, gamma_ao)
       !! `Gamma^P_munu`, the three-index density back-transformed
@@ -482,6 +497,7 @@ contains
       real(dp), intent(inout) :: gradient(:, :)
 
       real(dp), allocatable :: ip1(:, :, :, :), ip2(:, :, :, :), j1(:, :, :)
+      real(dp), allocatable :: gt(:, :, :)
       integer, allocatable :: offsets(:), counts(:), aux_offsets(:), aux_counts(:)
       integer :: iatom, comp, p0, p1, q0, q1
 
@@ -495,15 +511,19 @@ contains
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
          if (counts(iatom) == 0) cycle
+         ! Hoisted out of the component loop: it depends on the atom block and
+         ! not on which Cartesian direction is being differentiated, so inside
+         ! it was the same transpose and the same allocation done three times.
+         gt = transpose_first_two(gamma_ao, p0, p1)
          do comp = 1, 3
             ! The bra index on this atom, and then the ket: `(mu nu|P)` is
             ! symmetric in mu and nu, so the second is the first transposed.
             gradient(comp, iatom) = gradient(comp, iatom) &
                                     - 4.0_dp*sum(ip1(p0:p1, :, :, comp) &
                                                  *gamma_ao(p0:p1, :, :)) &
-                                    - 4.0_dp*sum(ip1(p0:p1, :, :, comp) &
-                                                 *transpose_first_two(gamma_ao, p0, p1))
+                                    - 4.0_dp*sum(ip1(p0:p1, :, :, comp)*gt)
          end do
+         deallocate (gt)
       end do
       deallocate (ip1)
 
