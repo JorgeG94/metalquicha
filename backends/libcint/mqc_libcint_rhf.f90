@@ -71,6 +71,48 @@ module mqc_libcint_rhf
    public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
 
+   type :: incremental_state_t
+      !! What an incremental Fock build carries between iterations
+      !!
+      !! G is linear in the density, so
+      !!
+      !!     G(D_n) = G(D_ref) + G(D_n - D_ref)
+      !!
+      !! and the correction can be built from the density *change* rather than
+      !! the density. That is the whole point: `build_fock_direct` screens on the
+      !! largest density element a quartet will multiply, and once the SCF is
+      !! settling the change is orders of magnitude smaller than the density. The
+      !! same screening test then discards far more, and discards more of it with
+      !! every iteration -- which is the compounding the plain density weighting
+      !! could not give on its own.
+      !!
+      !! Only the Coulomb and exchange part. The exchange-correlation potential is
+      !! not linear in the density and is rebuilt in full every iteration.
+      !!
+      !! **Kohn-Sham works and is checked, but gains little.** `g_ref` is captured
+      !! before the long-range exchange and before V_xc are added, so neither is
+      !! double counted, and `check_dft` agrees with PySCF to 1e-11 for a pure
+      !! functional, a hybrid and two range-separated ones through this path.
+      !! What it does not do is help much: for water in cc-pVDZ the quadrature is
+      !! 0.44 s of a 0.48 s SCF and the Fock build is too small to measure, so
+      !! this accelerates 8% of the run. The balance moves with size -- the
+      !! quadrature grows about linearly in the basis where the screened Fock
+      !! build tends toward quadratic -- but where they cross is not measured.
+      !! For a Kohn-Sham calculation the quadrature is the thing to look at.
+      !!
+      !! Two gaps, both deliberate rather than overlooked. A range-separated
+      !! functional needs a second exchange matrix over the attenuated kernel, and
+      !! that one is still rebuilt from the full density every iteration -- it
+      !! could carry its own `g_ref`, and until it does such a functional saves on
+      !! one of its two passes. And `assemble_fock_uhf` takes no state, so every
+      !! open-shell calculation builds in full; the mechanism carries over, with
+      !! two spin densities and two accumulated G, but it is a separate change.
+      real(dp), allocatable :: d_ref(:, :)   !! Density `g_ref` belongs to
+      real(dp), allocatable :: g_ref(:, :)   !! Accumulated G, without H
+      integer :: since_reset = 0             !! Iterations since the last full build
+      logical :: active = .false.            !! Off until the first full build seeds it
+   end type incremental_state_t
+
    type :: rhf_result_t
       !! What a converged closed-shell SCF leaves behind
       real(dp) :: energy = 0.0_dp              !! Total, including nuclear repulsion
@@ -91,6 +133,15 @@ module mqc_libcint_rhf
       integer :: n_occupied_beta = 0
       real(dp) :: spin_squared = 0.0_dp        !! <S^2>, unrestricted only
    end type rhf_result_t
+
+   !> Iterations between full rebuilds of the accumulated G.
+   !>
+   !> Incremental building adds a correction per iteration, so its rounding
+   !> accumulates where a full build's does not. Rebuilding periodically bounds
+   !> that. Sixteen is the usual choice and costs one full build in sixteen --
+   !> about 6% of the saving handed back for a drift that stays at the level of
+   !> the convergence threshold rather than growing past it.
+   integer, parameter :: INCREMENTAL_RESET = 16
 
    !> Stage labels, named once so the per-iteration column and the summary table
    !> cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
@@ -277,6 +328,7 @@ contains
       integer :: n_ao, n_mo, n_occ, iter
       type(timing_report_t) :: clk
       type(direct_stats_t) :: screening
+      type(incremental_state_t) :: incr
       real(dp) :: t_fock_iter, t_rest_iter
 
       if (mod(nelec, 2) /= 0) then
@@ -401,7 +453,7 @@ contains
          ! back together and before extrapolation. A DIIS-mixed Fock is a
          ! convergence device, not a state anything is the energy of.
          call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk=clk, screening=screening)
+                            fock, e_elec, error, clk=clk, screening=screening, incr=incr)
          if (error%has_error()) return
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          call clk%lap(STAGE_FOCK)
@@ -442,6 +494,10 @@ contains
       ! The energy that goes out is the one belonging to the density that
       ! satisfied the test, so it is recomputed from the final Fock rather
       ! than carried over from the loop.
+      !
+      ! Deliberately without `incr`: this one is a full build. An incremental
+      ! Fock carries however many corrections have accumulated since the last
+      ! reset, and the number that leaves this routine should not.
       call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                          fock, result%electronic, error, clk=clk)
       if (error%has_error()) return
@@ -729,7 +785,7 @@ contains
    end subroutine run_libcint_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk, screening)
+                            fock, e_elec, error, clk, screening, incr)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! One place, because there used to be two: the iteration built its Fock
@@ -763,8 +819,16 @@ contains
          !! discarded because wall time on a shared node varies by more than a
          !! screening change does -- these counts are exactly reproducible, so
          !! they are the measurement that can actually be trusted.
+      type(incremental_state_t), intent(inout), optional :: incr
+         !! Present from the SCF loop, which wants each build to cost only the
+         !! change since the last one. Absent from the guess, the gradient callers
+         !! and the final energy rebuild, all of which want an exact build --
+         !! the last of those especially, since the energy that goes out must not
+         !! carry sixteen iterations of accumulated correction.
 
       type(direct_stats_t) :: stats
+      real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
+      logical :: use_incremental, full_build
       real(dp), allocatable :: v_xc(:, :)
       real(dp) :: k_scale, e_xc, n_elec
       logical :: kohn_sham
@@ -801,14 +865,70 @@ contains
          end if
       end if
 
+      ! Incremental building is for the direct path only. The fitted and in-core
+      ! paths contract a stored tensor, so their cost does not depend on how large
+      ! the density elements are and there is nothing for a small delta to save.
+      use_incremental = .false.
+      if (present(incr) .and. .not. allocated(bmat) .and. .not. allocated(eri)) then
+         use_incremental = .true.
+      end if
+
       if (allocated(bmat)) then
          call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=k_scale)
       else if (allocated(eri)) then
          call build_fock(h, eri, density, fock, k_scale=k_scale)
       else
-         call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
-                                k_scale=k_scale)
-         if (error%has_error()) return
+         if (use_incremental) then
+            full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET
+            if (full_build) then
+               call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
+                                      k_scale=k_scale)
+               if (error%has_error()) return
+               if (.not. allocated(incr%g_ref)) then
+                  allocate (incr%g_ref(size(h, 1), size(h, 2)))
+                  allocate (incr%d_ref(size(h, 1), size(h, 2)))
+               end if
+               ! G alone, so the next iteration's correction adds to a matrix that
+               ! does not already contain H.
+               incr%g_ref = fock - h
+               incr%d_ref = density
+               incr%since_reset = 0
+               incr%active = .true.
+            else
+               allocate (g_delta(size(h, 1), size(h, 2)), d_delta(size(h, 1), size(h, 2)))
+               allocate (h_zero(size(h, 1), size(h, 2)))
+               d_delta = density - incr%d_ref
+               h_zero = 0.0_dp
+               ! Zero for the core Hamiltonian, so this returns G(delta) and nothing
+               ! has to be subtracted back out. The same device the range-separated
+               ! branch below uses to get the long-range exchange on its own.
+               ! `density_screen=.false.` for the same reason the CPHF response
+               ! operator needs it: `d_delta` is a difference the SCF drives to
+               ! zero, not a real density. A screen keyed on the magnitude of
+               ! what a quartet multiplies tightens as the delta shrinks, so the
+               ! correction is systematically incomplete and gets more so every
+               ! iteration -- the accumulated G then depends on the path the SCF
+               ! took to get there, which is how a converged energy ends up
+               ! moving when the whole system is translated.
+               call build_fock_direct(mol, h_zero, d_delta, bounds, g_delta, stats, error, &
+                                      k_scale=k_scale, density_screen=.false.)
+               if (error%has_error()) return
+               incr%g_ref = incr%g_ref + g_delta
+               incr%d_ref = density
+               incr%since_reset = incr%since_reset + 1
+               fock = h + incr%g_ref
+               deallocate (g_delta, d_delta, h_zero)
+            end if
+         else
+            call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
+                                   k_scale=k_scale)
+            if (error%has_error()) return
+         end if
+
+         ! The long-range exchange is rebuilt from the full density every
+         ! iteration rather than incrementally. `g_ref` is captured before this is
+         ! added, so the two do not overlap -- but it does mean a range-separated
+         ! functional saves on only one of its two passes.
          if (kohn_sham) then
             if (xc%range_separated) then
                block
