@@ -203,10 +203,10 @@ Calculate minimal distances for all fragments</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1008,7 +1008,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~16"></span>
+              <span class="anchor" id="variable-n~14"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1023,7 +1023,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~3"></span>
+              <span class="anchor" id="variable-r~2"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1068,7 +1068,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~5"></span>
+              <span class="anchor" id="variable-n_monomers~10"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1083,7 +1083,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level~15"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1129,7 +1129,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-combination~2"></span>
+              <span class="anchor" id="variable-combination~6"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1144,7 +1144,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~9"></span>
+              <span class="anchor" id="variable-k~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1159,7 +1159,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~21"></span>
+              <span class="anchor" id="variable-n~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1212,7 +1212,7 @@ in different constituent monomers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers~16"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1227,7 +1227,7 @@ in different constituent monomers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
+              <span class="anchor" id="variable-fragment_count~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1242,7 +1242,7 @@ in different constituent monomers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~26"></span>
+              <span class="anchor" id="variable-sys_geom~42"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1313,7 +1313,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~18"></span>
+              <span class="anchor" id="variable-n~16"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1328,7 +1328,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~5"></span>
+              <span class="anchor" id="variable-r~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1358,7 +1358,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~6"></span>
+              <span class="anchor" id="variable-count~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1398,7 +1398,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~3"></span>
+              <span class="anchor" id="variable-monomers~7"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout),</td>
@@ -1439,7 +1439,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~4"></span>
+              <span class="anchor" id="variable-monomers~8"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1454,7 +1454,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~16"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1469,7 +1469,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~15"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -1484,7 +1484,7 @@ Uses int64 for count to handle large numbers of fragments that overflow int32.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~5"></span>
+              <span class="anchor" id="variable-count~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1525,7 +1525,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices"></span>
+              <span class="anchor" id="variable-indices~5"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1540,7 +1540,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~7"></span>
+              <span class="anchor" id="variable-k~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1555,7 +1555,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~20"></span>
+              <span class="anchor" id="variable-n~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1570,7 +1570,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next"></span>
+              <span class="anchor" id="variable-has_next~5"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1610,7 +1610,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-combination"></span>
+              <span class="anchor" id="variable-combination~5"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1625,7 +1625,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~8"></span>
+              <span class="anchor" id="variable-k~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1681,7 +1681,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~8"></span>
+              <span class="anchor" id="variable-count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1752,7 +1752,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~19"></span>
+              <span class="anchor" id="variable-n~17"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1767,7 +1767,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~6"></span>
+              <span class="anchor" id="variable-r~5"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1797,7 +1797,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~2"></span>
+              <span class="anchor" id="variable-data~3"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -1812,7 +1812,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~41"></span>
+              <span class="anchor" id="variable-i~82"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1842,7 +1842,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~7"></span>
+              <span class="anchor" id="variable-count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1885,7 +1885,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-14 22:57 +0000             </p>
+ on 2026-08-15 00:11 +0000             </p>
           </div>
         </div>
         <br>
