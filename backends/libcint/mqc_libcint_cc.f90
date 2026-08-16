@@ -50,6 +50,7 @@ module mqc_libcint_cc
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_block
    use mqc_libcint_mp2, only: transform_block
    use pic_logger, only: logger => global_logger
+   use mqc_convergence_report, only: convergence_header, convergence_footer
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
@@ -458,6 +459,8 @@ contains
 
       e_old = 0.0_dp
       result%converged = .false.
+      call convergence_header(verbose, "CCSD iterations", &
+                              "    iter                 E_corr          dE   diis", 50)
       do iter = 1, max_iter
          call ccsd_iteration(mo, eris, eps, no, nv, t1, t2, t1n, t2n)
          call clk%lap("CCSD iterations")
@@ -479,8 +482,7 @@ contains
          e_corr = result%e_singles + result%e_doubles
          de = abs(e_corr - e_old)
          if (verbose) then
-            write (line, "(a,i4,a,f20.12,a,es10.3,a,i0)") "  cc iter ", iter, &
-               "  E_corr = ", e_corr, "  dE = ", de, "  diis ", diis%count()
+            write (line, "(i8,f23.12,es12.3,i7)") iter, e_corr, de, diis%count()
             call logger%info(trim(line))
          end if
 
@@ -492,6 +494,7 @@ contains
          end if
       end do
       call diis%destroy()
+      call convergence_footer(verbose, result%converged, result%iterations, "iterations", 50)
 
       if (.not. result%converged) then
          call error%set(ERROR_VALIDATION, "CCSD did not converge")
@@ -500,6 +503,7 @@ contains
 
       ! ---- (T) --------------------------------------------------------------
       if (want_triples) then
+         if (verbose) call logger%info("  CCSD iterations done! beginning the perturbative triples (T)")
          call triples_correction(eris, eps, t1, t2, no, nv, result%e_triples)
          call clk%lap("(T) correction")
          if (verbose) then

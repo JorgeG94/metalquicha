@@ -89,8 +89,9 @@ module mqc_libcint_fmo
    !! the expansion is generic and a cap would be arbitrary -- but the binomial
    !! is the whole story and it is not gentle.
    use pic_types, only: dp
-   use pic_logger, only: logger => global_logger
+   use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
+   use mqc_convergence_report, only: convergence_header, convergence_footer
    use pic_mpi_lib, only: comm_t, allreduce, MPI_SUM
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_vdw_radius
@@ -765,10 +766,10 @@ contains
 
       if (allocated(u)) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, .false., scf, error, h_extra=u)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, h_extra=u)
       else
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, .false., scf, error)
+                              opts%scf_density_tol, show_inner_scf(), scf, error)
       end if
       if (error%has_error()) return
       if (.not. scf%converged) all_converged = .false.
@@ -994,6 +995,7 @@ contains
       real(dp), allocatable :: q_all(:)
       real(dp) :: e_sum, e_prev
       integer :: i, outer
+      logical :: show_conv
 
       ! Isolated fragments, to start the field from something.
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
@@ -1013,6 +1015,9 @@ contains
       end if
 
       e_prev = sum(frag(:)%energy)
+      show_conv = show_outer(comm)
+      call convergence_header(show_conv, "FMO monomer SCF", &
+                              "    iter            monomer sum        change", 45)
       do outer = 1, opts%max_outer
          call all_charges(frag, n_frag, size(z), opts, q_all, error)
          if (error%has_error()) return
@@ -1031,15 +1036,16 @@ contains
          e_sum = sum(frag(:)%energy)
          res%outer_iterations = outer
          res%outer_change = abs(e_sum - e_prev)
-         call logger%verbose("  fmo outer "//to_char(outer)//": monomer sum "// &
-                             to_char(e_sum)//", moved "//to_char(res%outer_change))
+         call fmo_outer_row(show_conv, outer, e_sum, res%outer_change)
          if (res%outer_change < opts%outer_tol) then
             res%converged = .true.
+            call convergence_footer(show_conv, .true., outer, "outer iterations", 45)
             return
          end if
          e_prev = e_sum
       end do
 
+      call convergence_footer(show_conv, .false., opts%max_outer, "outer iterations", 45)
       call error%set(ERROR_VALIDATION, "fmo: the outer SCF did not settle in "// &
                      to_char(opts%max_outer)//" passes; the monomer sum was still "// &
                      "moving by "//to_char(res%outer_change)//" Hartree")
@@ -1083,7 +1089,7 @@ contains
       integer, allocatable :: terms(:, :), term_size(:)
       real(dp), allocatable :: correction(:)
       real(dp) :: e_internal, e_resp
-      integer :: n_terms, t, task, level
+      integer :: n_terms, t, task, level, n_nmers
 
       level = min(opts%level, n_frag)
       if (level < 2) return
@@ -1093,6 +1099,14 @@ contains
 
       call enumerate_terms(n_frag, level, terms, term_size, n_terms)
       allocate (correction(n_terms), source=0.0_dp)
+
+      ! Count the n-mers (size >= 2) so the progress below has a denominator: the
+      ! monomers are already solved, so they are not part of this phase's work.
+      n_nmers = count(term_size(1:n_terms) >= 2)
+      if (is_leader(comm)) then
+         call logger%info("  fmo: "//to_char(n_nmers)//" n-mers up to level "// &
+                          to_char(level))
+      end if
 
       ! Monomers are level one and already solved; their correction is just
       ! their energy, which is what the recursion below subtracts against.
@@ -1109,6 +1123,16 @@ contains
       do t = 1, n_terms
          if (term_size(t) < 2) cycle
          task = task + 1
+
+         ! Coarse progress at info level so a long n-mer sweep shows movement
+         ! without the per-SCF detail. On the loop index, not the owned subset, so
+         ! it advances smoothly; leader-guarded so it prints once under MPI.
+         if (is_leader(comm)) then
+            if (mod(task, max(1, n_nmers/10)) == 0 .or. task == n_nmers) then
+               call logger%info("  fmo: n-mer "//to_char(task)//"/"//to_char(n_nmers))
+            end if
+         end if
+
          if (.not. mine(task, comm)) cycle
 
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
@@ -1281,6 +1305,75 @@ contains
       owned = mod(task - 1, comm%size()) == comm%rank()
    end function mine
 
+   function is_leader(comm) result(leads)
+      !! Whether this rank should emit the run's shared log lines
+      !!
+      !! The outer-convergence and progress lines report reduced totals, so they
+      !! are identical on every rank -- without this each rank prints its own copy
+      !! and the log comes back interleaved N times under MPI. The per-fragment
+      !! SCF tables are deliberately *not* gated this way: each rank solves a
+      !! different set of fragments, so letting every rank print its own is the
+      !! point. Absent `comm` is a single rank, which always leads.
+      type(comm_t), intent(in), optional :: comm
+      logical :: leads
+
+      leads = .true.
+      if (.not. spread_over(comm)) return
+      leads = comm%rank() == 0
+   end function is_leader
+
+   function show_inner_scf() result(show)
+      !! Whether to print each fragment's per-iteration SCF table
+      !!
+      !! The individual monomer and n-mer SCFs are the finest thing this method
+      !! prints and there are a great many of them, so they sit at the deepest
+      !! level. Gating on the logger level rather than a threaded flag keeps the
+      !! decision in one place and matches how the MBE path decides the same.
+      !TODO: replace debug_level with verbose_level once pic defines large_info;
+      !      the outer convergence (see calculate_monomers) drops to large_info at
+      !      the same time, so inner SCF and outer stay one level apart.
+      logical :: show
+      integer :: level
+
+      call logger%configuration(level=level)
+      show = level >= debug_level
+   end function show_inner_scf
+
+   function show_outer(comm) result(show)
+      !! Whether to print the FMO outer-loop (monomer SCF) convergence table
+      !!
+      !! Leader-guarded -- the monomer sum is a reduced total, identical on every
+      !! rank -- and gated at verbose: one level above the info progress lines and
+      !! one below the debug per-fragment SCF tables. The level travels in this
+      !! flag rather than in the logger call because the shared table frame
+      !! (convergence_header/footer) prints through logger%info for every table.
+      !TODO: replace verbose_level with large_info once pic defines it, so the
+      !      outer table sits just below the inner SCF tables (see show_inner_scf).
+      type(comm_t), intent(in), optional :: comm
+      logical :: show
+      integer :: level
+
+      call logger%configuration(level=level)
+      show = is_leader(comm) .and. level >= verbose_level
+   end function show_outer
+
+   subroutine fmo_outer_row(show, iter, monomer_sum, change)
+      !! One outer iteration's line: the monomer energy sum and how far it moved
+      !!
+      !! The FMO loop's row for the shared convergence table -- the SCF row minus
+      !! the DIIS depth and per-iteration timings an outer loop has no analogue
+      !! for. The frame around it is convergence_header/convergence_footer.
+      logical, intent(in) :: show
+      integer, intent(in) :: iter
+      real(dp), intent(in) :: monomer_sum, change
+
+      character(len=100) :: line
+
+      if (.not. show) return
+      write (line, "(i8,f23.12,es14.3)") iter, monomer_sum, change
+      call logger%info(trim(line))
+   end subroutine fmo_outer_row
+
    subroutine exchange_monomers(frag, n_frag, comm)
       !! Share what each rank computed this pass with every other
       !!
@@ -1349,10 +1442,10 @@ contains
 
       if (embedded) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, .false., scf, error, h_extra=u)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, h_extra=u)
       else
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, .false., scf, error)
+                              opts%scf_density_tol, show_inner_scf(), scf, error)
       end if
       if (error%has_error()) return
       if (present(all_converged)) then

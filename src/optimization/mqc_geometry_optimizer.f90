@@ -23,6 +23,8 @@ module mqc_geometry_optimizer
    use pic_mpi_lib, only: comm_t, bcast
    use pic_logger, only: logger => global_logger, warning_level, verbose_level
    use pic_io, only: to_char
+   use pic_timer, only: timer_type
+   use mqc_convergence_report, only: convergence_header
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
                                   coordinates_to_string, algorithm_to_string
@@ -33,6 +35,7 @@ module mqc_geometry_optimizer
    use mqc_resources, only: resources_t
    use mqc_result_types, only: calculation_result_t
    use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_ENERGY
+   use mqc_method_types, only: method_type_to_string, METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
    use mqc_dlfind_bridge, only: dlfind_available, dlfind_optimize
@@ -80,6 +83,17 @@ module mqc_geometry_optimizer
    integer, allocatable, save :: ctx_terms(:, :)
    integer(int64), save :: ctx_n_terms = 0
    logical, save :: ctx_terms_frozen = .false.
+   type(timer_type), save :: ctx_wall
+      !! Wall clock over the whole engine run, so each step can report how its
+      !! time split between the quantum-chemistry evaluation and the optimizer.
+   real(dp), save :: ctx_qc_accum = 0.0_dp
+      !! Time in `run_step` since the last accepted step was printed. It
+      !! accumulates across line-search probe evaluations, which do not print but
+      !! are quantum chemistry all the same, so what the row shows as `qc_time` is
+      !! all of it and `opt_time` is the genuine remainder DL-FIND spent.
+   real(dp), save :: ctx_last_print_wall = 0.0_dp
+      !! `ctx_wall` reading at the last printed step, the other end of the
+      !! interval whose optimizer time is `wall_gap - qc_time`.
    real(dp), save :: ctx_last_gradient_max = huge(1.0_dp)
       !! Largest gradient component of the last successful step, which is what
       !! says whether this converged. DL-FIND reports geometries but not a
@@ -197,9 +211,20 @@ contains
             return
          end if
 
+         ! The step table's frame, shared with the SCF and CCSD tables. The rows
+         ! are written from the engine's callback as each step is accepted; the
+         ! verdict and the totals are `report_result` below, so the table closes
+         ! on a plain rule rather than a "converged in N" line that would say the
+         ! same thing twice.
+         ctx_qc_accum = 0.0_dp
+         ctx_last_print_wall = 0.0_dp
+         call ctx_wall%start()
+         call convergence_header(.true., "optimization steps", &
+                                 "    step                 energy        |g|max     qc_time    opt_time", 69)
          call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
                               coords, evaluate_energy_gradient, record_step, &
                               final_energy, error)
+         call logger%info("  "//repeat("-", 69))
 
          ! Stop the workers whether or not that succeeded. A rank 0 that
          ! returned an error without sending this would leave N-1 ranks
@@ -253,6 +278,9 @@ contains
       type(calculation_result_t) :: result
       type(driver_config_t) :: gradient_config
       integer :: saved_level
+      character(len=100) :: line
+      type(timer_type) :: step_clock
+      real(dp) :: step_time, now_wall, qc_time, opt_time
 
       energy = 0.0_dp
       gradient = 0.0_dp
@@ -280,8 +308,16 @@ contains
       ! they want the per-step detail.
       saved_level = logger%log_level
       if (saved_level < verbose_level) call logger%configure(level=warning_level)
+      call step_clock%start()
       call run_step(gradient_config, result)
+      step_time = step_clock%get_elapsed_time()
       call logger%configure(level=saved_level)
+
+      ! Every evaluation is quantum chemistry, printed or not, so accumulate its
+      ! cost here. A printed step then reports the whole of it -- its own plus any
+      ! line-search probes since the last -- and the optimizer's share is what is
+      ! left of the wall-clock interval.
+      ctx_qc_accum = ctx_qc_accum + step_time
 
       if (.not. ctx_probing) ctx_n_evaluations = ctx_n_evaluations + 1
 
@@ -309,10 +345,22 @@ contains
       gradient = result%gradient
       ctx_last_gradient_max = maxval(abs(gradient))
 
+      ! One row of the step table, the same shape as the SCF and CCSD tables.
+      ! Probe evaluations do not print: they are not steps, and numbering them
+      ! would read as "step 0". The header is emitted once by the driver before
+      ! the engine starts (see optimize_geometry), the closing rule after it.
       if (.not. ctx_probing) then
-         call logger%info("  step "//to_char(ctx_n_evaluations)// &
-                          "  E = "//to_char(energy)// &
-                          "  |g|max = "//to_char(maxval(abs(gradient))))
+         now_wall = ctx_wall%get_elapsed_time()
+         qc_time = ctx_qc_accum
+         ! What the interval was not spent doing quantum chemistry, DL-FIND spent
+         ! on the step: the L-BFGS update, the coordinate transform, its own
+         ! bookkeeping. Floored at zero against timer granularity.
+         opt_time = max(0.0_dp, (now_wall - ctx_last_print_wall) - qc_time)
+         write (line, "(i8,f23.12,es14.3,f10.2,a,f10.2,a)") ctx_n_evaluations, energy, &
+            maxval(abs(gradient)), qc_time, " s", opt_time, " s"
+         call logger%info(trim(line))
+         ctx_last_print_wall = now_wall
+         ctx_qc_accum = 0.0_dp
       end if
 
    end subroutine evaluate_energy_gradient
@@ -727,6 +775,15 @@ contains
       call logger%info(" ")
       call logger%info("============================================")
       call logger%info("Geometry optimization")
+      ! The method and basis up front, at info: an optimization suppresses the
+      ! per-step single-point banner (it would print a hundred times), so without
+      ! this the only place the theory appears is the final single point at the
+      ! very end -- too late to notice a deck that asked for the wrong one.
+      call logger%info("  Method: "//trim(method_type_to_string(config%method_config%method_type)))
+      if (config%method_config%method_type /= METHOD_TYPE_GFN1 .and. &
+          config%method_config%method_type /= METHOD_TYPE_GFN2) then
+         call logger%info("  Basis set: "//trim(config%method_config%basis_set))
+      end if
       call logger%info("  Atoms: "//to_char(n_atoms))
       call logger%info("  Coordinates: "//coordinates_to_string(config%optimization%coordinates))
       call logger%info("  Algorithm: "//algorithm_to_string(config%optimization%algorithm))
