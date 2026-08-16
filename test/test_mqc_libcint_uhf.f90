@@ -20,7 +20,8 @@ module test_mqc_libcint_uhf
    use mqc_error, only: error_t
    use mqc_cgto, only: molecular_basis_type
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
+                              SCF_GUESS_CORE
    implicit none
    private
    public :: collect_mqc_libcint_uhf_tests
@@ -201,6 +202,21 @@ contains
       !! and starting at iteration one has to still find the wrong one --
       !! otherwise this passes for some unrelated reason and stops guarding
       !! the delay it exists for.
+      !!
+      !! **The second half names its guess, and that is load-bearing.** The
+      !! pathology needs a symmetric starting point, and the core guess is the
+      !! symmetric one -- `F = H` knows nothing about the electrons, so the pi
+      !! pair enters exactly degenerate and linear extrapolation cannot split
+      !! it. Wolfsberg-Helmholz enters already slightly split, and from there
+      !! even `diis_start=1` finds the ground state. That was discovered by
+      !! changing the default guess to GWH and watching this assertion fail:
+      !! both runs came back at -75.325108417965, the ground state, and the
+      !! test stopped guarding anything. Pinned to `core` it keeps demonstrating
+      !! the failure the delay exists to prevent.
+      !!
+      !! Worth stating plainly, because it is the more useful half of that
+      !! discovery: a starting guess does not only change how *fast* an SCF
+      !! converges, it changes *which solution* it finds.
       type(error_type), allocatable, intent(out) :: error
       type(libcint_molecule_t) :: mol
       type(error_t) :: err
@@ -221,7 +237,8 @@ contains
                  "the default DIIS delay must reach the pi-hole ground state")
       if (allocated(error)) return
 
-      call run_libcint_uhf(mol, 9, 2, 400, E_TOL, D_TOL, .false., bad, err, diis_start=1)
+      call run_libcint_uhf(mol, 9, 2, 400, E_TOL, D_TOL, .false., bad, err, &
+                           diis_start=1, guess=SCF_GUESS_CORE)
       call check(error, bad%converged, "extrapolating from the start still converges")
       if (allocated(error)) return
       call check(error, bad%energy > GROUND + 0.1_dp, &

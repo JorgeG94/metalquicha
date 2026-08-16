@@ -277,9 +277,29 @@ contains
          !! against PySCF, so it is what the direct build is checked against --
          !! not because anything should run with it. It is n^4 in memory.
       integer, intent(in), optional :: guess
-         !! One of SCF_GUESS_*. Defaults to the core guess, which is the only
-         !! one needing nothing but H -- the caller decides policy, because
-         !! `guess_density` has to be built before this routine is entered.
+         !! One of SCF_GUESS_*. Defaults to Wolfsberg-Helmholz, the best guess
+         !! that needs nothing but `H` and `S` -- superposition of atomic
+         !! densities is better still, and is what a deck gets, but
+         !! `guess_density` has to be built before this routine is entered and
+         !! so cannot be a default here.
+         !!
+         !! **It used to default to the core guess**, which is `F = H`: every
+         !! electron-electron term ignored, and the worst starting point
+         !! available. Iterations to 1e-12, measured:
+         !!
+         !!     HCN   STO-3G  B2GP-PLYP   core 15   gwh  9   sad 9
+         !!     H2O   cc-pVDZ B3LYP       core 11   gwh  9   sad 9
+         !!     NH3   cc-pVDZ PBE         core 12   gwh 10   sad 9
+         !!     CH4   cc-pVDZ HF          core 10   gwh 10   sad 8
+         !!
+         !! Never worse, occasionally much better, and free -- `H` and `S` are
+         !! both in hand before the first Fock build.
+         !!
+         !! This moves nothing a deck does: the driver resolves "auto" to SAD
+         !! and always passes it. What it moves is every *library* caller that
+         !! did not think about the guess -- the validation harnesses, SAPT, the
+         !! EFP potential, the projection code -- each of which was silently
+         !! taking the worst option.
       type(xc_context_t), intent(inout), optional :: xc
          !! Exchange-correlation. Present turns this into a Kohn-Sham SCF; absent
          !! leaves it Hartree-Fock. One argument rather than six, and one loop
@@ -332,7 +352,7 @@ contains
       if (present(diis_vectors)) diis_size = diis_vectors
       use_in_core = .false.
       if (present(in_core)) use_in_core = in_core
-      guess_kind = SCF_GUESS_CORE
+      guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
 
       n_ao = mol%nao
@@ -548,7 +568,8 @@ contains
       integer, intent(in), optional :: diis_start
          !! First iteration allowed to extrapolate. See the default below.
       integer, intent(in), optional :: guess
-         !! One of SCF_GUESS_*. Defaults to the core guess.
+         !! One of SCF_GUESS_*. Defaults to Wolfsberg-Helmholz, as the restricted
+         !! path does and for the same reason -- see the note there.
       type(xc_context_t), intent(inout), optional :: xc
          !! Exchange-correlation, spin-polarised. Present makes this an
          !! unrestricted Kohn-Sham SCF; absent leaves it unrestricted
@@ -591,7 +612,7 @@ contains
       if (present(diis_start)) start_cycle = diis_start
       use_in_core = .false.
       if (present(in_core)) use_in_core = in_core
-      guess_kind = SCF_GUESS_CORE
+      guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
 
       ! 2S+1 = n_alpha - n_beta + 1, so the unpaired count is multiplicity - 1.
