@@ -211,6 +211,16 @@ contains
          spec%component(1) = xc_component_t("mgga_x_m06_l", 1.0_dp)
          spec%component(2) = xc_component_t("mgga_c_m06_l", 1.0_dp)
 
+         ! BLYP, which libxc also leaves as two halves. Worth a row of its own
+         ! rather than leaving callers to spell both: it is B2PLYP's semilocal
+         ! part at full weight, so it is the functional a double hybrid's kernel
+         ! and gradient are checked against.
+      case ("blyp")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("gga_x_b88", 1.0_dp)
+         spec%component(2) = xc_component_t("gga_c_lyp", 1.0_dp)
+
          ! PBE is exchange plus correlation under one name libxc does not pair.
       case ("pbe")
          spec%from_libxc = .false.

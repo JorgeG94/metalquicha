@@ -21,10 +21,22 @@ program check_xc_kernel
    !! not positive definite. That is the wrong operator for those orbitals
    !! rather than a defect in anything being tested.
    !!
-   !! So the control is PySCF, which computes the same coupled-perturbed
-   !! Kohn-Sham polarizability, and the internal checks here are the ones that
-   !! hold regardless of reference: the tensor is symmetric, and it is positive
-   !! definite for a closed-shell molecule in its ground state.
+   !! So the control is PySCF, by a five-point finite field on its own converged
+   !! Kohn-Sham energy -- that install ships no analytic polarizability, which is
+   !! what makes it a control: it shares no response code with what is being
+   !! checked. The references below are those numbers, carried here rather than
+   !! left to be re-derived, so this file fails on its own rather than printing
+   !! something for a person to compare.
+   !!
+   !! `TOL` is set by the reference and not by us. A field of 0.002 with the SCF
+   !! at 1e-13 leaves a few times 1e-8 in the second difference, and the two
+   !! codes' grids are the same tables but not the same code -- so 1e-6 is
+   !! generous against agreement that is actually 1e-8 to 1e-7, and tight enough
+   !! that dropping any one kernel term fails it by orders of magnitude.
+   !!
+   !! The internal checks are the ones that hold regardless of reference: the
+   !! tensor is symmetric, and it is positive definite for a closed-shell
+   !! molecule in its ground state.
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
@@ -35,6 +47,7 @@ program check_xc_kernel
    implicit none
 
    integer, parameter :: N_DIM = 3
+   real(dp), parameter :: TOL = 1.0e-6_dp
    integer :: n_bad
 
    n_bad = 0
@@ -49,14 +62,39 @@ program check_xc_kernel
                    reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                             0.0_dp, -1.4308_dp, 1.1078_dp, &
                             0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
-                   "sto-3g", 10, "svwn", n_bad)
+                   "sto-3g", 10, "svwn", [0.039642427_dp, 4.803099589_dp, 2.173448652_dp], n_bad)
 
    ! Asymmetric, so a kernel wrong in a way symmetry hides shows up.
    call check_case("HCN / sto-3g, SVWN", [1, 6, 7], ["H", "C", "N"], &
                    reshape([0.0_dp, 0.0_dp, -2.0_dp, &
                             0.0_dp, 0.0_dp, 0.0_dp, &
                             0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
-                   "sto-3g", 14, "svwn", n_bad)
+                   "sto-3g", 14, "svwn", [2.914428518_dp, 2.914428566_dp, 11.424268862_dp], n_bad)
+
+   ! A pure GGA: no exact exchange at all, so the whole difference from the
+   ! Hartree-Fock operator is the kernel, and `v2rhosigma`, `v2sigma2` and the
+   ! `v_sigma grad drho` term have nothing to hide behind. This is the case
+   ! that fails if any one of the three is dropped.
+   call check_case("H2O / sto-3g, BLYP", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "sto-3g", 10, "blyp", [0.036895297_dp, 5.016091472_dp, 2.250961225_dp], n_bad)
+
+   ! A hybrid GGA, where the kernel and a scaled exact exchange have to be
+   ! right together: BLYP alone would not catch an `exx_fraction` applied twice
+   ! or not at all, because it is zero there.
+   call check_case("H2O / sto-3g, B3LYP", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "sto-3g", 10, "b3lyp", [0.038235630_dp, 5.031696862_dp, 2.207720164_dp], n_bad)
+
+   call check_case("HCN / sto-3g, BLYP", [1, 6, 7], ["H", "C", "N"], &
+                   reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                            0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                   "sto-3g", 14, "blyp", [2.947895687_dp, 2.947895687_dp, 11.622996848_dp], n_bad)
 
    write (*, "(a)") ""
    if (n_bad == 0) then
@@ -68,7 +106,8 @@ program check_xc_kernel
 
 contains
 
-   subroutine check_case(label, numbers, symbols, coords, basis, nelec, functional, n_bad)
+   subroutine check_case(label, numbers, symbols, coords, basis, nelec, functional, &
+                         reference, n_bad)
       character(len=*), intent(in) :: label
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -76,6 +115,9 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec
       character(len=*), intent(in) :: functional
+      real(dp), intent(in) :: reference(3)
+         !! PySCF's diagonal, by finite field. See the note at the top for why
+         !! that is the control and why the tolerance is what it is.
       integer, intent(inout) :: n_bad
 
       type(libcint_molecule_t) :: mol
@@ -105,10 +147,20 @@ contains
                                  xc=xc, density=scf%density)
       if (fail(error, n_bad)) return
 
-      write (*, "(a)") "  alpha (diagonal, Bohr^3) -- compare with PySCF:"
-      write (*, "(a,3f16.9)") "    ", (alpha_ks(k, k), k=1, 3)
+      write (*, "(a)") "  alpha (diagonal, Bohr^3)"
+      write (*, "(a,3f16.9)") "    mine      ", (alpha_ks(k, k), k=1, 3)
+      write (*, "(a,3f16.9)") "    PySCF     ", reference
+      write (*, "(a,3es16.3)") "    diff      ", (alpha_ks(k, k) - reference(k), k=1, 3)
       write (*, "(a,3f16.9)") "    off-diag yz: ", alpha_ks(2, 3)
       flush (output_unit)
+
+      do k = 1, 3
+         if (abs(alpha_ks(k, k) - reference(k)) > TOL) then
+            write (*, "(a,i0,a,es14.4)") "  FAIL: alpha(", k, ") differs from PySCF by ", &
+               alpha_ks(k, k) - reference(k)
+            n_bad = n_bad + 1
+         end if
+      end do
 
       ! Positive definite for a closed-shell ground state, whatever the
       ! reference. A kernel with the wrong sign shows up here first.

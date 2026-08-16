@@ -43,7 +43,7 @@ module mqc_libcint_xc
                            xc_f03_hyb_cam_coef, xc_f03_nlc_coef, &
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
                            xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
-                           xc_f03_lda_fxc, &
+                           xc_f03_lda_fxc, xc_f03_gga_fxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
                            XC_UNPOLARIZED, XC_POLARIZED, &
                            XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
@@ -986,12 +986,25 @@ contains
       !! exchange came from. Written as a fourth case beside them it would have
       !! to be written three times over.
       !!
-      !! **LDA only, and refused otherwise.** A GGA kernel brings
-      !! `v2rhosigma` and `v2sigma2` and a gradient-of-the-response-density
-      !! term; meta-GGA adds tau on top. Those are real work rather than more
-      !! of this one, and returning an LDA kernel for a GGA would be a
-      !! converged, plausible, wrong response -- the failure mode this file
-      !! has hit twice already.
+      !! **LDA and GGA; meta-GGA is refused.** For a GGA the response density
+      !! has a gradient too, and both of the potential's pieces respond:
+      !!
+      !!     dv_rho  = f_rr drho + f_rs dsigma
+      !!     dv_grad = 2 (f_rs drho + f_ss dsigma) grad rho + 2 v_sigma grad drho
+      !!     dsigma  = 2 grad rho . grad drho
+      !!
+      !! which is the same pair of coefficients `accumulate_xc_matrix` already
+      !! turns into a matrix for the potential -- so the kernel is a different
+      !! `vrho` and `grad_coeff`, not a different assembly. The last term is the
+      !! one with no analogue in the LDA case and the one a first attempt drops:
+      !! `v_sigma` is a *first* derivative, and it enters the kernel because the
+      !! response density's gradient multiplies it.
+      !!
+      !! A meta-GGA adds `v2tau2`, `v2rhotau` and `v2sigmatau`, and a tau
+      !! component of the response density on top. That is real work rather than
+      !! more of this one, and returning a GGA kernel for a meta-GGA would be a
+      !! converged, plausible, wrong response -- the failure mode this file has
+      !! hit twice already.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)   !! The converged SCF density
@@ -1010,17 +1023,22 @@ contains
       !> never see this because `vrho` and `exc` stay finite where `v2rho2` does
       !> not.
       real(dp), parameter :: RHO_FLOOR = 1.0e-10_dp
-      real(dp), allocatable :: ao(:, :), rho(:), drho(:), v2(:), v2_i(:)
-      real(dp), allocatable :: scaled(:, :)
-      integer :: g0, g1, nb, i, ig, mu, npts
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho(:), rho_grad(:, :), drho(:), drho_grad(:, :)
+      real(dp), allocatable :: sigma(:), dsigma(:)
+      real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
+      real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
+      real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
+      real(dp), allocatable :: c_rho(:), c_grad(:, :), no_tau(:)
+      integer :: g0, g1, nb, i, ig, id, npts
+      logical :: gga
 
       if (.not. ctx%active) return
-      if (ctx%any_gga .or. ctx%any_mgga) then
-         call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is "// &
-                        "implemented for LDA functionals only: a GGA brings "// &
-                        "v2rhosigma and v2sigma2 and a gradient term on the response "// &
-                        "density, and a meta-GGA adds tau. Refused rather than "// &
-                        "approximated by the LDA part.")
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is not "// &
+                        "implemented for meta-GGA functionals: they bring second "// &
+                        "derivatives in tau and a tau component of the response "// &
+                        "density. Refused rather than approximated by the GGA part.")
          return
       end if
       if (ctx%polarized) then
@@ -1029,42 +1047,103 @@ contains
          return
       end if
 
+      gga = ctx%any_gga
       npts = ctx%grid%n_points
       do g0 = 1, npts, AO_POINT_BLOCK
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
          nb = g1 - g0 + 1
 
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
-         if (error%has_error()) return
-
          ! The reference density is what `f_xc` is evaluated at; the response
          ! density is what it multiplies. Both are ordinary densities on the
-         ! grid, so one routine builds them.
-         call eval_rho(ao, density, rho)
-         call eval_rho(ao, dtilde, drho)
+         ! grid, so one routine builds them -- and for a GGA both need their
+         ! gradients, which is the only reason the AO gradients are asked for.
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
+            call eval_rho(ao, dtilde, drho, ao_grad=ao_grad, rho_grad=drho_grad)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho)
+            call eval_rho(ao, dtilde, drho)
+         end if
 
-         if (allocated(v2)) deallocate (v2, v2_i)
-         allocate (v2(nb), v2_i(nb))
-         v2 = 0.0_dp
-         do i = 1, ctx%n_func
-            v2_i = 0.0_dp
-            call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, v2_i)
-            v2 = v2 + ctx%weight(i)*v2_i
-         end do
-         do ig = 1, nb
-            if (rho(ig) < RHO_FLOOR) v2(ig) = 0.0_dp
-         end do
-
-         ! V_uv += sum_g w(g) f_xc(g) drho(g) chi_u(g) chi_v(g), as one gemm
-         ! over the point index rather than a loop over pairs.
-         if (allocated(scaled)) deallocate (scaled)
-         allocate (scaled(nb, size(ao, 2)))
-         do mu = 1, size(ao, 2)
+         if (allocated(frr)) deallocate (frr, frs, fss, vsig, frr_i, frs_i, fss_i, &
+                                         exc_i, vrho_i, vsigma_i, sigma, dsigma, c_rho)
+         allocate (frr(nb), frs(nb), fss(nb), vsig(nb), frr_i(nb), frs_i(nb), fss_i(nb), &
+                   exc_i(nb), vrho_i(nb), vsigma_i(nb), sigma(nb), dsigma(nb), c_rho(nb))
+         frr = 0.0_dp
+         frs = 0.0_dp
+         fss = 0.0_dp
+         vsig = 0.0_dp
+         ! Zero rather than left alone on the LDA path: their coefficients are
+         ! zero there, and `0 * uninitialised` is a NaN rather than nothing.
+         sigma = 0.0_dp
+         dsigma = 0.0_dp
+         if (gga) then
             do ig = 1, nb
-               scaled(ig, mu) = ctx%grid%weights(g0 + ig - 1)*v2(ig)*drho(ig)*ao(ig, mu)
+               sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
+               dsigma(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_grad(ig, 1) &
+                                    + rho_grad(ig, 2)*drho_grad(ig, 2) &
+                                    + rho_grad(ig, 3)*drho_grad(ig, 3))
             end do
+         end if
+
+         ! Per component, as everywhere else here: a composition may put an LDA
+         ! correlation beside a GGA exchange, and `any_gga` only says that at
+         ! least one of them needs sigma.
+         do i = 1, ctx%n_func
+            select case (ctx%family(i))
+            case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+               call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                   frr_i, frs_i, fss_i)
+               ! `v_sigma` is a first derivative and comes from the ordinary
+               ! evaluator. It belongs here because the *response* density's
+               ! gradient multiplies it -- the one kernel term that is not a
+               ! second derivative.
+               call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                       exc_i, vrho_i, vsigma_i)
+               frr = frr + ctx%weight(i)*frr_i
+               frs = frs + ctx%weight(i)*frs_i
+               fss = fss + ctx%weight(i)*fss_i
+               vsig = vsig + ctx%weight(i)*vsigma_i
+            case default
+               call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, frr_i)
+               frr = frr + ctx%weight(i)*frr_i
+            end select
          end do
-         call pic_gemm(ao, scaled, v_kernel, transa="T", alpha=1.0_dp, beta=1.0_dp)
+
+         do ig = 1, nb
+            if (rho(ig) < RHO_FLOOR) then
+               frr(ig) = 0.0_dp
+               frs(ig) = 0.0_dp
+               fss(ig) = 0.0_dp
+               vsig(ig) = 0.0_dp
+            end if
+         end do
+
+         do ig = 1, nb
+            c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig)
+         end do
+         if (gga) then
+            if (allocated(c_grad)) deallocate (c_grad)
+            allocate (c_grad(nb, 3))
+            do id = 1, 3
+               do ig = 1, nb
+                  c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig)) &
+                                   *rho_grad(ig, id) &
+                                   + 2.0_dp*vsig(ig)*drho_grad(ig, id)
+               end do
+            end do
+         end if
+
+         ! The same assembly the potential uses, with the kernel's coefficients
+         ! in place of the potential's. Writing a second one would be two copies
+         ! of the arithmetic that is hardest to get right here.
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_kernel, &
+                                   ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
+                                   any_gga=gga, any_mgga=.false.)
       end do
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
