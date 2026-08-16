@@ -29,9 +29,7 @@ module mqc_capi_charges
    use mqc_capi_system, only: system_handle_t, last_message, MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    use mqc_error, only: error_t
    use mqc_elements, only: element_number_to_symbol
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_bridge, only: run_libcint_charges
    implicit none
    private
 
@@ -40,10 +38,6 @@ module mqc_capi_charges
    public :: mqc_system_charge_on
    public :: mqc_system_has_charges
    public :: mqc_system_charge_scheme
-
-   integer, parameter :: SCF_MAX_ITER = 100
-   real(dp), parameter :: SCF_ENERGY_TOL = 1.0e-9_dp
-   real(dp), parameter :: SCF_DENSITY_TOL = 1.0e-7_dp
 
 contains
 
@@ -68,13 +62,11 @@ contains
       integer(c_int) :: status
 
       type(system_handle_t), pointer :: h
-      type(libcint_molecule_t) :: mol
-      type(rhf_result_t) :: scf
       type(error_t) :: error
-      real(dp), allocatable :: overlap(:, :), q(:)
+      real(dp), allocatable :: q(:)
       character(len=2), allocatable :: symbols(:)
       character(len=:), allocatable :: which, basis_name
-      integer :: i, n, nelec
+      integer :: i, n
 
       status = MQC_BAD_HANDLE
       if (.not. c_associated(handle)) then
@@ -102,40 +94,16 @@ contains
       end if
 
       n = h%geom%total_atoms
-      nelec = sum(h%geom%element_numbers) - h%geom%charge
-      if (mod(nelec, 2) /= 0) then
-         last_message = "mqc_system_compute_charges: this is a closed-shell RHF and the "// &
-                        "system has an odd number of electrons"
-         status = MQC_FAIL
-         return
-      end if
-
       allocate (symbols(n))
       do i = 1, n
          symbols(i) = element_number_to_symbol(h%geom%element_numbers(i))
       end do
 
-      call build_libcint_molecule(h%geom%element_numbers, symbols, h%geom%coordinates, &
-                                  basis_name, mol, error)
-      if (failed(error, status)) return
-
-      call run_libcint_rhf(mol, nelec, SCF_MAX_ITER, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
-                           .false., scf, error)
-      if (failed(error, status)) return
-      if (.not. scf%converged) then
-         last_message = "mqc_system_compute_charges: the SCF did not converge, so there "// &
-                        "is no density to partition"
-         status = MQC_FAIL
-         return
-      end if
-
-      if (which == "mulliken") then
-         call mol%overlap(overlap)
-         call mulliken_charges(mol, scf%density, overlap, q, error)
-      else
-         call chelpg_charges(mol, scf%density, q, error, &
-                             total_charge=real(h%geom%charge, dp))
-      end if
+      ! Through the bridge, not into the backend. The odd-electron refusal and
+      ! the SCF live on the other side of it now, so this reports rather than
+      ! decides.
+      call run_libcint_charges(h%geom%element_numbers, symbols, h%geom%coordinates, &
+                               basis_name, which, h%geom%charge, q, error)
       if (failed(error, status)) return
 
       if (allocated(h%charges)) deallocate (h%charges)
