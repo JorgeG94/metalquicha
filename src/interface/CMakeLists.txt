@@ -3,6 +3,7 @@ target_sources(
   PRIVATE mqc_fraglist.f90
           mqc_capi_fraglist.f90
           mqc_capi_system.f90
+          mqc_capi_bond_orders.F90
           mqc_validate.f90
           mqc_session.f90
           mqc_capi_session.f90

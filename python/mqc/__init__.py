@@ -256,6 +256,58 @@ class System:
 
     # -- state --------------------------------------------------------------
 
+    def compute_bond_orders(self, variant="gfn2", accuracy=0.0):
+        """Run one xTB single point and keep its Wiberg-Mayer bond orders.
+
+        Over the whole system, not the monomers: the point of these is to
+        decide where the monomers should be, so a partition cannot be an
+        input. Computed once and read many times -- a caller trying twenty
+        trial fragmentations does not want twenty xTB calculations.
+
+        `variant` is "gfn2" or "gfn1"; `accuracy` <= 0 takes tblite's default.
+        """
+        name = variant.encode("utf-8")
+        _check(
+            _ffi.system_compute_bond_orders(
+                self._handle, len(name), name, float(accuracy)
+            ),
+            _ffi.system_last_error,
+        )
+        return self
+
+    @property
+    def has_bond_orders(self):
+        """Whether `compute_bond_orders` has run on this system."""
+        return bool(_ffi.system_has_bond_orders(self._handle))
+
+    def bond_orders(self):
+        """The full matrix, as a list of rows.
+
+        Symmetric, zero on the diagonal. A real single bond comes back near
+        one and a hydrogen bond near a few hundredths, which is the separation
+        a distance criterion cannot make.
+        """
+        n = self.n_atoms
+        buf = (_ffi._c_double * max(n * n, 1))()
+        _check(
+            _ffi.system_get_bond_orders(self._handle, n, buf),
+            _ffi.system_last_error,
+        )
+        # Column-major out of Fortran, and symmetric, so either reading gives
+        # the same answer -- built row-wise here because that is what a caller
+        # indexing [i][j] expects.
+        return [[buf[j * n + i] for j in range(n)] for i in range(n)]
+
+    def bond_order(self, i, j):
+        """One pair, 0-based. Raises if the orders have not been computed."""
+        value = float(_ffi.system_bond_order(self._handle, int(i), int(j)))
+        if value < 0.0:
+            raise MQCError(
+                "bond order unavailable: compute_bond_orders() first, "
+                "and check the atom indices are in range"
+            )
+        return value
+
     @property
     def n_atoms(self):
         return int(_ffi.system_n_atoms(self._handle))
