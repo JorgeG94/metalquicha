@@ -19,7 +19,8 @@ module mqc_physical_fragment
    public :: physical_fragment_t         !! Single molecular fragment type
    public :: system_geometry_t          !! Complete system geometry type
    public :: initialize_system_geometry  !! System geometry initialization
-   public :: build_fragment_from_indices  !! Extract fragment from system
+   public :: build_fragment_from_indices
+   public :: build_fragment_with_ghosts  !! Extract fragment from system
    public :: fragment_charge_multiplicity  !! Charge/multiplicity a set of monomers forms
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
@@ -384,6 +385,80 @@ contains
       deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
+
+   subroutine build_fragment_with_ghosts(sys_geom, signed_indices, fragment, error, bonds)
+      !! Build a fragment where some monomers contribute basis functions only
+      !!
+      !! `signed_indices` carries the sign as the distinction: a positive entry
+      !! is a real monomer, a negative one is present as ghost centres. The
+      !! geometry is the union either way, which is exactly what a
+      !! counterpoise-corrected term needs -- monomer A computed in the basis of
+      !! the pair AB, so that the superposition error inflating AB appears on
+      !! both sides of the difference and cancels.
+      !!
+      !! The sign rather than a second array because the index vector is what
+      !! already crosses the wire, and its length is already sent. A separate
+      !! ghost mask would mean a sixth message in a five-message payload whose
+      !! correctness rests on per-source ordering -- a change that deadlocks
+      !! rather than fails if it is applied to the sender and not the receiver.
+      !!
+      !! All-positive input is exactly `build_fragment_from_indices`, which is
+      !! what every task that exists today sends.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: signed_indices(:)
+      type(physical_fragment_t), intent(out) :: fragment
+      type(error_t), intent(out) :: error
+      type(bond_t), intent(in), optional :: bonds(:)
+
+      integer, allocatable :: union_indices(:), real_indices(:)
+      integer :: i, j, n_real, first, n_here
+
+      allocate (union_indices(size(signed_indices)))
+      union_indices = abs(signed_indices)
+
+      call build_fragment_from_indices(sys_geom, union_indices, fragment, error, bonds)
+      if (error%has_error()) return
+
+      n_real = count(signed_indices > 0)
+      if (n_real == size(signed_indices)) return   ! nothing ghosted
+
+      ! Mark the ghosted monomers' atoms. `build_fragment_from_indices` lays the
+      ! atoms out monomer by monomer in the order given, and appends any caps at
+      ! the end, so walking the same order finds them. Caps stay real: a cap
+      ! stands in for a bond this fragment cut, which is a property of the
+      ! fragment rather than of the monomer it replaces.
+      allocate (fragment%is_ghost(fragment%n_atoms))
+      fragment%is_ghost = .false.
+      first = 1
+      do i = 1, size(signed_indices)
+         if (allocated(sys_geom%fragment_atoms)) then
+            n_here = sys_geom%fragment_sizes(union_indices(i))
+         else
+            n_here = sys_geom%atoms_per_monomer
+         end if
+         if (signed_indices(i) < 0) then
+            do j = first, first + n_here - 1
+               fragment%is_ghost(j) = .true.
+            end do
+         end if
+         first = first + n_here
+      end do
+
+      ! Charge and multiplicity belong to the real monomers alone -- a ghost has
+      ! no charge to contribute and no electrons to pair. Recomputed rather than
+      ! adjusted, so the rule stays in one place.
+      allocate (real_indices(n_real))
+      j = 0
+      do i = 1, size(signed_indices)
+         if (signed_indices(i) > 0) then
+            j = j + 1
+            real_indices(j) = signed_indices(i)
+         end if
+      end do
+      call fragment_charge_multiplicity(sys_geom, real_indices, &
+                                        fragment%charge, fragment%multiplicity)
+      call fragment%compute_nelec()
+   end subroutine build_fragment_with_ghosts
 
    pure subroutine fragment_charge_multiplicity(sys_geom, monomer_indices, charge, multiplicity)
       !! Total charge and spin multiplicity of the fragment these monomers form
@@ -769,7 +844,14 @@ contains
       class(physical_fragment_t), intent(inout) :: this
       integer :: nuclear_charge
 
-      nuclear_charge = sum(this%element_numbers)
+      ! Ghost centres carry basis functions and no nucleus, so they contribute
+      ! no electrons either. Counted here rather than at each call site, since
+      ! this is the only place the number is formed.
+      if (allocated(this%is_ghost)) then
+         nuclear_charge = sum(this%element_numbers, mask=.not. this%is_ghost)
+      else
+         nuclear_charge = sum(this%element_numbers)
+      end if
       this%nelec = nuclear_charge - this%charge
    end subroutine fragment_compute_nelec
 

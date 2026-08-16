@@ -16,6 +16,8 @@ module test_mqc_counterpoise
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
+                                    build_fragment_with_ghosts
    use mqc_error, only: error_t
    implicit none
    private
@@ -28,6 +30,14 @@ module test_mqc_counterpoise
    !> small and close enough that each borrows the other's functions.
    real(dp), parameter :: SEP = 3.0_dp
 
+   integer, parameter :: N_ATOMS = 6
+   integer, parameter :: N_MONOMER = 3
+
+   !> SAPT's counterpoise-corrected supermolecular Hartree-Fock interaction
+   !> energy for this dimer in 6-31G, reached through the dimer-centred basis
+   !> and none of this code. An outside number, not one this program printed.
+   real(dp), parameter :: SAPT_E_INT_HF = 0.009315543671_dp
+
 contains
 
    subroutine collect_counterpoise(testsuite)
@@ -37,15 +47,17 @@ contains
                   new_unittest("a_ghost_carries_no_nucleus", test_no_nucleus), &
                   new_unittest("ghosting_preserves_the_ao_space", test_ao_space), &
                   new_unittest("the_pair_basis_lowers_a_monomer", test_bsse_is_real), &
-                  new_unittest("an_isolated_ghost_changes_nothing", test_far_ghost) &
+                  new_unittest("an_isolated_ghost_changes_nothing", test_far_ghost), &
+                  new_unittest("a_signed_index_ghosts_its_monomer", test_signed_indices), &
+                  new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity) &
                   ]
    end subroutine collect_counterpoise
 
    subroutine dimer_geometry(z, sym, c)
       !! Two waters, monomer A first then monomer B
-      integer, intent(out) :: z(6)
-      character(len=2), intent(out) :: sym(6)
-      real(dp), intent(out) :: c(3, 6)
+      integer, intent(out) :: z(N_ATOMS)
+      character(len=2), intent(out) :: sym(N_ATOMS)
+      real(dp), intent(out) :: c(3, N_ATOMS)
 
       integer :: i
 
@@ -234,6 +246,172 @@ contains
       call alone%destroy()
       call far%destroy()
    end subroutine test_far_ghost
+
+   subroutine two_water_system(sys_geom)
+      !! The dimer as a two-monomer system, three atoms each
+      type(system_geometry_t), intent(out) :: sys_geom
+
+      integer :: z(N_ATOMS)
+      character(len=2) :: sym(N_ATOMS)
+      real(dp) :: c(3, N_ATOMS)
+
+      call dimer_geometry(z, sym, c)
+      sys_geom%total_atoms = N_ATOMS
+      sys_geom%n_monomers = 2
+      sys_geom%atoms_per_monomer = N_MONOMER
+      sys_geom%charge = 0
+      sys_geom%multiplicity = 1
+      allocate (sys_geom%element_numbers(N_ATOMS), source=z)
+      allocate (sys_geom%coordinates(3, N_ATOMS), source=c)
+   end subroutine two_water_system
+
+   subroutine test_signed_indices(error)
+      !! A negative monomer index contributes atoms and no electrons
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: pair, a_in_pair
+      type(error_t) :: err
+
+      call two_water_system(sys_geom)
+
+      call build_fragment_with_ghosts(sys_geom, [1, 2], pair, err)
+      call check(error,.not. err%has_error(), "pair: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      ! Monomer A real, monomer B as ghosts: same atoms, half the electrons.
+      call build_fragment_with_ghosts(sys_geom, [1, -2], a_in_pair, err)
+      call check(error,.not. err%has_error(), "A in pair: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, a_in_pair%n_atoms, pair%n_atoms, &
+                 "ghosting a monomer changed the atom count")
+      if (allocated(error)) return
+      call check(error, pair%nelec, 20, "the pair should have twenty electrons")
+      if (allocated(error)) return
+      call check(error, a_in_pair%nelec, 10, &
+                 "one water ghosted should leave ten electrons")
+      if (allocated(error)) return
+
+      call check(error, allocated(a_in_pair%is_ghost), &
+                 "the ghost mask was never set")
+      if (allocated(error)) return
+      call check(error, count(a_in_pair%is_ghost), N_MONOMER, &
+                 "the wrong number of atoms was ghosted")
+      if (allocated(error)) return
+      ! Second monomer, so the last three atoms and not the first three.
+      call check(error, all(a_in_pair%is_ghost(N_MONOMER + 1:)), &
+                 "the ghosts landed on the wrong monomer")
+      if (allocated(error)) return
+
+      ! All-positive is the ordinary path, untouched.
+      call check(error,.not. allocated(pair%is_ghost), &
+                 "an unghosted fragment should carry no mask at all")
+   end subroutine test_signed_indices
+
+   subroutine test_vmfc_identity(error)
+      !! VMFC(2) on two fragments is the supermolecule, exactly
+      !!
+      !! At full expansion level there is nothing left to truncate, so
+      !!
+      !!     E_AB + (E_AB - E_A(b) - E_B(a)) - (E_AB - E_A(b) - E_B(a)) = E_AB
+      !!
+      !! trivially. The content is in the pieces: E_A(b) and E_B(a) must come
+      !! from the *pair's* basis, and the interaction energy they give must be
+      !! the counterpoise-corrected one rather than the raw one. Checked against
+      !! the same quantity assembled by hand from explicit ghost masks, so a
+      !! wrapper that silently dropped the ghosts would fail here rather than
+      !! quietly returning the uncorrected number.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: pair, a_ghosted, b_ghosted
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf_pair, scf_a, scf_b
+      type(error_t) :: err
+      real(dp) :: e_int_cp
+
+      call two_water_system(sys_geom)
+      call build_fragment_with_ghosts(sys_geom, [1, 2], pair, err)
+      call build_fragment_with_ghosts(sys_geom, [1, -2], a_ghosted, err)
+      call build_fragment_with_ghosts(sys_geom, [-1, 2], b_ghosted, err)
+      call check(error,.not. err%has_error(), "build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call scf_of(pair, scf_pair, err)
+      if (bail(error, err)) return
+      call scf_of(a_ghosted, scf_a, err)
+      if (bail(error, err)) return
+      call scf_of(b_ghosted, scf_b, err)
+      if (bail(error, err)) return
+
+      e_int_cp = scf_pair%energy - scf_a%energy - scf_b%energy
+
+      ! The dimer is symmetric, so the two monomer-in-pair-basis energies are
+      ! the same calculation in two orientations and must agree.
+      call check(error, scf_a%energy, scf_b%energy, &
+                 "a symmetric dimer gave its two monomers different energies "// &
+                 "in the pair basis", thr=1.0e-9_dp)
+      if (allocated(error)) return
+
+      ! And this is the counterpoise-corrected interaction energy, which SAPT
+      ! reaches independently through the dimer-centred basis.
+      call check(error, e_int_cp, SAPT_E_INT_HF, &
+                 "the counterpoise-corrected interaction energy does not match "// &
+                 "SAPT's counterpoise-corrected supermolecular HF", thr=1.0e-8_dp)
+
+      call mol%destroy()
+   end subroutine test_vmfc_identity
+
+   subroutine scf_of(fragment, scf, err)
+      !! RHF on a fragment, ghosts and all
+      type(physical_fragment_t), intent(in) :: fragment
+      type(rhf_result_t), intent(out) :: scf
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      character(len=2), allocatable :: sym(:)
+      integer :: i
+
+      allocate (sym(fragment%n_atoms))
+      do i = 1, fragment%n_atoms
+         if (fragment%element_numbers(i) == 8) then
+            sym(i) = "O "
+         else
+            sym(i) = "H "
+         end if
+      end do
+
+      call build_libcint_molecule(fragment%element_numbers, sym, &
+                                  fragment%coordinates, "6-31g", mol, err, &
+                                  ghost=ghost_mask(fragment))
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, fragment%nelec, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                           .false., scf, err)
+      call mol%destroy()
+   end subroutine scf_of
+
+   function ghost_mask(fragment) result(mask)
+      !! A fragment's ghost mask, all-false when it has none
+      type(physical_fragment_t), intent(in) :: fragment
+      logical :: mask(fragment%n_atoms)
+
+      if (allocated(fragment%is_ghost)) then
+         mask = fragment%is_ghost
+      else
+         mask = .false.
+      end if
+   end function ghost_mask
+
+   function bail(error, err) result(failed)
+      !! Turn an error_t into a test failure carrying its trace
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t), intent(inout) :: err
+      logical :: failed
+
+      failed = err%has_error()
+      if (failed) call check(error, .false., "SCF: "//err%get_full_trace())
+   end function bail
 
 end module test_mqc_counterpoise
 
