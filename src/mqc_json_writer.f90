@@ -116,6 +116,8 @@ contains
 
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
 
+      call write_sapt_section(json, main_obj, data)
+
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
       ! without a meaning.
@@ -601,5 +603,29 @@ contains
       call logger%info("Vibrational/thermochemistry JSON written successfully to "//trim(output_file))
 
    end subroutine write_vibrational_json_impl
+
+   subroutine write_sapt_section(json, parent, data)
+      !! The decomposition, under `sapt`, when there is one
+      !!
+      !! Named rather than a bare array: the order is fixed in
+      !! `SAPT_TERM_NAMES` and nothing downstream should have to know it.
+      use mqc_program_limits, only: N_SAPT_TERMS, SAPT_TERM_NAMES
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: sapt_obj
+      integer :: i
+
+      if (.not. data%has_sapt) return
+      if (.not. allocated(data%sapt_terms)) return
+      if (size(data%sapt_terms) /= N_SAPT_TERMS) return
+
+      call json%create_object(sapt_obj, "sapt")
+      call json%add(parent, sapt_obj)
+      do i = 1, N_SAPT_TERMS
+         call json%add(sapt_obj, trim(SAPT_TERM_NAMES(i)), data%sapt_terms(i))
+      end do
+   end subroutine write_sapt_section
 
 end module mqc_json_writer

@@ -20,6 +20,26 @@ module mqc_program_limits
    !> that stands in for it must agree, and only one of those is compiled with
    !> the backend present.
    integer, parameter, public :: N_EFP_TERMS = 6
+   !> Terms a SAPT0 interaction energy is reported as: electrostatics, exchange,
+   !> induction, exchange-induction, dispersion, exchange-dispersion, the
+   !> delta-HF correction, the supermolecular HF reference, and the total. Here
+   !> rather than beside the SAPT code because the real CPU bridge and the stub
+   !> standing in for it must agree, and only one is compiled with the backend.
+   integer, parameter, public :: N_SAPT_TERMS = 12
+
+   !> The slot each SAPT term occupies, and the name it is written out under.
+   !> Both sides of the backend gate index this array, and so does the JSON
+   !> writer, so the order is fixed in exactly one place. The names are the
+   !> literature's rather than the console's prose, because their reason to
+   !> exist is being compared against another code's output.
+   !>
+   !> `_u` is uncoupled and `_r` is response (coupled); `_s2` is the single
+   !> exchange approximation against the full `S^inf`. A code that reports only
+   !> one of each pair cannot be checked against one that reports the other.
+   character(len=*), parameter, public :: SAPT_TERM_NAMES(N_SAPT_TERMS) = &
+                                          [character(len=12) :: "elst10", "exch10_s2", "exch10", &
+                                                                 "ind20_u", "ind20_r", "exch_ind20_u", "exch_ind20_r", &
+                                                              "disp20", "exch_disp20", "delta_hf", "e_int_hf_cp", "total"]
 
    !> Group-global result batching size for MPI MBE (multi-global coordinator)
    integer, parameter, public :: GROUP_RESULT_BATCH_SIZE = 256

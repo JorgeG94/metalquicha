@@ -83,6 +83,14 @@ module mqc_json_output_types
       real(dp), allocatable :: pie_energies(:)        !! Per-term energies
       integer(int64) :: n_pie_terms = 0
 
+      !! ---- SAPT ----
+      !! An interaction energy decomposed, ordered by `SAPT_TERM_NAMES`. The
+      !! total also goes to `total_energy` like any other method's, but on its
+      !! own it is the one number a supermolecular calculation would also give;
+      !! the decomposition is what the method was run for.
+      real(dp), allocatable :: sapt_terms(:)
+      logical :: has_sapt = .false.
+
    contains
       procedure :: destroy => json_output_data_destroy
       procedure :: reset => json_output_data_reset
@@ -118,6 +126,7 @@ contains
       if (allocated(this%pie_atom_sets)) deallocate (this%pie_atom_sets)
       if (allocated(this%pie_coefficients)) deallocate (this%pie_coefficients)
       if (allocated(this%pie_energies)) deallocate (this%pie_energies)
+      if (allocated(this%sapt_terms)) deallocate (this%sapt_terms)
 
       call this%reset()
    end subroutine json_output_data_destroy
@@ -137,6 +146,7 @@ contains
       this%fragment_count = 0
       this%max_level = 0
       this%n_pie_terms = 0
+      this%has_sapt = .false.
    end subroutine json_output_data_reset
 
 end module mqc_json_output_types

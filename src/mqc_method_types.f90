@@ -16,6 +16,8 @@ module mqc_method_types
    public :: METHOD_TYPE_MCSCF
    ! Public constants - Classical, solving no wavefunction of its own
    public :: METHOD_TYPE_EFP2
+   ! Public constants - Interaction energies, decomposed
+   public :: METHOD_TYPE_SAPT0
    ! Public constants - Correlation methods
    public :: METHOD_TYPE_MP2, METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T
    public :: METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12
@@ -56,6 +58,14 @@ module mqc_method_types
    integer(int32), parameter :: METHOD_TYPE_CCSD_T = 41      !! CCSD(T)
    integer(int32), parameter :: METHOD_TYPE_CCSD_F12 = 42
    integer(int32), parameter :: METHOD_TYPE_CCSD_T_F12 = 43  !! CCSD(T)-F12
+
+   !> Interaction energies that come out decomposed (60-69). Unlike the entries
+   !> above, these do not return the energy of *a* system: they return the
+   !> interaction between two of them, broken into named physical terms.
+   !>
+   !> 60 is EFP2 on `feat/efp-efp`; SAPT0 takes 61 so the two branches can merge
+   !> without either constant moving.
+   integer(int32), parameter :: METHOD_TYPE_SAPT0 = 61
 
 contains
 
@@ -121,6 +131,10 @@ contains
          ! here, and spelling it out is what a deck written for another program does.
       case ("efp2", "efp")
          method_type = METHOD_TYPE_EFP2
+         ! Interaction energies. "sapt" alone means SAPT0: it is the only order
+         ! implemented, and higher ones need monomer correlation.
+      case ("sapt0", "sapt")
+         method_type = METHOD_TYPE_SAPT0
 
          ! Perturbation theory
       case ("mp2", "ri-mp2", "df-mp2", "scs-mp2", "sos-mp2")
@@ -171,6 +185,9 @@ contains
          ! Effective fragment potentials
       case (METHOD_TYPE_EFP2)
          method_str = "efp2"
+         ! Interaction energies
+      case (METHOD_TYPE_SAPT0)
+         method_str = "sapt0"
 
          ! Perturbation theory
       case (METHOD_TYPE_MP2)

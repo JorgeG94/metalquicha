@@ -1,0 +1,2454 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>run_sapt &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>run_sapt
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.5% of total for procedures.">74 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_driver.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_driver.f90.html'>mqc_driver.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
+            <li class="breadcrumb-item active" aria-current="page">run_sapt</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-a~6">a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-err">err</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-i~115">i</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-json_data~22">json_data</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-na~3">na</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-nb">nb</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-sym_a">sym_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-sym_b">sym_b</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-terms~13">terms</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-xyz_a">xyz_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-xyz_b">xyz_b</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-z_a">z_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-z_b">z_b</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/run_sapt.html#src">run_sapt</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine run_sapt(config, sys_geom, rank, result_out)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_sapt~~UsesGraph Pages: 1 -->
+<svg id="procrun_saptUsesGraph" width="641pt" height="352pt"
+ viewBox="0.00 0.00 641.00 351.98" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_sapt~~UsesGraph" class="graph" transform="scale(0.5 0.5) rotate(0) translate(4 706)">
+<title>proc~~run_sapt~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-706 1289,-706 1289,4 -4,4"/>
+<!-- proc~run_sapt -->
+<g id="proc~~run_sapt~~UsesGraph_node1" class="node">
+<title>proc~run_sapt</title>
+<polygon fill="none" stroke="black" points="1285,-496 1227,-496 1227,-472 1285,-472 1285,-496"/>
+<text text-anchor="middle" x="1256" y="-481.6" font-family="Helvetica,sans-Serif" font-size="10.50">run_sapt</text>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~run_sapt~~UsesGraph_node2" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node2"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-538 256,-538 256,-514 347,-514 347,-538"/>
+<text text-anchor="middle" x="301.5" y="-523.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;module~mqc_elements -->
+<g id="proc~~run_sapt~~UsesGraph_edge1" class="edge">
+<title>proc~run_sapt&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1133.5,-564C999.23,-590.65 962.14,-572.28 825.5,-564"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M823.5,-564C780.24,-559.86 771.1,-548.56 728,-543 595.9,-525.97 438.99,-524.49 357.62,-525.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="357.1,-521.61 347.13,-525.2 357.16,-528.61 357.1,-521.61"/>
+</g>
+<!-- module~mqc_json_output_types -->
+<g id="proc~~run_sapt~~UsesGraph_node3" class="node">
+<title>module~mqc_json_output_types</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node3"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="728,-576 592,-576 592,-552 728,-552 728,-576"/>
+<text text-anchor="middle" x="660" y="-561.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;module~mqc_json_output_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge2" class="edge">
+<title>proc~run_sapt&#45;&gt;module~mqc_json_output_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M823.5,-564C795.78,-562.32 765.36,-561.93 738.4,-562.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="738.23,-558.59 728.26,-562.18 738.29,-565.59 738.23,-558.59"/>
+</g>
+<!-- module~mqc_libcint_bridge -->
+<g id="proc~~run_sapt~~UsesGraph_node4" class="node">
+<title>module~mqc_libcint_bridge</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node4"><a xlink:href="../module/mqc_libcint_bridge.html" xlink:title="mqc_libcint_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="1191,-416 1078,-416 1078,-392 1191,-392 1191,-416"/>
+<text text-anchor="middle" x="1134.5" y="-401.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_libcint_bridge</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;module~mqc_libcint_bridge -->
+<g id="proc~~run_sapt~~UsesGraph_edge3" class="edge">
+<title>proc~run_sapt&#45;&gt;module~mqc_libcint_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1236.85,-471.85C1216.91,-458.5 1184.69,-436.93 1161.94,-421.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1163.69,-418.66 1153.43,-416 1159.79,-424.47 1163.69,-418.66"/>
+</g>
+<!-- module~mqc_program_limits -->
+<g id="proc~~run_sapt~~UsesGraph_node5" class="node">
+<title>module~mqc_program_limits</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node5"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
+<polygon fill="#337ab7" stroke="#337ab7" points="1042,-517 921,-517 921,-493 1042,-493 1042,-517"/>
+<text text-anchor="middle" x="981.5" y="-502.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;module~mqc_program_limits -->
+<g id="proc~~run_sapt~~UsesGraph_edge4" class="edge">
+<title>proc~run_sapt&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1243.93,-496C1224.41,-516 1181.54,-554.86 1135.5,-564"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1133.5,-564C1086.21,-573.38 1034.61,-543.8 1005.63,-523.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1007.52,-520.24 997.39,-517.14 1003.38,-525.88 1007.52,-520.24"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~run_sapt~~UsesGraph_node11" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="175.5,-538 117.5,-538 117.5,-514 175.5,-514 175.5,-538"/>
+<text text-anchor="middle" x="146.5" y="-523.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~run_sapt~~UsesGraph_edge5" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M255.83,-526C233.65,-526 207.12,-526 185.87,-526"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="185.59,-522.5 175.59,-526 185.59,-529.5 185.59,-522.5"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_node12" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-224 0,-224 0,-200 62,-200 62,-224"/>
+<text text-anchor="middle" x="31" y="-209.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge6" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M255.72,-517.01C217.49,-508.85 165.84,-496.51 147.5,-486"/>
+</g>
+<!-- module~mqc_thermochemistry -->
+<g id="proc~~run_sapt~~UsesGraph_node10" class="node">
+<title>module~mqc_thermochemistry</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node10"><a xlink:href="../module/mqc_thermochemistry.html" xlink:title="mqc_thermochemistry">
+<polygon fill="#337ab7" stroke="#337ab7" points="548.5,-614 415.5,-614 415.5,-590 548.5,-590 548.5,-614"/>
+<text text-anchor="middle" x="482" y="-599.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_thermochemistry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry -->
+<g id="proc~~run_sapt~~UsesGraph_edge7" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M603.31,-576.02C585.89,-579.78 566.51,-583.97 548.48,-587.86"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="547.66,-584.46 538.63,-589.99 549.14,-591.3 547.66,-584.46"/>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge8" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M591.94,-566.37C520.26,-568.43 403.29,-570.46 302.5,-566"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M300.5,-566C210.23,-561.26 165.06,-607.61 98,-547 51.34,-504.83 36.69,-302.42 33.04,-234.37"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="36.53,-234.12 32.53,-224.31 29.54,-234.47 36.53,-234.12"/>
+</g>
+<!-- module~mqc_cuest_iface -->
+<g id="proc~~run_sapt~~UsesGraph_node6" class="node">
+<title>module~mqc_cuest_iface</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node6"><a xlink:href="../module/mqc_cuest_iface.html" xlink:title="mqc_cuest_iface">
+<polygon fill="#337ab7" stroke="#337ab7" points="1032,-338 931,-338 931,-314 1032,-314 1032,-338"/>
+<text text-anchor="middle" x="981.5" y="-323.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface -->
+<g id="proc~~run_sapt~~UsesGraph_edge9" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1110.24,-391.98C1084.74,-378.81 1043.66,-357.59 1015,-342.79"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1016.28,-339.51 1005.79,-338.03 1013.07,-345.73 1016.28,-339.51"/>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~run_sapt~~UsesGraph_node7" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node7"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="180,-306 113,-306 113,-282 180,-282 180,-306"/>
+<text text-anchor="middle" x="146.5" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_error -->
+<g id="proc~~run_sapt~~UsesGraph_edge10" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M659,-404C582.38,-388.27 561.1,-408.31 483,-404"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M481,-404C422.09,-400.75 261.61,-339.53 186.83,-309.86"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="187.88,-306.51 177.29,-306.06 185.29,-313.01 187.88,-306.51"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~run_sapt~~UsesGraph_node8" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node8"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="551.5,-298 412.5,-298 412.5,-274 551.5,-274 551.5,-298"/>
+<text text-anchor="middle" x="482" y="-283.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~run_sapt~~UsesGraph_edge11" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1077.76,-409.71C988.91,-417.53 810.01,-428.05 661,-404"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M659,-404C592.84,-390.42 531.05,-335.63 501.4,-305.72"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="503.71,-303.08 494.23,-298.35 498.69,-307.96 503.71,-303.08"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="proc~~run_sapt~~UsesGraph_node9" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node9"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="353.5,-416 249.5,-416 249.5,-392 353.5,-392 353.5,-416"/>
+<text text-anchor="middle" x="301.5" y="-401.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge12" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M481,-404C442.16,-401.85 398.5,-401.81 364.08,-402.33"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="363.65,-398.83 353.71,-402.5 363.77,-405.83 363.65,-398.83"/>
+</g>
+<!-- module~mqc_program_limits&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge13" class="edge">
+<title>module~mqc_program_limits&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M920.79,-499.33C856.66,-493.73 751.71,-486 661,-486 661,-486 661,-486 481,-486 406.89,-486 211.81,-522.84 147.5,-486"/>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge16" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M823.5,-326C510.42,-248.7 379.75,-471.88 98,-315 66.66,-297.55 47.95,-258.3 38.84,-233.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="42.1,-232.32 35.52,-224.02 35.49,-234.62 42.1,-232.32"/>
+</g>
+<!-- module~mqc_config_types -->
+<g id="proc~~run_sapt~~UsesGraph_node14" class="node">
+<title>module~mqc_config_types</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node14"><a xlink:href="../module/mqc_config_types.html" xlink:title="mqc_config_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="714,-165 606,-165 606,-141 714,-141 714,-165"/>
+<text text-anchor="middle" x="660" y="-150.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_config_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge14" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_config_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M930.9,-331.99C900.12,-334.25 859.99,-334.51 825.5,-326"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M823.5,-326C745.35,-306.71 691.85,-216.13 670.88,-174.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="674,-172.68 666.47,-165.23 667.7,-175.75 674,-172.68"/>
+</g>
+<!-- module~mqc_method_config -->
+<g id="proc~~run_sapt~~UsesGraph_node16" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node16"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="885,-165 764,-165 764,-141 885,-141 885,-165"/>
+<text text-anchor="middle" x="824.5" y="-150.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_method_config -->
+<g id="proc~~run_sapt~~UsesGraph_edge15" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M969.6,-313.83C943.21,-284.38 875.66,-208.98 843.3,-172.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="845.87,-170.5 836.59,-165.38 840.66,-175.17 845.87,-170.5"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~run_sapt~~UsesGraph_edge18" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M471.51,-298.02C456.84,-316.93 428.22,-355.06 408,-390 389.08,-422.7 394.93,-436.97 372,-467 359.99,-482.73 343.13,-497.17 329.02,-507.83"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="326.66,-505.22 320.66,-513.95 330.8,-510.87 326.66,-505.22"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~run_sapt~~UsesGraph_edge19" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M300.5,-288C263.32,-286.41 221.05,-288.35 190.37,-290.44"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="189.76,-286.98 180.04,-291.18 190.26,-293.96 189.76,-286.98"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge23" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M461.96,-273.95C440.71,-260.91 404.95,-240.22 372,-227 342.28,-215.08 332.27,-219.8 302.5,-208"/>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M300.5,-208C229.91,-180.03 220.83,-112.33 147.5,-132"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~run_sapt~~UsesGraph_node13" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node13"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="178.5,-264 114.5,-264 114.5,-240 178.5,-240 178.5,-264"/>
+<text text-anchor="middle" x="146.5" y="-249.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~run_sapt~~UsesGraph_edge17" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M412.31,-288.5C379.12,-289.26 338.73,-289.55 302.5,-288"/>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M300.5,-288C261.8,-286.35 218.97,-275.46 188.5,-266.08"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="189.25,-262.65 178.66,-262.98 187.14,-269.33 189.25,-262.65"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~run_sapt~~UsesGraph_node15" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node15"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="193,-184 100,-184 100,-160 193,-160 193,-184"/>
+<text text-anchor="middle" x="146.5" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~run_sapt~~UsesGraph_edge20" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M300.5,-208C269.3,-195.63 232.76,-186.84 203.22,-181.04"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="203.55,-177.54 193.08,-179.11 202.25,-184.42 203.55,-177.54"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="proc~~run_sapt~~UsesGraph_node17" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node17"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="372,-458 231,-458 231,-434 372,-434 372,-458"/>
+<text text-anchor="middle" x="301.5" y="-443.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~run_sapt~~UsesGraph_edge21" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M472.84,-298.24C452.24,-328.8 397.95,-407.26 372,-425 369.48,-426.72 366.81,-428.31 364.05,-429.76"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="362.56,-426.6 354.97,-434 365.52,-432.94 362.56,-426.6"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~run_sapt~~UsesGraph_node18" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node18"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="351,-260 252,-260 252,-236 351,-236 351,-260"/>
+<text text-anchor="middle" x="301.5" y="-245.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~run_sapt~~UsesGraph_edge22" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M424.52,-273.98C404.25,-269.66 381.35,-264.79 360.91,-260.44"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="361.61,-257 351.1,-258.35 360.15,-263.85 361.61,-257"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
+<g id="proc~~run_sapt~~UsesGraph_edge24" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M259.4,-391.96C249.69,-388.22 239.66,-383.59 231,-378 203.88,-360.5 178.63,-332.88 163.15,-314.13"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="165.75,-311.79 156.75,-306.21 160.31,-316.19 165.75,-311.79"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge26" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M252.94,-416.02C245.43,-418.58 237.88,-421.57 231,-425 189.86,-445.49 187.38,-508.84 147.5,-486"/>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M145.5,-486C53.96,-433.57 36.24,-289.56 32.82,-234.14"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="36.31,-233.81 32.3,-224 29.32,-234.17 36.31,-233.81"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~run_sapt~~UsesGraph_node22" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="182.5,-416 110.5,-416 110.5,-392 182.5,-392 182.5,-416"/>
+<text text-anchor="middle" x="146.5" y="-401.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="proc~~run_sapt~~UsesGraph_edge25" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M249.13,-404C230.84,-404 210.4,-404 192.67,-404"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="192.58,-400.5 182.58,-404 192.58,-407.5 192.58,-400.5"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;module~mqc_elements -->
+<g id="proc~~run_sapt~~UsesGraph_edge27" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M456.12,-589.96C434.17,-579.5 401.22,-564.15 372,-552 363.62,-548.51 354.58,-544.98 345.89,-541.68"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="346.87,-538.31 336.27,-538.08 344.41,-544.86 346.87,-538.31"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge32" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M439.97,-589.96C404.08,-580.34 350.35,-568.12 302.5,-566"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~run_sapt~~UsesGraph_edge28" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M467.66,-589.95C447.21,-571.51 406.8,-535.25 372,-505 356.37,-491.41 338.56,-476.3 324.88,-464.78"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="326.86,-461.87 316.96,-458.11 322.36,-467.22 326.86,-461.87"/>
+</g>
+<!-- pic_io -->
+<g id="proc~~run_sapt~~UsesGraph_node19" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="328.5,-702 274.5,-702 274.5,-678 328.5,-678 328.5,-702"/>
+<text text-anchor="middle" x="301.5" y="-687.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_io -->
+<g id="proc~~run_sapt~~UsesGraph_edge29" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_io</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M464.39,-614.11C443.64,-628.77 406.65,-653.43 372,-669 361.44,-673.75 349.5,-677.79 338.55,-681.03"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="337.5,-677.68 328.82,-683.77 339.4,-684.42 337.5,-677.68"/>
+</g>
+<!-- pic_lapack_interfaces -->
+<g id="proc~~run_sapt~~UsesGraph_node20" class="node">
+<title>pic_lapack_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="365,-660 238,-660 238,-636 365,-636 365,-660"/>
+<text text-anchor="middle" x="301.5" y="-645.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces -->
+<g id="proc~~run_sapt~~UsesGraph_edge30" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M434.1,-614.09C411.04,-620.03 383.07,-627.24 358.86,-633.48"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="357.9,-630.11 349.09,-635.99 359.64,-636.89 357.9,-630.11"/>
+</g>
+<!-- pic_logger -->
+<g id="proc~~run_sapt~~UsesGraph_node21" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="335.5,-618 267.5,-618 267.5,-594 335.5,-594 335.5,-618"/>
+<text text-anchor="middle" x="301.5" y="-603.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_logger -->
+<g id="proc~~run_sapt~~UsesGraph_edge31" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M415.29,-603.47C392.16,-603.99 366.76,-604.56 345.93,-605.03"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="345.71,-601.53 335.79,-605.25 345.87,-608.53 345.71,-601.53"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge33" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M114.49,-241.07C101.39,-236.45 85.97,-231.02 72.03,-226.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.79,-222.66 62.19,-222.64 70.46,-229.27 72.79,-222.66"/>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~run_sapt~~UsesGraph_edge38" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M643.07,-165.04C612.13,-188.42 543.73,-240.11 507.16,-267.74"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="504.89,-265.07 499.02,-273.89 509.11,-270.66 504.89,-265.07"/>
+</g>
+<!-- module~mqc_config_types&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge39" class="edge">
+<title>module~mqc_config_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M300.5,-94C230.48,-96.5 214.87,-112.76 147.5,-132"/>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M145.5,-132C123.64,-138.24 117.22,-138.86 98,-151 79.86,-162.45 62.17,-179.2 49.68,-192.24"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="46.88,-190.11 42.62,-199.81 52,-194.89 46.88,-190.11"/>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_geometry -->
+<g id="proc~~run_sapt~~UsesGraph_edge36" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M605.71,-154.98C508.34,-158.6 302.6,-166.24 203.36,-169.93"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="203.09,-166.43 193.23,-170.3 203.35,-173.43 203.09,-166.43"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~run_sapt~~UsesGraph_node23" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node23"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="195,-104 98,-104 98,-80 195,-80 195,-104"/>
+<text text-anchor="middle" x="146.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge34" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M634.71,-140.85C614.26,-131.23 583.96,-118.39 556,-112 445.89,-86.82 415.24,-87.16 302.5,-94"/>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M300.5,-94C269.05,-95.12 233.95,-94.78 205.31,-94.08"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="205.16,-90.58 195.07,-93.81 204.97,-97.58 205.16,-90.58"/>
+</g>
+<!-- module~mqc_calculation_defaults -->
+<g id="proc~~run_sapt~~UsesGraph_node24" class="node">
+<title>module~mqc_calculation_defaults</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node24"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="556,-145 408,-145 408,-121 556,-121 556,-145"/>
+<text text-anchor="middle" x="482" y="-130.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_calculation_defaults -->
+<g id="proc~~run_sapt~~UsesGraph_edge35" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M605.72,-146.95C593.3,-145.53 579.79,-144 566.41,-142.48"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="566.57,-138.97 556.24,-141.32 565.78,-145.93 566.57,-138.97"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~run_sapt~~UsesGraph_node25" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~run_sapt~~UsesGraph_node25"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="540,-24 424,-24 424,0 540,0 540,-24"/>
+<text text-anchor="middle" x="482" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_method_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge37" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M643.99,-140.98C613.29,-116.38 543.09,-60.14 506.37,-30.72"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="508.21,-27.71 498.22,-24.19 503.83,-33.18 508.21,-27.71"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge40" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M111.45,-184C98.96,-188.4 84.71,-193.42 71.77,-197.98"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="70.44,-194.74 62.17,-201.37 72.77,-201.34 70.44,-194.74"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge43" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M659,-52C584.08,-26.23 381.5,-46.1 302.5,-52"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_config_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge41" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_config_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M763.91,-153C751.05,-153 737.4,-153 724.4,-153"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="724.13,-149.5 714.13,-153 724.13,-156.5 724.13,-149.5"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge42" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M808.99,-140.76C781.92,-118.7 721,-72.63 661,-52"/>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M659,-52C623.82,-39.9 583.42,-30.42 550.21,-23.73"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="550.63,-20.25 540.14,-21.75 549.28,-27.12 550.63,-20.25"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge44" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M264.83,-458.11C222.91,-471.91 157.71,-491.85 147.5,-486"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~run_sapt~~UsesGraph_edge45" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M260.3,-260.09C238.65,-266.6 211.95,-274.62 189.96,-281.23"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="188.79,-277.93 180.22,-284.16 190.81,-284.63 188.79,-277.93"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge47" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M251.98,-239.73C234.1,-236.8 213.65,-233.59 195,-231 153.24,-225.2 105.29,-219.76 72.26,-216.2"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="72.41,-212.69 62.09,-215.11 71.66,-219.65 72.41,-212.69"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~run_sapt~~UsesGraph_edge46" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M263.39,-235.91C252.72,-231.96 241.21,-227.22 231,-222 213.88,-213.24 211.45,-207.96 195,-198 190.07,-195.02 184.79,-191.97 179.59,-189.07"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="180.89,-185.79 170.44,-184.03 177.51,-191.92 180.89,-185.79"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge48" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M118.45,-104.04C111.36,-107.91 104.03,-112.61 98,-118 74.26,-139.23 54.46,-170.56 42.91,-191.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="39.79,-189.54 38.07,-199.99 45.93,-192.89 39.79,-189.54"/>
+</g>
+<!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge49" class="edge">
+<title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M407.7,-121.91C339.16,-114.07 234.6,-108.63 147.5,-132"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~run_sapt~~UsesGraph_edge50" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M443.9,-24.09C408.14,-34.83 352.28,-49.25 302.5,-52"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M300.5,-52C210.24,-56.99 171.92,-18.97 98,-71 58.26,-98.97 41.78,-157.2 35.5,-189.39"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="31.99,-189.14 33.68,-199.6 38.88,-190.37 31.99,-189.14"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_saptUsesGraph = svgPanZoom('#procrun_saptUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>SAPT0 between the deck&rsquo;s two fragments</p>
+<p>The monomers are the deck&rsquo;s own <code>fragments</code>, so no new keyword is needed
+&ndash; a SAPT deck is a geometry, a basis, and the partition that says which
+atoms are which monomer:</p>
+<div class="codehilite"><pre><span></span><code>&quot;model&quot;:     {&quot;method&quot;: &quot;sapt0&quot;, &quot;basis&quot;: &quot;6-31g&quot;},
+&quot;molecules&quot;: [{&quot;xyz&quot;: &quot;dimer.xyz&quot;, &quot;fragments&quot;: [[0,1,2],[3,4,5]], ...}]
+</code></pre></div>
+
+<p><strong>Exactly two fragments.</strong> SAPT partitions the Hamiltonian as
+<code>H_A + H_B + V</code>; there is no slot for a third monomer, and a cluster is
+a separate SAPT calculation per pair rather than one calculation. That
+is the theory rather than a limit of this code &ndash; see
+<code>validation/check_sapt.f90</code>, which walks the pairs of a six-water prism.</p>
+<p>Rank zero only. The pairs of a cluster are the obvious thing to
+distribute, and a single pair is not.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~31"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~60"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rank~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rank</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result_out~6"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result_out</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_sapt~~CallsGraph Pages: 1 -->
+<svg id="procrun_saptCallsGraph" width="641pt" height="777pt"
+ viewBox="0.00 0.00 641.00 776.82" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_sapt~~CallsGraph" class="graph" transform="scale(0.67 0.67) rotate(0) translate(4 1148.51)">
+<title>proc~~run_sapt~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1148.51 947,-1148.51 947,4 -4,4"/>
+<!-- proc~run_sapt -->
+<g id="proc~~run_sapt~~CallsGraph_node1" class="node">
+<title>proc~run_sapt</title>
+<polygon fill="none" stroke="black" points="58,-573.51 0,-573.51 0,-549.51 58,-549.51 58,-573.51"/>
+<text text-anchor="middle" x="29" y="-559.11" font-family="Helvetica,sans-Serif" font-size="10.50">run_sapt</text>
+</g>
+<!-- error -->
+<g id="proc~~run_sapt~~CallsGraph_node2" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="768.5,-774.51 714.5,-774.51 714.5,-750.51 768.5,-750.51 768.5,-774.51"/>
+<text text-anchor="middle" x="741.5" y="-760.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~run_sapt&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge1" class="edge">
+<title>proc~run_sapt&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M35.14,-573.65C44.14,-593.4 64.6,-632.4 94,-653.51 288.2,-792.94 598.93,-776.95 704.24,-766.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="704.76,-770.18 714.35,-765.69 704.05,-763.22 704.76,-770.18"/>
+</g>
+<!-- info -->
+<g id="proc~~run_sapt~~CallsGraph_node3" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="768.5,-694.51 714.5,-694.51 714.5,-670.51 768.5,-670.51 768.5,-694.51"/>
+<text text-anchor="middle" x="741.5" y="-680.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~run_sapt&#45;&gt;info -->
+<g id="proc~~run_sapt~~CallsGraph_edge2" class="edge">
+<title>proc~run_sapt&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M38.07,-573.58C48.83,-588.54 69.42,-613.41 94,-624.51 203.03,-673.74 512.31,-647.52 631,-662.51 655.55,-665.61 682.94,-670.61 704.18,-674.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="703.58,-678.29 714.07,-676.84 704.97,-671.43 703.58,-678.29"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~run_sapt~~CallsGraph_node4" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node4"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="304,-573.51 141,-573.51 141,-549.51 304,-549.51 304,-573.51"/>
+<text text-anchor="middle" x="222.5" y="-559.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~run_sapt~~CallsGraph_edge3" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#ff0000" d="M58.26,-561.51C77.63,-561.51 104.5,-561.51 130.86,-561.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="130.92,-565.01 140.92,-561.51 130.92,-558.01 130.92,-565.01"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~run_sapt~~CallsGraph_node5" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node5"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="302.5,-531.51 142.5,-531.51 142.5,-507.51 302.5,-507.51 302.5,-531.51"/>
+<text text-anchor="middle" x="222.5" y="-517.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~error_get_message -->
+<g id="proc~~run_sapt~~CallsGraph_edge4" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M58.08,-551.26C69.16,-547.49 82.07,-543.43 94,-540.51 106.33,-537.49 119.43,-534.78 132.37,-532.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="132.99,-535.84 142.22,-530.63 131.76,-528.95 132.99,-535.84"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~run_sapt~~CallsGraph_node6" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="292,-489.51 153,-489.51 153,-465.51 292,-465.51 292,-489.51"/>
+<text text-anchor="middle" x="222.5" y="-475.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~error_has_error -->
+<g id="proc~~run_sapt~~CallsGraph_edge5" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M38.62,-549.28C49.66,-534.64 70.23,-510.59 94,-498.51 108.9,-490.93 125.94,-485.99 142.6,-482.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="143.64,-486.16 152.9,-481.01 142.45,-479.26 143.64,-486.16"/>
+</g>
+<!-- proc~json_output_data_destroy -->
+<g id="proc~~run_sapt~~CallsGraph_node7" class="node">
+<title>proc~json_output_data_destroy</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node7"><a xlink:href="../proc/json_output_data_destroy.html" xlink:title="json_output_data_t%json_output_data_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="351,-428.51 94,-428.51 94,-404.51 351,-404.51 351,-428.51"/>
+<text text-anchor="middle" x="222.5" y="-414.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~json_output_data_destroy -->
+<g id="proc~~run_sapt~~CallsGraph_edge6" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~json_output_data_destroy</title>
+<path fill="none" stroke="#ff0000" d="M34.07,-549.5C42.06,-527.72 61.88,-481.63 94,-456.51 108.19,-445.42 125.49,-437.37 142.72,-431.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="143.78,-434.89 152.26,-428.54 141.67,-428.21 143.78,-434.89"/>
+</g>
+<!-- proc~run_libcint_sapt0 -->
+<g id="proc~~run_sapt~~CallsGraph_node8" class="node">
+<title>proc~run_libcint_sapt0</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node8"><a xlink:href="../proc/run_libcint_sapt0.html" xlink:title="run_libcint_sapt0">
+<polygon fill="#d9534f" stroke="#d9534f" points="274,-368.51 171,-368.51 171,-344.51 274,-344.51 274,-368.51"/>
+<text text-anchor="middle" x="222.5" y="-354.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt0</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt0 -->
+<g id="proc~~run_sapt~~CallsGraph_edge7" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt0</title>
+<path fill="none" stroke="#ff0000" d="M31.09,-549.51C34.5,-519.15 47.66,-438.66 94,-395.51 112.23,-378.53 137.67,-368.94 161.03,-363.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="161.82,-366.93 170.89,-361.44 160.38,-360.08 161.82,-366.93"/>
+</g>
+<!-- proc~write_json_output -->
+<g id="proc~~run_sapt~~CallsGraph_node9" class="node">
+<title>proc~write_json_output</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node9"><a xlink:href="../proc/write_json_output.html" xlink:title="write_json_output">
+<polygon fill="#d9534f" stroke="#d9534f" points="275.5,-615.51 169.5,-615.51 169.5,-591.51 275.5,-591.51 275.5,-615.51"/>
+<text text-anchor="middle" x="222.5" y="-601.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_json_output</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~write_json_output -->
+<g id="proc~~run_sapt~~CallsGraph_edge8" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#ff0000" d="M58.08,-571.76C69.16,-575.53 82.07,-579.59 94,-582.51 115.07,-587.67 138.41,-591.93 159.3,-595.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.92,-598.71 169.33,-596.77 159.98,-591.79 158.92,-598.71"/>
+</g>
+<!-- to_char -->
+<g id="proc~~run_sapt~~CallsGraph_node10" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="768.5,-1144.51 714.5,-1144.51 714.5,-1120.51 768.5,-1120.51 768.5,-1144.51"/>
+<text text-anchor="middle" x="741.5" y="-1130.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~run_sapt&#45;&gt;to_char -->
+<g id="proc~~run_sapt~~CallsGraph_edge9" class="edge">
+<title>proc~run_sapt&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M33.04,-573.75C40.27,-601.3 60.48,-669.51 94,-717.51 195.05,-862.2 239.56,-888.52 387,-985.51 501.01,-1060.51 538.84,-1064.64 667,-1111.51 679.07,-1115.93 692.54,-1120.01 704.61,-1123.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="703.79,-1126.78 714.36,-1126.03 705.62,-1120.02 703.79,-1126.78"/>
+</g>
+<!-- proc~json_output_data_reset -->
+<g id="proc~~run_sapt~~CallsGraph_node12" class="node">
+<title>proc~json_output_data_reset</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node12"><a xlink:href="../proc/json_output_data_reset.html" xlink:title="json_output_data_t%json_output_data_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="631,-391.51 387,-391.51 387,-367.51 631,-367.51 631,-391.51"/>
+<text text-anchor="middle" x="509" y="-377.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset -->
+<g id="proc~~run_sapt~~CallsGraph_edge10" class="edge">
+<title>proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset</title>
+<path fill="none" stroke="#00a9ff" d="M315.87,-404.5C344.46,-400.78 376.13,-396.66 405.37,-392.86"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="406.14,-396.29 415.61,-391.53 405.24,-389.35 406.14,-396.29"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~run_sapt~~CallsGraph_node11" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node11"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="561.5,-349.51 456.5,-349.51 456.5,-325.51 561.5,-325.51 561.5,-349.51"/>
+<text text-anchor="middle" x="509" y="-335.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~run_libcint_sapt0&#45;&gt;proc~error_set -->
+<g id="proc~~run_sapt~~CallsGraph_edge11" class="edge">
+<title>proc~run_libcint_sapt0&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#0000ff" d="M274.04,-353.14C322.24,-349.92 394.93,-345.06 446.48,-341.62"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="446.75,-345.11 456.5,-340.95 446.28,-338.12 446.75,-345.11"/>
+</g>
+<!-- proc~write_json_output&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge12" class="edge">
+<title>proc~write_json_output&#45;&gt;error</title>
+<path fill="none" stroke="#aa00ff" d="M238.66,-615.76C266.32,-637.42 327.63,-682.3 387,-704.51 416.47,-715.53 620.2,-745.37 704.31,-757.39"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="704.03,-760.88 714.42,-758.83 705.01,-753.95 704.03,-760.88"/>
+</g>
+<!-- proc~write_fragment_table -->
+<g id="proc~~run_sapt~~CallsGraph_node13" class="node">
+<title>proc~write_fragment_table</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node13"><a xlink:href="../proc/write_fragment_table.html" xlink:title="write_fragment_table">
+<polygon fill="#d9534f" stroke="#d9534f" points="572,-976.51 446,-976.51 446,-952.51 572,-952.51 572,-976.51"/>
+<text text-anchor="middle" x="509" y="-962.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fragment_table</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_fragment_table -->
+<g id="proc~~run_sapt~~CallsGraph_edge13" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_fragment_table</title>
+<path fill="none" stroke="#aa00ff" d="M232.97,-615.52C274.4,-668.09 440.01,-878.24 492.18,-944.44"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="489.56,-946.77 498.5,-952.45 495.06,-942.43 489.56,-946.77"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_node14" class="node">
+<title>proc~write_gmbe_pie_json_impl</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node14"><a xlink:href="../proc/write_gmbe_pie_json_impl.html" xlink:title="write_gmbe_pie_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="585,-475.51 433,-475.51 433,-451.51 585,-451.51 585,-475.51"/>
+<text text-anchor="middle" x="509" y="-461.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_gmbe_pie_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_edge14" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl</title>
+<path fill="none" stroke="#aa00ff" d="M275.67,-600.65C299.41,-597.92 327.4,-592.65 351,-582.51 380.24,-569.95 449.92,-512.77 485.81,-482.48"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="488.38,-484.89 493.75,-475.75 483.86,-479.55 488.38,-484.89"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_node15" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node15"><a xlink:href="../proc/write_mbe_breakdown_json_impl.html" xlink:title="write_mbe_breakdown_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="602.5,-433.51 415.5,-433.51 415.5,-409.51 602.5,-409.51 602.5,-433.51"/>
+<text text-anchor="middle" x="509" y="-419.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_mbe_breakdown_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_edge15" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl</title>
+<path fill="none" stroke="#aa00ff" d="M275.77,-607.44C301.4,-606.53 330.98,-600.84 351,-582.51 398.39,-539.13 339.79,-486.09 387,-442.51 392.6,-437.34 399,-433.2 405.86,-429.92"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="407.57,-433 415.47,-425.94 404.89,-426.53 407.57,-433"/>
+</g>
+<!-- proc~write_unfragmented_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_node16" class="node">
+<title>proc~write_unfragmented_json_impl</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node16"><a xlink:href="../proc/write_unfragmented_json_impl.html" xlink:title="write_unfragmented_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="597,-695.51 421,-695.51 421,-671.51 597,-671.51 597,-695.51"/>
+<text text-anchor="middle" x="509" y="-681.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_unfragmented_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_edge16" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl</title>
+<path fill="none" stroke="#aa00ff" d="M266.4,-615.57C316.96,-629.79 400.97,-653.42 455.41,-668.72"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="454.64,-672.14 465.22,-671.48 456.54,-665.4 454.64,-672.14"/>
+</g>
+<!-- proc~write_vibrational_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_node17" class="node">
+<title>proc~write_vibrational_json_impl</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node17"><a xlink:href="../proc/write_vibrational_json_impl.html" xlink:title="write_vibrational_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="587.5,-596.51 430.5,-596.51 430.5,-572.51 587.5,-572.51 587.5,-596.51"/>
+<text text-anchor="middle" x="509" y="-582.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_vibrational_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl -->
+<g id="proc~~run_sapt~~CallsGraph_edge17" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl</title>
+<path fill="none" stroke="#aa00ff" d="M275.68,-600.03C316.03,-597.33 372.81,-593.54 420.13,-590.38"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="420.64,-593.85 430.39,-589.69 420.18,-586.87 420.64,-593.85"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge18" class="edge">
+<title>proc~write_fragment_table&#45;&gt;error</title>
+<path fill="none" stroke="#48ff00" d="M517.07,-952.24C536.55,-919.57 594.38,-829.78 667,-783.51 678.3,-776.31 692.13,-771.52 704.73,-768.36"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="705.51,-771.77 714.49,-766.16 703.97,-764.95 705.51,-771.77"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;info -->
+<g id="proc~~run_sapt~~CallsGraph_edge20" class="edge">
+<title>proc~write_fragment_table&#45;&gt;info</title>
+<path fill="none" stroke="#48ff00" d="M516.94,-952.27C537.19,-917.13 599.1,-813.82 667,-741.51 681.33,-726.25 699.68,-711.52 714.47,-700.59"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="716.66,-703.32 722.7,-694.61 712.55,-697.65 716.66,-703.32"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;to_char -->
+<g id="proc~~run_sapt~~CallsGraph_edge25" class="edge">
+<title>proc~write_fragment_table&#45;&gt;to_char</title>
+<path fill="none" stroke="#48ff00" d="M530.65,-976.55C556.29,-992.21 600.39,-1021.48 631,-1054.51 651.36,-1076.49 643.02,-1093.55 667,-1111.51 677.81,-1119.61 691.65,-1124.59 704.39,-1127.65"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="703.79,-1131.1 714.3,-1129.71 705.22,-1124.24 703.79,-1131.1"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="proc~~run_sapt~~CallsGraph_node22" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="794.5,-976.51 688.5,-976.51 688.5,-952.51 794.5,-952.51 794.5,-976.51"/>
+<text text-anchor="middle" x="741.5" y="-962.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;get_elapsed_time -->
+<g id="proc~~run_sapt~~CallsGraph_edge19" class="edge">
+<title>proc~write_fragment_table&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#48ff00" d="M572.07,-964.51C604.92,-964.51 645.15,-964.51 678.05,-964.51"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="678.46,-968.01 688.46,-964.51 678.46,-961.01 678.46,-968.01"/>
+</g>
+<!-- proc~fragment_table_filename -->
+<g id="proc~~run_sapt~~CallsGraph_node25" class="node">
+<title>proc~fragment_table_filename</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node25"><a xlink:href="../proc/fragment_table_filename.html" xlink:title="fragment_table_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="815,-934.51 668,-934.51 668,-910.51 815,-910.51 815,-934.51"/>
+<text text-anchor="middle" x="741.5" y="-920.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_table_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~fragment_table_filename -->
+<g id="proc~~run_sapt~~CallsGraph_edge21" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~fragment_table_filename</title>
+<path fill="none" stroke="#48ff00" d="M572.07,-953.2C600.47,-948.03 634.37,-941.85 664.3,-936.4"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="665.07,-939.81 674.28,-934.58 663.81,-932.93 665.07,-939.81"/>
+</g>
+<!-- proc~scf_status_label -->
+<g id="proc~~run_sapt~~CallsGraph_node29" class="node">
+<title>proc~scf_status_label</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node29"><a xlink:href="../proc/scf_status_label.html" xlink:title="scf_status_label">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="789.5,-1102.51 693.5,-1102.51 693.5,-1078.51 789.5,-1078.51 789.5,-1102.51"/>
+<text text-anchor="middle" x="741.5" y="-1088.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">scf_status_label</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~scf_status_label -->
+<g id="proc~~run_sapt~~CallsGraph_edge22" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~scf_status_label</title>
+<path fill="none" stroke="#48ff00" d="M524.65,-976.63C551.37,-998.17 610.47,-1043.32 667,-1069.51 672.32,-1071.98 678,-1074.22 683.75,-1076.24"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="682.85,-1079.63 693.44,-1079.43 685.04,-1072.98 682.85,-1079.63"/>
+</g>
+<!-- proc~write_optional_value -->
+<g id="proc~~run_sapt~~CallsGraph_node30" class="node">
+<title>proc~write_optional_value</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node30"><a xlink:href="../proc/write_optional_value.html" xlink:title="write_optional_value">
+<polygon fill="#d9534f" stroke="#d9534f" points="802.5,-1060.51 680.5,-1060.51 680.5,-1036.51 802.5,-1036.51 802.5,-1060.51"/>
+<text text-anchor="middle" x="741.5" y="-1046.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_optional_value</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~write_optional_value -->
+<g id="proc~~run_sapt~~CallsGraph_edge23" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~write_optional_value</title>
+<path fill="none" stroke="#48ff00" d="M537.47,-976.54C568.56,-989.91 620.88,-1011.71 667,-1027.51 673.01,-1029.57 679.35,-1031.59 685.68,-1033.52"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="684.99,-1036.97 695.57,-1036.47 686.99,-1030.26 684.99,-1036.97"/>
+</g>
+<!-- start -->
+<g id="proc~~run_sapt~~CallsGraph_node32" class="node">
+<title>start</title>
+<polygon fill="#777777" stroke="#777777" points="768.5,-1018.51 714.5,-1018.51 714.5,-994.51 768.5,-994.51 768.5,-1018.51"/>
+<text text-anchor="middle" x="741.5" y="-1004.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;start -->
+<g id="proc~~run_sapt~~CallsGraph_edge24" class="edge">
+<title>proc~write_fragment_table&#45;&gt;start</title>
+<path fill="none" stroke="#48ff00" d="M572.07,-975.82C614.43,-983.54 669.06,-993.49 704.43,-999.94"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="703.84,-1003.39 714.31,-1001.74 705.1,-996.5 703.84,-1003.39"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge30" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#00ff91" d="M531.94,-475.68C559.35,-492.04 605.72,-523.71 631,-563.51 665.45,-617.74 632.17,-649.53 667,-703.51 677.83,-720.29 695.04,-734.48 710.08,-744.74"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="708.34,-747.78 718.63,-750.31 712.16,-741.92 708.34,-747.78"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;info -->
+<g id="proc~~run_sapt~~CallsGraph_edge31" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#00ff91" d="M526.25,-475.79C550.04,-494.03 595.4,-529.76 631,-563.51 665.63,-596.34 702.54,-638.03 723.44,-662.35"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="720.98,-664.85 730.14,-670.18 726.3,-660.3 720.98,-664.85"/>
+</g>
+<!-- add -->
+<g id="proc~~run_sapt~~CallsGraph_node18" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="924.5,-454.51 870.5,-454.51 870.5,-430.51 924.5,-430.51 924.5,-454.51"/>
+<text text-anchor="middle" x="897.5" y="-440.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;add -->
+<g id="proc~~run_sapt~~CallsGraph_edge26" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#00ff91" d="M585.15,-462.49C601.65,-459.17 618.04,-453.1 631,-442.51 665.01,-414.74 630.73,-375.26 667,-350.51 721.7,-313.18 755.7,-323.15 816,-350.51 847.96,-365.01 872.22,-399.17 885.39,-421.54"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="882.38,-423.33 890.35,-430.31 888.48,-419.88 882.38,-423.33"/>
+</g>
+<!-- create_array -->
+<g id="proc~~run_sapt~~CallsGraph_node19" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="937.5,-182.51 857.5,-182.51 857.5,-158.51 937.5,-158.51 937.5,-182.51"/>
+<text text-anchor="middle" x="897.5" y="-168.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_array -->
+<g id="proc~~run_sapt~~CallsGraph_edge27" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#00ff91" d="M585.27,-464.3C602.16,-460.99 618.69,-454.47 631,-442.51 688.58,-386.57 615.93,-327.45 667,-265.51 712.26,-210.61 794.52,-187.02 847.28,-177.18"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="848.18,-180.57 857.42,-175.39 846.96,-173.68 848.18,-180.57"/>
+</g>
+<!-- create_object -->
+<g id="proc~~run_sapt~~CallsGraph_node20" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="940,-656.51 855,-656.51 855,-632.51 940,-632.51 940,-656.51"/>
+<text text-anchor="middle" x="897.5" y="-642.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_sapt~~CallsGraph_edge28" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#00ff91" d="M585,-454.78C600.48,-451.79 616.48,-447.81 631,-442.51 648.4,-436.16 649.12,-426.34 667,-421.51 730.93,-404.23 765.23,-378.99 816,-421.51 885.91,-480.06 796.59,-551.09 852,-623.51 852.67,-624.39 853.4,-625.24 854.16,-626.05"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="851.97,-628.79 861.9,-632.48 856.44,-623.4 851.97,-628.79"/>
+</g>
+<!-- destroy -->
+<g id="proc~~run_sapt~~CallsGraph_node21" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="768.5,-496.51 714.5,-496.51 714.5,-472.51 768.5,-472.51 768.5,-496.51"/>
+<text text-anchor="middle" x="741.5" y="-482.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_sapt~~CallsGraph_edge29" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#00ff91" d="M585.16,-470.36C625.05,-473.99 672.27,-478.29 704.09,-481.19"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="703.98,-484.7 714.26,-482.12 704.61,-477.73 703.98,-484.7"/>
+</g>
+<!-- initialize -->
+<g id="proc~~run_sapt~~CallsGraph_node23" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="770,-454.51 713,-454.51 713,-430.51 770,-430.51 770,-454.51"/>
+<text text-anchor="middle" x="741.5" y="-440.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_sapt~~CallsGraph_edge32" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#00ff91" d="M585.16,-456.66C624.46,-453.08 670.87,-448.85 702.67,-445.96"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="703.21,-449.42 712.86,-445.03 702.58,-442.45 703.21,-449.42"/>
+</g>
+<!-- proc~add_gradient -->
+<g id="proc~~run_sapt~~CallsGraph_node24" class="node">
+<title>proc~add_gradient</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node24"><a xlink:href="../proc/add_gradient.html" xlink:title="add_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="783,-298.51 700,-298.51 700,-274.51 783,-274.51 783,-298.51"/>
+<text text-anchor="middle" x="741.5" y="-284.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~run_sapt~~CallsGraph_edge33" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#00ff91" d="M585.01,-463.62C601.8,-460.31 618.36,-453.96 631,-442.51 675.42,-402.25 626.11,-356.36 667,-312.51 673.37,-305.68 681.65,-300.64 690.35,-296.92"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="691.72,-300.15 699.88,-293.39 689.28,-293.59 691.72,-300.15"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~run_sapt~~CallsGraph_node26" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node26"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="943,-614.51 852,-614.51 852,-590.51 943,-590.51 943,-614.51"/>
+<text text-anchor="middle" x="897.5" y="-600.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_sapt~~CallsGraph_edge34" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#00ff91" d="M585.2,-460.08C601.24,-456.8 617.42,-451.35 631,-442.51 655.17,-426.77 641.57,-402.12 667,-388.51 725.39,-357.26 761.55,-350.82 816,-388.51 832.6,-400 873.67,-528.43 889.82,-580.64"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="886.5,-581.75 892.79,-590.28 893.19,-579.69 886.5,-581.75"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~run_sapt~~CallsGraph_node28" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node28"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="816,-538.51 667,-538.51 667,-514.51 816,-514.51 816,-538.51"/>
+<text text-anchor="middle" x="741.5" y="-524.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_sapt~~CallsGraph_edge35" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#00ff91" d="M554.17,-475.58C591.97,-485.91 646.5,-500.82 686.82,-511.84"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="685.91,-515.22 696.48,-514.48 687.76,-508.47 685.91,-515.22"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge40" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#0091ff" d="M602.78,-424.85C613.36,-428.72 623.15,-434.38 631,-442.51 712.35,-526.74 609.25,-601.64 667,-703.51 676.78,-720.76 693.78,-734.91 708.96,-745.02"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="707.31,-748.11 717.63,-750.49 711.05,-742.19 707.31,-748.11"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;info -->
+<g id="proc~~run_sapt~~CallsGraph_edge41" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#0091ff" d="M602.59,-426.77C612.95,-430.38 622.73,-435.45 631,-442.51 668.54,-474.52 647.13,-502.35 667,-547.51 685.38,-589.28 712,-635.48 727.65,-661.56"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="724.71,-663.47 732.88,-670.21 730.7,-659.84 724.71,-663.47"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;add -->
+<g id="proc~~run_sapt~~CallsGraph_edge36" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#0091ff" d="M602.51,-417.9C613.13,-414.08 623,-408.5 631,-400.51 696.76,-334.83 595.85,-254.31 667,-194.51 717.7,-151.91 762.43,-155.58 816,-194.51 889.53,-247.95 897.24,-370.15 897.14,-420.35"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="893.64,-420.4 897.01,-430.45 900.64,-420.5 893.64,-420.4"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_array -->
+<g id="proc~~run_sapt~~CallsGraph_edge37" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#0091ff" d="M602.79,-418.58C613.44,-414.66 623.24,-408.87 631,-400.51 687.33,-339.78 605.67,-85.18 667,-29.51 716.04,15 758.73,3.74 816,-29.51 860.24,-55.2 882.21,-115.33 891.25,-148.15"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="887.95,-149.35 893.84,-158.15 894.72,-147.59 887.95,-149.35"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_sapt~~CallsGraph_edge38" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#0091ff" d="M602.77,-416.91C613.16,-413.2 622.9,-407.92 631,-400.51 676.81,-358.59 617.76,-303.34 667,-265.51 719.51,-225.17 766.89,-221.09 816,-265.51 875.3,-319.15 805.87,-558.21 852,-623.51 852.54,-624.27 853.11,-625.01 853.72,-625.72"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="851.42,-628.36 861.22,-632.38 856.06,-623.12 851.42,-628.36"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_sapt~~CallsGraph_edge39" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#0091ff" d="M600.47,-433.55C610.91,-436.01 621.29,-438.97 631,-442.51 648.4,-448.86 649.96,-456.24 667,-463.51 678.92,-468.6 692.44,-472.86 704.61,-476.18"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="703.88,-479.61 714.44,-478.75 705.66,-472.84 703.88,-479.61"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_sapt~~CallsGraph_edge42" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#0091ff" d="M602.76,-429.96C637.66,-433.14 675.42,-436.58 702.56,-439.05"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="702.5,-442.56 712.78,-439.98 703.14,-435.59 702.5,-442.56"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~run_sapt~~CallsGraph_edge43" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#0091ff" d="M602.51,-415.68C612.82,-412.16 622.61,-407.26 631,-400.51 663.93,-374.03 636.41,-341.66 667,-312.51 673.55,-306.27 681.69,-301.52 690.14,-297.9"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="691.63,-301.08 699.75,-294.27 689.16,-294.53 691.63,-301.08"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_sapt~~CallsGraph_edge44" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#0091ff" d="M602.52,-417.51C613.08,-413.73 622.93,-408.27 631,-400.51 686.05,-347.58 607.62,-280.52 667,-232.51 718.5,-190.88 765.7,-189.44 816,-232.51 855.46,-266.3 840.04,-412.95 852,-463.51 861.99,-505.74 878.53,-553.68 888.38,-580.79"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="885.19,-582.24 891.92,-590.42 891.76,-579.82 885.19,-582.24"/>
+</g>
+<!-- proc~get_frag_level_name -->
+<g id="proc~~run_sapt~~CallsGraph_node27" class="node">
+<title>proc~get_frag_level_name</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node27"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="803.5,-62.51 679.5,-62.51 679.5,-38.51 803.5,-38.51 803.5,-62.51"/>
+<text text-anchor="middle" x="741.5" y="-48.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name -->
+<g id="proc~~run_sapt~~CallsGraph_edge45" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name</title>
+<path fill="none" stroke="#0091ff" d="M602.7,-418.49C613.36,-414.58 623.19,-408.83 631,-400.51 731.69,-293.28 572.16,-183.94 667,-71.51 668.32,-69.95 669.74,-68.5 671.25,-67.16"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="673.38,-69.94 679.48,-61.27 669.31,-64.25 673.38,-69.94"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_sapt~~CallsGraph_edge46" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#0091ff" d="M602.62,-428.73C612.74,-432.04 622.45,-436.51 631,-442.51 657.4,-461.03 641.62,-485.61 667,-505.51 668.82,-506.94 670.74,-508.27 672.73,-509.52"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="671.38,-512.76 681.85,-514.4 674.69,-506.59 671.38,-512.76"/>
+</g>
+<!-- warning -->
+<g id="proc~~run_sapt~~CallsGraph_node33" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="769,-104.51 714,-104.51 714,-80.51 769,-80.51 769,-104.51"/>
+<text text-anchor="middle" x="741.5" y="-90.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;warning -->
+<g id="proc~~run_sapt~~CallsGraph_edge47" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;warning</title>
+<path fill="none" stroke="#0091ff" d="M602.56,-418.36C613.24,-414.47 623.12,-408.76 631,-400.51 718.32,-309.19 587.66,-216.85 667,-118.51 676.01,-107.35 690.15,-100.97 703.64,-97.33"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="704.75,-100.67 713.73,-95.05 703.2,-93.84 704.75,-100.67"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge51" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#4800ff" d="M590.02,-695.58C604.02,-699.12 618.19,-703.67 631,-709.51 649.2,-717.8 649.37,-727.07 667,-736.51 678.65,-742.75 692.11,-748.01 704.3,-752.14"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="703.58,-755.58 714.17,-755.33 705.74,-748.92 703.58,-755.58"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;info -->
+<g id="proc~~run_sapt~~CallsGraph_edge52" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#4800ff" d="M597.14,-683.13C634.22,-682.97 675.43,-682.79 704.12,-682.67"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="704.48,-686.17 714.46,-682.62 704.45,-679.17 704.48,-686.17"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;add -->
+<g id="proc~~run_sapt~~CallsGraph_edge48" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#4800ff" d="M588.88,-695.54C613.8,-698.81 641.5,-701.89 667,-703.51 733.09,-707.7 762.96,-743.16 816,-703.51 861.28,-669.66 835.38,-635.55 852,-581.51 864.76,-540.03 880.36,-491.84 889.29,-464.48"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="892.69,-465.35 892.48,-454.75 886.04,-463.17 892.69,-465.35"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_sapt~~CallsGraph_edge49" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#4800ff" d="M516.06,-695.53C533.75,-729.1 589.1,-823.74 667,-858.51 727.47,-885.5 761.55,-896.2 816,-858.51 880.09,-814.15 893.22,-711.94 895.86,-666.72"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="899.37,-666.67 896.33,-656.52 892.38,-666.35 899.37,-666.67"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_sapt~~CallsGraph_edge50" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#4800ff" d="M539.07,-671.44C566.34,-658.74 606.5,-636.32 631,-605.51 660.4,-568.54 632.49,-537.77 667,-505.51 677.1,-496.07 691.14,-490.84 704.26,-487.95"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="705.26,-491.32 714.48,-486.1 704.02,-484.43 705.26,-491.32"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_sapt~~CallsGraph_edge53" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#4800ff" d="M540.81,-671.48C568.54,-659.07 608.32,-637.07 631,-605.51 669,-552.64 621.66,-510.23 667,-463.51 676.41,-453.82 689.95,-448.51 702.86,-445.64"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="703.76,-449.03 712.98,-443.82 702.52,-442.14 703.76,-449.03"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~run_sapt~~CallsGraph_edge54" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#4800ff" d="M542.03,-671.4C570,-659.13 609.4,-637.37 631,-605.51 677.76,-536.54 638.75,-499.9 667,-421.51 682.47,-378.58 710.07,-332.77 726.69,-307.08"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="729.71,-308.85 732.27,-298.57 723.86,-305.01 729.71,-308.85"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_sapt~~CallsGraph_edge55" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#4800ff" d="M518.45,-695.8C539.45,-725.12 597.38,-798.7 667,-825.51 728.8,-849.31 765.23,-868.03 816,-825.51 885.91,-766.96 796.59,-695.94 852,-623.51 852.67,-622.63 853.4,-621.78 854.16,-620.97"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="856.44,-623.62 861.9,-614.54 851.97,-618.23 856.44,-623.62"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_sapt~~CallsGraph_edge56" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#4800ff" d="M529.48,-671.39C553.57,-656.31 595.7,-629.6 631,-605.51 660.74,-585.21 694.22,-560.83 716.24,-544.57"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="718.41,-547.32 724.36,-538.56 714.24,-541.69 718.41,-547.32"/>
+</g>
+<!-- proc~write_sapt_section -->
+<g id="proc~~run_sapt~~CallsGraph_node31" class="node">
+<title>proc~write_sapt_section</title>
+<g id="a_proc~~run_sapt~~CallsGraph_node31"><a xlink:href="../proc/write_sapt_section.html" xlink:title="write_sapt_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="796.5,-816.51 686.5,-816.51 686.5,-792.51 796.5,-792.51 796.5,-816.51"/>
+<text text-anchor="middle" x="741.5" y="-802.11" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_sapt_section</text>
+</a>
+</g>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~write_sapt_section -->
+<g id="proc~~run_sapt~~CallsGraph_edge57" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~write_sapt_section</title>
+<path fill="none" stroke="#4800ff" d="M525.62,-695.65C552.89,-716.34 611.59,-758.59 667,-783.51 671.46,-785.51 676.15,-787.38 680.92,-789.1"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="680.18,-792.54 690.77,-792.42 682.42,-785.91 680.18,-792.54"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;error -->
+<g id="proc~~run_sapt~~CallsGraph_edge61" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#ff00da" d="M532.7,-596.61C558.03,-610.67 599.57,-635.42 631,-662.51 649.37,-678.34 649.48,-686.75 667,-703.51 682.32,-718.17 700.96,-733.1 715.64,-744.28"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="713.67,-747.18 723.76,-750.39 717.88,-741.58 713.67,-747.18"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;info -->
+<g id="proc~~run_sapt~~CallsGraph_edge62" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#ff00da" d="M551.06,-596.52C575.1,-604.34 605.62,-615.66 631,-629.51 648.55,-639.1 649.37,-647.07 667,-656.51 678.65,-662.75 692.11,-668.01 704.3,-672.14"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="703.58,-675.58 714.17,-675.33 705.74,-668.92 703.58,-675.58"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;add -->
+<g id="proc~~run_sapt~~CallsGraph_edge58" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#ff00da" d="M587.53,-581.93C665.12,-578.16 778.24,-569.06 816,-547.51 849.67,-528.3 873.93,-488.79 886.55,-464.09"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="889.84,-465.34 891.1,-454.82 883.56,-462.25 889.84,-465.34"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;create_object -->
+<g id="proc~~run_sapt~~CallsGraph_edge59" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff00da" d="M587.75,-596.58C664.23,-608.45 778.83,-626.24 844.77,-636.48"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="844.5,-639.98 854.92,-638.06 845.58,-633.06 844.5,-639.98"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;destroy -->
+<g id="proc~~run_sapt~~CallsGraph_edge60" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff00da" d="M530.75,-572.48C560.27,-555.74 616.41,-525.26 667,-505.51 678.98,-500.83 692.41,-496.69 704.49,-493.35"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="705.5,-496.7 714.25,-490.73 703.69,-489.94 705.5,-496.7"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;initialize -->
+<g id="proc~~run_sapt~~CallsGraph_edge63" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff00da" d="M524.35,-572.31C556.95,-544.8 636.13,-479.1 667,-463.51 678.09,-457.91 690.89,-453.6 702.67,-450.39"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="703.87,-453.69 712.7,-447.83 702.14,-446.91 703.87,-453.69"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~run_sapt~~CallsGraph_edge64" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#ff00da" d="M528.66,-572.42C554.15,-555.23 600.2,-521.63 631,-484.51 634.19,-480.67 701.46,-357.89 728.95,-307.64"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="732.16,-309.06 733.89,-298.61 726.02,-305.71 732.16,-309.06"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~run_sapt~~CallsGraph_edge65" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#ff00da" d="M587.75,-588.13C662.97,-591.63 775.08,-596.86 841.48,-599.95"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="841.58,-603.46 851.74,-600.43 841.91,-596.46 841.58,-603.46"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~run_sapt~~CallsGraph_edge66" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#ff00da" d="M557.76,-572.49C594.07,-563.36 644.19,-550.74 682.76,-541.04"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="683.96,-544.35 692.8,-538.51 682.25,-537.56 683.96,-544.35"/>
+</g>
+<!-- proc~add_gradient&#45;&gt;add -->
+<g id="proc~~run_sapt~~CallsGraph_edge67" class="edge">
+<title>proc~add_gradient&#45;&gt;add</title>
+<path fill="none" stroke="#00ff3f" d="M783.17,-295.49C794.61,-299.39 806.51,-304.87 816,-312.51 852.27,-341.73 876.64,-391.96 888.38,-420.68"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="885.21,-422.19 892.13,-430.21 891.72,-419.62 885.21,-422.19"/>
+</g>
+<!-- proc~add_gradient&#45;&gt;create_array -->
+<g id="proc~~run_sapt~~CallsGraph_edge68" class="edge">
+<title>proc~add_gradient&#45;&gt;create_array</title>
+<path fill="none" stroke="#00ff3f" d="M758.69,-274.32C785.8,-253.9 840.5,-212.69 872.23,-188.79"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="874.65,-191.35 880.53,-182.54 870.43,-185.76 874.65,-191.35"/>
+</g>
+<!-- proc~fragment_table_filename&#45;&gt;proc~get_basename -->
+<g id="proc~~run_sapt~~CallsGraph_edge69" class="edge">
+<title>proc~fragment_table_filename&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#00ff9f" d="M763.23,-910.34C780.32,-899.14 803.68,-880.89 816,-858.51 866.95,-765.95 788.82,-708.2 852,-623.51 852.56,-622.76 853.15,-622.04 853.77,-621.34"/>
+<polygon fill="#00ff9f" stroke="#00ff9f" points="856.1,-623.95 861.39,-614.77 851.53,-618.65 856.1,-623.95"/>
+</g>
+<!-- proc~write_sapt_section&#45;&gt;add -->
+<g id="proc~~run_sapt~~CallsGraph_edge70" class="edge">
+<title>proc~write_sapt_section&#45;&gt;add</title>
+<path fill="none" stroke="#df00ff" d="M796.77,-796.67C804.02,-793.57 810.75,-789.32 816,-783.51 877.11,-715.83 830.05,-670.02 852,-581.51 862.45,-539.39 878.83,-491.42 888.53,-464.27"/>
+<polygon fill="#df00ff" stroke="#df00ff" points="891.91,-465.22 892.02,-454.63 885.33,-462.84 891.91,-465.22"/>
+</g>
+<!-- proc~write_sapt_section&#45;&gt;create_object -->
+<g id="proc~~run_sapt~~CallsGraph_edge71" class="edge">
+<title>proc~write_sapt_section&#45;&gt;create_object</title>
+<path fill="none" stroke="#df00ff" d="M796.63,-794.3C803.57,-791.53 810.24,-788 816,-783.51 855.35,-752.84 879.02,-697.15 889.7,-666.39"/>
+<polygon fill="#df00ff" stroke="#df00ff" points="893.11,-667.23 892.94,-656.63 886.47,-665.02 893.11,-667.23"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_saptCallsGraph = svgPanZoom('#procrun_saptCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_sapt~~CalledByGraph Pages: 1 -->
+<svg id="procrun_saptCalledByGraph" width="641pt" height="182pt"
+ viewBox="0.00 0.00 641.00 181.66" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_sapt~~CalledByGraph" class="graph" transform="scale(0.58 0.58) rotate(0) translate(4 310)">
+<title>proc~~run_sapt~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-310 1104,-310 1104,4 -4,4"/>
+<!-- proc~run_sapt -->
+<g id="proc~~run_sapt~~CalledByGraph_node1" class="node">
+<title>proc~run_sapt</title>
+<polygon fill="none" stroke="black" points="1100,-208 1042,-208 1042,-184 1100,-184 1100,-208"/>
+<text text-anchor="middle" x="1071" y="-193.6" font-family="Helvetica,sans-Serif" font-size="10.50">run_sapt</text>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_node2" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node2"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1006,-208 912,-208 912,-184 1006,-184 1006,-208"/>
+<text text-anchor="middle" x="959" y="-193.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_sapt -->
+<g id="proc~~run_sapt~~CalledByGraph_edge1" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_sapt</title>
+<path fill="none" stroke="#ff0000" d="M1006.01,-196C1014.54,-196 1023.36,-196 1031.63,-196"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1031.75,-199.5 1041.75,-196 1031.75,-192.5 1031.75,-199.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~run_sapt~~CalledByGraph_node3" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node3"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="876,-306 710,-306 710,-282 876,-282 876,-306"/>
+<text text-anchor="middle" x="793" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M843.52,-281.93C854.58,-278.26 865.99,-273.65 876,-268 900.81,-254 924.77,-231.6 940.32,-215.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="942.92,-217.84 947.24,-208.17 937.83,-213.04 942.92,-217.84"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~run_sapt~~CalledByGraph_node4" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node4"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-226 90,-226 90,-202 277,-202 277,-226"/>
+<text text-anchor="middle" x="183.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M277.03,-211.85C439.06,-208.08 769.46,-200.39 901.57,-197.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="901.94,-200.81 911.86,-197.07 901.78,-193.81 901.94,-200.81"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~run_sapt~~CalledByGraph_node5" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node5"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="822,-168 764,-168 764,-144 822,-144 822,-168"/>
+<text text-anchor="middle" x="793" y="-153.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_edge4" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M822.19,-162.88C844.04,-168.2 875,-175.76 901.85,-182.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="901.37,-185.79 911.91,-184.76 903.03,-178.99 901.37,-185.79"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~run_sapt~~CalledByGraph_node6" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node6"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="873.5,-106 712.5,-106 712.5,-82 873.5,-82 873.5,-106"/>
+<text text-anchor="middle" x="793" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_edge5" class="edge">
+<title>proc~session_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M821.23,-106.14C837.51,-113.75 858.38,-124.16 876,-135 896.91,-147.87 919.17,-164.65 935.22,-177.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="933.45,-180.42 943.44,-183.94 937.83,-174.95 933.45,-180.42"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~run_sapt~~CalledByGraph_node7" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node7"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="829.5,-54 756.5,-54 756.5,-30 829.5,-30 829.5,-54"/>
+<text text-anchor="middle" x="793" y="-39.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_edge6" class="edge">
+<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M829.58,-50.19C844.99,-55 862.54,-62.29 876,-73 910.72,-100.63 935.95,-147.05 948.67,-174.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="945.61,-176.01 952.92,-183.68 951.99,-173.13 945.61,-176.01"/>
+</g>
+<!-- program~main -->
+<g id="proc~~run_sapt~~CalledByGraph_node8" class="node">
+<title>program~main</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-226 0,-226 0,-202 54,-202 54,-226"/>
+<text text-anchor="middle" x="27" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_sapt~~CalledByGraph_edge7" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.13,-224.57C65.04,-228.53 77.96,-232.63 90,-235 224.79,-261.49 261.13,-254 398.5,-254 398.5,-254 398.5,-254 599,-254 707.92,-254 833.07,-227.66 903.11,-210.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="904.18,-213.82 913.04,-208.02 902.49,-207.03 904.18,-213.82"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~run_sapt~~CalledByGraph_edge8" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#ffff00" d="M54.21,-214C61.73,-214 70.43,-214 79.67,-214"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="79.89,-217.5 89.89,-214 79.89,-210.5 79.89,-217.5"/>
+</g>
+<!-- proc~run_geometry_optimization -->
+<g id="proc~~run_sapt~~CalledByGraph_node15" class="node">
+<title>proc~run_geometry_optimization</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node15"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
+<polygon fill="#d9534f" stroke="#d9534f" points="263,-167 104,-167 104,-143 263,-143 263,-167"/>
+<text text-anchor="middle" x="183.5" y="-152.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_geometry_optimization -->
+<g id="proc~~run_sapt~~CalledByGraph_edge19" class="edge">
+<title>program~main&#45;&gt;proc~run_geometry_optimization</title>
+<path fill="none" stroke="#00ff00" d="M54.21,-203.99C78.08,-194.87 113.73,-181.26 141.39,-170.7"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="142.72,-173.94 150.81,-167.1 140.22,-167.4 142.72,-173.94"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="proc~~run_sapt~~CalledByGraph_node9" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node9"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="674,-108 522,-108 522,-84 674,-84 674,-108"/>
+<text text-anchor="middle" x="598" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
+<g id="proc~~run_sapt~~CalledByGraph_edge9" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M638.06,-108.14C671.9,-118.66 720.55,-133.79 754.06,-144.21"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="753.35,-147.65 763.94,-147.28 755.43,-140.97 753.35,-147.65"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~run_sapt~~CalledByGraph_node10" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node10"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="627.5,-66 568.5,-66 568.5,-42 627.5,-42 627.5,-66"/>
+<text text-anchor="middle" x="598" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~run_sapt~~CalledByGraph_edge12" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#00ffff" d="M627.89,-59.99C653.15,-65.22 690.82,-73.03 723.7,-79.84"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="723.23,-83.32 733.73,-81.92 724.65,-76.47 723.23,-83.32"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~run_sapt~~CalledByGraph_node11" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node11"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-188 559,-188 559,-164 637,-164 637,-188"/>
+<text text-anchor="middle" x="598" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="proc~~run_sapt~~CalledByGraph_edge10" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M637.13,-172.05C670.98,-168.54 720.18,-163.44 753.99,-159.94"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="754.37,-163.42 763.96,-158.91 753.65,-156.46 754.37,-163.42"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~run_sapt~~CalledByGraph_node12" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
+<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~run_sapt~~CalledByGraph_edge13" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M637.13,-17.93C668.49,-22.8 713.03,-29.72 746.29,-34.9"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="745.81,-38.36 756.23,-36.44 746.89,-31.45 745.81,-38.36"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="proc~~run_sapt~~CalledByGraph_node13" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node13"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="467.5,-149 331.5,-149 331.5,-125 467.5,-125 467.5,-149"/>
+<text text-anchor="middle" x="399.5" y="-134.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
+<g id="proc~~run_sapt~~CalledByGraph_edge11" class="edge">
+<title>proc~write_final_single_point&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M467.8,-140.27C550.4,-144.27 687.61,-150.93 753.87,-154.15"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="753.72,-157.65 763.88,-154.64 754.06,-150.65 753.72,-157.65"/>
+</g>
+<!-- proc~probe_gradient -->
+<g id="proc~~run_sapt~~CalledByGraph_node14" class="node">
+<title>proc~probe_gradient</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node14"><a xlink:href="../proc/probe_gradient.html" xlink:title="probe_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="446.5,-107 352.5,-107 352.5,-83 446.5,-83 446.5,-107"/>
+<text text-anchor="middle" x="399.5" y="-92.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">probe_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient -->
+<g id="proc~~run_sapt~~CalledByGraph_edge14" class="edge">
+<title>proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient</title>
+<path fill="none" stroke="#ff0000" d="M446.57,-95.23C465.95,-95.33 489.14,-95.45 511.45,-95.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="511.6,-99.07 521.62,-95.62 511.64,-92.07 511.6,-99.07"/>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~run_sapt~~CalledByGraph_edge15" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ff66" d="M263.06,-159C347.22,-163.28 478.13,-169.95 548.44,-173.53"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="548.61,-177.04 558.77,-174.05 548.97,-170.05 548.61,-177.04"/>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
+<g id="proc~~run_sapt~~CalledByGraph_edge17" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point</title>
+<path fill="none" stroke="#cc00ff" d="M263.27,-148.37C282.27,-146.78 302.54,-145.07 321.45,-143.48"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="321.83,-146.96 331.5,-142.64 321.24,-139.99 321.83,-146.96"/>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~probe_gradient -->
+<g id="proc~~run_sapt~~CalledByGraph_edge18" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~probe_gradient</title>
+<path fill="none" stroke="#ff0000" d="M222.3,-142.94C247.82,-134.95 282.31,-124.42 313,-116 322.51,-113.39 332.65,-110.76 342.51,-108.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="343.37,-111.69 352.23,-105.88 341.69,-104.89 343.37,-111.69"/>
+</g>
+<!-- proc~session_begin -->
+<g id="proc~~run_sapt~~CalledByGraph_node16" class="node">
+<title>proc~session_begin</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node16"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
+<polygon fill="#d9534f" stroke="#d9534f" points="486,-24 313,-24 313,0 486,0 486,-24"/>
+<text text-anchor="middle" x="399.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~run_sapt~~CalledByGraph_edge16" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0066ff" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
+</g>
+<!-- proc~mqc_session_begin -->
+<g id="proc~~run_sapt~~CalledByGraph_node17" class="node">
+<title>proc~mqc_session_begin</title>
+<g id="a_proc~~run_sapt~~CalledByGraph_node17"><a xlink:href="../proc/mqc_session_begin.html" xlink:title="mqc_session_begin">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="241,-24 126,-24 126,0 241,0 241,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_session_begin&#45;&gt;proc~session_begin -->
+<g id="proc~~run_sapt~~CalledByGraph_edge20" class="edge">
+<title>proc~mqc_session_begin&#45;&gt;proc~session_begin</title>
+<path fill="none" stroke="#0000ff" d="M241.01,-12C259.84,-12 281.39,-12 302.37,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="302.61,-15.5 312.61,-12 302.61,-8.5 302.61,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_saptCalledByGraph = svgPanZoom('#procrun_saptCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~6"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>err</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~115"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_data~22"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_data</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-na~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>na</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nb"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sym_a"></span>
+              character(len=8),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>sym_a</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sym_b"></span>
+              character(len=8),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>sym_b</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~13"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong>(N_SAPT_TERMS)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-xyz_a"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>xyz_a</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-xyz_b"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>xyz_b</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-z_a"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>z_a</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-z_b"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>z_b</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_sapt</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! SAPT0 between the deck&#39;s two fragments</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The monomers are the deck&#39;s own `fragments`, so no new keyword is needed</span>
+<span class="w">      </span><span class="c">!! -- a SAPT deck is a geometry, a basis, and the partition that says which</span>
+<span class="w">      </span><span class="c">!! atoms are which monomer:</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!!     &quot;model&quot;:     {&quot;method&quot;: &quot;sapt0&quot;, &quot;basis&quot;: &quot;6-31g&quot;},</span>
+<span class="w">      </span><span class="c">!!     &quot;molecules&quot;: [{&quot;xyz&quot;: &quot;dimer.xyz&quot;, &quot;fragments&quot;: [[0,1,2],[3,4,5]], ...}]</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **Exactly two fragments.** SAPT partitions the Hamiltonian as</span>
+<span class="w">      </span><span class="c">!! `H_A + H_B + V`; there is no slot for a third monomer, and a cluster is</span>
+<span class="w">      </span><span class="c">!! a separate SAPT calculation per pair rather than one calculation. That</span>
+<span class="w">      </span><span class="c">!! is the theory rather than a limit of this code -- see</span>
+<span class="w">      </span><span class="c">!! `validation/check_sapt.f90`, which walks the pairs of a six-water prism.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Rank zero only. The pairs of a cluster are the obvious thing to</span>
+<span class="w">      </span><span class="c">!! distribute, and a single pair is not.</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_libcint_sapt0</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_program_limits</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">N_SAPT_TERMS</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_elements</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">element_number_to_symbol</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_json_output_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_out</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">err</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_data</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="n">N_SAPT_TERMS</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">z_a</span><span class="p">(:),</span><span class="w"> </span><span class="n">z_b</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">xyz_a</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">xyz_b</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">8</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sym_a</span><span class="p">(:),</span><span class="w"> </span><span class="n">sym_b</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">a</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;SAPT: the deck must define exactly two fragments; &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">&quot;this one has &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">&quot;. SAPT is a two-body theory, so a cluster is one &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">&quot;calculation per pair.&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">na</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="n">nb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">z_a</span><span class="p">(</span><span class="n">na</span><span class="p">),</span><span class="w"> </span><span class="n">xyz_a</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">),</span><span class="w"> </span><span class="n">sym_a</span><span class="p">(</span><span class="n">na</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">z_b</span><span class="p">(</span><span class="n">nb</span><span class="p">),</span><span class="w"> </span><span class="n">xyz_b</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">),</span><span class="w"> </span><span class="n">sym_b</span><span class="p">(</span><span class="n">nb</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span>
+<span class="w">         </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w">        </span><span class="c">! stored 0-based</span>
+<span class="w">         </span><span class="n">z_a</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="w">         </span><span class="n">xyz_a</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sym_a</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">z_a</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">      do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span>
+<span class="w">         </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">z_b</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="w">         </span><span class="n">xyz_b</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sym_b</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">z_b</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      call </span><span class="n">run_libcint_sapt0</span><span class="p">(</span><span class="n">z_a</span><span class="p">,</span><span class="w"> </span><span class="n">sym_a</span><span class="p">,</span><span class="w"> </span><span class="n">xyz_a</span><span class="p">,</span><span class="w"> </span><span class="n">z_b</span><span class="p">,</span><span class="w"> </span><span class="n">sym_b</span><span class="p">,</span><span class="w"> </span><span class="n">xyz_b</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">basis_set</span><span class="p">,</span><span class="w"> </span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;SAPT: &quot;</span><span class="o">//</span><span class="n">err</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! The response terms are what enters the total; the uncoupled ones and</span>
+<span class="w">      </span><span class="c">! the S^2 exchange are printed beside them because they are what another</span>
+<span class="w">      </span><span class="c">! code&#39;s output is quoted in, and a term can only be checked against the</span>
+<span class="w">      </span><span class="c">! same term.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  SAPT0 interaction energy, Hartree&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    electrostatics        &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    exchange              &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;      (S^2 approximation) &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    induction             &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;      (uncoupled)         &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">4</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    exchange-induction    &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">7</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;      (uncoupled)         &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">6</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    dispersion            &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">8</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    exchange-dispersion   &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">9</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    delta HF              &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">10</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    --&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    supermolecular HF     &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">11</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    total                 &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">terms</span><span class="p">(</span><span class="mi">12</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">result_out</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! The `scf` slot, being the reference `energy_t%total()` sums. This is an</span>
+<span class="w">         </span><span class="c">! interaction energy and not an SCF energy; nothing here pretends otherwise.</span>
+<span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="n">N_SAPT_TERMS</span><span class="p">)</span>
+<span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">skip_json_output</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">output_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="n">N_SAPT_TERMS</span><span class="p">)</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">sapt_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_sapt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_breakdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fragment_breakdown</span>
+<span class="w">         </span><span class="k">call </span><span class="n">write_json_output</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json_data</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">z_a</span><span class="p">,</span><span class="w"> </span><span class="n">xyz_a</span><span class="p">,</span><span class="w"> </span><span class="n">sym_a</span><span class="p">,</span><span class="w"> </span><span class="n">z_b</span><span class="p">,</span><span class="w"> </span><span class="n">xyz_b</span><span class="p">,</span><span class="w"> </span><span class="n">sym_b</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">run_sapt</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-16 10:37 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
