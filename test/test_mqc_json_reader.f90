@@ -45,6 +45,7 @@ contains
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
+                  new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
                   new_unittest("fragmentation_cutoffs", test_cutoffs), &
                   new_unittest("cutoffs_must_decrease", test_cutoffs_monotonic), &
                   new_unittest("global_groups", test_global_groups), &
@@ -400,6 +401,40 @@ contains
       if (allocated(error)) return
       call check(error, config%distance_metric, "min")
    end subroutine test_fragmentation
+
+   subroutine test_fmo_scf_keywords(error)
+      !! FMO's inner per-fragment SCF controls reach the config from the deck
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, '// &
+                      '"expansion": "fmo", "scf_max_iter": 250, '// &
+                      '"scf_energy_tolerance": 1.0e-10, '// &
+                      '"scf_density_tolerance": 1.0e-8}', "", two_atoms())
+      call read_deck(config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fmo_scf_max_iter, 250)
+      if (allocated(error)) return
+      call check(error, close_enough(config%fmo_scf_energy_tol, 1.0e-10_dp))
+      if (allocated(error)) return
+      call check(error, close_enough(config%fmo_scf_density_tol, 1.0e-8_dp))
+      if (allocated(error)) return
+
+      ! Absent keys leave the defaults untouched.
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, '// &
+                      '"expansion": "fmo"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fmo_scf_max_iter, 100)
+      if (allocated(error)) return
+      call check(error, close_enough(config%fmo_scf_energy_tol, 1.0e-9_dp))
+   end subroutine test_fmo_scf_keywords
 
    subroutine test_cutoffs(error)
       !! Named and numeric n-mer keys both land at the right level

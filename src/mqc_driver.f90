@@ -593,6 +593,9 @@ contains
             expansion%resppc = config%fmo_resppc
             expansion%max_outer = config%fmo_max_outer
             expansion%outer_tol = config%fmo_tolerance
+            expansion%scf_max_iter = config%fmo_scf_max_iter
+            expansion%scf_energy_tol = config%fmo_scf_energy_tol
+            expansion%scf_density_tol = config%fmo_scf_density_tol
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
