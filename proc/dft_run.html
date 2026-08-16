@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">50 statements</a>
+                 title=" 0.3% of total for procedures.">51 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/dft_run.html#variable-backend_error~2">backend_error</a>
-            <a class="list-group-item" href="../proc/dft_run.html#variable-settings~4">settings</a>
+            <a class="list-group-item" href="../proc/dft_run.html#variable-settings~7">settings</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~43"></span>
+              <span class="anchor" id="variable-this~71"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -208,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~29"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~15"></span>
+              <span class="anchor" id="variable-result~39"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -238,7 +238,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~2"></span>
+              <span class="anchor" id="variable-want_gradient~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -637,7 +637,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~4"></span>
+              <span class="anchor" id="variable-settings~7"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -715,6 +715,17 @@ large graphs.</div>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">angular_points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">angular_points</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">grid_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">grid_level</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">pcm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">pcm</span>
+<span class="w">      </span><span class="c">! Set unconditionally, and deliberately not guarded on the backend. cuEST</span>
+<span class="w">      </span><span class="c">! has no four-index path so it fits regardless and ignores this, per the</span>
+<span class="w">      </span><span class="c">! note at the top of this module; on the libcint side it is a real choice.</span>
+<span class="w">      </span><span class="c">! Guarding on `BACKEND_LIBCINT` was tried and was wrong: an unspecified</span>
+<span class="w">      </span><span class="c">! backend parses to `BACKEND_AUTO` and is only resolved further down, so</span>
+<span class="w">      </span><span class="c">! the guard was false for every ordinary deck and the flag never arrived.</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! Until this line existed a Kohn-Sham deck could not turn fitting on</span>
+<span class="w">      </span><span class="c">! however it asked. That made the fitted path unreachable rather than</span>
+<span class="w">      </span><span class="c">! wrong, which is the better of the two failures but still a gap.</span>
+<span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">density_fitting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">use_density_fitting</span>
 
 <span class="w">      </span><span class="c">! The same choice Hartree-Fock makes, and made the same way rather than a</span>
 <span class="w">      </span><span class="c">! second time: cuEST when this build has it, because that is the production</span>
@@ -777,7 +788,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 07:07 +0000             </p>
+ on 2026-08-16 10:14 +0000             </p>
           </div>
         </div>
         <br>
