@@ -267,7 +267,15 @@ contains
          ! but only on the fitted path -- `df_two_electron_gradient` takes an
          ! `rs_omega`, while `two_electron_deriv` on the exact path still builds
          ! one kernel per call and has no second pass wired to it.
-         if (xc%range_separated .and. .not. fitted) then
+         ! `.or. unrestricted`, and that half is not hypothetical-only: the
+         ! fitted long-range pass below is written in the *restricted* branch
+         ! alone. Without this, unrestricted + fitted + range separated falls
+         ! through both the pass and the refusal and returns a gradient missing
+         ! wB97X's dominant exchange term. It is unreachable today because the
+         ! SCF refuses unrestricted fitting up front -- which is exactly the
+         ! shape the fitted-exchange-fraction bug had before Kohn-Sham fitting
+         ! became reachable and turned it live.
+         if (xc%range_separated .and. (.not. fitted .or. unrestricted)) then
             call error%set(ERROR_VALIDATION, "the gradient of a range-separated "// &
                            "functional needs a second exchange derivative at the "// &
                            "screened omega. The density-fitted path builds it; the "// &
@@ -352,8 +360,21 @@ contains
          ! meta-GGA outright when the caller cannot take it, because its own
          ! per-functional dispatch would otherwise fall through to the LDA
          ! branch. Unrestricted is refused in there for a separate reason.
-         call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
-                                     vtau=vtau)
+         ! `density_beta` where there is one, so the meta-GGA refusal inside
+         ! fires for the reason it was written. Without it that routine sees a
+         ! restricted call, its own guard never runs, and what refuses an
+         ! unrestricted meta-GGA gradient is the spin-consistency check further
+         ! down -- correct by accident, with a message about internal state
+         ! rather than about the missing feature.
+         if (unrestricted) then
+            call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
+                                        density_beta=density_beta, rho_beta=rho_beta, &
+                                        vrho_beta=vrho_beta, grad_coeff_beta=gcoef_beta, &
+                                        vtau=vtau)
+         else
+            call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
+                                        vtau=vtau)
+         end if
       else if (gga) then
          if (unrestricted) then
             call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
@@ -1199,12 +1220,19 @@ contains
          omega = 0.0_dp
       end if
 
-      if (unrestricted) then
-         call add_exchange_channel(three, jinv, orbitals, n_occupied, kf, gamma, omega)
-         call add_exchange_channel(three, jinv, orbitals_beta, n_occupied_beta, kf, &
-                                   gamma, omega)
-      else
-         call add_exchange_channel(three, jinv, orbitals, n_occupied, 2.0_dp*kf, gamma, omega)
+      ! Skipped outright at zero rather than multiplied by it. The header a
+      ! few lines up claimed this and the code did not: a pure functional was
+      ! paying the whole `e^P_ij` transform, the `J^-1 e` solve and the `Z^P`
+      ! back-transform to add exactly nothing.
+      if (kf /= 0.0_dp) then
+         if (unrestricted) then
+            call add_exchange_channel(three, jinv, orbitals, n_occupied, kf, gamma, omega)
+            call add_exchange_channel(three, jinv, orbitals_beta, n_occupied_beta, kf, &
+                                      gamma, omega)
+         else
+            call add_exchange_channel(three, jinv, orbitals, n_occupied, 2.0_dp*kf, &
+                                      gamma, omega)
+         end if
       end if
 
       deallocate (three, metric, half, jinv, g, rho)
