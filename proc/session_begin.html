@@ -185,7 +185,7 @@ from there. Callers on rank 0 get control back with a live session.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~94"></span>
+              <span class="anchor" id="variable-this~38"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -200,7 +200,7 @@ from there. Callers on rank 0 get control back with a live session.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~68"></span>
+              <span class="anchor" id="variable-error~39"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -278,18 +278,18 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <path fill="none" stroke="#ff0000" d="M173.23,-3276.81C230.04,-3276.81 306.22,-3276.81 373.5,-3276.81 373.5,-3276.81 373.5,-3276.81 530.5,-3276.81 769.42,-3276.81 675.27,-3565.55 884,-3681.81 903.8,-3692.84 927.82,-3698.43 949.65,-3701.16"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="949.52,-3704.67 959.83,-3702.26 950.26,-3697.71 949.52,-3704.67"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~session_begin~~CallsGraph_node5" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~session_begin~~CallsGraph_node5"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~session_begin~~CallsGraph_node5"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="288.5,-1510.81 210.5,-1510.81 210.5,-1486.81 288.5,-1486.81 288.5,-1510.81"/>
 <text text-anchor="middle" x="249.5" y="-1496.41" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
 <g id="proc~~session_begin~~CallsGraph_edge4" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#ff0000" d="M88.61,-3264.51C101.85,-3118.31 228.94,-1714.85 246.49,-1520.98"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="249.99,-1521.13 247.41,-1510.85 243.02,-1520.5 249.99,-1521.13"/>
 </g>
@@ -311,9 +311,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <polygon fill="#777777" stroke="#777777" points="1326,-194.81 1272,-194.81 1272,-170.81 1326,-170.81 1326,-194.81"/>
 <text text-anchor="middle" x="1299" y="-180.41" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;bcast -->
+<!-- proc~worker_loop&#45;&gt;bcast -->
 <g id="proc~~session_begin~~CallsGraph_edge6" class="edge">
-<title>proc~worker_loop~2&#45;&gt;bcast</title>
+<title>proc~worker_loop&#45;&gt;bcast</title>
 <path fill="none" stroke="#0066ff" d="M281.04,-1486.68C284.5,-1484.2 287.63,-1481.27 290,-1477.81 465.99,-1221.46 332.73,-372.96 459,-88.81 478.13,-45.77 481.4,-8.81 528.5,-8.81 528.5,-8.81 528.5,-8.81 743,-8.81 922.09,-8.81 996.51,34 1141,-71.81 1169.87,-92.95 1149.86,-120.5 1177,-143.81 1200.8,-164.25 1235.47,-174.01 1261.61,-178.66"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="1261.09,-182.12 1271.52,-180.25 1262.2,-175.21 1261.09,-182.12"/>
 </g>
@@ -323,9 +323,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <polygon fill="#777777" stroke="#777777" points="401.5,-1447.81 347.5,-1447.81 347.5,-1423.81 401.5,-1423.81 401.5,-1447.81"/>
 <text text-anchor="middle" x="374.5" y="-1433.41" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finalize</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;finalize -->
+<!-- proc~worker_loop&#45;&gt;finalize -->
 <g id="proc~~session_begin~~CallsGraph_edge7" class="edge">
-<title>proc~worker_loop~2&#45;&gt;finalize</title>
+<title>proc~worker_loop&#45;&gt;finalize</title>
 <path fill="none" stroke="#0066ff" d="M273.56,-1486.75C278.97,-1483.86 284.71,-1480.76 290,-1477.81 306.18,-1468.79 309.5,-1465.23 326,-1456.81 329.79,-1454.87 333.81,-1452.93 337.83,-1451.06"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="339.46,-1454.16 347.12,-1446.85 336.57,-1447.79 339.46,-1454.16"/>
 </g>
@@ -335,9 +335,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 <polygon fill="#777777" stroke="#777777" points="423,-1531.81 326,-1531.81 326,-1507.81 423,-1507.81 423,-1531.81"/>
 <text text-anchor="middle" x="374.5" y="-1517.41" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_finalize</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;pic_mpi_finalize -->
+<!-- proc~worker_loop&#45;&gt;pic_mpi_finalize -->
 <g id="proc~~session_begin~~CallsGraph_edge8" class="edge">
-<title>proc~worker_loop~2&#45;&gt;pic_mpi_finalize</title>
+<title>proc~worker_loop&#45;&gt;pic_mpi_finalize</title>
 <path fill="none" stroke="#0066ff" d="M288.74,-1505.34C297.34,-1506.81 306.65,-1508.4 315.84,-1509.97"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="315.29,-1513.42 325.73,-1511.65 316.46,-1506.52 315.29,-1513.42"/>
 </g>
@@ -350,9 +350,9 @@ from there. Callers on rank 0 get control back with a live session.</p>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~session_begin~~CallsGraph_edge9" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#0066ff" d="M288.74,-1492.28C301.1,-1490.17 314.92,-1487.81 327.76,-1485.62"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="328.53,-1489.04 337.8,-1483.91 327.35,-1482.14 328.53,-1489.04"/>
 </g>
@@ -2720,7 +2720,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 10:37 +0000             </p>
+ on 2026-08-16 12:13 +0000             </p>
           </div>
         </div>
         <br>

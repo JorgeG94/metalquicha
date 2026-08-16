@@ -39,7 +39,83 @@ module mqc_json_basis_reader
    public :: read_json_basis_element    !! Parse one element from a BSE JSON file
    public :: build_molecular_basis_json  !! Build a molecular basis from a BSE JSON file
 
+   !> A basis file, parsed once and kept
+   type :: cached_basis_t
+      character(len=:), allocatable :: path
+      type(json_file), pointer :: json => null()
+         !! Heap-allocated, and a pointer on purpose. `json_file` has a
+         !! finaliser, so holding one by value would mean that growing the cache
+         !! array -- copy into a bigger array, `move_alloc`, old array finalised
+         !! -- destroys the parsed tree that the surviving copy still points at.
+         !! Every basis loaded before the second one would go stale the moment
+         !! the second arrived. Storing pointers means growth copies addresses
+         !! and nothing is finalised.
+   end type cached_basis_t
+
+   !> Every basis file read so far, for the life of the process
+   !>
+   !> Parsing was happening once per *element*, not once per file, so a water
+   !> molecule re-read and re-parsed the whole basis set twice and a five-element
+   !> system five times. Anything that builds molecules in a loop -- a fragment
+   !> method especially, which builds one per fragment per iteration -- paid that
+   !> over and over, and on a shared filesystem with many ranks it is the same
+   !> file being opened by everyone repeatedly.
+   !>
+   !> A run touches one or two basis sets, so this never holds much. Entries are
+   !> never evicted: the whole point is that the second request is free, and a
+   !> parsed basis set is small next to anything it is used to compute.
+   !>
+   !> Not thread safe, and does not need to be -- basis sets are read while
+   !> setting a molecule up, not from inside a parallel region.
+   type(cached_basis_t), allocatable, target :: basis_cache(:)
+
 contains
+
+   subroutine cached_basis_json(json_path, json, error)
+      !! The parsed basis file, loading it the first time it is asked for
+      character(len=*), intent(in) :: json_path
+      type(json_file), pointer, intent(out) :: json
+      type(error_t), intent(out) :: error
+
+      type(cached_basis_t), allocatable :: bigger(:)
+      logical :: file_exists
+      integer :: i, n
+
+      nullify (json)
+      if (allocated(basis_cache)) then
+         do i = 1, size(basis_cache)
+            if (basis_cache(i)%path == json_path) then
+               json => basis_cache(i)%json
+               ! A failed lookup earlier leaves the exception flag set, which
+               ! would make every later query on this file look like a failure.
+               call json%clear_exceptions()
+               return
+            end if
+         end do
+      end if
+
+      inquire (file=json_path, exist=file_exists)
+      if (.not. file_exists) then
+         call error%set(ERROR_IO, "JSON basis file not found: "//trim(json_path))
+         return
+      end if
+
+      n = 0
+      if (allocated(basis_cache)) n = size(basis_cache)
+      allocate (bigger(n + 1))
+      if (n > 0) bigger(1:n) = basis_cache
+      call move_alloc(bigger, basis_cache)
+
+      basis_cache(n + 1)%path = json_path
+      allocate (basis_cache(n + 1)%json)
+      call basis_cache(n + 1)%json%initialize()
+      call basis_cache(n + 1)%json%load(filename=json_path)
+      if (basis_cache(n + 1)%json%failed()) then
+         call error%set(ERROR_PARSE, "Could not parse JSON basis file: "//trim(json_path))
+         return
+      end if
+      json => basis_cache(n + 1)%json
+   end subroutine cached_basis_json
 
    pure function integer_to_key(value) result(key)
       !! Atomic number as the string BSE keys its elements by
@@ -61,7 +137,7 @@ contains
       type(atomic_basis_type), intent(out) :: atom_basis
       type(error_t), intent(out) :: error
 
-      type(json_file) :: json
+      type(json_file), pointer :: json
       character(len=:), allocatable :: element_key, shell_path
       character(len=:), allocatable :: value_text
       integer, allocatable :: angular_momenta(:)
@@ -70,14 +146,8 @@ contains
       integer :: shell_form
       logical :: found
       real(dp) :: value
-      logical :: file_exists
-      logical :: saw_cartesian, saw_spherical
 
-      inquire (file=json_path, exist=file_exists)
-      if (.not. file_exists) then
-         call error%set(ERROR_IO, "JSON basis file not found: "//trim(json_path))
-         return
-      end if
+      logical :: saw_cartesian, saw_spherical
 
       atomic_number = element_symbol_to_number(trim(adjustl(element_symbol)))
       if (atomic_number <= 0) then
@@ -86,20 +156,14 @@ contains
       end if
       element_key = integer_to_key(atomic_number)
 
-      call json%initialize()
-      call json%load(filename=json_path)
-      if (json%failed()) then
-         call error%set(ERROR_PARSE, "Could not parse JSON basis file: "//trim(json_path))
-         call json%destroy()
-         return
-      end if
+      call cached_basis_json(json_path, json, error)
+      if (error%has_error()) return
 
       ! ---- how many shells, and how many after splitting? -------------------
       call json%info("elements."//element_key//".electron_shells", found=found, n_children=n_shells_json)
       if (.not. found .or. n_shells_json <= 0) then
          call error%set(ERROR_PARSE, "Element "//trim(element_symbol)// &
                         " not found in JSON basis file "//trim(json_path))
-         call json%destroy()
          return
       end if
 
@@ -120,7 +184,6 @@ contains
       if (n_shells_total == 0) then
          call error%set(ERROR_PARSE, "No usable shells for "//trim(element_symbol)// &
                         " in "//trim(json_path))
-         call json%destroy()
          return
       end if
 
@@ -137,7 +200,6 @@ contains
                         "form or the other for the whole molecule, so this basis "// &
                         "cannot be used for this element; choose a set that is "// &
                         "consistently one or the other.")
-         call json%destroy()
          return
       end if
 
@@ -166,7 +228,6 @@ contains
          call json%info(shell_path//".exponents", found=found, n_children=n_prim)
          if (.not. found .or. n_prim <= 0) then
             call error%set(ERROR_PARSE, "Shell without exponents in "//trim(json_path))
-            call json%destroy()
             return
          end if
 
@@ -194,14 +255,12 @@ contains
                              value_text, found)
                if (.not. found) then
                   call error%set(ERROR_PARSE, "Missing exponent in "//trim(json_path))
-                  call json%destroy()
                   return
                end if
                read (value_text, *, iostat=read_status) value
                if (read_status /= 0) then
                   call error%set(ERROR_PARSE, "Malformed exponent '"//trim(value_text)// &
                                  "' in "//trim(json_path))
-                  call json%destroy()
                   return
                end if
                atom_basis%shells(shell_index)%exponents(iprim) = value
@@ -211,14 +270,12 @@ contains
                if (.not. found) then
                   call error%set(ERROR_PARSE, "Coefficient set does not match the "// &
                                  "exponent count in "//trim(json_path))
-                  call json%destroy()
                   return
                end if
                read (value_text, *, iostat=read_status) value
                if (read_status /= 0) then
                   call error%set(ERROR_PARSE, "Malformed coefficient '"//trim(value_text)// &
                                  "' in "//trim(json_path))
-                  call json%destroy()
                   return
                end if
                atom_basis%shells(shell_index)%coefficients(iprim) = value
@@ -226,7 +283,6 @@ contains
          end do
       end do
 
-      call json%destroy()
    end subroutine read_json_basis_element
 
    function shell_angular_form(json, element_key, ishell, angular_momenta) result(form)

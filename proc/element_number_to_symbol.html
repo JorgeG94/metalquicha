@@ -182,7 +182,7 @@ Covers the complete periodic table (elements 1-118)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~3"></span>
+              <span class="anchor" id="variable-atomic_number~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -200,7 +200,7 @@ Covers the complete periodic table (elements 1-118)</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-symbol~2"></span>
+          <span class="anchor" id="variable-symbol~4"></span>
           character(len=2)
         </small>
       </h3>
@@ -591,20 +591,20 @@ Covers the complete periodic table (elements 1-118)</p>
 <path fill="none" stroke="#ff007f" d="M205.48,-620.08C225.01,-631.81 254.41,-650.79 277,-671 295.32,-687.4 291.04,-701.95 313,-713 420.46,-767.07 462.7,-732 583,-732 583,-732 583,-732 1505.5,-732 1625.88,-732 1765.17,-732 1852.07,-732"/>
 <polygon fill="#ff007f" stroke="#ff007f" points="1852.14,-735.5 1862.14,-732 1852.14,-728.5 1852.14,-735.5"/>
 </g>
-<!-- proc~worker_loop -->
-<g id="proc~~element_number_to_symbol~~CalledByGraph_node51" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~element_number_to_symbol~~CalledByGraph_node51"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<!-- proc~worker_loop~2 -->
+<g id="proc~~element_number_to_symbol~~CalledByGraph_node52" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~element_number_to_symbol~~CalledByGraph_node52"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="428,-578 350,-578 350,-554 428,-554 428,-578"/>
 <text text-anchor="middle" x="389" y="-563.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
-<g id="proc~~element_number_to_symbol~~CalledByGraph_edge80" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#7f00ff" d="M242.81,-595.96C273.6,-589.61 310.91,-581.91 340,-575.91"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="340.84,-579.31 349.92,-573.86 339.42,-572.45 340.84,-579.31"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~element_number_to_symbol~~CalledByGraph_edge81" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#ff00ff" d="M242.81,-595.96C273.6,-589.61 310.91,-581.91 340,-575.91"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="340.84,-579.31 349.92,-573.86 339.42,-572.45 340.84,-579.31"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~element_number_to_symbol~~CalledByGraph_node53" class="node">
@@ -1125,26 +1125,26 @@ Covers the complete periodic table (elements 1-118)</p>
 <path fill="none" stroke="#ff9900" d="M1075.03,-432.98C1104.03,-420.2 1152.08,-400.07 1195,-387 1202.75,-384.64 1210.94,-382.43 1219.12,-380.41"/>
 <polygon fill="#ff9900" stroke="#ff9900" points="1220.17,-383.75 1229.08,-378.02 1218.54,-376.95 1220.17,-383.75"/>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
-<g id="proc~~element_number_to_symbol~~CalledByGraph_edge67" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#7f00ff" d="M428.13,-561.85C461.98,-558.17 511.18,-552.81 544.99,-549.14"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="545.39,-552.61 554.96,-548.05 544.64,-545.65 545.39,-552.61"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~element_number_to_symbol~~CalledByGraph_node52" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~element_number_to_symbol~~CalledByGraph_node52"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<!-- proc~worker_loop -->
+<g id="proc~~element_number_to_symbol~~CalledByGraph_node51" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~element_number_to_symbol~~CalledByGraph_node51"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="428,-704 350,-704 350,-680 428,-680 428,-704"/>
 <text text-anchor="middle" x="389" y="-689.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~element_number_to_symbol~~CalledByGraph_edge71" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#ff0098" d="M428.13,-692C459.36,-692 503.64,-692 536.86,-692"/>
 <polygon fill="#ff0098" stroke="#ff0098" points="537.23,-695.5 547.23,-692 537.23,-688.5 537.23,-695.5"/>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<g id="proc~~element_number_to_symbol~~CalledByGraph_edge67" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#7f00ff" d="M428.13,-561.85C461.98,-558.17 511.18,-552.81 544.99,-549.14"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="545.39,-552.61 554.96,-548.05 544.64,-545.65 545.39,-552.61"/>
 </g>
 <!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
 <g id="proc~~element_number_to_symbol~~CalledByGraph_edge68" class="edge">
@@ -1236,11 +1236,11 @@ Covers the complete periodic table (elements 1-118)</p>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~element_number_to_symbol~~CalledByGraph_edge81" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#ff00ff" d="M270.21,-692C294,-692 318.99,-692 339.8,-692"/>
-<polygon fill="#ff00ff" stroke="#ff00ff" points="339.96,-695.5 349.96,-692 339.96,-688.5 339.96,-695.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~element_number_to_symbol~~CalledByGraph_edge80" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#7f00ff" d="M270.21,-692C294,-692 318.99,-692 339.8,-692"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="339.96,-695.5 349.96,-692 339.96,-688.5 339.96,-695.5"/>
 </g>
 </g>
 </svg>
@@ -1380,7 +1380,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 10:37 +0000             </p>
+ on 2026-08-16 12:13 +0000             </p>
           </div>
         </div>
         <br>

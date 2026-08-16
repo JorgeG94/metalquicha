@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for modules and submodules.">262 statements</a>
+                 title=" 1.5% of total for modules and submodules.">284 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -128,8 +128,18 @@
         <div id="sidebar">
       <h3>Contents</h3>
   
-  
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_json_basis_reader.html#variable-basis_cache">basis_cache</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -139,13 +149,25 @@
   
   
       <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_json_basis_reader.html#type-cached_basis_t">cached_basis_t</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
       <a data-bs-toggle="collapse" href="#funcs-0"
          aria-expanded="false" aria-controls="funcs-0">
          <h4 class="card-header bg-primary text-white">Functions</h4>
       </a>
       <div id="funcs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-integer_to_key">integer_to_key</a>
+            <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-integer_to_key~2">integer_to_key</a>
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-shell_angular_form">shell_angular_form</a>
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-shell_contractions">shell_contractions</a>
         </div>
@@ -161,6 +183,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-build_molecular_basis_json">build_molecular_basis_json</a>
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-read_json_basis_element">read_json_basis_element</a>
+            <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-cached_basis_json">cached_basis_json</a>
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-copy_atomic_basis">copy_atomic_basis</a>
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-shell_angular_momenta">shell_angular_momenta</a>
         </div>
@@ -213,11 +236,11 @@ Build a molecular basis from a BSE JSON file</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">json_module</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">json_module</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -414,15 +437,136 @@ large graphs.</div>
       <br>
 
 
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis_cache"></span>
+              type(<a href='../type/cached_basis_t.html'>cached_basis_t</a>),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable, target
+            </td>
+            <td>::</td>
+            <td><strong>basis_cache</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Every basis file read so far, for the life of the process</p>
+<p>Parsing was happening once per <em>element</em>, not once per file, so a water
+molecule re-read and re-parsed the whole basis set twice and a five-element
+system five times. Anything that builds molecules in a loop &ndash; a fragment
+method especially, which builds one per fragment per iteration &ndash; paid that
+over and over, and on a shared filesystem with many ranks it is the same
+file being opened by everyone repeatedly.</p>
+<p>A run touches one or two basis sets, so this never holds much. Entries are
+never evicted: the whole point is that the second request is free, and a
+parsed basis set is small next to anything it is used to compute.</p>
+<p>Not thread safe, and does not need to be &ndash; basis sets are read while
+setting a molecule up, not from inside a parallel region.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
 
+        </section>
+        <br>
 
 
 
 
         <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-cached_basis_t"></span>
+      <h3>
+        type, private&nbsp;::&nbsp;
+        <a href='../type/cached_basis_t.html'>cached_basis_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>A basis file, parsed once and kept</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~5"></span>
+              type(json_file),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+<td>=&gt; </td>
+                <td>null()</td>
+            <td>
+<p>Heap-allocated, and a pointer on purpose. <code>json_file</code> has a
+finaliser, so holding one by value would mean that growing the cache
+array &ndash; copy into a bigger array, <code>move_alloc</code>, old array finalised
+&ndash; destroys the parsed tree that the surviving copy still points at.
+Every basis loaded before the second one would go stale the moment
+the second arrived. Storing pointers means growth copies addresses
+and nothing is finalised.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-path~7"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>path</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
           <h2>Functions</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-integer_to_key"></span> <h3>private pure function <a href='../proc/integer_to_key.html'>integer_to_key</a>(value) result(key)  
+    <div class="card-header codesum"><span class="anchor" id="proc-integer_to_key~2"></span> <h3>private pure function <a href='../proc/integer_to_key~2.html'>integer_to_key</a>(value) result(key)  
 </h3></div>
     <div class="card-body">
           
@@ -441,7 +585,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value"></span>
+              <span class="anchor" id="variable-value~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -486,7 +630,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~2"></span>
+              <span class="anchor" id="variable-json~8"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -501,7 +645,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~2"></span>
+              <span class="anchor" id="variable-element_key~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -576,7 +720,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~4"></span>
+              <span class="anchor" id="variable-json~10"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -591,7 +735,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~4"></span>
+              <span class="anchor" id="variable-element_key~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -671,7 +815,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_path~2"></span>
+              <span class="anchor" id="variable-json_path~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -686,7 +830,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols"></span>
+              <span class="anchor" id="variable-element_symbols~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -716,7 +860,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~3"></span>
+              <span class="anchor" id="variable-error~66"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -756,7 +900,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_path"></span>
+              <span class="anchor" id="variable-json_path~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -771,7 +915,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbol"></span>
+              <span class="anchor" id="variable-element_symbol~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -801,7 +945,77 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~2"></span>
+              <span class="anchor" id="variable-error~65"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-cached_basis_json"></span> <h3>private  subroutine <a href='../proc/cached_basis_json.html'>cached_basis_json</a>(json_path, json, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The parsed basis file, loading it the first time it is asked for</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_path~4"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_path</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~6"></span>
+              type(json_file),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~64"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -841,7 +1055,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-source"></span>
+              <span class="anchor" id="variable-source~6"></span>
               type(<a href='../type/atomic_basis_type.html'>atomic_basis_type</a>),
             </td>
 <td>intent(in)</td>
@@ -856,7 +1070,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest"></span>
+              <span class="anchor" id="variable-dest~6"></span>
               type(<a href='../type/atomic_basis_type.html'>atomic_basis_type</a>),
             </td>
 <td>intent(out)</td>
@@ -896,7 +1110,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~3"></span>
+              <span class="anchor" id="variable-json~9"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -911,7 +1125,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~3"></span>
+              <span class="anchor" id="variable-element_key~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -956,7 +1170,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~3"></span>
+              <span class="anchor" id="variable-found~21"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -999,7 +1213,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 10:37 +0000             </p>
+ on 2026-08-16 12:13 +0000             </p>
           </div>
         </div>
         <br>
