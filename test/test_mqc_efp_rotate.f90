@@ -258,9 +258,15 @@ contains
 
       ! The quadrupole trace, summed over points: a rotational invariant of a rank-2
       ! tensor, and the thing a wrong packing destroys first.
+      !
+      ! `plain` and `spun` are two independent SCFs, so the invariant holds only to
+      ! their agreement, not to machine precision. That is usually ~2e-15, but the
+      ! threaded Fock build is not bit-reproducible and about one run in thirty
+      ! lands ~1e-10 apart -- so the tolerance is 1e-8, well above that and far
+      ! below the O(1) shift a genuinely wrong packing would make.
       before = sum(plain%quadrupole(1, :) + plain%quadrupole(2, :) + plain%quadrupole(3, :))
       after = sum(spun%quadrupole(1, :) + spun%quadrupole(2, :) + spun%quadrupole(3, :))
-      call check(error, abs(after - before) < 1.0e-12_dp, &
+      call check(error, abs(after - before) < 1.0e-8_dp, &
                  "the quadrupole trace changed under rotation")
       if (allocated(error)) return
 
