@@ -71,8 +71,7 @@ contains
       !! its energy less every proper subset's delta, so keeping a trimer whose
       !! dimers were screened away fails the lookup rather than approximating
       !! anything. `fraglist_t%close_subsets` exists for this.
-      use mqc_method_types, only: METHOD_TYPE_EFP2
-      use mqc_method_types, only: METHOD_TYPE_SAPT0
+      use mqc_method_types, only: METHOD_TYPE_EFP2, METHOD_TYPE_SAPT0
       type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
@@ -151,6 +150,9 @@ contains
       if (config%method_config%method_type == METHOD_TYPE_EFP2) then
          call run_efp(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
                       result_out)
+         return
+      end if
+
       ! SAPT takes neither path either: it returns the interaction between two
       ! monomers rather than the energy of one system, so there is nothing for a
       ! many-body expansion to expand and no single wavefunction to fragment.
@@ -891,23 +893,6 @@ contains
 
    end subroutine run_multi_molecule_calculations
 
-   subroutine run_efp(config, sys_geom, rank, result_out)
-      !! The interaction energy of a set of effective fragments
-      !!
-      !! Each fragment of the deck names a potential; the backend loads them, places
-      !! each on the atoms the deck gave it, turns it into that orientation and
-      !! evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were
-      !! solved when the potentials were made.
-      !!
-      !! The work itself is in `run_libcint_efp` rather than here, because all of it
-      !! lives behind `MQC_ENABLE_LIBCINT` and this file compiles either way. The stub
-      !! declines with the same signature and names the build option.
-      !!
-      !! Rank zero only, for now. The pair loop is the obvious thing to distribute and
-      !! is already flat, but the terms are milliseconds on a dimer and shaping that
-      !! before there is a cluster to shape it around would be guessing.
-      use mqc_libcint_bridge, only: run_libcint_efp
-      use mqc_program_limits, only: N_EFP_TERMS
    subroutine run_sapt(config, sys_geom, rank, result_out)
       !! SAPT0 between the deck's two fragments
       !!
@@ -937,27 +922,6 @@ contains
 
       type(error_t) :: err
       type(json_output_data_t) :: json_data
-      real(dp) :: terms(N_EFP_TERMS)
-      integer :: n
-
-      if (rank /= 0) return
-
-      n = sys_geom%n_monomers
-      if (.not. allocated(config%fragment_potentials)) then
-         call logger%error("EFP: no fragment carries a potential -- give "// &
-                           "'fragment_potentials' in the deck")
-         return
-      end if
-      if (size(config%fragment_potentials) /= n) then
-         call logger%error("EFP: the deck has "//to_char(n)//" fragments but "// &
-                           to_char(size(config%fragment_potentials))//" potentials")
-         return
-      end if
-
-      call run_libcint_efp(config%fragment_potentials, sys_geom%fragment_sizes, &
-                           sys_geom%fragment_atoms, sys_geom%coordinates, terms, err)
-      if (err%has_error()) then
-         call logger%error("EFP: "//err%get_message())
       real(dp) :: terms(N_SAPT_TERMS)
       integer, allocatable :: z_a(:), z_b(:)
       real(dp), allocatable :: xyz_a(:, :), xyz_b(:, :)
@@ -1003,31 +967,6 @@ contains
       ! code's output is quoted in, and a term can only be checked against the
       ! same term.
       call logger%info("============================================")
-      call logger%info("  EFP2 interaction energy, Hartree")
-      call logger%info("    electrostatics      "//to_char(terms(1)))
-      call logger%info("    polarization        "//to_char(terms(2)))
-      call logger%info("    exchange repulsion  "//to_char(terms(3)))
-      call logger%info("    dispersion          "//to_char(terms(4)))
-      call logger%info("    charge transfer     "//to_char(terms(5)))
-      call logger%info("    total               "//to_char(terms(6)))
-      call logger%info("============================================")
-
-      if (present(result_out)) then
-         ! In the `scf` slot because that is the one `energy_t%total()` sums as the
-         ! reference, and an EFP interaction energy has no correlation correction
-         ! sitting on top of it. It is not an SCF energy and nothing here pretends
-         ! otherwise -- there is no wavefunction solved in this routine at all.
-         result_out%energy%scf = terms(6)
-         result_out%has_energy = .true.
-      end if
-
-      ! The same summary every other run leaves behind, so a driven run or the
-      ! validation harness can read the number back rather than scrape the log.
-      ! `UNFRAGMENTED` because that is the shape of what is written -- one energy for
-      ! one system -- not a claim that the system has no fragments.
-      if (.not. config%skip_json_output) then
-         json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
-         json_data%total_energy = terms(6)
       call logger%info("  SAPT0 interaction energy, Hartree")
       call logger%info("    electrostatics        "//to_char(terms(1)))
       call logger%info("    exchange              "//to_char(terms(3)))
@@ -1061,10 +1000,91 @@ contains
          call write_json_output(json_data)
          call json_data%destroy()
       end if
-   end subroutine run_efp
 
       deallocate (z_a, xyz_a, sym_a, z_b, xyz_b, sym_b)
    end subroutine run_sapt
+
+   subroutine run_efp(config, sys_geom, rank, result_out)
+      !! The interaction energy of a set of effective fragments
+      !!
+      !! Each fragment of the deck names a potential; the backend loads them, places
+      !! each on the atoms the deck gave it, turns it into that orientation and
+      !! evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were
+      !! solved when the potentials were made.
+      !!
+      !! The work itself is in `run_libcint_efp` rather than here, because all of it
+      !! lives behind `MQC_ENABLE_LIBCINT` and this file compiles either way. The stub
+      !! declines with the same signature and names the build option.
+      !!
+      !! Rank zero only, for now. The pair loop is the obvious thing to distribute and
+      !! is already flat, but the terms are milliseconds on a dimer and shaping that
+      !! before there is a cluster to shape it around would be guessing.
+      use mqc_libcint_bridge, only: run_libcint_efp
+      use mqc_program_limits, only: N_EFP_TERMS
+      use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
+      type(driver_config_t), intent(in) :: config
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: rank
+      type(calculation_result_t), intent(out), optional :: result_out
+
+      type(error_t) :: err
+      type(json_output_data_t) :: json_data
+      real(dp) :: terms(N_EFP_TERMS)
+      integer :: n
+
+      if (rank /= 0) return
+
+      n = sys_geom%n_monomers
+      if (.not. allocated(config%fragment_potentials)) then
+         call logger%error("EFP: no fragment carries a potential -- give "// &
+                           "'fragment_potentials' in the deck")
+         return
+      end if
+      if (size(config%fragment_potentials) /= n) then
+         call logger%error("EFP: the deck has "//to_char(n)//" fragments but "// &
+                           to_char(size(config%fragment_potentials))//" potentials")
+         return
+      end if
+
+      call run_libcint_efp(config%fragment_potentials, sys_geom%fragment_sizes, &
+                           sys_geom%fragment_atoms, sys_geom%coordinates, terms, err)
+      if (err%has_error()) then
+         call logger%error("EFP: "//err%get_message())
+         return
+      end if
+
+      call logger%info("============================================")
+      call logger%info("  EFP2 interaction energy, Hartree")
+      call logger%info("    electrostatics      "//to_char(terms(1)))
+      call logger%info("    polarization        "//to_char(terms(2)))
+      call logger%info("    exchange repulsion  "//to_char(terms(3)))
+      call logger%info("    dispersion          "//to_char(terms(4)))
+      call logger%info("    charge transfer     "//to_char(terms(5)))
+      call logger%info("    total               "//to_char(terms(6)))
+      call logger%info("============================================")
+
+      if (present(result_out)) then
+         ! In the `scf` slot because that is the one `energy_t%total()` sums as the
+         ! reference, and an EFP interaction energy has no correlation correction
+         ! sitting on top of it. It is not an SCF energy and nothing here pretends
+         ! otherwise -- there is no wavefunction solved in this routine at all.
+         result_out%energy%scf = terms(6)
+         result_out%has_energy = .true.
+      end if
+
+      ! The same summary every other run leaves behind, so a driven run or the
+      ! validation harness can read the number back rather than scrape the log.
+      ! `UNFRAGMENTED` because that is the shape of what is written -- one energy for
+      ! one system -- not a claim that the system has no fragments.
+      if (.not. config%skip_json_output) then
+         json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+         json_data%total_energy = terms(6)
+         json_data%has_energy = .true.
+         json_data%fragment_breakdown = config%fragment_breakdown
+         call write_json_output(json_data)
+         call json_data%destroy()
+      end if
+   end subroutine run_efp
 
    subroutine run_makefp(config, sys_geom, rank)
       !! Build an effective fragment potential for the whole system and write it

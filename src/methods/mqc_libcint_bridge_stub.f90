@@ -27,21 +27,6 @@ contains
       available = .false.
    end function libcint_backend_available
 
-   subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
-                              coordinates, terms, error)
-      !! No-op stand-in: an EFP interaction energy needs the CPU backend
-      !!
-      !! Every piece of it does -- the multipole and polarizability machinery, the
-      !! integrals two fragments' basis sets share, and the potential reader itself
-      !! all live behind `MQC_ENABLE_LIBCINT`.
-      use pic_types, only: dp
-      use mqc_program_limits, only: N_EFP_TERMS
-      use mqc_error, only: error_t
-      character(len=*), intent(in) :: potentials(:)
-      integer, intent(in) :: fragment_sizes(:)
-      integer, intent(in) :: fragment_atoms(:, :)
-      real(dp), intent(in) :: coordinates(:, :)
-      real(dp), intent(out) :: terms(N_EFP_TERMS)
    subroutine run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
                                 terms, error)
       !! No-op stand-in: SAPT0 needs the CPU integral backend
@@ -57,18 +42,38 @@ contains
 
       terms = 0.0_dp
       call error%set(ERROR_VALIDATION, &
-                     "EFP needs the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
-      if (len_trim(potentials(1)) < 0) return
-      if (size(fragment_sizes) < 0 .or. size(fragment_atoms) < 0) return
-      if (size(coordinates) < 0) return
-   end subroutine run_libcint_efp
                      "SAPT needs the CPU integral backend; build with "// &
                      "-DMQC_ENABLE_LIBCINT=ON")
       if (size(z_a) < 0 .or. size(z_b) < 0) return
       if (len_trim(sym_a(1))*len_trim(sym_b(1))*len_trim(basis_name) < 0) return
       if (size(xyz_a) < 0 .or. size(xyz_b) < 0) return
    end subroutine run_libcint_sapt0
+
+   subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
+                              coordinates, terms, error)
+      !! No-op stand-in: an EFP interaction energy needs the CPU backend
+      !!
+      !! Every piece of it does -- the multipole and polarizability machinery, the
+      !! integrals two fragments' basis sets share, and the potential reader itself
+      !! all live behind `MQC_ENABLE_LIBCINT`.
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_EFP_TERMS
+      use mqc_error, only: error_t
+      character(len=*), intent(in) :: potentials(:)
+      integer, intent(in) :: fragment_sizes(:)
+      integer, intent(in) :: fragment_atoms(:, :)
+      real(dp), intent(in) :: coordinates(:, :)
+      real(dp), intent(out) :: terms(N_EFP_TERMS)
+      type(error_t), intent(inout) :: error
+
+      terms = 0.0_dp
+      call error%set(ERROR_VALIDATION, &
+                     "EFP needs the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_LIBCINT=ON")
+      if (len_trim(potentials(1)) < 0) return
+      if (size(fragment_sizes) < 0 .or. size(fragment_atoms) < 0) return
+      if (size(coordinates) < 0) return
+   end subroutine run_libcint_efp
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
