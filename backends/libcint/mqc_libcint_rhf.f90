@@ -320,6 +320,7 @@ contains
       type(direct_stats_t) :: stats
 
       real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :), bmat(:, :)
+      real(dp), allocatable :: bmat_lr(:, :)
       real(dp), allocatable :: x(:, :), fock(:, :), density(:, :), density_old(:, :)
       real(dp), allocatable :: coeff(:, :), eigenvalues(:)
       real(dp), allocatable :: err(:, :), fock_flat(:)
@@ -381,6 +382,16 @@ contains
       end if
       if (present(aux)) then
          call build_df_tensor(mol, aux, bmat, error)
+         if (error%has_error()) return
+         ! A second fit, against the attenuated kernel, when the functional
+         ! splits its exchange by range. Built once beside the first rather than
+         ! per iteration: it depends on the geometry and the auxiliary basis,
+         ! neither of which moves during an SCF.
+         if (present(xc)) then
+            if (xc%range_separated) then
+               call build_df_tensor(mol, aux, bmat_lr, error, omega=xc%rs_omega)
+            end if
+         end if
          if (error%has_error()) return
       else if (use_in_core) then
          call mol%eris(eri)
@@ -454,7 +465,8 @@ contains
          ! back together and before extrapolation. A DIIS-mixed Fock is a
          ! convergence device, not a state anything is the energy of.
          call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk=clk, screening=screening, incr=incr)
+                            fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
+                            bmat_lr=bmat_lr)
          if (error%has_error()) return
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          call clk%lap(STAGE_FOCK)
@@ -500,7 +512,7 @@ contains
       ! Fock carries however many corrections have accumulated since the last
       ! reset, and the number that leaves this routine should not.
       call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                         fock, result%electronic, error, clk=clk)
+                         fock, result%electronic, error, clk=clk, bmat_lr=bmat_lr)
       if (error%has_error()) return
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
@@ -786,7 +798,7 @@ contains
    end subroutine run_libcint_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk, screening, incr)
+                            fock, e_elec, error, clk, screening, incr, bmat_lr)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! One place, because there used to be two: the iteration built its Fock
@@ -807,6 +819,10 @@ contains
       real(dp), allocatable, intent(in) :: bmat(:, :)
       real(dp), allocatable, intent(in) :: eri(:, :, :, :)
       real(dp), allocatable, intent(in) :: bounds(:, :)
+      real(dp), allocatable, intent(in), optional :: bmat_lr(:, :)
+         !! The same fit against `erf(omega r)/r`, for a range-separated
+         !! functional whose reference is density fitted. Unallocated otherwise,
+         !! and only read when `xc%range_separated`.
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(out) :: e_elec
@@ -832,6 +848,7 @@ contains
       logical :: use_incremental, full_build
       real(dp), allocatable :: v_xc(:, :)
       real(dp) :: k_scale, e_xc, n_elec
+      logical :: have_lr
       logical :: kohn_sham
 
       kohn_sham = .false.
@@ -856,13 +873,32 @@ contains
       ! tensor and the fitted tensor are both built for the full Coulomb kernel and
       ! would need a second one of their own. Refused rather than approximated.
       if (present(xc)) then
-         if (xc%range_separated .and. (allocated(bmat) .or. allocated(eri))) then
+         ! The in-core tensor is still refused: it is built once for the full
+         ! Coulomb kernel and a second `n_ao^4` array for the attenuated one is
+         ! not worth having. The *fitted* path is answerable now -- `bmat_lr`
+         ! below is the same fit against `erf(omega r)/r`, which costs another
+         ! `n_ao^2 n_aux` rather than another `n_ao^4`.
+         if (xc%range_separated .and. allocated(eri) .and. .not. allocated(bmat)) then
             call error%set(ERROR_VALIDATION, "a range-separated functional needs the "// &
-                           "direct Fock build: the in-core and density-fitted "// &
-                           "integrals are built for the full Coulomb kernel, and the "// &
-                           "long-range exchange would be missing. Run without "// &
-                           "in_core and without an auxiliary basis for the reference.")
+                           "direct or the density-fitted Fock build: the in-core "// &
+                           "integrals are built for the full Coulomb kernel, so the "// &
+                           "long-range exchange would be missing. Run without in_core.")
             return
+         end if
+         ! `present` before `allocated`, and not merged into one expression:
+         ! Fortran does not short-circuit, so `allocated(bmat_lr)` on an absent
+         ! optional is a reference to something that is not there. The same
+         ! trap the two-particle density hit in the MP2 gradient.
+         if (xc%range_separated .and. allocated(bmat)) then
+            have_lr = .false.
+            if (present(bmat_lr)) have_lr = allocated(bmat_lr)
+            if (.not. have_lr) then
+               call error%set(ERROR_VALIDATION, "a range-separated functional fitted "// &
+                              "with an auxiliary basis needs the attenuated tensor as "// &
+                              "well, and it was not built. This is an internal "// &
+                              "inconsistency rather than a deck error.")
+               return
+            end if
          end if
       end if
 
@@ -876,6 +912,22 @@ contains
 
       if (allocated(bmat)) then
          call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=k_scale)
+         ! The long-range exchange, from the tensor fitted against the
+         ! attenuated kernel. Same shape as the direct path's second pass: no
+         ! core Hamiltonian and no Coulomb, so this returns K_lr alone.
+         if (kohn_sham) then
+            if (xc%range_separated) then
+               block
+                  real(dp), allocatable :: k_lr(:, :), h_zero(:, :)
+                  allocate (k_lr(size(h, 1), size(h, 2)), h_zero(size(h, 1), size(h, 2)))
+                  h_zero = 0.0_dp
+                  call build_fock_df(h_zero, bmat_lr, density, coeff, n_occ, k_lr, &
+                                     k_scale=xc%rs_k_lr, j_scale=0.0_dp)
+                  fock = fock + k_lr
+                  deallocate (k_lr, h_zero)
+               end block
+            end if
+         end if
       else if (allocated(eri)) then
          call build_fock(h, eri, density, fock, k_scale=k_scale)
       else
@@ -1326,7 +1378,7 @@ contains
       !$omp end parallel do
    end subroutine build_fock
 
-   subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale)
+   subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale, j_scale)
       !! F = H + J - K/2 from the fitted tensor rather than the exact ERIs
       !!
       !! Neither term ever forms a four-index object. Density fitting is not the
@@ -1353,8 +1405,14 @@ contains
       integer, intent(in) :: n_occ
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
+      real(dp), intent(in), optional :: j_scale
+         !! Coulomb fraction, default one. Zero is the long-range exchange pass
+         !! of a range-separated functional: the attenuated tensor must not
+         !! contribute a second Coulomb term, because `erf(omega r)/r` and
+         !! `1/r` differ there too and J is already complete from the full-range
+         !! pass.
 
-      real(dp) :: kf
+      real(dp) :: kf, jf
       real(dp), allocatable :: c(:), j(:, :), k(:, :), w(:, :), c_occ(:, :)
       integer :: n, naux, p
 
@@ -1387,7 +1445,9 @@ contains
 
       kf = 0.5_dp
       if (present(k_scale)) kf = 0.5_dp*k_scale
-      fock = h + j - kf*k
+      jf = 1.0_dp
+      if (present(j_scale)) jf = j_scale
+      fock = h + jf*j - kf*k
    end subroutine build_fock_df
 
    pure subroutine build_density_spin(coeff, n_occ, density)

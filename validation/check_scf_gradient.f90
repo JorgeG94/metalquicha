@@ -225,6 +225,28 @@ program check_scf_gradient
                       "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit", &
                       functional="tpss")
 
+      ! Range separated, fitted. The exchange is split by range, so this pass
+      ! differentiates *two* fits -- the full-range one and a second against
+      ! `erf(omega r)/r` -- and the long-range half must contribute no Coulomb
+      ! term, because the attenuated tensor's Coulomb belongs to no energy. On
+      ! the exact-ERI path these are still refused: nothing there builds a
+      ! second exchange derivative at the screened omega.
+      call check_case("H2O / sto-3g + rifit, wB97X (DF, range separated)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit", &
+                      functional="wb97x")
+
+      call check_case("H2O / sto-3g + rifit, CAM-B3LYP (DF, range separated)", [8, 1, 1], &
+                      ["O", "H", "H"], &
+                      reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                               0.0_dp, -1.4308_dp, 1.1078_dp, &
+                               0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                      "sto-3g", 10, 1, n_bad, aux_basis="cc-pvdz-rifit", &
+                      functional="cam-b3lyp")
+
       ! A second meta-GGA, different in kind: M06-L is heavily parametrised
       ! where TPSS is constraint-derived, so the two exercise different parts of
       ! libxc's tau dependence rather than the same one twice.

@@ -174,8 +174,11 @@ Gradient Calculations
 - **Applications**: Geometry optimization, molecular dynamics
 
 On the CPU backend the analytic gradient covers Hartree-Fock restricted and
-unrestricted, Kohn-Sham through LDA, GGA, hybrid GGA and meta-GGA, any of
-those five with the Coulomb and exact-exchange builds density fitted, and MP2
+unrestricted, Kohn-Sham through LDA, GGA, hybrid GGA, meta-GGA and
+range-separated hybrids, any of those with the Coulomb and exact-exchange
+builds density fitted -- and for a range-separated functional the fitted path
+is the *only* one with a gradient, because the exact-ERI side builds no second
+exchange derivative at the screened omega. And MP2
 over a restricted reference -- both the
 conventional one and ``ri-mp2``, where the correlation is fitted and the
 reference is not.
@@ -198,8 +201,10 @@ What is refused rather than approximated, and why:
    * - Meta-GGA over an unrestricted reference
      - The kinetic energy density carries a term per spin that is not built;
        the restricted case is implemented
-   * - Range-separated hybrids
-     - Needs a second exchange derivative at the screened omega
+   * - Range-separated hybrid gradients without an auxiliary basis
+     - The second exchange derivative at the screened omega comes from fitting
+       a second tensor against ``erf(omega r)/r``; the exact-ERI path has no
+       equivalent second pass. Give an auxiliary basis
    * - Unrestricted density fitting, Hartree-Fock or Kohn-Sham
      - The fitted J and K are written for one density, so this is refused for
        the energy and therefore for the gradient. The fitted *gradient* does

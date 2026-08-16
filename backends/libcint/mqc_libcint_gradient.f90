@@ -45,7 +45,8 @@ module mqc_libcint_gradient
                               libcint_3c2e_ip2_sph, libcint_3c2e_ip2_cart, &
                               libcint_2c2e_ip1_sph, libcint_2c2e_ip1_cart, &
                               libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
-                              libcint_del_optimizer, LIBCINT_PTR_RINV_ORIG
+                              libcint_del_optimizer, LIBCINT_PTR_RINV_ORIG, &
+                              LIBCINT_PTR_RANGE_OMEGA
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
@@ -181,6 +182,18 @@ contains
             call df_two_electron_gradient(mol, aux, total_density, orbitals, n_occupied, &
                                           gradient=gradient, error=error, &
                                           exx_fraction=exx)
+            if (error%has_error()) return
+            ! The long-range exchange, differentiated against the kernel it was
+            ! fitted with. Exchange only: `J` is complete from the pass above,
+            ! and the attenuated tensor's Coulomb term belongs to no energy.
+            if (present(xc)) then
+               if (xc%range_separated) then
+                  call df_two_electron_gradient(mol, aux, total_density, orbitals, &
+                                                n_occupied, gradient=gradient, &
+                                                error=error, exx_fraction=xc%rs_k_lr, &
+                                                rs_omega=xc%rs_omega, with_coulomb=.false.)
+               end if
+            end if
          end if
          if (error%has_error()) return
       else if (unrestricted) then
@@ -250,10 +263,17 @@ contains
       ! an addition to the Hartree-Fock gradient, not a replacement for any part
       ! of it.
       if (present(xc)) then
-         if (xc%range_separated) then
+         ! The second exchange derivative at the screened omega now exists,
+         ! but only on the fitted path -- `df_two_electron_gradient` takes an
+         ! `rs_omega`, while `two_electron_deriv` on the exact path still builds
+         ! one kernel per call and has no second pass wired to it.
+         if (xc%range_separated .and. .not. fitted) then
             call error%set(ERROR_VALIDATION, "the gradient of a range-separated "// &
                            "functional needs a second exchange derivative at the "// &
-                           "screened omega, which this does not build")
+                           "screened omega. The density-fitted path builds it; the "// &
+                           "exact-ERI one does not yet. Give an auxiliary basis, or "// &
+                           "take the gradient at a functional that is not range "// &
+                           "separated.")
             return
          end if
          if (unrestricted) then
@@ -1041,7 +1061,7 @@ contains
 
    subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &
                                        orbitals_beta, n_occupied_beta, gradient, error, &
-                                       exx_fraction)
+                                       exx_fraction, rs_omega, with_coulomb)
       !! The two-electron gradient when J and K are density-fitted
       !!
       !! **What is being differentiated.** The fitted energy is
@@ -1089,6 +1109,23 @@ contains
          !! Fraction of exact exchange the fitted energy kept. Absent is one,
          !! which is Hartree-Fock; a hybrid passes its own and a pure
          !! functional passes zero.
+      real(dp), intent(in), optional :: rs_omega
+         !! Fit and differentiate the attenuated kernel `erf(omega r)/r`. Named
+         !! `rs_omega` and not `omega` because `omega` is already the two-index
+         !! density `Omega_PQ` in this routine -- the collision compiles in some
+         !! orderings and means the wrong thing in all of them.
+         !!
+         !! A
+         !! range-separated functional calls this routine twice: once
+         !! full-range for `J` and its short-range exchange fraction, and once
+         !! attenuated with `with_coulomb` false for the long-range exchange.
+      logical, intent(in), optional :: with_coulomb
+         !! False drops the Coulomb terms -- both the `rho^T g^x` shape and the
+         !! `-(1/2) rho^T J^x rho` one -- leaving exchange alone. Default true.
+         !!
+         !! It has to drop *both*. Keeping the metric term while dropping the
+         !! other leaves a piece of a Coulomb energy that the second pass never
+         !! contained, and it is the same size as the answer.
 
       real(dp), allocatable :: three(:, :), metric(:, :), half(:, :), jinv(:, :)
       real(dp), allocatable :: g(:), rho(:)
@@ -1096,7 +1133,7 @@ contains
       real(dp), allocatable :: ip1(:, :, :, :), ip2(:, :, :, :), d2c(:, :, :)
       integer, allocatable :: orb_off(:), orb_cnt(:), aux_off(:), aux_cnt(:)
       integer :: nao, naux, iatom, comp, p0, p1, q0, q1, ip
-      logical :: unrestricted
+      logical :: unrestricted, coulomb
       real(dp) :: kf
 
       nao = orb%nao
@@ -1115,8 +1152,16 @@ contains
          return
       end if
 
-      call three_centre(orb, aux, three)
-      call two_centre(aux, metric)
+      coulomb = .true.
+      if (present(with_coulomb)) coulomb = with_coulomb
+
+      if (present(rs_omega)) then
+         call three_centre(orb, aux, three, omega=rs_omega)
+         call two_centre(aux, metric, omega=rs_omega)
+      else
+         call three_centre(orb, aux, three)
+         call two_centre(aux, metric)
+      end if
       call metric_inverse_sqrt(metric, half, error)
       if (error%has_error()) return
 
@@ -1130,6 +1175,7 @@ contains
          g(ip) = sum(reshape(three(:, ip), [nao, nao])*total_density)
       end do
       rho = matmul(jinv, g)
+      if (.not. coulomb) rho = 0.0_dp
 
       allocate (gamma(nao, nao, naux), omega(naux, naux))
       do ip = 1, naux
@@ -1144,7 +1190,14 @@ contains
       kf = 1.0_dp
       if (present(exx_fraction)) kf = exx_fraction
 
-      omega = -0.5_dp*outer(rho, rho)
+      ! Both Coulomb shapes go together when this is an exchange-only pass:
+      ! `rho` is left zero above, so the `rho^T g^x` term vanishes with it, and
+      ! this metric term has to be dropped here to match.
+      if (coulomb) then
+         omega = -0.5_dp*outer(rho, rho)
+      else
+         omega = 0.0_dp
+      end if
 
       if (unrestricted) then
          call add_exchange_channel(three, jinv, orbitals, n_occupied, kf, gamma, omega)
@@ -1156,9 +1209,15 @@ contains
 
       deallocate (three, metric, half, jinv, g, rho)
 
-      call three_centre_deriv(orb, aux, 1, ip1)
-      call three_centre_deriv(orb, aux, 2, ip2)
-      call two_centre_deriv(aux, d2c)
+      if (present(rs_omega)) then
+         call three_centre_deriv(orb, aux, 1, ip1, omega=rs_omega)
+         call three_centre_deriv(orb, aux, 2, ip2, omega=rs_omega)
+         call two_centre_deriv(aux, d2c, omega=rs_omega)
+      else
+         call three_centre_deriv(orb, aux, 1, ip1)
+         call three_centre_deriv(orb, aux, 2, ip2)
+         call two_centre_deriv(aux, d2c)
+      end if
 
       allocate (orb_off(orb%natm), orb_cnt(orb%natm))
       allocate (aux_off(aux%natm), aux_cnt(aux%natm))
@@ -1275,7 +1334,7 @@ contains
       end do
    end function outer
 
-   subroutine three_centre_deriv(orb, aux, which, deriv)
+   subroutine three_centre_deriv(orb, aux, which, deriv, omega)
       !! d(mu nu | P) / dR, as (nao, nao, naux, 3)
       !!
       !! `which` selects whose centre is differentiated: 1 for the first
@@ -1291,6 +1350,10 @@ contains
       type(libcint_molecule_t), intent(in) :: orb, aux
       integer, intent(in) :: which
       real(dp), allocatable, intent(out) :: deriv(:, :, :, :)
+      real(dp), intent(in), optional :: omega
+         !! Attenuate to `erf(omega r)/r`, matching `three_centre`. A fitted
+         !! range-separated gradient differentiates two fits, and the long-range
+         !! one has to be differentiated with the kernel it was made from.
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
@@ -1301,6 +1364,7 @@ contains
       nbas_orb = orb%nbas
       nbas_aux = aux%nbas
       call build_df_shell_table(orb, aux, bas, env, dummy)
+      if (present(omega)) env(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       allocate (deriv(orb%nao, orb%nao, aux%nao, 3))
       deriv = 0.0_dp
@@ -1366,17 +1430,22 @@ contains
       !$omp end parallel
    end subroutine three_centre_deriv
 
-   subroutine two_centre_deriv(aux, deriv)
+   subroutine two_centre_deriv(aux, deriv, omega)
       !! d(P|Q) / dR with respect to P's centre, as (naux, naux, 3)
       type(libcint_molecule_t), intent(in) :: aux
       real(dp), allocatable, intent(out) :: deriv(:, :, :)
+      real(dp), intent(in), optional :: omega   !! As `two_centre`
 
-      real(dp), allocatable :: buf(:)
+      real(dp), allocatable :: buf(:), env_local(:)
       integer :: shls(4)
       integer :: ish, jsh, di, dj, io, jo, i, j, comp, ret, idx, mx
 
       allocate (deriv(aux%nao, aux%nao, 3))
       deriv = 0.0_dp
+
+      ! A copy: `aux%env` is shared and must not keep the omega afterwards.
+      env_local = aux%env
+      if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       mx = largest_shell(aux)
       allocate (buf(mx*mx*3))
@@ -1391,10 +1460,10 @@ contains
 
             if (aux%cartesian) then
                ret = libcint_2c2e_ip1_cart(buf, shls, aux%atm, aux%natm, aux%bas, &
-                                           aux%nbas, aux%env)
+                                           aux%nbas, env_local)
             else
                ret = libcint_2c2e_ip1_sph(buf, shls, aux%atm, aux%natm, aux%bas, &
-                                          aux%nbas, aux%env)
+                                          aux%nbas, env_local)
             end if
             if (ret == 0) cycle
 
