@@ -15,6 +15,7 @@ module mqc_many_body_expansion
    public :: many_body_expansion_t
    public :: mbe_context_t
    public :: gmbe_context_t
+   public :: fmo_context_t
 
    !============================================================================
    ! Abstract base type for all many-body expansion methods
@@ -138,6 +139,55 @@ module mqc_many_body_expansion
       procedure :: destroy => gmbe_destroy
    end type gmbe_context_t
 
+   !============================================================================
+   ! Fragment molecular orbital method, and electrostatically embedded MBE
+   !============================================================================
+   type, extends(many_body_expansion_t) :: fmo_context_t
+      !! FMO2 and EE-MBE over non-covalently bonded fragments
+      !!
+      !! Two phases rather than one, which is what separates this from
+      !! `mbe_context_t`. The monomers are iterated to self-consistency -- each
+      !! solved in the field the others make, which changes its density, which
+      !! changes their field -- and only then are the pairs computed, in the
+      !! field the settled monomers make. Within a phase the tasks are
+      !! independent; between monomer passes there is a barrier and a density
+      !! exchange.
+      !!
+      !! `esp` and `expansion` pick which method this is:
+      !!
+      !!     "exact" + "fmo"   FMO2
+      !!     "ptc"   + "mbe"   electrostatically embedded MBE
+      !!     "none"  + "mbe"   plain MBE
+      !!
+      !! The physics lives in the libcint backend and is reached through
+      !! `mqc_libcint_bridge`, so a build without the backend refuses with a
+      !! message naming the option rather than failing to link.
+      integer, allocatable :: owner(:)
+         !! Fragment index per atom, numbered from one with no gaps
+      integer :: n_fragments = 0
+      character(len=64) :: basis = "6-31g"
+      character(len=16) :: esp = "exact"
+      character(len=16) :: expansion = "fmo"
+      character(len=16) :: far_field = "mulliken"
+      real(dp) :: resppc = 2.0_dp
+         !! Separation past which a neighbour becomes point charges. Negative
+         !! disables the approximation.
+      integer :: level = 2
+         !! Fragments at a time: 2 is FMO2, 3 is FMO3. Taken from the
+         !! fragmentation level the deck already gives, since it means the same
+         !! thing here as it does for MBE.
+      integer :: max_outer = 50
+      real(dp) :: outer_tol = 1.0e-7_dp
+      real(dp) :: energy = 0.0_dp
+         !! What the run produced
+
+   contains
+      procedure :: run_serial => fmo_run_serial
+      procedure :: run_distributed => fmo_run_distributed
+      procedure :: init => fmo_init
+      procedure :: destroy => fmo_destroy
+   end type fmo_context_t
+
 contains
 
    !============================================================================
@@ -207,6 +257,151 @@ contains
       ! Clean up base class data
       call this%destroy_base()
    end subroutine mbe_destroy
+
+   subroutine fmo_init(this, method_config, calc_type)
+      !! Initialise an FMO context
+      class(fmo_context_t), intent(out) :: this
+      type(method_config_t), intent(in) :: method_config
+      integer(int32), intent(in) :: calc_type
+
+      this%method_config = method_config
+      this%calc_type = calc_type
+   end subroutine fmo_init
+
+   subroutine fmo_destroy(this)
+      !! Clean up an FMO context
+      class(fmo_context_t), intent(inout) :: this
+
+      if (allocated(this%owner)) deallocate (this%owner)
+      this%n_fragments = 0
+      this%energy = 0.0_dp
+      call this%destroy_base()
+   end subroutine fmo_destroy
+
+   subroutine fmo_run_serial(this, json_data)
+      !! Run FMO on one rank
+      use mqc_libcint_bridge, only: run_libcint_fmo
+      use mqc_error, only: error_t
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+
+      class(fmo_context_t), intent(inout) :: this
+      type(json_output_data_t), intent(out), optional :: json_data
+
+      type(error_t) :: error
+      character(len=2), allocatable :: symbols(:)
+      integer :: i
+
+      if (.not. this%has_geometry()) then
+         call logger%error("fmo_run_serial: sys_geom required but not set")
+         return
+      end if
+      if (.not. allocated(this%owner)) then
+         call logger%error("fmo_run_serial: no fragment partition set")
+         return
+      end if
+
+      allocate (symbols(this%sys_geom%total_atoms))
+      do i = 1, this%sys_geom%total_atoms
+         symbols(i) = element_symbol_of(this%sys_geom%element_numbers(i))
+      end do
+
+      call run_libcint_fmo(this%sys_geom%element_numbers, symbols, &
+                           this%sys_geom%coordinates, this%owner, &
+                           trim(this%basis), trim(this%esp), trim(this%expansion), &
+                           trim(this%far_field), this%resppc, this%level, &
+                           this%max_outer, this%outer_tol, this%energy, error)
+      if (error%has_error()) then
+         call logger%error("fmo_run_serial: "//error%get_message())
+         return
+      end if
+      call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+      call fmo_report(this, json_data)
+   end subroutine fmo_run_serial
+
+   subroutine fmo_report(this, json_data)
+      !! Hand the total to whatever writes the output file
+      !!
+      !! Reported as a fragmented total, which is what it is: the expansion is
+      !! different from MBE's but the shape of the answer -- one energy for the
+      !! whole system, assembled from fragments -- is the same, and a reader
+      !! should not have to learn a third format to find it.
+      use mqc_json_output_types, only: OUTPUT_MODE_MBE
+
+      class(fmo_context_t), intent(in) :: this
+      type(json_output_data_t), intent(inout), optional :: json_data
+
+      if (.not. present(json_data)) return
+      json_data%output_mode = OUTPUT_MODE_MBE
+      json_data%total_energy = this%energy
+      json_data%has_energy = .true.
+   end subroutine fmo_report
+
+   subroutine fmo_run_distributed(this, json_data)
+      !! Run FMO across ranks
+      !!
+      !! The two phases distribute differently and both go through the backend,
+      !! which is where the loops are: a monomer pass is a bag of independent
+      !! tasks followed by a barrier and a density exchange, and the pair phase
+      !! is one bag with no barrier at all. Handing the communicator down rather
+      !! than distributing here keeps the fragment geometries from ever crossing
+      !! a wire -- every rank assembles what it was asked for from the geometry
+      !! it already holds.
+      use mqc_libcint_bridge, only: run_libcint_fmo
+      use mqc_error, only: error_t
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+
+      class(fmo_context_t), intent(inout) :: this
+      type(json_output_data_t), intent(out), optional :: json_data
+
+      type(error_t) :: error
+      character(len=2), allocatable :: symbols(:)
+      integer :: i
+
+      if (.not. this%has_mpi()) then
+         call logger%error("fmo_run_distributed: resources not set in context")
+         return
+      end if
+      if (.not. this%has_geometry()) then
+         call logger%error("fmo_run_distributed: sys_geom required but not set")
+         return
+      end if
+      if (.not. allocated(this%owner)) then
+         call logger%error("fmo_run_distributed: no fragment partition set")
+         return
+      end if
+
+      allocate (symbols(this%sys_geom%total_atoms))
+      do i = 1, this%sys_geom%total_atoms
+         symbols(i) = element_symbol_of(this%sys_geom%element_numbers(i))
+      end do
+
+      call run_libcint_fmo(this%sys_geom%element_numbers, symbols, &
+                           this%sys_geom%coordinates, this%owner, &
+                           trim(this%basis), trim(this%esp), trim(this%expansion), &
+                           trim(this%far_field), this%resppc, this%level, &
+                           this%max_outer, this%outer_tol, this%energy, error, &
+                           comm=this%resources%mpi_comms%world_comm)
+      if (error%has_error()) then
+         call logger%error("fmo_run_distributed: "//error%get_message())
+         return
+      end if
+      if (this%resources%mpi_comms%world_comm%leader()) then
+         call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+      end if
+      ! Every rank has the same total, but only the leader writes a file.
+      if (this%resources%mpi_comms%world_comm%leader()) call fmo_report(this, json_data)
+   end subroutine fmo_run_distributed
+
+   function element_symbol_of(z) result(sym)
+      !! Two-character element symbol, for handing a geometry to the backend
+      use mqc_elements, only: element_number_to_symbol
+      integer, intent(in) :: z
+      character(len=2) :: sym
+
+      sym = element_number_to_symbol(z)
+   end function element_symbol_of
 
    subroutine mbe_run_serial(this, json_data)
       !! Run serial MBE calculation

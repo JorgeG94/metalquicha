@@ -1,0 +1,1171 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>fmo_run_serial &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>fmo_run_serial
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">30 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_many_body_expansion.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_many_body_expansion.f90.html'>mqc_many_body_expansion.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></li>
+            <li class="breadcrumb-item active" aria-current="page">fmo_run_serial</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-error~2">error</a>
+            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-i~3">i</a>
+            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-symbols">symbols</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/fmo_run_serial.html#src">fmo_run_serial</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine fmo_run_serial(this, json_data)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~fmo_run_serial~~UsesGraph Pages: 1 -->
+<svg id="procfmo_run_serialUsesGraph" width="641pt" height="255pt"
+ viewBox="0.00 0.00 641.00 255.40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fmo_run_serial~~UsesGraph" class="graph" transform="scale(0.47 0.47) rotate(0) translate(4 537.07)">
+<title>proc~~fmo_run_serial~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-537.07 1354,-537.07 1354,4 -4,4"/>
+<!-- proc~fmo_run_serial -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node1" class="node">
+<title>proc~fmo_run_serial</title>
+<polygon fill="none" stroke="black" points="1350,-237.66 1175,-237.66 1175,-213.66 1350,-213.66 1350,-237.66"/>
+<text text-anchor="middle" x="1262.5" y="-223.26" font-family="Helvetica,sans-Serif" font-size="10.50">fmo_context_t%fmo_run_serial</text>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node2" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node2"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-297.66 111,-297.66 111,-273.66 178,-273.66 178,-297.66"/>
+<text text-anchor="middle" x="144.5" y="-283.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;module~mqc_error -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge1" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1174.74,-234C1110.2,-239.48 1019.93,-245.66 940.5,-245.66 940.5,-245.66 940.5,-245.66 791.5,-245.66 652.61,-245.66 617.89,-245.25 479,-245.66"/>
+</g>
+<!-- module~mqc_libcint_bridge -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node3" class="node">
+<title>module~mqc_libcint_bridge</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node3"><a xlink:href="../module/mqc_libcint_bridge.html" xlink:title="mqc_libcint_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="1139,-297.66 1026,-297.66 1026,-273.66 1139,-273.66 1139,-297.66"/>
+<text text-anchor="middle" x="1082.5" y="-283.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_libcint_bridge</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;module~mqc_libcint_bridge -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge2" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;module~mqc_libcint_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1225.48,-237.8C1197.64,-247.18 1158.93,-260.23 1128.96,-270.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1127.52,-267.13 1119.16,-273.64 1129.76,-273.76 1127.52,-267.13"/>
+</g>
+<!-- pic_io -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node4" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="1109.5,-217.66 1055.5,-217.66 1055.5,-193.66 1109.5,-193.66 1109.5,-217.66"/>
+<text text-anchor="middle" x="1082.5" y="-203.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;pic_io -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge3" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1174.85,-215.92C1155.41,-213.74 1135.82,-211.54 1119.8,-209.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1120.15,-206.25 1109.82,-208.62 1119.37,-213.21 1120.15,-206.25"/>
+</g>
+<!-- pic_logger -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node5" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="1116.5,-175.66 1048.5,-175.66 1048.5,-151.66 1116.5,-151.66 1116.5,-175.66"/>
+<text text-anchor="middle" x="1082.5" y="-161.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;pic_logger -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge4" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1226.76,-213.56C1198,-203.54 1157.02,-189.27 1126.25,-178.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1127.25,-175.19 1116.65,-175.2 1124.94,-181.8 1127.25,-175.19"/>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_error -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge6" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1025.76,-286.22C942.46,-286.87 780.55,-287.43 643,-283.66"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M641,-283.66C567.09,-281.14 552.88,-242.25 479,-245.66"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M477,-245.66C428.21,-247.91 416.48,-253.71 368,-259.66 305.51,-267.32 233.07,-275.69 188.26,-280.81"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="187.85,-277.33 178.31,-281.94 188.64,-284.29 187.85,-277.33"/>
+</g>
+<!-- module~mqc_cuest_iface -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node6" class="node">
+<title>module~mqc_cuest_iface</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node6"><a xlink:href="../module/mqc_cuest_iface.html" xlink:title="mqc_cuest_iface">
+<polygon fill="#337ab7" stroke="#337ab7" points="990,-433.66 889,-433.66 889,-409.66 990,-409.66 990,-433.66"/>
+<text text-anchor="middle" x="939.5" y="-419.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge5" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1068.99,-297.73C1044.49,-321.36 990.01,-373.91 960.47,-402.4"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="957.96,-399.96 953.19,-409.42 962.81,-405 957.96,-399.96"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node7" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node7"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="547.5,-217.66 408.5,-217.66 408.5,-193.66 547.5,-193.66 547.5,-217.66"/>
+<text text-anchor="middle" x="478" y="-203.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge7" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1025.92,-275.53C1014.08,-273.49 1001.64,-271.43 990,-269.66 837.46,-246.47 658.36,-225.46 557.83,-214.23"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="558.09,-210.74 547.76,-213.11 557.31,-217.7 558.09,-210.74"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node8" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node8"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="349.5,-373.66 245.5,-373.66 245.5,-349.66 349.5,-349.66 349.5,-373.66"/>
+<text text-anchor="middle" x="297.5" y="-359.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge8" class="edge">
+<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M641,-283.66C528.02,-277.14 398.86,-321.06 336.35,-345.72"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="334.89,-342.53 326.9,-349.5 337.49,-349.03 334.89,-342.53"/>
+</g>
+<!-- module~mqc_config_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node10" class="node">
+<title>module~mqc_config_types</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node10"><a xlink:href="../module/mqc_config_types.html" xlink:title="mqc_config_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="696,-413.66 588,-413.66 588,-389.66 696,-389.66 696,-413.66"/>
+<text text-anchor="middle" x="642" y="-399.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_config_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge9" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_config_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M888.71,-418.29C838.56,-414.89 761.02,-409.65 706.49,-405.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="706.46,-402.45 696.25,-405.26 705.99,-409.43 706.46,-402.45"/>
+</g>
+<!-- module~mqc_method_config -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node13" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node13"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="853,-453.66 732,-453.66 732,-429.66 853,-429.66 853,-453.66"/>
+<text text-anchor="middle" x="792.5" y="-439.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_method_config -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge10" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M888.6,-428.54C880.41,-429.67 871.8,-430.86 863.24,-432.04"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="862.68,-428.58 853.25,-433.42 863.63,-435.52 862.68,-428.58"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node17" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-177.66 0,-177.66 0,-153.66 62,-153.66 62,-177.66"/>
+<text text-anchor="middle" x="31" y="-163.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge11" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M916.56,-433.8C899.61,-442.78 875.35,-454.77 853,-462.66 694.18,-518.71 645.39,-549.75 479,-523.66"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M296.5,-245.66C259.08,-249.75 217.84,-261.17 187.93,-270.76"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="186.66,-267.49 178.25,-273.93 188.84,-274.15 186.66,-267.49"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node9" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node9"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="176.5,-57.66 112.5,-57.66 112.5,-33.66 176.5,-33.66 176.5,-57.66"/>
+<text text-anchor="middle" x="144.5" y="-43.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M467.29,-193.36C449.77,-172.02 410.71,-128.17 368,-104.66 309.74,-72.58 233.2,-57.28 186.77,-50.49"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="187.16,-47.01 176.77,-49.1 186.19,-53.95 187.16,-47.01"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node11" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node11"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-137.66 252,-137.66 252,-113.66 343,-113.66 343,-137.66"/>
+<text text-anchor="middle" x="297.5" y="-123.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M449.89,-193.51C419.04,-179.68 368.54,-157.05 334.44,-141.76"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="335.84,-138.56 325.28,-137.66 332.97,-144.94 335.84,-138.56"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node12" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node12"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-217.66 98,-217.66 98,-193.66 191,-193.66 191,-217.66"/>
+<text text-anchor="middle" x="144.5" y="-203.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M435.61,-217.69C399.71,-227.46 346.17,-240.44 298.5,-245.66"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M296.5,-245.66C255.02,-250.2 208.86,-234.83 178.63,-221.85"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="179.96,-218.61 169.4,-217.75 177.11,-225.01 179.96,-218.61"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node14" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node14"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="368,-27.66 227,-27.66 227,-3.66 368,-3.66 368,-27.66"/>
+<text text-anchor="middle" x="297.5" y="-13.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge16" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M469.72,-193.38C453.71,-167.05 413.26,-104.15 368,-61.66 356.54,-50.9 342.29,-40.99 329.68,-33.14"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="331.23,-29.99 320.86,-27.81 327.61,-35.98 331.23,-29.99"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node15" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node15"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-217.66 248,-217.66 248,-193.66 347,-193.66 347,-217.66"/>
+<text text-anchor="middle" x="297.5" y="-203.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge17" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M408.5,-205.66C391.72,-205.66 373.91,-205.66 357.62,-205.66"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="357.16,-202.16 347.16,-205.66 357.16,-209.16 357.16,-202.16"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge18" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M296.5,-245.66C208.4,-255.3 178.9,-262.86 98,-226.66 77.64,-217.55 59.44,-199.59 47.34,-185.51"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="50.01,-183.25 40.94,-177.76 44.61,-187.7 50.01,-183.25"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge19" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M260.23,-349.59C249.36,-345.57 237.53,-340.8 227,-335.66 207.8,-326.28 187.3,-313.69 171.66,-303.49"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="173.34,-300.4 163.06,-297.8 169.47,-306.24 173.34,-300.4"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node16" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="180.5,-373.66 108.5,-373.66 108.5,-349.66 180.5,-349.66 180.5,-373.66"/>
+<text text-anchor="middle" x="144.5" y="-359.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge20" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M245.38,-361.66C227.81,-361.66 208.26,-361.66 191.15,-361.66"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="190.86,-358.16 180.86,-361.66 190.86,-365.16 190.86,-358.16"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge21" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M281.3,-373.75C248.51,-399.18 171.92,-454.83 145.5,-441.66"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M143.5,-441.66C48.33,-394.21 34.11,-244.71 32.2,-187.88"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="35.7,-187.72 31.96,-177.8 28.7,-187.88 35.7,-187.72"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge22" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M117.61,-57.86C110.82,-61.73 103.78,-66.39 98,-71.66 74.59,-92.99 54.82,-124.04 43.19,-144.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="40.06,-142.95 38.29,-153.4 46.19,-146.34 40.06,-142.95"/>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge27" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M634.73,-389.4C615.02,-350.87 555.36,-234.57 552,-231.66 547.81,-228.02 543.08,-224.88 538.08,-222.17"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="539.4,-218.92 528.87,-217.74 536.37,-225.23 539.4,-218.92"/>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_geometry -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge25" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M626.86,-389.56C610.06,-375.8 580.7,-353.56 552,-340.66 416.23,-279.61 363.24,-319.64 227,-259.66 205.77,-250.31 183.97,-235.55 168.27,-223.82"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="170.29,-220.96 160.22,-217.67 166.04,-226.52 170.29,-220.96"/>
+</g>
+<!-- module~mqc_config_types&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge28" class="edge">
+<title>module~mqc_config_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M587.62,-404.16C539.46,-406.84 466.76,-411.93 404,-420.66 356.65,-427.25 346.31,-441.76 298.5,-441.66"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node18" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node18"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="526.5,-453.66 429.5,-453.66 429.5,-429.66 526.5,-429.66 526.5,-453.66"/>
+<text text-anchor="middle" x="478" y="-439.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge23" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M592.39,-413.66C574.86,-417.99 554.9,-422.92 536.66,-427.42"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="535.6,-424.08 526.73,-429.87 537.28,-430.87 535.6,-424.08"/>
+</g>
+<!-- module~mqc_calculation_defaults -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node19" class="node">
+<title>module~mqc_calculation_defaults</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node19"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="552,-373.66 404,-373.66 404,-349.66 552,-349.66 552,-373.66"/>
+<text text-anchor="middle" x="478" y="-359.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_calculation_defaults -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge24" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M592.39,-389.66C575.17,-385.4 555.61,-380.57 537.64,-376.14"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="538.4,-372.72 527.85,-373.72 536.72,-379.52 538.4,-372.72"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node20" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~fmo_run_serial~~UsesGraph_node20"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="536,-495.66 420,-495.66 420,-471.66 536,-471.66 536,-495.66"/>
+<text text-anchor="middle" x="478" y="-481.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_types&#45;&gt;module~mqc_method_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge26" class="edge">
+<title>module~mqc_config_types&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M626.47,-413.81C609.55,-427.43 580.3,-449.32 552,-462.66 547.68,-464.69 543.12,-466.58 538.48,-468.3"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="537.17,-465.05 528.87,-471.64 539.47,-471.66 537.17,-465.05"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge30" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M265.04,-113.58C224.85,-100.08 153.83,-82.81 98,-104.66 77.11,-112.83 58.87,-131.07 46.89,-145.48"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="44.06,-143.42 40.58,-153.42 49.54,-147.77 44.06,-143.42"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~fmo_run_serial~~UsesGraph_node21" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173.5,-137.66 115.5,-137.66 115.5,-113.66 173.5,-113.66 173.5,-137.66"/>
+<text text-anchor="middle" x="144.5" y="-123.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge29" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M251.6,-125.66C230.13,-125.66 204.69,-125.66 184.1,-125.66"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="183.83,-122.16 173.83,-125.66 183.83,-129.16 183.83,-122.16"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge31" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M110.05,-193.66C98,-189.34 84.29,-184.42 71.76,-179.92"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="72.61,-176.51 62.02,-176.43 70.25,-183.1 72.61,-176.51"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_config_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge32" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_config_types</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M746.95,-429.66C731.45,-425.48 713.89,-420.75 697.67,-416.39"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="698.35,-412.94 687.78,-413.72 696.53,-419.7 698.35,-412.94"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge34" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M641,-485.66C568.47,-500.12 552.06,-535.11 479,-523.66"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M477,-523.66C443.88,-518.46 434.92,-517.6 404,-504.66 353.62,-483.57 353.11,-442.11 298.5,-441.66"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge33" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M757.44,-453.68C727.62,-463.74 682.95,-477.69 643,-485.66"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M641,-485.66C610.28,-491.79 575.63,-492.2 546.28,-490.72"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="546.33,-487.22 536.14,-490.12 545.91,-494.2 546.33,-487.22"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge35" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M240.8,-3.65C198.15,2.33 139.73,3.23 98,-24.66 57.4,-51.8 41.23,-110.87 35.23,-143.28"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="31.71,-143.09 33.51,-153.53 38.62,-144.25 31.71,-143.09"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge36" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M259.4,-217.77C248.73,-221.72 237.21,-226.45 227,-231.66 206.71,-242 185.31,-256.33 169.53,-267.63"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="167.41,-264.84 161.38,-273.56 171.53,-270.51 167.41,-264.84"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge37" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M247.89,-205.66C233.11,-205.66 216.75,-205.66 201.52,-205.66"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="201.19,-202.16 191.19,-205.66 201.19,-209.16 201.19,-202.16"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge38" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M247.79,-195.14C229.98,-191.51 209.63,-187.62 191,-184.66 150.92,-178.28 104.84,-173 72.64,-169.64"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="72.59,-166.11 62.28,-168.57 71.87,-173.08 72.59,-166.11"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge39" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M429.27,-441.72C393.32,-441.74 342.81,-441.76 298.5,-441.66"/>
+</g>
+<!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge40" class="edge">
+<title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M440.25,-373.69C428.54,-377.81 415.61,-382.64 404,-387.66 355.64,-408.54 351.17,-441.77 298.5,-441.66"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M296.5,-441.66C229.39,-441.51 205.56,-471.6 145.5,-441.66"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~fmo_run_serial~~UsesGraph_edge41" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M435.73,-471.64C391.73,-459.25 324.84,-441.72 298.5,-441.66"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocfmo_run_serialUsesGraph = svgPanZoom('#procfmo_run_serialUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>Run FMO on one rank</p>
+
+    <h3>Type Bound</h3>
+    <p><a href='../type/fmo_context_t.html'>fmo_context_t</a></p>
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~16"></span>
+              class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_data~3"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_data</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~fmo_run_serial~~CallsGraph Pages: 1 -->
+<svg id="procfmo_run_serialCallsGraph" width="641pt" height="334pt"
+ viewBox="0.00 0.00 641.00 334.12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fmo_run_serial~~CallsGraph" class="graph" transform="scale(0.91 0.91) rotate(0) translate(4 364)">
+<title>proc~~fmo_run_serial~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-364 702,-364 702,4 -4,4"/>
+<!-- proc~fmo_run_serial -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node1" class="node">
+<title>proc~fmo_run_serial</title>
+<polygon fill="none" stroke="black" points="175,-192 0,-192 0,-168 175,-168 175,-192"/>
+<text text-anchor="middle" x="87.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50">fmo_context_t%fmo_run_serial</text>
+</g>
+<!-- error -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node2" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="382,-360 328,-360 328,-336 382,-336 382,-360"/>
+<text text-anchor="middle" x="355" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;error -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge1" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M94.51,-192.05C109.61,-220.91 152.17,-294.02 211,-327 243.89,-345.44 287.45,-349.47 317.81,-349.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="317.99,-353.15 327.96,-349.57 317.93,-346.15 317.99,-353.15"/>
+</g>
+<!-- info -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node3" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="382,-318 328,-318 328,-294 382,-294 382,-318"/>
+<text text-anchor="middle" x="355" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;info -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge2" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M98.46,-192.23C117.62,-214.8 162.05,-262.72 211,-285 244.97,-300.46 287.73,-305.05 317.61,-306.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="317.91,-309.68 328,-306.45 318.09,-302.69 317.91,-309.68"/>
+</g>
+<!-- proc~element_symbol_of -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node4" class="node">
+<title>proc~element_symbol_of</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node4"><a xlink:href="../proc/element_symbol_of.html" xlink:title="element_symbol_of">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="413,-276 297,-276 297,-252 413,-252 413,-276"/>
+<text text-anchor="middle" x="355" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_symbol_of</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;proc~element_symbol_of -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge3" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;proc~element_symbol_of</title>
+<path fill="none" stroke="#ff0000" d="M107.17,-192.09C130.48,-206.6 172.06,-230.51 211,-243 235.15,-250.75 262.52,-255.65 286.8,-258.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="286.65,-262.25 297,-259.97 287.48,-255.3 286.65,-262.25"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node5" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node5"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="435,-234 275,-234 275,-210 435,-210 435,-234"/>
+<text text-anchor="middle" x="355" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;proc~error_get_message -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge4" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M156.81,-192.01C174.45,-195.03 193.42,-198.2 211,-201 228.3,-203.75 246.79,-206.56 264.55,-209.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="264.5,-212.73 274.9,-210.73 265.52,-205.81 264.5,-212.73"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node6" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="424.5,-192 285.5,-192 285.5,-168 424.5,-168 424.5,-192"/>
+<text text-anchor="middle" x="355" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;proc~error_has_error -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge5" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M175.07,-180C207.29,-180 243.67,-180 275.16,-180"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="275.2,-183.5 285.2,-180 275.2,-176.5 275.2,-183.5"/>
+</g>
+<!-- proc~fmo_report -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node7" class="node">
+<title>proc~fmo_report</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node7"><a xlink:href="../proc/fmo_report.html" xlink:title="fmo_report">
+<polygon fill="#d9534f" stroke="#d9534f" points="390.5,-150 319.5,-150 319.5,-126 390.5,-126 390.5,-150"/>
+<text text-anchor="middle" x="355" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fmo_report</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;proc~fmo_report -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge6" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;proc~fmo_report</title>
+<path fill="none" stroke="#ff0000" d="M156.81,-167.99C174.45,-164.97 193.42,-161.8 211,-159 243.89,-153.77 281.1,-148.32 309.32,-144.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="309.88,-147.74 319.29,-142.86 308.9,-140.81 309.88,-147.74"/>
+</g>
+<!-- proc~mbe_base_has_geometry -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node8" class="node">
+<title>proc~mbe_base_has_geometry</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node8"><a xlink:href="../proc/mbe_base_has_geometry.html" xlink:title="many_body_expansion_t%mbe_base_has_geometry">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="499,-108 211,-108 211,-84 499,-84 499,-108"/>
+<text text-anchor="middle" x="355" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">many_body_expansion_t%mbe_base_has_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;proc~mbe_base_has_geometry -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge7" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;proc~mbe_base_has_geometry</title>
+<path fill="none" stroke="#ff0000" d="M107.17,-167.91C130.48,-153.4 172.06,-129.49 211,-117 218.99,-114.44 227.32,-112.19 235.79,-110.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="236.75,-113.58 245.76,-108.01 235.24,-106.75 236.75,-113.58"/>
+</g>
+<!-- proc~run_libcint_fmo -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node9" class="node">
+<title>proc~run_libcint_fmo</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node9"><a xlink:href="../proc/run_libcint_fmo.html" xlink:title="run_libcint_fmo">
+<polygon fill="#d9534f" stroke="#d9534f" points="402,-66 308,-66 308,-42 402,-42 402,-66"/>
+<text text-anchor="middle" x="355" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_fmo</text>
+</a>
+</g>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;proc~run_libcint_fmo -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge8" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;proc~run_libcint_fmo</title>
+<path fill="none" stroke="#ff0000" d="M98.46,-167.77C117.62,-145.2 162.05,-97.28 211,-75 237.93,-62.74 270.4,-57.32 297.58,-55.04"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="298,-58.52 307.72,-54.31 297.5,-51.53 298,-58.52"/>
+</g>
+<!-- to_char -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node10" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="382,-24 328,-24 328,0 382,0 382,-24"/>
+<text text-anchor="middle" x="355" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~fmo_run_serial&#45;&gt;to_char -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge9" class="edge">
+<title>proc~fmo_run_serial&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M94.51,-167.95C109.61,-139.09 152.17,-65.98 211,-33 243.89,-14.56 287.45,-10.53 317.81,-10.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="317.93,-13.85 327.96,-10.43 317.99,-6.85 317.93,-13.85"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node11" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node11"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="698,-276 535,-276 535,-252 698,-252 698,-276"/>
+<text text-anchor="middle" x="616.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~element_symbol_of&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge10" class="edge">
+<title>proc~element_symbol_of&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#aaff00" d="M413.27,-264C445.88,-264 487.48,-264 524.46,-264"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="524.75,-267.5 534.75,-264 524.75,-260.5 524.75,-267.5"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~fmo_run_serial~~CallsGraph_node12" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~fmo_run_serial~~CallsGraph_node12"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="669,-66 564,-66 564,-42 669,-42 669,-66"/>
+<text text-anchor="middle" x="616.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~run_libcint_fmo&#45;&gt;proc~error_set -->
+<g id="proc~~fmo_run_serial~~CallsGraph_edge11" class="edge">
+<title>proc~run_libcint_fmo&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#aa00ff" d="M402.09,-54C444.2,-54 506.81,-54 553.33,-54"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="553.6,-57.5 563.6,-54 553.6,-50.5 553.6,-57.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocfmo_run_serialCallsGraph = svgPanZoom('#procfmo_run_serialCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~2"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-symbols"></span>
+              character(len=2),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>symbols</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">fmo_run_serial</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Run FMO on one rank</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_libcint_fmo</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
+<span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">global_logger</span>
+<span class="w">      </span><span class="k">use </span><span class="n">pic_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">to_char</span>
+
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">fmo_context_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_data</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symbols</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">has_geometry</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;fmo_run_serial: sys_geom required but not set&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">owner</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;fmo_run_serial: no fragment partition set&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">symbols</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span>
+<span class="w">         </span><span class="n">symbols</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_symbol_of</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      call </span><span class="n">run_libcint_fmo</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">symbols</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">basis</span><span class="p">),</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">esp</span><span class="p">),</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">expansion</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">far_field</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">resppc</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">this</span><span class="p">%</span><span class="n">max_outer</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">outer_tol</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;fmo_run_serial: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;FMO total energy: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">energy</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Hartree&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">fmo_report</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">fmo_run_serial</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-16 21:30 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
