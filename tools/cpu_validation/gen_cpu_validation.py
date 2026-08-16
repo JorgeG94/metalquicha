@@ -1558,6 +1558,32 @@ def main():
         print(f"{mol.label:6s} {basis:12s} sapt0    "
               f"elst={terms['Elst10,r']:+.9f} exch={terms['Exch10']:+.9f} "
               f"E={energy:.12f}", flush=True)
+    # Carry the hand-maintained entries through the regeneration.
+    #
+    # HAND_MAINTAINED spares those *decks* from the sweep below, but the manifest
+    # is rebuilt from `tests` alone and this script cannot produce their entries:
+    # EFP2's reference is GAMESS, not PySCF, and MAKEFP returns a potential
+    # rather than an energy. So every regeneration silently dropped them while
+    # leaving the decks on disk -- coverage that still looks present and no
+    # longer runs, which is worse than coverage that is visibly gone. That is
+    # exactly what happened to the two EFP2 cases: the decks are in the tree and
+    # the manifest has not mentioned them since whenever this was last rerun.
+    #
+    # Read back what is there, keep the entries whose deck is hand-maintained,
+    # and re-emit them. An entry this run *did* generate wins, so a case that
+    # graduates to being generated is not duplicated by its own history.
+    if MANIFEST.exists():
+        generated_inputs = {t["input"] for t in tests}
+        try:
+            previous = json.loads(MANIFEST.read_text())
+        except json.JSONDecodeError:
+            previous = {"tests": []}
+        for entry in previous.get("tests", []):
+            deck = entry.get("input", "")
+            rel = deck[len("inputs/"):] if deck.startswith("inputs/") else deck
+            if rel in HAND_MAINTAINED and deck not in generated_inputs:
+                tests.append(entry)
+                print(f"kept hand-maintained {deck}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:
