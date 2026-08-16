@@ -563,6 +563,47 @@ if(MQC_ENABLE_LIBCINT)
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_charges PRIVATE ${main_lib} cint_fortran cint)
 
+  add_executable(check_fmo_mpi
+                 ${PROJECT_SOURCE_DIR}/validation/check_fmo_mpi.f90)
+  target_include_directories(check_fmo_mpi
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_fmo_mpi PRIVATE ${main_lib} cint_fortran cint)
+
+  if(MQC_ENABLE_TESTING)
+    # The physics, on one rank.
+    add_test(NAME ${project_name}/mqc_libcint_fmo
+             COMMAND $<TARGET_FILE:check_fmo>)
+
+    # The embedding is local, which is what lets the cutoff exist.
+    add_test(NAME ${project_name}/mqc_libcint_fmo_locality
+             COMMAND $<TARGET_FILE:probe_esp>)
+
+    # Same answer however many ranks. Run on two by default, which is enough to
+    # catch a missing reduction or a rank computing someone else's fragment;
+    # oversubscribe so it does not depend on the machine having free cores.
+    find_program(MQC_MPIEXEC NAMES mpirun mpiexec)
+    if(MQC_MPIEXEC)
+      add_test(NAME ${project_name}/mqc_libcint_fmo_mpi
+               COMMAND ${MQC_MPIEXEC} --oversubscribe -np 2
+                       $<TARGET_FILE:check_fmo_mpi>)
+    else()
+      add_test(NAME ${project_name}/mqc_libcint_fmo_mpi
+               COMMAND $<TARGET_FILE:check_fmo_mpi>)
+    endif()
+  endif()
+
+  add_executable(probe_esp ${PROJECT_SOURCE_DIR}/validation/probe_esp.f90)
+  target_include_directories(probe_esp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(probe_esp PRIVATE ${main_lib} cint_fortran cint)
+
+  add_executable(sweep_fmo ${PROJECT_SOURCE_DIR}/validation/sweep_fmo.f90)
+  target_include_directories(sweep_fmo PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(sweep_fmo PRIVATE ${main_lib} cint_fortran cint)
+
+  add_executable(check_fmo ${PROJECT_SOURCE_DIR}/validation/check_fmo.f90)
+  target_include_directories(check_fmo PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_fmo PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)

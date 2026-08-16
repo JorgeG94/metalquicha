@@ -14,6 +14,7 @@ module mqc_libcint_bridge
    private
 
    public :: run_libcint_hf
+   public :: run_libcint_fmo
    public :: run_libcint_makefp
    public :: run_libcint_charges
    public :: run_libcint_efp
@@ -101,6 +102,44 @@ contains
       if (size(fragment_sizes) < 0 .or. size(fragment_atoms) < 0) return
       if (size(coordinates) < 0) return
    end subroutine run_libcint_efp
+   subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
+                              basis_name, esp, expansion, far_field, resppc, &
+                              level, max_outer, outer_tol, energy, error, comm)
+      !! Run FMO2 (or EE-MBE) over a partitioned system
+      !!
+      !! Options arrive as plain scalars rather than the backend's own options
+      !! type, so the layer above never has to see a type it cannot compile
+      !! without the backend. Coordinates are Bohr; `owner(i)` is atom i's
+      !! fragment, numbered from one with no gaps.
+      use pic_types, only: dp
+      use mqc_error, only: error_t
+      use pic_mpi_lib, only: comm_t
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      integer, intent(in) :: owner(:)
+      character(len=*), intent(in) :: basis_name, esp, expansion, far_field
+      real(dp), intent(in) :: resppc
+      integer, intent(in) :: level
+      integer, intent(in) :: max_outer
+      real(dp), intent(in) :: outer_tol
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+         !! Present means distribute the fragment work over this communicator.
+         !! Absent means one rank does all of it.
+
+      energy = 0.0_dp
+      call error%set(ERROR_VALIDATION, &
+                     "FMO needs the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_LIBCINT=ON")
+      if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(owner) < 0) return
+      if (len_trim(element_symbols(1)) < 0) return
+      if (len_trim(basis_name)*len_trim(esp)*len_trim(expansion)*len_trim(far_field) < 0) return
+      if (resppc < -huge(1.0_dp) .or. level < 0 .or. max_outer < 0) return
+      if (outer_tol < 0.0_dp) return
+      if (present(comm)) return
+   end subroutine run_libcint_fmo
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &

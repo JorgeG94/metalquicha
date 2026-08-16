@@ -37,6 +37,41 @@ Advanced method for overlapping fragments using Principle of Inclusion-Exclusion
 - **Intersection depth control**: Maximum k-way intersection level configurable
 - **Use cases**: Strongly interacting systems, covalently bonded clusters
 
+Fragment Molecular Orbital method (FMO_n)
+------------------------------------------
+
+Fragments solved in the electrostatic field of the others, iterated to
+self-consistency, rather than in vacuum:
+
+- **Two nested SCFs**: an inner fragment SCF against a fixed field, and an outer
+  monomer loop that converges the field itself
+- **Exact embedding**: nuclear attraction integrals plus the Coulomb operator of
+  the neighbours' density matrices, not fitted point charges
+- **Supported levels**: FMO2, FMO3 and beyond; level equal to the fragment count
+  is the full expansion and reproduces the supermolecular energy exactly
+- **Point-charge cutoff**: distant fragments approximated by atomic populations
+  past a configurable separation (GAMESS's ``RESPPC``), which is what makes the
+  method scale
+- **Use cases**: hydrogen-bonded clusters, solvated molecules -- anywhere the
+  monomers are substantially polarized
+- **Restrictions**: non-covalent fragments only (enforced), closed shell,
+  energies only
+
+Electrostatically Embedded MBE (EE-MBE)
+----------------------------------------
+
+Many-body expansion with fragments embedded in point charges:
+
+- **Point-charge embedding**: each neighbour represented by Mulliken or CHELPG
+  atomic charges, self-consistently updated
+- **Ordinary MBE assembly**: total embedded energies, no response term, which is
+  what distinguishes it from FMO with the same charges
+- **Shares all machinery with FMO**, including the level, the cutoff and the
+  distributed execution
+- **Use cases**: the same systems as FMO, at lower cost per fragment
+
+See :doc:`fmo` for both.
+
 Distance-Based Screening
 -------------------------
 

@@ -1847,6 +1847,30 @@
             "input": "inputs/cpu/mqc/sapt/cpu_w2dimer_6-31g_sapt0.json",
             "expected_energy": -0.009427996709,
             "type": "unfragmented"
+        },
+        {
+            "name": "FMO2 water trimer 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
+            "expected_energy": -227.9705411684,
+            "type": "fragmented"
+        },
+        {
+            "name": "EE-MBE water trimer 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fmo/eembe_water3.json",
+            "expected_energy": -227.9704573337,
+            "type": "fragmented"
+        },
+        {
+            "name": "FMO3 water trimer 6-31g, exact at full level (CPU)",
+            "input": "inputs/cpu/mqc/fmo/fmo3_water3.json",
+            "expected_energy": -227.970497639,
+            "type": "fragmented"
+        },
+        {
+            "name": "EE-MBE3 water trimer 6-31g, exact at full level (CPU)",
+            "input": "inputs/cpu/mqc/fmo/eembe3_water3.json",
+            "expected_energy": -227.970497639,
+            "type": "fragmented"
         }
     ]
 }
