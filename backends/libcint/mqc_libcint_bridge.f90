@@ -15,6 +15,7 @@ module mqc_libcint_bridge
    !! elsewhere.
    use pic_logger, only: logger => global_logger
    use pic_types, only: dp
+   use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -364,6 +365,7 @@ contains
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
+      type(timer_type) :: grad_clock
 
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -716,6 +718,9 @@ contains
             end if
          end if
 
+         call logger%info("  energy converged, computing the gradient")
+         call grad_clock%start()
+
          aux_arg => null()
          xc_arg => null()
          if (settings%density_fitting) aux_arg => aux
@@ -746,8 +751,11 @@ contains
             return
          end if
          result%has_gradient = .true.
+         write (line, "(a,f10.2,a)") "  gradient done in ", grad_clock%get_elapsed_time(), " s"
+         call logger%info(trim(line))
          if (settings%verbose) then
-            write (*, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+            write (line, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+            call logger%info(trim(line))
          end if
       end if
       call aux%destroy()
@@ -806,6 +814,8 @@ contains
                   call mol%destroy()
                   return
                end if
+               call logger%info("  energy converged, computing the gradient")
+               call grad_clock%start()
                ! Fitted correlation gets the fitted gradient. Not a refinement:
                ! `run_libcint_ri_mp2` above computed a fitted energy, and the
                ! conventional gradient is the derivative of a different one.
@@ -837,9 +847,11 @@ contains
                   return
                end if
                result%has_gradient = .true.
+               write (line, "(a,f10.2,a)") "  gradient done in ", grad_clock%get_elapsed_time(), " s"
+               call logger%info(trim(line))
                if (settings%verbose) then
-                  write (*, "(a,f20.12)") "  |gradient|     ", &
-                     sqrt(sum(result%gradient**2))
+                  write (line, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+                  call logger%info(trim(line))
                end if
             end if
 
