@@ -175,7 +175,7 @@ Gradient Calculations
 
 On the CPU backend the analytic gradient covers Hartree-Fock restricted and
 unrestricted, density-fitted restricted Hartree-Fock, Kohn-Sham through LDA,
-GGA and hybrid GGA, and MP2 over a restricted reference -- both the
+GGA, hybrid GGA and meta-GGA, and MP2 over a restricted reference -- both the
 conventional one and ``ri-mp2``, where the correlation is fitted and the
 reference is not.
 
@@ -194,8 +194,9 @@ What is refused rather than approximated, and why:
 
    * - Case
      - Why it is refused
-   * - Meta-GGA functionals
-     - The kinetic energy density brings a term of its own, which is not built
+   * - Meta-GGA over an unrestricted reference
+     - The kinetic energy density carries a term per spin that is not built;
+       the restricted case is implemented
    * - Range-separated hybrids
      - Needs a second exchange derivative at the screened omega
    * - MP2 over a fitted reference (``keywords.scf.density_fitting``)

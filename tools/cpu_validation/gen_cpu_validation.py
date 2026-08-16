@@ -411,6 +411,13 @@ GRADIENT_CASES = [
     ("water", "cc-pvdz", "", "pbe", 1),             # GGA
     ("water", "cc-pvdz", "", "b3lyp", 1),           # hybrid GGA
     ("ch3", "cc-pvdz", "", "pbe", 2),               # unrestricted GGA
+    # Meta-GGA. Two of them, and different in kind: TPSS is constraint-derived
+    # and M06-L heavily parametrised, so they exercise different parts of
+    # libxc's tau dependence rather than the same one twice. Restricted only --
+    # the unrestricted kinetic energy density carries a term per spin that the
+    # gradient refuses rather than approximates.
+    ("water", "cc-pvdz", "", "tpss", 1),            # meta-GGA
+    ("water", "cc-pvdz", "", "m06l", 1),            # meta-GGA, parametrised
 ]
 
 # MP2 gradients, as (molecule, basis). Small on purpose: the relaxed density

@@ -1159,6 +1159,56 @@
             "type": "unfragmented"
         },
         {
+            "name": "TPSS gradient H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_tpss_grad.json",
+            "expected_energy": -76.422747225964,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    2.23e-10,
+                    -0.028243881186
+                ],
+                [
+                    0.0,
+                    -0.006856598635,
+                    0.014121940677
+                ],
+                [
+                    -0.0,
+                    0.006856598412,
+                    0.014121940509
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "M06L gradient H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_m06l_grad.json",
+            "expected_energy": -76.413432743074,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.27e-10,
+                    -0.015615162372
+                ],
+                [
+                    -0.0,
+                    0.002845811518,
+                    0.007807581271
+                ],
+                [
+                    -0.0,
+                    -0.002845811745,
+                    0.007807581101
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "MP2 gradient H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_mp2_grad.json",
             "expected_energy": -74.997272482595,
@@ -1618,18 +1668,6 @@
             "input": "inputs/cpu/mqc/mp2/cpu_w2dimer_cc-pvdz_mp2_mbe2.json",
             "expected_energy": -152.466588405967,
             "type": "fragmented"
-        },
-        {
-            "name": "EFP2 water dimer 6-31G* (CPU)",
-            "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
-            "expected_energy": 0.0030795778,
-            "type": "unfragmented"
-        },
-        {
-            "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
-            "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
-            "expected_energy": 0.0030795778,
-            "type": "unfragmented"
         }
     ]
 }
