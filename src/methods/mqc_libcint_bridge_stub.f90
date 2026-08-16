@@ -137,13 +137,14 @@ contains
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(esp)*len_trim(expansion)*len_trim(far_field) < 0) return
       if (resppc < -huge(1.0_dp) .or. level < 0 .or. max_outer < 0) return
-      if (outer_tol < 0.0_dp) return
+      if (outer_tol < 0.0_dp .or. scf_max_iter < 0 .or. scf_energy_tol < 0.0_dp) return
+      if (scf_density_tol < 0.0_dp) return
       if (present(comm)) return
    end subroutine run_libcint_fmo
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
-                                 aux_basis)
+                                 aux_basis, guess)
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -155,6 +156,7 @@ contains
       integer, intent(in), optional :: charge   !! Net charge; a fragment may be an ion
       logical, intent(in), optional :: verbose
       character(len=*), intent(in), optional :: aux_basis
+      character(len=*), intent(in), optional :: guess
 
       call error%set(ERROR_VALIDATION, &
                      "MAKEFP needs the CPU integral backend; build with "// &
@@ -163,6 +165,7 @@ contains
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(name)*len_trim(path) < 0) return
       if (present(charge) .or. present(verbose)) return
+      if (present(aux_basis) .or. present(guess)) return
    end subroutine run_libcint_makefp
 
    subroutine run_libcint_hf(settings, fragment, result, want_gradient)

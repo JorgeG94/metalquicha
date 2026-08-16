@@ -237,7 +237,7 @@ contains
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
-                                 aux_basis)
+                                 aux_basis, guess)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of whether
@@ -258,17 +258,20 @@ contains
       character(len=*), intent(in), optional :: aux_basis
          !! Fit the response Hessian against this basis instead of building it
          !! exactly. Absent, the build is exact.
+      character(len=*), intent(in), optional :: guess
+         !! Initial-guess name from the deck, forwarded to the SCF. Absent leaves
+         !! `make_efp_potential` on its "auto" (SAD) default.
 
       type(efp_potential_t) :: pot
 
       if (present(aux_basis)) then
          call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge=charge, &
-                                 verbose=verbose, aux_basis=aux_basis)
+                                 verbose=verbose, aux_basis=aux_basis, guess=guess)
       else
          call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge=charge, &
-                                 verbose=verbose)
+                                 verbose=verbose, guess=guess)
       end if
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
