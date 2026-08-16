@@ -433,6 +433,18 @@ GRADIENT_CASES = [
     # gradient refuses rather than approximates.
     ("water", "cc-pvdz", "", "tpss", 1),            # meta-GGA
     ("water", "cc-pvdz", "", "m06l", 1),            # meta-GGA, parametrised
+    # Kohn-Sham with the two-electron term fitted, one per rung. The pure
+    # functional is the sharp one: the fitted gradient carried a full
+    # Hartree-Fock exchange derivative until `exx_fraction` reached it, which
+    # an energy with no exact exchange never contained.
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "pbe", 1),    # DF + pure GGA
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "b3lyp", 1),  # DF + hybrid
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "tpss", 1),   # DF + meta-GGA
+    # Range separated *and* fitted, which is the only way these have a
+    # gradient: the exact-ERI path builds no second exchange derivative at the
+    # screened omega, so there is deliberately no unfitted counterpart below.
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "wb97x", 1),      # DF + RSH
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "cam-b3lyp", 1),  # DF + RSH
 ]
 
 # MP2 gradients, as (molecule, basis). Small on purpose: the relaxed density
@@ -499,6 +511,24 @@ GRADIENT_FRAGMENTED_TOLERANCE = 1.0e-7
 # is enough: a term going missing is a 1e-3 event, not a 1e-8 one.
 GRADIENT_TOLERANCE = 1.0e-8
 GRADIENT_DFT_TOLERANCE = 1.0e-7
+
+# Range separated *and* fitted needs its own bound, and the reason is not slop.
+# Both codes are internally consistent -- our analytic gradient matches finite
+# differences of our own energy to 5.1e-7, which is the difference formula's
+# floor -- and the two fitted energies agree to 4.0e-10. What differs is which
+# near-null modes of the auxiliary metric each code drops. `(P|Q)_omega` is the
+# less well conditioned of the two metrics, the kept-mode count moves with
+# geometry, and a 4e-10 difference in energy becomes 1e-7 in its derivative.
+#
+# Matching PySCF's threshold would be matching an implementation detail rather
+# than a physical quantity, so the bound is set where the disagreement actually
+# lives. It is still two hundred times tighter than a missing term, which is a
+# 1e-3 event. Measured: 1.02e-7 for wB97X, under 1e-7 for CAM-B3LYP.
+GRADIENT_DF_RSH_TOLERANCE = 5.0e-7
+
+#: Functionals whose exchange is split by range. Named here because the
+#: generator has no libxc to ask, and only the tolerance above depends on it.
+RSH_FUNCTIONALS = {"wb97x", "cam-b3lyp"}
 GRADIENT_GRID_LEVEL = 3
 
 DF_CASES = [
@@ -506,6 +536,27 @@ DF_CASES = [
     ("water", "def2-svp", "def2-universal-jkfit"),
     ("water", "6-31g*", "6-31g*"),
     ("ch4", "6-31g**", "6-31g**"),
+]
+
+# The same, with a functional. Density-fitted Kohn-Sham had no case here at all
+# -- not one entry in the manifest carried both a functional and an auxiliary
+# basis -- because until the method factory was taught to read
+# `keywords.scf.density_fitting` a Kohn-Sham deck could not ask for fitting in
+# the first place. So this is a rung that was unreachable rather than untested,
+# and these are its first references.
+#
+# One per rung, because what fitting has to know is the exchange fraction: PBE
+# keeps none, B3LYP a fifth, TPSS none again with tau on top.
+DF_KS_CASES = [
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "pbe"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "b3lyp"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "tpss"),
+    # Range separated, where fitting has to build a *second* tensor against
+    # `erf(omega r)/r` and use the attenuated metric with it. A full-range
+    # metric paired with an attenuated three-centre tensor fits nothing, and
+    # these two cases are what would notice.
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "wb97x"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "cam-b3lyp"),
 ]
 
 # Cases whose deck already exists in the tree and is referenced from elsewhere
@@ -847,14 +898,18 @@ def pyscf_uks(atoms, basis, functional, level, multiplicity):
     return mf.kernel(), mol.nao_nr()
 
 
-def pyscf_rks(atoms, basis, functional, level):
+def pyscf_rks(atoms, basis, functional, level, aux=""):
     """Reference Kohn-Sham total energy, on the same grid level.
 
     `dft.RKS` builds its own grid from the same tables ours does, which is what
     makes a level-for-level comparison meaningful -- the grids do not cancel here
     the way they do when one code evaluates on the other's points.
+
+    `aux` fits the Coulomb and exact-exchange builds, leaving the
+    exchange-correlation term alone -- which is what our own fitted Kohn-Sham
+    does, and why one auxiliary basis covers every rung.
     """
-    from pyscf import dft, gto
+    from pyscf import df, dft, gto
 
     mol = gto.Mole()
     mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
@@ -869,6 +924,10 @@ def pyscf_rks(atoms, basis, functional, level):
     mf = dft.RKS(mol)
     mf.xc = functional
     mf.grids.level = level
+    if aux:
+        mf = df.density_fit(mf, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
+        mf.xc = functional
+        mf.grids.level = level
     mf.conv_tol = 1e-11
     energy = mf.kernel()
     return float(energy), mol.nao
@@ -977,6 +1036,15 @@ def mqc_ri_mp2_gradient(atoms, basis, aux):
     energy, mf = ri_mp2_energy(mol, auxmol)
     gradient = ri_mp2_gradient(mol, auxmol, mf)
     return float(energy), gradient.tolist(), mol.nao
+
+
+def _gradient_tolerance(functional, aux):
+    """Which bound this case is held to, and why it might not be the default."""
+    if not functional:
+        return GRADIENT_TOLERANCE
+    if aux and functional in RSH_FUNCTIONALS:
+        return GRADIENT_DF_RSH_TOLERANCE
+    return GRADIENT_DFT_TOLERANCE
 
 
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
@@ -1163,7 +1231,7 @@ def main():
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
-            "gradient_tolerance": GRADIENT_DFT_TOLERANCE if functional else GRADIENT_TOLERANCE,
+            "gradient_tolerance": _gradient_tolerance(functional, aux),
             # Exact here, and worth failing on: every term in these gradients is
             # translationally invariant, so a residual is a real defect even
             # though the converse does not hold.
@@ -1226,6 +1294,25 @@ def main():
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad |g|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux, functional in DF_KS_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rks(mol.atoms, basis, functional, GRADIENT_GRID_LEVEL, aux=aux)
+        deck = deck_for(f"{CPU_MQC}/df-dft",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_{functional}_df")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="dft")
+            d["model"]["functional"] = functional
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"{functional.upper()} {mol.label} {basis} density fitted with {aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:8s} df={aux:20s} "
+              f"E={energy:.12f}", flush=True)
 
     for name, basis, fragments in GRADIENT_FRAGMENTED_CASES:
         mol = MOLECULES[name]
