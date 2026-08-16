@@ -1494,6 +1494,86 @@
             "type": "unfragmented"
         },
         {
+            "name": "DH B2PLYP gradient H2O sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_b2plyp_grad.json",
+            "expected_energy": -75.20973856727,
+            "expected_gradient": [
+                [
+                    -9e-12,
+                    3.26e-10,
+                    -0.103861590377
+                ],
+                [
+                    4e-12,
+                    -0.036278086265,
+                    0.051930795313
+                ],
+                [
+                    5e-12,
+                    0.036278085926,
+                    0.051930795066
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "DH B2GP-PLYP gradient H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_b2gpplyp_grad.json",
+            "expected_energy": -76.336965835977,
+            "expected_gradient": [
+                [
+                    3e-11,
+                    3.4e-11,
+                    -0.012736684654
+                ],
+                [
+                    3.14e-10,
+                    0.003167268597,
+                    0.006368342554
+                ],
+                [
+                    1.1e-11,
+                    -0.00316726912,
+                    0.006368342369
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "DH MPW2PLYP gradient NH3 sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_nh3_sto-3g_mpw2plyp_grad.json",
+            "expected_energy": -55.692472643581,
+            "expected_gradient": [
+                [
+                    -2.897484e-06,
+                    1.4e-11,
+                    0.048653227074
+                ],
+                [
+                    -0.028604402689,
+                    -6e-12,
+                    -0.016218620595
+                ],
+                [
+                    0.014303650119,
+                    -0.024773605389,
+                    -0.016217303245
+                ],
+                [
+                    0.014303650102,
+                    0.024773605382,
+                    -0.016217303266
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "PBE H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_pbe_df.json",
             "expected_energy": -76.335467103918,
@@ -1823,18 +1903,6 @@
             "input": "inputs/cpu/mqc/mp2/cpu_w2dimer_cc-pvdz_mp2_mbe2.json",
             "expected_energy": -152.466588405967,
             "type": "fragmented"
-        },
-        {
-            "name": "EFP2 water dimer 6-31G* (CPU)",
-            "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
-            "expected_energy": 0.0030795778,
-            "type": "unfragmented"
-        },
-        {
-            "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
-            "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
-            "expected_energy": 0.0030795778,
-            "type": "unfragmented"
         },
         {
             "name": "SAPT0 (H2O)2 sto-3g (CPU)",

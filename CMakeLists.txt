@@ -544,6 +544,12 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_xc_potential_gradient PRIVATE ${main_lib}
                                                             cint_fortran cint)
 
+  add_executable(check_dh_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_dh_gradient.f90)
+  target_include_directories(check_dh_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_dh_gradient PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_df_cphf
                  ${PROJECT_SOURCE_DIR}/validation/check_df_cphf.f90)
   target_include_directories(check_df_cphf

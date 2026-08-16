@@ -695,23 +695,64 @@ contains
       ! is a gradient of a function nobody computed.
       if (do_gradient .and. .not. settings%run_mp2) then
          ! A double hybrid's energy is the Kohn-Sham part plus a scaled PT2
-         ! correlation, and only the first of those is differentiated below.
-         ! Left unchecked this returns the hybrid's gradient against the double
-         ! hybrid's energy -- on water/cc-pVDZ that is 0.011 against a true
-         ! 0.016, right in shape, wrong by a third, and with nothing in the
-         ! output to say which of the two numbers the other belongs to.
+         ! correlation, and the call below differentiates only the first. The
+         ! second is added afterwards, once the reference gradient exists --
+         ! see the block after this one. What is still refused there is the
+         ! combination this cannot do, rather than the whole functional.
          !
-         ! The PT2 piece needs a relaxed density and a response solve over a
-         ! Kohn-Sham reference, which means the exchange-correlation kernel in
-         ! the coupled-perturbed operator. That kernel does not exist here yet.
-         if (kohn_sham) then
-            if (xc%pt2_fraction /= 0.0_dp) then
-               call result%error%set(ERROR_VALIDATION, "a double hybrid gradient needs "// &
-                                     "the PT2 term differentiated too: its relaxed "// &
-                                     "density and response solve run over a Kohn-Sham "// &
-                                     "reference, whose exchange-correlation kernel is "// &
-                                     "not implemented. Run the double hybrid as an "// &
-                                     "energy, or take the gradient at a hybrid.")
+         ! Left unchecked entirely, this used to return the hybrid's gradient
+         ! against the double hybrid's energy: on water/cc-pVDZ 0.011 against a
+         ! true 0.016, right in shape, wrong by a third, with nothing in the
+         ! output to say which of the two numbers the other belonged to.
+         if (kohn_sham .and. xc%pt2_fraction /= 0.0_dp) then
+            if (unrestricted) then
+               call result%error%set(ERROR_VALIDATION, "a double hybrid gradient over "// &
+                                     "an open shell needs an unrestricted MP2 relaxed "// &
+                                     "density and a spin-resolved response, neither of "// &
+                                     "which is implemented. Run it as an energy.")
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+            if (xc%range_separated) then
+               call result%error%set(ERROR_VALIDATION, "a range-separated double "// &
+                                     "hybrid gradient would need the response operator "// &
+                                     "and the potential derivative at a screened "// &
+                                     "omega, which are not built. Run it as an energy.")
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+            if (xc%any_mgga) then
+               call result%error%set(ERROR_VALIDATION, "a meta-GGA double hybrid "// &
+                                     "gradient needs the exchange-correlation kernel "// &
+                                     "in tau, which is not implemented. Run it as an "// &
+                                     "energy, or take the gradient at a GGA-based "// &
+                                     "double hybrid.")
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+            if (settings%density_fitting) then
+               call result%error%set(ERROR_VALIDATION, "a double hybrid gradient over "// &
+                                     "a density-fitted reference is not implemented: "// &
+                                     "the perturbative term's response equations would "// &
+                                     "have to be solved with the fitted operator the "// &
+                                     "SCF actually used, and solving the exact ones "// &
+                                     "against a fitted reference answers a different "// &
+                                     "question. Run it as an energy, or take the "// &
+                                     "gradient without fitting the reference.")
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+            if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
+               call result%error%set(ERROR_VALIDATION, "a double hybrid gradient is "// &
+                                     "all-electron: the relaxed density gains "// &
+                                     "occupied-frozen blocks that are not built. Note "// &
+                                     "the *energy* is all-electron too, whatever the "// &
+                                     "deck says, so this refuses rather than "// &
+                                     "differentiating something else.")
                result%has_error = .true.
                call mol%destroy()
                return
@@ -968,7 +1009,16 @@ contains
                ! a deck that named no auxiliary basis should get an answer, not a
                ! refusal, since the conventional transform is the more accurate of
                ! the two anyway.
-               if (len_trim(settings%aux_basis_set) > 0) then
+               !
+               ! **A gradient run takes the conventional transform instead**, and
+               ! that is not a performance choice. The gradient assembled below
+               ! differentiates exact integrals; reporting it beside a fitted
+               ! energy would be a gradient of a function nobody computed, which
+               ! is the one thing every other branch in this file is arranged to
+               ! prevent. Until the fitted double hybrid gradient exists, the
+               ! consistent pair is the exact one -- and it is the more accurate
+               ! half of the pair anyway.
+               if (len_trim(settings%aux_basis_set) > 0 .and. .not. do_gradient) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (error%has_error()) then
                      call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -982,6 +1032,12 @@ contains
                                           scf%energy, dh_mp2, error, n_frozen=dh_frozen)
                   call corr_aux%destroy()
                else
+                  if (do_gradient .and. len_trim(settings%aux_basis_set) > 0 &
+                      .and. settings%verbose) then
+                     call logger%info("  double hybrid gradient: the PT2 term is "// &
+                                      "computed with exact integrals, so that the "// &
+                                      "energy and the gradient belong to each other")
+                  end if
                   call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
                                        fragment%nelec/2, scf%energy, dh_mp2, error, &
                                        n_frozen=dh_frozen)
@@ -1004,6 +1060,43 @@ contains
                   call logger%info(trim(line))
                   write (line, "(a,f20.12)") "  E total        ", result%energy%total()
                   call logger%info(trim(line))
+               end if
+
+               ! The perturbative term's gradient, on top of the Kohn-Sham one
+               ! already in `result%gradient`. Two calls rather than one because
+               ! only the first half is variational: the reference gradient
+               ! needs no response, and this one is almost entirely response.
+               !
+               ! Exact integrals whatever the energy above used. The fitted
+               ! correlation gradient exists next door, but it differentiates a
+               ! *Hartree-Fock* reference by construction -- so pairing it with
+               ! a Kohn-Sham one would be the same category of error this whole
+               ! block is arranged to avoid. Where the energy was fitted the two
+               ! differ by the fitting error, which is the honest cost of not
+               ! having written the fitted version yet.
+               if (do_gradient) then
+                  block
+                     real(dp), allocatable :: dh_grad(:, :)
+
+                     call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                                               fragment%nelec/2, dh_grad, error, &
+                                               xc=xc, scf_density=scf%density, &
+                                               pt2_scale=xc%pt2_fraction)
+                     if (error%has_error()) then
+                        call result%error%set(ERROR_VALIDATION, "double hybrid "// &
+                                              "gradient: "//error%get_message())
+                        result%has_error = .true.
+                        call xc%destroy()
+                        call mol%destroy()
+                        return
+                     end if
+                     result%gradient = result%gradient + dh_grad
+                     if (settings%verbose) then
+                        write (line, "(a,f20.12)") "  |gradient|     ", &
+                           sqrt(sum(result%gradient**2))
+                        call logger%info(trim(line))
+                     end if
+                  end block
                end if
             end block
          end if
