@@ -33,7 +33,7 @@ module mqc_libcint_gradient
                                     metric_inverse_sqrt
    use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP
    use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities, &
-                             xc_grid_gga_quantities
+                             xc_grid_gga_quantities, xc_grid_kernel_quantities
    use mqc_dft_partition, only: becke_partition_derivatives
    use pic_blas_interfaces, only: pic_gemm
    use libcint_fortran, only: libcint_1e_ipovlp_sph, libcint_1e_ipovlp_cart, &
@@ -62,6 +62,7 @@ module mqc_libcint_gradient
    ! same assembly.
    public :: one_electron_deriv
    public :: iprinv_deriv_at
+   public :: xc_potential_gradient
    public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
 
    ! Which one-electron derivative `one_electron_deriv` should build.
@@ -516,6 +517,195 @@ contains
          end do
       end do
    end subroutine xc_gradient
+
+   subroutine xc_potential_gradient(ctx, mol, density, pmat, gradient, error)
+      !! `d/dR Tr(P V_xc[D])`, with both densities held fixed, accumulated in place
+      !!
+      !! **Why a double hybrid needs this and no gradient before it did.** Every
+      !! gradient up to here differentiates an energy that is stationary in the
+      !! orbitals, so the reference operator's derivative never appears on its
+      !! own. A double hybrid's perturbative term is not stationary: eliminating
+      !! the orbital response leaves the Z-vector contracted with the derivative
+      !! of the *reference* operator, and for a Kohn-Sham reference that operator
+      !! contains `V_xc`. Omitting this term gives a gradient of entirely
+      !! plausible magnitude -- it is not a correction, it is a missing piece of
+      !! the same order as the Coulomb one beside it.
+      !!
+      !! **`P` is not a density in the usual sense.** It is the relaxed
+      !! correlation density plus the Z-vector, so it is symmetric but
+      !! indefinite, integrates to zero rather than to the electron count, and is
+      !! nowhere near idempotent. Nothing here assumes otherwise; in particular
+      !! the functional is evaluated at `D` alone and `P` only ever appears
+      !! linearly, which is what makes this the derivative of a *linear form*
+      !! rather than of an energy.
+      !!
+      !!     G(R) = int w(R) [ v_rho rho_P + 2 v_sigma grad rho . grad rho_P ]
+      !!
+      !! and `dG/dR` has the same three sources the exchange-correlation gradient
+      !! has -- the basis functions move, the grid points move, the partition
+      !! weights move -- with one addition: `v_rho` and `v_sigma` are themselves
+      !! functions of the reference density, which moves too. That is where the
+      !! second derivatives enter, and it is the part with no analogue next door.
+      !!
+      !! **Four channels, two of them the reference's.** Collecting terms by
+      !! which object is being differentiated:
+      !!
+      !!     d rho      : f_rr rho_P + 2 f_rs (grad rho . grad rho_P)
+      !!     d grad rho : 2 f_rs rho_P grad rho
+      !!                  + 4 f_ss (grad rho . grad rho_P) grad rho
+      !!                  + 2 v_sigma grad rho_P
+      !!     d rho_P    : v_rho
+      !!     d grad rho_P: 2 v_sigma grad rho
+      !!
+      !! Each is the same contraction `accumulate_channel` and
+      !! `accumulate_gga_channel` already perform for the energy gradient -- what
+      !! differs is the density they carry and the coefficient they are weighted
+      !! by, neither of which those routines know about. So this adds no new
+      !! arithmetic of the kind that is hard to get right, only new coefficients.
+      !!
+      !! LDA and GGA; a meta-GGA is refused upstream by
+      !! `xc_grid_kernel_quantities`.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! The converged reference density
+      real(dp), intent(in) :: pmat(:, :)      !! The density `V_xc` is traced against
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: dchi(:, :), dgchi(:, :, :)
+      real(dp), allocatable :: pchi(:, :), pgchi(:, :, :)
+      real(dp), allocatable :: rho_p(:), p_grad(:, :)
+      real(dp), allocatable :: dpart(:, :, :)
+      real(dp) :: wg_ref(3), wg_p(3), gdotp, coef_rho, integrand, w
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: npts, nao, natm, g0, g1, nb, ig, gg, id, ia, comp, own
+      logical :: gga
+
+      if (.not. ctx%active) return
+
+      nao = mol%nao
+      natm = mol%natm
+      npts = ctx%grid%n_points
+      gga = ctx%any_gga
+
+      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, &
+                                     vsigma, frr, frs, fss, error)
+      if (error%has_error()) return
+
+      allocate (offsets(natm), counts(natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+
+         ! Second derivatives of the basis functions, for the same reason the
+         ! GGA energy gradient needs them: differentiating `grad chi` with
+         ! respect to a nuclear coordinate is a second derivative.
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         end if
+         if (error%has_error()) return
+
+         if (allocated(dchi)) deallocate (dchi, pchi)
+         allocate (dchi(nb, nao), pchi(nb, nao))
+         call density_times_ao(ao, density, nb, nao, dchi)
+         call density_times_ao(ao, pmat, nb, nao, pchi)
+
+         ! rho_P and its gradient, on the same footing as the reference's. Built
+         ! from `pchi` directly rather than through `eval_rho`, since the partner
+         ! matrices are wanted anyway and this saves a second pass.
+         if (allocated(rho_p)) deallocate (rho_p, p_grad)
+         allocate (rho_p(nb), p_grad(nb, 3))
+         rho_p = 0.0_dp
+         p_grad = 0.0_dp
+         do ig = 1, nb
+            rho_p(ig) = sum(pchi(ig, :)*ao(ig, :))
+         end do
+         if (gga) then
+            if (allocated(dgchi)) deallocate (dgchi, pgchi)
+            allocate (dgchi(nb, nao, 3), pgchi(nb, nao, 3))
+            call density_times_ao_grad(ao_grad, density, nb, nao, dgchi)
+            call density_times_ao_grad(ao_grad, pmat, nb, nao, pgchi)
+            ! grad rho_P = 2 sum_uv P_uv chi_v grad chi_u -- the two is the
+            ! symmetry of P, exactly as in `eval_rho`.
+            do id = 1, 3
+               do ig = 1, nb
+                  p_grad(ig, id) = 2.0_dp*sum(pchi(ig, :)*ao_grad(ig, :, id))
+               end do
+            end do
+         end if
+
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            own = ctx%grid%atom(gg)
+            w = ctx%grid%weights(gg)
+
+            gdotp = 0.0_dp
+            if (gga) gdotp = sum(rho_grad(gg, :)*p_grad(ig, :))
+
+            ! The reference density's channel: what multiplies d rho / dR.
+            coef_rho = frr(gg)*rho_p(ig)
+            if (gga) coef_rho = coef_rho + 2.0_dp*frs(gg)*gdotp
+            call accumulate_channel(ao_grad, dchi, ig, nao, w*coef_rho, 2.0_dp, &
+                                    offsets, counts, natm, own, gradient)
+
+            ! `P`'s own channel, weighted by the ordinary potential. This is the
+            ! term that survives when the functional is a constant -- and the
+            ! only one an LDA-shaped first attempt would write.
+            call accumulate_channel(ao_grad, pchi, ig, nao, w*vrho(gg), 2.0_dp, &
+                                    offsets, counts, natm, own, gradient)
+
+            if (gga) then
+               do id = 1, 3
+                  wg_ref(id) = w*(2.0_dp*frs(gg)*rho_p(ig)*rho_grad(gg, id) &
+                                  + 4.0_dp*fss(gg)*gdotp*rho_grad(gg, id) &
+                                  + 2.0_dp*vsigma(gg)*p_grad(ig, id))
+                  wg_p(id) = w*2.0_dp*vsigma(gg)*rho_grad(gg, id)
+               end do
+               call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, &
+                                           wg_ref, 2.0_dp, offsets, counts, natm, &
+                                           own, gradient)
+               call accumulate_gga_channel(ao_grad, ao_hess, pchi, pgchi, ig, nao, &
+                                           wg_p, 2.0_dp, offsets, counts, natm, &
+                                           own, gradient)
+            end if
+         end do
+
+         ! The partition weights, on the integrand of this linear form rather
+         ! than on the energy density. Same two pieces as the energy gradient:
+         ! every nucleus reweights the whole grid, and a point owned by A also
+         ! moves with A.
+         if (allocated(dpart)) deallocate (dpart)
+         allocate (dpart(3, natm, nb))
+         call becke_partition_derivatives(ctx%grid%coords(:, g0:g1), mol%coords, &
+                                          ctx%grid%numbers, ctx%grid%atom(g0:g1), &
+                                          ctx%grid%scheme, ctx%grid%adjust, dpart, error)
+         if (error%has_error()) return
+
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            integrand = vrho(gg)*rho_p(ig)
+            if (gga) integrand = integrand &
+                                 + 2.0_dp*vsigma(gg)*sum(rho_grad(gg, :)*p_grad(ig, :))
+            integrand = ctx%grid%quad_weights(gg)*integrand
+
+            own = ctx%grid%atom(gg)
+            do ia = 1, natm
+               do comp = 1, 3
+                  gradient(comp, ia) = gradient(comp, ia) + integrand*dpart(comp, ia, ig)
+                  gradient(comp, own) = gradient(comp, own) - integrand*dpart(comp, ia, ig)
+               end do
+            end do
+         end do
+      end do
+   end subroutine xc_potential_gradient
 
    subroutine density_times_ao(ao, density, nb, nao, dchi)
       !! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g)

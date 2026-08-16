@@ -61,6 +61,19 @@ module mqc_libcint_xc
    public :: xc_grid_lda_quantities
    public :: xc_grid_gga_quantities
    public :: xc_kernel_apply
+   public :: xc_grid_kernel_quantities
+
+   real(dp), parameter :: KERNEL_RHO_FLOOR = 1.0e-10_dp
+      !! Grid points below this density contribute no *second* derivative.
+      !!
+      !! Not a tolerance -- a necessity. The LDA kernel is `d2e/drho2`, which for
+      !! the exchange part goes as `rho^(-2/3)` and diverges at the tail of every
+      !! atomic grid. Left in, those points carry weights that swamp the real
+      !! ones and the response operator stops being positive definite, so the
+      !! conjugate-gradient solver refuses along its first search direction and
+      !! reports a saddle point that is not there. The energy and potential never
+      !! see this because `vrho` and `exc` stay finite where `v2rho2` does not,
+      !! which is why nothing before the kernel needed a floor.
 
    type :: xc_context_t
       !! A functional, a grid, and the fraction of exact exchange to keep
@@ -641,6 +654,145 @@ contains
 #endif
    end subroutine xc_grid_gga_quantities
 
+   subroutine xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, &
+                                        vsigma, frr, frs, fss, error)
+      !! First *and* second functional derivatives at every grid point
+      !!
+      !! What `xc_grid_gga_quantities` is to the exchange-correlation gradient,
+      !! this is to the derivative of the exchange-correlation *potential*. The
+      !! double hybrid gradient needs
+      !!
+      !!     d/dR Tr(P V_xc[D])
+      !!
+      !! for a density `P` that is not the reference -- the Z-vector's -- and
+      !! since `V_xc` is itself a first derivative, differentiating it brings
+      !! second ones.
+      !!
+      !! **Returned raw rather than pre-combined**, which is the opposite of the
+      !! choice next door. `xc_grid_gga_quantities` resolves `2 vsigma grad rho`
+      !! into one vector because its caller contracts exactly that. Here there
+      !! are two densities and four independent combinations of them, and which
+      !! is wanted depends on whether the moving object is the reference's
+      !! density or the other one -- so combining early would mean returning all
+      !! four, and the caller assembling them anyway.
+      !!
+      !! LDA and GGA. A meta-GGA is refused for the same reason the kernel is.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), allocatable, intent(out) :: rho(:)
+      real(dp), allocatable, intent(out) :: rho_grad(:, :)   !! (npts, 3)
+      real(dp), allocatable, intent(out) :: vrho(:), vsigma(:)
+      real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:)
+         !! d2E/drho2, d2E/drho dsigma and d2E/dsigma2
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho_blk(:), grad_blk(:, :), sigma(:)
+      real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
+      real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
+      integer :: g0, g1, nb, i, ig, id, npts
+
+      npts = ctx%grid%n_points
+      allocate (rho(npts), rho_grad(npts, 3), vrho(npts), vsigma(npts), &
+                frr(npts), frs(npts), fss(npts))
+      rho = 0.0_dp
+      rho_grad = 0.0_dp
+      vrho = 0.0_dp
+      vsigma = 0.0_dp
+      frr = 0.0_dp
+      frs = 0.0_dp
+      fss = 0.0_dp
+
+      if (.not. ctx%active) return
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the derivative of the exchange-correlation "// &
+                        "potential is not implemented for meta-GGA functionals: they "// &
+                        "bring second derivatives in tau. Refused rather than "// &
+                        "approximated by the GGA part.")
+         return
+      end if
+      if (ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "the derivative of the exchange-correlation "// &
+                        "potential is implemented for a restricted reference only")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+
+         ! The AO gradients are needed whenever anything here is a GGA, and
+         ! harmless otherwise -- but they are the expensive half of the
+         ! evaluation, so a pure LDA does not pay for them.
+         if (ctx%any_gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=grad_blk)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho_blk)
+            if (allocated(grad_blk)) deallocate (grad_blk)
+            allocate (grad_blk(nb, 3))
+            grad_blk = 0.0_dp
+         end if
+
+         if (allocated(sigma)) deallocate (sigma, exc_i, vrho_i, vsigma_i, &
+                                           frr_i, frs_i, fss_i)
+         allocate (sigma(nb), exc_i(nb), vrho_i(nb), vsigma_i(nb), &
+                   frr_i(nb), frs_i(nb), fss_i(nb))
+         do ig = 1, nb
+            sigma(ig) = grad_blk(ig, 1)**2 + grad_blk(ig, 2)**2 + grad_blk(ig, 3)**2
+         end do
+
+         do i = 1, ctx%n_func
+            select case (ctx%family(i))
+            case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+               call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
+                                       exc_i, vrho_i, vsigma_i)
+               call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
+                                   frr_i, frs_i, fss_i)
+               do ig = 1, nb
+                  vsigma(g0 + ig - 1) = vsigma(g0 + ig - 1) + ctx%weight(i)*vsigma_i(ig)
+                  frs(g0 + ig - 1) = frs(g0 + ig - 1) + ctx%weight(i)*frs_i(ig)
+                  fss(g0 + ig - 1) = fss(g0 + ig - 1) + ctx%weight(i)*fss_i(ig)
+               end do
+            case default
+               call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
+               call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho_blk, frr_i)
+            end select
+            do ig = 1, nb
+               vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(ig)
+               frr(g0 + ig - 1) = frr(g0 + ig - 1) + ctx%weight(i)*frr_i(ig)
+            end do
+         end do
+
+         do ig = 1, nb
+            rho(g0 + ig - 1) = rho_blk(ig)
+            do id = 1, 3
+               rho_grad(g0 + ig - 1, id) = grad_blk(ig, id)
+            end do
+            ! The same divergence the kernel floors, and for the same reason:
+            ! `v2rho2` goes as rho^(-2/3) at the tail of every atomic grid. Only
+            ! the *second* derivatives are floored -- `vrho` and `vsigma` stay
+            ! finite there, and they are what the reference's own potential is
+            ! built from, so zeroing them would perturb a converged quantity.
+            if (rho_blk(ig) < KERNEL_RHO_FLOOR) then
+               frr(g0 + ig - 1) = 0.0_dp
+               frs(g0 + ig - 1) = 0.0_dp
+               fss(g0 + ig - 1) = 0.0_dp
+            end if
+         end do
+      end do
+#endif
+   end subroutine xc_grid_kernel_quantities
+
    subroutine xc_add_potential(ctx, mol, density, v_xc, e_xc, n_elec, error)
       !! The exchange-correlation potential and energy for one density
       !!
@@ -1013,16 +1165,6 @@ contains
       type(error_t), intent(inout) :: error
 
 #ifdef MQC_WITH_LIBXC
-      !> Grid points below this density contribute nothing and are skipped.
-      !> Not a tolerance -- a necessity. The LDA kernel is `d2e/drho2`, which
-      !> for the exchange part goes as `rho^(-2/3)` and diverges at the tail of
-      !> every atomic grid. Left in, those points carry weights that swamp the
-      !> real ones and the response operator stops being positive definite, so
-      !> the conjugate-gradient solver refuses along its first search direction
-      !> and reports a saddle point that is not there. The energy and potential
-      !> never see this because `vrho` and `exc` stay finite where `v2rho2` does
-      !> not.
-      real(dp), parameter :: RHO_FLOOR = 1.0e-10_dp
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: rho(:), rho_grad(:, :), drho(:), drho_grad(:, :)
       real(dp), allocatable :: sigma(:), dsigma(:)
@@ -1115,7 +1257,7 @@ contains
          end do
 
          do ig = 1, nb
-            if (rho(ig) < RHO_FLOOR) then
+            if (rho(ig) < KERNEL_RHO_FLOOR) then
                frr(ig) = 0.0_dp
                frs(ig) = 0.0_dp
                fss(ig) = 0.0_dp
