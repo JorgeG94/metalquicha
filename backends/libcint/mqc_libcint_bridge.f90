@@ -473,9 +473,13 @@ contains
          symbols(iatom) = element_number_to_symbol(fragment%element_numbers(iatom))
       end do
 
+      ! `ghost` present and all-false is the same molecule as no ghost at all,
+      ! so an ordinary fragment is unaffected -- and the AO count and ordering
+      ! are identical either way, which is what makes the counterpoise
+      ! difference meaningful.
       call build_libcint_molecule(fragment%element_numbers, symbols, &
                                   fragment%coordinates, trim(settings%basis_set), &
-                                  mol, error)
+                                  mol, error, ghost=ghost_of(fragment))
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
@@ -612,9 +616,12 @@ contains
       ! calculation quietly fitted -- and the difference is 5e-5 Hartree, large
       ! enough to matter and small enough to look like convergence noise.
       if (settings%density_fitting) then
+         ! The auxiliary set follows the orbital set: a ghost centre carries
+         ! fitting functions too, or the fitted Coulomb would see a different
+         ! molecule from the one being fitted.
          call build_libcint_molecule(fragment%element_numbers, symbols, &
                                      fragment%coordinates, trim(settings%aux_basis_set), &
-                                     aux, error)
+                                     aux, error, ghost=ghost_of(fragment))
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, "auxiliary basis '"// &
                                   trim(settings%aux_basis_set)//"': "//error%get_message())
@@ -1182,7 +1189,8 @@ contains
       end if
 
       call build_libcint_molecule(fragment%element_numbers, symbols, &
-                                  fragment%coordinates, name, aux, error)
+                                  fragment%coordinates, name, aux, error, &
+                                  ghost=ghost_of(fragment))
    end subroutine correlation_aux_basis
 
    pure function core_orbital_count(atomic_numbers) result(n_core)
@@ -1215,5 +1223,22 @@ contains
          end if
       end do
    end function core_orbital_count
+
+   pure function ghost_of(fragment) result(ghost)
+      !! A fragment's ghost mask, or all-false when it has none
+      !!
+      !! `is_ghost` is unallocated on every fragment an ordinary expansion
+      !! builds, and passing an unallocated array to an optional dummy is an
+      !! absent argument -- which would be fine, except three call sites would
+      !! each need the same conditional. This says it once.
+      type(physical_fragment_t), intent(in) :: fragment
+      logical :: ghost(fragment%n_atoms)
+
+      if (allocated(fragment%is_ghost)) then
+         ghost = fragment%is_ghost
+      else
+         ghost = .false.
+      end if
+   end function ghost_of
 
 end module mqc_libcint_bridge

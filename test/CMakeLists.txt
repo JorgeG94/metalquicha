@@ -161,6 +161,14 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_cphf)
   target_link_libraries(test_mqc_libcint_cphf PRIVATE cint_fortran cint)
 
+  # Ghost centres and the superposition error they expose. Everything a
+  # counterpoise-corrected expansion rests on, checked before any expansion is
+  # assembled: that a ghost drops its nucleus and keeps its functions, that the
+  # AO space is untouched, and that a monomer really is lowered by its partner's
+  # basis -- which is the quantity the correction removes.
+  addtest(mqc_counterpoise)
+  target_link_libraries(test_mqc_counterpoise PRIVATE cint_fortran cint)
+
   # Which density symmetry each direct two-electron build may be given. The fast
   # one folds permutations into a multiplicity factor and is valid only for a
   # symmetric density; asserting that it is genuinely wrong otherwise is what

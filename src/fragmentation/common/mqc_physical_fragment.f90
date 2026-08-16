@@ -61,6 +61,17 @@ module mqc_physical_fragment
 
       ! Gradient redistribution support
       integer, allocatable :: local_to_global(:)  !! Map fragment atom index to system atom index (size: n_atoms - n_caps)
+      logical, allocatable :: is_ghost(:)
+         !! Which atoms carry basis functions but no nucleus and no electrons
+         !! (size: n_atoms). Unallocated means none, which is every fragment a
+         !! plain expansion builds.
+         !!
+         !! This is what a counterpoise-corrected term is made of: a monomer
+         !! computed in the *pair's* basis, so that the basis-set superposition
+         !! error which inflates the pair cancels out of the difference instead
+         !! of being absorbed into it. `charge`, `nelec` and `multiplicity` count
+         !! the real atoms only -- whoever builds the fragment owns that, since
+         !! only they know which atoms they meant.
 
       ! Fragment distance (for screening)
       real(dp) :: distance = 0.0_dp  !! Minimal atomic distance between monomers in fragment (Angstrom, 0 for monomers)
@@ -741,6 +752,7 @@ contains
       if (allocated(this%coordinates)) deallocate (this%coordinates)
       if (allocated(this%cap_replaces_atom)) deallocate (this%cap_replaces_atom)
       if (allocated(this%local_to_global)) deallocate (this%local_to_global)
+      if (allocated(this%is_ghost)) deallocate (this%is_ghost)
       if (allocated(this%basis)) then
          call this%basis%destroy()
          deallocate (this%basis)
