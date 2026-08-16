@@ -43,6 +43,7 @@ module mqc_libcint_xc
                            xc_f03_hyb_cam_coef, xc_f03_nlc_coef, &
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
                            xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
+                           xc_f03_lda_fxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
                            XC_UNPOLARIZED, XC_POLARIZED, &
                            XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
@@ -59,6 +60,7 @@ module mqc_libcint_xc
    public :: xc_available
    public :: xc_grid_lda_quantities
    public :: xc_grid_gga_quantities
+   public :: xc_kernel_apply
 
    type :: xc_context_t
       !! A functional, a grid, and the fraction of exact exchange to keep
@@ -963,6 +965,114 @@ contains
       end do
 #endif
    end subroutine xc_add_potential_uks
+
+   subroutine xc_kernel_apply(ctx, mol, density, dtilde, v_kernel, error)
+      !! The exchange-correlation kernel applied to a response density
+      !!
+      !! `f_xc` is the second functional derivative, and this returns
+      !!
+      !!     V_uv = int w(r) chi_u(r) chi_v(r) f_xc(r) drho(r)
+      !!
+      !! with `drho` the density change the trial rotation makes. It is what
+      !! turns a coupled-perturbed *Hartree-Fock* operator into a
+      !! coupled-perturbed *Kohn-Sham* one, and without it a response over a
+      !! Kohn-Sham reference is missing a term of the same order as the
+      !! exchange it does include.
+      !!
+      !! **An addend, not a fourth branch.** The two-electron part of the
+      !! response operator already comes three ways -- stored, integral-direct
+      !! and density-fitted -- and the kernel is orthogonal to that choice: it
+      !! is a grid quantity that knows nothing about where the Coulomb and
+      !! exchange came from. Written as a fourth case beside them it would have
+      !! to be written three times over.
+      !!
+      !! **LDA only, and refused otherwise.** A GGA kernel brings
+      !! `v2rhosigma` and `v2sigma2` and a gradient-of-the-response-density
+      !! term; meta-GGA adds tau on top. Those are real work rather than more
+      !! of this one, and returning an LDA kernel for a GGA would be a
+      !! converged, plausible, wrong response -- the failure mode this file
+      !! has hit twice already.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! The converged SCF density
+      real(dp), intent(in) :: dtilde(:, :)    !! The response density
+      real(dp), intent(inout) :: v_kernel(:, :)  !! Accumulated into
+      type(error_t), intent(inout) :: error
+
+#ifdef MQC_WITH_LIBXC
+      !> Grid points below this density contribute nothing and are skipped.
+      !> Not a tolerance -- a necessity. The LDA kernel is `d2e/drho2`, which
+      !> for the exchange part goes as `rho^(-2/3)` and diverges at the tail of
+      !> every atomic grid. Left in, those points carry weights that swamp the
+      !> real ones and the response operator stops being positive definite, so
+      !> the conjugate-gradient solver refuses along its first search direction
+      !> and reports a saddle point that is not there. The energy and potential
+      !> never see this because `vrho` and `exc` stay finite where `v2rho2` does
+      !> not.
+      real(dp), parameter :: RHO_FLOOR = 1.0e-10_dp
+      real(dp), allocatable :: ao(:, :), rho(:), drho(:), v2(:), v2_i(:)
+      real(dp), allocatable :: scaled(:, :)
+      integer :: g0, g1, nb, i, ig, mu, npts
+
+      if (.not. ctx%active) return
+      if (ctx%any_gga .or. ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is "// &
+                        "implemented for LDA functionals only: a GGA brings "// &
+                        "v2rhosigma and v2sigma2 and a gradient term on the response "// &
+                        "density, and a meta-GGA adds tau. Refused rather than "// &
+                        "approximated by the LDA part.")
+         return
+      end if
+      if (ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is "// &
+                        "implemented for a restricted reference only")
+         return
+      end if
+
+      npts = ctx%grid%n_points
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
+         if (error%has_error()) return
+
+         ! The reference density is what `f_xc` is evaluated at; the response
+         ! density is what it multiplies. Both are ordinary densities on the
+         ! grid, so one routine builds them.
+         call eval_rho(ao, density, rho)
+         call eval_rho(ao, dtilde, drho)
+
+         if (allocated(v2)) deallocate (v2, v2_i)
+         allocate (v2(nb), v2_i(nb))
+         v2 = 0.0_dp
+         do i = 1, ctx%n_func
+            v2_i = 0.0_dp
+            call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, v2_i)
+            v2 = v2 + ctx%weight(i)*v2_i
+         end do
+         do ig = 1, nb
+            if (rho(ig) < RHO_FLOOR) v2(ig) = 0.0_dp
+         end do
+
+         ! V_uv += sum_g w(g) f_xc(g) drho(g) chi_u(g) chi_v(g), as one gemm
+         ! over the point index rather than a loop over pairs.
+         if (allocated(scaled)) deallocate (scaled)
+         allocate (scaled(nb, size(ao, 2)))
+         do mu = 1, size(ao, 2)
+            do ig = 1, nb
+               scaled(ig, mu) = ctx%grid%weights(g0 + ig - 1)*v2(ig)*drho(ig)*ao(ig, mu)
+            end do
+         end do
+         call pic_gemm(ao, scaled, v_kernel, transa="T", alpha=1.0_dp, beta=1.0_dp)
+      end do
+#else
+      call error%set(ERROR_VALIDATION, "no libxc in this build")
+      if (size(density) < 0 .or. size(dtilde) < 0 .or. size(v_kernel) < 0) return
+      if (mol%nao < 0) return
+      if (ctx%n_func < 0) return
+#endif
+   end subroutine xc_kernel_apply
 
    subroutine accumulate_xc_matrix(weights, ao, vrho, v, ao_grad, grad_coeff, vtau, &
                                    any_gga, any_mgga)
