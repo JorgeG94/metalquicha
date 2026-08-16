@@ -308,6 +308,91 @@ class System:
             )
         return value
 
+    def compute_charges(self, scheme="chelpg", basis="6-31g"):
+        """Run one RHF and keep its atomic partial charges.
+
+        Unlike `compute_bond_orders`, this costs a real SCF in the basis you
+        name -- xTB is cheap enough to point at anything, an RHF is not. On a
+        large system pick the basis deliberately.
+
+        `scheme` is "chelpg" or "mulliken". Prefer CHELPG unless the question
+        is specifically about basis-function populations: on water, going from
+        6-31G to aug-cc-pVDZ moves the Mulliken charge on oxygen from -0.79 to
+        -0.30, while CHELPG moves from -0.94 to -0.74. The molecule did not
+        change; one of the two numbers is mostly reporting the basis.
+
+        Closed shell only -- an odd electron count raises rather than being
+        quietly paired up.
+        """
+        if _ffi.system_compute_charges is None:
+            raise MQCError(
+                "charges need the libcint integrals backend, and this build "
+                "does not have it. Reconfigure with -DMQC_ENABLE_LIBCINT=ON."
+            )
+        which = scheme.encode("utf-8")
+        name = basis.encode("utf-8")
+        _check(
+            _ffi.system_compute_charges(
+                self._handle, len(which), which, len(name), name
+            ),
+            _ffi.system_last_error,
+        )
+        return self
+
+    @property
+    def has_charges(self):
+        """Whether `compute_charges` has run on this system."""
+        if _ffi.system_has_charges is None:
+            return False
+        return bool(_ffi.system_has_charges(self._handle))
+
+    @property
+    def charge_scheme(self):
+        """Which scheme produced the current charges, or "" if none have been.
+
+        Worth checking before comparing charges between systems: Mulliken and
+        CHELPG disagree by design, so the numbers are only comparable if they
+        came from the same question.
+        """
+        if _ffi.system_charge_scheme is None:
+            return ""
+        buf = ctypes.create_string_buffer(32)
+        _ffi.system_charge_scheme(self._handle, 32, buf)
+        return buf.value.decode("utf-8", "replace")
+
+    def charges(self):
+        """The partial charges, one per atom, in input order.
+
+        They sum to the molecular charge -- for CHELPG because the fit is
+        solved under that constraint, for Mulliken because the trace says so.
+        """
+        if _ffi.system_get_charges is None:
+            raise MQCError("this build has no charges; see compute_charges()")
+        n = self.n_atoms
+        buf = (_ffi._c_double * max(n, 1))()
+        _check(
+            _ffi.system_get_charges(self._handle, n, buf),
+            _ffi.system_last_error,
+        )
+        return [buf[i] for i in range(n)]
+
+    def charge_on(self, i):
+        """One atom, 0-based. Raises if the charges have not been computed.
+
+        A partial charge is legitimately negative, so there is no sentinel
+        value available; the binding returns NaN and this turns it into an
+        exception rather than letting it propagate into arithmetic.
+        """
+        if _ffi.system_charge_on is None:
+            raise MQCError("this build has no charges; see compute_charges()")
+        value = float(_ffi.system_charge_on(self._handle, int(i)))
+        if value != value:  # NaN
+            raise MQCError(
+                "charge unavailable: compute_charges() first, and check the "
+                "atom index is in range"
+            )
+        return value
+
     @property
     def n_atoms(self):
         return int(_ffi.system_n_atoms(self._handle))

@@ -58,6 +58,20 @@ def _declare(name, restype, argtypes):
     return fn
 
 
+def _declare_optional(name, restype, argtypes):
+    """A symbol that a valid build may legitimately not have.
+
+    Some of the library is behind a CMake option, and a build without that
+    option is not a broken build -- it simply cannot answer those questions.
+    Returning None lets the caller say so in one sentence, where a bare
+    getattr would abort the import of the whole package.
+    """
+    try:
+        return _declare(name, restype, argtypes)
+    except AttributeError:
+        return None
+
+
 # -- session ---------------------------------------------------------------
 session_begin = _declare("mqc_session_begin", _c_int, [])
 session_end = _declare("mqc_session_end", _c_int, [])
@@ -92,6 +106,23 @@ system_get_bond_orders = _declare(
 )
 system_bond_order = _declare(
     "mqc_system_bond_order", _c_double, [_c_ptr, _c_int, _c_int]
+)
+# Absent from a build without libcint: charges need a real density, and there
+# is no density without an integrals backend.
+system_compute_charges = _declare_optional(
+    "mqc_system_compute_charges",
+    _c_int,
+    [_c_ptr, _c_int, _c_str, _c_int, _c_str],
+)
+system_has_charges = _declare_optional("mqc_system_has_charges", _c_int, [_c_ptr])
+system_get_charges = _declare_optional(
+    "mqc_system_get_charges", _c_int, [_c_ptr, _c_int, ctypes.POINTER(_c_double)]
+)
+system_charge_on = _declare_optional(
+    "mqc_system_charge_on", _c_double, [_c_ptr, _c_int]
+)
+system_charge_scheme = _declare_optional(
+    "mqc_system_charge_scheme", None, [_c_ptr, _c_int, _c_str]
 )
 system_n_atoms = _declare("mqc_system_n_atoms", _c_int, [_c_ptr])
 system_n_monomers = _declare("mqc_system_n_monomers", _c_int, [_c_ptr])

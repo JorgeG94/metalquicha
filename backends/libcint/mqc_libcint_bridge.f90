@@ -39,6 +39,7 @@ module mqc_libcint_bridge
 
    public :: run_libcint_hf
    public :: run_libcint_makefp
+   public :: run_libcint_charges
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
@@ -50,6 +51,70 @@ contains
       logical :: available
       available = .true.
    end function libcint_backend_available
+
+   subroutine run_libcint_charges(atomic_numbers, element_symbols, coordinates, &
+                                  basis_name, scheme, total_charge, charges, error)
+      !! Atomic charges from an RHF density, by Mulliken or CHELPG
+      !!
+      !! Here rather than in `src/interface/` for the reason every other entry in
+      !! this file is: the molecule builder, the SCF and both partition schemes
+      !! live in the CPU backend. A C API reaching for them directly compiles
+      !! under CMake with the backend on and nothing else -- not the stub build,
+      !! and not FPM, which only sees `src/` and `app/`.
+      !!
+      !! Closed shell only; an odd electron count is refused rather than paired
+      !! up, because a caller fragmenting a radical needs to know this cannot
+      !! answer for it.
+      use pic_types, only: dp
+      use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+      use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
+      use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)     !! (3, n), Bohr
+      character(len=*), intent(in) :: basis_name
+      character(len=*), intent(in) :: scheme        !! "mulliken" or "chelpg"
+      integer, intent(in) :: total_charge
+      real(dp), allocatable, intent(out) :: charges(:)
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: SCF_MAX_ITER = 100
+      real(dp), parameter :: SCF_ENERGY_TOL = 1.0e-9_dp
+      real(dp), parameter :: SCF_DENSITY_TOL = 1.0e-7_dp
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: overlap(:, :)
+      integer :: nelec
+
+      nelec = sum(atomic_numbers) - total_charge
+      if (mod(nelec, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "atomic charges come from a closed-shell "// &
+                        "RHF and this system has an odd number of electrons")
+         return
+      end if
+
+      call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
+                                  basis_name, mol, error)
+      if (error%has_error()) return
+
+      call run_libcint_rhf(mol, nelec, SCF_MAX_ITER, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
+                           .false., scf, error)
+      if (error%has_error()) return
+      if (.not. scf%converged) then
+         call error%set(ERROR_VALIDATION, "the SCF did not converge, so there is no "// &
+                        "density to partition")
+         return
+      end if
+
+      if (scheme == "mulliken") then
+         call mol%overlap(overlap)
+         call mulliken_charges(mol, scf%density, overlap, charges, error)
+      else
+         call chelpg_charges(mol, scf%density, charges, error, &
+                             total_charge=real(total_charge, dp))
+      end if
+   end subroutine run_libcint_charges
 
    subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
                               coordinates, terms, error)

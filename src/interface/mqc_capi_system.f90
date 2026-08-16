@@ -77,6 +77,14 @@ module mqc_capi_system
          !! deciding where to cut reads the same matrix many times while trying
          !! partitions, and recomputing it per question would be an xTB
          !! calculation per question.
+      real(dp), allocatable :: charges(:)
+         !! Atomic partial charges from `mqc_system_compute_charges`, if it has
+         !! run. Cached for the same reason as the bond orders, and more so:
+         !! these cost an SCF rather than an xTB single point.
+      character(len=16) :: charge_scheme = ""
+         !! Which scheme produced `charges`. Kept because "the charge on atom 3"
+         !! is not a well-defined number without it, and a caller comparing two
+         !! systems has to be able to check they were partitioned the same way.
    end type system_handle_t
 
 contains

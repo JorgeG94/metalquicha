@@ -11,6 +11,7 @@ module mqc_elements
    public :: element_number_to_symbol  !! Convert atomic number to element symbol
    public :: element_mass              !! Get atomic mass by atomic number
    public :: element_covalent_radius   !! Get covalent radius by atomic number
+   public :: element_vdw_radius        !! Get van der Waals radius by atomic number
    ! TODO: refactr to use findloc
    ! Periodic table data as module-level parameters
    integer, parameter :: n_elements = 118
@@ -49,6 +50,23 @@ module mqc_elements
                           243.0_dp, 247.0_dp, 247.0_dp, 251.0_dp, 252.0_dp, 257.0_dp, 258.0_dp, 259.0_dp, &  ! Am-No
                           262.0_dp, 267.0_dp, 268.0_dp, 271.0_dp, 272.0_dp, 270.0_dp, 276.0_dp, 281.0_dp, &  ! Lr-Ds
                           280.0_dp, 285.0_dp, 284.0_dp, 289.0_dp, 288.0_dp, 293.0_dp, 294.0_dp, 294.0_dp]   ! Rg-Og
+
+   !> Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor's
+   !> hydrogen. Zero where Bondi tabulates none -- see `element_vdw_radius`.
+   integer, parameter :: n_vdw = 96
+   real(dp), parameter :: vdw_radii(n_vdw) = [ &
+                          1.10_dp, 1.40_dp, 1.81_dp, 1.53_dp, 1.92_dp, 1.70_dp, 1.55_dp, 1.52_dp, &
+                          1.47_dp, 1.54_dp, 2.27_dp, 1.73_dp, 1.84_dp, 2.10_dp, 1.80_dp, 1.80_dp, &
+                          1.75_dp, 1.88_dp, 2.75_dp, 2.31_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, &
+                          0.00_dp, 0.00_dp, 0.00_dp, 1.63_dp, 1.40_dp, 1.39_dp, 1.87_dp, 2.11_dp, &
+                          1.85_dp, 1.90_dp, 1.85_dp, 2.02_dp, 3.03_dp, 2.49_dp, 0.00_dp, 0.00_dp, &
+                          0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 1.63_dp, 1.72_dp, 1.58_dp, &
+                          1.93_dp, 2.17_dp, 2.06_dp, 2.06_dp, 1.98_dp, 2.16_dp, 3.43_dp, 2.68_dp, &
+                          0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, &
+                          0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, &
+                          0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 1.75_dp, 1.66_dp, 1.55_dp, &
+                          1.96_dp, 2.02_dp, 2.07_dp, 1.97_dp, 2.02_dp, 2.20_dp, 3.48_dp, 2.83_dp, &
+                          0.00_dp, 0.00_dp, 0.00_dp, 1.86_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp]
 
    integer, parameter :: n_covalent = 96
       !! Cordero's set stops at curium. Past it there are no consensus radii,
@@ -120,6 +138,33 @@ contains
       end select
 
    end function element_mass
+
+   pure function element_vdw_radius(atomic_number) result(radius)
+      !! Van der Waals radius in Angstrom, or 0 where none is tabulated
+      !!
+      !! Bondi's set (J. Phys. Chem. 68, 441 (1964)) with Rowland and Taylor's
+      !! revision for hydrogen, which is the usual modern choice.
+      !!
+      !! **These are a convention, and an electrostatic-potential charge fit
+      !! depends on which one is used.** CHELPG excludes grid points inside these
+      !! spheres, so a different radius set moves the points the fit sees and
+      !! therefore the charges it returns. Comparing charges against another
+      !! program means checking it uses these radii, not merely that it calls
+      !! the method CHELPG.
+      !!
+      !! Zero for anything untabulated, for the same reason the covalent radii
+      !! refuse: a caller has to decide what to do about an element nobody
+      !! measured, and a made-up sphere would silently exclude or include points.
+      integer, intent(in) :: atomic_number
+      real(dp) :: radius
+
+      select case (atomic_number)
+      case (1:n_vdw)
+         radius = vdw_radii(atomic_number)
+      case default
+         radius = 0.0_dp
+      end select
+   end function element_vdw_radius
 
    pure function element_covalent_radius(atomic_number) result(radius)
       !! Covalent radius in Angstrom, or 0 where none is tabulated
