@@ -10,6 +10,7 @@ module mqc_combinatorics
    private
 
    public :: fragment_size_of      !! How many monomers a polymer row names
+   public :: vmfc_subset_key       !! Counterpoise subset key: chosen real, rest ghosted
    public :: binomial              !! Binomial coefficient calculation
    public :: get_nfrags            !! Calculate total number of fragments
    public :: create_monomer_list   !! Generate sequential monomer indices
@@ -75,6 +76,43 @@ contains
       end do
 
    end subroutine create_monomer_list
+
+   pure subroutine vmfc_subset_key(fragment, n, chosen, k, key)
+      !! The subset key a counterpoise-corrected expansion looks up
+      !!
+      !! Ordinary MBE subtracts the subset {A} from the pair {A,B}. VMFC
+      !! subtracts {A in the basis of AB} instead -- the same monomers, solved
+      !! in the parent's basis -- so the superposition error that inflates the
+      !! parent stands on both sides of the difference and cancels rather than
+      !! surviving into the total.
+      !!
+      !! So the key is the chosen monomers positive and *everything else in the
+      !! parent* negative. For the pair [1,2] choosing [1], that is [1,-2]. The
+      !! recursion, the hash table and the dispatch are untouched: a signed key
+      !! is just another key, and it sorts and hashes like any other.
+      integer, intent(in) :: fragment(:)   !! The parent's monomers, all positive
+      integer, intent(in) :: n             !! How many of them
+      integer, intent(in) :: chosen(:)     !! Positions within `fragment`, size k
+      integer, intent(in) :: k
+      integer, intent(out) :: key(:)       !! Size n: k real, then n-k ghosted
+
+      integer :: i, j, next
+      logical :: taken(n)
+
+      taken = .false.
+      do i = 1, k
+         taken(chosen(i)) = .true.
+         key(i) = fragment(chosen(i))
+      end do
+
+      next = k
+      do j = 1, n
+         if (.not. taken(j)) then
+            next = next + 1
+            key(next) = -fragment(j)
+         end if
+      end do
+   end subroutine vmfc_subset_key
 
    pure function fragment_size_of(row) result(n)
       !! How many monomers a polymer row names, padding excluded

@@ -18,6 +18,7 @@ module test_mqc_counterpoise
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_with_ghosts
+   use mqc_combinatorics, only: vmfc_subset_key
    use mqc_error, only: error_t
    implicit none
    private
@@ -49,7 +50,8 @@ contains
                   new_unittest("the_pair_basis_lowers_a_monomer", test_bsse_is_real), &
                   new_unittest("an_isolated_ghost_changes_nothing", test_far_ghost), &
                   new_unittest("a_signed_index_ghosts_its_monomer", test_signed_indices), &
-                  new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity) &
+                  new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity), &
+                  new_unittest("the_subset_key_ghosts_the_complement", test_subset_key) &
                   ]
    end subroutine collect_counterpoise
 
@@ -412,6 +414,49 @@ contains
       failed = err%has_error()
       if (failed) call check(error, .false., "SCF: "//err%get_full_trace())
    end function bail
+
+
+   subroutine test_subset_key(error)
+      !! The key names the chosen monomers real and the rest as ghosts
+      !!
+      !! This is the whole difference between MBE and VMFC in one function: the
+      !! subset {A} of the pair {A,B} becomes {A in AB's basis}. If the
+      !! complement were dropped rather than ghosted, the lookup would find the
+      !! ordinary monomer and the expansion would be uncorrected -- which is a
+      !! number, not a failure, so it is worth pinning here.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: key(3)
+
+      ! Pair [1,2], choosing the first: 1 real, 2 ghosted.
+      call vmfc_subset_key([1, 2], 2, [1], 1, key(1:2))
+      call check(error, key(1), 1, "the chosen monomer should stay real")
+      if (allocated(error)) return
+      call check(error, key(2), -2, "the complement should be ghosted")
+      if (allocated(error)) return
+
+      ! And the other way round.
+      call vmfc_subset_key([1, 2], 2, [2], 1, key(1:2))
+      call check(error, key(1), 2, "the chosen monomer should stay real")
+      if (allocated(error)) return
+      call check(error, key(2), -1, "the complement should be ghosted")
+      if (allocated(error)) return
+
+      ! Trimer [1,2,3] choosing two: both real, the third ghosted -- so a
+      ! dimer-in-trimer-basis, which is what VMFC(3) subtracts.
+      call vmfc_subset_key([1, 2, 3], 3, [1, 3], 2, key)
+      call check(error, key(1), 1, "first chosen")
+      if (allocated(error)) return
+      call check(error, key(2), 3, "second chosen")
+      if (allocated(error)) return
+      call check(error, key(3), -2, "the unchosen monomer should be ghosted")
+      if (allocated(error)) return
+
+      ! Every monomer chosen is the parent itself, with nothing ghosted.
+      call vmfc_subset_key([1, 2], 2, [1, 2], 2, key(1:2))
+      call check(error, all(key(1:2) > 0), &
+                 "choosing everything should ghost nothing")
+   end subroutine test_subset_key
 
 end module test_mqc_counterpoise
 
