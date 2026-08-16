@@ -25,7 +25,9 @@ module mqc_capi_bond_orders
    use mqc_capi_system, only: system_handle_t, last_message, MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
+#ifndef MQC_WITHOUT_TBLITE
    use mqc_method_xtb, only: xtb_method_t
+#endif
    implicit none
    private
 
@@ -54,11 +56,13 @@ contains
       integer(c_int) :: status
 
       type(system_handle_t), pointer :: h
+#ifndef MQC_WITHOUT_TBLITE
       type(physical_fragment_t) :: whole
       type(calculation_result_t) :: res
       type(xtb_method_t) :: xtb
       character(len=:), allocatable :: name
       integer :: i
+#endif
 
       status = MQC_BAD_HANDLE
       if (.not. c_associated(handle)) then
@@ -67,6 +71,15 @@ contains
       end if
       call c_f_pointer(handle, h)
 
+#ifdef MQC_WITHOUT_TBLITE
+      ! Bond orders come from an xTB single point and there is no other route to
+      ! them here. Declining with the same signature, so a C or Python caller
+      ! still links and gets told why rather than finding the symbol missing.
+      last_message = "mqc_system_compute_bond_orders: bond orders need tblite; "// &
+                     "build with -DMQC_ENABLE_TBLITE=ON"
+      status = MQC_FAIL
+      return
+#else
       if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_compute_bond_orders: set the geometry first"
          status = MQC_FAIL
@@ -108,6 +121,7 @@ contains
       if (allocated(h%bond_orders)) deallocate (h%bond_orders)
       allocate (h%bond_orders(whole%n_atoms, whole%n_atoms), source=res%bond_orders)
       status = MQC_OK
+#endif
    end function mqc_system_compute_bond_orders
 
    function mqc_system_has_bond_orders(handle) result(has) &

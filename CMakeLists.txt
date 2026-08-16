@@ -261,7 +261,18 @@ endif()
 #
 # The tarball rather than the git repository: libxc's history carries the
 # generated functional sources and is far larger than any release. URL_HASH pins
-# it, which a tag would not -- a tag can be moved and a hash cannot.
+# it, which a tag would not -- a tag can be moved and a hash cannot. Bond orders
+# come from an xTB single point, so this needs tblite, not libcint. It was
+# registered inside the libcint block, so a libcint-on tblite-off build compiled
+# it against an mqc_method_xtb that CMake had never built.
+if(MQC_ENABLE_TBLITE)
+  add_executable(check_bond_orders
+                 ${PROJECT_SOURCE_DIR}/validation/check_bond_orders.f90)
+  target_include_directories(check_bond_orders
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_bond_orders PRIVATE ${main_lib})
+endif()
+
 add_executable(check_grid ${PROJECT_SOURCE_DIR}/validation/check_grid.f90)
 target_include_directories(check_grid PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_grid PRIVATE ${main_lib})
@@ -545,11 +556,6 @@ if(MQC_ENABLE_LIBCINT)
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_mp2_gradient PRIVATE ${main_lib} cint_fortran
                                                    cint)
-  add_executable(check_bond_orders
-                 ${PROJECT_SOURCE_DIR}/validation/check_bond_orders.f90)
-  target_include_directories(check_bond_orders
-                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_bond_orders PRIVATE ${main_lib})
 
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
