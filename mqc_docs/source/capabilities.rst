@@ -175,8 +175,18 @@ Gradient Calculations
 
 On the CPU backend the analytic gradient covers Hartree-Fock restricted and
 unrestricted, density-fitted restricted Hartree-Fock, Kohn-Sham through LDA,
-GGA and hybrid GGA, and MP2 over a restricted reference. What is refused rather
-than approximated, and why:
+GGA and hybrid GGA, and MP2 over a restricted reference -- both the
+conventional one and ``ri-mp2``, where the correlation is fitted and the
+reference is not.
+
+Those last two are different energies and get different gradients: an
+``ri-mp2`` deck is differentiated by the fitted formulation, whose two-particle
+density stays three-index and contracts against three- and two-centre
+derivative integrals. Asking for a gradient with ``keywords.scf.density_fitting``
+on is a third thing, and is still refused -- there the *reference* is fitted,
+and nothing here differentiates that.
+
+What is refused rather than approximated, and why:
 
 .. list-table::
    :header-rows: 1
@@ -188,9 +198,10 @@ than approximated, and why:
      - The kinetic energy density brings a term of its own, which is not built
    * - Range-separated hybrids
      - Needs a second exchange derivative at the screened omega
-   * - Density-fitted MP2
-     - Would differentiate an energy nothing computed
-   * - Frozen-core MP2
+   * - MP2 over a fitted reference (``keywords.scf.density_fitting``)
+     - Would differentiate an energy nothing computed. Fitting only the
+       correlation, which is what ``ri-mp2`` means, is implemented
+   * - Frozen-core MP2 and RI-MP2
      - The relaxed density gains occupied-frozen and virtual-frozen blocks
    * - Spin-scaled MP2 (SCS, SOS)
      - The amplitudes enter the response equations, where the two spin cases

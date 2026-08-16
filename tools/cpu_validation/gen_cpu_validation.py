@@ -426,6 +426,28 @@ GRADIENT_MP2_CASES = [
     ("nh3", "6-31g"),
 ]
 
+# RI-MP2 gradients, as (molecule, basis, aux). The reference for these is not
+# PySCF: it implements no RI-MP2 gradient at all -- both
+# `pyscf.mp.dfmp2.DFMP2.nuc_grad_method` and `dfmp2_native`'s raise
+# NotImplementedError -- so `ri_mp2_gradient.py` next door is it. That is a
+# weaker guarantee than the rest of the suite carries and it is worth naming:
+# an independent implementation of the same equations, checked against finite
+# differences of its own energy, rather than a third party's. What it does not
+# do is catch a misreading of the paper shared by both. Finite difference in
+# `validation/check_ri_mp2_gradient.f90` is what covers that.
+#
+# No Cartesian case, unlike the gradients above it. Every RIFIT set in
+# `basis_sets/` is spherical, and a fitting integral whose orbital and
+# auxiliary centres disagree is refused rather than built -- libcint puts all
+# three centres of one in the same form. So a Cartesian orbital basis has no
+# auxiliary to pair with, and that refusal is exercised by the energy path
+# already.
+GRADIENT_RI_MP2_CASES = [
+    ("water", "sto-3g", "cc-pvdz-rifit"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit"),
+    ("nh3", "def2-svp", "def2-svp-rifit"),   # a second auxiliary family
+]
+
 # The same gradient through the many-body expansion, as
 # (molecule, basis, fragments). Its reference is the supermolecule and that is
 # exact rather than tolerated: over two fragments the expansion collapses term
@@ -904,6 +926,21 @@ def pyscf_mp2_gradient(atoms, basis):
     return float(mf.e_tot + pt.e_corr), pt.Gradients().kernel().tolist(), mol.nao
 
 
+def mqc_ri_mp2_gradient(atoms, basis, aux):
+    """Reference RI-MP2 energy and analytic gradient, from `ri_mp2_gradient.py`.
+
+    The one reference in this file that is not a third party's, because there
+    is no third party to ask -- see `GRADIENT_RI_MP2_CASES` for what that costs
+    and what covers it instead.
+    """
+    from ri_mp2_gradient import build, ri_mp2_energy, ri_mp2_gradient
+
+    mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
+    energy, mf = ri_mp2_energy(mol, auxmol)
+    gradient = ri_mp2_gradient(mol, auxmol, mf)
+    return float(energy), gradient.tolist(), mol.nao
+
+
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
                    level=GRADIENT_GRID_LEVEL):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
@@ -1122,6 +1159,34 @@ def main():
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'MP2':8s} grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux in GRADIENT_RI_MP2_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = mqc_ri_mp2_gradient(mol.atoms, basis, aux)
+        deck = deck_for(f"{CPU_MQC}/gradient",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_rimp2_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            # `aux_only`: the auxiliary fits the correlation and not the SCF.
+            # Without it the deck asks for a fitted reference too, which the
+            # gradient refuses -- correctly, and that is a different energy.
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
+                          correlation={"freeze_core": False}, aux_only=True)
+            d["keywords"]["scf"]["tolerance"] = 1e-12
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"RI-MP2 gradient {mol.label} {basis}/{aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad |g|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, fragments in GRADIENT_FRAGMENTED_CASES:

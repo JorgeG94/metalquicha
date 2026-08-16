@@ -136,7 +136,7 @@ contains
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
                          response, error, max_iter, tol, iterations, in_core, mo_rhs, &
-                         eri_in)
+                         eri_in, bmat)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
@@ -164,6 +164,13 @@ contains
          !! Implies `in_core`. A caller that has the tensor for its own reasons --
          !! the MP2 gradient contracts it against the two-particle density --
          !! would otherwise pay for a second identical build.
+      real(dp), intent(in), optional :: bmat(:, :)
+         !! The fitted tensor `B(mu nu, P)`, in place of any four-index
+         !! integrals. This is not a storage choice like `in_core` and it is not
+         !! a speed one: it makes the operator the fitted reference's own. Give
+         !! it when, and only when, the SCF whose response this is was itself
+         !! fitted -- solving the exact equations against a fitted reference
+         !! answers a question nobody asked, and so does the reverse.
       real(dp), intent(in), optional :: mo_rhs(:, :, :)
          !! The right-hand side already in the occupied-virtual MO block,
          !! `(n_vir, n_occ, n_perturbations)`. The Z-vector equation of an MP2
@@ -247,7 +254,21 @@ contains
       direct = .true.
       if (present(in_core)) direct = .not. in_core
       if (present(eri_in)) direct = .false.
-      if (present(eri_in)) then
+      if (present(bmat)) then
+         ! Neither stored nor direct: fitting removes the four-index integrals
+         ! rather than choosing where to keep them, so both of the others are
+         ! left empty and `response_operator` takes the third path.
+         if (present(eri_in)) then
+            call error%set(ERROR_VALIDATION, "CPHF: given both a fitted tensor and an "// &
+                           "exact one. They are different operators, not two routes to "// &
+                           "the same one; pass whichever the reference was built with.")
+            return
+         end if
+         direct = .false.
+         allocate (eri_own(0, 0, 0, 0))
+         eri => eri_own
+         allocate (bounds(0, 0))
+      else if (present(eri_in)) then
          ! Pointed at, not copied: the tensor is the largest object either side
          ! of this call has, and duplicating it to pass it would cost more than
          ! the solve.
@@ -302,8 +323,13 @@ contains
 
          iter = 0
          do iter = 1, limit
-            call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                   gaps, p, ap, error)
+            if (present(bmat)) then
+               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, p, ap, error, bmat=bmat)
+            else
+               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, p, ap, error)
+            end if
             if (error%has_error()) return
             pap = sum(p*ap)
             if (pap <= 0.0_dp) then
@@ -340,7 +366,7 @@ contains
    end subroutine cphf_solve
 
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                gaps, u, au, error)
+                                gaps, u, au, error, bmat)
       !! Apply the coupled-perturbed operator to a trial rotation
       type(libcint_molecule_t), intent(in) :: mol
       logical, intent(in) :: direct          !! Recompute integrals rather than store them
@@ -352,6 +378,11 @@ contains
       real(dp), intent(in) :: u(:, :)
       real(dp), intent(out) :: au(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: bmat(:, :)
+         !! The fitted tensor `B(mu nu, P)`. Present, the operator is built from
+         !! it and neither `eri` nor the direct build is touched -- see
+         !! `response_operator_df` for why that is a third path rather than a
+         !! flavour of the other two.
 
       real(dp), allocatable :: dtilde(:, :), g(:, :), half(:, :), work(:, :)
       type(direct_stats_t) :: stats
@@ -368,7 +399,11 @@ contains
       call pic_gemm(half, c_occ, dtilde, transb="T")
       dtilde = dtilde + transpose(dtilde)
 
-      if (direct) then
+      if (present(bmat)) then
+         ! `half` is C_vir U, which is exactly the factor the fitted build
+         ! wants: it never assembles Dt at all.
+         call response_operator_df(bmat, half, c_occ, dtilde, g)
+      else if (direct) then
          ! density_screen=.false. is not optional here. `dtilde` is the trial
          ! rotation the CG solver drives towards zero, so the default
          ! density-weighted screen would tighten as the solve converges and this
@@ -388,6 +423,63 @@ contains
 
       deallocate (dtilde, g, half, work)
    end subroutine response_operator
+
+   subroutine response_operator_df(b, x, c_occ, dtilde, g)
+      !! `J - K/2` for a response density, from the fitted tensor
+      !!
+      !! **Why this is not `build_fock_df`.** That one takes its exchange
+      !! through the occupied orbitals, which is a factor of n/n_occ cheaper and
+      !! is the reason the fitted path is worth having -- but it gets them by
+      !! assuming `D = 2 sum_i C_ui C_vi`, an idempotent SCF density. A response
+      !! density is not one. It is symmetric but *indefinite*, so it has no such
+      !! orbitals, and `density_pseudo_orbitals` cannot supply them either: that
+      !! takes a square root of every eigenvalue and drops what comes out
+      !! negative, which for a response density is half of them.
+      !!
+      !! It needs no factorization of its own, though, because it arrives
+      !! already factored. The trial rotation gives
+      !!
+      !!     Dt = X C_occ^T + C_occ X^T,     X = C_vir U
+      !!
+      !! a rank-2 n_occ form for free, and substituting it into
+      !! `K_uv = sum_P sum_ls B(ul,P) Dt_ls B(sv,P)` leaves
+      !!
+      !!     K = sum_P [ (B_P X)(B_P C_occ)^T + (B_P C_occ)(B_P X)^T ]
+      !!
+      !! which is two n^2 n_occ products per auxiliary function -- the same cost
+      !! as the SCF build, with no diagonalisation and no approximation beyond
+      !! the fitting itself. `Dt` is still passed, but only for the Coulomb
+      !! term, where any density will do.
+      real(dp), intent(in) :: b(:, :)        !! `B(mu nu, P)`, (n_ao^2, naux)
+      real(dp), intent(in) :: x(:, :)        !! `C_vir U`, (n_ao, n_occ)
+      real(dp), intent(in) :: c_occ(:, :)    !! (n_ao, n_occ)
+      real(dp), intent(in) :: dtilde(:, :)   !! The assembled response density, for J
+      real(dp), intent(out) :: g(:, :)
+
+      real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :)
+      real(dp) :: c_p
+      integer :: n, n_occ, naux, p
+
+      n = size(c_occ, 1)
+      n_occ = size(c_occ, 2)
+      naux = size(b, 2)
+      allocate (coul(n, n), exch(n, n), bx(n, n_occ), bc(n, n_occ))
+
+      coul = 0.0_dp
+      exch = 0.0_dp
+      do p = 1, naux
+         associate (b_p => reshape(b(:, p), [n, n]))
+            c_p = sum(b_p*dtilde)
+            coul = coul + c_p*b_p
+            call pic_gemm(b_p, x, bx)
+            call pic_gemm(b_p, c_occ, bc)
+            call pic_gemm(bx, bc, exch, transb="T", alpha=1.0_dp, beta=1.0_dp)
+            call pic_gemm(bc, bx, exch, transb="T", alpha=1.0_dp, beta=1.0_dp)
+         end associate
+      end do
+
+      g = coul - 0.5_dp*exch
+   end subroutine response_operator_df
 
    subroutine response_operator_minus(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                       gaps, u, au, error)

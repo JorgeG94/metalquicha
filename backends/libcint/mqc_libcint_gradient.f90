@@ -1209,8 +1209,18 @@ contains
       deriv = 0.0_dp
 
       mx = max(largest_shell(orb), largest_shell(aux))
-      allocate (buf(mx**3*3))
 
+      ! Threaded over the first orbital shell. Each (ish, jsh, ksh) writes its
+      ! own block of `deriv` and reads nothing another writes, so the only
+      ! shared state is the output array and no reduction is needed. `buf` is
+      ! allocated inside the region because libcint writes into it per quartet,
+      ! which makes it the one genuinely private object here.
+      !$omp parallel default(none) &
+      !$omp    shared(deriv, orb, aux, bas, env, dummy, nbas_orb, nbas_aux, mx, which) &
+      !$omp    private(ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, comp, ret, idx, &
+      !$omp            shls, buf)
+      allocate (buf(mx**3*3))
+      !$omp do schedule(dynamic)
       do ish = 1, nbas_orb
          di = shell_dim(orb%cartesian, ish - 1, bas)
          io = orb%shell_offset(ish)
@@ -1254,6 +1264,9 @@ contains
             end do
          end do
       end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
    end subroutine three_centre_deriv
 
    subroutine two_centre_deriv(aux, deriv)
