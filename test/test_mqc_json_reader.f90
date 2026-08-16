@@ -46,6 +46,7 @@ contains
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
                   new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
+                  new_unittest("df_without_aux_fails", test_df_without_aux), &
                   new_unittest("fragmentation_cutoffs", test_cutoffs), &
                   new_unittest("cutoffs_must_decrease", test_cutoffs_monotonic), &
                   new_unittest("global_groups", test_global_groups), &
@@ -401,6 +402,27 @@ contains
       if (allocated(error)) return
       call check(error, config%distance_metric, "min")
    end subroutine test_fragmentation
+
+   subroutine test_df_without_aux(error)
+      !! A density-fitted SCF with no auxiliary basis is refused, not defaulted
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! density_fitting on, no model.aux_basis -> must fail
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"scf": {"density_fitting": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "density_fitting with no aux basis should be refused")
+      if (allocated(error)) return
+
+      ! the same deck naming an aux basis is accepted
+      call write_deck('"method": "HF", "basis": "6-31g", "aux_basis": "def2-universal-jkfit"', &
+                      "Energy", '"scf": {"density_fitting": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+   end subroutine test_df_without_aux
 
    subroutine test_fmo_scf_keywords(error)
       !! FMO's inner per-fragment SCF controls reach the config from the deck
