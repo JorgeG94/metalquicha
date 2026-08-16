@@ -25,6 +25,8 @@ module mqc_method_xtb
    use tblite_xtb_gfn2, only: new_gfn2_calculator
    use tblite_xtb_singlepoint, only: xtb_singlepoint
    use pic_io, only: to_char
+   use tblite_post_processing_list, only: post_processing_list, add_post_processing
+   use tblite_results, only: results_type
 
    implicit none
    private
@@ -39,6 +41,13 @@ module mqc_method_xtb
       character(len=:), allocatable :: variant  !! XTB variant: "gfn1" or "gfn2"
       logical :: verbose = .false.              !! Print calculation details
       real(wp) :: accuracy = 0.01_wp            !! Numerical accuracy parameter
+      logical :: want_bond_orders = .false.
+         !! Ask tblite for Wiberg-Mayer bond orders alongside the energy.
+         !!
+         !! Off by default because it is not free -- the post-processor rebuilds
+         !! a density matrix and contracts it with the overlap -- and most
+         !! fragments in an expansion have no use for it. On when something
+         !! downstream is going to read the connectivity rather than guess it.
       logical :: allow_crap_scf = .false.       !! Keep a non-converged SCF instead of stopping
       integer :: max_iter = 250                 !! SCF cycles before tblite gives up
          !! There was no field for this, so `keywords.scf.maxiter` reached the
@@ -80,6 +89,8 @@ contains
       type(context_type) :: ctx
       integer :: verbosity
       real(wp) :: dipole_wp(3)
+      type(post_processing_list) :: pproc
+      type(results_type) :: xtb_results
 
       if (this%verbose) then
          call logger%info("XTB: Calculating energy using "//to_char(this%variant))
@@ -155,7 +166,14 @@ contains
       energy = 0.0_wp
 
       verbosity = merge(1, 0, this%verbose)
-      call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity)
+      if (this%want_bond_orders) then
+         call add_bond_order_post_processing(pproc, mol, result)
+         if (result%has_error) return
+         call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, &
+                              verbosity=verbosity, results=xtb_results, post_process=pproc)
+      else
+         call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity)
+      end if
 
       ! tblite reports a failed SCF by setting an error on the context and
       ! returning anyway -- "SCF not converged in N cycles" among them. Not
@@ -166,6 +184,10 @@ contains
          if (result%has_error) return
       else
          result%scf_status = SCF_CONVERGED
+      end if
+
+      if (this%want_bond_orders) then
+         call take_bond_orders(xtb_results, fragment%n_atoms, result)
       end if
 
       ! emo is ascending and focc holds occupations, so the frontier pair
@@ -769,5 +791,78 @@ contains
       call result%error%set(ERROR_GENERIC, first)
       result%has_error = .true.
    end subroutine record_context_failure
+
+   subroutine add_bond_order_post_processing(pproc, mol, result)
+      !! Ask tblite to compute Wiberg-Mayer bond orders during the single point
+      !!
+      !! Registered by name through tblite's own post-processing list rather than
+      !! calling `get_mayer_bond_orders` directly. The direct call needs the
+      !! overlap and the density matrix, which means holding tblite's integrals
+      !! open across the calculation; the post-processor already runs at the
+      !! point where both exist and hands back a matrix.
+      type(post_processing_list), intent(inout) :: pproc
+      type(structure_type), intent(in) :: mol
+      type(calculation_result_t), intent(inout) :: result
+
+      type(error_type), allocatable :: perr
+      character(len=:), allocatable :: request
+
+      request = "bond-orders"
+      call add_post_processing(pproc, mol, request, perr)
+      if (allocated(perr)) then
+         call result%error%set(ERROR_VALIDATION, "xtb bond orders: tblite refused the "// &
+                               "post-processing request: "//perr%message)
+         result%has_error = .true.
+      end if
+   end subroutine add_bond_order_post_processing
+
+   subroutine take_bond_orders(xtb_results, n_atoms, result)
+      !! Copy the bond-order matrix out of tblite's results dictionary
+      !!
+      !! tblite stores a restricted calculation's orders as (nat, nat) and an
+      !! unrestricted one as (nat, nat, nspin). Both are read: the spin channels
+      !! of the second are summed, because a bond order is a property of the pair
+      !! and not of a spin.
+      !!
+      !! A missing entry is reported rather than left as a silently absent
+      !! matrix. The caller asked for these, so not getting them is a fact worth
+      !! having, and `has_bond_orders` stays false either way.
+      type(results_type), intent(in) :: xtb_results
+      integer, intent(in) :: n_atoms
+      type(calculation_result_t), intent(inout) :: result
+
+      real(wp), allocatable :: mat2(:, :), mat3(:, :, :)
+      integer :: ispin
+
+      if (.not. allocated(xtb_results%dict)) then
+         call logger%warning("xtb bond orders: tblite returned no results dictionary")
+         return
+      end if
+
+      call xtb_results%dict%get_entry("bond-orders", mat2)
+      if (allocated(mat2)) then
+         if (size(mat2, 1) == n_atoms .and. size(mat2, 2) == n_atoms) then
+            result%bond_orders = real(mat2, dp)
+            result%has_bond_orders = .true.
+            return
+         end if
+      end if
+
+      call xtb_results%dict%get_entry("bond-orders", mat3)
+      if (allocated(mat3)) then
+         if (size(mat3, 1) == n_atoms .and. size(mat3, 2) == n_atoms) then
+            allocate (result%bond_orders(n_atoms, n_atoms))
+            result%bond_orders = 0.0_dp
+            do ispin = 1, size(mat3, 3)
+               result%bond_orders = result%bond_orders + real(mat3(:, :, ispin), dp)
+            end do
+            result%has_bond_orders = .true.
+            return
+         end if
+      end if
+
+      call logger%warning("xtb bond orders: tblite computed none, or of an "// &
+                          "unexpected shape for this fragment")
+   end subroutine take_bond_orders
 
 end module mqc_method_xtb

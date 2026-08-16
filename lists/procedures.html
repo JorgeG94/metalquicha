@@ -102,6 +102,12 @@
                  <td><p>Accumulation path for systems without bond connectivity</p><a href="../proc/accumulate_uncapped.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_bond_order_post_processing.html'>add_bond_order_post_processing</a></td>
+                 <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Ask tblite to compute Wiberg-Mayer bond orders during the single point</p><a href="../proc/add_bond_order_post_processing.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_gradient.html'>add_gradient</a></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
@@ -1695,15 +1701,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1713,27 +1719,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1743,15 +1749,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1912,15 +1918,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td>Function</td>
                  <td><p>An integer as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -2225,15 +2231,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
-                 <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
                  <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2375,10 +2381,22 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Make each covalently connected molecule a monomer</p><a href="../proc/mqc_system_auto_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mqc_system_bond_order.html'>mqc_system_bond_order</a></td>
+                 <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Function</td>
+                 <td><p>One element, 0-based, for a caller probing a single pair</p><a href="../proc/mqc_system_bond_order.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mqc_system_bonds_declared.html'>mqc_system_bonds_declared</a></td>
                  <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td><p>Whether the caller has said anything about bonds at all</p><a href="../proc/mqc_system_bonds_declared.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_compute_bond_orders.html'>mqc_system_compute_bond_orders</a></td>
+                 <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Function</td>
+                 <td><p>Run one xTB single point over the whole system and keep its bond orders</p><a href="../proc/mqc_system_compute_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mqc_system_count_missing_bonds.html'>mqc_system_count_missing_bonds</a></td>
@@ -2391,6 +2409,18 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Subroutine</td>
                  <td><p>Release a system. Safe on a null handle.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_get_bond_orders.html'>mqc_system_get_bond_orders</a></td>
+                 <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Function</td>
+                 <td><p>Copy the matrix into a caller buffer of n*n doubles</p><a href="../proc/mqc_system_get_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_has_bond_orders.html'>mqc_system_has_bond_orders</a></td>
+                 <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Function</td>
+                 <td><p>Whether <code>compute</code> has run on this handle. Zero for a null handle too.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mqc_system_last_error.html'>mqc_system_last_error</a></td>
@@ -3442,6 +3472,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/take_bond_orders.html'>take_bond_orders</a></td>
+                 <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Copy the bond-order matrix out of tblite&rsquo;s results dictionary</p><a href="../proc/take_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/text.html'>text</a></td>
                  <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
                  <td>Function</td>
@@ -3670,7 +3706,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 13:16 +0000             </p>
+ on 2026-08-16 13:53 +0000             </p>
           </div>
         </div>
         <br>

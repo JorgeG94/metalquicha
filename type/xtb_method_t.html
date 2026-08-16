@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.0% of total for derived types.</p>Including implementation: 317 statements, 10.3% of total for derived types.">19 statements</a>
+                 title="<p> 2.1% of total for derived types.</p>Including implementation: 329 statements, 10.7% of total for derived types.">20 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/xtb_method_t.html#variable-accuracy~2">accuracy</a>
+            <a class="list-group-item" href="../type/xtb_method_t.html#variable-accuracy~3">accuracy</a>
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-allow_crap_scf~5">allow_crap_scf</a>
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-cpcm_nang~4">cpcm_nang</a>
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-cpcm_rscale~4">cpcm_rscale</a>
@@ -147,8 +147,9 @@
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-solvent~4">solvent</a>
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-use_cds~4">use_cds</a>
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-use_shift~4">use_shift</a>
-            <a class="list-group-item" href="../type/xtb_method_t.html#variable-variant">variant</a>
+            <a class="list-group-item" href="../type/xtb_method_t.html#variable-variant~2">variant</a>
             <a class="list-group-item" href="../type/xtb_method_t.html#variable-verbose~10">verbose</a>
+            <a class="list-group-item" href="../type/xtb_method_t.html#variable-want_bond_orders">want_bond_orders</a>
         </div>
       </div>
     </div>
@@ -175,9 +176,9 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/xtb_method_t.html#boundprocedure-calc_energy~4">calc_energy</a>
-            <a class="list-group-item" href="../type/xtb_method_t.html#boundprocedure-calc_gradient~4">calc_gradient</a>
-            <a class="list-group-item" href="../type/xtb_method_t.html#boundprocedure-calc_hessian~4">calc_hessian</a>
+            <a class="list-group-item" href="../type/xtb_method_t.html#boundprocedure-calc_energy~5">calc_energy</a>
+            <a class="list-group-item" href="../type/xtb_method_t.html#boundprocedure-calc_gradient~5">calc_gradient</a>
+            <a class="list-group-item" href="../type/xtb_method_t.html#boundprocedure-calc_hessian~5">calc_hessian</a>
         </div>
       </div>
     </div>
@@ -308,7 +309,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accuracy~2"></span>
+              <span class="anchor" id="variable-accuracy~3"></span>
               real(kind=wp),
             </td>
               <td>public</td>
@@ -499,7 +500,7 @@ here changes nothing until a deck says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-variant"></span>
+              <span class="anchor" id="variable-variant~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -531,6 +532,27 @@ here changes nothing until a deck says otherwise.</p>
                 <p>Print calculation details</p>
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-want_bond_orders"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>want_bond_orders</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>Ask tblite for Wiberg-Mayer bond orders alongside the energy.</p>
+<p>Off by default because it is not free &ndash; the post-processor rebuilds
+a density matrix and contracts it with the overlap &ndash; and most
+fragments in an expansion have no use for it. On when something
+downstream is going to read the connectivity rather than guess it.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -544,7 +566,7 @@ here changes nothing until a deck says otherwise.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_energy~4"></span>
+      <span class="anchor" id="boundprocedure-calc_energy~5"></span>
       <h3>
           procedure, public ::
   <strong>calc_energy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a>
@@ -632,7 +654,7 @@ here changes nothing until a deck says otherwise.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_gradient~4"></span>
+      <span class="anchor" id="boundprocedure-calc_gradient~5"></span>
       <h3>
           procedure, public ::
   <strong>calc_gradient</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a>
@@ -720,7 +742,7 @@ here changes nothing until a deck says otherwise.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_hessian~4"></span>
+      <span class="anchor" id="boundprocedure-calc_hessian~5"></span>
       <h3>
           procedure, public ::
   <strong>calc_hessian</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a>
@@ -817,6 +839,13 @@ here changes nothing until a deck says otherwise.</p>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">variant</span><span class="w">  </span><span class="c">!! XTB variant: &quot;gfn1&quot; or &quot;gfn2&quot;</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">              </span><span class="c">!! Print calculation details</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.01_wp</span><span class="w">            </span><span class="c">!! Numerical accuracy parameter</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want_bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Ask tblite for Wiberg-Mayer bond orders alongside the energy.</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! Off by default because it is not free -- the post-processor rebuilds</span>
+<span class="w">         </span><span class="c">!! a density matrix and contracts it with the overlap -- and most</span>
+<span class="w">         </span><span class="c">!! fragments in an expansion have no use for it. On when something</span>
+<span class="w">         </span><span class="c">!! downstream is going to read the connectivity rather than guess it.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">       </span><span class="c">!! Keep a non-converged SCF instead of stopping</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">250</span><span class="w">                 </span><span class="c">!! SCF cycles before tblite gives up</span>
 <span class="w">         </span><span class="c">!! There was no field for this, so `keywords.scf.maxiter` reached the</span>
@@ -860,7 +889,7 @@ here changes nothing until a deck says otherwise.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 13:16 +0000             </p>
+ on 2026-08-16 13:53 +0000             </p>
           </div>
         </div>
         <br>

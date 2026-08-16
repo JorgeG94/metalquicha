@@ -1,0 +1,1055 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_system_compute_bond_orders &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_system_compute_bond_orders
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">52 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_bond_orders.F90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_bond_orders.f90.html'>mqc_capi_bond_orders.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_system_compute_bond_orders</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-h">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-i~25">i</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-name~6">name</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-res">res</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-whole">whole</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-xtb">xtb</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#src">mqc_system_compute_bond_orders</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  function mqc_system_compute_bond_orders(handle, variant_len, variant, accuracy) result(status) bind(C, name="mqc_system_compute_bond_orders")  
+</h2>
+    
+
+    <p>Run one xTB single point over the whole system and keep its bond orders</p>
+<p>The whole system, not the monomers: the point of these is to decide
+where the monomers should be, so a partition cannot be an input. A
+caller wanting fragment-local orders builds a handle per fragment.</p>
+<p><code>variant</code> is &ldquo;gfn2&rdquo; or &ldquo;gfn1&rdquo;; an empty string takes gfn2, which is the
+one whose bond orders were checked. <code>accuracy</code> &lt;= 0 takes tblite&rsquo;s
+default.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-variant_len"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>variant_len</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-variant"></span>
+              character(kind=c_char, len=1),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>variant</strong>(variant_len)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-accuracy"></span>
+              real(kind=c_double),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>accuracy</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-status~9"></span>
+          integer(kind=c_int)
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~mqc_system_compute_bond_orders~~CallsGraph Pages: 1 -->
+<svg id="procmqc_system_compute_bond_ordersCallsGraph" width="641pt" height="595pt"
+ viewBox="0.00 0.00 641.00 594.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph" class="graph" transform="scale(0.76 0.76) rotate(0) translate(4 776)">
+<title>proc~~mqc_system_compute_bond_orders~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-776 837,-776 837,4 -4,4"/>
+<!-- proc~mqc_system_compute_bond_orders -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node1" class="node">
+<title>proc~mqc_system_compute_bond_orders</title>
+<polygon fill="none" stroke="black" points="203,-419 0,-419 0,-395 203,-395 203,-419"/>
+<text text-anchor="middle" x="101.5" y="-404.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_system_compute_bond_orders</text>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node2" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node2"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="409.5,-440 249.5,-440 249.5,-416 409.5,-416 409.5,-440"/>
+<text text-anchor="middle" x="329.5" y="-425.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_system_compute_bond_orders&#45;&gt;proc~error_get_message -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge1" class="edge">
+<title>proc~mqc_system_compute_bond_orders&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M203.27,-416.36C215.2,-417.47 227.31,-418.6 239.06,-419.69"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="239.01,-423.2 249.29,-420.64 239.65,-416.23 239.01,-423.2"/>
+</g>
+<!-- proc~xtb_calc_energy -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node3" class="node">
+<title>proc~xtb_calc_energy</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node3"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="420,-398 239,-398 239,-374 420,-374 420,-398"/>
+<text text-anchor="middle" x="329.5" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_system_compute_bond_orders&#45;&gt;proc~xtb_calc_energy -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge2" class="edge">
+<title>proc~mqc_system_compute_bond_orders&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#ff0000" d="M203.27,-397.64C211.82,-396.84 220.46,-396.04 228.99,-395.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="229.32,-398.73 238.95,-394.32 228.67,-391.76 229.32,-398.73"/>
+</g>
+<!-- dpat -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node4" class="node">
+<title>dpat</title>
+<polygon fill="#777777" stroke="#777777" points="578,-772 524,-772 524,-748 578,-748 578,-772"/>
+<text text-anchor="middle" x="551" y="-757.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dpat</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;dpat -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge3" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;dpat</title>
+<path fill="none" stroke="#00ffff" d="M409.58,-398.07C413.41,-400.58 416.93,-403.53 420,-407 518.33,-518.17 357.08,-628.35 456,-739 470.24,-754.92 493.67,-760.18 513.58,-761.46"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.48,-764.96 523.6,-761.8 513.72,-757.96 513.48,-764.96"/>
+</g>
+<!-- emo -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node5" class="node">
+<title>emo</title>
+<polygon fill="#777777" stroke="#777777" points="578,-730 524,-730 524,-706 578,-706 578,-730"/>
+<text text-anchor="middle" x="551" y="-715.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">emo</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;emo -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge4" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;emo</title>
+<path fill="none" stroke="#00ffff" d="M409.51,-398.14C413.36,-400.63 416.9,-403.56 420,-407 505.43,-501.88 372.46,-595.45 456,-692 470.25,-708.46 493.9,-714.95 513.91,-717.32"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.7,-720.82 523.97,-718.22 514.33,-713.85 513.7,-720.82"/>
+</g>
+<!-- failed -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node6" class="node">
+<title>failed</title>
+<polygon fill="#777777" stroke="#777777" points="784.5,-588 730.5,-588 730.5,-564 784.5,-564 784.5,-588"/>
+<text text-anchor="middle" x="757.5" y="-573.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">failed</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;failed -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge5" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;failed</title>
+<path fill="none" stroke="#00ffff" d="M409.44,-398.2C413.31,-400.68 416.88,-403.59 420,-407 496.38,-490.46 370.53,-584.87 456,-659 519.79,-714.33 565.9,-685.73 646,-659 683.54,-646.47 718.57,-615.64 738.75,-595.28"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="741.3,-597.68 745.73,-588.05 736.26,-592.82 741.3,-597.68"/>
+</g>
+<!-- focc -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node7" class="node">
+<title>focc</title>
+<polygon fill="#777777" stroke="#777777" points="578,-650 524,-650 524,-626 578,-626 578,-650"/>
+<text text-anchor="middle" x="551" y="-635.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">focc</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;focc -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge6" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;focc</title>
+<path fill="none" stroke="#00ffff" d="M408.93,-398.05C412.98,-400.56 416.72,-403.51 420,-407 484.9,-475.96 390.74,-548.39 456,-617 470.65,-632.41 493.94,-637.69 513.67,-639.1"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.75,-642.61 523.89,-639.53 514.04,-635.62 513.75,-642.61"/>
+</g>
+<!-- info -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node8" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="578,-608 524,-608 524,-584 578,-584 578,-608"/>
+<text text-anchor="middle" x="551" y="-593.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;info -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge7" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;info</title>
+<path fill="none" stroke="#00ffff" d="M408.76,-398.21C412.85,-400.68 416.65,-403.58 420,-407 473.47,-461.52 402.24,-520.77 456,-575 470.87,-590 493.95,-595.31 513.51,-596.84"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.5,-600.34 523.66,-597.33 513.84,-593.35 513.5,-600.34"/>
+</g>
+<!-- new -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node9" class="node">
+<title>new</title>
+<polygon fill="#777777" stroke="#777777" points="578,-566 524,-566 524,-542 578,-542 578,-566"/>
+<text text-anchor="middle" x="551" y="-551.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge8" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new</title>
+<path fill="none" stroke="#00ffff" d="M407.66,-398C412.13,-400.5 416.3,-403.48 420,-407 462.16,-447.19 413.63,-493.04 456,-533 471.36,-547.49 494.45,-552.79 513.9,-554.45"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.78,-557.95 523.96,-555.02 514.18,-550.96 513.78,-557.95"/>
+</g>
+<!-- new_gfn1_calculator -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node10" class="node">
+<title>new_gfn1_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="612,-524 490,-524 490,-500 612,-500 612,-524"/>
+<text text-anchor="middle" x="551" y="-509.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge9" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator</title>
+<path fill="none" stroke="#00ffff" d="M406.31,-398.12C411.21,-400.58 415.84,-403.51 420,-407 451.11,-433.11 424.75,-465.06 456,-491 463.09,-496.88 471.47,-501.21 480.28,-504.37"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="479.36,-507.75 489.95,-507.36 481.43,-501.06 479.36,-507.75"/>
+</g>
+<!-- new_gfn2_calculator -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node11" class="node">
+<title>new_gfn2_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="612,-482 490,-482 490,-458 612,-458 612,-482"/>
+<text text-anchor="middle" x="551" y="-467.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge10" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator</title>
+<path fill="none" stroke="#00ffff" d="M401.09,-398.02C407.72,-400.47 414.14,-403.43 420,-407 441.01,-419.77 434.93,-436.34 456,-449 463.31,-453.39 471.45,-456.87 479.78,-459.62"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="479.04,-463.05 489.63,-462.53 481.03,-456.34 479.04,-463.05"/>
+</g>
+<!-- new_wavefunction -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node12" class="node">
+<title>new_wavefunction</title>
+<polygon fill="#777777" stroke="#777777" points="606.5,-440 495.5,-440 495.5,-416 606.5,-416 606.5,-440"/>
+<text text-anchor="middle" x="551" y="-425.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_wavefunction -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge11" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_wavefunction</title>
+<path fill="none" stroke="#00ffff" d="M393.4,-398.04C422.18,-403.54 456.26,-410.06 485.26,-415.61"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="484.81,-419.09 495.29,-417.53 486.13,-412.22 484.81,-419.09"/>
+</g>
+<!-- proc~add_bond_order_post_processing -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node13" class="node">
+<title>proc~add_bond_order_post_processing</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node13"><a xlink:href="../proc/add_bond_order_post_processing.html" xlink:title="add_bond_order_post_processing">
+<polygon fill="#d9534f" stroke="#d9534f" points="646,-318 456,-318 456,-294 646,-294 646,-318"/>
+<text text-anchor="middle" x="551" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_bond_order_post_processing</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~add_bond_order_post_processing -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge12" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~add_bond_order_post_processing</title>
+<path fill="none" stroke="#00ffff" d="M356.05,-373.78C381.13,-362.09 420.64,-344.43 456,-332 467.36,-328.01 479.65,-324.23 491.5,-320.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="492.61,-324.17 501.3,-318.11 490.73,-317.43 492.61,-324.17"/>
+</g>
+<!-- proc~add_solvation_to_calc -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node14" class="node">
+<title>proc~add_solvation_to_calc</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node14"><a xlink:href="../proc/add_solvation_to_calc.html" xlink:title="add_solvation_to_calc">
+<polygon fill="#d9534f" stroke="#d9534f" points="615.5,-276 486.5,-276 486.5,-252 615.5,-252 615.5,-276"/>
+<text text-anchor="middle" x="551" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_solvation_to_calc</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~add_solvation_to_calc -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge13" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~add_solvation_to_calc</title>
+<path fill="none" stroke="#00ffff" d="M341.68,-373.92C362.18,-352.52 408.12,-308.05 456,-285 462.53,-281.86 469.53,-279.18 476.67,-276.89"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="477.85,-280.2 486.46,-274.02 475.88,-273.48 477.85,-280.2"/>
+</g>
+<!-- proc~energy_total -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node15" class="node">
+<title>proc~energy_total</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node15"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="619,-192 483,-192 483,-168 619,-168 619,-192"/>
+<text text-anchor="middle" x="551" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~energy_total -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge14" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#00ffff" d="M335.04,-373.72C348.12,-340.15 389.25,-246.4 456,-201 461.26,-197.42 467.04,-194.44 473.06,-191.96"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="474.48,-195.17 482.68,-188.47 472.09,-188.59 474.48,-195.17"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node16" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node16"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="810,-402 705,-402 705,-378 810,-378 810,-402"/>
+<text text-anchor="middle" x="757.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~error_set -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge15" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ffff" d="M389.93,-373.98C410.74,-370.33 434.31,-366.8 456,-365 540.15,-358.01 562.08,-355.62 646,-365 665.05,-367.13 685.61,-371.26 703.77,-375.56"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="703.04,-378.98 713.58,-377.95 704.7,-372.18 703.04,-378.98"/>
+</g>
+<!-- proc~frontier_orbitals -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node17" class="node">
+<title>proc~frontier_orbitals</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node17"><a xlink:href="../proc/frontier_orbitals.html" xlink:title="frontier_orbitals">
+<polygon fill="#d9534f" stroke="#d9534f" points="599.5,-234 502.5,-234 502.5,-210 599.5,-210 599.5,-234"/>
+<text text-anchor="middle" x="551" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">frontier_orbitals</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~frontier_orbitals -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge16" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~frontier_orbitals</title>
+<path fill="none" stroke="#00ffff" d="M337.48,-373.72C354.09,-345.7 398.89,-276.86 456,-243 467.01,-236.47 479.84,-231.97 492.41,-228.87"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="493.39,-232.24 502.41,-226.67 491.89,-225.4 493.39,-232.24"/>
+</g>
+<!-- proc~record_context_failure -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node18" class="node">
+<title>proc~record_context_failure</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node18"><a xlink:href="../proc/record_context_failure.html" xlink:title="record_context_failure">
+<polygon fill="#d9534f" stroke="#d9534f" points="616,-398 486,-398 486,-374 616,-374 616,-398"/>
+<text text-anchor="middle" x="551" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">record_context_failure</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~record_context_failure -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge17" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~record_context_failure</title>
+<path fill="none" stroke="#00ffff" d="M420.1,-386C438.61,-386 457.92,-386 475.82,-386"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="475.89,-389.5 485.89,-386 475.89,-382.5 475.89,-389.5"/>
+</g>
+<!-- proc~take_bond_orders -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node19" class="node">
+<title>proc~take_bond_orders</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node19"><a xlink:href="../proc/take_bond_orders.html" xlink:title="take_bond_orders">
+<polygon fill="#d9534f" stroke="#d9534f" points="605,-150 497,-150 497,-126 605,-126 605,-150"/>
+<text text-anchor="middle" x="551" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">take_bond_orders</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~take_bond_orders -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge18" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~take_bond_orders</title>
+<path fill="none" stroke="#00ffff" d="M333.43,-373.8C343.33,-335.46 379.22,-216.49 456,-159 465.11,-152.18 476.02,-147.5 487.13,-144.31"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="488.05,-147.68 496.9,-141.87 486.35,-140.89 488.05,-147.68"/>
+</g>
+<!-- qat -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node20" class="node">
+<title>qat</title>
+<polygon fill="#777777" stroke="#777777" points="578,-108 524,-108 524,-84 578,-84 578,-108"/>
+<text text-anchor="middle" x="551" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">qat</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;qat -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge19" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;qat</title>
+<path fill="none" stroke="#00ffff" d="M332.33,-373.76C339.4,-330.96 369.04,-186.9 456,-117 472.17,-104.01 494.73,-98.67 513.7,-96.63"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="514.13,-100.11 523.81,-95.8 513.56,-93.13 514.13,-100.11"/>
+</g>
+<!-- to_char -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node21" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="578,-66 524,-66 524,-42 578,-42 578,-66"/>
+<text text-anchor="middle" x="551" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;to_char -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge20" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ffff" d="M331.48,-373.88C335.95,-327.21 358.54,-157.67 456,-75 471.82,-61.58 494.37,-56.24 513.42,-54.29"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.87,-57.77 523.58,-53.53 513.35,-50.79 513.87,-57.77"/>
+</g>
+<!-- xtb_singlepoint -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node22" class="node">
+<title>xtb_singlepoint</title>
+<polygon fill="#777777" stroke="#777777" points="597.5,-24 504.5,-24 504.5,0 597.5,0 597.5,-24"/>
+<text text-anchor="middle" x="551" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_singlepoint</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;xtb_singlepoint -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge21" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;xtb_singlepoint</title>
+<path fill="none" stroke="#00ffff" d="M330.85,-373.7C332.97,-323 348.12,-128.48 456,-33 466.58,-23.64 480.42,-18.17 494.21,-15.04"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="495.01,-18.45 504.19,-13.15 493.72,-11.57 495.01,-18.45"/>
+</g>
+<!-- proc~add_bond_order_post_processing&#45;&gt;proc~error_set -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge23" class="edge">
+<title>proc~add_bond_order_post_processing&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ffd6" d="M614.09,-318.14C625.15,-321.69 636.24,-326.22 646,-332 665.74,-343.69 662.28,-357.26 682,-369 686.18,-371.49 690.67,-373.69 695.3,-375.65"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="694.34,-379.03 704.93,-379.31 696.83,-372.48 694.34,-379.03"/>
+</g>
+<!-- add_post_processing -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node23" class="node">
+<title>add_post_processing</title>
+<polygon fill="#777777" stroke="#777777" points="819,-360 696,-360 696,-336 819,-336 819,-360"/>
+<text text-anchor="middle" x="757.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_post_processing</text>
+</g>
+<!-- proc~add_bond_order_post_processing&#45;&gt;add_post_processing -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge22" class="edge">
+<title>proc~add_bond_order_post_processing&#45;&gt;add_post_processing</title>
+<path fill="none" stroke="#00ffd6" d="M610.6,-318.04C634.77,-323 662.95,-328.79 688.07,-333.95"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="687.39,-337.38 697.89,-335.96 688.8,-330.52 687.39,-337.38"/>
+</g>
+<!-- new_solvation -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node26" class="node">
+<title>new_solvation</title>
+<polygon fill="#777777" stroke="#777777" points="801.5,-234 713.5,-234 713.5,-210 801.5,-210 801.5,-234"/>
+<text text-anchor="middle" x="757.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_solvation</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;new_solvation -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge24" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;new_solvation</title>
+<path fill="none" stroke="#00d6ff" d="M610.6,-251.96C639.82,-245.96 674.9,-238.76 703.34,-232.92"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="704.4,-236.27 713.49,-230.83 702.99,-229.42 704.4,-236.27"/>
+</g>
+<!-- new_solvation_cds -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node27" class="node">
+<title>new_solvation_cds</title>
+<polygon fill="#777777" stroke="#777777" points="813,-192 702,-192 702,-168 813,-168 813,-192"/>
+<text text-anchor="middle" x="757.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_solvation_cds</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;new_solvation_cds -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge25" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;new_solvation_cds</title>
+<path fill="none" stroke="#00d6ff" d="M615.83,-255.58C626.36,-252.58 636.83,-248.51 646,-243 667.07,-230.34 661.28,-214.24 682,-201 685.34,-198.86 688.91,-196.94 692.6,-195.21"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="694.09,-198.38 701.97,-191.29 691.39,-191.92 694.09,-198.38"/>
+</g>
+<!-- new_solvation_shift -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node28" class="node">
+<title>new_solvation_shift</title>
+<polygon fill="#777777" stroke="#777777" points="815,-150 700,-150 700,-126 815,-126 815,-150"/>
+<text text-anchor="middle" x="757.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_solvation_shift</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;new_solvation_shift -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge26" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;new_solvation_shift</title>
+<path fill="none" stroke="#00d6ff" d="M615.96,-258.26C626.83,-255 637.38,-250.16 646,-243 677.25,-217.06 651.47,-185.79 682,-159 684.71,-156.62 687.67,-154.51 690.79,-152.64"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="692.65,-155.62 699.98,-147.97 689.48,-149.38 692.65,-155.62"/>
+</g>
+<!-- proc~get_solvent_dielectric -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node29" class="node">
+<title>proc~get_solvent_dielectric</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node29"><a xlink:href="../proc/get_solvent_dielectric.html" xlink:title="get_solvent_dielectric">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="821.5,-318 693.5,-318 693.5,-294 821.5,-294 821.5,-318"/>
+<text text-anchor="middle" x="757.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_solvent_dielectric</text>
+</a>
+</g>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;proc~get_solvent_dielectric -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge27" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;proc~get_solvent_dielectric</title>
+<path fill="none" stroke="#00d6ff" d="M610.6,-276.04C634.77,-281 662.95,-286.79 688.07,-291.95"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="687.39,-295.38 697.89,-293.96 688.8,-288.52 687.39,-295.38"/>
+</g>
+<!-- push_back -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node31" class="node">
+<title>push_back</title>
+<polygon fill="#777777" stroke="#777777" points="792,-276 723,-276 723,-252 792,-252 792,-276"/>
+<text text-anchor="middle" x="757.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">push_back</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;push_back -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge28" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;push_back</title>
+<path fill="none" stroke="#00d6ff" d="M615.58,-264C647.09,-264 684.33,-264 712.62,-264"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="712.99,-267.5 722.99,-264 712.99,-260.5 712.99,-267.5"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node30" class="node">
+<title>proc~mp2_total</title>
+<g id="a_proc~~mqc_system_compute_bond_orders~~CallsGraph_node30"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="833,-108 682,-108 682,-84 833,-84 833,-108"/>
+<text text-anchor="middle" x="757.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge29" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#0086ff" d="M619.28,-170.56C628.64,-167.67 637.83,-163.91 646,-159 667.07,-146.34 661.28,-130.24 682,-117 684.77,-115.23 687.7,-113.6 690.72,-112.11"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="692.27,-115.25 700.03,-108.03 689.46,-108.84 692.27,-115.25"/>
+</g>
+<!-- proc~record_context_failure&#45;&gt;failed -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge30" class="edge">
+<title>proc~record_context_failure&#45;&gt;failed</title>
+<path fill="none" stroke="#6b00ff" d="M616.47,-393.44C626.93,-396.55 637.2,-400.91 646,-407 660.23,-416.86 718.31,-512.15 744.08,-555.14"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="741.2,-557.15 749.34,-563.94 747.21,-553.56 741.2,-557.15"/>
+</g>
+<!-- proc~record_context_failure&#45;&gt;proc~error_set -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge32" class="edge">
+<title>proc~record_context_failure&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#6b00ff" d="M616.14,-387.25C641.26,-387.75 669.96,-388.31 694.84,-388.79"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="694.82,-392.29 704.88,-388.99 694.95,-385.3 694.82,-392.29"/>
+</g>
+<!-- get_error -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node25" class="node">
+<title>get_error</title>
+<polygon fill="#777777" stroke="#777777" points="788,-444 727,-444 727,-420 788,-420 788,-444"/>
+<text text-anchor="middle" x="757.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_error</text>
+</g>
+<!-- proc~record_context_failure&#45;&gt;get_error -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge31" class="edge">
+<title>proc~record_context_failure&#45;&gt;get_error</title>
+<path fill="none" stroke="#6b00ff" d="M606.19,-398.08C619.23,-400.99 633.11,-404.1 646,-407 669.58,-412.3 695.99,-418.27 717.07,-423.05"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="716.43,-426.5 726.96,-425.29 717.98,-419.67 716.43,-426.5"/>
+</g>
+<!-- get_entry -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node24" class="node">
+<title>get_entry</title>
+<polygon fill="#777777" stroke="#777777" points="789,-66 726,-66 726,-42 789,-42 789,-66"/>
+<text text-anchor="middle" x="757.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_entry</text>
+</g>
+<!-- proc~take_bond_orders&#45;&gt;get_entry -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge33" class="edge">
+<title>proc~take_bond_orders&#45;&gt;get_entry</title>
+<path fill="none" stroke="#bb00ff" d="M605.48,-132.21C619.36,-129.09 633.82,-124.32 646,-117 667.07,-104.34 661.28,-88.24 682,-75 692.16,-68.51 704.35,-63.99 715.9,-60.86"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="716.92,-64.21 725.81,-58.44 715.27,-57.41 716.92,-64.21"/>
+</g>
+<!-- warning -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_node32" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="785,-24 730,-24 730,0 785,0 785,-24"/>
+<text text-anchor="middle" x="757.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~take_bond_orders&#45;&gt;warning -->
+<g id="proc~~mqc_system_compute_bond_orders~~CallsGraph_edge34" class="edge">
+<title>proc~take_bond_orders&#45;&gt;warning</title>
+<path fill="none" stroke="#bb00ff" d="M605.2,-134.99C619.7,-131.94 634.55,-126.51 646,-117 677.25,-91.06 651.47,-59.79 682,-33 692.36,-23.91 706.38,-18.73 719.46,-15.79"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="720.48,-19.16 729.67,-13.88 719.19,-12.28 720.48,-19.16"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocmqc_system_compute_bond_ordersCallsGraph = svgPanZoom('#procmqc_system_compute_bond_ordersCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-h"></span>
+              type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>h</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~25"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~6"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-res"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>res</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-whole"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>whole</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-xtb"></span>
+              type(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>xtb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_system_compute_bond_orders</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">variant_len</span><span class="p">,</span><span class="w"> </span><span class="n">variant</span><span class="p">,</span><span class="w"> </span><span class="n">accuracy</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">      </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_compute_bond_orders&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Run one xTB single point over the whole system and keep its bond orders</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The whole system, not the monomers: the point of these is to decide</span>
+<span class="w">      </span><span class="c">!! where the monomers should be, so a partition cannot be an input. A</span>
+<span class="w">      </span><span class="c">!! caller wanting fragment-local orders builds a handle per fragment.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! `variant` is &quot;gfn2&quot; or &quot;gfn1&quot;; an empty string takes gfn2, which is the</span>
+<span class="w">      </span><span class="c">!! one whose bond orders were checked. `accuracy` &lt;= 0 takes tblite&#39;s</span>
+<span class="w">      </span><span class="c">!! default.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">variant_len</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">variant</span><span class="p">(</span><span class="n">variant_len</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="kt">c_double</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">accuracy</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_handle_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
+<span class="cp">#ifndef MQC_WITHOUT_TBLITE</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">whole</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">res</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">xtb_method_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">xtb</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
+<span class="cp">#endif</span>
+
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;null system handle&quot;</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
+
+<span class="cp">#ifdef MQC_WITHOUT_TBLITE</span>
+<span class="w">      </span><span class="c">! Bond orders come from an xTB single point and there is no other route to</span>
+<span class="w">      </span><span class="c">! them here. Declining with the same signature, so a C or Python caller</span>
+<span class="w">      </span><span class="c">! still links and gets told why rather than finding the symbol missing.</span>
+<span class="w">      </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_bond_orders: bond orders need tblite; &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="s2">&quot;build with -DMQC_ENABLE_TBLITE=ON&quot;</span>
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<span class="w">      </span><span class="k">return</span>
+<span class="cp">#else</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_bond_orders: set the geometry first&quot;</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">variant_len</span>
+<span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="o">//</span><span class="n">variant</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gfn2&quot;</span>
+
+<span class="w">      </span><span class="c">! The system as one fragment. Charge and multiplicity come from the</span>
+<span class="w">      </span><span class="c">! geometry rather than from any monomer, because this is the parent.</span>
+<span class="w">      </span><span class="n">whole</span><span class="p">%</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span>
+<span class="w">      </span><span class="n">whole</span><span class="p">%</span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">charge</span>
+<span class="w">      </span><span class="n">whole</span><span class="p">%</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">multiplicity</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">whole</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">whole</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">whole</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">whole</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">)</span>
+<span class="w">      </span><span class="n">whole</span><span class="p">%</span><span class="n">nelec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">charge</span>
+
+<span class="w">      </span><span class="n">xtb</span><span class="p">%</span><span class="n">variant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+<span class="w">      </span><span class="n">xtb</span><span class="p">%</span><span class="n">want_bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="n">xtb</span><span class="p">%</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accuracy</span>
+<span class="w">      </span><span class="k">call </span><span class="n">xtb</span><span class="p">%</span><span class="n">calc_energy</span><span class="p">(</span><span class="n">whole</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_bond_orders: &quot;</span><span class="o">//</span><span class="n">res</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">()</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">res</span><span class="p">%</span><span class="n">has_bond_orders</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_bond_orders: the calculation returned no &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot;bond orders&quot;</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">bond_orders</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">bond_orders</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">bond_orders</span><span class="p">(</span><span class="n">whole</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">whole</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">res</span><span class="p">%</span><span class="n">bond_orders</span><span class="p">)</span>
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_OK</span>
+<span class="cp">#endif</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">mqc_system_compute_bond_orders</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-16 13:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
