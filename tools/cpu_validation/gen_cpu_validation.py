@@ -425,6 +425,11 @@ GRADIENT_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit", "pbe", 1),    # DF + pure GGA
     ("water", "cc-pvdz", "cc-pvdz-rifit", "b3lyp", 1),  # DF + hybrid
     ("water", "cc-pvdz", "cc-pvdz-rifit", "tpss", 1),   # DF + meta-GGA
+    # Range separated *and* fitted, which is the only way these have a
+    # gradient: the exact-ERI path builds no second exchange derivative at the
+    # screened omega, so there is deliberately no unfitted counterpart below.
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "wb97x", 1),      # DF + RSH
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "cam-b3lyp", 1),  # DF + RSH
 ]
 
 # MP2 gradients, as (molecule, basis). Small on purpose: the relaxed density
@@ -491,6 +496,24 @@ GRADIENT_FRAGMENTED_TOLERANCE = 1.0e-7
 # is enough: a term going missing is a 1e-3 event, not a 1e-8 one.
 GRADIENT_TOLERANCE = 1.0e-8
 GRADIENT_DFT_TOLERANCE = 1.0e-7
+
+# Range separated *and* fitted needs its own bound, and the reason is not slop.
+# Both codes are internally consistent -- our analytic gradient matches finite
+# differences of our own energy to 5.1e-7, which is the difference formula's
+# floor -- and the two fitted energies agree to 4.0e-10. What differs is which
+# near-null modes of the auxiliary metric each code drops. `(P|Q)_omega` is the
+# less well conditioned of the two metrics, the kept-mode count moves with
+# geometry, and a 4e-10 difference in energy becomes 1e-7 in its derivative.
+#
+# Matching PySCF's threshold would be matching an implementation detail rather
+# than a physical quantity, so the bound is set where the disagreement actually
+# lives. It is still two hundred times tighter than a missing term, which is a
+# 1e-3 event. Measured: 1.02e-7 for wB97X, under 1e-7 for CAM-B3LYP.
+GRADIENT_DF_RSH_TOLERANCE = 5.0e-7
+
+#: Functionals whose exchange is split by range. Named here because the
+#: generator has no libxc to ask, and only the tolerance above depends on it.
+RSH_FUNCTIONALS = {"wb97x", "cam-b3lyp"}
 GRADIENT_GRID_LEVEL = 3
 
 DF_CASES = [
@@ -513,6 +536,12 @@ DF_KS_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit", "pbe"),
     ("water", "cc-pvdz", "cc-pvdz-rifit", "b3lyp"),
     ("water", "cc-pvdz", "cc-pvdz-rifit", "tpss"),
+    # Range separated, where fitting has to build a *second* tensor against
+    # `erf(omega r)/r` and use the attenuated metric with it. A full-range
+    # metric paired with an attenuated three-centre tensor fits nothing, and
+    # these two cases are what would notice.
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "wb97x"),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "cam-b3lyp"),
 ]
 
 # Cases whose deck already exists in the tree and is referenced from elsewhere
@@ -978,6 +1007,15 @@ def mqc_ri_mp2_gradient(atoms, basis, aux):
     return float(energy), gradient.tolist(), mol.nao
 
 
+def _gradient_tolerance(functional, aux):
+    """Which bound this case is held to, and why it might not be the default."""
+    if not functional:
+        return GRADIENT_TOLERANCE
+    if aux and functional in RSH_FUNCTIONALS:
+        return GRADIENT_DF_RSH_TOLERANCE
+    return GRADIENT_DFT_TOLERANCE
+
+
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
                    level=GRADIENT_GRID_LEVEL):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
@@ -1162,7 +1200,7 @@ def main():
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
-            "gradient_tolerance": GRADIENT_DFT_TOLERANCE if functional else GRADIENT_TOLERANCE,
+            "gradient_tolerance": _gradient_tolerance(functional, aux),
             # Exact here, and worth failing on: every term in these gradients is
             # translationally invariant, so a residual is a real defect even
             # though the converse does not hold.

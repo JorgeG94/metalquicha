@@ -1284,6 +1284,56 @@
             "type": "unfragmented"
         },
         {
+            "name": "WB97X gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_wb97x_df_grad.json",
+            "expected_energy": -76.402216052144,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.28e-10,
+                    -0.013156164002
+                ],
+                [
+                    0.0,
+                    0.001753795523,
+                    0.006578082092
+                ],
+                [
+                    -0.0,
+                    -0.001753795752,
+                    0.006578081922
+                ]
+            ],
+            "gradient_tolerance": 5e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "CAM-B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_camb3lyp_df_grad.json",
+            "expected_energy": -76.393652022904,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    2.26e-10,
+                    -0.01580269768
+                ],
+                [
+                    -0.0,
+                    -0.000836411319,
+                    0.007901348925
+                ],
+                [
+                    -0.0,
+                    0.000836411094,
+                    0.007901348756
+                ]
+            ],
+            "gradient_tolerance": 5e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "MP2 gradient H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_mp2_grad.json",
             "expected_energy": -74.997272482595,
@@ -1459,6 +1509,18 @@
             "name": "TPSS H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_tpss_df.json",
             "expected_energy": -76.4251513078,
+            "type": "unfragmented"
+        },
+        {
+            "name": "WB97X H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_wb97x_df.json",
+            "expected_energy": -76.402216052144,
+            "type": "unfragmented"
+        },
+        {
+            "name": "CAM-B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_cam-b3lyp_df.json",
+            "expected_energy": -76.393652022904,
             "type": "unfragmented"
         },
         {
