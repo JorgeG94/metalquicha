@@ -1140,6 +1140,12 @@ Covers the complete periodic table (elements 1-118)</p></td>
 Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/element_vdw_radius.html'>element_vdw_radius</a></td>
+                 <td><a href='../module/mqc_elements.html'>mqc_elements</a></td>
+                 <td>Function</td>
+                 <td><p>Van der Waals radius in Angstrom, or 0 where none is tabulated</p><a href="../proc/element_vdw_radius.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/end_context.html'>end_context</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
@@ -1147,15 +1153,15 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
-                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
-                 <td>Function</td>
-                 <td><p>Check if string ends with suffix</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
                  <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
                  <td>Function</td>
                  <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
+                 <td>Function</td>
+                 <td><p>Check if string ends with suffix</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/energy_reset.html'>energy_reset</a></td>
@@ -1250,6 +1256,12 @@ Resets the stack trace</p></td>
                  <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
                  <td>Subroutine</td>
                  <td><p>Propagate a failed displacement outward with enough context to locate it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/failed.html'>failed</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
+                 <td>Function</td>
+                 <td><p>Turn an error_t into a C status, and say whether to stop</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/find_basis_file.html'>find_basis_file</a></td>
@@ -1432,6 +1444,12 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
                  <td><p>Choose the MBE term list once, here, and keep it for the whole run</p><a href="../proc/freeze_term_list.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/from_c.html'>from_c</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
+                 <td>Function</td>
+                 <td><p>A C character buffer as a Fortran string</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/frontier_orbitals.html'>frontier_orbitals</a></td>
@@ -2231,15 +2249,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2393,10 +2411,28 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Whether the caller has said anything about bonds at all</p><a href="../proc/mqc_system_bonds_declared.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mqc_system_charge_on.html'>mqc_system_charge_on</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
+                 <td>Function</td>
+                 <td><p>One atom&rsquo;s charge, 0-based</p><a href="../proc/mqc_system_charge_on.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_charge_scheme.html'>mqc_system_charge_scheme</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Which scheme produced the charges currently on the handle</p><a href="../proc/mqc_system_charge_scheme.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mqc_system_compute_bond_orders.html'>mqc_system_compute_bond_orders</a></td>
                  <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
                  <td>Function</td>
                  <td><p>Run one xTB single point over the whole system and keep its bond orders</p><a href="../proc/mqc_system_compute_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_compute_charges.html'>mqc_system_compute_charges</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
+                 <td>Function</td>
+                 <td><p>Run one RHF over the whole system and keep its atomic charges</p><a href="../proc/mqc_system_compute_charges.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mqc_system_count_missing_bonds.html'>mqc_system_count_missing_bonds</a></td>
@@ -2417,8 +2453,20 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Copy the matrix into a caller buffer of n*n doubles</p><a href="../proc/mqc_system_get_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mqc_system_get_charges.html'>mqc_system_get_charges</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
+                 <td>Function</td>
+                 <td><p>Copy the charges into a caller buffer of n doubles, one per atom</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mqc_system_has_bond_orders.html'>mqc_system_has_bond_orders</a></td>
                  <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Function</td>
+                 <td><p>Whether <code>compute</code> has run on this handle. Zero for a null handle too.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_has_charges.html'>mqc_system_has_charges</a></td>
+                 <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
                  <td>Function</td>
                  <td><p>Whether <code>compute</code> has run on this handle. Zero for a null handle too.</p></td>
                </tr>
@@ -3164,6 +3212,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td><p>Optimize <code>sys_geom</code> in place. Every rank calls this.</p><a href="../proc/run_geometry_optimization.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_libcint_charges.html'>run_libcint_charges</a></td>
+                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: atomic charges need the CPU integral backend</p><a href="../proc/run_libcint_charges.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_libcint_efp.html'>run_libcint_efp</a></td>
                  <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
                  <td>Subroutine</td>
@@ -3545,15 +3599,15 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -3706,7 +3760,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 13:53 +0000             </p>
+ on 2026-08-16 20:28 +0000             </p>
           </div>
         </div>
         <br>

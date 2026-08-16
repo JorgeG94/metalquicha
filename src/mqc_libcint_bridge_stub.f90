@@ -15,6 +15,7 @@ module mqc_libcint_bridge
 
    public :: run_libcint_hf
    public :: run_libcint_makefp
+   public :: run_libcint_charges
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
@@ -48,6 +49,32 @@ contains
       if (len_trim(sym_a(1))*len_trim(sym_b(1))*len_trim(basis_name) < 0) return
       if (size(xyz_a) < 0 .or. size(xyz_b) < 0) return
    end subroutine run_libcint_sapt0
+
+   subroutine run_libcint_charges(atomic_numbers, element_symbols, coordinates, &
+                                  basis_name, scheme, total_charge, charges, error)
+      !! No-op stand-in: atomic charges need the CPU integral backend
+      !!
+      !! The molecule builder, the SCF and both partition schemes all live behind
+      !! `MQC_ENABLE_LIBCINT`.
+      use pic_types, only: dp
+      use mqc_error, only: error_t
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      character(len=*), intent(in) :: basis_name
+      character(len=*), intent(in) :: scheme
+      integer, intent(in) :: total_charge
+      real(dp), allocatable, intent(out) :: charges(:)
+      type(error_t), intent(inout) :: error
+
+      allocate (charges(0))
+      call error%set(ERROR_VALIDATION, &
+                     "atomic charges need the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_LIBCINT=ON")
+      if (size(atomic_numbers) < 0 .or. size(coordinates) < 0) return
+      if (len_trim(element_symbols(1))*len_trim(basis_name)*len_trim(scheme) < 0) return
+      if (total_charge < -huge(1)) return
+   end subroutine run_libcint_charges
 
    subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
                               coordinates, terms, error)

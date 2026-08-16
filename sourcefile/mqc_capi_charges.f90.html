@@ -1,0 +1,895 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_capi_charges.f90 &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_capi_charges.f90
+      <small>Source File</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.8% of total for source files.">149 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_charges.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+            <li class="breadcrumb-item active" aria-current="page">mqc_capi_charges.f90</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#mods-0"
+         aria-expanded="false" aria-controls="mods-0">
+         <h4 class="card-header bg-primary text-white">Modules</h4>
+      </a>
+      <div id="mods-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_charges.html">mqc_capi_charges</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../sourcefile/mqc_capi_charges.f90.html#src">mqc_capi_charges.f90</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    <div class="col-md-9" id='text'>
+      <p>Atomic partial charges over the C boundary</p>
+      <br>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">This file depends on</h3>
+          </div>
+          <div class="card-body">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~mqc_capi_charges.f90~~EfferentGraph Pages: 1 -->
+<svg id="sourcefilemqc_capi_chargesf90EfferentGraph" width="641pt" height="156pt"
+ viewBox="0.00 0.00 641.00 156.49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph" class="graph" transform="scale(0.45 0.45) rotate(0) translate(4 344.38)">
+<title>sourcefile~~mqc_capi_charges.f90~~EfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-344.38 1423,-344.38 1423,4 -4,4"/>
+<!-- sourcefile~mqc_capi_charges.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node1" class="node">
+<title>sourcefile~mqc_capi_charges.f90</title>
+<polygon fill="none" stroke="black" points="1419,-259.25 1287,-259.25 1287,-235.25 1419,-235.25 1419,-259.25"/>
+<text text-anchor="middle" x="1353" y="-244.85" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_capi_charges.f90</text>
+</g>
+<!-- sourcefile~mqc_capi_system.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node2" class="node">
+<title>sourcefile~mqc_capi_system.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node2"><a xlink:href="../sourcefile/mqc_capi_system.f90.html" xlink:title="mqc_capi_system.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="870,-259.25 743,-259.25 743,-235.25 870,-235.25 870,-259.25"/>
+<text text-anchor="middle" x="806.5" y="-244.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_system.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_capi_system.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge1" class="edge">
+<title>sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_capi_system.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1325.12,-259.33C1264.83,-285.04 1113.96,-341.69 984.5,-327.25"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M982.5,-327.25C924.27,-324.03 864.07,-287.99 831.67,-265.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="833.47,-262.38 823.3,-259.42 829.4,-268.08 833.47,-262.38"/>
+</g>
+<!-- sourcefile~mqc_elements.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node3" class="node">
+<title>sourcefile~mqc_elements.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node3"><a xlink:href="../sourcefile/mqc_elements.f90.html" xlink:title="mqc_elements.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="284,-299.25 173,-299.25 173,-275.25 284,-275.25 284,-299.25"/>
+<text text-anchor="middle" x="228.5" y="-284.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_elements.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge2" class="edge">
+<title>sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_elements.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M982.5,-327.25C737.32,-313.7 675.25,-339.45 430,-327.25"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M428,-327.25C377.19,-324.59 320.38,-312.15 280.6,-301.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="281.43,-298.44 270.87,-299.27 279.65,-305.21 281.43,-298.44"/>
+</g>
+<!-- sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node4" class="node">
+<title>sourcefile~mqc_error.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node4"><a xlink:href="../sourcefile/mqc_error.f90.html" xlink:title="mqc_error.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="99,-175.25 13,-175.25 13,-151.25 99,-151.25 99,-175.25"/>
+<text text-anchor="middle" x="56" y="-160.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge3" class="edge">
+<title>sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M428,-327.25C339.9,-322.64 312.41,-357.41 229.5,-327.25"/>
+</g>
+<!-- sourcefile~mqc_libcint_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node5" class="node">
+<title>sourcefile~mqc_libcint_bridge_stub.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node5"><a xlink:href="../sourcefile/mqc_libcint_bridge_stub.f90.html" xlink:title="mqc_libcint_bridge_stub.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1251,-179.25 1090,-179.25 1090,-155.25 1251,-155.25 1251,-179.25"/>
+<text text-anchor="middle" x="1170.5" y="-164.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_libcint_bridge_stub.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_libcint_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge4" class="edge">
+<title>sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_libcint_bridge_stub.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1324.59,-235.1C1293.4,-221.27 1242.33,-198.64 1207.84,-183.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1209.14,-180.1 1198.58,-179.25 1206.3,-186.5 1209.14,-180.1"/>
+</g>
+<!-- sourcefile~mqc_capi_system.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge6" class="edge">
+<title>sourcefile~mqc_capi_system.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M748.97,-259.28C733.16,-262.43 715.95,-265.66 700,-268.25 698.37,-268.51 231.06,-327.78 229.5,-327.25"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M227.5,-327.25C193.36,-314.83 177.51,-329.43 148,-308.25 104.21,-276.82 76.79,-217.14 64.53,-185.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="67.81,-183.81 61.08,-175.63 61.24,-186.22 67.81,-183.81"/>
+</g>
+<!-- sourcefile~mqc_bond_perception.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node6" class="node">
+<title>sourcefile~mqc_bond_perception.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node6"><a xlink:href="../sourcefile/mqc_bond_perception.f90.html" xlink:title="mqc_bond_perception.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="700,-259.25 549,-259.25 549,-235.25 700,-235.25 700,-259.25"/>
+<text text-anchor="middle" x="624.5" y="-244.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_bond_perception.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_system.f90&#45;&gt;sourcefile~mqc_bond_perception.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge5" class="edge">
+<title>sourcefile~mqc_capi_system.f90&#45;&gt;sourcefile~mqc_bond_perception.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M742.8,-247.25C732.23,-247.25 721.11,-247.25 710.1,-247.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="710.04,-243.75 700.04,-247.25 710.04,-250.75 710.04,-243.75"/>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node8" class="node">
+<title>sourcefile~mqc_physical_fragment.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node8"><a xlink:href="../sourcefile/mqc_physical_fragment.f90.html" xlink:title="mqc_physical_fragment.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="509,-219.25 349,-219.25 349,-195.25 509,-195.25 509,-219.25"/>
+<text text-anchor="middle" x="429" y="-204.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_system.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge7" class="edge">
+<title>sourcefile~mqc_capi_system.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M768.08,-235.16C732.01,-224.42 675.68,-210 625.5,-207.25"/>
+</g>
+<!-- sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge9" class="edge">
+<title>sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1131.37,-155.17C1094.3,-144.34 1036.19,-129.79 984.5,-127.25"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M982.5,-127.25C904.82,-123.43 884.23,-114.52 807.5,-127.25"/>
+</g>
+<!-- sourcefile~mqc_cuest_iface.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node7" class="node">
+<title>sourcefile~mqc_cuest_iface.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node7"><a xlink:href="../sourcefile/mqc_cuest_iface.f90.html" xlink:title="mqc_cuest_iface.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1044,-99.25 923,-99.25 923,-75.25 1044,-75.25 1044,-99.25"/>
+<text text-anchor="middle" x="983.5" y="-84.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_cuest_iface.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge8" class="edge">
+<title>sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_cuest_iface.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1144.97,-155.09C1121.76,-143.75 1085.84,-126.62 1054,-113.25 1045.63,-109.73 1036.6,-106.18 1027.91,-102.88"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1028.89,-99.51 1018.29,-99.28 1026.43,-106.06 1028.89,-99.51"/>
+</g>
+<!-- sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge10" class="edge">
+<title>sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1112.15,-179.26C1093.67,-182.7 1073.04,-186.1 1054,-188.25 864.56,-209.57 815.85,-217.67 625.5,-207.25"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M623.5,-207.25C589.46,-205.29 551.99,-204.88 519.17,-205.11"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="519.11,-201.61 509.14,-205.2 519.17,-208.61 519.11,-201.61"/>
+</g>
+<!-- sourcefile~mqc_program_limits.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node9" class="node">
+<title>sourcefile~mqc_program_limits.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node9"><a xlink:href="../sourcefile/mqc_program_limits.f90.html" xlink:title="mqc_program_limits.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1054,-179.25 913,-179.25 913,-155.25 1054,-155.25 1054,-179.25"/>
+<text text-anchor="middle" x="983.5" y="-164.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_program_limits.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge11" class="edge">
+<title>sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_program_limits.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1089.97,-167.25C1081.48,-167.25 1072.83,-167.25 1064.34,-167.25"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1064.06,-163.75 1054.06,-167.25 1064.06,-170.75 1064.06,-163.75"/>
+</g>
+<!-- sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node10" class="node">
+<title>sourcefile~mqc_result_types.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node10"><a xlink:href="../sourcefile/mqc_result_types.f90.html" xlink:title="mqc_result_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="868.5,-179.25 744.5,-179.25 744.5,-155.25 868.5,-155.25 868.5,-179.25"/>
+<text text-anchor="middle" x="806.5" y="-164.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge12" class="edge">
+<title>sourcefile~mqc_libcint_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M982.5,-127.25C935.19,-124.92 882.37,-139.46 847.26,-151.65"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="845.64,-148.52 837.4,-155.18 847.99,-155.11 845.64,-148.52"/>
+</g>
+<!-- sourcefile~mqc_bond_perception.f90&#45;&gt;sourcefile~mqc_elements.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge13" class="edge">
+<title>sourcefile~mqc_bond_perception.f90&#45;&gt;sourcefile~mqc_elements.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M428,-247.25C377.18,-249.77 320.38,-262.23 280.6,-272.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="279.64,-269.21 270.87,-275.16 281.43,-275.98 279.64,-269.21"/>
+</g>
+<!-- sourcefile~mqc_bond_perception.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge14" class="edge">
+<title>sourcefile~mqc_bond_perception.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M548.57,-245.51C512.67,-245.13 469.09,-245.3 430,-247.25"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M428,-247.25C339.89,-251.63 316.35,-262.77 229.5,-247.25"/>
+</g>
+<!-- sourcefile~mqc_bond_perception.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge15" class="edge">
+<title>sourcefile~mqc_bond_perception.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M565.44,-235.25C544.3,-230.87 520.21,-225.89 498.26,-221.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="498.85,-217.91 488.35,-219.31 497.43,-224.76 498.85,-217.91"/>
+</g>
+<!-- sourcefile~mqc_cuest_iface.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge17" class="edge">
+<title>sourcefile~mqc_cuest_iface.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M936.74,-99.3C901.61,-108.16 851.77,-119.9 807.5,-127.25"/>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M805.5,-127.25C724.65,-140.66 707.33,-162.76 625.5,-167.25"/>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M623.5,-167.25C499.62,-174.03 454.62,-206.35 345,-148.25 322.06,-136.09 332.34,-113.62 309,-102.25 244.67,-70.9 216.46,-81.42 148,-102.25 120.95,-110.47 94.62,-129.72 77.31,-144.41"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="74.79,-141.97 69.57,-151.19 79.4,-147.23 74.79,-141.97"/>
+</g>
+<!-- sourcefile~mqc_config_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node12" class="node">
+<title>sourcefile~mqc_config_types.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node12"><a xlink:href="../sourcefile/mqc_config_types.f90.html" xlink:title="mqc_config_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="688.5,-97.25 560.5,-97.25 560.5,-73.25 688.5,-73.25 688.5,-97.25"/>
+<text text-anchor="middle" x="624.5" y="-82.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_iface.f90&#45;&gt;sourcefile~mqc_config_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge16" class="edge">
+<title>sourcefile~mqc_cuest_iface.f90&#45;&gt;sourcefile~mqc_config_types.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M932.62,-75.23C915.14,-71.58 895.31,-68.05 877,-66.25 814.64,-60.1 798.44,-60.92 736,-66.25 722.42,-67.41 708.01,-69.35 694.23,-71.57"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="693.61,-68.12 684.33,-73.22 694.77,-75.03 693.61,-68.12"/>
+</g>
+<!-- sourcefile~mqc_method_config.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node14" class="node">
+<title>sourcefile~mqc_method_config.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node14"><a xlink:href="../sourcefile/mqc_method_config.f90.html" xlink:title="mqc_method_config.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="877,-99.25 736,-99.25 736,-75.25 877,-75.25 877,-99.25"/>
+<text text-anchor="middle" x="806.5" y="-84.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_iface.f90&#45;&gt;sourcefile~mqc_method_config.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge18" class="edge">
+<title>sourcefile~mqc_cuest_iface.f90&#45;&gt;sourcefile~mqc_method_config.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M922.76,-87.25C911.43,-87.25 899.4,-87.25 887.56,-87.25"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="887.22,-83.75 877.22,-87.25 887.22,-90.75 887.22,-83.75"/>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_elements.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge20" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_elements.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M379.43,-219.27C367.82,-223 355.7,-227.64 345,-233.25 327.04,-242.65 326.9,-251.73 309,-261.25 301.53,-265.21 293.35,-268.72 285.17,-271.77"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="283.87,-268.52 275.6,-275.15 286.19,-275.12 283.87,-268.52"/>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge21" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M386.67,-219.3C337.72,-232.91 259.09,-252.53 229.5,-247.25"/>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M227.5,-247.25C191.74,-240.85 181.06,-243.31 148,-228.25 122.04,-216.42 95.89,-196.75 78.33,-182.14"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="80.33,-179.24 70.44,-175.43 75.79,-184.58 80.33,-179.24"/>
+</g>
+<!-- sourcefile~mqc_cgto.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node11" class="node">
+<title>sourcefile~mqc_cgto.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node11"><a xlink:href="../sourcefile/mqc_cgto.f90.html" xlink:title="mqc_cgto.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="270.5,-219.25 186.5,-219.25 186.5,-195.25 270.5,-195.25 270.5,-219.25"/>
+<text text-anchor="middle" x="228.5" y="-204.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_cgto.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge19" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_cgto.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M348.98,-207.25C326.04,-207.25 301.6,-207.25 280.83,-207.25"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="280.65,-203.75 270.65,-207.25 280.65,-210.75 280.65,-203.75"/>
+</g>
+<!-- sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node13" class="node">
+<title>sourcefile~mqc_geometry.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node13"><a xlink:href="../sourcefile/mqc_geometry.f90.html" xlink:title="mqc_geometry.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="112,-94.25 0,-94.25 0,-70.25 112,-70.25 112,-94.25"/>
+<text text-anchor="middle" x="56" y="-79.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge22" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_geometry.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M407.66,-195.13C390.05,-184.13 364.43,-166.81 345,-148.25 285.41,-91.35 311.87,-4.94 229.5,-3.25"/>
+</g>
+<!-- sourcefile~mqc_physical_constants.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node15" class="node">
+<title>sourcefile~mqc_physical_constants.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node15"><a xlink:href="../sourcefile/mqc_physical_constants.f90.html" xlink:title="mqc_physical_constants.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="309,-177.25 148,-177.25 148,-153.25 309,-153.25 309,-177.25"/>
+<text text-anchor="middle" x="228.5" y="-162.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_physical_constants.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge23" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_physical_constants.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M371.12,-195.21C347.76,-190.27 320.54,-184.51 296.25,-179.37"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="296.9,-175.93 286.39,-177.28 295.45,-182.78 296.9,-175.93"/>
+</g>
+<!-- sourcefile~mqc_xyz_reader.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node16" class="node">
+<title>sourcefile~mqc_xyz_reader.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node16"><a xlink:href="../sourcefile/mqc_xyz_reader.f90.html" xlink:title="mqc_xyz_reader.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="287.5,-135.25 169.5,-135.25 169.5,-111.25 287.5,-111.25 287.5,-135.25"/>
+<text text-anchor="middle" x="228.5" y="-120.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_xyz_reader.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge24" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_xyz_reader.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M375.79,-195.24C365.17,-191.62 354.39,-187.02 345,-181.25 325.46,-169.23 328.81,-155.82 309,-144.25 305.33,-142.1 301.43,-140.17 297.41,-138.43"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="298.45,-135.08 287.86,-134.72 295.92,-141.61 298.45,-135.08"/>
+</g>
+<!-- sourcefile~mqc_result_types.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge25" class="edge">
+<title>sourcefile~mqc_result_types.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M744.22,-165.59C709.39,-165.06 664.97,-165.08 625.5,-167.25"/>
+</g>
+<!-- sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge30" class="edge">
+<title>sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M604.24,-97.39C569.83,-119.09 497.68,-164.57 457.87,-189.68"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="455.78,-186.86 449.18,-195.15 459.51,-192.78 455.78,-186.86"/>
+</g>
+<!-- sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge28" class="edge">
+<title>sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_geometry.f90</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M607.72,-73.15C587.18,-58.16 549.58,-33.26 513,-22.25 392.08,14.17 355.76,-5.84 229.5,-3.25"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M227.5,-3.25C169.97,-1.61 110.76,-39.74 79.51,-63.61"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="77.17,-61 71.46,-69.92 81.49,-66.51 77.17,-61"/>
+</g>
+<!-- sourcefile~mqc_calc_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node17" class="node">
+<title>sourcefile~mqc_calc_types.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node17"><a xlink:href="../sourcefile/mqc_calc_types.f90.html" xlink:title="mqc_calc_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="487.5,-97.25 370.5,-97.25 370.5,-73.25 487.5,-73.25 487.5,-97.25"/>
+<text text-anchor="middle" x="429" y="-82.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_calc_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge26" class="edge">
+<title>sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_calc_types.f90</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M560.41,-85.25C540.41,-85.25 518.21,-85.25 497.89,-85.25"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="497.77,-81.75 487.77,-85.25 497.77,-88.75 497.77,-81.75"/>
+</g>
+<!-- sourcefile~mqc_calculation_defaults.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node18" class="node">
+<title>sourcefile~mqc_calculation_defaults.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node18"><a xlink:href="../sourcefile/mqc_calculation_defaults.f90.html" xlink:title="mqc_calculation_defaults.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="513,-55.25 345,-55.25 345,-31.25 513,-31.25 513,-55.25"/>
+<text text-anchor="middle" x="429" y="-40.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_calculation_defaults.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge27" class="edge">
+<title>sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_calculation_defaults.f90</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M568.05,-73.21C545.38,-68.29 518.99,-62.56 495.38,-57.44"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="495.97,-53.98 485.46,-55.28 494.49,-60.83 495.97,-53.98"/>
+</g>
+<!-- sourcefile~mqc_method_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node19" class="node">
+<title>sourcefile~mqc_method_types.f90</title>
+<g id="a_sourcefile~~mqc_capi_charges.f90~~EfferentGraph_node19"><a xlink:href="../sourcefile/mqc_method_types.f90.html" xlink:title="mqc_method_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="497,-139.25 361,-139.25 361,-115.25 497,-115.25 497,-139.25"/>
+<text text-anchor="middle" x="429" y="-124.85" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_method_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge29" class="edge">
+<title>sourcefile~mqc_config_types.f90&#45;&gt;sourcefile~mqc_method_types.f90</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M568.05,-97.28C545.38,-102.2 518.99,-107.93 495.38,-113.05"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="494.49,-109.67 485.46,-115.21 495.97,-116.51 494.49,-109.67"/>
+</g>
+<!-- sourcefile~mqc_method_config.f90&#45;&gt;sourcefile~mqc_config_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge31" class="edge">
+<title>sourcefile~mqc_method_config.f90&#45;&gt;sourcefile~mqc_config_types.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M735.91,-86.47C723.77,-86.34 711.12,-86.2 698.88,-86.06"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="698.77,-82.56 688.73,-85.95 698.69,-89.56 698.77,-82.56"/>
+</g>
+<!-- sourcefile~mqc_method_config.f90&#45;&gt;sourcefile~mqc_method_types.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge32" class="edge">
+<title>sourcefile~mqc_method_config.f90&#45;&gt;sourcefile~mqc_method_types.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M744.57,-99.29C730.01,-101.88 714.49,-104.38 700,-106.25 635.27,-114.57 561.36,-120.04 507.25,-123.31"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="506.82,-119.83 497.04,-123.91 507.23,-126.81 506.82,-119.83"/>
+</g>
+<!-- sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge33" class="edge">
+<title>sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M176.34,-135.25C155.09,-140.23 130.45,-146.01 109.1,-151.02"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="108.16,-147.65 99.23,-153.34 109.76,-154.46 108.16,-147.65"/>
+</g>
+<!-- sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_capi_charges.f90~~EfferentGraph_edge34" class="edge">
+<title>sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_geometry.f90</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M177.27,-111.17C158.36,-106.62 136.67,-101.4 116.96,-96.67"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="117.71,-93.25 107.17,-94.31 116.07,-100.05 117.71,-93.25"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pansourcefilemqc_capi_chargesf90EfferentGraph = svgPanZoom('#sourcefilemqc_capi_chargesf90EfferentGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#EfferentGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="EfferentGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a file to a file which it depends on. A file
+is dependent upon another if the latter must be compiled before the former
+can be.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
+<br>
+      <section>
+        <h2><span class="anchor" id="src"></span>Source Code</h2>
+        <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! Atomic partial charges over the C boundary</span>
+<a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_capi_charges</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Mulliken and CHELPG charges on a system handle, from an RHF density.</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!!</span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! Same shape as [[mqc_capi_bond_orders]] and for the same reason: charges</span>
+<a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! are an input to deciding what to calculate, not the output of a</span>
+<a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! calculation someone asked for. A caller weighing fragmentations wants to</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! know how much charge sits near each candidate cut, and wants to ask that</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! many times over many trial partitions -- a Python loop, not a deck.</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!!</span>
+<a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! **Unlike bond orders, these cost a real SCF.** Bond orders come from xTB,</span>
+<a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="c">!! which is cheap enough to run on the whole system without thinking about</span>
+<a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="c">!! it. Charges here come from `run_libcint_rhf` in whatever basis the caller</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="w">   </span><span class="c">!! names, so `compute` on a large system in a large basis is a large</span>
+<a id="ln-15" name="ln-15" href="#ln-15"></a><span class="w">   </span><span class="c">!! calculation. That is the caller&#39;s decision to make, which is why the basis</span>
+<a id="ln-16" name="ln-16" href="#ln-16"></a><span class="w">   </span><span class="c">!! is a parameter and not a default hidden inside. Measured: 32 atoms in</span>
+<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="w">   </span><span class="c">!! 6-31G is about twenty seconds, nearly all of it the SCF -- so the basis is</span>
+<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="w">   </span><span class="c">!! the knob that matters and the choice of scheme is not.</span>
+<a id="ln-19" name="ln-19" href="#ln-19"></a><span class="w">   </span><span class="c">!!</span>
+<a id="ln-20" name="ln-20" href="#ln-20"></a><span class="w">   </span><span class="c">!! **Which scheme to ask for.** CHELPG, unless the reason for asking is</span>
+<a id="ln-21" name="ln-21" href="#ln-21"></a><span class="w">   </span><span class="c">!! specifically about basis-function populations. Measured on water between</span>
+<a id="ln-22" name="ln-22" href="#ln-22"></a><span class="w">   </span><span class="c">!! 6-31G and aug-cc-pVDZ, the Mulliken charge on oxygen moves from -0.79 to</span>
+<a id="ln-23" name="ln-23" href="#ln-23"></a><span class="w">   </span><span class="c">!! -0.30 while CHELPG moves from -0.94 to -0.74 -- the same molecule, and one</span>
+<a id="ln-24" name="ln-24" href="#ln-24"></a><span class="w">   </span><span class="c">!! of the two answers has changed by more than half. For anything downstream</span>
+<a id="ln-25" name="ln-25" href="#ln-25"></a><span class="w">   </span><span class="c">!! that treats a charge as a physical quantity, embedding especially, the</span>
+<a id="ln-26" name="ln-26" href="#ln-26"></a><span class="w">   </span><span class="c">!! basis-stable one is the only defensible input.</span>
+<a id="ln-27" name="ln-27" href="#ln-27"></a><span class="w">   </span><span class="k">use</span><span class="p">,</span><span class="w"> </span><span class="k">intrinsic</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">iso_c_binding</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="kt">c_ptr</span><span class="p">,</span><span class="w"> </span><span class="kt">c_int</span><span class="p">,</span><span class="w"> </span><span class="kt">c_double</span><span class="p">,</span><span class="w"> </span><span class="kt">c_char</span><span class="p">,</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">,</span><span class="w"> </span><span class="nb">c_f_pointer</span>
+<a id="ln-28" name="ln-28" href="#ln-28"></a><span class="nb">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span>
+<a id="ln-29" name="ln-29" href="#ln-29"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_capi_system</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">system_handle_t</span><span class="p">,</span><span class="w"> </span><span class="n">last_message</span><span class="p">,</span><span class="w"> </span><span class="n">MQC_OK</span><span class="p">,</span><span class="w"> </span><span class="n">MQC_FAIL</span><span class="p">,</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
+<a id="ln-30" name="ln-30" href="#ln-30"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
+<a id="ln-31" name="ln-31" href="#ln-31"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_elements</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">element_number_to_symbol</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_libcint_charges</span>
+<a id="ln-33" name="ln-33" href="#ln-33"></a><span class="w">   </span><span class="k">implicit none</span>
+<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="k">   private</span>
+<a id="ln-35" name="ln-35" href="#ln-35"></a>
+<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_system_compute_charges</span>
+<a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_system_get_charges</span>
+<a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_system_charge_on</span>
+<a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_system_has_charges</span>
+<a id="ln-40" name="ln-40" href="#ln-40"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_system_charge_scheme</span>
+<a id="ln-41" name="ln-41" href="#ln-41"></a>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="k">contains</span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a>
+<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="k">   function </span><span class="n">mqc_system_compute_charges</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">scheme_len</span><span class="p">,</span><span class="w"> </span><span class="n">scheme</span><span class="p">,</span><span class="w"> </span><span class="n">basis_len</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_compute_charges&quot;</span><span class="p">)</span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">      </span><span class="c">!! Run one RHF over the whole system and keep its atomic charges</span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">      </span><span class="c">!! `scheme` is &quot;chelpg&quot; or &quot;mulliken&quot;; an empty string takes chelpg, for</span>
+<a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">      </span><span class="c">!! the reason in the module header. `basis` is any basis the build carries;</span>
+<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">      </span><span class="c">!! an empty string takes 6-31g, which is small enough to be affordable on</span>
+<a id="ln-51" name="ln-51" href="#ln-51"></a><span class="w">      </span><span class="c">!! the systems this gets pointed at and large enough that the charges mean</span>
+<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">      </span><span class="c">!! something.</span>
+<a id="ln-53" name="ln-53" href="#ln-53"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-54" name="ln-54" href="#ln-54"></a><span class="w">      </span><span class="c">!! Closed shell only. An odd electron count is refused rather than</span>
+<a id="ln-55" name="ln-55" href="#ln-55"></a><span class="w">      </span><span class="c">!! silently paired up, because a caller fragmenting a radical needs to</span>
+<a id="ln-56" name="ln-56" href="#ln-56"></a><span class="w">      </span><span class="c">!! know that this cannot answer for it.</span>
+<a id="ln-57" name="ln-57" href="#ln-57"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<a id="ln-58" name="ln-58" href="#ln-58"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scheme_len</span>
+<a id="ln-59" name="ln-59" href="#ln-59"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scheme</span><span class="p">(</span><span class="n">scheme_len</span><span class="p">)</span>
+<a id="ln-60" name="ln-60" href="#ln-60"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_len</span>
+<a id="ln-61" name="ln-61" href="#ln-61"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(</span><span class="n">basis_len</span><span class="p">)</span>
+<a id="ln-62" name="ln-62" href="#ln-62"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+<a id="ln-63" name="ln-63" href="#ln-63"></a>
+<a id="ln-64" name="ln-64" href="#ln-64"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_handle_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
+<a id="ln-65" name="ln-65" href="#ln-65"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<a id="ln-66" name="ln-66" href="#ln-66"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">q</span><span class="p">(:)</span>
+<a id="ln-67" name="ln-67" href="#ln-67"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symbols</span><span class="p">(:)</span>
+<a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">which</span><span class="p">,</span><span class="w"> </span><span class="n">basis_name</span>
+<a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-70" name="ln-70" href="#ln-70"></a>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
+<a id="ln-72" name="ln-72" href="#ln-72"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-73" name="ln-73" href="#ln-73"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;null system handle&quot;</span>
+<a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-75" name="ln-75" href="#ln-75"></a><span class="k">      end if</span>
+<a id="ln-76" name="ln-76" href="#ln-76"></a><span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
+<a id="ln-77" name="ln-77" href="#ln-77"></a>
+<a id="ln-78" name="ln-78" href="#ln-78"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-79" name="ln-79" href="#ln-79"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_charges: set the geometry first&quot;</span>
+<a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-82" name="ln-82" href="#ln-82"></a><span class="k">      end if</span>
+<a id="ln-83" name="ln-83" href="#ln-83"></a>
+<a id="ln-84" name="ln-84" href="#ln-84"></a><span class="k">      </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from_c</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span><span class="w"> </span><span class="n">scheme_len</span><span class="p">)</span>
+<a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">which</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;chelpg&quot;</span>
+<a id="ln-86" name="ln-86" href="#ln-86"></a><span class="w">      </span><span class="n">basis_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from_c</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">basis_len</span><span class="p">)</span>
+<a id="ln-87" name="ln-87" href="#ln-87"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">basis_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31g&quot;</span>
+<a id="ln-88" name="ln-88" href="#ln-88"></a>
+<a id="ln-89" name="ln-89" href="#ln-89"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">which</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">&quot;chelpg&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">&quot;mulliken&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-90" name="ln-90" href="#ln-90"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_charges: unknown scheme &#39;&quot;</span><span class="o">//</span><span class="n">which</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="w">                        </span><span class="s2">&quot;&#39;; use &#39;chelpg&#39; or &#39;mulliken&#39;&quot;</span>
+<a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<a id="ln-93" name="ln-93" href="#ln-93"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-94" name="ln-94" href="#ln-94"></a><span class="k">      end if</span>
+<a id="ln-95" name="ln-95" href="#ln-95"></a>
+<a id="ln-96" name="ln-96" href="#ln-96"></a><span class="k">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span>
+<a id="ln-97" name="ln-97" href="#ln-97"></a><span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">symbols</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+<a id="ln-98" name="ln-98" href="#ln-98"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-99" name="ln-99" href="#ln-99"></a><span class="w">         </span><span class="n">symbols</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<a id="ln-100" name="ln-100" href="#ln-100"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-101" name="ln-101" href="#ln-101"></a>
+<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="w">      </span><span class="c">! Through the bridge, not into the backend. The odd-electron refusal and</span>
+<a id="ln-103" name="ln-103" href="#ln-103"></a><span class="w">      </span><span class="c">! the SCF live on the other side of it now, so this reports rather than</span>
+<a id="ln-104" name="ln-104" href="#ln-104"></a><span class="w">      </span><span class="c">! decides.</span>
+<a id="ln-105" name="ln-105" href="#ln-105"></a><span class="w">      </span><span class="k">call </span><span class="n">run_libcint_charges</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">symbols</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">                               </span><span class="n">basis_name</span><span class="p">,</span><span class="w"> </span><span class="n">which</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<a id="ln-107" name="ln-107" href="#ln-107"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">failed</span><span class="p">(</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-108" name="ln-108" href="#ln-108"></a>
+<a id="ln-109" name="ln-109" href="#ln-109"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">)</span>
+<a id="ln-110" name="ln-110" href="#ln-110"></a><span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">q</span><span class="p">)</span>
+<a id="ln-111" name="ln-111" href="#ln-111"></a><span class="w">      </span><span class="n">h</span><span class="p">%</span><span class="n">charge_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">which</span>
+<a id="ln-112" name="ln-112" href="#ln-112"></a><span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_OK</span>
+<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="w">   </span><span class="k">end function </span><span class="n">mqc_system_compute_charges</span>
+<a id="ln-114" name="ln-114" href="#ln-114"></a>
+<a id="ln-115" name="ln-115" href="#ln-115"></a><span class="w">   </span><span class="k">function </span><span class="n">mqc_system_has_charges</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">has</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-116" name="ln-116" href="#ln-116"></a><span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_has_charges&quot;</span><span class="p">)</span>
+<a id="ln-117" name="ln-117" href="#ln-117"></a><span class="w">      </span><span class="c">!! Whether `compute` has run on this handle. Zero for a null handle too.</span>
+<a id="ln-118" name="ln-118" href="#ln-118"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<a id="ln-119" name="ln-119" href="#ln-119"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has</span>
+<a id="ln-120" name="ln-120" href="#ln-120"></a>
+<a id="ln-121" name="ln-121" href="#ln-121"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_handle_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
+<a id="ln-122" name="ln-122" href="#ln-122"></a>
+<a id="ln-123" name="ln-123" href="#ln-123"></a><span class="w">      </span><span class="n">has</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<a id="ln-124" name="ln-124" href="#ln-124"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-125" name="ln-125" href="#ln-125"></a><span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
+<a id="ln-126" name="ln-126" href="#ln-126"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<a id="ln-127" name="ln-127" href="#ln-127"></a><span class="w">   </span><span class="k">end function </span><span class="n">mqc_system_has_charges</span>
+<a id="ln-128" name="ln-128" href="#ln-128"></a>
+<a id="ln-129" name="ln-129" href="#ln-129"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">mqc_system_charge_scheme</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">buffer_len</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-130" name="ln-130" href="#ln-130"></a><span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_charge_scheme&quot;</span><span class="p">)</span>
+<a id="ln-131" name="ln-131" href="#ln-131"></a><span class="w">      </span><span class="c">!! Which scheme produced the charges currently on the handle</span>
+<a id="ln-132" name="ln-132" href="#ln-132"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-133" name="ln-133" href="#ln-133"></a><span class="w">      </span><span class="c">!! Empty if none have been computed. Worth asking, because &quot;the charge on</span>
+<a id="ln-134" name="ln-134" href="#ln-134"></a><span class="w">      </span><span class="c">!! atom 3&quot; is not a well-defined number without it -- two schemes</span>
+<a id="ln-135" name="ln-135" href="#ln-135"></a><span class="w">      </span><span class="c">!! disagree by design, and a caller comparing systems or caching results</span>
+<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">      </span><span class="c">!! has to be able to tell which question was answered.</span>
+<a id="ln-137" name="ln-137" href="#ln-137"></a><span class="w">      </span><span class="k">use</span><span class="p">,</span><span class="w"> </span><span class="k">intrinsic</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">iso_c_binding</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="nb">c_null_char</span>
+<a id="ln-138" name="ln-138" href="#ln-138"></a><span class="nb">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<a id="ln-139" name="ln-139" href="#ln-139"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buffer_len</span>
+<a id="ln-140" name="ln-140" href="#ln-140"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buffer</span><span class="p">(</span><span class="n">buffer_len</span><span class="p">)</span>
+<a id="ln-141" name="ln-141" href="#ln-141"></a>
+<a id="ln-142" name="ln-142" href="#ln-142"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_handle_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
+<a id="ln-143" name="ln-143" href="#ln-143"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">text</span>
+<a id="ln-144" name="ln-144" href="#ln-144"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
+<a id="ln-145" name="ln-145" href="#ln-145"></a>
+<a id="ln-146" name="ln-146" href="#ln-146"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer_len</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-147" name="ln-147" href="#ln-147"></a><span class="k">      </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<a id="ln-148" name="ln-148" href="#ln-148"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-149" name="ln-149" href="#ln-149"></a><span class="k">         call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
+<a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charge_scheme</span><span class="p">)</span>
+<a id="ln-151" name="ln-151" href="#ln-151"></a><span class="w">      </span><span class="k">end if</span>
+<a id="ln-152" name="ln-152" href="#ln-152"></a>
+<a id="ln-153" name="ln-153" href="#ln-153"></a><span class="k">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">buffer_len</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-154" name="ln-154" href="#ln-154"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-155" name="ln-155" href="#ln-155"></a><span class="w">         </span><span class="n">buffer</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">text</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span>
+<a id="ln-156" name="ln-156" href="#ln-156"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-157" name="ln-157" href="#ln-157"></a><span class="k">      </span><span class="n">buffer</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">c_null_char</span>
+<a id="ln-158" name="ln-158" href="#ln-158"></a><span class="nb">   </span><span class="k">end subroutine </span><span class="n">mqc_system_charge_scheme</span>
+<a id="ln-159" name="ln-159" href="#ln-159"></a>
+<a id="ln-160" name="ln-160" href="#ln-160"></a><span class="w">   </span><span class="k">function </span><span class="n">mqc_system_get_charges</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_get_charges&quot;</span><span class="p">)</span>
+<a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">      </span><span class="c">!! Copy the charges into a caller buffer of n doubles, one per atom</span>
+<a id="ln-163" name="ln-163" href="#ln-163"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<a id="ln-164" name="ln-164" href="#ln-164"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-165" name="ln-165" href="#ln-165"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="kt">c_double</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">out</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<a id="ln-166" name="ln-166" href="#ln-166"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+<a id="ln-167" name="ln-167" href="#ln-167"></a>
+<a id="ln-168" name="ln-168" href="#ln-168"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_handle_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
+<a id="ln-169" name="ln-169" href="#ln-169"></a>
+<a id="ln-170" name="ln-170" href="#ln-170"></a><span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
+<a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-172" name="ln-172" href="#ln-172"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;null system handle&quot;</span>
+<a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-174" name="ln-174" href="#ln-174"></a><span class="k">      end if</span>
+<a id="ln-175" name="ln-175" href="#ln-175"></a><span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
+<a id="ln-176" name="ln-176" href="#ln-176"></a>
+<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-178" name="ln-178" href="#ln-178"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_get_charges: compute them first&quot;</span>
+<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<a id="ln-180" name="ln-180" href="#ln-180"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-181" name="ln-181" href="#ln-181"></a><span class="k">      end if</span>
+<a id="ln-182" name="ln-182" href="#ln-182"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-183" name="ln-183" href="#ln-183"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_get_charges: buffer is the wrong size for this system&quot;</span>
+<a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-186" name="ln-186" href="#ln-186"></a><span class="k">      end if</span>
+<a id="ln-187" name="ln-187" href="#ln-187"></a>
+<a id="ln-188" name="ln-188" href="#ln-188"></a><span class="k">      </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">charges</span>
+<a id="ln-189" name="ln-189" href="#ln-189"></a><span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_OK</span>
+<a id="ln-190" name="ln-190" href="#ln-190"></a><span class="w">   </span><span class="k">end function </span><span class="n">mqc_system_get_charges</span>
+<a id="ln-191" name="ln-191" href="#ln-191"></a>
+<a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">   </span><span class="k">function </span><span class="n">mqc_system_charge_on</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_charge_on&quot;</span><span class="p">)</span>
+<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="w">      </span><span class="c">!! One atom&#39;s charge, 0-based</span>
+<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">      </span><span class="c">!! Unlike a bond order, a partial charge is legitimately negative, so</span>
+<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">      </span><span class="c">!! there is no out-of-band value to signal failure with. A bad index or an</span>
+<a id="ln-198" name="ln-198" href="#ln-198"></a><span class="w">      </span><span class="c">!! uncomputed handle gives a quiet NaN, which propagates rather than</span>
+<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">      </span><span class="c">!! silently reading as a neutral atom.</span>
+<a id="ln-200" name="ln-200" href="#ln-200"></a><span class="w">      </span><span class="k">use</span><span class="p">,</span><span class="w"> </span><span class="k">intrinsic</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ieee_arithmetic</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">ieee_value</span><span class="p">,</span><span class="w"> </span><span class="n">ieee_quiet_nan</span>
+<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
+<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="kt">c_double</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">q</span>
+<a id="ln-204" name="ln-204" href="#ln-204"></a>
+<a id="ln-205" name="ln-205" href="#ln-205"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_handle_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
+<a id="ln-206" name="ln-206" href="#ln-206"></a>
+<a id="ln-207" name="ln-207" href="#ln-207"></a><span class="w">      </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ieee_value</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="n">ieee_quiet_nan</span><span class="p">)</span>
+<a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-209" name="ln-209" href="#ln-209"></a><span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
+<a id="ln-210" name="ln-210" href="#ln-210"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-212" name="ln-212" href="#ln-212"></a><span class="k">      </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">charges</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-213" name="ln-213" href="#ln-213"></a><span class="w">   </span><span class="k">end function </span><span class="n">mqc_system_charge_on</span>
+<a id="ln-214" name="ln-214" href="#ln-214"></a>
+<a id="ln-215" name="ln-215" href="#ln-215"></a><span class="w">   </span><span class="k">function </span><span class="n">from_c</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="ln-216" name="ln-216" href="#ln-216"></a><span class="w">      </span><span class="c">!! A C character buffer as a Fortran string</span>
+<a id="ln-217" name="ln-217" href="#ln-217"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-218" name="ln-218" href="#ln-218"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buf</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<a id="ln-219" name="ln-219" href="#ln-219"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">s</span>
+<a id="ln-220" name="ln-220" href="#ln-220"></a>
+<a id="ln-221" name="ln-221" href="#ln-221"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
+<a id="ln-222" name="ln-222" href="#ln-222"></a>
+<a id="ln-223" name="ln-223" href="#ln-223"></a><span class="w">      </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<a id="ln-224" name="ln-224" href="#ln-224"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-225" name="ln-225" href="#ln-225"></a><span class="w">         </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="o">//</span><span class="n">buf</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="ln-226" name="ln-226" href="#ln-226"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-227" name="ln-227" href="#ln-227"></a><span class="k">      </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+<a id="ln-228" name="ln-228" href="#ln-228"></a><span class="w">   </span><span class="k">end function </span><span class="n">from_c</span>
+<a id="ln-229" name="ln-229" href="#ln-229"></a>
+<a id="ln-230" name="ln-230" href="#ln-230"></a><span class="w">   </span><span class="k">function </span><span class="n">failed</span><span class="p">(</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span>
+<a id="ln-231" name="ln-231" href="#ln-231"></a><span class="w">      </span><span class="c">!! Turn an error_t into a C status, and say whether to stop</span>
+<a id="ln-232" name="ln-232" href="#ln-232"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<a id="ln-233" name="ln-233" href="#ln-233"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+<a id="ln-234" name="ln-234" href="#ln-234"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bad</span>
+<a id="ln-235" name="ln-235" href="#ln-235"></a>
+<a id="ln-236" name="ln-236" href="#ln-236"></a><span class="w">      </span><span class="n">bad</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">()</span>
+<a id="ln-237" name="ln-237" href="#ln-237"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">bad</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-238" name="ln-238" href="#ln-238"></a><span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_charges: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">()</span>
+<a id="ln-239" name="ln-239" href="#ln-239"></a><span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
+<a id="ln-240" name="ln-240" href="#ln-240"></a><span class="w">      </span><span class="k">end if</span>
+<a id="ln-241" name="ln-241" href="#ln-241"></a><span class="k">   end function </span><span class="n">failed</span>
+<a id="ln-242" name="ln-242" href="#ln-242"></a>
+<a id="ln-243" name="ln-243" href="#ln-243"></a><span class="k">end module </span><span class="n">mqc_capi_charges</span>
+</pre></div>
+
+      </section>
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-16 20:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
