@@ -168,6 +168,17 @@ contains
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
       settings%pcm = this%options%pcm
+      ! Set unconditionally, and deliberately not guarded on the backend. cuEST
+      ! has no four-index path so it fits regardless and ignores this, per the
+      ! note at the top of this module; on the libcint side it is a real choice.
+      ! Guarding on `BACKEND_LIBCINT` was tried and was wrong: an unspecified
+      ! backend parses to `BACKEND_AUTO` and is only resolved further down, so
+      ! the guard was false for every ordinary deck and the flag never arrived.
+      !
+      ! Until this line existed a Kohn-Sham deck could not turn fitting on
+      ! however it asked. That made the fitted path unreachable rather than
+      ! wrong, which is the better of the two failures but still a gap.
+      settings%density_fitting = this%options%use_density_fitting
 
       ! The same choice Hartree-Fock makes, and made the same way rather than a
       ! second time: cuEST when this build has it, because that is the production

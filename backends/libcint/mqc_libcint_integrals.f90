@@ -46,6 +46,7 @@ module mqc_libcint_integrals
                               libcint_3c2e_sph_optimizer, libcint_3c2e_cart_optimizer, &
                               libcint_2c2e_sph_optimizer, libcint_2c2e_cart_optimizer, &
                               libcint_gto_norm, libcint_del_optimizer, &
+                              LIBCINT_PTR_RANGE_OMEGA, &
                               LIBCINT_ATM_SLOTS, LIBCINT_BAS_SLOTS, &
                               LIBCINT_CHARGE_OF, LIBCINT_PTR_COORD, &
                               LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
@@ -594,7 +595,7 @@ contains
       deallocate (buf)
    end subroutine one_electron
 
-   subroutine build_df_tensor(orb, aux, b, error)
+   subroutine build_df_tensor(orb, aux, b, error, omega)
       !! B(mu nu, P) = sum_Q (mu nu | Q) [(P|Q)^(-1/2)]_QP
       !!
       !! The fitted J and K are contractions of this one tensor, which is why
@@ -610,6 +611,19 @@ contains
       type(libcint_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
       real(dp), allocatable, intent(out) :: b(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: omega
+         !! Fit the *attenuated* kernel `erf(omega r)/r` instead of `1/r`, which
+         !! is what a range-separated functional's long-range exchange needs.
+         !!
+         !! Both halves are attenuated, not just the three-centre one. The
+         !! fitted approximation is
+         !!
+         !!     (mu nu|lam sig)_omega ~ sum_PQ (mu nu|P)_omega [J_omega]^-1_PQ (Q|lam sig)_omega
+         !!
+         !! so the metric has to be `(P|Q)_omega` as well. Mixing an attenuated
+         !! three-centre tensor with a full-range metric is not a worse fit of
+         !! the same thing -- it fits nothing, and the error does not shrink as
+         !! the auxiliary basis grows, which is how it would be noticed.
 
       real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
@@ -636,9 +650,17 @@ contains
       naux = aux%nao
 
       call clk%start()
-      call two_centre(aux, metric)
+      if (present(omega)) then
+         call two_centre(aux, metric, omega=omega)
+      else
+         call two_centre(aux, metric)
+      end if
       call clk%lap("2-centre metric")
-      call three_centre(orb, aux, three)
+      if (present(omega)) then
+         call three_centre(orb, aux, three, omega=omega)
+      else
+         call three_centre(orb, aux, three)
+      end if
       call clk%lap("3-centre integrals")
 
       call metric_inverse_sqrt(metric, half, error)
@@ -804,18 +826,35 @@ contains
       deallocate (ovl, half)
    end subroutine build_df_mo_block
 
-   subroutine two_centre(aux, metric)
+   subroutine two_centre(aux, metric, omega)
       !! (P|Q) over the auxiliary basis
+      !!
+      !! `omega` switches the kernel to `erf(omega r)/r`, which is what a
+      !! range-separated functional's long-range exchange is fitted against.
+      !! libcint takes it through `env` rather than through a different entry
+      !! point, so the attenuated metric is the same loop over a modified copy.
+      !!
+      !! **The slot is one-based here and zero-based in libcint's headers**, so
+      !! it is `LIBCINT_PTR_RANGE_OMEGA + 1`. Getting it wrong is silent: the
+      !! neighbouring slot is ignored by a two-centre integral, so the
+      !! "attenuated" metric would come back full-range and the long- and
+      !! short-range pieces would sum to unscaled exchange.
       type(libcint_molecule_t), intent(in) :: aux
       real(dp), allocatable, intent(out) :: metric(:, :)
+      real(dp), intent(in), optional :: omega
 
-      real(dp), allocatable :: buf(:)
+      real(dp), allocatable :: buf(:), env_local(:)
       integer :: shls(2)
       integer :: ish, jsh, di, dj, i, j, io, jo, ret
 
       allocate (metric(aux%nao, aux%nao))
       metric = 0.0_dp
       allocate (buf(max_block(aux)**2))
+
+      ! A copy, because `aux%env` is shared and an attenuated build must not
+      ! leave the omega set behind for the next caller.
+      env_local = aux%env
+      if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       do ish = 1, aux%nbas
          di = shell_dim(aux%cartesian, ish - 1, aux%bas)
@@ -825,9 +864,11 @@ contains
             jo = aux%shell_offset(jsh)
             shls = [ish - 1, jsh - 1]
             if (aux%cartesian) then
-               ret = libcint_2c2e_cart(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, aux%env)
+               ret = libcint_2c2e_cart(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, &
+                                       env_local)
             else
-               ret = libcint_2c2e_sph(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, aux%env)
+               ret = libcint_2c2e_sph(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, &
+                                      env_local)
             end if
             if (ret == 0) cycle
             do j = 1, dj
@@ -887,7 +928,7 @@ contains
       env(size(env)) = 0.0_dp
    end subroutine build_df_shell_table
 
-   subroutine three_centre(orb, aux, three)
+   subroutine three_centre(orb, aux, three, omega)
       !! (mu nu | P), flattened to (nao*nao, naux)
       !!
       !! The orbital and auxiliary shells are concatenated into one bas array,
@@ -900,6 +941,10 @@ contains
       !! bases disagree, so that is not a choice being made here.
       type(libcint_molecule_t), intent(in) :: orb, aux
       real(dp), allocatable, intent(out) :: three(:, :)
+      real(dp), intent(in), optional :: omega
+         !! Attenuate the kernel to `erf(omega r)/r`, for the long-range
+         !! exchange of a range-separated functional. See `two_centre` for why
+         !! the slot index is what it is.
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
@@ -913,6 +958,8 @@ contains
       nbas_orb = orb%nbas
       nbas_aux = aux%nbas
       call build_df_shell_table(orb, aux, bas, env, dummy)
+      ! `env` is built fresh above, so this needs no copy of its own.
+      if (present(omega)) env(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       allocate (three(orb%nao*orb%nao, aux%nao))
       three = 0.0_dp

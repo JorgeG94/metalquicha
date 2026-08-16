@@ -521,6 +521,30 @@ contains
       ! whatever the deck names: a fitted energy differentiated as an exact one
       ! is a gradient of a function nobody computed.
       if (do_gradient .and. .not. settings%run_mp2) then
+         ! A double hybrid's energy is the Kohn-Sham part plus a scaled PT2
+         ! correlation, and only the first of those is differentiated below.
+         ! Left unchecked this returns the hybrid's gradient against the double
+         ! hybrid's energy -- on water/cc-pVDZ that is 0.011 against a true
+         ! 0.016, right in shape, wrong by a third, and with nothing in the
+         ! output to say which of the two numbers the other belongs to.
+         !
+         ! The PT2 piece needs a relaxed density and a response solve over a
+         ! Kohn-Sham reference, which means the exchange-correlation kernel in
+         ! the coupled-perturbed operator. That kernel does not exist here yet.
+         if (kohn_sham) then
+            if (xc%pt2_fraction /= 0.0_dp) then
+               call result%error%set(ERROR_VALIDATION, "a double hybrid gradient needs "// &
+                                     "the PT2 term differentiated too: its relaxed "// &
+                                     "density and response solve run over a Kohn-Sham "// &
+                                     "reference, whose exchange-correlation kernel is "// &
+                                     "not implemented. Run the double hybrid as an "// &
+                                     "energy, or take the gradient at a hybrid.")
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+         end if
+
          aux_arg => null()
          xc_arg => null()
          if (settings%density_fitting) aux_arg => aux

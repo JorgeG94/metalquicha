@@ -239,7 +239,14 @@ contains
       ! Density fitting. The auxiliary basis normally comes from the shared
       ! SCF settings, which is what the %model `aux_basis` keyword fills; a
       ! DFT-specific override wins only when it was actually set.
-      m%options%use_density_fitting = config%dft%use_density_fitting
+      ! From the *shared* SCF settings, which is what `keywords.scf.density_fitting`
+      ! fills and what Hartree-Fock reads a few lines above. `config%dft%use_density_fitting`
+      ! is never written by the reader or the adapter, so taking it here meant a
+      ! Kohn-Sham deck could not turn fitting on however it asked -- the flag was
+      ! read from a field nothing set. The DFT-specific auxiliary override below
+      ! still wins where it is given, because that one *is* filled.
+      m%options%use_density_fitting = config%scf%density_fitting .or. &
+                                      config%dft%use_density_fitting
       if (len_trim(config%dft%aux_basis_set) > 0) then
          m%options%aux_basis_set = config%dft%aux_basis_set
       else

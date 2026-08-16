@@ -1209,6 +1209,131 @@
             "type": "unfragmented"
         },
         {
+            "name": "PBE gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_pbe_df_grad.json",
+            "expected_energy": -76.335467103918,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.24e-10,
+                    -0.02848149427
+                ],
+                [
+                    0.0,
+                    -0.007038565101,
+                    0.01424074722
+                ],
+                [
+                    -0.0,
+                    0.007038564877,
+                    0.01424074705
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_b3lyp_df_grad.json",
+            "expected_energy": -76.422171387807,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.24e-10,
+                    -0.018613530413
+                ],
+                [
+                    -0.0,
+                    -0.001764652776,
+                    0.00930676529
+                ],
+                [
+                    -0.0,
+                    0.001764652552,
+                    0.009306765123
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "TPSS gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_tpss_df_grad.json",
+            "expected_energy": -76.4251513078,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.23e-10,
+                    -0.028339532348
+                ],
+                [
+                    -0.0,
+                    -0.006873601802,
+                    0.014169766258
+                ],
+                [
+                    -0.0,
+                    0.006873601579,
+                    0.01416976609
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "WB97X gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_wb97x_df_grad.json",
+            "expected_energy": -76.402216052144,
+            "expected_gradient": [
+                [
+                    0.0,
+                    2.28e-10,
+                    -0.013156164002
+                ],
+                [
+                    0.0,
+                    0.001753795523,
+                    0.006578082092
+                ],
+                [
+                    -0.0,
+                    -0.001753795752,
+                    0.006578081922
+                ]
+            ],
+            "gradient_tolerance": 5e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "CAM-B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_camb3lyp_df_grad.json",
+            "expected_energy": -76.393652022904,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    2.26e-10,
+                    -0.01580269768
+                ],
+                [
+                    -0.0,
+                    -0.000836411319,
+                    0.007901348925
+                ],
+                [
+                    -0.0,
+                    0.000836411094,
+                    0.007901348756
+                ]
+            ],
+            "gradient_tolerance": 5e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "MP2 gradient H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_mp2_grad.json",
             "expected_energy": -74.997272482595,
@@ -1366,6 +1491,36 @@
             ],
             "gradient_tolerance": 1e-08,
             "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "PBE H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_pbe_df.json",
+            "expected_energy": -76.335467103918,
+            "type": "unfragmented"
+        },
+        {
+            "name": "B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_b3lyp_df.json",
+            "expected_energy": -76.422171387807,
+            "type": "unfragmented"
+        },
+        {
+            "name": "TPSS H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_tpss_df.json",
+            "expected_energy": -76.4251513078,
+            "type": "unfragmented"
+        },
+        {
+            "name": "WB97X H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_wb97x_df.json",
+            "expected_energy": -76.402216052144,
+            "type": "unfragmented"
+        },
+        {
+            "name": "CAM-B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_cam-b3lyp_df.json",
+            "expected_energy": -76.393652022904,
             "type": "unfragmented"
         },
         {
