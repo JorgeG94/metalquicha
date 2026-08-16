@@ -9,6 +9,7 @@ module mqc_combinatorics
    implicit none
    private
 
+   public :: fragment_size_of      !! How many monomers a polymer row names
    public :: binomial              !! Binomial coefficient calculation
    public :: get_nfrags            !! Calculate total number of fragments
    public :: create_monomer_list   !! Generate sequential monomer indices
@@ -74,6 +75,24 @@ contains
       end do
 
    end subroutine create_monomer_list
+
+   pure function fragment_size_of(row) result(n)
+      !! How many monomers a polymer row names, padding excluded
+      !!
+      !! Rows are zero-padded to the widest fragment, so the size is the count
+      !! of non-zero entries. Written `/= 0` rather than `> 0` because a
+      !! negative entry is a monomer present as *ghost centres* -- its atoms and
+      !! basis functions without its nucleus -- which is a monomer the fragment
+      !! contains and must be sized for. `> 0` would drop it silently and hand
+      !! the SCF a smaller molecule than the row asked for.
+      !!
+      !! Here rather than repeated at each site because there were seventeen of
+      !! them, and one missed would be a wrong energy rather than a failure.
+      integer(default_int), intent(in) :: row(:)
+      integer(default_int) :: n
+
+      n = count(row /= 0)
+   end function fragment_size_of
 
    recursive subroutine generate_fragment_list(monomers, max_level, polymers, count)
       !! Generate all possible fragments (combinations of monomers) up to max_level
@@ -240,7 +259,7 @@ contains
       is_variable_size = allocated(sys_geom%fragment_sizes)
 
       do ifrag = 1_int64, fragment_count
-         fragment_size = count(polymers(ifrag, :) > 0)
+         fragment_size = fragment_size_of(polymers(ifrag, :))
 
          if (fragment_size == 1) then
             ! Monomers have distance 0

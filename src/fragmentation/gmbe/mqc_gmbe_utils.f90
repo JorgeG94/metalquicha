@@ -6,7 +6,7 @@ module mqc_gmbe_utils
    use pic_types, only: default_int, int32, int64, dp
    use pic_logger, only: logger => global_logger, info_level
    use pic_io, only: to_char
-   use mqc_combinatorics, only: next_combination, next_combination_init
+   use mqc_combinatorics, only: fragment_size_of, next_combination, next_combination_init
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_result_types, only: calculation_result_t
@@ -343,7 +343,7 @@ contains
       ! Find max atoms needed
       max_atoms_per_polymer = 0
       do i = 1, n_polymers
-         polymer_size = count(polymers(i, :) > 0)
+         polymer_size = fragment_size_of(polymers(i, :))
          ! Worst case: all atoms from all fragments in this polymer
          max_atoms_per_polymer = max(max_atoms_per_polymer, polymer_size*maxval(sys_geom%fragment_sizes))
       end do
@@ -354,7 +354,7 @@ contains
 
       ! Compute atoms for each polymer
       do i = 1, n_polymers
-         polymer_size = count(polymers(i, :) > 0)
+         polymer_size = fragment_size_of(polymers(i, :))
          block
             integer, allocatable :: atom_list(:)
             integer :: n_atoms

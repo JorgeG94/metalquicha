@@ -3,6 +3,7 @@ module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
+   use mqc_combinatorics, only: fragment_size_of
    use pic_timer, only: timer_type
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
@@ -136,13 +137,13 @@ contains
 
       ! Every fragment in the expansion enters the total with unit weight
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
+         fragment_size = fragment_size_of(polymers(i, :))
          if (fragment_size >= 1 .and. fragment_size <= max_level) weights(i) = 1.0_dp
       end do
 
       do nlevel = max_level, 1, -1
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size /= nlevel) cycle
 
             ! delta_i contributes X_i with this fragment's accumulated weight ...
@@ -368,7 +369,7 @@ contains
       call lookup_timer%start()
       call lookup%init(fragment_count)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
+         fragment_size = fragment_size_of(polymers(i, :))
          call lookup%insert(polymers(i, :), fragment_size, i, insert_error)
          if (insert_error%has_error()) then
             if (present(error)) then
@@ -614,7 +615,7 @@ contains
       ! We process by n-mer level to ensure all subsets are computed before they're needed
       do nlevel = 1, max_level
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
 
             ! Only process fragments of the current nlevel
             if (fragment_size /= nlevel) cycle
@@ -664,7 +665,7 @@ contains
       if (allocated(coeffs)) then
          call assembly_timer%start()
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size < 1 .or. fragment_size > max_level) cycle
             if (coeffs(i) == 0.0_dp) cycle  ! Fragment cancels out of the expansion
 
@@ -683,7 +684,7 @@ contains
 
       if (compute_dipole) then
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size <= max_level) then
                mbe_result%dipole = mbe_result%dipole + delta_dipoles(:, i)
             end if

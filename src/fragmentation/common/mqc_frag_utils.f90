@@ -11,17 +11,17 @@ module mqc_frag_utils
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_combinatorics, only: &
-      binomial, &
-      get_nfrags, &
-      create_monomer_list, &
-      generate_fragment_list, &
-      combine, &
-      get_next_combination, &
-      next_combination_init, &
-      next_combination, &
-      print_combos, &
-      calculate_fragment_distances
+   use mqc_combinatorics, only: fragment_size_of, &
+                                binomial, &
+                                get_nfrags, &
+                                create_monomer_list, &
+                                generate_fragment_list, &
+                                combine, &
+                                get_next_combination, &
+                                next_combination_init, &
+                                next_combination, &
+                                print_combos, &
+                                calculate_fragment_distances
    use mqc_fragment_lookup, only: fragment_lookup_t
    use mqc_gmbe_utils, only: &
       find_fragment_intersection, &
@@ -145,7 +145,7 @@ contains
 
       ! Loop through all fragments and filter based on distance
       do i = 1_int64, total_fragments
-         fragment_size = count(polymers(i, :) > 0)
+         fragment_size = fragment_size_of(polymers(i, :))
 
          ! Monomers are always kept (distance = 0)
          if (fragment_size == 1) then
@@ -271,7 +271,7 @@ contains
 
       ! Calculate fragment sizes
       do i = 0, total_fragments - 1
-         fragment_size = count(polymers(i + 1, :) > 0)
+         fragment_size = fragment_size_of(polymers(i + 1, :))
          fragment_sizes(i) = int(fragment_size, int64)
       end do
 
