@@ -137,6 +137,11 @@ if(MQC_ENABLE_LIBCINT)
   # dipole rank being the first.
   addtest(mqc_libcint_esp)
   target_link_libraries(test_mqc_libcint_esp PRIVATE cint_fortran cint)
+  # SAPT0's molecules: ghosts in the dimer basis. Everything checkable before a
+  # term is computed -- that ghosts keep their basis and lose their charge, and
+  # that a monomer's AO ordering is the dimer's, which Tr(D S) catches.
+  addtest(mqc_sapt)
+  target_link_libraries(test_mqc_sapt PRIVATE cint_fortran cint)
 
   # Coupled cluster, against the identities a reference energy cannot see:
   # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the

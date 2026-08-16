@@ -217,7 +217,7 @@ contains
 
    subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                      basis_name, mol, error, normalize_contractions, &
-                                     force_cartesian)
+                                     force_cartesian, ghost)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
       !! This is what makes the backend general rather than a demonstration:
@@ -250,6 +250,9 @@ contains
       character(len=*), intent(in) :: basis_name
       type(libcint_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: ghost(:)
+         !! Atoms keeping their basis and losing their nuclear charge; see
+         !! `molecule_build`.
       logical, intent(in), optional :: force_cartesian
          !! Read the basis in Cartesian form whatever the file declares. See the note
          !! in `build`: BSE is inconsistent about Pople sets and GAMESS assumes
@@ -279,9 +282,15 @@ contains
          return
       end if
 
-      call mol%build(atomic_numbers, coordinates, basis, error, &
-                     normalize_contractions=normalize_contractions, &
-                     force_cartesian=force_cartesian)
+      if (present(ghost)) then
+         call mol%build(atomic_numbers, coordinates, basis, error, &
+                        normalize_contractions=normalize_contractions, &
+                        force_cartesian=force_cartesian, ghost=ghost)
+      else
+         call mol%build(atomic_numbers, coordinates, basis, error, &
+                        normalize_contractions=normalize_contractions, &
+                        force_cartesian=force_cartesian)
+      end if
       call basis%destroy()
    end subroutine build_libcint_molecule
 
@@ -324,7 +333,7 @@ contains
    end function contraction_group_size
 
    subroutine molecule_build(this, atomic_numbers, coordinates, basis, error, &
-                             normalize_contractions, force_cartesian)
+                             normalize_contractions, force_cartesian, ghost)
       !! Pack atoms and shells into libcint's atm/bas/env
       class(libcint_molecule_t), intent(inout) :: this
       integer, intent(in) :: atomic_numbers(:)
@@ -334,13 +343,23 @@ contains
       logical, intent(in), optional :: force_cartesian  !! See the note below
       logical, intent(in), optional :: normalize_contractions
          !! See `build_libcint_molecule`. Default true.
+      logical, intent(in), optional :: ghost(:)
+         !! Which atoms carry their basis functions but no nuclear charge.
+         !!
+         !! A counterpoise-corrected monomer is exactly this: every basis
+         !! function of the dimer, and only its own nuclei. The basis is taken
+         !! from `basis` and is untouched here, so ghosting changes the nuclear
+         !! attraction and the nuclear repulsion and nothing else -- in
+         !! particular the AO count and ordering are identical to the unghosted
+         !! molecule's, which is what lets matrices from two of them be
+         !! contracted against each other.
 
       logical :: do_normalize
       integer :: jprim
       real(dp) :: norm2, scale, ai, aj
 
       integer :: iatom, ishell, iprim, nprim, off, env_size, ang
-      integer :: shell_index, ictr, nctr, first
+      integer :: shell_index, ictr, nctr, first, z_eff
 
       do_normalize = .true.
       if (present(normalize_contractions)) do_normalize = normalize_contractions
@@ -400,10 +419,14 @@ contains
 
       off = LIBCINT_PTR_ENV_START
       do iatom = 1, this%natm
-         this%atm(LIBCINT_CHARGE_OF, iatom) = atomic_numbers(iatom)
+         z_eff = atomic_numbers(iatom)
+         if (present(ghost)) then
+            if (ghost(iatom)) z_eff = 0
+         end if
+         this%atm(LIBCINT_CHARGE_OF, iatom) = z_eff
          this%atm(LIBCINT_PTR_COORD, iatom) = off
          this%env(off + 1:off + 3) = coordinates(1:3, iatom)
-         this%charges(iatom) = real(atomic_numbers(iatom), dp)
+         this%charges(iatom) = real(z_eff, dp)
          this%coords(:, iatom) = coordinates(1:3, iatom)
          off = off + 3
       end do

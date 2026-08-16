@@ -71,7 +71,7 @@ contains
       !! its energy less every proper subset's delta, so keeping a trimer whose
       !! dimers were screened away fails the lookup rather than approximating
       !! anything. `fraglist_t%close_subsets` exists for this.
-      use mqc_method_types, only: METHOD_TYPE_EFP2
+      use mqc_method_types, only: METHOD_TYPE_EFP2, METHOD_TYPE_SAPT0
       type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
@@ -150,6 +150,15 @@ contains
       if (config%method_config%method_type == METHOD_TYPE_EFP2) then
          call run_efp(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
                       result_out)
+         return
+      end if
+
+      ! SAPT takes neither path either: it returns the interaction between two
+      ! monomers rather than the energy of one system, so there is nothing for a
+      ! many-body expansion to expand and no single wavefunction to fragment.
+      if (config%method_config%method_type == METHOD_TYPE_SAPT0) then
+         call run_sapt(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
+                       result_out)
          return
       end if
 
@@ -883,6 +892,117 @@ contains
       end if
 
    end subroutine run_multi_molecule_calculations
+
+   subroutine run_sapt(config, sys_geom, rank, result_out)
+      !! SAPT0 between the deck's two fragments
+      !!
+      !! The monomers are the deck's own `fragments`, so no new keyword is needed
+      !! -- a SAPT deck is a geometry, a basis, and the partition that says which
+      !! atoms are which monomer:
+      !!
+      !!     "model":     {"method": "sapt0", "basis": "6-31g"},
+      !!     "molecules": [{"xyz": "dimer.xyz", "fragments": [[0,1,2],[3,4,5]], ...}]
+      !!
+      !! **Exactly two fragments.** SAPT partitions the Hamiltonian as
+      !! `H_A + H_B + V`; there is no slot for a third monomer, and a cluster is
+      !! a separate SAPT calculation per pair rather than one calculation. That
+      !! is the theory rather than a limit of this code -- see
+      !! `validation/check_sapt.f90`, which walks the pairs of a six-water prism.
+      !!
+      !! Rank zero only. The pairs of a cluster are the obvious thing to
+      !! distribute, and a single pair is not.
+      use mqc_libcint_bridge, only: run_libcint_sapt0
+      use mqc_program_limits, only: N_SAPT_TERMS
+      use mqc_elements, only: element_number_to_symbol
+      use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
+      type(driver_config_t), intent(in) :: config
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: rank
+      type(calculation_result_t), intent(out), optional :: result_out
+
+      type(error_t) :: err
+      type(json_output_data_t) :: json_data
+      real(dp) :: terms(N_SAPT_TERMS)
+      integer, allocatable :: z_a(:), z_b(:)
+      real(dp), allocatable :: xyz_a(:, :), xyz_b(:, :)
+      character(len=8), allocatable :: sym_a(:), sym_b(:)
+      integer :: na, nb, i, a
+
+      if (rank /= 0) return
+
+      if (sys_geom%n_monomers /= 2) then
+         call logger%error("SAPT: the deck must define exactly two fragments; "// &
+                           "this one has "//to_char(sys_geom%n_monomers)// &
+                           ". SAPT is a two-body theory, so a cluster is one "// &
+                           "calculation per pair.")
+         return
+      end if
+
+      na = sys_geom%fragment_sizes(1)
+      nb = sys_geom%fragment_sizes(2)
+      allocate (z_a(na), xyz_a(3, na), sym_a(na))
+      allocate (z_b(nb), xyz_b(3, nb), sym_b(nb))
+      do i = 1, na
+         a = sys_geom%fragment_atoms(i, 1) + 1        ! stored 0-based
+         z_a(i) = sys_geom%element_numbers(a)
+         xyz_a(:, i) = sys_geom%coordinates(:, a)
+         sym_a(i) = element_number_to_symbol(z_a(i))
+      end do
+      do i = 1, nb
+         a = sys_geom%fragment_atoms(i, 2) + 1
+         z_b(i) = sys_geom%element_numbers(a)
+         xyz_b(:, i) = sys_geom%coordinates(:, a)
+         sym_b(i) = element_number_to_symbol(z_b(i))
+      end do
+
+      call run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                             config%method_config%basis_set, terms, err)
+      if (err%has_error()) then
+         call logger%error("SAPT: "//err%get_message())
+         return
+      end if
+
+      ! The response terms are what enters the total; the uncoupled ones and
+      ! the S^2 exchange are printed beside them because they are what another
+      ! code's output is quoted in, and a term can only be checked against the
+      ! same term.
+      call logger%info("============================================")
+      call logger%info("  SAPT0 interaction energy, Hartree")
+      call logger%info("    electrostatics        "//to_char(terms(1)))
+      call logger%info("    exchange              "//to_char(terms(3)))
+      call logger%info("      (S^2 approximation) "//to_char(terms(2)))
+      call logger%info("    induction             "//to_char(terms(5)))
+      call logger%info("      (uncoupled)         "//to_char(terms(4)))
+      call logger%info("    exchange-induction    "//to_char(terms(7)))
+      call logger%info("      (uncoupled)         "//to_char(terms(6)))
+      call logger%info("    dispersion            "//to_char(terms(8)))
+      call logger%info("    exchange-dispersion   "//to_char(terms(9)))
+      call logger%info("    delta HF              "//to_char(terms(10)))
+      call logger%info("    --")
+      call logger%info("    supermolecular HF     "//to_char(terms(11)))
+      call logger%info("    total                 "//to_char(terms(12)))
+      call logger%info("============================================")
+
+      if (present(result_out)) then
+         ! The `scf` slot, being the reference `energy_t%total()` sums. This is an
+         ! interaction energy and not an SCF energy; nothing here pretends otherwise.
+         result_out%energy%scf = terms(N_SAPT_TERMS)
+         result_out%has_energy = .true.
+      end if
+
+      if (.not. config%skip_json_output) then
+         json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+         json_data%total_energy = terms(N_SAPT_TERMS)
+         json_data%has_energy = .true.
+         json_data%sapt_terms = terms
+         json_data%has_sapt = .true.
+         json_data%fragment_breakdown = config%fragment_breakdown
+         call write_json_output(json_data)
+         call json_data%destroy()
+      end if
+
+      deallocate (z_a, xyz_a, sym_a, z_b, xyz_b, sym_b)
+   end subroutine run_sapt
 
    subroutine run_efp(config, sys_geom, rank, result_out)
       !! The interaction energy of a set of effective fragments

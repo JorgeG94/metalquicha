@@ -40,6 +40,7 @@ module mqc_libcint_bridge
    public :: run_libcint_hf
    public :: run_libcint_makefp
    public :: run_libcint_efp
+   public :: run_libcint_sapt0
    public :: libcint_backend_available
 
 contains
@@ -125,6 +126,48 @@ contains
       end do
       deallocate (frags, shifts)
    end subroutine run_libcint_efp
+   subroutine run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
+                                terms, error)
+      !! SAPT0 between two monomers, as named physical terms
+      !!
+      !! Here rather than in the driver for the reason `run_libcint_makefp` is:
+      !! every module this needs lives in the CPU backend, so a driver reaching
+      !! for them directly would not compile without one. The stub beside this
+      !! declines with the same signature.
+      !!
+      !! `terms` crosses that boundary as plain numbers rather than
+      !! `sapt_terms_t`, because the type would have to exist on both sides of a
+      !! gate whose whole purpose is that one side has none of this compiled.
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_SAPT_TERMS
+      use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
+                          run_sapt0
+      integer, intent(in) :: z_a(:), z_b(:)
+      character(len=*), intent(in) :: sym_a(:), sym_b(:)
+      real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
+      character(len=*), intent(in) :: basis_name
+      real(dp), intent(out) :: terms(N_SAPT_TERMS)
+         !! Ordered by `SAPT_TERM_NAMES`
+      type(error_t), intent(inout) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_terms_t) :: t
+
+      terms = 0.0_dp
+      call build_sapt_molecules(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                                basis_name, mols, error)
+      if (error%has_error()) return
+      call run_sapt0(mols, t, error)
+      if (error%has_error()) then
+         call mols%destroy()
+         return
+      end if
+
+      terms = [t%elst10, t%exch10_s2, t%exch10, t%ind20_u, t%ind20_r, &
+               t%exch_ind20_u, t%exch_ind20_r, t%disp20, t%exch_disp20, &
+               t%delta_hf, t%e_int_hf, t%total]
+      call mols%destroy()
+   end subroutine run_libcint_sapt0
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
