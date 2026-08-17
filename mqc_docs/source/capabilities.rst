@@ -20,6 +20,9 @@ Standard many-body expansion for non-overlapping molecular fragments:
      E_{MBE(n)} = \sum_{I} E_I - \sum_{I<J} \Delta E_{IJ} + \sum_{I<J<K} \Delta E_{IJK} - \ldots
 
 - **Fragment generation**: Automatic enumeration of all n-mer combinations
+- **Counterpoise**: ``vmfc`` solves every subfragment in its parent's basis, so
+  the basis-set superposition error cancels within each term instead of
+  accumulating in it. Energies only; see :doc:`counterpoise`
 - **Use cases**: Molecular clusters, water clusters, periodic systems
 
 Generalized Many-Body Expansion (GMBE)
