@@ -52,6 +52,42 @@ if(MQC_BLA_VENDOR)
   message(STATUS "BLAS vendor: ${BLA_VENDOR}")
 endif()
 
+# Threaded MKL under gfortran must find *gfortran's* libgomp.
+#
+# `FindBLAS` completes the GNU threading layer with a bare `find_library(gomp)`,
+# and on a box with a stray `/usr/local/lib/libgomp.so` -- which on at least one
+# of ours is a symlink to LLVM's `libomp.so` -- that is what it finds. The link
+# then records a DT_NEEDED on LLVM's runtime while `-fopenmp` records one on
+# GNU's, and both load. Two runtimes, two thread pools, two notions of thread
+# identity, and threads from one writing into state owned by the other: wrong
+# answers above one thread, different every run, with nothing in the build log
+# to say so.
+#
+# Asking the compiler where its own libgomp is and searching there first costs
+# nothing and cannot pick the wrong one. It matters only for the threaded Intel
+# layers -- the sequential one links no OpenMP at all, which is why the default
+# above has never tripped over this.
+if(BLA_VENDOR MATCHES "^Intel"
+   AND NOT BLA_VENDOR MATCHES "_seq$"
+   AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  execute_process(
+    COMMAND ${CMAKE_Fortran_COMPILER} -print-file-name=libgomp.so
+    OUTPUT_VARIABLE mqc_gomp
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+  if(IS_ABSOLUTE "${mqc_gomp}" AND EXISTS "${mqc_gomp}")
+    get_filename_component(mqc_gomp_dir "${mqc_gomp}" DIRECTORY)
+    list(PREPEND CMAKE_LIBRARY_PATH "${mqc_gomp_dir}")
+    message(STATUS "Threaded MKL: OpenMP runtime pinned to ${mqc_gomp}")
+  else()
+    message(
+      WARNING
+        "Threaded MKL with gfortran, but gfortran's own libgomp could not be "
+        "located. If a foreign libgomp is on the link path this build will "
+        "load two OpenMP runtimes and give wrong answers above one thread. "
+        "Check `ldd` on the binary for libomp.so.")
+  endif()
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
@@ -370,6 +406,34 @@ if(MQC_ENABLE_LIBCINT)
   # a compiler problem.
   FetchContent_MakeAvailable(libcint)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
+
+  # Whether the BLAS underneath threads itself, which decides where the response
+  # solver puts its parallelism.
+  #
+  # The twelve frequency solves are independent, and each is one `getrf` over
+  # the whole occupied-virtual space. Under a threaded BLAS that factorization
+  # already fills the machine, so the loop around it should stay serial. Under a
+  # sequential one it does not, and the solves have to be threaded here or the
+  # run spends its time on one core: at 8350 pairs, 175 seconds against 15.
+  #
+  # They do not compose. Nesting them is *slower* than a threaded BLAS alone --
+  # measured at 107 s against 102 s on a glycine tripeptide -- because MKL
+  # serialises a call made from inside a parallel region, leaving twelve-way
+  # concurrency where there was forty-way.
+  #
+  # Read off the vendor rather than probed at runtime, because there is no
+  # portable way to ask a BLAS how many threads it intends to use.
+  #
+  # An unknown vendor -- CMake's own detection, which is what CI gets -- is
+  # treated as sequential, because the two mistakes do not cost the same. Guess
+  # sequential wrongly and the nesting costs 5%; guess threaded wrongly and
+  # every solve runs on one core, which is the 175-second case.
+  if(NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$")
+    target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
+    message(STATUS "Response solver: frequencies threaded (BLAS is sequential)")
+  else()
+    message(STATUS "Response solver: frequencies serial (BLAS threads itself)")
+  endif()
   # BUILD_INTERFACE, not just PRIVATE: a static library records even its private
   # dependencies in its interface as $<LINK_ONLY:...>, so CMake wants them in
   # this project's export set -- which a fetched third-party library is never

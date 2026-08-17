@@ -20,7 +20,7 @@ target_sources(
           mqc_libcint_integrals.f90
           mqc_libcint_multipole.f90
           mqc_libcint_localize.f90
-          mqc_libcint_cphf.f90
+          mqc_libcint_cphf.F90
           mqc_libcint_dma.f90
           mqc_libcint_esp.f90
           mqc_libcint_charges.f90
