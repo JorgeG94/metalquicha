@@ -19,6 +19,7 @@ module mqc_cuest_iface
    public :: cuest_scf_settings_t
    public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_LIBCINT
    public :: parse_backend_name
+   public :: method_runs_on_cuest
 
    !> Which integral backend a deck asked for.
    !>
@@ -150,5 +151,25 @@ contains
                         "'auto', 'cuest' (or 'gpu'), or 'libcint' (or 'cpu')")
       end select
    end subroutine parse_backend_name
+
+   pure function method_runs_on_cuest(method_type) result(offloadable)
+      !! Whether cuEST has an implementation of this method
+      !!
+      !! An allow-list rather than a list of the refused ones, so a method added
+      !! later is refused on the GPU until someone has written it there. The
+      !! other way round it would inherit "offloadable" and silently be run by
+      !! whatever the cuEST path does with a method it does not know.
+      !!
+      !! Hartree-Fock and Kohn-Sham are the two: cuEST computes the integrals
+      !! and the SCF, and everything beyond it -- MP2, coupled cluster, MCSCF --
+      !! is CPU-only here, as are the semi-empirical methods, which never touch
+      !! this backend at all.
+      use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_DFT
+      integer, intent(in) :: method_type
+      logical :: offloadable
+
+      offloadable = (method_type == METHOD_TYPE_HF .or. &
+                     method_type == METHOD_TYPE_DFT)
+   end function method_runs_on_cuest
 
 end module mqc_cuest_iface

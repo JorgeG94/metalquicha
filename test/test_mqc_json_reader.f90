@@ -13,13 +13,15 @@ module test_mqc_json_reader
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_types, only: mqc_config_t
-   use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+   use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
+                               METHOD_TYPE_DFT, METHOD_TYPE_MP2, METHOD_TYPE_CCSD_T
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_PRESSURE
    use mqc_error, only: error_t
    use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
-                              BACKEND_LIBCINT
+                              BACKEND_LIBCINT, method_runs_on_cuest
+   use mqc_cuest_bridge, only: cuest_backend_available
    use pic_types, only: dp
    implicit none
    private
@@ -57,6 +59,9 @@ contains
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
                   new_unittest("backend_keyword", test_backend_keyword), &
+                  new_unittest("system_gpu_keyword", test_gpu_keyword), &
+                  new_unittest("system_gpu_conflicts_with_backend", test_gpu_conflict), &
+                  new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("fragment_potentials", test_fragment_potentials), &
@@ -70,7 +75,7 @@ contains
    !  Deck construction
    ! ==========================================================================
 
-   subroutine write_deck(model, driver, keywords, system, molecule)
+   subroutine write_deck(model, driver, keywords, system, molecule, root)
       !! Write a scratch deck, omitting any block given as an empty string
       !!
       !! Every argument is a JSON fragment without its trailing comma; the
@@ -80,12 +85,18 @@ contains
       character(len=*), intent(in) :: keywords  !! Body of "keywords", or ""
       character(len=*), intent(in) :: system    !! Body of "system", or ""
       character(len=*), intent(in) :: molecule  !! Body of molecules[0]
+      character(len=*), intent(in), optional :: root
+         !! Extra root-level keys, for the few that live there rather than in a
+         !! block -- `backend` is the one this exists for.
 
       integer :: unit
 
       open (newunit=unit, file=DECK, status="replace", action="write")
       write (unit, "(A)") "{"
       write (unit, "(A)") '  "schema": {"name": "mqc-frag", "version": "1.0"},'
+      if (present(root)) then
+         if (len_trim(root) > 0) write (unit, "(A)") "  "//root//","
+      end if
       write (unit, "(A)") '  "model": {'//model//'},'
       write (unit, "(A)") '  "driver": "'//driver//'",'
       if (len_trim(keywords) > 0) write (unit, "(A)") '  "keywords": {'//keywords//'},'
@@ -574,6 +585,125 @@ contains
       call check(error, parse_error%has_error(), &
                  "an unknown backend name must be refused, not defaulted")
    end subroutine test_backend_keyword
+
+   subroutine test_gpu_keyword(error)
+      !! `system.gpu`, and that a GPU this build cannot give is refused at read time
+      !!
+      !! The refusal has to happen while the deck is still a deck. Left to the
+      !! calculation it would arrive once per fragment, after fragmentation, from
+      !! a bridge that computes nothing -- which is a much longer way round to
+      !! the same sentence.
+      !!
+      !! Written to hold on either build. Whether a GPU can be had is a property
+      !! of what linked, so the test asks the same question the reader does
+      !! rather than assuming an answer.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Absent: the backend request is left alone.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%gpu_set, "an absent system.gpu must not be 'seen'")
+      if (allocated(error)) return
+      call check(error, trim(config%backend) == "auto", "an absent system.gpu leaves auto")
+      if (allocated(error)) return
+
+      ! False: the CPU, named, on any build.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", &
+                      '"gpu": false', two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%backend) == "libcint", &
+                 "system.gpu false must pin the CPU backend")
+      if (allocated(error)) return
+
+      ! True: honoured where cuEST is built, refused where it is not.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", &
+                      '"gpu": true', two_atoms())
+      call read_deck(config, parse_error)
+      if (cuest_backend_available()) then
+         call check(error,.not. parse_error%has_error(), parse_error%get_message())
+         if (allocated(error)) return
+         call check(error, trim(config%backend) == "cuest", &
+                    "system.gpu true must ask for cuEST")
+      else
+         call check(error, parse_error%has_error(), &
+                    "system.gpu true must be refused on a build without cuEST")
+      end if
+      if (allocated(error)) return
+
+      ! A method with no GPU implementation is refused too. On a build without
+      ! cuEST the missing backend is what stops it first; either way the deck
+      ! does not run, which is the property being fixed here.
+      call write_deck('"method": "gfn2"', "Energy", "", '"gpu": true', two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "system.gpu true must be refused for a method cuEST cannot run")
+   end subroutine test_gpu_keyword
+
+   subroutine test_gpu_conflict(error)
+      !! `system.gpu` and `backend` naming different things is refused
+      !!
+      !! Refused rather than given a precedence rule: they are two spellings of
+      !! one choice, and a deck that says both while meaning opposite things has
+      !! no reading that is not a guess. Agreeing is fine -- redundant, not
+      !! contradictory.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", &
+                      '"gpu": true', two_atoms(), root='"backend": "cpu"')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "system.gpu true beside backend 'cpu' must be refused")
+      if (allocated(error)) return
+
+      ! The other direction, and on a build without cuEST it must still be the
+      ! disagreement that is reported rather than the missing backend.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", &
+                      '"gpu": false', two_atoms(), root='"backend": "gpu"')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "system.gpu false beside backend 'gpu' must be refused")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "disagree") > 0, &
+                 "the message must name the disagreement: "//parse_error%get_message())
+      if (allocated(error)) return
+
+      ! Agreeing is not a conflict.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", &
+                      '"gpu": false', two_atoms(), root='"backend": "cpu"')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+   end subroutine test_gpu_conflict
+
+   subroutine test_cuest_methods(error)
+      !! Which methods cuEST is allowed to be asked for
+      !!
+      !! An allow-list, so a method added later is CPU-only until someone writes
+      !! it on the GPU. Checked here because it is the half of the GPU gate a
+      !! build without cuEST cannot exercise through a deck -- the missing
+      !! backend stops those decks first.
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, method_runs_on_cuest(METHOD_TYPE_HF), "cuEST runs Hartree-Fock")
+      if (allocated(error)) return
+      call check(error, method_runs_on_cuest(METHOD_TYPE_DFT), "cuEST runs Kohn-Sham")
+      if (allocated(error)) return
+      call check(error,.not. method_runs_on_cuest(METHOD_TYPE_MP2), &
+                 "MP2 has no cuEST implementation")
+      if (allocated(error)) return
+      call check(error,.not. method_runs_on_cuest(METHOD_TYPE_CCSD_T), &
+                 "CCSD(T) has no cuEST implementation")
+      if (allocated(error)) return
+      call check(error,.not. method_runs_on_cuest(METHOD_TYPE_GFN2), &
+                 "the semi-empirical methods never reach cuEST")
+   end subroutine test_cuest_methods
 
    subroutine test_pcm_keywords(error)
       !! keywords.pcm, and that the block's presence is what switches it on

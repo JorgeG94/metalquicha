@@ -26,10 +26,12 @@ contains
       !! so the answer is a property of the binary that exists rather than of
       !! the flags somebody believes they configured with.
       use mqc_libcint_bridge, only: libcint_backend_available
+      use mqc_cuest_bridge, only: cuest_backend_available
       use mqc_dlfind_bridge, only: dlfind_available
 
       call logger%info("metalquicha version "//MQC_VERSION_STR)
       call logger%info("features: libcint="//available(libcint_backend_available())// &
+                       " cuest="//available(cuest_backend_available())// &
                        " dlfind="//available(dlfind_available()))
    end subroutine print_version
 
