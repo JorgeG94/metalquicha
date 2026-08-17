@@ -43,7 +43,7 @@ module mqc_libcint_xc
                            xc_f03_hyb_cam_coef, xc_f03_nlc_coef, &
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
                            xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
-                           xc_f03_lda_fxc, xc_f03_gga_fxc, &
+                           xc_f03_lda_fxc, xc_f03_gga_fxc, xc_f03_mgga_fxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
                            XC_UNPOLARIZED, XC_POLARIZED, &
                            XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
@@ -1171,18 +1171,20 @@ contains
       real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
       real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
       real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
-      real(dp), allocatable :: c_rho(:), c_grad(:, :), no_tau(:)
+      real(dp), allocatable :: c_rho(:), c_grad(:, :), c_tau(:), no_tau(:)
+      real(dp), allocatable :: tau(:), dtau(:), lapl(:)
+      real(dp), allocatable :: frt(:), fst(:), ftt(:), vtau(:)
+      real(dp), allocatable :: frt_i(:), fst_i(:), ftt_i(:), vtau_i(:)
+      real(dp), allocatable :: lapl_scratch(:)
+         !! libxc's meta-GGA entry points take the Laplacian and return its
+         !! derivatives whether or not the functional uses them. Laplacian
+         !! dependent functionals are refused at construction, so these are
+         !! zeros in and discarded out -- the single largest simplification
+         !! available on this rung, and the energy path already takes it.
       integer :: g0, g1, nb, i, ig, id, npts
-      logical :: gga
+      logical :: gga, mgga
 
       if (.not. ctx%active) return
-      if (ctx%any_mgga) then
-         call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is not "// &
-                        "implemented for meta-GGA functionals: they bring second "// &
-                        "derivatives in tau and a tau component of the response "// &
-                        "density. Refused rather than approximated by the GGA part.")
-         return
-      end if
       if (ctx%polarized) then
          call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is "// &
                         "implemented for a restricted reference only")
@@ -1190,6 +1192,10 @@ contains
       end if
 
       gga = ctx%any_gga
+      mgga = ctx%any_mgga
+      ! A meta-GGA needs the AO gradients for the same reason a GGA does, and
+      ! then some: tau is built from them too.
+      gga = gga .or. mgga
       npts = ctx%grid%n_points
       do g0 = 1, npts, AO_POINT_BLOCK
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
@@ -1199,7 +1205,18 @@ contains
          ! density is what it multiplies. Both are ordinary densities on the
          ! grid, so one routine builds them -- and for a GGA both need their
          ! gradients, which is the only reason the AO gradients are asked for.
-         if (gga) then
+         if (mgga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            ! **The tau convention never has to be decided here.** Whatever
+            ! `eval_rho` means by tau is what the energy path already fed libxc
+            ! and what `accumulate_xc_matrix` already differentiates, and the
+            ! response density goes through the same routine with `dtilde` in
+            ! place of `density`. Deriving the factor again would be inventing a
+            ! second convention that has to agree with the first.
+            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
+            call eval_rho(ao, dtilde, drho, ao_grad=ao_grad, rho_grad=drho_grad, tau=dtau)
+         else if (gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
             if (error%has_error()) return
             call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
@@ -1219,6 +1236,25 @@ contains
          frs = 0.0_dp
          fss = 0.0_dp
          vsig = 0.0_dp
+         if (allocated(frt)) deallocate (frt, fst, ftt, vtau, frt_i, fst_i, ftt_i, &
+                                         vtau_i, lapl, lapl_scratch, c_tau)
+         allocate (frt(nb), fst(nb), ftt(nb), vtau(nb), frt_i(nb), fst_i(nb), ftt_i(nb), &
+                   vtau_i(nb), lapl(nb), lapl_scratch(nb), c_tau(nb))
+         frt = 0.0_dp
+         fst = 0.0_dp
+         ftt = 0.0_dp
+         vtau = 0.0_dp
+         lapl = 0.0_dp
+         c_tau = 0.0_dp
+         if (.not. mgga) then
+            ! Same reason `sigma` is zeroed on the LDA path: the coefficients
+            ! that multiply these are zero, and zero times uninitialised is a
+            ! NaN rather than nothing.
+            if (.not. allocated(tau)) allocate (tau(nb))
+            if (.not. allocated(dtau)) allocate (dtau(nb))
+            tau = 0.0_dp
+            dtau = 0.0_dp
+         end if
          ! Zero rather than left alone on the LDA path: their coefficients are
          ! zero there, and `0 * uninitialised` is a NaN rather than nothing.
          sigma = 0.0_dp
@@ -1250,6 +1286,27 @@ contains
                frs = frs + ctx%weight(i)*frs_i
                fss = fss + ctx%weight(i)*fss_i
                vsig = vsig + ctx%weight(i)*vsigma_i
+            case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+               ! Six of the ten second derivatives are wanted; the four
+               ! Laplacian ones are written into scratch and dropped.
+               call xc_f03_mgga_fxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
+                                    frr_i, frs_i, lapl_scratch, frt_i, &
+                                    fss_i, lapl_scratch, fst_i, &
+                                    lapl_scratch, lapl_scratch, ftt_i)
+               ! `v_sigma` and `v_tau` are *first* derivatives and belong here
+               ! for the same reason on this rung as on the last: the response
+               ! density's gradient multiplies one and its tau the other, so
+               ! neither is a second-derivative term but both are kernel terms.
+               call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
+                                        exc_i, vrho_i, vsigma_i, lapl_scratch, vtau_i)
+               frr = frr + ctx%weight(i)*frr_i
+               frs = frs + ctx%weight(i)*frs_i
+               fss = fss + ctx%weight(i)*fss_i
+               frt = frt + ctx%weight(i)*frt_i
+               fst = fst + ctx%weight(i)*fst_i
+               ftt = ftt + ctx%weight(i)*ftt_i
+               vsig = vsig + ctx%weight(i)*vsigma_i
+               vtau = vtau + ctx%weight(i)*vtau_i
             case default
                call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, frr_i)
                frr = frr + ctx%weight(i)*frr_i
@@ -1262,30 +1319,54 @@ contains
                frs(ig) = 0.0_dp
                fss(ig) = 0.0_dp
                vsig(ig) = 0.0_dp
+               frt(ig) = 0.0_dp
+               fst(ig) = 0.0_dp
+               ftt(ig) = 0.0_dp
+               vtau(ig) = 0.0_dp
             end if
          end do
 
+         ! The potential has three pieces on this rung and every one of them
+         ! responds to every component of the response density:
+         !
+         !     dv_rho   = f_rr drho + f_rs dsigma + f_rt dtau
+         !     dv_sigma = f_rs drho + f_ss dsigma + f_st dtau
+         !     dv_tau   = f_rt drho + f_st dsigma + f_tt dtau
+         !
+         ! `dtau` is zero on the LDA and GGA paths, so the same three lines
+         ! reduce to what they were rather than branching.
          do ig = 1, nb
-            c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig)
+            c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig) + frt(ig)*dtau(ig)
          end do
          if (gga) then
             if (allocated(c_grad)) deallocate (c_grad)
             allocate (c_grad(nb, 3))
             do id = 1, 3
                do ig = 1, nb
-                  c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig)) &
-                                   *rho_grad(ig, id) &
+                  c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig) &
+                                           + fst(ig)*dtau(ig))*rho_grad(ig, id) &
                                    + 2.0_dp*vsig(ig)*drho_grad(ig, id)
                end do
+            end do
+         end if
+         if (mgga) then
+            do ig = 1, nb
+               c_tau(ig) = frt(ig)*drho(ig) + fst(ig)*dsigma(ig) + ftt(ig)*dtau(ig)
             end do
          end if
 
          ! The same assembly the potential uses, with the kernel's coefficients
          ! in place of the potential's. Writing a second one would be two copies
          ! of the arithmetic that is hardest to get right here.
-         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_kernel, &
-                                   ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
-                                   any_gga=gga, any_mgga=.false.)
+         if (mgga) then
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_kernel, &
+                                      ao_grad=ao_grad, grad_coeff=c_grad, vtau=c_tau, &
+                                      any_gga=gga, any_mgga=.true.)
+         else
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_kernel, &
+                                      ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
+                                      any_gga=gga, any_mgga=.false.)
+         end if
       end do
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
