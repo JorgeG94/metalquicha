@@ -306,6 +306,9 @@ carry at all:
    * - ``pbe``
      - GGA
      - ``gga_x_pbe`` + ``gga_c_pbe``
+   * - ``blyp``
+     - GGA
+     - ``gga_x_b88`` + ``gga_c_lyp``
    * - ``b3lyp``
      - hybrid
      - ``hyb_gga_xc_b3lyp`` (libxc reports its own exchange fraction)
@@ -334,10 +337,14 @@ carry at all:
      - double hybrid
      - 0.55 / 0.25 over mPW91
 
-Every one of these is validated against a reference: the first eight against
-``pyscf.dft.RKS`` at the same grid level, agreeing to 7.7e-11 or better; the three
-double hybrids against ``pyscf.dh.DFDH``, whose reported coefficients match the
-table above exactly.
+Every one of these is validated against a reference: the semilocal and hybrid
+ones against ``pyscf.dft.RKS`` at the same grid level, agreeing to 7.7e-11 or
+better; the three double hybrids against ``pyscf.dh.DFDH``, whose reported
+coefficients match the table above exactly. ``blyp`` is the exception in kind
+rather than in rigour -- it has no standalone energy case in the generated CPU
+suite, and is instead checked against PySCF through the exchange-correlation
+kernel and potential-derivative programs, where it is the reference functional
+precisely because it is B2PLYP's semilocal part at full weight.
 
 Anything beyond meta-GGA is refused, as is a functional needing the density
 Laplacian -- on libxc's own say-so rather than a guess about which ones are safe.

@@ -220,7 +220,8 @@ is the *only* one with a gradient, because the exact-ERI side builds no second
 exchange derivative at the screened omega. And MP2
 over a restricted reference -- both the
 conventional one and ``ri-mp2``, where the correlation is fitted and the
-reference is not.
+reference is not. The double hybrids have gradients too, and enough of their
+own conditions to be worth a section below.
 
 Those last two are different energies and get different gradients: an
 ``ri-mp2`` deck is differentiated by the fitted formulation, whose two-particle
@@ -229,7 +230,46 @@ derivative integrals. Asking for a gradient with ``keywords.scf.density_fitting`
 on is a third thing, and is still refused -- there the *reference* is fitted,
 and nothing here differentiates that.
 
-What is refused rather than approximated, and why:
+Double hybrids
+~~~~~~~~~~~~~~
+
+``b2plyp``, ``b2gp-plyp`` and ``mpw2plyp`` have analytic gradients, restricted
+and all-electron, over an exact-ERI reference. This is not the hybrid gradient
+with a correlation gradient added on, and the difference is the whole of the
+work:
+
+- The self-consistent field is over the *semilocal* part only. The perturbative
+  term is evaluated once on the converged Kohn-Sham orbitals and never fed back
+  into the density, so those orbitals are not stationary with respect to the
+  energy being differentiated. An orbital response is therefore mandatory rather
+  than an accuracy refinement -- the same Z-vector the MP2 gradient uses, but
+  contracted against a *Kohn-Sham* operator.
+- That operator contains :math:`V_{xc}`, so two pieces the Hartree-Fock path
+  never needed had to exist first: the exchange-correlation kernel
+  :math:`f_{xc}` at the GGA rung, which turns the coupled-perturbed
+  Hartree-Fock equations into coupled-perturbed Kohn-Sham ones, and the
+  skeleton derivative :math:`\partial_R \mathrm{Tr}(P V_{xc}[D])` for a
+  :math:`P` that is symmetric and indefinite and is not a density.
+
+Both are validated on their own before the gradient uses them -- the kernel
+through a static polarizability against PySCF, the potential derivative against
+a finite difference that moves the grid with the nuclei -- because a
+disagreement seen only at the end of a Z-vector solve could be any of five
+things.
+
+One consequence is visible in the output. The perturbative term is normally
+density-fitted when the deck names an auxiliary basis, but **a gradient run
+computes it with exact integrals regardless**, because the assembled gradient
+differentiates exact integrals and the alternative is reporting a gradient
+beside an energy it does not belong to. A double hybrid energy and the energy
+printed by the same deck run as a gradient can therefore differ in the last
+few decimals; the gradient is consistent with the second one.
+
+What is refused rather than approximated
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Every one of these returns an error naming what is missing, rather than a
+number computed from a formula that does not apply:
 
 .. list-table::
    :header-rows: 1
@@ -257,6 +297,23 @@ What is refused rather than approximated, and why:
      - The amplitudes enter the response equations, where the two spin cases
        are no longer separable, so the scaled gradient is not the unscaled one
        rescaled
+   * - Double hybrid over an open shell
+     - Needs an unrestricted MP2 relaxed density and a spin-resolved response,
+       neither of which is built. The *energy* is closed-shell only for the
+       same reason
+   * - Meta-GGA or range-separated double hybrid
+     - The kernel exists at the GGA rung. A meta-GGA one needs
+       :math:`f_{xc}` in :math:`\tau`; a range-separated one needs the response
+       operator and the potential derivative at the screened omega. The three
+       double hybrids carried here are all GGA-based, so this is reachable only
+       by composing your own
+   * - Double hybrid over a fitted reference
+     - Same reason as MP2 over a fitted reference: the response equations would
+       have to be solved with the operator the SCF actually used
+   * - Frozen-core double hybrid
+     - The relaxed density gains occupied-frozen blocks that are not built.
+       Note the double hybrid *energy* is all-electron whatever the deck says,
+       so this refuses rather than differentiating a different energy
    * - Coupled cluster
      - Needs the Lambda amplitudes, which are not implemented
 
@@ -271,8 +328,10 @@ Geometry Optimization
 - **Fragmented systems**: MBE and GMBE gradients drive it unchanged. The term list
   is frozen at the starting geometry so distance screening cannot change the energy
   expression mid-run
-- **Backends**: any method with a gradient. xTB today; the CPU ab initio backend has
-  no gradients and is refused up front
+- **Backends**: any method with a gradient -- xTB, cuEST, and the CPU ab initio
+  backend, whose coverage and refusals are the table above. There is no
+  optimizer-level restriction on the backend: whatever refuses a gradient
+  refuses it on the first step, with its own message
 - **Output**: optimized structure, a trajectory, and a machine-readable record of
   the run
 - See :doc:`geometry_optimization`

@@ -56,6 +56,7 @@ module mqc_libcint_cphf
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
+   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_nosym, &
                                  build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
@@ -136,7 +137,7 @@ contains
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
                          response, error, max_iter, tol, iterations, in_core, mo_rhs, &
-                         eri_in, bmat)
+                         eri_in, bmat, xc, density)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
@@ -164,6 +165,14 @@ contains
          !! Implies `in_core`. A caller that has the tensor for its own reasons --
          !! the MP2 gradient contracts it against the two-particle density --
          !! would otherwise pay for a second identical build.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Solve the coupled-perturbed *Kohn-Sham* equations rather than the
+         !! Hartree-Fock ones: the operator gains the exchange-correlation
+         !! kernel. Give it whenever the reference was Kohn-Sham -- omitting it
+         !! solves a different linear system and answers about a different
+         !! energy.
+      real(dp), intent(in), optional :: density(:, :)
+         !! The converged reference density, where the kernel is evaluated.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`, in place of any four-index
          !! integrals. This is not a storage choice like `in_core` and it is not
@@ -323,9 +332,16 @@ contains
 
          iter = 0
          do iter = 1, limit
-            if (present(bmat)) then
+            if (present(bmat) .and. present(xc)) then
+               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, p, ap, error, bmat=bmat, xc=xc, &
+                                      density=density)
+            else if (present(bmat)) then
                call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                       gaps, p, ap, error, bmat=bmat)
+            else if (present(xc)) then
+               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, p, ap, error, xc=xc, density=density)
             else
                call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                       gaps, p, ap, error)
@@ -366,7 +382,7 @@ contains
    end subroutine cphf_solve
 
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                gaps, u, au, error, bmat)
+                                gaps, u, au, error, bmat, xc, density)
       !! Apply the coupled-perturbed operator to a trial rotation
       type(libcint_molecule_t), intent(in) :: mol
       logical, intent(in) :: direct          !! Recompute integrals rather than store them
@@ -378,6 +394,13 @@ contains
       real(dp), intent(in) :: u(:, :)
       real(dp), intent(out) :: au(:, :)
       type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Present, the exchange-correlation kernel is added on top of the
+         !! two-electron part -- an addend over whichever integral source ran,
+         !! not a fourth source, because `f_xc` is a grid quantity that knows
+         !! nothing about where J and K came from.
+      real(dp), intent(in), optional :: density(:, :)
+         !! The reference density the kernel is evaluated at. Required with `xc`.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`. Present, the operator is built from
          !! it and neither `eri` nor the direct build is touched -- see
@@ -387,6 +410,15 @@ contains
       real(dp), allocatable :: dtilde(:, :), g(:, :), half(:, :), work(:, :)
       type(direct_stats_t) :: stats
       integer :: n_ao, n_occ
+      real(dp) :: kf
+
+      ! The exchange fraction the *reference* kept. Hartree-Fock keeps all of
+      ! it; a pure functional keeps none, and building full exchange there adds
+      ! a term its energy never contained. Unscreened that is not a small error
+      ! -- it makes the operator indefinite, and the solver reports a saddle
+      ! point that is not there.
+      kf = 1.0_dp
+      if (present(xc)) kf = xc%exx_fraction
 
       n_ao = size(c_occ, 1)
       n_occ = size(c_occ, 2)
@@ -411,10 +443,22 @@ contains
          ! the iteration then stalls short of tolerance. The plain Schwarz screen
          ! depends on the basis alone and keeps the operator constant.
          call build_fock_direct(mol, zero_h, dtilde, bounds, g, stats, error, &
-                                density_screen=.false.)
+                                density_screen=.false., k_scale=kf)
          if (error%has_error()) return
       else
-         call build_fock(zero_h, eri, dtilde, g)
+         call build_fock(zero_h, eri, dtilde, g, k_scale=kf)
+      end if
+
+      ! The kernel, on top of whatever built `g` above.
+      if (present(xc)) then
+         if (.not. present(density)) then
+            call error%set(ERROR_VALIDATION, "the response operator was given an "// &
+                           "exchange-correlation context but no reference density to "// &
+                           "evaluate its kernel at")
+            return
+         end if
+         call xc_kernel_apply(xc, mol, density, dtilde, g, error)
+         if (error%has_error()) return
       end if
 
       call pic_gemm(g, c_occ, work)
@@ -1627,7 +1671,7 @@ contains
    end subroutine distributed_polarizability
 
    subroutine static_polarizability(mol, orbitals, orbital_energies, n_occ, alpha, &
-                                    error, max_iter, tol, iterations, in_core)
+                                    error, max_iter, tol, iterations, in_core, xc, density)
       !! The dipole polarizability tensor, in Bohr^3
       !!
       !! `alpha_kl = d mu_k / d F_l`, from the response to the three components
@@ -1659,6 +1703,14 @@ contains
       real(dp), intent(in), optional :: tol
       integer, intent(out), optional :: iterations
       logical, intent(in), optional :: in_core
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Makes this a coupled-perturbed *Kohn-Sham* polarizability: the
+         !! response operator gains the exchange-correlation kernel. The
+         !! cheapest thing that exercises `f_xc` end to end, and it needs no
+         !! double-hybrid code to exist -- which is why the kernel is validated
+         !! here first.
+      real(dp), intent(in), optional :: density(:, :)
+         !! The reference density the kernel is evaluated at. Required with `xc`.
 
       real(dp), allocatable :: dip(:, :, :), u(:, :, :), h(:, :), work(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
@@ -1671,9 +1723,18 @@ contains
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
       if (error%has_error()) return
 
-      call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
-                      max_iter=max_iter, tol=tol, iterations=iterations, &
-                      in_core=in_core)
+      ! With the kernel when this is a Kohn-Sham reference, without it
+      ! otherwise. Passing an absent `xc` through would be the same call, but
+      ! `density` has to travel with it and only makes sense alongside.
+      if (present(xc)) then
+         call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
+                         max_iter=max_iter, tol=tol, iterations=iterations, &
+                         in_core=in_core, xc=xc, density=density)
+      else
+         call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
+                         max_iter=max_iter, tol=tol, iterations=iterations, &
+                         in_core=in_core)
+      end if
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))

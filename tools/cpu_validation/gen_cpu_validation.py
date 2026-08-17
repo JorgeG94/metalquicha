@@ -392,6 +392,28 @@ DH_CASES = [
 ]
 DH_TOLERANCE = 5.0e-5
 
+# Double hybrid gradients, as (molecule, basis, functional). Three entries and
+# not a sweep, because each one costs four converged SCF-plus-MP2 runs per
+# component on the reference side -- see `pyscf_dh_gradient`.
+#
+# One per coefficient rather than one per molecule: 0.27, 0.36 and 0.25 are what
+# distinguish these functionals here, and a coefficient applied twice or applied
+# before the Z-vector rather than after moves each case by a different amount.
+# sto-3g is deliberate: the exact-ERI correlation gradient forms a dense
+# `n_ao^4` two-particle density, so this is a memory ceiling long before it is a
+# speed problem, and cc-pVDZ water is already the largest of them.
+GRADIENT_DH_CASES = [
+    ("water", "sto-3g", "b2plyp"),
+    ("water", "cc-pvdz", "b2gp-plyp"),
+    ("nh3", "sto-3g", "mpw2plyp"),
+]
+
+# Looser than the MP2 gradient bound and level with the Kohn-Sham one, which is
+# where the two error sources meet: the reference is a difference formula (1e-10
+# after Richardson) evaluated on quadratures that are the same tables but not the
+# same code. Measured agreement is a few times 1e-9.
+GRADIENT_DH_TOLERANCE = 1.0e-7
+
 RI_CC_CASES = [
     ("water", "sto-3g", "cc-pvdz-rifit", "ccsd", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", "ccsd", 1),
@@ -616,6 +638,12 @@ def normalize_basis_name(name):
 
 #: the three angular forms, mirroring mqc_cgto.f90
 UNSET, SPHERICAL, CARTESIAN = "unset", "spherical", "cartesian"
+
+#: Angstrom in one Bohr. The decks are written in Angstrom and gradients are
+#: compared in Hartree/Bohr, so a reference differentiated numerically with
+#: respect to the deck's own coordinates has to be converted; PySCF's analytic
+#: gradients come back in Hartree/Bohr already and need none of this.
+ANGSTROM_PER_BOHR = 0.52917721092
 
 
 def shell_form(sh):
@@ -880,6 +908,102 @@ def pyscf_dh(atoms, basis, aux, functional):
     mol.build()
     mf = DFDH(mol, xc=functional.replace("-", "").upper()).run()
     return float(mf.e_tot), mol.nao
+
+
+#: The semilocal half of each double hybrid, spelled the way PySCF wants it.
+#:
+#: libxc carries none of these names -- which is exactly why `mqc_xc_spec`
+#: builds them from parts -- so a reference has to be composed the same way on
+#: the other side. Written out rather than derived from our own table on
+#: purpose: a reference that read our definition of the functional would agree
+#: with us about a wrong one.
+DH_SEMILOCAL = {
+    "b2plyp": ("0.53*HF + 0.47*B88, 0.73*LYP", 0.27),
+    "b2gp-plyp": ("0.65*HF + 0.35*B88, 0.64*LYP", 0.36),
+    "mpw2plyp": ("0.55*HF + 0.45*MPW91, 0.75*LYP", 0.25),
+}
+
+
+def pyscf_dh_gradient(atoms, basis, functional, level):
+    """Reference double-hybrid gradient, by finite difference of PySCF's energy.
+
+    **Why a difference and not an analytic reference.** PySCF implements no
+    double-hybrid gradient in the released wheel, and the extension that does
+    the *energy* (`pyscf.dh`) is an optional extra. So there is no third-party
+    analytic gradient to compare against, the way there was for MP2.
+
+    What there is, and what matters, is a third-party *energy*: PySCF's
+    B2PLYP total agrees with ours to 1.5e-12 when both are built from the same
+    basis file and the same grid level. Differentiating that numerically gives
+    a reference that owes nothing to our assembly -- not our Z-vector, not our
+    kernel, not our exchange-correlation potential derivative. A disagreement
+    can then only be ours.
+
+    **Richardson, for the same reason `check_dh_gradient` uses it.** A plain
+    central difference leaves an `h^2` truncation error around 1e-6, which is
+    ten times the tolerance these cases are held to and would have to be
+    absorbed by loosening it. Two steps combined as `(4 D(h/2) - D(h)) / 3`
+    leave `h^4` and land at 1e-10, so the stored numbers are the gradient
+    rather than the gradient plus a difference formula.
+
+    Four converged SCF-plus-MP2 runs per component. That is the expensive
+    reference in this file by a wide margin, and it is why the case list is
+    three entries rather than a sweep.
+    """
+    import numpy as np
+    from pyscf import gto, dft, mp
+
+    xc, c_pt2 = DH_SEMILOCAL[functional]
+    symbols = {a[0] for a in atoms}
+    cart = molecule_form(basis, symbols) == CARTESIAN
+    step = 4.0e-3
+
+    def energy(coords):
+        mol = gto.Mole()
+        mol.atom = [(s, tuple(c)) for (s, *_), c in zip(atoms, coords)]
+        mol.unit = "Angstrom"
+        mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+        mol.charge = 0
+        mol.spin = 0
+        mol.cart = cart
+        mol.verbose = 0
+        mol.build()
+        mf = dft.RKS(mol)
+        mf.xc = xc
+        mf.grids.level = level
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-9
+        mf.max_cycle = 200
+        e_ks = mf.kernel()
+        if not mf.converged:
+            raise SystemExit("the reference SCF did not converge at a displaced "
+                             "geometry; a difference over that measures the "
+                             "iteration rather than the energy")
+        pt2 = mp.MP2(mf)
+        pt2.frozen = 0
+        return float(e_ks + c_pt2 * pt2.kernel()[0]), mol.nao
+
+    base = np.array([[x, y, z] for _, x, y, z in atoms])
+    e0, nao = energy(base)
+
+    # Angstrom in, Hartree/Bohr out: the decks are written in Angstrom and the
+    # gradient is compared in atomic units, so the conversion belongs here
+    # rather than in whoever reads the manifest.
+    gradient = np.zeros_like(base)
+    for ia in range(len(atoms)):
+        for comp in range(3):
+            def central(h):
+                shifted = base.copy()
+                shifted[ia, comp] = base[ia, comp] + h
+                plus, _ = energy(shifted)
+                shifted[ia, comp] = base[ia, comp] - h
+                minus, _ = energy(shifted)
+                return (plus - minus) / (2.0 * h)
+            coarse = central(step)
+            fine = central(0.5 * step)
+            gradient[ia, comp] = (4.0 * fine - coarse) / 3.0
+    gradient *= ANGSTROM_PER_BOHR
+    return e0, gradient.tolist(), nao
 
 
 def pyscf_uks(atoms, basis, functional, level, multiplicity):
@@ -1303,6 +1427,39 @@ def main():
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional in GRADIENT_DH_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_dh_gradient(mol.atoms, basis, functional,
+                                                  GRADIENT_GRID_LEVEL)
+        tag = functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/gradient",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_{tag}_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            # No auxiliary basis. A gradient run computes the perturbative term
+            # with exact integrals so that the two belong to each other, so a
+            # deck naming one here would describe an energy this case does not
+            # produce.
+            d = deck_json(xyz_for(mol), basis, method="dft",
+                          correlation={"freeze_core": False})
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
+            d["keywords"]["scf"]["tolerance"] = 1e-12
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"DH {functional.upper()} gradient {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_DH_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {functional:10s} grad |g|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, aux, functional in DF_KS_CASES:
