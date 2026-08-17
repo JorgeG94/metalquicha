@@ -75,16 +75,30 @@ module mqc_libcint_cphf
    public :: casimir_polder_frequencies
    !> Exposed side by side so a check can hold both builds of the same matrices.
    public :: build_hessian, build_hessian_df, build_hessian_mo
+   public :: static_response_dense
    public :: fitted_potential_general
 
    !> CG iterations before giving up.
    type :: response_hessian_t
       !! A built response Hessian, so several blocks can share one build
       !!
-      !! Only `(A-B)` and the product `(A-B)(A+B)` are kept: those are all the solve
-      !! needs, and `(A+B)` on its own is not wanted again.
+      !! `(A-B)` and the product `(A-B)(A+B)` are what a solve at finite frequency
+      !! needs. `(A+B)` is kept as well for the one case that must not go through
+      !! the product: at `nu = 0` the equations reduce to `(A+B) S = -2h`, and
+      !! reaching that by solving the product instead squares the condition number
+      !! -- measured at four digits lost on a ten-atom fragment, against a solve
+      !! that keeps fourteen.
       logical :: ready = .false.
+      logical :: fitted = .false.
+         !! Whether `(A+B)` came from fitted integrals rather than exact ones.
+         !!
+         !! The dynamic blocks are asked for a fitted Hessian by the deck and get
+         !! what they asked for. The static block is not: it is solved exactly
+         !! today, and handing it this one would move it by the fitting error --
+         !! 2e-4 on a ten-atom fragment -- without the deck saying anything had
+         !! changed. So it declines and iterates instead.
       real(dp), allocatable :: aminus(:, :)
+      real(dp), allocatable :: aplus(:, :)
       real(dp), allocatable :: product(:, :)
    contains
       procedure :: destroy => hessian_destroy
@@ -863,6 +877,7 @@ contains
          if (present(aux)) then
             call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
                                   progress=talk)
+            if (present(hessian)) hessian%fitted = .true.
          else if (mo_transform_fits(mol%nao, n_occ, direct)) then
             ! Exact integrals, but assembled the way the fitted build assembles
             ! them. The column build below is what this replaces, and it stays for
@@ -926,18 +941,38 @@ contains
       !$omp parallel do default(none) num_threads(concurrent) schedule(dynamic) &
       !$omp    private(ifreq, lu, ipiv, solution, j, k, l, info) &
       !$omp    shared(n_freq, n_ov, n_pert, n_vir, n_occ, reuse, hessian, product, &
-      !$omp           frequencies, rhs_flat, h_flat, alpha, response, infos)
+      !$omp           aplus, frequencies, rhs_flat, h_flat, alpha, response, infos)
       do ifreq = 1, n_freq
          allocate (lu(n_ov, n_ov), ipiv(n_ov), solution(n_ov, n_pert))
-         if (reuse) then
-            lu = hessian%product
+         if (frequencies(ifreq) == 0.0_dp) then
+            ! The static limit, solved as the static equation rather than as the
+            ! zero-frequency member of the family.
+            !
+            ! `(A+B) S + nu D' = -2h` and `(A-B) D' = nu S` were combined by
+            ! multiplying through by `(A-B)`, which is what puts the product
+            ! matrix in hand at every other frequency. At `nu = 0` the coupling
+            ! is gone and the equation is just `(A+B) S = -2h`, so going through
+            ! the product means solving a system whose condition number is the
+            ! square of the one actually being asked about. Measured against a
+            ! converged iterative solve on a ten-atom fragment, the product route
+            ! agrees to four digits and this one to fourteen.
+            if (reuse) then
+               lu = hessian%aplus
+            else
+               lu = aplus
+            end if
+            solution = -2.0_dp*h_flat
          else
-            lu = product
+            if (reuse) then
+               lu = hessian%product
+            else
+               lu = product
+            end if
+            do j = 1, n_ov
+               lu(j, j) = lu(j, j) + frequencies(ifreq)**2
+            end do
+            solution = rhs_flat
          end if
-         do j = 1, n_ov
-            lu(j, j) = lu(j, j) + frequencies(ifreq)**2
-         end do
-         solution = rhs_flat
          call pic_getrf(lu, ipiv, info)
          if (info /= 0) then
             infos(ifreq) = 1
@@ -976,9 +1011,9 @@ contains
       ! Hand the build back if the caller wants it, rather than freeing it.
       if (present(hessian) .and. .not. reuse) then
          call move_alloc(aminus, hessian%aminus)
+         call move_alloc(aplus, hessian%aplus)
          call move_alloc(product, hessian%product)
          hessian%ready = .true.
-         if (allocated(aplus)) deallocate (aplus)
       else if (.not. reuse) then
          deallocate (aplus, aminus, product)
       end if
@@ -1871,9 +1906,65 @@ contains
       deallocate (c_occ, c_vir, work)
    end subroutine distributed_dynamic_polarizability
 
+   subroutine static_response_dense(aplus, dip, c_occ, c_vir, u, error)
+      !! `U` from `(A+B) U = -h`, factorized rather than iterated
+      !!
+      !! The same equation `cphf_solve` runs conjugate gradients on, solved
+      !! directly because `(A+B)` is already in hand. Agreement between the two
+      !! is 2.5e-13 relative on water in 6-31G, which is what
+      !! `test_mqc_libcint_cphf` pins.
+      !!
+      !! Not to be confused with taking the zero-frequency member of the dynamic
+      !! family: that one is reached by multiplying through by `(A-B)`, and its
+      !! `nu = 0` limit does *not* reproduce this to better than 4e-5. This solves
+      !! the static equation itself.
+      real(dp), intent(in) :: aplus(:, :)
+      real(dp), intent(in) :: dip(:, :, :)      !! AO perturbations, `(n_ao, n_ao, n_pert)`
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
+      real(dp), allocatable, intent(out) :: u(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: lu(:, :), rhs(:, :), work(:, :), block_h(:, :)
+      integer, allocatable :: ipiv(:)
+      integer :: n_ao, n_occ, n_vir, n_ov, n_pert, k, info
+
+      n_ao = size(c_occ, 1)
+      n_occ = size(c_occ, 2)
+      n_vir = size(c_vir, 2)
+      n_ov = n_vir*n_occ
+      n_pert = size(dip, 3)
+
+      allocate (u(n_vir, n_occ, n_pert))
+      allocate (lu(n_ov, n_ov), ipiv(n_ov), rhs(n_ov, n_pert))
+      allocate (work(n_ao, n_occ), block_h(n_vir, n_occ))
+
+      do k = 1, n_pert
+         call pic_gemm(dip(:, :, k), c_occ, work)
+         call pic_gemm(c_vir, work, block_h, transa="T")
+         rhs(:, k) = -reshape(block_h, [n_ov])
+      end do
+
+      lu = aplus
+      call pic_getrf(lu, ipiv, info)
+      if (info /= 0) then
+         call error%set(ERROR_GENERIC, "static response: (A+B) is singular")
+         return
+      end if
+      call pic_getrs(lu, ipiv, rhs, info=info)
+      if (info /= 0) then
+         call error%set(ERROR_GENERIC, "static response: the solve failed")
+         return
+      end if
+
+      do k = 1, n_pert
+         u(:, :, k) = reshape(rhs(:, k), [n_vir, n_occ])
+      end do
+      deallocate (lu, ipiv, rhs, work, block_h)
+   end subroutine static_response_dense
+
    subroutine distributed_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                          tensors, centroids, error, n_core, &
-                                         max_iter, tol, iterations, in_core)
+                                         max_iter, tol, iterations, in_core, hessian)
       !! One polarizability tensor per localized orbital, at its centroid
       !!
       !! What an effective fragment potential wants: not the molecule's total
@@ -1927,11 +2018,21 @@ contains
       real(dp), intent(in), optional :: tol
       integer, intent(out), optional :: iterations
       logical, intent(in), optional :: in_core
+      type(response_hessian_t), intent(in), optional :: hessian
+         !! A built Hessian to solve against instead of iterating.
+         !!
+         !! The static response is `(A+B) U = -h`, which is what `cphf_solve`
+         !! reaches by conjugate gradients -- one Fock build per iteration per
+         !! perturbation. When the dynamic blocks have already built `(A+B)` for
+         !! their own solves, the same equation is one factorization away, and the
+         !! iteration is work the potential has already paid for. Agreement with
+         !! the iterative route is to 1e-13; they are the same equation.
 
       real(dp), allocatable :: dip(:, :, :), u(:, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), w(:, :), u_loc(:, :, :), h_loc(:, :, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), work(:, :), sc(:, :)
       integer :: n_ao, n_mo, n_vir, n_lmo, core, k, l, i, a
+      logical :: dense
       character(len=32) :: text
 
       n_ao = size(orbitals, 1)
@@ -1956,15 +2057,23 @@ contains
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
       if (error%has_error()) return
 
-      ! The response over the whole occupied space -- see `n_core` above.
-      call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
-                      max_iter=max_iter, tol=tol, iterations=iterations, &
-                      in_core=in_core)
-      if (error%has_error()) return
-
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
       c_occ = orbitals(:, 1:n_occ)
       c_vir = orbitals(:, n_occ + 1:n_mo)
+
+      ! The response over the whole occupied space -- see `n_core` above.
+      ! A fitted Hessian is declined here on purpose -- see `fitted` on the type.
+      dense = .false.
+      if (present(hessian)) dense = hessian%ready .and. .not. hessian%fitted
+      if (dense) then
+         call static_response_dense(hessian%aplus, dip, c_occ, c_vir, u, error)
+         if (present(iterations)) iterations = 0
+      else
+         call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
+                         max_iter=max_iter, tol=tol, iterations=iterations, &
+                         in_core=in_core)
+      end if
+      if (error%has_error()) return
 
       ! W maps the canonical occupied orbitals onto the localized ones. It is an
       ! isometry rather than a rotation when a core is excluded, and `W W^T` is

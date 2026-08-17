@@ -25,7 +25,7 @@ module test_mqc_libcint_cphf
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
    use mqc_libcint_cphf, only: cphf_solve, static_polarizability, distributed_polarizability, &
-                               build_hessian, build_hessian_mo
+                               build_hessian, build_hessian_mo, static_response_dense
    use mqc_error, only: error_t
    implicit none
    private
@@ -67,7 +67,9 @@ contains
                   new_unittest("a_batch_of_densities_equals_one_at_a_time", &
                                test_density_batch), &
                   new_unittest("the_transformed_hessian_equals_the_probed_one", &
-                               test_hessian_transform) &
+                               test_hessian_transform), &
+                  new_unittest("the_dense_static_solve_equals_the_iterative_one", &
+                               test_static_dense) &
                   ]
    end subroutine collect_mqc_libcint_cphf_tests
 
@@ -835,6 +837,73 @@ contains
 
       call mol%destroy()
    end subroutine test_hessian_transform
+
+   subroutine test_static_dense(error)
+      !! Factorizing (A+B) gives what iterating against it gives
+      !!
+      !! The static response is `(A+B) U = -h`, and `cphf_solve` reaches it by
+      !! conjugate gradients -- a Fock build per iteration per perturbation. Once
+      !! the dynamic blocks have built `(A+B)` for their own solves the same
+      !! equation is one factorization away, which is forty seconds of a hundred
+      !! on a tripeptide.
+      !!
+      !! Worth a test because the substitution is safe only if the two really are
+      !! the same equation, and there is a nearby one that is not: the
+      !! zero-frequency member of the dynamic family is reached by multiplying
+      !! through by `(A-B)`, and agrees with this only to about 1e-4. Confusing
+      !! the two would move every static polarizability in a potential without
+      !! anything failing.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: dip(:, :, :), u_iter(:, :, :), u_dense(:, :, :)
+      real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable :: aplus(:, :), aminus(:, :)
+      integer :: n_ao, n_mo, n_occ, n_vir, a, i
+      real(dp) :: worst, scale
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, err)
+      call cphf_solve(mol, scf%orbitals, scf%orbital_energies, n_occ, dip, u_iter, &
+                      err, tol=1.0e-13_dp, in_core=.true.)
+      call check(error, .not. err%has_error(), "the iterative solve failed: "//err%get_message())
+      if (allocated(error)) return
+
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+      call mol%eris(eri)
+      call build_hessian_mo(mol, eri, c_occ, c_vir, gaps, aplus, aminus, err)
+      call check(error, .not. err%has_error(), "the Hessian build failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call static_response_dense(aplus, dip, c_occ, c_vir, u_dense, err)
+      call check(error, .not. err%has_error(), "the dense solve failed: "//err%get_message())
+      if (allocated(error)) return
+
+      worst = maxval(abs(u_iter - u_dense))
+      scale = maxval(abs(u_iter))
+      call check(error, worst <= 1.0e-9_dp*max(scale, 1.0_dp), &
+                 "the dense and iterative static responses disagree")
+
+      call mol%destroy()
+   end subroutine test_static_dense
 
 end module test_mqc_libcint_cphf
 

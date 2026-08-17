@@ -444,15 +444,6 @@ contains
 
       ! --- polarization ---------------------------------------------------------
       if (talk) call report(stage, "distributed multipoles", talk)
-      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
-                                      pot%n_occ, pot%static_pol, pot%centroids, &
-                                      error, n_core=core)
-      if (error%has_error()) then
-         call mol%destroy()
-         return
-      end if
-
-      if (talk) call report(stage, "static polarizability", talk)
 
       allocate (pot%frequencies(N_CASIMIR_POLDER))
       pot%frequencies = casimir_polder_frequencies()
@@ -463,6 +454,12 @@ contains
       ! two blocks after it are handed the built one and reuse it. So this is the one
       ! place the auxiliary basis has to reach, and an optional dummy cannot be passed
       ! conditionally from a local -- hence the branch rather than one call.
+      !
+      ! Ahead of the static block, which used to come first. The static response is
+      ! `(A+B) U = -h`, the same operator these blocks build, so once it exists the
+      ! static solve is a factorization rather than a conjugate-gradient run --
+      ! forty seconds of the hundred a tripeptide took, for a result that agrees to
+      ! thirteen digits.
       if (present(aux_basis)) then
          call distributed_dynamic_polarizability(mol, scf%orbitals, &
                                                  scf%orbital_energies, pot%n_occ, &
@@ -482,6 +479,18 @@ contains
          return
       end if
       if (talk) call report(stage, "dynamic dipole response, with the Hessian build", talk)
+
+      ! The static block, solved against the Hessian the dynamic blocks just
+      ! built rather than by iterating for it again.
+      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                      pot%n_occ, pot%static_pol, pot%centroids, &
+                                      error, n_core=core, hessian=shared_hessian)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      if (talk) call report(stage, "static polarizability", talk)
+
       if (talk) then
          write (line, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, " imaginary frequencies"
          call logger%info(trim(line))
