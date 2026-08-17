@@ -385,13 +385,29 @@ contains
          return
       end if
       if (do_gradient .and. settings%run_mp2) then
-         if (settings%density_fitting) then
-            call result%error%set(ERROR_VALIDATION, "the MP2 gradient differentiates an "// &
-                                  "exact-ERI reference: with keywords.scf.density_fitting "// &
-                                  "on it would be the derivative of an energy nothing "// &
-                                  "computed. Fitting the correlation instead -- an "// &
-                                  "`ri-mp2` method, which fits nothing in the SCF -- is "// &
-                                  "implemented and differentiated exactly.")
+         ! Three combinations of what is fitted, and each is a different energy
+         ! with a different gradient. Exact reference with exact correlation is
+         ! `libcint_mp2_gradient`; exact reference with fitted correlation is an
+         ! `ri-mp2` deck and is `libcint_ri_mp2_gradient`; both fitted is the
+         ! third, and it differentiates the fitted reference too -- the response
+         ! operator, the potentials built from the relaxed density, and a
+         ! two-electron derivative term that is not a four-centre contraction at
+         ! all.
+         !
+         ! The fourth combination has no implementation and is what is refused
+         ! here: a *conventional* MP2 over a fitted reference. Nothing about it
+         ! is harder than the third, but its correlation gradient forms an
+         ! exact-ERI two-particle density while its reference term is fitted,
+         ! and no routine assembles that pair.
+         if (settings%density_fitting .and. .not. settings%corr_density_fitting) then
+            call result%error%set(ERROR_VALIDATION, "a conventional MP2 gradient over a "// &
+                                  "density-fitted reference is not implemented: the "// &
+                                  "correlation would contract an exact two-particle "// &
+                                  "density against four-centre derivatives while the "// &
+                                  "reference contributes three- and two-centre ones, and "// &
+                                  "nothing assembles that pair. Ask for `ri-mp2`, which "// &
+                                  "fits both and is differentiated as one energy, or drop "// &
+                                  "keywords.scf.density_fitting.")
             result%has_error = .true.
             return
          end if
@@ -878,9 +894,14 @@ contains
                      call mol%destroy()
                      return
                   end if
+                  ! One auxiliary basis for both halves when both are fitted,
+                  ! which is not a simplification: `model.aux_basis` is the only
+                  ! place a fitting set is named, so it is the only combination
+                  ! a deck can express.
                   call libcint_ri_mp2_gradient(mol, corr_aux, scf%orbitals, &
                                                scf%orbital_energies, fragment%nelec/2, &
-                                               result%gradient, error, n_frozen=frozen)
+                                               result%gradient, error, n_frozen=frozen, &
+                                               fitted_reference=settings%density_fitting)
                   call corr_aux%destroy()
                else
                   call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &

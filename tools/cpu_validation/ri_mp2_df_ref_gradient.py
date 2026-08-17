@@ -346,6 +346,48 @@ def richardson(atoms, basis, auxbasis, step=2.5e-3):
     return (4.0 * fine - coarse) / 3.0
 
 
+def against_pyscf_df_scf(atoms, basis, auxbasis):
+    """The `P -> 0` limit, against PySCF's analytic DF-RHF gradient.
+
+    **Why this is the only analytic-vs-analytic check available.** PySCF ships
+    no density-fitted MP2 gradient for either reference --
+    `pyscf.mp.dfmp2.DFRMP2.nuc_grad_method` raises `NotImplementedError`, and
+    there is no `pyscf.df.grad.mp2` -- so the finished gradient has nothing to
+    be compared against directly. `pyscf.df.grad.rhf` does exist, though, and
+    with the relaxed correlation density set to zero the assembly collapses
+    onto exactly it.
+
+    That limit is not a weak check of the new part. `gamma_omega` supplies the
+    *entire* two-electron half of a DF-RHF gradient here -- every fitted
+    three-centre and metric derivative in the answer comes out of it -- and the
+    rest is one-electron, overlap and nuclear terms that are shared with the
+    exact-reference path and already validated. What it cannot see is the
+    factor carried on `dm1p`, since `A` and `B` are the same matrix in this
+    limit; the finite-difference check in `main` is what covers that.
+    """
+    mol, auxmol = build(atoms, basis, auxbasis)
+    mf = scf.RHF(mol).density_fit(auxbasis=auxmol.basis)
+    mf.conv_tol = 1e-13
+    mf.kernel()
+
+    dm = mf.make_rdm1()
+    ref = FittedReference(mol, auxmol)
+    ours = 0.5 * reference_gradient(mol, auxmol, *ref.gamma_omega(dm, dm))
+
+    grad = scf.RHF(mol).nuc_grad_method()
+    hcore_deriv = grad.hcore_generator(mol)
+    s1 = grad.get_ovlp(mol)
+    dme0 = grad.make_rdm1e(mf.mo_energy, mf.mo_coeff, mf.mo_occ)
+    aoslices = mol.aoslice_by_atom()
+    for a in range(mol.natm):
+        p0, p1 = aoslices[a, 2], aoslices[a, 3]
+        ours[a] += np.einsum("xij,ij->x", hcore_deriv(a), dm)
+        ours[a] -= np.einsum("xij,ij->x", s1[:, p0:p1], dme0[p0:p1]) * 2
+    ours += grad.grad_nuc()
+
+    return np.abs(ours - mf.nuc_grad_method().kernel()).max()
+
+
 def main():
     lib.num_threads(8)
     cases = [
@@ -358,6 +400,13 @@ def main():
                           ["N", 0.0, 0.0, 2.2]],
          "sto-3g", "cc-pvdz-rifit"),
     ]
+
+    worst_scf = 0.0
+    for label, atoms, basis, auxbasis in cases:
+        worst = against_pyscf_df_scf(atoms, basis, auxbasis)
+        worst_scf = max(worst_scf, worst)
+        print("== %-16s P->0 limit vs pyscf.df.grad.rhf: %.4e" % (label, worst))
+    print()
 
     worst_overall = 0.0
     for label, atoms, basis, auxbasis in cases:
@@ -377,10 +426,12 @@ def main():
               f"{np.abs(analytic.sum(axis=0)).max():.4e}")
 
     print()
-    print("worst over all cases: %.4e" % worst_overall)
-    # Two orders below the plain central difference this used to accept, which
-    # is the point of extrapolating: at 1e-5 a wrong exchange factor passes.
-    return 0 if worst_overall < 1e-7 else 1
+    print("worst against pyscf.df.grad.rhf in the P->0 limit: %.4e" % worst_scf)
+    print("worst against finite difference:                   %.4e" % worst_overall)
+    # The first is analytic against analytic and holds at 1e-11; the second is
+    # two orders below the plain central difference this used to accept, which
+    # is the point of extrapolating -- at 1e-5 a wrong exchange factor passes.
+    return 0 if (worst_scf < 1e-9 and worst_overall < 1e-7) else 1
 
 
 if __name__ == "__main__":

@@ -63,6 +63,7 @@ module mqc_libcint_gradient
    public :: one_electron_deriv
    public :: iprinv_deriv_at
    public :: xc_potential_gradient
+   public :: fitted_reference_gradient
    public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
 
    ! Which one-electron derivative `one_electron_deriv` should build.
@@ -707,6 +708,178 @@ contains
          end do
       end do
    end subroutine xc_potential_gradient
+
+   subroutine fitted_reference_gradient(mol, aux, three, jm12, dm_a, dm_b, &
+                                        gradient, k_scale)
+      !! `d/dR Tr(G[A] B)` when `G` is built from fitted integrals
+      !!
+      !! **What this replaces.** With exact integrals the reference part of a
+      !! correlated gradient is a four-centre `int2e_ip1` contraction --
+      !! `two_electron_mp2_terms` builds it, and the assembly contracts the
+      !! result against the relaxed density. Fitted, the same quantity has no
+      !! four-centre derivative anywhere in it: `(mu nu|lam sig)` is a product
+      !! of three-centre integrals and a metric, and differentiating a product
+      !! gives terms of each kind. So this returns the two intermediates that
+      !! contract against those, in the shapes the correlation's own fitted
+      !! terms already use.
+      !!
+      !! **Coulomb.** `F_J = sum_PQ g^A_P J^-1_PQ g^B_Q` with
+      !! `g^A_P = sum_uv A_uv (uv|P)`. Each `g` differentiates, and
+      !! `d(J^-1) = -J^-1 (dJ) J^-1` supplies the metric term:
+      !!
+      !!     Gamma^P_uv  +=  A_uv rho^B_P + B_uv rho^A_P,   rho = J^-1 g
+      !!     Omega_PQ    += -rho^A_P rho^B_Q
+      !!
+      !! **Exchange.** `F_K = -(k/2) sum_PQ J^-1_PQ Tr(B M^P A M^Q)`, writing
+      !! `M^P_uv = (uv|P)`. Both `M` factors differentiate, and the two results
+      !! are *transposes* of one another rather than equal -- which is the trap,
+      !! because either choice leaves `Gamma` symmetric and only the assembled
+      !! gradient can tell them apart. With `Y^P = sum_Q J^-1_PQ M^Q` and
+      !! `S^P = B Y^P A`,
+      !!
+      !!     Gamma^P     += -(k/2) (S^P + S^P transposed)
+      !!     Omega_RS    += +(k/2) sum_uv S^R_uv Y^S_uv
+      !!
+      !! The metric half is written through `S` and `Y` rather than through the
+      !! `n_aux^2` intermediate `W_PQ = Tr(B M^P A M^Q)` it comes from: applying
+      !! `J^-1` on both sides of `W` is what the derivative wants anyway, and
+      !! `S` already carries one of the two applications.
+      !!
+      !! **The caller halves this.** What an assembly wants is
+      !! `(1/2) Tr(G^x[D] D) + Tr(G^x[D] P)` -- the reference's own two-electron
+      !! gradient plus the cross term -- which is half of `Tr(G^x[D](D + 2P))`.
+      !! The exact path reaches the same half by building only two of the four
+      !! differentiated positions and letting the integral's symmetry supply the
+      !! rest, which is invisible from its call site. Left in, the water
+      !! gradient comes out thirty times too large with translational invariance
+      !! holding at 1e-14 throughout, so this returns the honest derivative and
+      !! the factor is written where it can be read.
+      type(libcint_molecule_t), intent(in) :: mol, aux
+      real(dp), intent(in) :: three(:, :)   !! Raw `(mu nu|P)`, (n_ao^2, naux)
+      real(dp), intent(in) :: jm12(:, :)    !! `J^(-1/2)`, as the energy fitted with
+      real(dp), intent(in) :: dm_a(:, :)    !! The density inside the operator
+      real(dp), intent(in) :: dm_b(:, :)    !! The density it is contracted against
+      real(dp), intent(inout) :: gradient(:, :)   !! (3, natm), accumulated into
+      real(dp), intent(in), optional :: k_scale
+
+      real(dp), allocatable :: jinv(:, :), y(:, :), s(:, :), gamma(:, :, :)
+      real(dp), allocatable :: omega(:, :), gt(:, :, :)
+      real(dp), allocatable :: ip1(:, :, :, :), ip2(:, :, :, :), j1(:, :, :)
+      real(dp), allocatable :: rho_a(:), rho_b(:), work(:, :)
+      integer, allocatable :: offsets(:), counts(:)
+      integer, allocatable :: aux_offsets(:), aux_counts(:)
+      integer :: n, naux, p, iatom, comp, p0, p1, q0, q1
+      real(dp) :: kf
+
+      kf = 1.0_dp
+      if (present(k_scale)) kf = k_scale
+
+      n = mol%nao
+      naux = aux%nao
+
+      allocate (jinv(naux, naux))
+      call pic_gemm(jm12, jm12, jinv)
+
+      ! `Y^P = sum_Q J^-1_PQ M^Q`, wanted by both halves of the exchange term
+      ! and by the two `rho` vectors, which are `<Y^P, D>` rather than a second
+      ! metric solve.
+      allocate (y(n*n, naux))
+      call pic_gemm(three, jinv, y)
+
+      allocate (rho_a(naux), rho_b(naux))
+      rho_a = matmul(reshape(dm_a, [n*n]), y)
+      rho_b = matmul(reshape(dm_b, [n*n]), y)
+
+      ! `S^P = B Y^P A`, one pair of n^3 products per auxiliary function.
+      allocate (s(n*n, naux), work(n, n))
+      !$omp parallel do default(none) shared(s, y, dm_a, dm_b, n, naux) private(p, work)
+      do p = 1, naux
+         work = matmul(dm_b, reshape(y(:, p), [n, n]))
+         s(:, p) = reshape(matmul(work, dm_a), [n*n])
+      end do
+      !$omp end parallel do
+      deallocate (work)
+
+      allocate (gamma(n, n, naux))
+      do p = 1, naux
+         associate (sp => reshape(s(:, p), [n, n]))
+            gamma(:, :, p) = dm_a*rho_b(p) + dm_b*rho_a(p) &
+                             - 0.5_dp*kf*(sp + transpose(sp))
+         end associate
+      end do
+
+      allocate (omega(naux, naux))
+      call pic_gemm(s, y, omega, transa="T")
+      omega = 0.5_dp*kf*omega
+      do p = 1, naux
+         omega(:, p) = omega(:, p) - rho_a*rho_b(p)
+      end do
+      omega = 0.5_dp*(omega + transpose(omega))
+
+      ! ---- contraction, in the same conventions the correlation's own fitted
+      ! terms use: libcint's `ip` integrals differentiate the electronic
+      ! coordinate, so the derivative with respect to a nucleus carrying the
+      ! function is minus them.
+      allocate (offsets(mol%natm), counts(mol%natm))
+      allocate (aux_offsets(aux%natm), aux_counts(aux%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+      call atom_ao_blocks(aux, aux_offsets, aux_counts)
+
+      call three_centre_deriv(mol, aux, 1, ip1)
+      do iatom = 1, mol%natm
+         p0 = offsets(iatom) + 1
+         p1 = offsets(iatom) + counts(iatom)
+         if (counts(iatom) == 0) cycle
+         ! `(mu nu|P)` is symmetric in mu and nu, so the ket derivative is the
+         ! bra one against a transposed density rather than a second integral.
+         gt = transposed_block(gamma, p0, p1)
+         do comp = 1, 3
+            gradient(comp, iatom) = gradient(comp, iatom) &
+                                    - sum(ip1(p0:p1, :, :, comp)*gamma(p0:p1, :, :)) &
+                                    - sum(ip1(p0:p1, :, :, comp)*gt)
+         end do
+         deallocate (gt)
+      end do
+      deallocate (ip1)
+
+      call three_centre_deriv(mol, aux, 2, ip2)
+      do iatom = 1, aux%natm
+         q0 = aux_offsets(iatom) + 1
+         q1 = aux_offsets(iatom) + aux_counts(iatom)
+         if (aux_counts(iatom) == 0) cycle
+         do comp = 1, 3
+            gradient(comp, iatom) = gradient(comp, iatom) &
+                                    - sum(ip2(:, :, q0:q1, comp)*gamma(:, :, q0:q1))
+         end do
+      end do
+      deallocate (ip2)
+
+      call two_centre_deriv(aux, j1)
+      do iatom = 1, aux%natm
+         q0 = aux_offsets(iatom) + 1
+         q1 = aux_offsets(iatom) + aux_counts(iatom)
+         if (aux_counts(iatom) == 0) cycle
+         do comp = 1, 3
+            gradient(comp, iatom) = gradient(comp, iatom) &
+                                    - sum(j1(q0:q1, :, comp)*omega(q0:q1, :)) &
+                                    - sum(j1(q0:q1, :, comp)*transpose(omega(:, q0:q1)))
+         end do
+      end do
+      deallocate (j1)
+   end subroutine fitted_reference_gradient
+
+   function transposed_block(g, p0, p1) result(t)
+      !! `g(nu, mu, P)` for `mu` in a block, as the ket-side contraction needs
+      real(dp), intent(in) :: g(:, :, :)
+      integer, intent(in) :: p0, p1
+      real(dp), allocatable :: t(:, :, :)
+      integer :: p
+
+      allocate (t(p1 - p0 + 1, size(g, 1), size(g, 3)))
+      do p = 1, size(g, 3)
+         t(:, :, p) = transpose(g(:, p0:p1, p))
+      end do
+   end function transposed_block
 
    subroutine density_times_ao(ao, density, nb, nao, dchi)
       !! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g)

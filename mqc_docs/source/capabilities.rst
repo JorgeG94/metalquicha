@@ -226,9 +226,21 @@ own conditions to be worth a section below.
 Those last two are different energies and get different gradients: an
 ``ri-mp2`` deck is differentiated by the fitted formulation, whose two-particle
 density stays three-index and contracts against three- and two-centre
-derivative integrals. Asking for a gradient with ``keywords.scf.density_fitting``
-on is a third thing, and is still refused -- there the *reference* is fitted,
-and nothing here differentiates that.
+derivative integrals.
+
+Adding ``keywords.scf.density_fitting`` to an ``ri-mp2`` deck is a third
+energy, and it too has a gradient. There the *reference* is fitted as well, so
+the response operator, both potentials built from the relaxed density, and the
+whole reference two-electron derivative term move to the fitted integrals --
+and the last of those stops being a four-centre contraction at all, becoming
+three- and two-centre terms with intermediates of their own. One auxiliary
+basis serves both halves, which is the only combination a deck can express:
+``model.aux_basis`` is the only place a fitting set is named.
+
+The fourth combination -- a *conventional* MP2 over a fitted reference -- is
+refused. Nothing about it is harder in principle, but its correlation gradient
+forms an exact-ERI two-particle density while the reference contributes
+three- and two-centre derivatives, and no routine assembles that pair.
 
 Double hybrids
 ~~~~~~~~~~~~~~
@@ -288,9 +300,11 @@ number computed from a formula that does not apply:
      - The fitted J and K are written for one density, so this is refused for
        the energy and therefore for the gradient. The fitted *gradient* does
        carry both spin channels already -- it is the SCF that is missing
-   * - MP2 over a fitted reference (``keywords.scf.density_fitting``)
-     - Would differentiate an energy nothing computed. Fitting only the
-       correlation, which is what ``ri-mp2`` means, is implemented
+   * - Conventional MP2 over a fitted reference
+     - The correlation would contract an exact two-particle density against
+       four-centre derivatives while the reference contributes three- and
+       two-centre ones, and nothing assembles that pair. Ask for ``ri-mp2``,
+       which fits both and is differentiated as one energy
    * - Frozen-core MP2 and RI-MP2
      - The relaxed density gains occupied-frozen and virtual-frozen blocks
    * - Spin-scaled MP2 (SCS, SOS)
@@ -308,8 +322,10 @@ number computed from a formula that does not apply:
        double hybrids carried here are all GGA-based, so this is reachable only
        by composing your own
    * - Double hybrid over a fitted reference
-     - Same reason as MP2 over a fitted reference: the response equations would
-       have to be solved with the operator the SCF actually used
+     - Its perturbative term is a conventional MP2, so it needs the same
+       missing pair as the row above. Note the fitted-reference machinery
+       ``ri-mp2`` uses does not reach it: that one fits the correlation too,
+       and a double hybrid's PT2 term is exact in a gradient run
    * - Frozen-core double hybrid
      - The relaxed density gains occupied-frozen blocks that are not built.
        Note the double hybrid *energy* is all-electron whatever the deck says,
