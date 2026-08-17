@@ -63,6 +63,12 @@ target_compile_definitions(test_mqc_basis_cartesian PRIVATE MQC_HAVE_BASIS_SETS)
 # That the angular form reaches the integrals, counted in basis functions. Needs
 # libcint, since libcint_molecule_t is the thing it inspects.
 if(MQC_ENABLE_LIBCINT)
+  # The overlap between two different bases on the same atoms, which is the one
+  # new integral the quasi-atomic construction needs. Gated because
+  # libcint_molecule_t is what it builds.
+  addtest(mqc_mixed_overlap)
+  target_link_libraries(test_mqc_mixed_overlap PRIVATE cint_fortran cint)
+
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
 
