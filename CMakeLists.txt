@@ -651,7 +651,7 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/check_xc_kernel.f90)
   target_include_directories(check_xc_kernel
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_xc_kernel PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_xc_kernel PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(
     check_xc_potential_gradient
@@ -659,13 +659,13 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_xc_potential_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_xc_potential_gradient PRIVATE ${main_lib}
-                                                            cint_fortran cint)
+                                                            ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_dh_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_dh_gradient.f90)
   target_include_directories(check_dh_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_dh_gradient PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_dh_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_df_cphf
                  ${PROJECT_SOURCE_DIR}/validation/check_df_cphf.f90)
