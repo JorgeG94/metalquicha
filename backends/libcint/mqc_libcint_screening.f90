@@ -302,7 +302,7 @@ contains
       !$omp parallel do default(shared) private(g, residual) reduction(+:rms)
       do g = 1, size(rest)
          residual = (rest(g) + monopole(g)*(1.0_dp - exp(-alpha*argument(g)))) &
-                    *KCAL_PER_HARTREE
+                    *HARTREE_TO_KCALMOL
          rms = rms + residual*residual
       end do
       !$omp end parallel do
