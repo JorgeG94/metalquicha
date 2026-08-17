@@ -669,6 +669,26 @@ adds one case per code path. Their references come from PySCF with
 derivative of the quadrature weights while metalquicha includes it, and the two
 disagree by ~1e-4 with nothing wrong on either side.
 
+Double hybrid gradients sit in a separate table, ``GRADIENT_DH_CASES``, and
+their references are a different kind of thing: PySCF ships no analytic double
+hybrid gradient, so each reference is a Richardson-extrapolated central
+difference of PySCF's *own* total energy, two step sizes combined as
+:math:`(4 D(h/2) - D(h))/3` to remove the :math:`h^2` truncation term. That is
+worth more than an analytic reference would be, not less -- it shares no
+derivative code at all with what it is checking -- but it does cap the
+achievable agreement. Those cases are held to ``1.0e-7``, the same bound the
+Kohn-Sham cases use and looser than the ``1.0e-8`` of the Hartree-Fock ones;
+measured agreement is a few times 1e-9. Only three cases, and one per
+perturbative coefficient rather than one per molecule, because each reference
+component costs four converged SCF-plus-MP2 runs on the PySCF side.
+
+The same extrapolation, against metalquicha's own energy, is what
+``validation/check_dh_gradient`` does; it runs four functional/geometry
+combinations and agrees to between 2e-11 and 2e-10. A plain central difference
+leaves an :math:`h^2` error near 1e-6, which would hide a real mistake of the
+same size -- so the second step size is doing work here rather than adding
+confidence to something already settled.
+
 Contributing New Tests
 ======================
 

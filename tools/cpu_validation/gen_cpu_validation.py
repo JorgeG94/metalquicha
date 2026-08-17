@@ -408,10 +408,10 @@ GRADIENT_DH_CASES = [
     ("nh3", "sto-3g", "mpw2plyp"),
 ]
 
-# Looser than the MP2 gradient bound and tighter than the Kohn-Sham one, which
-# is where the two error sources meet: the reference is a difference formula
-# (1e-10 after Richardson) evaluated on quadratures that are the same tables but
-# not the same code. Measured agreement is a few times 1e-9.
+# Looser than the MP2 gradient bound and level with the Kohn-Sham one, which is
+# where the two error sources meet: the reference is a difference formula (1e-10
+# after Richardson) evaluated on quadratures that are the same tables but not the
+# same code. Measured agreement is a few times 1e-9.
 GRADIENT_DH_TOLERANCE = 1.0e-7
 
 RI_CC_CASES = [

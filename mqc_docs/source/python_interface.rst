@@ -171,17 +171,27 @@ Examples
 What it cannot do
 =================
 
-Gradients are not available from the CPU Hartree-Fock backend. libcint has the
-derivative entry points, so this is a gap rather than a wall, but an untested
-gradient is worse than an absent one -- so it raises:
+Gradients are available from every backend, including the CPU one -- that used
+to be the entry in this section and no longer is:
 
 .. code-block:: python
 
-   >>> mqc.MBE(water, level=0, method="hf", driver="gradient").run()
-   MQCError: the CPU backend has no gradients yet; run an energy, or build with cuEST
+   >>> mqc.MBE(water, level=0, method="hf", basis="sto-3g",
+   ...         driver="gradient").run(label="grad", write_to_file=True).gradient_norm
+   0.0861241914007507
 
-xTB gradients work normally, and so do cuEST's. Only the CPU Hartree-Fock path
-refuses.
+``write_to_file=True`` is not incidental: ``gradient_norm`` is read back out of
+``output_<label>.json``, so a run that wrote nothing returns ``None`` whether or
+not it computed a gradient. The norm is all this layer exposes -- enough to tell
+a run that produced a gradient from one that did not, not enough to tell a
+correct gradient from one with a sign error. The components are in that same
+JSON.
+
+What is refused is a *particular combination*, not a backend, and the list is in
+:doc:`capabilities` under gradient calculations -- an open-shell double hybrid,
+a frozen-core MP2, spin-scaled MP2, coupled cluster, and a few others. Each
+raises with a message naming the missing piece rather than returning a number
+from a formula that does not apply.
 
 ``backend=`` picks the integral backend -- ``"cuest"``/``"gpu"``,
 ``"libcint"``/``"cpu"``, or omitted for the build's default. A request the build
