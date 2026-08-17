@@ -45,7 +45,23 @@ module mqc_libcint_screening
 
    public :: fit_screening
    public :: screening_grid
+   public :: screening_target_t
    public :: SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
+
+   !> The part of a screening fit that does not depend on the damping function
+   !>
+   !> Both blocks are fitted to the *same* quantum potential on the *same* grid;
+   !> only the objective's damping term differs. Computing them once and handing
+   !> them to both fits halves the stage, and the expensive half is the one being
+   !> shared -- the grid runs to tens of thousands of points and every one of them
+   !> costs an integral over every shell pair.
+   type :: screening_target_t
+      logical :: ready = .false.
+      real(dp), allocatable :: grid(:, :)     !! (3, n_points), Bohr
+      real(dp), allocatable :: quantum(:)     !! Electronic potential at each point
+   contains
+      procedure :: destroy => screening_target_destroy
+   end type screening_target_t
 
    !> Which damping function to fit.
    integer, parameter :: SCREEN_EXPONENTIAL = 1   !! `1 - exp(-alpha r)`, the SCREEN2 block
@@ -260,8 +276,72 @@ contains
       rms = sqrt(rms/real(size(base), dp))
    end function objective
 
+   subroutine hold_others(base, monopole, argument, alpha, skip, rest)
+      !! The damped potential with one centre's contribution left out
+      !!
+      !! A line search moves one exponent and leaves the rest where they are, so
+      !! everything but that centre is constant across the whole bracket. Summed
+      !! once here, the search then costs one exponential per grid point instead of
+      !! one per point per centre -- which on eighteen centres is the difference
+      !! between the fit being the longest stage of a potential and being noise.
+      !!
+      !! Summed rather than subtracted from a running total. Subtracting would be
+      !! one operation instead of eighteen, but the total is a residual that the
+      !! fit is driving toward zero, so the cancellation gets worse exactly as the
+      !! search converges.
+      real(dp), intent(in) :: base(:), monopole(:, :), argument(:, :), alpha(:)
+      integer, intent(in) :: skip
+      real(dp), intent(out) :: rest(:)
+
+      real(dp) :: total
+      integer :: g, k
+
+      !$omp parallel do default(shared) private(g, k, total)
+      do g = 1, size(base)
+         total = base(g)
+         do k = 1, size(alpha)
+            if (k == skip) cycle
+            total = total + monopole(g, k)*(1.0_dp - exp(-alpha(k)*argument(g, k)))
+         end do
+         rest(g) = total
+      end do
+      !$omp end parallel do
+   end subroutine hold_others
+
+   function objective_one(rest, monopole, argument, alpha) result(rms)
+      !! The objective with every other centre already summed into `rest`
+      !!
+      !! Identical to `objective` term for term; what differs is that seventeen of
+      !! the eighteen exponentials were evaluated once by `hold_others` rather than
+      !! again for every probe of the bracket.
+      real(dp), intent(in) :: rest(:), monopole(:), argument(:)
+      real(dp), intent(in) :: alpha
+      real(dp) :: rms
+      real(dp) :: residual
+      integer :: g
+
+      rms = 0.0_dp
+      !$omp parallel do default(shared) private(g, residual) reduction(+:rms)
+      do g = 1, size(rest)
+         residual = (rest(g) + monopole(g)*(1.0_dp - exp(-alpha*argument(g)))) &
+                    *KCAL_PER_HARTREE
+         rms = rms + residual*residual
+      end do
+      !$omp end parallel do
+      rms = sqrt(rms/real(size(rest), dp))
+   end function objective_one
+
+   subroutine screening_target_destroy(this)
+      !! Release the shared grid and potential
+      class(screening_target_t), intent(inout) :: this
+
+      if (allocated(this%grid)) deallocate (this%grid)
+      if (allocated(this%quantum)) deallocate (this%quantum)
+      this%ready = .false.
+   end subroutine screening_target_destroy
+
    subroutine fit_screening(mol, density, dma, atomic_numbers, kind, alpha, error, &
-                            residual, grid_size)
+                            residual, grid_size, target)
       !! Fit one damping exponent per expansion centre
       !!
       !! Minimized by repeated bracketed line searches over one exponent at a time,
@@ -278,27 +358,47 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(out), optional :: residual
       integer, intent(out), optional :: grid_size
+      type(screening_target_t), intent(inout), optional :: target
+         !! The grid and quantum potential, built here if it is not ready and kept
+         !! for the next fit. Both damping forms are fitted to the same target, so
+         !! passing this across the pair halves the stage. Absent means build it,
+         !! use it and drop it, which is what a lone fit wants.
 
       real(dp), allocatable :: grid(:, :), potential(:, :, :), quantum(:)
-      real(dp), allocatable :: base(:), monopole(:, :), argument(:, :)
+      real(dp), allocatable :: base(:), monopole(:, :), argument(:, :), rest(:)
       real(dp) :: best, trial, low, high, mid, value_low, value_high, keep
       integer :: n_centre, i, sweep, step, g
+      logical :: shared
 
       if (kind /= SCREEN_EXPONENTIAL .and. kind /= SCREEN_GAUSSIAN) then
          call error%set(ERROR_VALIDATION, "screening: unknown damping function")
          return
       end if
 
-      call screening_grid(dma, atomic_numbers, grid, error)
-      if (error%has_error()) return
+      shared = .false.
+      if (present(target)) shared = target%ready
 
-      ! The quantum target: the electronic potential, nuclei excluded, because the
-      ! classical side above carries the electronic monopoles alone.
-      ! Contracted inside the integral loop. Holding the whole
-      ! `(n_ao, n_ao, n_grid)` tensor to form this one vector is 786 MB at 58
-      ! orbitals and 3.1 GB at 115, for a grid of about thirty thousand points.
-      call esp_contract(mol, grid, density, quantum, error)
-      if (error%has_error()) return
+      if (shared) then
+         grid = target%grid
+         quantum = target%quantum
+      else
+         call screening_grid(dma, atomic_numbers, grid, error)
+         if (error%has_error()) return
+
+         ! The quantum target: the electronic potential, nuclei excluded, because the
+         ! classical side above carries the electronic monopoles alone.
+         ! Contracted inside the integral loop. Holding the whole
+         ! `(n_ao, n_ao, n_grid)` tensor to form this one vector is 786 MB at 58
+         ! orbitals and 3.1 GB at 115, for a grid of about thirty thousand points.
+         call esp_contract(mol, grid, density, quantum, error)
+         if (error%has_error()) return
+
+         if (present(target)) then
+            target%grid = grid
+            target%quantum = quantum
+            target%ready = .true.
+         end if
+      end if
 
       n_centre = size(dma%points, 2)
       allocate (alpha(n_centre))
@@ -311,10 +411,16 @@ contains
       end do
 
       call precompute(dma, grid, quantum, base, monopole, argument, kind)
+      allocate (rest(size(base)))
       best = objective(base, monopole, argument, alpha)
       do sweep = 1, MAX_SWEEPS
          keep = best
          do i = 1, n_centre
+            ! Everything but centre `i` is fixed for the whole bracket below, so it
+            ! is summed once here and the sixty-one probes that follow each cost a
+            ! single exponential per grid point.
+            call hold_others(base, monopole, argument, alpha, i, rest)
+
             ! Golden-section on one exponent, inside the bounds.
             low = ALPHA_MIN
             high = ALPHA_MAX
@@ -322,8 +428,8 @@ contains
                if (high - low < ALPHA_TOL) exit
                mid = low + 0.381966_dp*(high - low)
                trial = high - 0.381966_dp*(high - low)
-               value_low = probe(base, monopole, argument, alpha, i, mid)
-               value_high = probe(base, monopole, argument, alpha, i, trial)
+               value_low = objective_one(rest, monopole(:, i), argument(:, i), mid)
+               value_high = objective_one(rest, monopole(:, i), argument(:, i), trial)
                if (value_low < value_high) then
                   high = trial
                else
@@ -331,7 +437,7 @@ contains
                end if
             end do
             mid = 0.5_dp*(low + high)
-            trial = probe(base, monopole, argument, alpha, i, mid)
+            trial = objective_one(rest, monopole(:, i), argument(:, i), mid)
             if (trial < best) then
                best = trial
                alpha(i) = mid
@@ -342,20 +448,7 @@ contains
 
       if (present(residual)) residual = best
       if (present(grid_size)) grid_size = size(grid, 2)
-      deallocate (grid, quantum, base, monopole, argument)
+      deallocate (grid, quantum, base, monopole, argument, rest)
    end subroutine fit_screening
-
-   function probe(base, monopole, argument, alpha, which, value) result(rms)
-      !! The objective with one exponent replaced
-      real(dp), intent(in) :: base(:), monopole(:, :), argument(:, :), alpha(:)
-      integer, intent(in) :: which
-      real(dp), intent(in) :: value
-      real(dp) :: rms
-      real(dp), allocatable :: trial(:)
-      allocate (trial, source=alpha)
-      trial(which) = value
-      rms = objective(base, monopole, argument, trial)
-      deallocate (trial)
-   end function probe
 
 end module mqc_libcint_screening

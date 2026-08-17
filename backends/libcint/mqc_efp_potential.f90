@@ -46,7 +46,8 @@ module mqc_efp_potential
                                distributed_dynamic_cross, &
                                casimir_polder_frequencies, N_CASIMIR_POLDER
    use mqc_libcint_multipole, only: multipole_matrices
-   use mqc_libcint_screening, only: fit_screening, SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
+   use mqc_libcint_screening, only: fit_screening, screening_target_t, &
+                                    SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
    use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
    use pic_logger, only: logger => global_logger
@@ -254,8 +255,10 @@ contains
       type(rhf_result_t) :: scf
       type(dma_result_t) :: dma
       type(response_hessian_t) :: shared_hessian
+      type(screening_target_t) :: screen_target
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
+      real(dp) :: rms_exp, rms_gauss
       integer :: natm, core, i, j, k, n_valence, n_electrons
       integer :: guess_kind
       real(dp), allocatable :: guess_total(:, :)
@@ -540,9 +543,16 @@ contains
 
       ! --- charge penetration screening ----------------------------------------
       ! Last, because it is fitted to the error the multipoles above make.
+      !
+      ! One grid and one quantum potential for both damping forms. They are fitted
+      ! to the same target and differ only in the damping term of the objective, so
+      ! the first fit hands its target to the second rather than the second building
+      ! an identical one. Building it is nearly the whole cost: the grid runs to
+      ! tens of thousands of points and each needs an integral over every shell pair.
       call fit_screening(mol, scf%density, dma, atomic_numbers, SCREEN_EXPONENTIAL, &
-                         alpha, error)
+                         alpha, error, target=screen_target, residual=rms_exp)
       if (error%has_error()) then
+         call screen_target%destroy()
          call mol%destroy()
          return
       end if
@@ -550,7 +560,8 @@ contains
       pot%screen2 = alpha
       deallocate (alpha)
       call fit_screening(mol, scf%density, dma, atomic_numbers, SCREEN_GAUSSIAN, &
-                         alpha, error)
+                         alpha, error, target=screen_target, residual=rms_gauss)
+      call screen_target%destroy()
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -559,7 +570,8 @@ contains
       pot%screen = alpha
       deallocate (alpha)
       if (talk) then
-         write (line, "(A)") "  screening fitted for both damping forms"
+         write (line, "(A,F0.4,A,F0.4,A)") "  screening fitted: exponential misses by ", &
+            rms_exp, " kcal/mol, Gaussian by ", rms_gauss, " kcal/mol"
          call logger%info(trim(line))
       end if
       if (talk) call report(stage, "charge-penetration screening", talk)
