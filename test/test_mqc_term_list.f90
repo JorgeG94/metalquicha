@@ -15,6 +15,7 @@ module test_mqc_term_list
    !! the optimizer backend is set to.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_frag_utils, only: generate_mbe_term_list, get_nfrags
+   use mqc_combinatorics, only: is_auxiliary_row, real_count_of
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_adapter, only: driver_config_t
    use pic_types, only: dp, int64
@@ -32,7 +33,9 @@ contains
                   new_unittest("deterministic", test_deterministic), &
                   new_unittest("screening_removes_terms", test_screening_removes_terms), &
                   new_unittest("screened_list_keeps_monomers", test_screened_keeps_monomers), &
-                  new_unittest("list_moves_with_geometry", test_list_moves_with_geometry) &
+                  new_unittest("list_moves_with_geometry", test_list_moves_with_geometry), &
+                  new_unittest("counterpoise_gives_every_n_mer_its_subsets", test_vmfc_rows), &
+                  new_unittest("counterpoise_follows_screening", test_vmfc_after_screening) &
                   ]
    end subroutine collect_mqc_term_list_tests
 
@@ -192,6 +195,166 @@ contains
       call check(error, n_close > n_spread, &
                  "bringing the monomers together should bring screened pairs back")
    end subroutine test_list_moves_with_geometry
+
+   subroutine test_vmfc_rows(error)
+      !! Counterpoise at level 3, where the recursion first has depth
+      !!
+      !! Level 2 is the easy case: a pair has two subsets and both are
+      !! monomers. Level 3 is where the rule has to be a rule -- a trimer
+      !! contributes six subsets, three of them pairs, and each of those pairs
+      !! must be ghosted against the *trimer* rather than against itself. Get
+      !! that wrong and the pair rows collide with the level-2 ones, which is a
+      !! wrong answer and not a crash.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms, i
+      integer :: n_aux, n_real
+
+      call make_chain(sys_geom, 4.0_dp)
+      config%nlevel = 3
+      config%counterpoise = "vmfc"
+
+      call generate_mbe_term_list(sys_geom, config, 3, polymers, n_terms)
+
+      ! 4 monomers, 6 pairs and 4 trimers is 14 ordinary rows. Each pair adds
+      ! its 2 subsets and each trimer its 6, so 14 + 12 + 24.
+      call check(error, n_terms == 50_int64, &
+                 "MBE(3) over 4 monomers under counterpoise is 50 rows, not "// &
+                 int_str(n_terms))
+      if (allocated(error)) return
+
+      n_aux = 0
+      n_real = 0
+      do i = 1, n_terms
+         if (is_auxiliary_row(polymers(i, :))) then
+            n_aux = n_aux + 1
+         else
+            n_real = n_real + 1
+         end if
+      end do
+
+      call check(error, n_real == 14, "the ordinary expansion must survive intact")
+      if (allocated(error)) return
+      call check(error, n_aux == 36, "every n-mer owes 2**n - 2 ghosted subsets")
+      if (allocated(error)) return
+
+      ! Every auxiliary row must belong to a parent that is actually being
+      ! computed, or it is subtracted from nothing.
+      do i = 1, n_terms
+         if (.not. is_auxiliary_row(polymers(i, :))) cycle
+         call check(error, has_parent(polymers, n_terms, abs(polymers(i, :))), &
+                    "a ghosted row has no parent n-mer in the list")
+         if (allocated(error)) return
+      end do
+
+      ! And no auxiliary row may be all-ghost: something has to be real.
+      do i = 1, n_terms
+         if (.not. is_auxiliary_row(polymers(i, :))) cycle
+         call check(error, real_count_of(polymers(i, :)) >= 1, &
+                    "a ghosted row with no real monomer is not a term")
+         if (allocated(error)) return
+      end do
+   end subroutine test_vmfc_rows
+
+   subroutine test_vmfc_after_screening(error)
+      !! A screened-out pair does not bring ghosted monomers along with it
+      !!
+      !! The rows are added after screening for exactly this reason. Added
+      !! before, a distant pair would be dropped and its two ghosted monomers
+      !! would stay -- auxiliary rows subtracted by nothing, paid for in full.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms, i
+      integer :: n_pairs, n_aux
+
+      call make_chain(sys_geom, 4.0_dp)
+      config%nlevel = 2
+      config%counterpoise = "vmfc"
+      allocate (config%fragment_cutoffs(2))
+      ! Cutoffs are in Angstrom and the chain is 4 Bohr (~2.117 Angstrom) per
+      ! step, so 3 Angstrom keeps the adjacent pairs and drops the rest.
+      config%fragment_cutoffs = [0.0_dp, 3.0_dp]
+
+      call generate_mbe_term_list(sys_geom, config, 2, polymers, n_terms)
+
+      n_pairs = 0
+      n_aux = 0
+      do i = 1, n_terms
+         if (is_auxiliary_row(polymers(i, :))) then
+            n_aux = n_aux + 1
+         else if (real_count_of(polymers(i, :)) == 2) then
+            n_pairs = n_pairs + 1
+         end if
+      end do
+
+      call check(error, n_pairs == 3, &
+                 "a 3 Angstrom cutoff on a 4 Bohr chain leaves the 3 adjacent pairs")
+      if (allocated(error)) return
+      call check(error, n_aux == 2*n_pairs, &
+                 "each surviving pair owes exactly two ghosted monomers, and a "// &
+                 "screened one owes none")
+   end subroutine test_vmfc_after_screening
+
+   logical function has_parent(polymers, n_terms, support)
+      !! Is this row's full support -- real and ghosted alike -- a real term
+      !!
+      !! Compared as a set, not term for term: a ghosted key lists its real
+      !! monomers first and the ghosted ones after, so `abs()` of it is the
+      !! parent's monomers in a different order.
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: n_terms
+      integer, intent(in) :: support(:)
+
+      integer(int64) :: j
+      integer :: want(size(support)), have(size(support))
+
+      want = support
+      call ascending(want)
+
+      has_parent = .false.
+      do j = 1, n_terms
+         if (is_auxiliary_row(polymers(j, :))) cycle
+         have = polymers(j, :)
+         call ascending(have)
+         if (all(have == want)) then
+            has_parent = .true.
+            return
+         end if
+      end do
+   end function has_parent
+
+   subroutine ascending(a)
+      !! Insertion sort; the arrays here are four wide
+      integer, intent(inout) :: a(:)
+
+      integer :: i, j, key
+
+      do i = 2, size(a)
+         key = a(i)
+         j = i - 1
+         do while (j >= 1)
+            if (a(j) <= key) exit
+            a(j + 1) = a(j)
+            j = j - 1
+         end do
+         a(j + 1) = key
+      end do
+   end subroutine ascending
+
+   function int_str(n) result(s)
+      !! The count, for a failure message that says what it actually found
+      integer(int64), intent(in) :: n
+      character(len=32) :: s
+
+      write (s, "(i0)") n
+      s = adjustl(s)
+   end function int_str
 
 end module test_mqc_term_list
 
