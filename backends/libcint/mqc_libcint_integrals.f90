@@ -68,6 +68,7 @@ module mqc_libcint_integrals
    public :: pair_index
    public :: two_electron_block
    public :: two_electron_optimizer
+   public :: ket_transformed_pairs
    ! Where an atom's functions live, and what angular momentum each carries.
    ! Both follow from the packing order in `molecule_build`, so they belong
    ! beside it rather than being re-derived by whatever needs them.
@@ -1180,6 +1181,132 @@ contains
       call libcint_del_optimizer(opt)
       deallocate (pair_i, pair_j)
    end subroutine molecule_eris
+
+   subroutine ket_transformed_pairs(this, c_vir, c_occ, pair_ov, pair_oo)
+      !! `(mu nu | b j)` and `(mu nu | i j)` in one pass, without the AO tensor
+      !!
+      !! The four-index transform behind an exact response Hessian starts by
+      !! contracting the ket pair. Doing that from a stored `eri` costs `n_ao^4`
+      !! to hold -- 16.5 GB at 217 orbitals, which is what stops a tripeptide
+      !! using the transform at all -- and the tensor is read once and dropped.
+      !! Contracting as the quartets come out needs only what is being built.
+      !!
+      !! **Threaded over bra pairs so the accumulation needs no reduction.**
+      !! `molecule_eris` can scatter all eight permutations of a canonical quartet
+      !! because it *assigns*: no two canonical quartets name the same element.
+      !! A contraction accumulates, so that argument does not carry over. Giving
+      !! each thread a bra pair makes it the sole writer of those rows, and the
+      !! price is the bra-ket permutation: every `(mu nu | lambda sigma)` is
+      !! computed once here where the stored build computes it for eight
+      !! positions, so roughly twice the integral work of a symmetric pass. The
+      !! `(lambda sigma)` symmetry is still used.
+      !!
+      !! Both blocks come out of one pass because they share every integral and
+      !! differ only in what the ket is contracted with.
+      class(libcint_molecule_t), intent(in) :: this
+      real(dp), intent(in) :: c_vir(:, :), c_occ(:, :)
+      real(dp), intent(out) :: pair_ov(:, :)   !! `(n_ao^2, n_vir*n_occ)`, `b` fastest
+      real(dp), intent(out) :: pair_oo(:, :)   !! `(n_ao^2, n_occ*n_occ)`, `i` fastest
+
+      real(dp), allocatable :: buf(:), ket(:, :, :), tmp(:, :), slab(:, :)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo
+      integer :: i, j, k, l, ret, idx, m, n_ao, n_vir, n_occ, row
+      integer :: npair, ipair, nket, iket
+      integer, allocatable :: pair_i(:), pair_j(:)
+      real(dp) :: value
+      type(c_ptr) :: opt
+
+      n_ao = this%nao
+      n_vir = size(c_vir, 2)
+      n_occ = size(c_occ, 2)
+      pair_ov = 0.0_dp
+      pair_oo = 0.0_dp
+
+      opt = c_null_ptr
+      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
+                                  this%nbas, this%env)
+
+      npair = this%nbas*this%nbas
+      nket = this%nbas*(this%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do ish = 1, this%nbas
+         do jsh = 1, this%nbas
+            ipair = ipair + 1
+            pair_i(ipair) = ish
+            pair_j(ipair) = jsh
+         end do
+      end do
+
+      !$omp parallel default(none) &
+      !$omp    shared(this, c_vir, c_occ, pair_ov, pair_oo, opt, npair, pair_i, pair_j, &
+      !$omp           n_ao, n_vir, n_occ) &
+      !$omp    private(ipair, ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, m, ret, idx, value, buf, ket, tmp, slab, row, iket)
+      allocate (buf(max_block(this)**4))
+      allocate (ket(n_ao, n_ao, max_block(this)**2))
+      allocate (tmp(n_ao, max(n_vir, n_occ)), slab(max(n_vir, n_occ), max(n_vir, n_occ)))
+      !$omp do schedule(dynamic)
+      do ipair = 1, npair
+         ish = pair_i(ipair)
+         jsh = pair_j(ipair)
+         di = shell_dim(this%cartesian, ish - 1, this%bas)
+         io = this%shell_offset(ish)
+         dj = shell_dim(this%cartesian, jsh - 1, this%bas)
+         jo = this%shell_offset(jsh)
+
+         ! Every ket pair against this bra pair, filled both ways round so the
+         ! contraction below can be a plain matrix product.
+         ket(:, :, 1:di*dj) = 0.0_dp
+         do ksh = 1, this%nbas
+            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
+            ko = this%shell_offset(ksh)
+            do lsh = 1, ksh
+               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
+               lo = this%shell_offset(lsh)
+               ret = two_electron_block(this%cartesian, buf, &
+                                        [ish - 1, jsh - 1, ksh - 1, lsh - 1], this%atm, &
+                                        this%natm, this%bas, this%nbas, this%env, opt)
+               if (ret == 0) cycle
+               do l = 1, dl
+                  do k = 1, dk
+                     do j = 1, dj
+                        do i = 1, di
+                           idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
+                           value = buf(idx)
+                           m = i + (j - 1)*di
+                           ket(ko + k, lo + l, m) = value
+                           ket(lo + l, ko + k, m) = value
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+
+         ! Contract the ket pair. The rows written are this bra pair's own, so
+         ! no two threads touch the same one.
+         do j = 1, dj
+            do i = 1, di
+               m = i + (j - 1)*di
+               row = (io + i) + n_ao*(jo + j - 1)
+
+               call pic_gemm(ket(:, :, m), c_occ, tmp(:, 1:n_occ))
+               call pic_gemm(c_vir, tmp(:, 1:n_occ), slab(1:n_vir, 1:n_occ), transa="T")
+               pair_ov(row, :) = reshape(slab(1:n_vir, 1:n_occ), [n_vir*n_occ])
+
+               call pic_gemm(c_occ, tmp(:, 1:n_occ), slab(1:n_occ, 1:n_occ), transa="T")
+               pair_oo(row, :) = reshape(slab(1:n_occ, 1:n_occ), [n_occ*n_occ])
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf, ket, tmp, slab)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+      deallocate (pair_i, pair_j)
+   end subroutine ket_transformed_pairs
 
    subroutine molecule_eris_packed(this, eri)
       !! Every unique two-electron integral, as (pq|rs) over packed AO pairs

@@ -52,7 +52,7 @@ module mqc_libcint_cphf
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_block
+   use mqc_libcint_integrals, only: libcint_molecule_t, ket_transformed_pairs, build_df_mo_block
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
@@ -113,6 +113,16 @@ module mqc_libcint_cphf
 
    !> What the concurrent frequency solves may take, in bytes.
    integer(int64), parameter :: SOLVE_BATCH_BYTES = 8_int64*1024_int64**3
+
+   !> What the exact MO transform may take at its peak, in bytes.
+   !>
+   !> Larger than `IN_CORE_LIMIT` on purpose, and not for the same reason. That one
+   !> bounds a tensor kept for a whole solve; this one bounds a few arrays held
+   !> across one transform, and what it is traded against is not a slower path but
+   !> an unusable one -- the column build on a 24-atom fragment is `n_quartets`
+   !> times `n_ov`, which is hours. A fragment big enough to exceed this has no
+   !> good exact route at all.
+   real(dp), parameter :: MO_TRANSFORM_LIMIT = 16.0e9_dp
 
    !> Above this many orbitals, recompute the integrals rather than store them.
    !>
@@ -878,7 +888,7 @@ contains
             call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
                                   progress=talk)
             if (present(hessian)) hessian%fitted = .true.
-         else if (mo_transform_fits(mol%nao, n_occ, direct)) then
+         else if (mo_transform_fits(mol%nao, n_occ, n_vir, direct)) then
             ! Exact integrals, but assembled the way the fitted build assembles
             ! them. The column build below is what this replaces, and it stays for
             ! the systems whose AO tensor will not fit.
@@ -1219,27 +1229,41 @@ contains
       concurrent = min(concurrent, n_freq, omp_get_max_threads())
    end function concurrent_solves
 
-   function mo_transform_fits(n_ao, n_occ, direct) result(fits)
+   function mo_transform_fits(n_ao, n_occ, n_vir, direct) result(fits)
       !! Can the whole Hessian be had by transformation rather than column by column
       !!
-      !! The transform needs the AO tensor in one piece. When the solve is already
-      !! holding it there is nothing to weigh; when it is integral-direct, building
-      !! one costs the `n_ao^4` the direct path exists to avoid, so it is worth it
-      !! only up to the same limit the stored path uses.
+      !! There is no `n_ao^4` term any more: `ket_transformed_pairs` contracts the
+      !! ket as the quartets come out, so the largest thing the transform holds is
+      !! the half-transformed pair block rather than the AO tensor. At 217 orbitals
+      !! that is the difference between 16.5 GB and 7 GB, which is the difference
+      !! between a tripeptide taking this path and taking the column build -- and
+      !! the column build at that size is hours.
       !!
-      !! Weighed against the peak rather than against the tensor: the first quarter
-      !! transform is live while the tensor still is, and it is `n_ao^3 * n_occ` --
-      !! a sixth of the tensor at ten atoms, and not ignorable at the limit.
+      !! Weighed at the peak, which is the stage where the pair blocks and the
+      !! first bra transform are both live. `(A+B)` and `(A-B)` are left out: the
+      !! column build allocates those too, so they are not what the choice is
+      !! between.
       integer, intent(in) :: n_ao
       integer, intent(in) :: n_occ
+      integer, intent(in) :: n_vir
       logical, intent(in) :: direct
       logical :: fits
+
+      real(dp) :: right, peak
 
       if (.not. direct) then
          fits = .true.
          return
       end if
-      fits = (real(n_ao, dp)**4 + real(n_ao, dp)**3*real(n_occ, dp))*8.0_dp <= IN_CORE_LIMIT
+      ! Both ket blocks, `(b j)` and `(i j)`, share the pass and so are both live,
+      ! as are the two operators and the product the solve goes on to form. The
+      ! pair blocks and the first bra transform dominate; the rest is added because
+      ! leaving it out made this read 6.7 GB where a tripeptide measured 9.5.
+      right = real(n_vir, dp)*real(n_occ, dp) + real(n_occ, dp)**2
+      peak = real(n_ao, dp)**2*right + real(n_vir, dp)*real(n_ao, dp)*right &
+             + 4.0_dp*(real(n_vir, dp)*real(n_occ, dp))**2 &
+             + (real(n_vir, dp)*real(n_occ, dp))**2
+      fits = peak*8.0_dp <= MO_TRANSFORM_LIMIT
    end function mo_transform_fits
 
    subroutine build_hessian_mo(mol, eri_in, c_occ, c_vir, gaps, aplus, aminus, error, &
@@ -1283,13 +1307,11 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: progress
 
-      real(dp), allocatable, target :: eri_own(:, :, :, :)
-      real(dp), pointer :: eri(:, :, :, :)
       real(dp), allocatable :: half(:, :), pair_ov(:, :), pair_oo(:, :)
       real(dp), allocatable :: step_ov(:, :), step_oo(:, :)
       real(dp), allocatable :: coul(:, :), exch(:, :)
       integer :: n_ao, n_vir, n_occ, n_ov, j
-      logical :: talk
+      logical :: talk, direct_ket
       type(timer_type) :: clock
 
       character(len=MAX_LINE_LENGTH) :: line
@@ -1302,39 +1324,35 @@ contains
       n_ov = n_vir*n_occ
       if (talk) call clock%start()
 
-      if (size(eri_in) > 0) then
-         eri => eri_in
-         allocate (eri_own(0, 0, 0, 0))
-      else
-         call mol%eris(eri_own)
-         eri => eri_own
-      end if
+      allocate (pair_ov(n_ao**2, n_ov), pair_oo(n_ao**2, n_occ*n_occ))
+      direct_ket = size(eri_in) == 0
       if (talk) then
          write (line, "(A,I0,A,F0.1,A)") "        exact Hessian: ", n_ov, &
             " pairs by transformation, ", &
-            (real(n_ao, dp)**4 + 4.0_dp*real(n_ov, dp)**2)*8.0_dp/1.0e6_dp, " MB"
+            (real(n_ao, dp)**2*real(n_ov, dp) + 4.0_dp*real(n_ov, dp)**2)*8.0_dp/1.0e6_dp, " MB"
          call logger%info(trim(line))
          call tick(clock, 1, 3, "step")
       end if
 
-      ! One: the last AO index onto the occupied space. `eri` is contiguous in
-      ! `(mu nu lambda)`, so this is a single gemm against a matrix of `n_ao^3` rows.
-      allocate (half(n_ao**3, n_occ))
-      call pic_gemm(reshape(eri, [n_ao**3, n_ao]), c_occ, half)
-      nullify (eri)
-      if (allocated(eri_own)) deallocate (eri_own)
-
-      ! Two: the third AO index, onto the virtuals for `(ai|bj)` and onto the
-      ! occupieds for `(ab|ij)`. Both read the same half-transformed tensor, which
-      ! is why the occupied index went first.
-      allocate (pair_ov(n_ao**2, n_ov), pair_oo(n_ao**2, n_occ*n_occ))
-      do j = 1, n_occ
-         call pic_gemm(reshape(half(:, j), [n_ao**2, n_ao]), c_vir, &
-                       pair_ov(:, 1 + (j - 1)*n_vir:j*n_vir))
-         call pic_gemm(reshape(half(:, j), [n_ao**2, n_ao]), c_occ, &
-                       pair_oo(:, 1 + (j - 1)*n_occ:j*n_occ))
-      end do
-      deallocate (half)
+      ! One and two: the ket pair onto the MO blocks.
+      !
+      ! From a stored tensor this is two gemms over its `n_ao^3` leading extent.
+      ! Without one it is a pass over the quartets that contracts as they come
+      ! out -- same result, and the `n_ao^4` never exists, which is the whole
+      ! reason a tripeptide can take this path at all.
+      if (direct_ket) then
+         call ket_transformed_pairs(mol, c_vir, c_occ, pair_ov, pair_oo)
+      else
+         allocate (half(n_ao**3, n_occ))
+         call pic_gemm(reshape(eri_in, [n_ao**3, n_ao]), c_occ, half)
+         do j = 1, n_occ
+            call pic_gemm(reshape(half(:, j), [n_ao**2, n_ao]), c_vir, &
+                          pair_ov(:, 1 + (j - 1)*n_vir:j*n_vir))
+            call pic_gemm(reshape(half(:, j), [n_ao**2, n_ao]), c_occ, &
+                          pair_oo(:, 1 + (j - 1)*n_occ:j*n_occ))
+         end do
+         deallocate (half)
+      end if
       if (talk) call tick(clock, 2, 3, "step")
 
       ! Three and four: the bra pair, the same way round. `step_*` holds the first

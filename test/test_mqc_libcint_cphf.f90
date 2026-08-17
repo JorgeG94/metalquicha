@@ -834,6 +834,27 @@ contains
       ! column build only if the column build had the same slip.
       call check(error, maxval(abs(minus_mo - transpose(minus_mo))) < 1.0e-12_dp, &
                  "(A-B) should be symmetric")
+      if (allocated(error)) return
+
+      ! And again without the tensor. Handed a zero-sized `eri`, the transform
+      ! contracts the ket as the quartets come out instead of storing them --
+      ! which is the only reason a fragment past about twenty atoms can take this
+      ! path, since `n_ao^4` is 16.5 GB at 217 orbitals. That route gives up the
+      ! bra-ket permutation to keep its accumulation race-free, so it is genuinely
+      ! different arithmetic reaching the same matrix, and worth its own check.
+      deallocate (plus_mo, minus_mo)
+      block
+         real(dp) :: empty(0, 0, 0, 0)
+         call build_hessian_mo(mol, empty, c_occ, c_vir, gaps, plus_mo, minus_mo, err)
+      end block
+      call check(error,.not. err%has_error(), &
+                 "the integral-direct transform failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, maxval(abs(plus_mo - plus_col)) < 1.0e-10_dp, &
+                 "(A+B) disagrees between the direct transform and the column build")
+      if (allocated(error)) return
+      call check(error, maxval(abs(minus_mo - minus_col)) < 1.0e-10_dp, &
+                 "(A-B) disagrees between the direct transform and the column build")
 
       call mol%destroy()
    end subroutine test_hessian_transform
@@ -877,7 +898,7 @@ contains
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, err)
       call cphf_solve(mol, scf%orbitals, scf%orbital_energies, n_occ, dip, u_iter, &
                       err, tol=1.0e-13_dp, in_core=.true.)
-      call check(error, .not. err%has_error(), "the iterative solve failed: "//err%get_message())
+      call check(error,.not. err%has_error(), "the iterative solve failed: "//err%get_message())
       if (allocated(error)) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
@@ -890,11 +911,11 @@ contains
       end do
       call mol%eris(eri)
       call build_hessian_mo(mol, eri, c_occ, c_vir, gaps, aplus, aminus, err)
-      call check(error, .not. err%has_error(), "the Hessian build failed: "//err%get_message())
+      call check(error,.not. err%has_error(), "the Hessian build failed: "//err%get_message())
       if (allocated(error)) return
 
       call static_response_dense(aplus, dip, c_occ, c_vir, u_dense, err)
-      call check(error, .not. err%has_error(), "the dense solve failed: "//err%get_message())
+      call check(error,.not. err%has_error(), "the dense solve failed: "//err%get_message())
       if (allocated(error)) return
 
       worst = maxval(abs(u_iter - u_dense))
