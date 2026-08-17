@@ -165,6 +165,15 @@ contains
       end if
       if (.not. error%has_error()) gradient = gradient + term
 
+      ! ---- continuum solvation (no-op without a cavity) ---------------------
+      !
+      ! Last, and from the total density: the cavity couples to the whole
+      ! electron density, not to one spin channel, which is why this is one call
+      ! for both the restricted and unrestricted paths where the two above are
+      ! two.
+      call system%gradient_pcm(scf%density, term, error)
+      if (.not. error%has_error()) gradient = gradient + term
+
       deallocate (term, weighted, half_density)
 
       if (error%has_error()) then

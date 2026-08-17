@@ -439,8 +439,28 @@ Fock matrix beside Vxc. cuEST builds the cavity itself, so what is ours is the
 input data -- radii from `mqc_pcm_radii` and the Gaussian switching exponents,
 whose convention has *not* been checked against cuEST's and whose prefactor was
 calibrated against the reference rather than derived. Both spin channels share
-one solve, since the surface charges come from the total density. Gradients are
-bound (`cuestPCMDerivativeCompute`) but not called.
+one solve, since the surface charges come from the total density.
+
+`cuestPCMDerivativeCompute` is now called, from `system_gradient_pcm`, and its
+term added in `compute_scf_gradient`. **It has never been run.** This box has no
+libcuest to link against, so what has been checked is that it compiles against
+the real bindings -- argument counts, types and the parameter constants -- and
+nothing more. Before trusting it:
+
+- Finite-difference one component. Displace an atom, take `(E(+h) - E(-h))/2h`
+  against cuEST's own PCM energy, and compare with the reported gradient. That
+  validates the wiring -- layout, sign, and whether the one call covers every
+  term -- without depending on whether the cavity model is right.
+- Only then look at an optimisation. Before this the gradient omitted the
+  continuum entirely while the energy included it, so an optimisation was
+  minimising one function along the gradient of another and could not converge;
+  that is the symptom this is meant to fix.
+
+If the finite difference agrees but solvated optimisations still behave badly,
+suspect the switching exponents above rather than this: a prefactor fitted to an
+energy can absorb a constant error while leaving its geometry dependence wrong,
+and a gradient is exactly that geometry dependence. The 1.5% is upstream of
+everything here.
 
 Multi-rank GPU binding is implemented and logged, but has not yet been exercised
 beyond one rank.

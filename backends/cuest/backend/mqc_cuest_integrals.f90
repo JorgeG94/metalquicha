@@ -46,6 +46,7 @@ module mqc_cuest_integrals
                     cuestPCMIntPlanCreate, cuestPCMIntPlanCreateWorkspaceQuery, &
                     cuestPCMIntPlanDestroy, &
                     cuestPCMPotentialCompute, cuestPCMPotentialComputeWorkspaceQuery, &
+                    cuestPCMDerivativeCompute, cuestPCMDerivativeComputeWorkspaceQuery, &
                     cuestResultsCreate, cuestResultsDestroy, &
                     CUEST_PCMINTPLAN, CUEST_PCMINTPLAN_NUM_POINT, &
                     CUEST_PCMINTPLAN_NUM_ACTIVE_POINT, &
@@ -53,6 +54,9 @@ module mqc_cuest_integrals
                     CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS, &
                     CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS_CONVERGENCE_THRESHOLD, &
                     CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS_MAX_ITERATIONS, &
+                    CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS, &
+                    CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS_CONVERGENCE_THRESHOLD, &
+                    CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS_MAX_ITERATIONS, &
                     CUEST_PCM_RESULTS, CUEST_PCMRESULT_PCM_DIELECTRIC_ENERGY, &
                     CUEST_PCMRESULT_CONVERGED_RESIDUAL, &
                     CUEST_PCMRESULT_NUM_ITERATIONS_TAKEN, CUEST_PCMRESULT_CONVERGED, &
@@ -282,6 +286,7 @@ module mqc_cuest_integrals
       procedure :: gradient_xc => system_gradient_xc
       procedure :: gradient_two_electron_uks => system_gradient_two_electron_uks
       procedure :: gradient_xc_uks => system_gradient_xc_uks
+      procedure :: gradient_pcm => system_gradient_pcm
    end type cuest_system_t
 
 contains
@@ -1244,6 +1249,109 @@ contains
 
       if (error%has_error()) pcm_energy = 0.0_dp
    end subroutine system_pcm_device
+
+   subroutine system_gradient_pcm(this, density, gradient, error)
+      !! The continuum's contribution to the nuclear gradient
+      !!
+      !! Everything in the dielectric energy depends on where the nuclei are:
+      !! the surface points sit on atom-centred spheres, the switching weights
+      !! are functions of interatomic distances, and the surface charges
+      !! interact with the nuclei directly. cuEST differentiates all of that
+      !! behind one call, in the same way it builds the cavity itself.
+      !!
+      !! The surface charges do *not* need a response term. They are determined
+      !! variationally, so the energy is stationary with respect to them and
+      !! their derivative contributes nothing at first order -- the same reason
+      !! `pcm_device` hands the Fock matrix the full potential rather than half
+      !! of it. What would otherwise be the expensive part of a continuum
+      !! gradient is therefore simply absent.
+      !!
+      !! `d_q_in` holds the converged charges on entry: the last SCF iteration
+      !! copies `q_out` into it, so a gradient taken after a converged SCF
+      !! starts from the right surface rather than from zero.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: density(:, :)    !! Total density, (n_ao, n_ao)
+      real(dp), intent(out) :: gradient(:, :)  !! (3, n_atoms), Hartree/Bohr
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params, results
+      integer(c_int) :: status
+      integer(c_int64_t) :: max_iter
+      real(dp) :: residual
+
+      gradient = 0.0_dp
+      if (error%has_error() .or. .not. this%has_pcm) return
+
+      call stage_matrix(this, this%d_matrix, density, "density (PCM gradient)", error)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      results = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(PCM derivative)", error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS, params, &
+                                                     CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS_CONVERGENCE_THRESHOLD, &
+                                                     this%pcm_tolerance), &
+                                 "PCM derivative convergence threshold", error)
+      end if
+      if (.not. error%has_error()) then
+         max_iter = int(this%pcm_max_iter, c_int64_t)
+         call cuest_status_check(cuest_param_set_i64(CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS, params, &
+                                                     CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS_MAX_ITERATIONS, &
+                                                     max_iter), &
+                                 "PCM derivative iteration limit", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestResultsCreate(CUEST_PCM_RESULTS, results), &
+                                 "cuestResultsCreate(PCM derivative)", error)
+      end if
+
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPCMDerivativeComputeWorkspaceQuery(this%handle, this%pcm_plan, &
+                                                                         params, temporary_desc, &
+                                                                         this%d_matrix, this%d_q_in, &
+                                                                         this%d_q_out, results, &
+                                                                         this%d_gradient), &
+                                 "cuestPCMDerivativeComputeWorkspaceQuery", error)
+      end if
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPCMDerivativeCompute(this%handle, this%pcm_plan, params, &
+                                                           temporary_ws, this%d_matrix, this%d_q_in, &
+                                                           this%d_q_out, results, this%d_gradient), &
+                                 "cuestPCMDerivativeCompute", error)
+      end if
+
+      ! The derivative runs its own iterative solve, so it converges or it does
+      ! not, exactly as the energy's does. Read the residual rather than
+      ! `CUEST_PCMRESULT_CONVERGED` for the reason given in `pcm_device`: that
+      ! attribute's width is not recoverable from the bindings.
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_results_query_f64(CUEST_PCM_RESULTS, results, &
+                                                         CUEST_PCMRESULT_CONVERGED_RESIDUAL, &
+                                                         residual), &
+                                 "query PCM derivative residual", error)
+         if (.not. error%has_error()) then
+            this%pcm_residual = residual
+            this%pcm_solved = (residual <= this%pcm_tolerance)
+         end if
+      end if
+
+      call workspace_free(temporary_ws)
+      if (c_associated(results)) then
+         status = cuestResultsDestroy(CUEST_PCM_RESULTS, results)
+         call cuest_status_check(status, "cuestResultsDestroy(PCM derivative)", error)
+      end if
+      if (c_associated(params)) then
+         status = cuestParametersDestroy(CUEST_PCMDERIVATIVECOMPUTE_PARAMETERS, params)
+         call cuest_status_check(status, "cuestParametersDestroy(PCM derivative)", error)
+      end if
+
+      call fetch_gradient(this, gradient, "dE_diel/dR", error)
+   end subroutine system_gradient_pcm
 
    subroutine system_xc_device(this, d_c_occ, d_out, xc_energy, error)
       !! RKS exchange-correlation potential, device in and device out
