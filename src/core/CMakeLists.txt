@@ -10,6 +10,7 @@ target_sources(
           mqc_pcm_radii.f90
           mqc_geometry.f90
           mqc_logo.f90
+          mqc_acknowledgements.f90
           mqc_mpi_comms.f90
           mqc_resources.f90
           mqc_result_types.f90
