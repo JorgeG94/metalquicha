@@ -579,7 +579,8 @@ contains
       real(dp), allocatable :: pchi(:, :), pgchi(:, :, :)
       real(dp), allocatable :: rho_p(:), p_grad(:, :)
       real(dp), allocatable :: dpart(:, :, :)
-      real(dp) :: wg_ref(3), wg_p(3), gdotp, coef_rho, integrand, w
+      real(dp) :: wg_ref(3), wg_p(3)
+      real(dp) :: gdotp, coef_rho, integrand, w
       integer, allocatable :: offsets(:), counts(:)
       integer :: npts, nao, natm, g0, g1, nb, ig, gg, id, ia, comp, own
       logical :: gga
