@@ -212,41 +212,79 @@ Gradient Calculations
 - **Units**: Hartree/Bohr
 - **Applications**: Geometry optimization, molecular dynamics
 
-On the CPU backend the analytic gradient covers Hartree-Fock restricted and
-unrestricted, Kohn-Sham through LDA, GGA, hybrid GGA, meta-GGA and
-range-separated hybrids, any of those with the Coulomb and exact-exchange
-builds density fitted -- and for a range-separated functional the fitted path
-is the *only* one with a gradient, because the exact-ERI side builds no second
-exchange derivative at the screened omega. And MP2
-over a restricted reference -- both the
-conventional one and ``ri-mp2``, where the correlation is fitted and the
-reference is not. The double hybrids have gradients too, and enough of their
-own conditions to be worth a section below.
+What has a gradient on the CPU backend, at a glance:
 
-Those last two are different energies and get different gradients: an
-``ri-mp2`` deck is differentiated by the fitted formulation, whose two-particle
-density stays three-index and contracts against three- and two-centre
-derivative integrals.
+.. list-table::
+   :header-rows: 1
+   :widths: 34 12 54
 
-Adding ``keywords.scf.density_fitting`` to an ``ri-mp2`` deck is a third
-energy, and it too has a gradient. There the *reference* is fitted as well, so
-the response operator, both potentials built from the relaxed density, and the
-whole reference two-electron derivative term move to the fitted integrals --
-and the last of those stops being a four-centre contraction at all, becoming
-three- and two-centre terms with intermediates of their own. One auxiliary
-basis serves both halves, which is the only combination a deck can express:
-``model.aux_basis`` is the only place a fitting set is named.
+   * - Method
+     - Gradient
+     - Notes
+   * - Hartree-Fock, restricted and unrestricted
+     - yes
+     - Exact or density fitted
+   * - Kohn-Sham: LDA, GGA, hybrid, meta-GGA
+     - yes
+     - Restricted and unrestricted; meta-GGA restricted only
+   * - Kohn-Sham: range-separated hybrid
+     - yes
+     - **Needs an auxiliary basis.** The exact-ERI path builds no second
+       exchange derivative at the screened omega, so the fitted one is the
+       only one
+   * - MP2, restricted
+     - yes
+     - All four combinations of fitted reference and fitted correlation
+   * - Double hybrids (``b2plyp``, ``b2gp-plyp``, ``mpw2plyp``)
+     - yes
+     - Restricted, all-electron, GGA-based; exact or fitted reference
+   * - Coupled cluster
+     - no
+     - Needs the Lambda amplitudes
+   * - Anything unrestricted beyond HF and semilocal/hybrid KS
+     - no
+     - See the refusal table below
 
-The fourth combination -- a *conventional* MP2 over a fitted reference -- is
-refused. Nothing about it is harder in principle, but its correlation gradient
-forms an exact-ERI two-particle density while the reference contributes
-three- and two-centre derivatives, and no routine assembles that pair.
+**The four MP2 combinations are four different energies**, not one energy
+reached four ways, and each gets its own gradient:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 22 56
+
+   * - Reference
+     - Correlation
+     - What differentiates it
+   * - exact
+     - exact
+     - ``mp2``. Four-centre derivatives throughout
+   * - exact
+     - fitted
+     - ``ri-mp2``. The two-particle density stays three-index and contracts
+       against three- and two-centre derivatives
+   * - fitted
+     - fitted
+     - ``ri-mp2`` plus ``keywords.scf.density_fitting``. The response operator,
+       both potentials built from the relaxed density and the reference's
+       two-electron derivative all move onto the auxiliary basis
+   * - fitted
+     - exact
+     - ``mp2`` plus ``keywords.scf.density_fitting``, and what a double hybrid
+       needs. **Consistent, not cheap**: the two-particle density is still
+       four-index and the four-centre integrals are still built. What fitting
+       buys is that the reference being differentiated is the one the SCF
+       converged
+
+One auxiliary basis serves both halves when both are fitted, which is the only
+combination a deck can express -- ``model.aux_basis`` is the only place a
+fitting set is named.
 
 Double hybrids
 ~~~~~~~~~~~~~~
 
 ``b2plyp``, ``b2gp-plyp`` and ``mpw2plyp`` have analytic gradients, restricted
-and all-electron, over an exact-ERI reference. This is not the hybrid gradient
+and all-electron, over an exact or a density-fitted reference. This is not the
+hybrid gradient
 with a correlation gradient added on, and the difference is the whole of the
 work:
 
@@ -300,11 +338,6 @@ number computed from a formula that does not apply:
      - The fitted J and K are written for one density, so this is refused for
        the energy and therefore for the gradient. The fitted *gradient* does
        carry both spin channels already -- it is the SCF that is missing
-   * - Conventional MP2 over a fitted reference
-     - The correlation would contract an exact two-particle density against
-       four-centre derivatives while the reference contributes three- and
-       two-centre ones, and nothing assembles that pair. Ask for ``ri-mp2``,
-       which fits both and is differentiated as one energy
    * - Frozen-core MP2 and RI-MP2
      - The relaxed density gains occupied-frozen and virtual-frozen blocks
    * - Spin-scaled MP2 (SCS, SOS)
@@ -321,15 +354,10 @@ number computed from a formula that does not apply:
        operator and the potential derivative at the screened omega. The three
        double hybrids carried here are all GGA-based, so this is reachable only
        by composing your own
-   * - Double hybrid over a fitted reference
-     - Its perturbative term is a conventional MP2, so it needs the same
-       missing pair as the row above. Note the fitted-reference machinery
-       ``ri-mp2`` uses does not reach it: that one fits the correlation too,
-       and a double hybrid's PT2 term is exact in a gradient run
    * - Frozen-core double hybrid
      - The relaxed density gains occupied-frozen blocks that are not built.
-       Note the double hybrid *energy* is all-electron whatever the deck says,
-       so this refuses rather than differentiating a different energy
+       The *energy* does honour ``freeze_core``, so this refuses rather than
+       returning the all-electron gradient of a frozen-core energy
    * - Coupled cluster
      - Needs the Lambda amplitudes, which are not implemented
 

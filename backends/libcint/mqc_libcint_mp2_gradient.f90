@@ -38,14 +38,16 @@ module mqc_libcint_mp2_gradient
    use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
-                                    two_electron_block
+                                    two_electron_block, three_centre, two_centre, &
+                                    metric_inverse_sqrt
    use mqc_libcint_mp2, only: transform_ovov
-   use mqc_libcint_cphf, only: cphf_solve
+   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general
    use mqc_libcint_rhf, only: build_fock
    use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                    iprinv_deriv_at, xc_potential_gradient, &
+                                   fitted_reference_gradient, &
                                    DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply
    use libcint_fortran, only: libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
@@ -76,7 +78,7 @@ contains
 
    subroutine libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
                                    error, n_frozen, block_bytes, force_blocked, &
-                                   xc, scf_density, pt2_scale)
+                                   xc, scf_density, pt2_scale, aux)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! **With `xc`, this returns something else**: the correlation part alone,
@@ -125,8 +127,21 @@ contains
          !! Take the blocked path whatever the size. Separate from the target
          !! on purpose -- the dense path blocks over the occupied index too,
          !! and a knob that forced the other path would leave that untested.
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Present, the reference was density fitted and this differentiates
+         !! that one. Only the reference moves: the response operator, both
+         !! potentials built from the relaxed density, and the reference's
+         !! two-electron derivative term, which stops being a four-centre object
+         !! and becomes three- and two-centre ones.
+         !!
+         !! The *correlation* stays exact throughout, which is what makes this
+         !! different from `libcint_ri_mp2_gradient`. Its two-particle density is
+         !! four-index and contracts against four-centre derivatives whatever the
+         !! reference fitted, so the integrals are still built -- fitting the SCF
+         !! does not make an MP2 gradient cheap, it makes it consistent.
 
-      real(dp), allocatable :: eri_packed(:, :), eri(:, :, :, :)
+      real(dp), allocatable :: eri_packed(:, :)
+      real(dp), allocatable, target :: eri(:, :, :, :)
       real(dp), allocatable :: ovov(:, :, :, :), t2(:, :, :, :)
       real(dp), allocatable :: doo(:, :), dvv(:, :), dm1mo(:, :), zeta(:, :)
       real(dp), allocatable, target :: gamma_ao(:, :, :, :)
@@ -139,10 +154,15 @@ contains
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
       real(dp), allocatable :: vrinv(:, :, :), hcore_a(:, :, :)
       real(dp), allocatable :: de2(:, :), vhf1(:, :, :, :)
+      real(dp), allocatable :: three_ao(:, :), jm12(:, :), metric(:, :)
+      real(dp), allocatable, target :: bref(:, :)
+      real(dp), allocatable :: ref_grad(:, :)
+      real(dp), pointer :: bref_arg(:, :)
+      real(dp), pointer :: eri_arg(:, :, :, :)
       real(dp), allocatable :: im1_t(:, :), work_t(:, :)
       integer, allocatable :: offsets(:), counts(:)
       integer :: n_ao, n_mo, n_o, n_v, frozen, iatom, comp, p0, p1, p, q, i, a
-      logical :: dense
+      logical :: dense, fitted
       real(dp) :: target_bytes
       real(dp), allocatable :: bounds(:, :)
       logical :: dh
@@ -242,6 +262,26 @@ contains
       allocate (hf_density(n_ao, n_ao))
       hf_density = 2.0_dp*matmul(c_occ, transpose(c_occ))
 
+      ! The reference's own fitting, built once and kept: `bref` for the three
+      ! potentials and the Z-vector, the raw integrals and metric for the
+      ! derivative term. Formed here rather than through `build_df_tensor`,
+      ! which would build the three-centre integrals a second time.
+      fitted = present(aux)
+      if (fitted) then
+         call three_centre(mol, aux, three_ao)
+         call two_centre(aux, metric)
+         call metric_inverse_sqrt(metric, jm12, error)
+         if (error%has_error()) return
+         allocate (bref(n_ao*n_ao, aux%nao))
+         call pic_gemm(three_ao, jm12, bref)
+      else
+         allocate (bref(0, 0))
+      end if
+      ! A disassociated pointer reaches an optional dummy as absent, which is
+      ! what keeps the four call sites below one branch each instead of two.
+      bref_arg => null()
+      if (fitted) bref_arg => bref
+
       ! `vhf1` is the reference operator's derivative, so its exchange carries
       ! the fraction the reference kept -- one for Hartree-Fock, the
       ! functional's for a hybrid. `de2` is not scaled with it: that term is the
@@ -254,12 +294,13 @@ contains
          call mol%eris(eri)
          call contract_gamma_eri(eri, gamma_ao, n_ao, imat_ao)
          call two_electron_mp2_terms(mol, gamma_ao, hf_density, de2, vhf1, &
-                                     k_scale=kf)
+                                     k_scale=kf, with_reference=.not. fitted)
          deallocate (gamma_ao)
       else
          call blocked_two_electron_terms(mol, t2, c_occ, c_vir, n_ao, n_o, n_v, &
                                          target_bytes, hf_density, imat_ao, de2, &
-                                         vhf1, error, k_scale=kf)
+                                         vhf1, error, k_scale=kf, &
+                                         with_reference=.not. fitted)
          if (error%has_error()) return
       end if
       deallocate (t2)
@@ -284,9 +325,11 @@ contains
       zero_h = 0.0_dp
       if (dh) then
          call reference_potential(dense, mol, eri, bounds, zero_h, dm1, veff, error, &
-                                  k_scale=kf, xc=xc, ref_density=scf_density)
+                                  k_scale=kf, xc=xc, ref_density=scf_density, &
+                                  bmat=bref_arg)
       else
-         call reference_potential(dense, mol, eri, bounds, zero_h, dm1, veff, error)
+         call reference_potential(dense, mol, eri, bounds, zero_h, dm1, veff, error, &
+                                  bmat=bref_arg)
       end if
       if (error%has_error()) return
       veff = 2.0_dp*veff
@@ -314,29 +357,27 @@ contains
       ! the Hartree-Fock equations against a Kohn-Sham reference: a different
       ! linear system, converging cleanly to the answer to a question nobody
       ! asked.
-      if (dense) then
-         if (dh) then
-            call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
-                            error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
-                            eri_in=eri, xc=xc, density=scf_density)
-         else
-            call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
-                            error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
-                            eri_in=eri)
-         end if
+      ! One of the two integral sources, never both -- `cphf_solve` refuses a
+      ! fitted tensor and an exact one together, and is right to: they are
+      ! different operators rather than two routes to one. A fitted reference
+      ! therefore hands over `bmat` and withholds `eri`, even though `eri` was
+      ! built and is sitting right there for the *correlation* term. Passing it
+      ! anyway is what this branch got wrong first, and the refusal caught it.
+      !
+      ! Integral-direct otherwise, with the same Schwarz bound the Fock builds
+      ! use. Measured against the stored path on water/cc-pVDZ, the screening
+      ! moves the gradient by less than 1e-12 -- it is the reference's own
+      ! Krylov solver, not screening, that put 4e-8 between the two codes.
+      eri_arg => null()
+      if (dense .and. .not. fitted) eri_arg => eri
+      if (dh) then
+         call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
+                         error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
+                         eri_in=eri_arg, xc=xc, density=scf_density, bmat=bref_arg)
       else
-         ! Integral-direct, with the same Schwarz bound the Fock builds use.
-         ! Measured against the stored path on water/cc-pVDZ, the screening
-         ! moves the gradient by less than 1e-12 -- it is the reference's own
-         ! Krylov solver, not screening, that put 4e-8 between the two codes.
-         if (dh) then
-            call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
-                            error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
-                            xc=xc, density=scf_density)
-         else
-            call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
-                            error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200)
-         end if
+         call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
+                         error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
+                         eri_in=eri_arg, bmat=bref_arg)
       end if
       if (error%has_error()) return
 
@@ -378,10 +419,12 @@ contains
       if (dh) then
          call reference_potential(dense, mol, eri, bounds, zero_h, &
                                   dm1 + transpose(dm1), veff, error, &
-                                  k_scale=kf, xc=xc, ref_density=scf_density)
+                                  k_scale=kf, xc=xc, ref_density=scf_density, &
+                                  bmat=bref_arg)
       else
          call reference_potential(dense, mol, eri, bounds, zero_h, &
-                                  dm1 + transpose(dm1), veff, error)
+                                  dm1 + transpose(dm1), veff, error, &
+                                  bmat=bref_arg)
       end if
       if (error%has_error()) return
       allocate (vhf_s1occ(n_ao, n_ao))
@@ -439,6 +482,20 @@ contains
       if (dh) then
          call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error)
          if (error%has_error()) return
+      end if
+
+      ! The reference's two-electron derivative, when that reference was fitted.
+      ! `vhf1` is zero in this case and the loop below contributes nothing, so
+      ! this is a replacement rather than an addition. The half is the factor
+      ! `two_electron_mp2_terms` carries implicitly by building two of the four
+      ! differentiated positions and letting the integral's symmetry supply the
+      ! rest; `fitted_reference_gradient` returns the honest derivative instead.
+      if (fitted) then
+         allocate (ref_grad(3, mol%natm))
+         ref_grad = 0.0_dp
+         call fitted_reference_gradient(mol, aux, three_ao, jm12, hf_density, dm1p, &
+                                        ref_grad, k_scale=kf)
+         gradient = gradient + 0.5_dp*ref_grad
       end if
 
       allocate (offsets(mol%natm), counts(mol%natm))
@@ -566,7 +623,7 @@ contains
    end subroutine gamma1_intermediates
 
    subroutine reference_potential(dense, mol, eri, bounds, zero_h, density, &
-                                  veff, error, k_scale, xc, ref_density)
+                                  veff, error, k_scale, xc, ref_density, bmat)
       !! The reference operator's response to a density
       !!
       !! `J - K/2` for Hartree-Fock; for a Kohn-Sham reference the exchange
@@ -585,10 +642,21 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(in), optional :: ref_density(:, :)
          !! Where the kernel is evaluated. Required with `xc`.
+      real(dp), intent(in), optional :: bmat(:, :)
+         !! The reference's fitted tensor `B(mu nu, P)`. Present, the two-electron
+         !! half comes from it and neither `eri` nor the direct build is touched.
+         !! `density` here is a relaxed correlation density, so this cannot go
+         !! through the SCF's own fitted build -- see `fitted_potential_general`.
+         !! The kernel below is unaffected either way: `f_xc` is a grid quantity
+         !! and knows nothing about where J and K came from.
 
-      call two_electron_potential(dense, mol, eri, bounds, zero_h, density, veff, &
-                                  error, k_scale=k_scale)
-      if (error%has_error()) return
+      if (present(bmat)) then
+         call fitted_potential_general(bmat, density, veff, k_scale=k_scale)
+      else
+         call two_electron_potential(dense, mol, eri, bounds, zero_h, density, veff, &
+                                     error, k_scale=k_scale)
+         if (error%has_error()) return
+      end if
       if (.not. present(xc)) return
       call xc_kernel_apply(xc, mol, ref_density, density, veff, error)
    end subroutine reference_potential
@@ -877,7 +945,7 @@ contains
 
    subroutine blocked_two_electron_terms(mol, t2, c_occ, c_vir, n_ao, n_o, n_v, &
                                          target_bytes, hf_density, imat_ao, de2, &
-                                         vhf1, error, k_scale)
+                                         vhf1, error, k_scale, with_reference)
       !! The Lagrangian and the gradient's two-electron term, a block at a time
       !!
       !! Neither the integrals nor the two-particle density is ever whole here.
@@ -903,6 +971,9 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: k_scale
          !! The reference's exchange fraction, passed through to `vhf1`.
+      logical, intent(in), optional :: with_reference
+         !! Passed straight through, and meaning what it means there: false with
+         !! a fitted reference, whose derivative is not a four-centre object.
 
       real(dp), allocatable, target :: gamma_blk(:, :, :, :)
       real(dp), allocatable :: eri_blk(:, :, :, :), local(:, :)
@@ -933,7 +1004,7 @@ contains
          call two_electron_mp2_terms(mol, gamma_blk, hf_density, de2, vhf1, &
                                      ish_lo=ish_lo, ish_hi=ish_hi, &
                                      p_offset=p_lo - 1, eri_blk=eri_blk, &
-                                     k_scale=k_scale)
+                                     k_scale=k_scale, with_reference=with_reference)
 
          ! The Lagrangian, over this block of the contracted first index. Same
          ! product as the dense path, with `k` the block rather than `n_ao`.
@@ -1002,7 +1073,7 @@ contains
 
    subroutine two_electron_mp2_terms(mol, gamma_ao, hf_density, de2, vhf1, &
                                      ish_lo, ish_hi, p_offset, eri_blk, with_gamma, &
-                                     k_scale)
+                                     k_scale, with_reference)
       !! The differentiated integrals, contracted twice
       !!
       !! Once against the two-particle density, which gives a gradient
@@ -1036,6 +1107,12 @@ contains
          !! nothing else. `de2` contracts the two-particle density against the
          !! full interaction whatever the functional does with exchange, because
          !! perturbative correlation is not part of the functional's exchange.
+      logical, intent(in), optional :: with_reference
+         !! False leaves `vhf1` alone and builds only the two-particle term,
+         !! which is what a *fitted* reference wants: its operator has no
+         !! four-centre derivative at all, so the matrices built here would be
+         !! the derivative of an interaction the SCF never used. The correlation
+         !! half is unaffected -- it is exact whatever the reference fitted.
       integer, intent(in), optional :: ish_lo, ish_hi
          !! Shells to differentiate over. Absent means all of them, which is the
          !! dense path; present is one block of the first index.
@@ -1059,7 +1136,7 @@ contains
       real(dp) :: g, g0, kx
       real(dp), allocatable :: eri_local(:)
       real(dp), pointer :: eri_out(:, :, :, :)
-      logical :: want_eri, want_gamma
+      logical :: want_eri, want_gamma, want_ref
 
       nao = mol%nao
       nbas = mol%nbas
@@ -1089,6 +1166,8 @@ contains
       want_eri = present(eri_blk)
       want_gamma = .true.
       if (present(with_gamma)) want_gamma = with_gamma
+      want_ref = .true.
+      if (present(with_reference)) want_ref = with_reference
       ! The exchange half-coefficient, scaled. One for Hartree-Fock, giving back
       ! the -0.5 this loop carried before there was a choice.
       kx = 0.5_dp
@@ -1105,7 +1184,7 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(mol, gamma_ao, hf_density, de2, vhf1, opt, mx, nao, nbas, natm, &
-      !$omp           shell_atom, first, last, off, want_eri, want_gamma, eri_out, kx) &
+      !$omp           shell_atom, first, last, off, want_eri, want_gamma, want_ref, eri_out, kx) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, g0, gi, shls, ia, buf, &
       !$omp            de_local, vhf_local, eri_local)
@@ -1178,18 +1257,20 @@ contains
                                  if (want_gamma) de_local(comp, ia) = de_local(comp, ia) &
                                                                  - 2.0_dp*g*gamma_ao(io + i - off, jo + j, ko + k, lo + l)
 
-                                 vhf_local(ko + k, lo + l, comp, ia) = &
-                                    vhf_local(ko + k, lo + l, comp, ia) &
-                                    + g*hf_density(io + i, jo + j)
-                                 vhf_local(ko + k, jo + j, comp, ia) = &
-                                    vhf_local(ko + k, jo + j, comp, ia) &
-                                    - kx*g*hf_density(io + i, lo + l)
-                                 vhf_local(io + i, jo + j, comp, ia) = &
-                                    vhf_local(io + i, jo + j, comp, ia) &
-                                    + g*hf_density(ko + k, lo + l)
-                                 vhf_local(io + i, lo + l, comp, ia) = &
-                                    vhf_local(io + i, lo + l, comp, ia) &
-                                    - kx*g*hf_density(jo + j, ko + k)
+                                 if (want_ref) then
+                                    vhf_local(ko + k, lo + l, comp, ia) = &
+                                       vhf_local(ko + k, lo + l, comp, ia) &
+                                       + g*hf_density(io + i, jo + j)
+                                    vhf_local(ko + k, jo + j, comp, ia) = &
+                                       vhf_local(ko + k, jo + j, comp, ia) &
+                                       - kx*g*hf_density(io + i, lo + l)
+                                    vhf_local(io + i, jo + j, comp, ia) = &
+                                       vhf_local(io + i, jo + j, comp, ia) &
+                                       + g*hf_density(ko + k, lo + l)
+                                    vhf_local(io + i, lo + l, comp, ia) = &
+                                       vhf_local(io + i, lo + l, comp, ia) &
+                                       - kx*g*hf_density(jo + j, ko + k)
+                                 end if
 
                                  ! The transposed ket pair: the same integral,
                                  ! and not the same contraction. Skipped on the
@@ -1198,18 +1279,20 @@ contains
                                  if (lsh /= ksh) then
                                     if (want_gamma) de_local(comp, ia) = de_local(comp, ia) &
                                                                  - 2.0_dp*g*gamma_ao(io + i - off, jo + j, lo + l, ko + k)
-                                    vhf_local(lo + l, ko + k, comp, ia) = &
-                                       vhf_local(lo + l, ko + k, comp, ia) &
-                                       + g*hf_density(io + i, jo + j)
-                                    vhf_local(lo + l, jo + j, comp, ia) = &
-                                       vhf_local(lo + l, jo + j, comp, ia) &
-                                       - kx*g*hf_density(io + i, ko + k)
-                                    vhf_local(io + i, jo + j, comp, ia) = &
-                                       vhf_local(io + i, jo + j, comp, ia) &
-                                       + g*hf_density(lo + l, ko + k)
-                                    vhf_local(io + i, ko + k, comp, ia) = &
-                                       vhf_local(io + i, ko + k, comp, ia) &
-                                       - kx*g*hf_density(jo + j, lo + l)
+                                    if (want_ref) then
+                                       vhf_local(lo + l, ko + k, comp, ia) = &
+                                          vhf_local(lo + l, ko + k, comp, ia) &
+                                          + g*hf_density(io + i, jo + j)
+                                       vhf_local(lo + l, jo + j, comp, ia) = &
+                                          vhf_local(lo + l, jo + j, comp, ia) &
+                                          - kx*g*hf_density(io + i, ko + k)
+                                       vhf_local(io + i, jo + j, comp, ia) = &
+                                          vhf_local(io + i, jo + j, comp, ia) &
+                                          + g*hf_density(lo + l, ko + k)
+                                       vhf_local(io + i, ko + k, comp, ia) = &
+                                          vhf_local(io + i, ko + k, comp, ia) &
+                                          - kx*g*hf_density(jo + j, lo + l)
+                                    end if
                                  end if
                               end do
                            end do

@@ -435,7 +435,7 @@ contains
       if (present(bmat)) then
          ! `half` is C_vir U, which is exactly the factor the fitted build
          ! wants: it never assembles Dt at all.
-         call response_operator_df(bmat, half, c_occ, dtilde, g)
+         call response_operator_df(bmat, half, c_occ, dtilde, g, k_scale=kf)
       else if (direct) then
          ! density_screen=.false. is not optional here. `dtilde` is the trial
          ! rotation the CG solver drives towards zero, so the default
@@ -469,7 +469,7 @@ contains
       deallocate (dtilde, g, half, work)
    end subroutine response_operator
 
-   subroutine response_operator_df(b, x, c_occ, dtilde, g)
+   subroutine response_operator_df(b, x, c_occ, dtilde, g, k_scale)
       !! `J - K/2` for a response density, from the fitted tensor
       !!
       !! **Why this is not `build_fock_df`.** That one takes its exchange
@@ -500,10 +500,22 @@ contains
       real(dp), intent(in) :: c_occ(:, :)    !! (n_ao, n_occ)
       real(dp), intent(in) :: dtilde(:, :)   !! The assembled response density, for J
       real(dp), intent(out) :: g(:, :)
+      real(dp), intent(in), optional :: k_scale
+         !! The exchange fraction the reference kept. Absent is all of it.
+         !!
+         !! This used to be missing, and the exact-integral branch beside it has
+         !! carried the fraction all along -- so a *fitted* hybrid or double
+         !! hybrid solved its response equations with full exact exchange while
+         !! its energy used a fraction of it. Not a small error and not a loud
+         !! one: on B2PLYP/STO-3G it moved the gradient by 1.6e-3, about 1.5%,
+         !! with translational invariance holding at 1e-14 throughout.
 
       real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :)
-      real(dp) :: c_p
+      real(dp) :: c_p, kf
       integer :: n, n_occ, naux, p
+
+      kf = 1.0_dp
+      if (present(k_scale)) kf = k_scale
 
       n = size(c_occ, 1)
       n_occ = size(c_occ, 2)
@@ -523,7 +535,7 @@ contains
          end associate
       end do
 
-      g = coul - 0.5_dp*exch
+      g = coul - 0.5_dp*kf*exch
    end subroutine response_operator_df
 
    subroutine fitted_potential_general(b, dens, g, k_scale)

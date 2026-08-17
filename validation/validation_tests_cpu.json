@@ -1549,6 +1549,56 @@
             "type": "unfragmented"
         },
         {
+            "name": "MP2 gradient over a fitted reference H2O sto-3g/cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_mp2_dfref_grad.json",
+            "expected_energy": -74.997749909455,
+            "expected_gradient": [
+                [
+                    7e-12,
+                    3.16e-10,
+                    -0.100058570598
+                ],
+                [
+                    -2e-12,
+                    -0.03160630008,
+                    0.050029285422
+                ],
+                [
+                    -7e-12,
+                    0.031606299753,
+                    0.050029285188
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "DH B2PLYP gradient over a fitted reference H2O sto-3g/cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_b2plyp_dfref_grad.json",
+            "expected_energy": -75.210556532568,
+            "expected_gradient": [
+                [
+                    1.2e-11,
+                    3.06e-10,
+                    -0.103869644446
+                ],
+                [
+                    -1.2e-11,
+                    -0.03625327539,
+                    0.051934822354
+                ],
+                [
+                    1.1e-11,
+                    0.036253275068,
+                    0.05193482233
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "DH B2PLYP gradient H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_b2plyp_grad.json",
             "expected_energy": -75.20973856727,

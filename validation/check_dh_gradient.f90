@@ -77,7 +77,7 @@ program check_dh_gradient
                    reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                             0.0_dp, -1.4308_dp, 1.1078_dp, &
                             0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
-                   "sto-3g", 10, "b2plyp", n_bad)
+                   "sto-3g", 10, "b2plyp", "", n_bad)
 
    ! No symmetry left, and a different PT2 coefficient: B2GP-PLYP takes 0.36
    ! where B2PLYP takes 0.27, so a coefficient applied in the wrong place --
@@ -87,7 +87,7 @@ program check_dh_gradient
                    reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                             0.31_dp, -1.52_dp, 1.03_dp, &
                             -0.09_dp, 1.35_dp, 1.21_dp], [N_DIM, 3]), &
-                   "sto-3g", 10, "b2gp-plyp", n_bad)
+                   "sto-3g", 10, "b2gp-plyp", "", n_bad)
 
    ! Linear, with a doubly degenerate pi HOMO, and the case that exposed the
    ! density tolerance below.
@@ -95,7 +95,7 @@ program check_dh_gradient
                    reshape([0.0_dp, 0.0_dp, -2.0_dp, &
                             0.0_dp, 0.0_dp, 0.0_dp, &
                             0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
-                   "sto-3g", 14, "b2gp-plyp", n_bad)
+                   "sto-3g", 14, "b2gp-plyp", "", n_bad)
 
    ! A third coefficient, and a molecule whose heavy atom is not oxygen.
    call check_case("NH3 pyramidal / sto-3g, mPW2-PLYP", [7, 1, 1, 1], &
@@ -104,7 +104,28 @@ program check_dh_gradient
                             1.77_dp, 0.11_dp, -0.51_dp, &
                             -0.83_dp, 1.58_dp, -0.47_dp, &
                             -0.91_dp, -1.61_dp, -0.44_dp], [N_DIM, 4]), &
-                   "sto-3g", 10, "mpw2plyp", n_bad)
+                   "sto-3g", 10, "mpw2plyp", "", n_bad)
+
+   ! The same functionals over a *fitted* reference, which is a different
+   ! energy: the SCF fits its own J and K, so the Z-vector's operator, both
+   ! potentials built from the relaxed density and the reference's two-electron
+   ! derivative all come off the auxiliary basis. The perturbative term stays
+   ! exact, which is what the driver does in a gradient run.
+   call check_case("H2O / sto-3g, B2PLYP, fitted reference", [8, 1, 1], &
+                   ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "sto-3g", 10, "b2plyp", "cc-pvdz-rifit", n_bad)
+
+   ! Asymmetric and with a third coefficient, so a term that pairs the two
+   ! densities the wrong way round in the fitted exchange cannot hide.
+   call check_case("HCN / sto-3g, B2GP-PLYP, fitted reference", [1, 6, 7], &
+                   ["H", "C", "N"], &
+                   reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                            0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                   "sto-3g", 14, "b2gp-plyp", "cc-pvdz-rifit", n_bad)
 
    write (*, "(a)") ""
    if (n_bad == 0) then
@@ -116,7 +137,8 @@ program check_dh_gradient
 
 contains
 
-   subroutine check_case(label, numbers, symbols, coords, basis, nelec, functional, n_bad)
+   subroutine check_case(label, numbers, symbols, coords, basis, nelec, functional, &
+                         aux_basis, n_bad)
       character(len=*), intent(in) :: label
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -124,6 +146,8 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec
       character(len=*), intent(in) :: functional
+      character(len=*), intent(in) :: aux_basis
+         !! Empty for an exact reference; a basis name fits the SCF's J and K.
       integer, intent(inout) :: n_bad
 
       type(error_t) :: error
@@ -137,7 +161,7 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call dh_gradient(numbers, symbols, coords, basis, nelec, functional, &
+      call dh_gradient(numbers, symbols, coords, basis, nelec, functional, aux_basis, &
                        e0, analytic, error)
       if (fail(error, n_bad)) return
 
@@ -145,10 +169,10 @@ contains
       do ia = 1, natm
          do comp = 1, 3
             call central(numbers, symbols, coords, basis, nelec, functional, &
-                         ia, comp, STEP, coarse, error)
+                         aux_basis, ia, comp, STEP, coarse, error)
             if (fail(error, n_bad)) return
             call central(numbers, symbols, coords, basis, nelec, functional, &
-                         ia, comp, 0.5_dp*STEP, fine, error)
+                         aux_basis, ia, comp, 0.5_dp*STEP, fine, error)
             if (fail(error, n_bad)) return
             ! Richardson: the h^2 error cancels between the two, leaving h^4.
             numeric(comp, ia) = (4.0_dp*fine - coarse)/3.0_dp
@@ -176,7 +200,7 @@ contains
       end if
    end subroutine check_case
 
-   subroutine converge(mol, nelec, xc, scf, error)
+   subroutine converge(mol, nelec, xc, scf, error, aux)
       !! One SCF, from superposed atomic densities
       !!
       !! **The guess is load-bearing here, which is not obvious.** A converged
@@ -192,6 +216,9 @@ contains
       type(xc_context_t), intent(inout) :: xc
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: error
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Present, the SCF fits its own J and K. That is a different energy,
+         !! and the gradient below has to differentiate the one that was run.
 
       real(dp), allocatable :: guess_a(:, :), guess_b(:, :)
 
@@ -199,18 +226,18 @@ contains
       if (error%has_error()) return
       call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, DENSITY_TOL, .false., scf, &
                            error, xc=xc, guess=SCF_GUESS_SAD, &
-                           guess_density=guess_a + guess_b)
+                           guess_density=guess_a + guess_b, aux=aux)
    end subroutine converge
 
    subroutine central(numbers, symbols, coords, basis, nelec, functional, &
-                      ia, comp, h, deriv, error)
+                      aux_basis, ia, comp, h, deriv, error)
       !! One central difference of the double hybrid energy
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec
-      character(len=*), intent(in) :: functional
+      character(len=*), intent(in) :: functional, aux_basis
       integer, intent(in) :: ia, comp
       real(dp), intent(in) :: h
       real(dp), intent(out) :: deriv
@@ -223,16 +250,18 @@ contains
       allocate (shifted(size(coords, 1), size(coords, 2)))
       shifted = coords
       shifted(comp, ia) = coords(comp, ia) + h
-      call dh_energy(numbers, symbols, shifted, basis, nelec, functional, plus, error)
+      call dh_energy(numbers, symbols, shifted, basis, nelec, functional, aux_basis, &
+                     plus, error)
       if (error%has_error()) return
       shifted(comp, ia) = coords(comp, ia) - h
-      call dh_energy(numbers, symbols, shifted, basis, nelec, functional, minus, error)
+      call dh_energy(numbers, symbols, shifted, basis, nelec, functional, aux_basis, &
+                     minus, error)
       if (error%has_error()) return
       deriv = (plus - minus)/(2.0_dp*h)
    end subroutine central
 
    subroutine dh_gradient(numbers, symbols, coords, basis, nelec, functional, &
-                          energy, gradient, error)
+                          aux_basis, energy, gradient, error)
       !! The total double hybrid gradient: Kohn-Sham plus scaled correlation
       !!
       !! The two halves are separate calls on purpose. The Kohn-Sham part is
@@ -245,12 +274,14 @@ contains
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec
-      character(len=*), intent(in) :: functional
+      character(len=*), intent(in) :: functional, aux_basis
       real(dp), intent(out) :: energy
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
 
       type(libcint_molecule_t) :: mol
+      type(libcint_molecule_t), target :: aux
+      type(libcint_molecule_t), pointer :: aux_arg
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(mp2_result_t) :: mp2
@@ -258,11 +289,19 @@ contains
 
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
+      aux_arg => null()
+      if (len_trim(aux_basis) > 0) then
+         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         if (error%has_error()) return
+         aux_arg => aux
+      end if
       call xc_context_create(mol, functional, xc, error, polarized=.false.)
       if (error%has_error()) return
-      call converge(mol, nelec, xc, scf, error)
+      call converge(mol, nelec, xc, scf, error, aux=aux_arg)
       if (error%has_error()) return
 
+      ! The perturbative term is exact whatever the reference fitted, which is
+      ! what the driver does in a gradient run and therefore what this has to do.
       call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
                            scf%energy, mp2, error)
       if (error%has_error()) return
@@ -271,32 +310,35 @@ contains
       call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
                                 orbital_energies=scf%orbital_energies, &
                                 n_occupied=scf%n_occupied, gradient=gradient, &
-                                error=error, xc=xc)
+                                error=error, xc=xc, aux=aux_arg)
       if (error%has_error()) return
 
       call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
                                 corr, error, xc=xc, scf_density=scf%density, &
-                                pt2_scale=xc%pt2_fraction)
+                                pt2_scale=xc%pt2_fraction, aux=aux_arg)
       if (error%has_error()) return
       gradient = gradient + corr
 
       call xc%destroy()
+      if (len_trim(aux_basis) > 0) call aux%destroy()
       call mol%destroy()
    end subroutine dh_gradient
 
    subroutine dh_energy(numbers, symbols, coords, basis, nelec, functional, &
-                        energy, error)
+                        aux_basis, energy, error)
       !! `E_KS + c E_PT2` at one geometry, converged from scratch
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec
-      character(len=*), intent(in) :: functional
+      character(len=*), intent(in) :: functional, aux_basis
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
       type(libcint_molecule_t) :: mol
+      type(libcint_molecule_t), target :: aux
+      type(libcint_molecule_t), pointer :: aux_arg
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(mp2_result_t) :: mp2
@@ -304,9 +346,15 @@ contains
       energy = 0.0_dp
       call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
+      aux_arg => null()
+      if (len_trim(aux_basis) > 0) then
+         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         if (error%has_error()) return
+         aux_arg => aux
+      end if
       call xc_context_create(mol, functional, xc, error, polarized=.false.)
       if (error%has_error()) return
-      call converge(mol, nelec, xc, scf, error)
+      call converge(mol, nelec, xc, scf, error, aux=aux_arg)
       if (error%has_error()) return
       ! A displaced point that did not converge would enter the finite
       ! difference as whatever the iteration happened to reach, and the
@@ -321,6 +369,7 @@ contains
       energy = scf%energy + xc%pt2_fraction*mp2%correlation
 
       call xc%destroy()
+      if (len_trim(aux_basis) > 0) call aux%destroy()
       call mol%destroy()
    end subroutine dh_energy
 
