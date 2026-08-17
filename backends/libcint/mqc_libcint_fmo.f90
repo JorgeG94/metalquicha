@@ -95,6 +95,7 @@ module mqc_libcint_fmo
    use pic_mpi_lib, only: comm_t, allreduce, MPI_SUM
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_vdw_radius
+   use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_bond_perception, only: connected_components
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
@@ -828,7 +829,6 @@ contains
 
    subroutine unitless_distance(fa, ia, fb, ib, r, error)
       !! |R_A - R_B| / (vdw_A + vdw_B), the separation FMO measures in
-      real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
       type(fragment_t), intent(in) :: fa, fb
       integer, intent(in) :: ia, ib
       real(dp), intent(out) :: r
