@@ -39,6 +39,9 @@ module mqc_config_adapter
       real(dp) :: fmo_resppc = 2.0_dp    !! Point-charge cutoff; negative disables it
       integer :: fmo_max_outer = 50
       real(dp) :: fmo_tolerance = 1.0e-7_dp
+      integer :: fmo_scf_max_iter = 100         !! Inner per-fragment SCF iteration cap
+      real(dp) :: fmo_scf_energy_tol = 1.0e-9_dp   !! Inner SCF energy convergence
+      real(dp) :: fmo_scf_density_tol = 1.0e-7_dp  !! Inner SCF density convergence
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
       integer :: global_groups = 0
@@ -160,6 +163,9 @@ contains
       driver_config%fmo_resppc = mqc_config%fmo_resppc
       driver_config%fmo_max_outer = mqc_config%fmo_max_outer
       driver_config%fmo_tolerance = mqc_config%fmo_tolerance
+      driver_config%fmo_scf_max_iter = mqc_config%fmo_scf_max_iter
+      driver_config%fmo_scf_energy_tol = mqc_config%fmo_scf_energy_tol
+      driver_config%fmo_scf_density_tol = mqc_config%fmo_scf_density_tol
 
       ! Set GMBE maximum intersection level
       driver_config%max_intersection_level = mqc_config%max_intersection_level

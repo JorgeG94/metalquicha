@@ -53,6 +53,7 @@ module mqc_libcint_atomic_guess
    !! corrupt a guess rather than an answer, which is exactly the kind of bug this
    !! code is bad at noticing.
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks, subshell_layout
    use mqc_libcint_rhf, only: SCF_GUESS_PROJ, rhf_result_t, run_libcint_uhf, &
@@ -61,6 +62,7 @@ module mqc_libcint_atomic_guess
    private
 
    public :: build_atomic_guess     !! Molecular guess densities from free-atom solutions
+   public :: build_restricted_guess  !! Name + density a restricted SCF starts from
    public :: parse_guess_name       !! Deck spelling to SCF_GUESS_*
    public :: guess_display_name     !! SCF_GUESS_* back to a name, for reporting
    public :: hund_multiplicity      !! Ground-state multiplicity of a free atom
@@ -188,6 +190,52 @@ contains
                         "basis_set_projection")
       end select
    end subroutine parse_guess_name
+
+   subroutine build_restricted_guess(mol, guess_name, guess_kind, guess_total, error)
+      !! Resolve a deck guess name and build the density a restricted SCF starts from
+      !!
+      !! The restricted counterpart of the guess block the bridge runs before its
+      !! own SCF: parse the name, and for the atomic guesses (SAD, SAC) build the
+      !! free-atom density and sum its spin channels into the one total a closed
+      !! shell takes. A guess that will not build is a reason to start elsewhere,
+      !! not to fail the run, so a failed atomic guess falls back to GWH -- loudly,
+      !! since the run is then doing something other than what the deck asked.
+      !!
+      !! Core and GWH need nothing here: the SCF builds them from H (and S), so
+      !! `guess_total` is left unallocated and only the kind comes back -- the same
+      !! contract `run_libcint_rhf` reads, which touches `guess_density` only for
+      !! the atomic guesses. Basis-set projection is refused rather than guessed
+      !! at: it needs a sub-SCF ladder the caller drives, which a single-shot
+      !! caller like MAKEFP has not.
+      type(libcint_molecule_t), intent(in) :: mol
+      character(len=*), intent(in) :: guess_name
+      integer, intent(out) :: guess_kind
+      real(dp), allocatable, intent(out) :: guess_total(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: guess_a(:, :), guess_b(:, :)
+      type(error_t) :: guess_error
+
+      call parse_guess_name(guess_name, guess_kind, error)
+      if (error%has_error()) return
+
+      if (guess_kind == SCF_GUESS_PROJ) then
+         call error%set(ERROR_VALIDATION, "the basis-set-projection guess needs a sub-SCF "// &
+                        "ladder and is not available here; choose sad, gwh or core")
+         return
+      end if
+
+      if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD) then
+         call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error)
+         if (guess_error%has_error()) then
+            call logger%warning("initial guess: "//guess_error%get_message()// &
+                                " -- falling back to gwh")
+            guess_kind = SCF_GUESS_GWH
+         else
+            guess_total = guess_a + guess_b
+         end if
+      end if
+   end subroutine build_restricted_guess
 
    pure function guess_display_name(kind) result(name)
       !! A guess constant back to its deck spelling, so a run can report itself

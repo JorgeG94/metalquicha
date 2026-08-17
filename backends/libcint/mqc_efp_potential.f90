@@ -38,6 +38,7 @@ module mqc_efp_potential
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, shell_dim
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_atomic_guess, only: build_restricted_guess, guess_display_name
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_dma, only: dma_result_t, distributed_multipoles
    use mqc_libcint_cphf, only: response_hessian_t, distributed_polarizability, &
@@ -206,7 +207,7 @@ contains
 
    subroutine make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge, n_core, &
-                                 vdwscl, verbose, aux_basis)
+                                 vdwscl, verbose, aux_basis, guess)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what. The SCF gives the density
@@ -232,6 +233,12 @@ contains
          !! its exchange-repulsion orbitals are valence only.
       real(dp), intent(in), optional :: vdwscl
       logical, intent(in), optional :: verbose
+      character(len=*), intent(in), optional :: guess
+         !! Initial-guess name from the deck (`keywords.guess.type`). Default is
+         !! "auto", which resolves to SAD on this backend -- the same guess the
+         !! Energy driver uses. Without it MAKEFP ran the core guess: a system the
+         !! Energy driver converged in ten iterations did not converge in two
+         !! hundred here, and the guess was the whole of the difference.
       character(len=*), intent(in), optional :: aux_basis
          !! Fit the dynamic response rather than building its Hessian exactly. That
          !! build is `n_ov` Fock builds and is most of what a potential costs; fitted,
@@ -250,6 +257,9 @@ contains
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
       integer :: natm, core, i, j, k, n_valence, n_electrons
+      integer :: guess_kind
+      real(dp), allocatable :: guess_total(:, :)
+      character(len=:), allocatable :: guess_name
       type(timer_type) :: stage
       logical :: talk
 
@@ -303,9 +313,12 @@ contains
             return
          end if
          if (talk) then
-            write (line, "(A,A,A,I0,A)") "  fitting the response with ", trim(aux_basis), ", ", aux%nao, " functions"
+            write (line, "(A,A,A,I0,A)") "  density fitting: ", trim(aux_basis), ", ", aux%nao, &
+               " functions (the SCF and the dynamic response)"
             call logger%info(trim(line))
          end if
+      else if (talk) then
+         call logger%info("  density fitting: off (the SCF and the dynamic response are exact)")
       end if
 
       ! Checked here, not where the ordering map needs it. The map runs after the
@@ -317,8 +330,44 @@ contains
          return
       end if
 
-      call run_libcint_rhf(mol, n_electrons, 200, 1.0e-12_dp, 1.0e-10_dp, &
-                           .false., scf, error)
+      ! Honour the deck's guess, the same as the Energy path: MAKEFP passing no
+      ! guess meant the core guess, which on anything larger than a few atoms does
+      ! not converge in 200 iterations where SAD converges in ten. `guess_total`
+      ! is left unallocated for core/gwh and the SCF reads it only for the atomic
+      ! guesses, so passing it unconditionally is safe.
+      guess_name = "auto"
+      if (present(guess)) guess_name = guess
+      call build_restricted_guess(mol, guess_name, guess_kind, guess_total, error)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      if (talk) call logger%info("  initial guess: "//guess_display_name(guess_kind))
+
+      ! `talk` (the makefp verbosity, true for a real run from the driver) rather
+      ! than a hardcoded .false.: the SCF that builds the potential is the main
+      ! computation here, so its iteration table belongs alongside the stage
+      ! timings this routine already prints, not hidden a level down.
+      !
+      ! 1e-10 energy / 1e-8 density: the density is what the multipoles and the
+      ! response are taken from, and 1e-8 is tight enough that the potential does
+      ! not move in any digit it reports. The energy keeps the 100:1 ratio the
+      ! rest of the code uses (SCF_ENERGY_TOL / SCF_DENSITY_TOL), so the density is
+      ! the binding criterion -- by the time it reaches 1e-8 the energy is already
+      ! past 1e-12. The old 1e-12 / 1e-10 chased digits below what a fragment
+      ! potential can carry and cost several iterations doing it.
+      !
+      ! `aux` present means density-fit the SCF too, not just the response: the
+      ! `scf.density_fitting` flag now fits both stages against the one auxiliary
+      ! basis, the same as the key does on the Energy path. Absent, the SCF is
+      ! exact.
+      if (present(aux_basis)) then
+         call run_libcint_rhf(mol, n_electrons, 200, 1.0e-10_dp, 1.0e-8_dp, &
+                              talk, scf, error, guess=guess_kind, guess_density=guess_total, aux=aux)
+      else
+         call run_libcint_rhf(mol, n_electrons, 200, 1.0e-10_dp, 1.0e-8_dp, &
+                              talk, scf, error, guess=guess_kind, guess_density=guess_total)
+      end if
       if (error%has_error()) then
          call mol%destroy()
          return

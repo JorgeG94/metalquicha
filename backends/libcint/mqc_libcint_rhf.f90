@@ -16,6 +16,7 @@ module mqc_libcint_rhf
    use pic_lapack_interfaces, only: pic_syev
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use mqc_convergence_report, only: convergence_header, convergence_footer
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
@@ -208,15 +209,12 @@ contains
       !! Through the logger like everything else the program says: the level
       !! decides whether it is seen, and a run redirected to a log file gets the
       !! table with it rather than only on a terminal that is no longer there.
+      !! The frame is `mqc_convergence_report`, shared with the FMO outer loop;
+      !! only the columns and their widths are the SCF's own.
       logical, intent(in) :: verbose
 
-      if (.not. verbose) return
-      call logger%info("")
-      call logger%info("  SCF iterations")
-      call logger%info("  "//repeat("-", 84))
-      call logger%info("    iter                 energy          dE          dD"// &
-                       "   diis       Fock       rest")
-      call logger%info("  "//repeat("-", 84))
+      call convergence_header(verbose, "SCF iterations", &
+                              "    iter                 energy          dE          dD   diis       Fock       rest", 84)
    end subroutine scf_table_header
 
    subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_rest)
@@ -249,16 +247,7 @@ contains
       logical, intent(in) :: verbose, converged
       integer, intent(in) :: iterations
 
-      character(len=LINE_LEN) :: line
-
-      if (.not. verbose) return
-      call logger%info("  "//repeat("-", 84))
-      if (converged) then
-         write (line, "(a,i0,a)") "  converged in ", iterations, " iterations"
-      else
-         write (line, "(a,i0,a)") "  NOT converged after ", iterations, " iterations"
-      end if
-      call logger%info(trim(line))
+      call convergence_footer(verbose, converged, iterations, "iterations", 84)
    end subroutine scf_table_footer
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &

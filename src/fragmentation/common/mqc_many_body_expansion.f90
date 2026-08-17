@@ -178,6 +178,11 @@ module mqc_many_body_expansion
          !! thing here as it does for MBE.
       integer :: max_outer = 50
       real(dp) :: outer_tol = 1.0e-7_dp
+      integer :: scf_max_iter = 100
+      real(dp) :: scf_energy_tol = 1.0e-9_dp
+      real(dp) :: scf_density_tol = 1.0e-7_dp
+         !! The inner per-fragment SCF: iteration cap and energy/density
+         !! convergence, held apart from the outer loop above.
       real(dp) :: energy = 0.0_dp
          !! What the run produced
 
@@ -310,7 +315,8 @@ contains
                            this%sys_geom%coordinates, this%owner, &
                            trim(this%basis), trim(this%esp), trim(this%expansion), &
                            trim(this%far_field), this%resppc, this%level, &
-                           this%max_outer, this%outer_tol, this%energy, error)
+                           this%max_outer, this%outer_tol, this%scf_max_iter, &
+                           this%scf_energy_tol, this%scf_density_tol, this%energy, error)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -381,7 +387,8 @@ contains
                            this%sys_geom%coordinates, this%owner, &
                            trim(this%basis), trim(this%esp), trim(this%expansion), &
                            trim(this%far_field), this%resppc, this%level, &
-                           this%max_outer, this%outer_tol, this%energy, error, &
+                           this%max_outer, this%outer_tol, this%scf_max_iter, &
+                           this%scf_energy_tol, this%scf_density_tol, this%energy, error, &
                            comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())

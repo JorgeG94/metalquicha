@@ -15,6 +15,7 @@ module mqc_libcint_bridge
    !! elsewhere.
    use pic_logger, only: logger => global_logger
    use pic_types, only: dp
+   use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -237,7 +238,7 @@ contains
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
-                                 aux_basis)
+                                 aux_basis, guess)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of whether
@@ -258,17 +259,20 @@ contains
       character(len=*), intent(in), optional :: aux_basis
          !! Fit the response Hessian against this basis instead of building it
          !! exactly. Absent, the build is exact.
+      character(len=*), intent(in), optional :: guess
+         !! Initial-guess name from the deck, forwarded to the SCF. Absent leaves
+         !! `make_efp_potential` on its "auto" (SAD) default.
 
       type(efp_potential_t) :: pot
 
       if (present(aux_basis)) then
          call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge=charge, &
-                                 verbose=verbose, aux_basis=aux_basis)
+                                 verbose=verbose, aux_basis=aux_basis, guess=guess)
       else
          call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge=charge, &
-                                 verbose=verbose)
+                                 verbose=verbose, guess=guess)
       end if
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
@@ -277,7 +281,8 @@ contains
 
    subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
                               basis_name, esp, expansion, far_field, resppc, &
-                              level, max_outer, outer_tol, energy, error, comm)
+                              level, max_outer, outer_tol, scf_max_iter, &
+                              scf_energy_tol, scf_density_tol, energy, error, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -297,6 +302,8 @@ contains
       integer, intent(in) :: level
       integer, intent(in) :: max_outer
       real(dp), intent(in) :: outer_tol
+      integer, intent(in) :: scf_max_iter
+      real(dp), intent(in) :: scf_energy_tol, scf_density_tol
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
@@ -322,6 +329,9 @@ contains
       opts%level = level
       opts%max_outer = max_outer
       opts%outer_tol = outer_tol
+      opts%scf_max_iter = scf_max_iter
+      opts%scf_energy_tol = scf_energy_tol
+      opts%scf_density_tol = scf_density_tol
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return
@@ -355,6 +365,7 @@ contains
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
+      type(timer_type) :: grad_clock
 
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -707,6 +718,9 @@ contains
             end if
          end if
 
+         call logger%info("  energy converged, computing the gradient")
+         call grad_clock%start()
+
          aux_arg => null()
          xc_arg => null()
          if (settings%density_fitting) aux_arg => aux
@@ -737,8 +751,11 @@ contains
             return
          end if
          result%has_gradient = .true.
+         write (line, "(a,f10.2,a)") "  gradient done in ", grad_clock%get_elapsed_time(), " s"
+         call logger%info(trim(line))
          if (settings%verbose) then
-            write (*, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+            write (line, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+            call logger%info(trim(line))
          end if
       end if
       call aux%destroy()
@@ -797,6 +814,8 @@ contains
                   call mol%destroy()
                   return
                end if
+               call logger%info("  energy converged, computing the gradient")
+               call grad_clock%start()
                ! Fitted correlation gets the fitted gradient. Not a refinement:
                ! `run_libcint_ri_mp2` above computed a fitted energy, and the
                ! conventional gradient is the derivative of a different one.
@@ -828,9 +847,11 @@ contains
                   return
                end if
                result%has_gradient = .true.
+               write (line, "(a,f10.2,a)") "  gradient done in ", grad_clock%get_elapsed_time(), " s"
+               call logger%info(trim(line))
                if (settings%verbose) then
-                  write (*, "(a,f20.12)") "  |gradient|     ", &
-                     sqrt(sum(result%gradient**2))
+                  write (line, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+                  call logger%info(trim(line))
                end if
             end if
 

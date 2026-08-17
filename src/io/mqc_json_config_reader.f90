@@ -208,6 +208,17 @@ contains
       ! After the method name, so an explicit keyword wins over the spelling.
       call optional_logical(json, "keywords.correlation.density_fitting", &
                             config%corr_density_fitting)
+
+      ! A fitted SCF needs a basis to fit against. There is a default, but it is a
+      ! JK set that is wrong for some of what asks for fitting, so rather than pick
+      ! one silently a fitted run must name its own. `aux_basis` is unallocated
+      ! exactly when `model.aux_basis` was absent, which is the case to refuse.
+      if (config%scf_density_fitting .and. .not. allocated(config%aux_basis)) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.density_fitting is on but no "// &
+                        "auxiliary basis was given; set model.aux_basis")
+         return
+      end if
+
       call optional_logical(json, "keywords.correlation.scs", config%corr_scs)
       call optional_real(json, "keywords.correlation.scs_ss", config%corr_scs_ss)
       call optional_real(json, "keywords.correlation.scs_os", config%corr_scs_os)
@@ -366,6 +377,9 @@ contains
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
       call optional_int(json, "keywords.fragmentation.max_outer", config%fmo_max_outer)
       call optional_real(json, "keywords.fragmentation.outer_tolerance", config%fmo_tolerance)
+      call optional_int(json, "keywords.fragmentation.scf_max_iter", config%fmo_scf_max_iter)
+      call optional_real(json, "keywords.fragmentation.scf_energy_tolerance", config%fmo_scf_energy_tol)
+      call optional_real(json, "keywords.fragmentation.scf_density_tolerance", config%fmo_scf_density_tol)
       call optional_string(json, "keywords.fragmentation.embedding", config%embedding)
       call optional_string(json, "keywords.fragmentation.cutoff_method", config%cutoff_method)
       call optional_string(json, "keywords.fragmentation.distance_metric", config%distance_metric)

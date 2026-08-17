@@ -27,6 +27,8 @@ module mqc_efp_interaction
    !! way. Signs and component orders in a multipole expansion are exactly the
    !! things that look right and are wrong.
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger, verbose_level
+   use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_efp_read, only: efp_fragment_t
    implicit none
@@ -433,12 +435,21 @@ contains
       real(dp) :: dist, inv3, inv5, change
       integer :: n_pol, f, i, k, at, iter, limit, j
       real(dp) :: use_tol
+      integer :: log_level
+      logical :: show_iter
 
       energy = 0.0_dp
       limit = DEFAULT_ITER
       if (present(max_iter)) limit = max_iter
       use_tol = DEFAULT_TOL
       if (present(tol)) use_tol = tol
+
+      ! The induced-dipole solve is the one iterative step in an EFP-EFP
+      ! interaction -- there is no SCF, the wavefunctions were fixed when the
+      ! potentials were made -- so at verbose it is the convergence worth watching.
+      ! The caller (run_efp) is already rank-0 only, so no leader guard is needed.
+      call logger%configuration(level=log_level)
+      show_iter = log_level >= verbose_level
 
       n_pol = 0
       do f = 1, size(fragments)
@@ -518,6 +529,10 @@ contains
          end do
          !$omp end parallel do
          mu = mu_new
+         if (show_iter) then
+            call logger%verbose("  efp induction "//to_char(iter)//": max change "// &
+                                to_char(change))
+         end if
          if (change < use_tol) exit
       end do
       if (change >= use_tol) then
