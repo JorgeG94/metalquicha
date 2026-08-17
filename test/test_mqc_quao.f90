@@ -402,11 +402,12 @@ contains
       type(error_t) :: err
       type(libcint_molecule_t) :: mol
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), kbo(:, :)
+      real(dp), allocatable :: interference(:, :), vi(:, :), work(:, :)
       logical :: ok
-      real(dp) :: strongest
+      real(dp) :: strongest, trace_mo
       integer :: i, best
 
-      call water_quaos("cc-pvdz", quao, overlap, dims, err, ok)
+      call water_quaos("cc-pvdz", quao, overlap, dims, err, ok, vi)
       call check(error, ok, "the construction should succeed")
       if (allocated(error)) return
 

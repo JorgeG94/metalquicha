@@ -786,7 +786,7 @@ contains
       end do
    end subroutine fix_phases
 
-   subroutine kinetic_bond_orders(quao, kinetic_ao, kbo, error)
+   subroutine kinetic_bond_orders(quao, kinetic_ao, kbo, error, interference)
       !! Kinetic bond orders, kcal/mol, negative for a bonding interaction
       !!
       !!     k_{Aa,Bb} = 0.1 * < Aa | -1/2 nabla^2 | Bb > * p_{Aa,Bb}
@@ -803,10 +803,25 @@ contains
       !!
       !! The factor of 0.1 is empirical and the papers say so. It brings the
       !! numbers onto the scale of tabulated bond energies; it is not derived.
+      !!
+      !! **Two quantities, and they get confused.** Paper II eq (1) is the
+      !! kinetic interference energy `t = p * T` in hartree; eq (2) is the
+      !! kinetic bond order `k = 0.1 t`, quoted in kcal/mol. GAMESS prints the
+      !! *former* under the heading KEI-BO, so a value of -0.578 there is
+      !! -36.3 kcal/mol here. Both are returned so neither has to be
+      !! reconstructed from the other.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: kinetic_ao(:, :)    !! (n_ao, n_ao)
       real(dp), allocatable, intent(out) :: kbo(:, :)   !! (n_quao, n_quao)
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: interference(:, :)
+         !! The unscaled kinetic interference energy `p * T`, in hartree --
+         !! Paper II eq (1) rather than eq (2). This is what GAMESS prints, as
+         !! its "novel oriented density matrix" and the KEI-BO column, so it is
+         !! the quantity to compare against directly. Its sum over all orbital
+         !! pairs, core included, is the total kinetic energy, which GAMESS
+         !! prints either side of the transformation as a check that the
+         !! rotation was orthogonal.
 
       real(dp), allocatable :: work(:, :), t(:, :)
       integer :: n
@@ -825,6 +840,7 @@ contains
       call pic_gemm(kinetic_ao, quao%orbitals, work)
       call pic_gemm(quao%orbitals, work, t, transa="T")
 
+      if (present(interference)) interference = t*quao%population_bond_order
       kbo = KBO_SCALE*t*quao%population_bond_order*HARTREE_TO_KCAL
       deallocate (work, t)
    end subroutine kinetic_bond_orders
