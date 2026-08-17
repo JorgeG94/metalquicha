@@ -170,10 +170,11 @@ contains
 
       real(dp), allocatable, target :: env_local(:), buf(:)
       real(dp), allocatable :: local(:)
+      integer, allocatable :: pair_i(:), pair_j(:)
       integer, target :: shls(4)
       integer :: ish, jsh, di, dj, i, j, g, ret, io, jo, block_max, n_grid
-      integer :: grid_offset
-      real(dp) :: dij
+      integer :: grid_offset, n_pair, p
+      real(dp) :: dij, wt
 
       if (size(grids, 1) /= 3) then
          call error%set(ERROR_VALIDATION, "ESP contraction: grid points must be (3, n)")
@@ -201,44 +202,69 @@ contains
       allocate (values(n_grid))
       values = 0.0_dp
 
-      ! Threaded over bra shells, each thread accumulating its own grid vector. The
+      ! Half the shell pairs, because the integral is symmetric in the bra and ket
+      ! -- `<u|1/|r-R||v>` is `<v|1/|r-R||u>` for real functions -- and so is the
+      ! density contracted against it. An off-diagonal block therefore stands for
+      ! itself and its transpose, counted once and doubled.
+      !
+      ! Walked as a flat pair list rather than as a nested triangle so the schedule
+      ! still balances: the triangle's rows run from one pair to `nbas`, and a
+      ! thread handed the first row would finish while the one handed the last was
+      ! still starting.
+      n_pair = mol%nbas*(mol%nbas + 1)/2
+      allocate (pair_i(n_pair), pair_j(n_pair))
+      p = 0
+      do ish = 1, mol%nbas
+         do jsh = 1, ish
+            p = p + 1
+            pair_i(p) = ish
+            pair_j(p) = jsh
+         end do
+      end do
+
+      ! Threaded over shell pairs, each thread accumulating its own grid vector. The
       ! vector is small -- a few hundred kilobytes -- so a private copy per thread
       ! costs nothing next to what the tensor cost.
       !$omp parallel default(none) &
-      !$omp    shared(mol, env_local, density, values, n_grid, block_max) &
-      !$omp    private(ish, jsh, di, dj, i, j, g, ret, io, jo, shls, buf, local, dij)
+      !$omp    shared(mol, env_local, density, values, n_grid, block_max, &
+      !$omp           n_pair, pair_i, pair_j) &
+      !$omp    private(ish, jsh, di, dj, i, j, g, ret, io, jo, shls, buf, local, dij, p, wt)
       allocate (buf(block_max*block_max*n_grid), local(n_grid))
       local = 0.0_dp
       !$omp do schedule(dynamic)
-      do ish = 1, mol%nbas
+      do p = 1, n_pair
+         ish = pair_i(p)
+         jsh = pair_j(p)
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
-         do jsh = 1, mol%nbas
-            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
-            jo = mol%shell_offset(jsh)
-            shls = [ish - 1, jsh - 1, 0, n_grid]
+         dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+         jo = mol%shell_offset(jsh)
+         ! A diagonal block already holds both `(i,j)` and `(j,i)`; an off-diagonal
+         ! one holds only its own half of the pair.
+         wt = 2.0_dp
+         if (ish == jsh) wt = 1.0_dp
+         shls = [ish - 1, jsh - 1, 0, n_grid]
 
-            if (mol%cartesian) then
-               ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                       c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                       mol%nbas, c_loc(env_local), c_null_ptr, &
-                                       c_null_ptr)
-            else
-               ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                      c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                      mol%nbas, c_loc(env_local), c_null_ptr, &
-                                      c_null_ptr)
-            end if
-            if (ret == 0) cycle
+         if (mol%cartesian) then
+            ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
+                                    c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                    mol%nbas, c_loc(env_local), c_null_ptr, &
+                                    c_null_ptr)
+         else
+            ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
+                                   c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
+                                   mol%nbas, c_loc(env_local), c_null_ptr, &
+                                   c_null_ptr)
+         end if
+         if (ret == 0) cycle
 
-            do j = 1, dj
-               do i = 1, di
-                  dij = density(io + i, jo + j)
-                  if (dij == 0.0_dp) cycle
-                  do g = 1, n_grid
-                     local(g) = local(g) &
-                                + dij*buf(g + (i - 1)*n_grid + (j - 1)*n_grid*di)
-                  end do
+         do j = 1, dj
+            do i = 1, di
+               dij = wt*density(io + i, jo + j)
+               if (dij == 0.0_dp) cycle
+               do g = 1, n_grid
+                  local(g) = local(g) &
+                             + dij*buf(g + (i - 1)*n_grid + (j - 1)*n_grid*di)
                end do
             end do
          end do
@@ -252,7 +278,7 @@ contains
 
       ! The electronic potential is negative where the density is positive.
       values = -values
-      deallocate (env_local)
+      deallocate (env_local, pair_i, pair_j)
    end subroutine esp_contract
 
    subroutine drinv_matrices(mol, centres, matrices, error)
