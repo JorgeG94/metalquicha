@@ -75,6 +75,7 @@ module mqc_libcint_cphf
    public :: casimir_polder_frequencies
    !> Exposed side by side so a check can hold both builds of the same matrices.
    public :: build_hessian, build_hessian_df
+   public :: fitted_potential_general
 
    !> CG iterations before giving up.
    type :: response_hessian_t
@@ -434,7 +435,7 @@ contains
       if (present(bmat)) then
          ! `half` is C_vir U, which is exactly the factor the fitted build
          ! wants: it never assembles Dt at all.
-         call response_operator_df(bmat, half, c_occ, dtilde, g)
+         call response_operator_df(bmat, half, c_occ, dtilde, g, k_scale=kf)
       else if (direct) then
          ! density_screen=.false. is not optional here. `dtilde` is the trial
          ! rotation the CG solver drives towards zero, so the default
@@ -468,7 +469,7 @@ contains
       deallocate (dtilde, g, half, work)
    end subroutine response_operator
 
-   subroutine response_operator_df(b, x, c_occ, dtilde, g)
+   subroutine response_operator_df(b, x, c_occ, dtilde, g, k_scale)
       !! `J - K/2` for a response density, from the fitted tensor
       !!
       !! **Why this is not `build_fock_df`.** That one takes its exchange
@@ -499,10 +500,22 @@ contains
       real(dp), intent(in) :: c_occ(:, :)    !! (n_ao, n_occ)
       real(dp), intent(in) :: dtilde(:, :)   !! The assembled response density, for J
       real(dp), intent(out) :: g(:, :)
+      real(dp), intent(in), optional :: k_scale
+         !! The exchange fraction the reference kept. Absent is all of it.
+         !!
+         !! This used to be missing, and the exact-integral branch beside it has
+         !! carried the fraction all along -- so a *fitted* hybrid or double
+         !! hybrid solved its response equations with full exact exchange while
+         !! its energy used a fraction of it. Not a small error and not a loud
+         !! one: on B2PLYP/STO-3G it moved the gradient by 1.6e-3, about 1.5%,
+         !! with translational invariance holding at 1e-14 throughout.
 
       real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :)
-      real(dp) :: c_p
+      real(dp) :: c_p, kf
       integer :: n, n_occ, naux, p
+
+      kf = 1.0_dp
+      if (present(k_scale)) kf = k_scale
 
       n = size(c_occ, 1)
       n_occ = size(c_occ, 2)
@@ -522,8 +535,58 @@ contains
          end associate
       end do
 
-      g = coul - 0.5_dp*exch
+      g = coul - 0.5_dp*kf*exch
    end subroutine response_operator_df
+
+   subroutine fitted_potential_general(b, dens, g, k_scale)
+      !! `J - k K/2` from the fitted tensor, for a density with no structure
+      !!
+      !! The third of the three fitted builds, and the one that assumes
+      !! nothing. `build_fock_df` needs an idempotent density and
+      !! `response_operator_df` above needs one that arrives already factored as
+      !! `X C_occ^T + C_occ X^T`. An MP2 relaxed density is neither: it is
+      !! symmetric, indefinite, integrates to zero, and has no factorization to
+      !! exploit.
+      !!
+      !! So exchange goes through the general form, per auxiliary function,
+      !!
+      !!     J += (sum_uv B^P_uv D_uv) B^P,     K += B^P D B^P
+      !!
+      !! at `n^3 n_aux` rather than the `n^2 n_occ n_aux` the other two manage.
+      !! That is the price of not assuming, and it is affordable exactly where
+      !! it is needed: a gradient evaluates this a handful of times, where an
+      !! SCF would evaluate it once per iteration.
+      real(dp), intent(in) :: b(:, :)      !! `B(mu nu, P)`, (n_ao^2, naux)
+      real(dp), intent(in) :: dens(:, :)   !! Symmetric, otherwise arbitrary
+      real(dp), intent(out) :: g(:, :)
+      real(dp), intent(in), optional :: k_scale
+         !! How much exact exchange the reference kept. Absent is all of it,
+         !! which is Hartree-Fock; a hybrid passes its own fraction and a pure
+         !! functional would pass zero.
+
+      real(dp), allocatable :: coul(:, :), exch(:, :), bd(:, :)
+      real(dp) :: c_p, kf
+      integer :: n, naux, p
+
+      kf = 1.0_dp
+      if (present(k_scale)) kf = k_scale
+
+      n = size(dens, 1)
+      naux = size(b, 2)
+      allocate (coul(n, n), exch(n, n), bd(n, n))
+      coul = 0.0_dp
+      exch = 0.0_dp
+      do p = 1, naux
+         associate (b_p => reshape(b(:, p), [n, n]))
+            c_p = sum(b_p*dens)
+            coul = coul + c_p*b_p
+            call pic_gemm(b_p, dens, bd)
+            call pic_gemm(bd, b_p, exch, alpha=1.0_dp, beta=1.0_dp)
+         end associate
+      end do
+
+      g = coul - 0.5_dp*kf*exch
+   end subroutine fitted_potential_general
 
    subroutine response_operator_minus(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                       gaps, u, au, error)

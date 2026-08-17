@@ -57,20 +57,28 @@ which backends have gradients, not about the optimizer:
    * - tblite (``gfn1``, ``gfn2``)
      - yes
      - Supported and tested, fragmented and not
-   * - libcint (CPU ``hf``, ``dft``, ``mp2``, ``ccsd``)
+   * - libcint (CPU ``hf``, ``dft``, ``mp2``, ``ri-mp2``)
+     - yes
+     - Supported, for whatever combination has a gradient -- see
+       :doc:`capabilities`, which lists both what is covered and what is
+       refused
+   * - libcint (CPU ``ccsd``, ``ccsd(t)``)
      - **no**
-     - Refused: the CPU backend computes energies only
+     - Refused: a coupled cluster gradient needs the Lambda amplitudes
    * - cuEST (GPU ``hf``, ``dft``)
      - yes
      - Expected to work; needs an sm_80 card
 
-A method that cannot produce a gradient is found out before the optimizer starts,
-by taking one gradient up front, and refused in a sentence:
+There is no optimizer-level restriction on the backend. What refuses a gradient
+refuses it wherever that gradient would have been built, and the optimizer finds
+out the same way any other caller would -- by taking one gradient up front,
+before DL-FIND is entered:
 
 .. code-block:: text
 
-   The initial gradient check failed: the CPU backend has no gradients yet;
-   run an energy, or build with cuEST
+   The initial gradient check failed: a coupled cluster gradient needs the
+   Lambda amplitudes, which are not implemented. Run the gradient at the
+   Hartree-Fock or MP2 level, or coupled cluster as an energy.
    Geometry optimization failed: This method cannot produce a gradient, so it
    cannot be optimized.
 

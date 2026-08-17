@@ -558,6 +558,21 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(check_ri_mp2_gradient PRIVATE ${main_lib} cint_fortran
                                                       cint)
 
+  add_executable(
+    check_fitted_reference_gradient
+    ${PROJECT_SOURCE_DIR}/validation/check_fitted_reference_gradient.f90)
+  target_include_directories(check_fitted_reference_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_fitted_reference_gradient
+                        PRIVATE ${main_lib} cint_fortran cint)
+
+  add_executable(check_df_ref_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_df_ref_gradient.f90)
+  target_include_directories(check_df_ref_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_df_ref_gradient PRIVATE ${main_lib} cint_fortran
+                                                      cint)
+
   add_executable(bench_mp2_gradient
                  ${PROJECT_SOURCE_DIR}/validation/bench_mp2_gradient.f90)
   target_include_directories(bench_mp2_gradient
@@ -723,8 +738,11 @@ foreach(
         check_df
         check_df_cphf
         check_df_deriv
+        check_df_ref_gradient
         check_dft
+        check_dh_gradient
         check_direct
+        check_fitted_reference_gradient
         check_gradient
         check_grid
         check_hdf5
@@ -743,6 +761,8 @@ foreach(
         check_scf_gradient
         check_session
         check_session_run
+        check_xc_kernel
+        check_xc_potential_gradient
         sweep_fmo)
   if(TARGET ${mqc_validation_program})
     set_target_properties(${mqc_validation_program} PROPERTIES EXCLUDE_FROM_ALL

@@ -48,6 +48,18 @@ module mqc_method_config
          !! Needed for broken-symmetry singlets, and the cleanest check that
          !! the unrestricted code reduces to the restricted result.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
+      logical :: aux_basis_named = .false.
+         !! Whether a deck actually asked for the set above, as opposed to
+         !! inheriting the default.
+         !!
+         !! The default is not optional -- cuEST is always density fitted and an
+         !! unset auxiliary basis fails there at run time -- which means
+         !! `len_trim(aux_basis_set) > 0` is true whether or not anyone asked,
+         !! and it cannot be used to decide anything. A double hybrid's
+         !! perturbative term did use it that way, and so fitted itself with a
+         !! JKFIT set nobody named: 3e-9 on water/STO-3G, and against exactly the
+         !! kind of auxiliary `correlation_aux_basis` warns about fitting an
+         !! (ia|jb) block with.
          !! Auxiliary (JKFIT) basis for the density-fitted J and K.
          !! Required, not optional, for the cuEST backend: cuEST exposes no
          !! conventional four-index ERI path, so J/K are always fitted.
@@ -437,6 +449,7 @@ contains
       this%dft%angular_points = 302
       this%dft%use_density_fitting = .false.
       this%dft%aux_basis_set = ""
+      this%scf%aux_basis_named = .false.
       this%dft%use_dispersion = .false.
       this%dft%dispersion_type = "d3bj"
 

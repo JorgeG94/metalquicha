@@ -79,6 +79,17 @@ module mqc_method_dft
          !! Use RI-J approximation
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis. Required by the cuEST backend.
+      logical :: aux_basis_named = .false.
+         !! Whether the deck asked for it. See `scf_config_t`.
+
+      ! Correlation, for the double hybrids. Nothing else on this path has a
+      ! correlated term, but `b2plyp` and its relatives carry an MP2 and read
+      ! `keywords.correlation` like any other method that does. Absent these,
+      ! a deck asking to freeze the core got an all-electron answer with
+      ! nothing in the output to say the request had been dropped.
+      logical :: freeze_core = .false.
+      integer :: n_frozen_core = -1
+         !! -1 counts the core from the elements
 
       ! Dispersion correction
       logical :: use_dispersion = .false.
@@ -144,6 +155,7 @@ contains
 
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
+      settings%aux_basis_named = this%options%aux_basis_named
       settings%functional = this%options%functional
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
@@ -179,6 +191,8 @@ contains
       ! however it asked. That made the fitted path unreachable rather than
       ! wrong, which is the better of the two failures but still a gap.
       settings%density_fitting = this%options%use_density_fitting
+      settings%freeze_core = this%options%freeze_core
+      settings%n_frozen_core = this%options%n_frozen_core
 
       ! The same choice Hartree-Fock makes, and made the same way rather than a
       ! second time: cuEST when this build has it, because that is the production

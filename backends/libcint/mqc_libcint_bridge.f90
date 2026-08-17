@@ -385,16 +385,21 @@ contains
          return
       end if
       if (do_gradient .and. settings%run_mp2) then
-         if (settings%density_fitting) then
-            call result%error%set(ERROR_VALIDATION, "the MP2 gradient differentiates an "// &
-                                  "exact-ERI reference: with keywords.scf.density_fitting "// &
-                                  "on it would be the derivative of an energy nothing "// &
-                                  "computed. Fitting the correlation instead -- an "// &
-                                  "`ri-mp2` method, which fits nothing in the SCF -- is "// &
-                                  "implemented and differentiated exactly.")
-            result%has_error = .true.
-            return
-         end if
+         ! Four combinations of what is fitted, each a different energy with a
+         ! different gradient, and all four implemented. Exact reference with
+         ! exact correlation is `libcint_mp2_gradient`; exact reference with
+         ! fitted correlation is an `ri-mp2` deck and is
+         ! `libcint_ri_mp2_gradient`. Adding `keywords.scf.density_fitting` to
+         ! either fits the reference too, which moves the response operator,
+         ! both potentials built from the relaxed density, and the reference's
+         ! two-electron derivative term onto the auxiliary basis.
+         !
+         ! What that last pair does *not* do is make the conventional gradient
+         ! cheap: its two-particle density stays four-index and contracts
+         ! against four-centre derivatives whatever the reference fitted. It
+         ! makes it consistent, which is the point -- differentiating an exact
+         ! reference under a fitted SCF is the derivative of an energy nothing
+         ! computed.
          if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
             call result%error%set(ERROR_VALIDATION, "the MP2 gradient does not implement "// &
                                   "a frozen core: the relaxed density gains "// &
@@ -740,26 +745,20 @@ contains
                call mol%destroy()
                return
             end if
-            if (settings%density_fitting) then
-               call result%error%set(ERROR_VALIDATION, "a double hybrid gradient over "// &
-                                     "a density-fitted reference is not implemented: "// &
-                                     "the perturbative term's response equations would "// &
-                                     "have to be solved with the fitted operator the "// &
-                                     "SCF actually used, and solving the exact ones "// &
-                                     "against a fitted reference answers a different "// &
-                                     "question. Run it as an energy, or take the "// &
-                                     "gradient without fitting the reference.")
-               result%has_error = .true.
-               call mol%destroy()
-               return
-            end if
+            ! A fitted reference used to be refused here. It is not any more:
+            ! the perturbative term's response equations are solved with the
+            ! operator the SCF actually used, and its two-electron derivative
+            ! term comes off the auxiliary basis. What still holds is that the
+            ! *correlation* is exact either way -- a double hybrid's PT2 term is
+            ! a conventional MP2, and in a gradient run it stays one.
             if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
                call result%error%set(ERROR_VALIDATION, "a double hybrid gradient is "// &
                                      "all-electron: the relaxed density gains "// &
-                                     "occupied-frozen blocks that are not built. Note "// &
-                                     "the *energy* is all-electron too, whatever the "// &
-                                     "deck says, so this refuses rather than "// &
-                                     "differentiating something else.")
+                                     "occupied-frozen blocks that are not built. The "// &
+                                     "*energy* does honour freeze_core, so this refuses "// &
+                                     "rather than returning the all-electron gradient of "// &
+                                     "a frozen-core energy. Run the energy with it, or "// &
+                                     "the gradient with freeze_core off.")
                result%has_error = .true.
                call mol%destroy()
                return
@@ -878,9 +877,30 @@ contains
                      call mol%destroy()
                      return
                   end if
+                  ! One auxiliary basis for both halves when both are fitted,
+                  ! which is not a simplification: `model.aux_basis` is the only
+                  ! place a fitting set is named, so it is the only combination
+                  ! a deck can express.
                   call libcint_ri_mp2_gradient(mol, corr_aux, scf%orbitals, &
                                                scf%orbital_energies, fragment%nelec/2, &
-                                               result%gradient, error, n_frozen=frozen)
+                                               result%gradient, error, n_frozen=frozen, &
+                                               fitted_reference=settings%density_fitting)
+                  call corr_aux%destroy()
+               else if (settings%density_fitting) then
+                  ! Exact correlation over a fitted reference. The correlation's
+                  ! four-centre integrals are still built -- fitting the SCF makes
+                  ! this consistent rather than cheap -- and only the reference
+                  ! half moves onto the auxiliary basis.
+                  call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+                  if (error%has_error()) then
+                     call result%error%set(ERROR_VALIDATION, error%get_message())
+                     result%has_error = .true.
+                     call mol%destroy()
+                     return
+                  end if
+                  call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                                            fragment%nelec/2, result%gradient, error, &
+                                            n_frozen=frozen, aux=corr_aux)
                   call corr_aux%destroy()
                else
                   call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
@@ -1010,22 +1030,28 @@ contains
                if (dh_frozen < 0) dh_frozen = core_orbital_count(fragment%element_numbers)
                if (.not. settings%freeze_core) dh_frozen = 0
 
-               ! Fitted when an auxiliary basis is available, exact otherwise. The
-               ! reference implementations of these functionals are density-fitted,
-               ! so fitting is the comparable choice rather than a compromise -- but
-               ! a deck that named no auxiliary basis should get an answer, not a
-               ! refusal, since the conventional transform is the more accurate of
-               ! the two anyway.
+               ! Fitted when the deck *named* an auxiliary basis, exact otherwise
+               ! -- and `named` rather than merely present, because
+               ! `scf_config_t%aux_basis_set` carries a default that cuEST needs
+               ! and every deck therefore has one. Testing for its presence
+               ! fitted this term with a JKFIT set nobody asked for.
                !
-               ! **A gradient run takes the conventional transform instead**, and
-               ! that is not a performance choice. The gradient assembled below
-               ! differentiates exact integrals; reporting it beside a fitted
-               ! energy would be a gradient of a function nobody computed, which
-               ! is the one thing every other branch in this file is arranged to
-               ! prevent. Until the fitted double hybrid gradient exists, the
-               ! consistent pair is the exact one -- and it is the more accurate
-               ! half of the pair anyway.
-               if (len_trim(settings%aux_basis_set) > 0 .and. .not. do_gradient) then
+               ! The reference implementations of these functionals are
+               ! density-fitted, so fitting is the comparable choice rather than
+               ! a compromise -- but a deck that named no auxiliary basis should
+               ! get an answer rather than a refusal, and the conventional
+               ! transform is the more accurate of the two anyway.
+               !
+               ! **A gradient run makes the same choice**, which it did not used
+               ! to. The gradient below is assembled by whichever routine matches:
+               ! `libcint_ri_mp2_gradient` differentiates the fitted correlation,
+               ! `libcint_mp2_gradient` the exact one. Before the fitted one knew
+               ! about functionals, a gradient run had to drop back to exact
+               ! integrals to stay consistent with its own gradient -- which left
+               ! an `Energy` run and a `Gradient` run of one deck reporting
+               ! different energies, and left the expensive `n^4` two-particle
+               ! density in the one place fitting was supposed to remove it.
+               if (settings%aux_basis_named) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (error%has_error()) then
                      call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -1039,12 +1065,6 @@ contains
                                           scf%energy, dh_mp2, error, n_frozen=dh_frozen)
                   call corr_aux%destroy()
                else
-                  if (do_gradient .and. len_trim(settings%aux_basis_set) > 0 &
-                      .and. settings%verbose) then
-                     call logger%info("  double hybrid gradient: the PT2 term is "// &
-                                      "computed with exact integrals, so that the "// &
-                                      "energy and the gradient belong to each other")
-                  end if
                   call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
                                        fragment%nelec/2, scf%energy, dh_mp2, error, &
                                        n_frozen=dh_frozen)
@@ -1074,21 +1094,57 @@ contains
                ! only the first half is variational: the reference gradient
                ! needs no response, and this one is almost entirely response.
                !
-               ! Exact integrals whatever the energy above used. The fitted
-               ! correlation gradient exists next door, but it differentiates a
-               ! *Hartree-Fock* reference by construction -- so pairing it with
-               ! a Kohn-Sham one would be the same category of error this whole
-               ! block is arranged to avoid. Where the energy was fitted the two
-               ! differ by the fitting error, which is the honest cost of not
-               ! having written the fitted version yet.
+               ! **The gradient follows the energy**, on both axes. Fitted
+               ! correlation is differentiated by `libcint_ri_mp2_gradient` and
+               ! exact correlation by `libcint_mp2_gradient`; a fitted reference
+               ! is differentiated as fitted by either. Every other branch in
+               ! this file exists to keep those two in step, and this is the one
+               ! that used to be out of step: the fitted correlation gradient
+               ! knew nothing about functionals, so a double hybrid had to take
+               ! the exact transform whatever the deck asked for.
+               !
+               ! What that cost was not accuracy but scale. The exact assembly
+               ! forms a dense `n_ao^4` two-particle density, which is the
+               ! ceiling fitting exists to remove, and it was still there in the
+               ! one place a double hybrid needs it gone.
                if (do_gradient) then
                   block
                      real(dp), allocatable :: dh_grad(:, :)
+                     type(libcint_molecule_t), target :: dh_aux
+                     type(libcint_molecule_t), pointer :: dh_aux_arg
 
-                     call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                               fragment%nelec/2, dh_grad, error, &
-                                               xc=xc, scf_density=scf%density, &
-                                               pt2_scale=xc%pt2_fraction)
+                     ! One auxiliary basis, serving whichever halves are fitted.
+                     ! Rebuilt here for the reason the MP2 branch rebuilds its
+                     ! own: the SCF's copy was destroyed above, and each branch
+                     ! owning one means no error return in between has to
+                     ! remember it.
+                     dh_aux_arg => null()
+                     if (settings%aux_basis_named .or. settings%density_fitting) then
+                        call correlation_aux_basis(settings, fragment, symbols, dh_aux, error)
+                        if (error%has_error()) then
+                           call result%error%set(ERROR_VALIDATION, error%get_message())
+                           result%has_error = .true.
+                           call xc%destroy()
+                           call mol%destroy()
+                           return
+                        end if
+                        dh_aux_arg => dh_aux
+                     end if
+                     if (settings%aux_basis_named) then
+                        call libcint_ri_mp2_gradient(mol, dh_aux, scf%orbitals, &
+                                                     scf%orbital_energies, &
+                                                     fragment%nelec/2, dh_grad, error, &
+                                                     n_frozen=dh_frozen, &
+                                                     fitted_reference=settings%density_fitting, &
+                                                     xc=xc, scf_density=scf%density, &
+                                                     pt2_scale=xc%pt2_fraction)
+                     else
+                        call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                                                  fragment%nelec/2, dh_grad, error, &
+                                                  xc=xc, scf_density=scf%density, &
+                                                  pt2_scale=xc%pt2_fraction, aux=dh_aux_arg)
+                     end if
+                     if (associated(dh_aux_arg)) call dh_aux%destroy()
                      if (error%has_error()) then
                         call result%error%set(ERROR_VALIDATION, "double hybrid "// &
                                               "gradient: "//error%get_message())

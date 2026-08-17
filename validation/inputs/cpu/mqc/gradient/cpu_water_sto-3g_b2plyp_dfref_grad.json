@@ -1,0 +1,38 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/w1.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "dft",
+        "basis": "sto-3g",
+        "aux_basis": "cc-pvdz-rifit",
+        "functional": "b2plyp"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-12,
+            "density_fitting": true
+        },
+        "correlation": {
+            "freeze_core": false
+        },
+        "dft": {
+            "grid_level": 3
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Gradient"
+}
