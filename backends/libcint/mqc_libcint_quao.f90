@@ -24,8 +24,10 @@ module mqc_libcint_quao
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type
    use mqc_json_basis_reader, only: build_molecular_basis_json
-   use mqc_aambs, only: aambs_file, aambs_dimensions, aambs_dimensions_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, mixed_basis_overlap
+   use mqc_aambs, only: aambs_file, aambs_dimensions, aambs_dimensions_t, &
+                        aambs_element_counts
+   use mqc_libcint_integrals, only: libcint_molecule_t, mixed_basis_overlap, &
+                                    atom_ao_blocks
    implicit none
    private
 
@@ -33,6 +35,16 @@ module mqc_libcint_quao
    public :: mo_aambs_overlap        !! < MO | orthogonalized AAMBS >
    public :: valence_virtual_orbitals
    public :: vvo_result_t
+   public :: aambs_atom_ranges       !! Where each atom's minimal-basis orbitals sit
+   public :: quasi_atomic_orbitals
+   public :: quao_result_t
+
+   real(dp), parameter :: JACOBI_CRIT = 1.0e-10_dp
+      !! GAMESS's `CRIT` in `LOCAL_MODELORB_DRIV`. Both the rotation magnitude
+      !! and the angle are tested against it.
+   integer, parameter :: JACOBI_MAX_SWEEPS = 10000
+      !! GAMESS's `MXITER`. Neither paper states a criterion or a cap, so the
+      !! reference implementation's are used rather than invented.
 
    type :: vvo_result_t
       !! What the valence-virtual extraction leaves behind
@@ -49,6 +61,23 @@ module mqc_libcint_quao
          !! 0.99999 against 0.105-0.272 across eight molecules; anything else
          !! means the projection is not finding a clean valence space.
    end type vvo_result_t
+
+   type :: quao_result_t
+      !! Quasi-atomic orbitals and the density in their basis
+      real(dp), allocatable :: orbitals(:, :)
+         !! (n_ao, n_quao), orthonormal, each one belonging to a single atom
+      integer, allocatable :: atom_of(:)
+         !! Which atom each quasi-atomic orbital sits on
+      real(dp), allocatable :: population_bond_order(:, :)
+         !! (n_quao, n_quao). Diagonal elements are orbital populations;
+         !! interatomic off-diagonal elements are bond orders. Paper I eq (5.2).
+      integer :: n_quao = 0
+      integer :: sweeps = 0            !! Jacobi sweeps the refinement took
+      real(dp) :: atomic_character = 0.0_dp
+         !! The maximized functional, Paper II eq (A.5), divided by the number of
+         !! orbitals. One means every orbital lies entirely within its own atom's
+         !! free-atom space; the deficit is the deformation the molecule imposes.
+   end type quao_result_t
 
 contains
 
@@ -114,7 +143,7 @@ contains
       call pic_gemm(scaled, vectors, result, transb="T")
    end subroutine inverse_sqrt
 
-   subroutine mo_aambs_overlap(orbitals, mixed, aambs_overlap, projection, error)
+   subroutine mo_aambs_overlap(orbitals, mixed, aambs_overlap, projection, error, orthogonalize)
       !! `< MO_p | A#a >`, the molecular orbitals against the orthogonalized AAMBS
       !!
       !! **Both bases have to be orthonormal**, and that is not a detail of
@@ -134,22 +163,253 @@ contains
       real(dp), intent(in) :: aambs_overlap(:, :)   !! < AAMBS | AAMBS >, (n_mbs, n_mbs)
       real(dp), allocatable, intent(out) :: projection(:, :)   !! (n_mo, n_mbs)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: orthogonalize
+         !! Default true, giving `|A#a>`. False gives the raw `|A*a>`, which is
+         !! what the *per-atom* decompositions want: within one atom the
+         !! free-atom orbitals are already orthonormal, so the metric there is
+         !! the identity and orthogonalizing across the molecule would mix in
+         !! the neighbours the projection is trying to distinguish from.
 
       real(dp), allocatable :: half(:, :), work(:, :)
       integer :: n_mo, n_mbs
+      logical :: rotate
 
       if (error%has_error()) return
+      rotate = .true.
+      if (present(orthogonalize)) rotate = orthogonalize
       n_mo = size(orbitals, 2)
       n_mbs = size(mixed, 2)
 
+      allocate (work(n_mo, n_mbs))
+      call pic_gemm(orbitals, mixed, work, transa="T")
+
+      if (.not. rotate) then
+         call move_alloc(work, projection)
+         return
+      end if
+
       call inverse_sqrt(aambs_overlap, half, error)
       if (error%has_error()) return
-
-      allocate (work(n_mo, n_mbs), projection(n_mo, n_mbs))
-      call pic_gemm(orbitals, mixed, work, transa="T")
+      allocate (projection(n_mo, n_mbs))
       call pic_gemm(work, half, projection)
       deallocate (work, half)
    end subroutine mo_aambs_overlap
+
+   subroutine aambs_atom_ranges(atomic_numbers, aambs, core_offset, core_count, &
+                                valence_offset, valence_count, error)
+      !! Where each atom's core and valence minimal-basis orbitals sit
+      !!
+      !! Each atom's functions are one contiguous run, and *within* that run the
+      !! chemical core comes first. That second fact is the invariant the whole
+      !! core/valence split rests on, and it is why the shell ordering in
+      !! `aambs.json` is not simply by principal quantum number: scandium
+      !! through zinc list 4s before 3d so that the argon core stays a prefix.
+      !! The extraction asserts it for every element; this consumes it.
+      integer, intent(in) :: atomic_numbers(:)
+      type(libcint_molecule_t), intent(in) :: aambs
+      integer, allocatable, intent(out) :: core_offset(:), core_count(:)
+      integer, allocatable, intent(out) :: valence_offset(:), valence_count(:)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: natm, iatom, core, valence
+
+      if (error%has_error()) return
+      natm = size(atomic_numbers)
+      allocate (offsets(natm), counts(natm))
+      call atom_ao_blocks(aambs, offsets, counts)
+
+      allocate (core_offset(natm), core_count(natm))
+      allocate (valence_offset(natm), valence_count(natm))
+      do iatom = 1, natm
+         call aambs_element_counts(atomic_numbers(iatom), core, valence, error)
+         if (error%has_error()) return
+         if (core + valence /= counts(iatom)) then
+            call error%set(ERROR_VALIDATION, "atom "//to_char(iatom)//" has "// &
+                           to_char(counts(iatom))//" minimal-basis functions but its "// &
+                           "counts say "//to_char(core + valence)//". The shell data "// &
+                           "and the orbital counts in aambs.json disagree.")
+            return
+         end if
+         core_offset(iatom) = offsets(iatom)
+         core_count(iatom) = core
+         valence_offset(iatom) = offsets(iatom) + core
+         valence_count(iatom) = valence
+      end do
+   end subroutine aambs_atom_ranges
+
+   subroutine atom_adapted_block(sigma, block, error)
+      !! The orbitals of one subspace that best match one atom's free-atom set
+      !!
+      !! `sigma` is the overlap of an orthonormal set of molecular orbitals with
+      !! one atom's free-atom orbitals, so its left singular vectors are the
+      !! combinations of those orbitals lying closest to that atom -- Paper I
+      !! section V.B.1.
+      !!
+      !! Taken through the *small* Gram matrix `sigma^T sigma`, which is one
+      !! atom's minimal-basis dimension square: five for carbon, one for
+      !! hydrogen. The left vectors follow as `sigma V / s`. The alternative is
+      !! an SVD of a matrix whose row count is the whole valence space, for
+      !! exactly the same answer.
+      real(dp), intent(in) :: sigma(:, :)     !! (n_rows, m_atom)
+      real(dp), allocatable, intent(out) :: block(:, :)   !! (n_rows, m_atom)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: gram(:, :), values(:), work(:, :)
+      integer :: m, i, info
+
+      if (error%has_error()) return
+      m = size(sigma, 2)
+      allocate (gram(m, m), values(m))
+      call pic_gemm(sigma, sigma, gram, transa="T")
+
+      ! Negated so the largest projections come first, matching the ordering the
+      ! selection downstream assumes.
+      gram = -gram
+      call pic_syev(gram, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "an atomic projection could not be "// &
+                        "diagonalized (info = "//to_char(info)//")")
+         return
+      end if
+      values = -values
+
+      if (values(m) < 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "one of this atom's free-atom orbitals has "// &
+                        "no counterpart in the molecular orbital space (projection "// &
+                        to_char(values(m))//"). The orbital basis cannot represent the "// &
+                        "minimal basis, which usually means it is far too small.")
+         return
+      end if
+
+      allocate (work(size(sigma, 1), m), block(size(sigma, 1), m))
+      call pic_gemm(sigma, gram, work)
+      do i = 1, m
+         block(:, i) = work(:, i)/sqrt(values(i))
+      end do
+      deallocate (gram, values, work)
+   end subroutine atom_adapted_block
+
+   subroutine refine_atomic_character(coefficients, projection, atom_of, offset, &
+                                      count, sweeps, functional, error)
+      !! Rotate between atoms so each orbital sits as fully as possible on its own
+      !!
+      !! Paper II's Appendix, eqs (A.1)-(A.11), which replaces the plain
+      !! symmetric orthogonalization of Paper I and applies retroactively to the
+      !! Hartree-Fock case. It maximizes
+      !!
+      !!     P = sum_A sum_{a on A} sum_{alpha on A} <A*alpha | Aa>^2
+      !!
+      !! over orthogonal transformations. Only rotations between orbitals on
+      !! *different* atoms change it -- the functional is blind to intra-atomic
+      !! mixing, which is what the orientation step later exploits -- so the
+      !! sweep skips same-atom pairs entirely.
+      !!
+      !! Each rotation is closed form. With
+      !!
+      !!     D = (Q^A_ii - Q^A_jj + Q^B_jj - Q^B_ii) / 2
+      !!     F =  Q^A_ij - Q^B_ij
+      !!
+      !! the optimum is theta = atan2(F, D) / 2. GAMESS computes exactly this in
+      !! `LOCAL_MODELORB_JACOBI`, down to the halved angle and the sign flip on
+      !! the second atom's contribution, and its thresholds are the ones used
+      !! here because neither paper states any.
+      real(dp), intent(inout) :: coefficients(:, :)   !! (n_rows, n_quao)
+      real(dp), intent(in) :: projection(:, :)        !! (n_rows, n_mbs), raw AAMBS
+      integer, intent(in) :: atom_of(:)
+      integer, intent(in) :: offset(:), count(:)      !! AAMBS range per atom
+      integer, intent(out) :: sweeps
+      real(dp), intent(out) :: functional
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: amb(:, :), ci(:), cj(:)
+      real(dp), allocatable :: ri(:), rj(:)
+      real(dp) :: d, f, radius, theta, a, b, qii, qjj, qij
+      integer :: n, i, j, k, lo, hi, sweep
+      logical :: moved
+
+      if (error%has_error()) return
+      n = size(coefficients, 2)
+      allocate (amb(n, size(projection, 2)), ci(size(coefficients, 1)))
+      allocate (cj(size(coefficients, 1)))
+      allocate (ri(size(projection, 2)), rj(size(projection, 2)))
+
+      sweeps = 0
+      do sweep = 1, JACOBI_MAX_SWEEPS
+         moved = .false.
+         ! `< QUAO | A*alpha >` for the current orbitals. Rebuilt each sweep
+         ! rather than updated in place: two rows change per rotation, and the
+         ! bookkeeping to track that is more error-prone than the multiply.
+         call pic_gemm(coefficients, projection, amb, transa="T")
+
+         do i = 1, n
+            do j = i + 1, n
+               if (atom_of(i) == atom_of(j)) cycle   ! invisible to the functional
+
+               d = 0.0_dp
+               f = 0.0_dp
+               lo = offset(atom_of(i)) + 1
+               hi = offset(atom_of(i)) + count(atom_of(i))
+               qii = sum(amb(i, lo:hi)**2)
+               qjj = sum(amb(j, lo:hi)**2)
+               qij = sum(amb(i, lo:hi)*amb(j, lo:hi))
+               d = d + 0.5_dp*(qii - qjj)
+               f = f + qij
+
+               lo = offset(atom_of(j)) + 1
+               hi = offset(atom_of(j)) + count(atom_of(j))
+               qii = sum(amb(i, lo:hi)**2)
+               qjj = sum(amb(j, lo:hi)**2)
+               qij = sum(amb(i, lo:hi)*amb(j, lo:hi))
+               d = d + 0.5_dp*(qjj - qii)
+               f = f - qij
+
+               radius = sqrt(d*d + f*f)
+               if (radius < JACOBI_CRIT) cycle
+               ! P is independent of the angle here; any rotation is as good as
+               ! any other, so leave the pair alone. Neither paper mentions this
+               ! case; it is reachable whenever two orbitals are symmetric
+               ! partners.
+               theta = 0.5_dp*atan2(f, d)
+               if (abs(theta) < JACOBI_CRIT) cycle
+
+               a = cos(theta)
+               b = sin(theta)
+               ci = coefficients(:, i)
+               cj = coefficients(:, j)
+               coefficients(:, i) = a*ci + b*cj
+               coefficients(:, j) = -b*ci + a*cj
+               ! Both rows from the *old* values. Updating in place would feed
+               ! the new row i into row j and silently rotate by the wrong angle.
+               ri = amb(i, :)
+               rj = amb(j, :)
+               amb(i, :) = a*ri + b*rj
+               amb(j, :) = -b*ri + a*rj
+               moved = .true.
+            end do
+         end do
+
+         sweeps = sweep
+         if (.not. moved) exit
+      end do
+
+      if (sweeps >= JACOBI_MAX_SWEEPS) then
+         call error%set(ERROR_VALIDATION, "the quasi-atomic refinement did not settle "// &
+                        "in "//to_char(JACOBI_MAX_SWEEPS)//" sweeps.")
+         return
+      end if
+
+      call pic_gemm(coefficients, projection, amb, transa="T")
+      functional = 0.0_dp
+      do i = 1, n
+         k = atom_of(i)
+         lo = offset(k) + 1
+         hi = offset(k) + count(k)
+         functional = functional + sum(amb(i, lo:hi)**2)
+      end do
+      functional = functional/real(n, dp)
+      deallocate (amb, ci, cj, ri, rj)
+   end subroutine refine_atomic_character
 
    subroutine valence_virtual_orbitals(orbitals, projection, dims, result, error)
       !! Recover the chemically meaningful part of the virtual space
@@ -231,5 +491,106 @@ contains
 
       deallocate (sigma, b, values, c_virt)
    end subroutine valence_virtual_orbitals
+
+   subroutine quasi_atomic_orbitals(atomic_numbers, valence_internal, n_occupied_valence, &
+                                    mixed, offset, count, result, error)
+      !! Quasi-atomic orbitals for the valence-internal space
+      !!
+      !! Each atom claims the combinations of valence-internal orbitals that
+      !! look most like its own free-atom orbitals. Those claims are orthonormal
+      !! within an atom and not between atoms, so the collection is
+      !! symmetrically orthogonalized and then refined by the Paper II sweep,
+      !! which recovers the atomic character the orthogonalization costs.
+      !!
+      !! The result is a basis for the same space the molecular orbitals span,
+      !! in which every orbital belongs to one atom. The density in that basis
+      !! is the population-bond-order matrix: its diagonal counts electrons on
+      !! an orbital, and its interatomic off-diagonal elements are bond orders.
+      !!
+      !! **Bond-order signs are meaningless on their own.** Nothing here fixes a
+      !! phase -- the eigenvectors come back however LAPACK produced them -- and
+      !! the papers say so explicitly: a negative bond order routinely describes
+      !! a bonding interaction. Compare magnitudes, or use the kinetic bond
+      !! order, in which the two phase factors cancel.
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: valence_internal(:, :)
+         !! (n_ao, n_val): the occupied valence orbitals followed by the
+         !! valence-virtual ones, orthonormal
+      integer, intent(in) :: n_occupied_valence
+         !! How many of those columns are occupied. The rest are empty.
+      real(dp), intent(in) :: mixed(:, :)      !! < AO | AAMBS >, (n_ao, n_mbs)
+      integer, intent(in) :: offset(:), count(:)   !! Valence AAMBS range per atom
+      type(quao_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: projection(:, :), sigma(:, :), block(:, :)
+      real(dp), allocatable :: claims(:, :), gram(:, :), half(:, :), orthogonal(:, :)
+      real(dp), allocatable :: occupied(:, :)
+      integer :: n_ao, n_val, natm, iatom, m, filled
+
+      if (error%has_error()) return
+      n_ao = size(valence_internal, 1)
+      n_val = size(valence_internal, 2)
+      natm = size(atomic_numbers)
+
+      if (sum(count) /= n_val) then
+         call error%set(ERROR_VALIDATION, "the atoms contribute "//to_char(sum(count))// &
+                        " valence minimal-basis orbitals but the valence-internal "// &
+                        "space has "//to_char(n_val)//". These are the same number by "// &
+                        "construction, so they disagreeing means the space was "// &
+                        "assembled from the wrong columns.")
+         return
+      end if
+
+      ! Raw free-atom orbitals, not the orthogonalized ones: the decomposition
+      ! below is per atom, and within one atom the metric is already the identity.
+      allocate (projection(n_val, size(mixed, 2)))
+      call pic_gemm(valence_internal, mixed, projection, transa="T")
+
+      allocate (claims(n_val, n_val), result%atom_of(n_val))
+      filled = 0
+      do iatom = 1, natm
+         m = count(iatom)
+         if (m == 0) cycle
+         allocate (sigma(n_val, m))
+         sigma = projection(:, offset(iatom) + 1:offset(iatom) + m)
+         call atom_adapted_block(sigma, block, error)
+         deallocate (sigma)
+         if (error%has_error()) return
+         claims(:, filled + 1:filled + m) = block
+         result%atom_of(filled + 1:filled + m) = iatom
+         filled = filled + m
+         deallocate (block)
+      end do
+
+      ! Orthonormal within an atom, not between atoms. Symmetric
+      ! orthogonalization is the choice that moves every orbital as little as
+      ! possible, which is what keeps them atomic.
+      allocate (gram(n_val, n_val), orthogonal(n_val, n_val))
+      call pic_gemm(claims, claims, gram, transa="T")
+      call inverse_sqrt(gram, half, error)
+      if (error%has_error()) return
+      call pic_gemm(claims, half, orthogonal)
+
+      call refine_atomic_character(orthogonal, projection, result%atom_of, offset, &
+                                   count, result%sweeps, result%atomic_character, error)
+      if (error%has_error()) return
+
+      allocate (result%orbitals(n_ao, n_val))
+      call pic_gemm(valence_internal, orthogonal, result%orbitals)
+      result%n_quao = n_val
+
+      ! The density in the quasi-atomic basis. Only the occupied
+      ! valence-internal orbitals carry electrons, two each, so this is
+      ! 2 U_occ U_occ^T with U the transformation from valence-internal
+      ! orbitals to quasi-atomic ones -- Paper I eq (5.2).
+      allocate (occupied(n_occupied_valence, n_val))
+      occupied = orthogonal(1:n_occupied_valence, :)
+      allocate (result%population_bond_order(n_val, n_val))
+      call pic_gemm(occupied, occupied, result%population_bond_order, transa="T", &
+                    alpha=2.0_dp, beta=0.0_dp)
+
+      deallocate (projection, claims, gram, half, orthogonal, occupied)
+   end subroutine quasi_atomic_orbitals
 
 end module mqc_libcint_quao

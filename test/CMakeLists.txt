@@ -74,6 +74,10 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_quao_vvo)
   target_link_libraries(test_mqc_quao_vvo PRIVATE cint_fortran cint)
 
+  # The quasi-atomic orbitals themselves, and the density in their basis.
+  addtest(mqc_quao)
+  target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
+
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
 
