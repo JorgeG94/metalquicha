@@ -35,6 +35,7 @@ module mqc_config_adapter
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       character(len=16) :: expansion_kind = "mbe"  !! "mbe", "fmo" or "ee-mbe"
+      character(len=16) :: counterpoise = "none"   !! "none" or "vmfc"
       character(len=16) :: fmo_far_field = "mulliken"  !! mulliken, chelpg or ignore
       real(dp) :: fmo_resppc = 2.0_dp    !! Point-charge cutoff; negative disables it
       integer :: fmo_max_outer = 50
@@ -154,6 +155,9 @@ contains
 
       ! Set GMBE overlapping fragments flag
       driver_config%allow_overlapping_fragments = mqc_config%allow_overlapping_fragments
+      if (allocated(mqc_config%counterpoise)) then
+         driver_config%counterpoise = mqc_config%counterpoise
+      end if
       if (allocated(mqc_config%expansion_kind)) then
          driver_config%expansion_kind = mqc_config%expansion_kind
       end if

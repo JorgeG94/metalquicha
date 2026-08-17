@@ -1,5 +1,6 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
    use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
+   use mqc_combinatorics, only: fragment_size_of
    use mqc_work_queue, only: queue_t, queue_init_from_list, queue_pop, queue_is_empty, queue_destroy
    use mqc_group_batching, only: flush_group_results, handle_local_worker_results_to_batch, &
                                  handle_node_results_to_batch, handle_group_results
@@ -55,7 +56,7 @@ contains
          task_offset(f) = total_tasks + 1_int64
          if (expand) then
             ! Atom count must include hydrogen caps, so the fragment has to be built
-            fragment_size = count(polymers(f, :) > 0)
+            fragment_size = fragment_size_of(polymers(f, :))
             call build_fragment_from_indices(sys_geom, polymers(f, 1:fragment_size), frag, error, sys_geom%bonds)
             if (error%has_error()) then
                call logger%error("build_hessian_task_table: "//error%get_full_trace())
@@ -111,7 +112,7 @@ contains
       n_cols = size(task_row) - 1
       disp_code = int(task_row(n_cols + 1), int32)
 
-      fragment_size = count(task_row(1:n_cols) > 0)
+      fragment_size = fragment_size_of(task_row(1:n_cols))
       allocate (fragment_indices(fragment_size))
       fragment_indices = task_row(1:fragment_size)
 
@@ -269,7 +270,7 @@ contains
       n_disp = 3*n_atoms
       base = task_offset(f)
 
-      fragment_size = count(polymers(f, :) > 0)
+      fragment_size = fragment_size_of(polymers(f, :))
       call build_fragment_from_indices(sys_geom, polymers(f, 1:fragment_size), frag, error, sys_geom%bonds)
       if (error%has_error()) then
          call logger%error("assemble_one_fragment_hessian: "//error%get_full_trace())

@@ -2,6 +2,7 @@ module mqc_mbe_io
    !! Non-JSON I/O utilities for MBE calculations
    !! JSON output has been centralized in mqc_json_writer module
    use pic_types, only: int32, int64, dp
+   use mqc_combinatorics, only: fragment_size_of
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_physical_fragment, only: physical_fragment_t, to_angstrom
@@ -96,7 +97,7 @@ contains
          count_by_level = 0_int64
 
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size == frag_level) count_by_level = count_by_level + 1_int64
          end do
 
@@ -118,7 +119,7 @@ contains
             call logger%verbose("--------------------------------------------")
 
             do i = 1_int64, fragment_count
-               fragment_size = count(polymers(i, :) > 0)
+               fragment_size = fragment_size_of(polymers(i, :))
 
                if (fragment_size == frag_level) then
                   fragment_str = "["

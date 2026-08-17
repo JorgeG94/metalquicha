@@ -9,6 +9,10 @@ module mqc_combinatorics
    implicit none
    private
 
+   public :: fragment_size_of      !! How many monomers a polymer row names
+   public :: vmfc_subset_key       !! Counterpoise subset key: chosen real, rest ghosted
+   public :: is_auxiliary_row      !! A ghosted row: subtracted, never summed
+   public :: real_count_of         !! Real (non-ghosted) monomers in a row
    public :: binomial              !! Binomial coefficient calculation
    public :: get_nfrags            !! Calculate total number of fragments
    public :: create_monomer_list   !! Generate sequential monomer indices
@@ -74,6 +78,92 @@ contains
       end do
 
    end subroutine create_monomer_list
+
+   pure function is_auxiliary_row(row) result(aux)
+      !! Whether a row exists only to be subtracted, not to be summed
+      !!
+      !! A counterpoise expansion computes monomer A in the basis of the pair
+      !! AB. That energy belongs inside the pair's correction and nowhere else:
+      !!
+      !!     E = sum_i E_i(i)  +  sum_ij [ E_ij - E_i(ij) - E_j(ij) ]
+      !!
+      !! The one-body term uses each monomer in its *own* basis, so the ghosted
+      !! rows are auxiliary -- adding their deltas to the total as well would
+      !! count them twice. A negative entry is what marks them, which is the
+      !! same sign the fragment builder and the subset key already read.
+      integer(default_int), intent(in) :: row(:)
+      logical :: aux
+
+      aux = any(row < 0)
+   end function is_auxiliary_row
+
+   pure function real_count_of(row) result(n)
+      !! How many of a row's monomers are real rather than ghosted
+      !!
+      !! The subset recursion works over these: [1,-2] contains one real
+      !! monomer, so it has no proper subsets and its delta is its energy. Using
+      !! the full row size instead would send the recursion looking for subsets
+      !! that were never generated.
+      integer(default_int), intent(in) :: row(:)
+      integer(default_int) :: n
+
+      n = count(row > 0)
+   end function real_count_of
+
+   pure subroutine vmfc_subset_key(fragment, n, chosen, k, key)
+      !! The subset key a counterpoise-corrected expansion looks up
+      !!
+      !! Ordinary MBE subtracts the subset {A} from the pair {A,B}. VMFC
+      !! subtracts {A in the basis of AB} instead -- the same monomers, solved
+      !! in the parent's basis -- so the superposition error that inflates the
+      !! parent stands on both sides of the difference and cancels rather than
+      !! surviving into the total.
+      !!
+      !! So the key is the chosen monomers positive and *everything else in the
+      !! parent* negative. For the pair [1,2] choosing [1], that is [1,-2]. The
+      !! recursion, the hash table and the dispatch are untouched: a signed key
+      !! is just another key, and it sorts and hashes like any other.
+      integer, intent(in) :: fragment(:)   !! The parent's monomers, all positive
+      integer, intent(in) :: n             !! How many of them
+      integer, intent(in) :: chosen(:)     !! Positions within `fragment`, size k
+      integer, intent(in) :: k
+      integer, intent(out) :: key(:)       !! Size n: k real, then n-k ghosted
+
+      integer :: i, j, next
+      logical :: taken(n)
+
+      taken = .false.
+      do i = 1, k
+         taken(chosen(i)) = .true.
+         key(i) = fragment(chosen(i))
+      end do
+
+      next = k
+      do j = 1, n
+         if (.not. taken(j)) then
+            next = next + 1
+            key(next) = -fragment(j)
+         end if
+      end do
+   end subroutine vmfc_subset_key
+
+   pure function fragment_size_of(row) result(n)
+      !! How many monomers a polymer row names, padding excluded
+      !!
+      !! Rows are zero-padded to the widest fragment, so the size is the count
+      !! of non-zero entries. Written `/= 0` rather than `> 0` because a
+      !! negative entry is a monomer present as *ghost centres* -- its atoms and
+      !! basis functions without its nucleus -- which is a monomer the fragment
+      !! contains and must be sized for. `> 0` would drop it silently and hand
+      !! the SCF a smaller molecule than the row asked for.
+      !!
+      !! Here rather than repeated at each site because there were seventeen of
+      !! them, and one missed would be a wrong energy rather than a failure.
+      integer(default_int), intent(in) :: row(:)
+      integer(default_int) :: n
+
+      n = count(row /= 0)
+   end function fragment_size_of
 
    recursive subroutine generate_fragment_list(monomers, max_level, polymers, count)
       !! Generate all possible fragments (combinations of monomers) up to max_level
@@ -240,7 +330,7 @@ contains
       is_variable_size = allocated(sys_geom%fragment_sizes)
 
       do ifrag = 1_int64, fragment_count
-         fragment_size = count(polymers(ifrag, :) > 0)
+         fragment_size = fragment_size_of(polymers(ifrag, :))
 
          if (fragment_size == 1) then
             ! Monomers have distance 0

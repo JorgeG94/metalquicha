@@ -356,6 +356,7 @@ contains
       call allow(keys, "allow_overlapping_fragments")
       call allow(keys, "max_intersection_level")
       call allow(keys, "expansion")
+      call allow(keys, "counterpoise")
       call allow(keys, "far_field")
       call allow(keys, "resppc")
       call allow(keys, "max_outer")

@@ -3,6 +3,7 @@ module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
+   use mqc_combinatorics, only: fragment_size_of, vmfc_subset_key, is_auxiliary_row, real_count_of
    use pic_timer, only: timer_type
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
@@ -31,7 +32,7 @@ module mqc_mbe
 
 contains
 
-   function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm) result(delta_E)
+ function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm, vmfc) result(delta_E)
       !! Bottom-up computation of n-body correction (non-recursive, uses pre-computed subset deltas)
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all subset deltaE values
       !! All subsets must have been computed already (guaranteed by processing fragments in order)
@@ -41,12 +42,21 @@ contains
       type(fragment_lookup_t), intent(in) :: lookup  !! Pre-built hash table for lookups
       real(dp), intent(in) :: energies(:), delta_energies(:)  !! Pre-computed delta values
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+      logical, intent(in), optional :: vmfc
+         !! Subtract each subset *in this fragment's basis* rather than in its
+         !! own -- the counterpoise correction. Absent means the ordinary
+         !! expansion, which is every caller that predates it.
       real(dp) :: delta_E
 
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
-      logical :: has_next
+      integer :: key(MAX_MBE_LEVEL)
+      integer :: key_len
+      logical :: has_next, counterpoise
+
+      counterpoise = .false.
+      if (present(vmfc)) counterpoise = vmfc
 
       ! Start with the full n-mer energy
       delta_E = energies(fragment_idx)
@@ -60,20 +70,30 @@ contains
 
          ! Loop through all combinations
          do
-            ! Build current subset
-            do i = 1, subset_size
-               subset(i) = fragment(indices(i))
-            end do
+            ! Build current subset. Under counterpoise the key names the chosen
+            ! monomers real and the rest of *this* fragment ghosted, so the
+            ! lookup finds the subset solved in the parent's basis rather than
+            ! its own -- which is the whole of the correction.
+            if (counterpoise) then
+               call vmfc_subset_key(fragment, n, indices(1:subset_size), subset_size, key(1:n))
+               key_len = n
+            else
+               do i = 1, subset_size
+                  subset(i) = fragment(indices(i))
+               end do
+               key(1:subset_size) = subset(1:subset_size)
+               key_len = subset_size
+            end if
 
             ! Look up subset index
-            subset_idx = lookup%find(subset(1:subset_size), subset_size)
+            subset_idx = lookup%find(key(1:key_len), key_len)
             if (subset_idx < 0) then
                block
                   use pic_io, only: to_char
                   character(len=512) :: error_msg
                   integer :: j
                   write (error_msg, "(a,i0,a,*(i0,1x))") "Subset not found! Fragment idx=", fragment_idx, &
-                     " seeking subset: ", (subset(j), j=1, subset_size)
+                     " seeking subset: ", (key(j), j=1, key_len)
                   call logger%error(trim(error_msg))
                   write (error_msg, "(a,*(i0,1x))") "  Full fragment: ", (fragment(j), j=1, n)
                   call logger%error(trim(error_msg))
@@ -136,13 +156,13 @@ contains
 
       ! Every fragment in the expansion enters the total with unit weight
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
+         fragment_size = fragment_size_of(polymers(i, :))
          if (fragment_size >= 1 .and. fragment_size <= max_level) weights(i) = 1.0_dp
       end do
 
       do nlevel = max_level, 1, -1
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size /= nlevel) cycle
 
             ! delta_i contributes X_i with this fragment's accumulated weight ...
@@ -305,7 +325,9 @@ contains
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
-      logical :: has_next
+      integer :: key(MAX_MBE_LEVEL)
+      integer :: key_len
+      logical :: has_next, counterpoise
 
       ! Start with the full n-mer dipole
       delta_dipoles(:, fragment_idx) = results(fragment_idx)%dipole
@@ -319,13 +341,23 @@ contains
 
          ! Loop through all combinations
          do
-            ! Build current subset
-            do i = 1, subset_size
-               subset(i) = fragment(indices(i))
-            end do
+            ! Build current subset. Under counterpoise the key names the chosen
+            ! monomers real and the rest of *this* fragment ghosted, so the
+            ! lookup finds the subset solved in the parent's basis rather than
+            ! its own -- which is the whole of the correction.
+            if (counterpoise) then
+               call vmfc_subset_key(fragment, n, indices(1:subset_size), subset_size, key(1:n))
+               key_len = n
+            else
+               do i = 1, subset_size
+                  subset(i) = fragment(indices(i))
+               end do
+               key(1:subset_size) = subset(1:subset_size)
+               key_len = subset_size
+            end if
 
             ! Look up subset index
-            subset_idx = lookup%find(subset(1:subset_size), subset_size)
+            subset_idx = lookup%find(key(1:key_len), key_len)
             if (subset_idx < 0) then
                call logger%error("Subset not found in MBE dipole computation")
                if (present(world_comm)) then
@@ -368,7 +400,7 @@ contains
       call lookup_timer%start()
       call lookup%init(fragment_count)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
+         fragment_size = fragment_size_of(polymers(i, :))
          call lookup%insert(polymers(i, :), fragment_size, i, insert_error)
          if (insert_error%has_error()) then
             if (present(error)) then
@@ -494,7 +526,8 @@ contains
 
       ! Local variables
       integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level, hess_dim
+      integer :: fragment_size, row_width, nlevel, current_log_level, hess_dim
+      logical :: use_vmfc
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
       real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
@@ -609,12 +642,28 @@ contains
          end if
       end block
 
+      ! Counterpoise is read off the term list rather than passed in: the rows
+      ! are what a ghosted expansion actually differs by, so a flag could
+      ! disagree with them and this cannot. An all-positive table is the
+      ! ordinary expansion, which is every table built before this existed.
+      use_vmfc = .false.
+      do i = 1_int64, fragment_count
+         if (is_auxiliary_row(polymers(i, :))) then
+            use_vmfc = .true.
+            exit
+         end if
+      end do
+
       ! Bottom-up computation: process fragments by size (1-body, then 2-body, etc.)
       ! This makes the algorithm independent of input fragment order
       ! We process by n-mer level to ensure all subsets are computed before they're needed
       do nlevel = 1, max_level
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            ! The *real* monomers set the level, so a counterpoise row like
+            ! [1,-2] is a one-body term with no subsets to subtract, and it is
+            ! computed at level 1 -- before the pair that needs it.
+            fragment_size = int(real_count_of(polymers(i, :)))
+            row_width = fragment_size_of(polymers(i, :))
 
             ! Only process fragments of the current nlevel
             if (fragment_size /= nlevel) cycle
@@ -622,7 +671,12 @@ contains
             if (fragment_size == 1) then
                ! 1-body: delta = value (no subsets to subtract)
                delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
+               ! An auxiliary row exists to be subtracted by its parent, never
+               ! to be summed: the one-body term is each monomer in its *own*
+               ! basis, so adding the ghosted one here would count it twice.
+               if (.not. is_auxiliary_row(polymers(i, :))) then
+                  sum_by_level(1) = sum_by_level(1) + delta_energies(i)
+               end if
 
                if (compute_dipole) then
                   ! For 1-body, delta dipole is just the fragment dipole
@@ -631,10 +685,13 @@ contains
 
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
                ! n-body: delta = value - sum(all subset deltas)
-               delta_E = compute_mbe_delta(i, polymers(i, 1:fragment_size), lookup, &
-                                           energies, delta_energies, fragment_size, world_comm)
+               delta_E = compute_mbe_delta(i, polymers(i, 1:row_width), lookup, &
+                                           energies, delta_energies, fragment_size, world_comm, &
+                                           vmfc=use_vmfc)
                delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+               if (.not. is_auxiliary_row(polymers(i, :))) then
+                  sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+               end if
 
                if (compute_dipole) then
                   call compute_mbe_dipole(i, polymers(i, 1:fragment_size), lookup, &
@@ -647,6 +704,23 @@ contains
       ! Collapse the delta recursion into one weight per fragment while the lookup
       ! table is still alive. Only needed for the quantities that are mapped into
       ! system coordinates; energy and dipole stay on the O(fragment_count) path.
+      if (use_vmfc .and. (compute_grad .or. compute_hess .or. compute_dipole_derivs)) then
+         ! `compute_mbe_coefficients` collapses the delta recursion into one
+         ! weight per fragment, and it does so with unghosted subset keys -- it
+         ! predates counterpoise and does not know a ghosted row from an
+         ! ordinary one. Under VMFC the weights would be assembled from the
+         ! wrong terms and the derivative would be wrong without being
+         ! obviously wrong, which is worse than not having it. Refused until
+         ! that routine learns the same key rule `compute_mbe_delta` now uses.
+         call logger%error("counterpoise: energies only for now. The gradient, "// &
+                           "Hessian and dipole-derivative path collapses the "// &
+                           "expansion with uncorrected subset weights, so it "// &
+                           "would return a wrong derivative rather than fail. "// &
+                           "Run the energy, or drop counterpoise.")
+         if (present(world_comm)) call abort_comm(world_comm, 1)
+         error stop "counterpoise gradients are not implemented"
+      end if
+
       if (compute_grad .or. compute_hess .or. compute_dipole_derivs) then
          allocate (coeffs(fragment_count))
          call compute_mbe_coefficients(polymers, fragment_count, max_level, lookup, coeffs)
@@ -664,7 +738,7 @@ contains
       if (allocated(coeffs)) then
          call assembly_timer%start()
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size < 1 .or. fragment_size > max_level) cycle
             if (coeffs(i) == 0.0_dp) cycle  ! Fragment cancels out of the expansion
 
@@ -683,7 +757,7 @@ contains
 
       if (compute_dipole) then
          do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+            fragment_size = fragment_size_of(polymers(i, :))
             if (fragment_size <= max_level) then
                mbe_result%dipole = mbe_result%dipole + delta_dipoles(:, i)
             end if

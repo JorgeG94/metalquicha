@@ -265,6 +265,22 @@ module mqc_config_types
          !! Which expansion runs: "mbe" (default), "fmo" or "ee-mbe".
          !! GMBE is selected by `allow_overlapping_fragments` instead, which
          !! predates this and stays as it was.
+      character(len=:), allocatable :: counterpoise
+         !! How basis-set superposition error is handled: "none" (default) or
+         !! "vmfc".
+         !!
+         !! Under "none" each subfragment is solved in its own basis, so a pair
+         !! borrows functions its monomers did not have and looks more bound
+         !! than it is. That error lands in the pair term and survives
+         !! truncation. "vmfc" solves every subfragment in its parent's basis
+         !! instead -- valiron-mayer function counterpoise -- so the borrowing
+         !! appears on both sides of each difference and cancels.
+         !!
+         !! It is not free: a monomer's energy stops being one number reusable
+         !! across every pair it belongs to and becomes one number per pair, so
+         !! a level-2 expansion goes from N + C(N,2) subcalculations to
+         !! 3*C(N,2).
+
       character(len=:), allocatable :: fmo_far_field
          !! What a distant fragment contributes: mulliken, chelpg or ignore
       real(dp) :: fmo_resppc = 2.0_dp

@@ -373,6 +373,7 @@ contains
       call optional_int(json, "keywords.fragmentation.max_intersection_level", &
                         config%max_intersection_level)
       call optional_string(json, "keywords.fragmentation.expansion", config%expansion_kind)
+      call optional_string(json, "keywords.fragmentation.counterpoise", config%counterpoise)
       call optional_string(json, "keywords.fragmentation.far_field", config%fmo_far_field)
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
       call optional_int(json, "keywords.fragmentation.max_outer", config%fmo_max_outer)

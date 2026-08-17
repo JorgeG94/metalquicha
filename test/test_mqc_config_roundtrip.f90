@@ -35,6 +35,7 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
+                  new_unittest("counterpoise_roundtrip", test_counterpoise_roundtrip), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
                   new_unittest("dft_settings_reach_the_method", test_dft_roundtrip) &
                   ]
@@ -68,6 +69,28 @@ contains
       close (unit)
    end subroutine write_input
 
+   subroutine write_counterpoise_input(value)
+      !! A deck naming a counterpoise scheme, and nothing else unusual
+      character(len=*), intent(in) :: value
+      integer :: unit
+
+      open (newunit=unit, file=SCRATCH_FILE, status="replace", action="write")
+      write (unit, "(A)") "{"
+      write (unit, "(A)") '  "schema": {"name": "roundtrip", "version": "1.0"},'
+      write (unit, "(A)") '  "model": {"method": "hf", "basis": "cc-pvdz"},'
+      write (unit, "(A)") '  "driver": "Energy",'
+      write (unit, "(A)") '  "keywords": {"fragmentation": {'
+      write (unit, "(A)") '    "method": "MBE", "level": 2,'
+      write (unit, "(A)") '    "counterpoise": "'//value//'"'
+      write (unit, "(A)") "  }},"
+      write (unit, "(A)") '  "molecules": [{'
+      write (unit, "(A)") '    "symbols": ["He"], "geometry": [0.0, 0.0, 0.0],'
+      write (unit, "(A)") '    "molecular_charge": 0, "molecular_multiplicity": 1'
+      write (unit, "(A)") "  }]"
+      write (unit, "(A)") "}"
+      close (unit)
+   end subroutine write_counterpoise_input
+
    subroutine remove_input()
       integer :: unit
       logical :: exists
@@ -77,6 +100,47 @@ contains
       open (newunit=unit, file=SCRATCH_FILE, status="old")
       close (unit, status="delete")
    end subroutine remove_input
+
+   subroutine test_counterpoise_roundtrip(error)
+      !! `counterpoise` survives the deck, the config and the adapter
+      !!
+      !! Three hops, and the middle one is where a keyword usually dies: the
+      !! schema validator rejects anything it does not know, so a field added to
+      !! the config type but not to the allow-list is refused before the reader
+      !! ever sees it.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+      type(error_t) :: parse_error
+
+      call write_counterpoise_input("vmfc")
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+
+      call check(error,.not. parse_error%has_error(), &
+                 "a deck naming counterpoise should parse: "//parse_error%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, allocated(config%counterpoise), &
+                 "counterpoise must survive parsing")
+      if (allocated(error)) return
+      call check(error, trim(config%counterpoise), "vmfc", &
+                 "the counterpoise value must survive parsing")
+      if (allocated(error)) return
+
+      call config_to_driver(config, driver)
+      call check(error, trim(driver%counterpoise), "vmfc", &
+                 "counterpoise must survive the config adapter")
+      if (allocated(error)) return
+
+      ! And the default is the uncorrected expansion, not an error.
+      call write_counterpoise_input("none")
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call config_to_driver(config, driver)
+      call check(error, trim(driver%counterpoise), "none", &
+                 "a scheme of none should reach the driver as itself")
+   end subroutine test_counterpoise_roundtrip
 
    subroutine test_hf_roundtrip(error)
       !> Error handling
