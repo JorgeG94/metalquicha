@@ -47,7 +47,7 @@ module mqc_libcint_cphf
    !! of Kohn-Sham orbitals. There is no functional argument to get wrong; the caller
    !! has to keep it straight. EFP2 wants Hartree-Fock anyway.
    use, intrinsic :: iso_fortran_env, only: output_unit
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
@@ -96,6 +96,9 @@ module mqc_libcint_cphf
    !> integral generation is amortised, small enough that the batch of densities
    !> stays a sensible size -- at 115 orbitals, 64 of them is 60 MB.
    integer, parameter :: HESSIAN_CHUNK = 64
+
+   !> What the concurrent frequency solves may take, in bytes.
+   integer(int64), parameter :: SOLVE_BATCH_BYTES = 8_int64*1024_int64**3
 
    !> Above this many orbitals, recompute the integrals rather than store them.
    !>
@@ -755,8 +758,8 @@ contains
       logical :: reuse
       real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
       real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
-      integer, allocatable :: ipiv(:)
-      integer :: n_ov, j, info
+      integer, allocatable :: ipiv(:), infos(:)
+      integer :: n_ov, j, info, n_freq, concurrent
       real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
@@ -894,13 +897,38 @@ contains
 
       allocate (solution(n_ov, n_pert))
 
+      ! The frequencies are independent -- each is its own shifted factorization of
+      ! the same matrix -- and the factorization is a single-threaded LAPACK call,
+      ! because the BLAS this links against is the sequential one. Run one after
+      ! another they leave every core but one idle: at 8350 pairs a factorization
+      ! is 388 GFLOP, eleven seconds on one core, and there are twelve of them per
+      ! block and three blocks.
+      !
+      ! Threaded over the frequencies rather than inside the factorization, which
+      ! keeps the sequential BLAS sequential -- one OpenMP runtime in play, not two
+      ! -- and needs no threaded LAPACK to be available.
+      !
+      ! How many at once is a memory question and nothing else: each carries its
+      ! own copy of the operator, because `getrf` factorizes in place.
+      n_freq = size(frequencies)
+      concurrent = concurrent_solves(n_ov, n_freq)
+      allocate (infos(n_freq))
+      infos = 0
       if (talk) then
-         write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", size(frequencies), " frequencies x ", &
-            n_pert, " perturbations over ", n_ov, " pairs"
+         write (line, "(A,I0,A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
+            " frequencies x ", n_pert, " perturbations over ", n_ov, " pairs, ", &
+            concurrent, " at a time"
          call logger%info(trim(line))
          call clock%start()
       end if
-      do ifreq = 1, size(frequencies)
+      deallocate (lu, ipiv, solution)
+
+      !$omp parallel do default(none) num_threads(concurrent) schedule(dynamic) &
+      !$omp    private(ifreq, lu, ipiv, solution, j, k, l, info) &
+      !$omp    shared(n_freq, n_ov, n_pert, n_vir, n_occ, reuse, hessian, product, &
+      !$omp           frequencies, rhs_flat, h_flat, alpha, response, infos)
+      do ifreq = 1, n_freq
+         allocate (lu(n_ov, n_ov), ipiv(n_ov), solution(n_ov, n_pert))
          if (reuse) then
             lu = hessian%product
          else
@@ -912,25 +940,38 @@ contains
          solution = rhs_flat
          call pic_getrf(lu, ipiv, info)
          if (info /= 0) then
-            call error%set(ERROR_GENERIC, "dynamic response: the operator is singular")
-            return
-         end if
-         call pic_getrs(lu, ipiv, solution, info=info)
-         if (info /= 0) then
-            call error%set(ERROR_GENERIC, "dynamic response: the solve failed")
-            return
+            infos(ifreq) = 1
+         else
+            call pic_getrs(lu, ipiv, solution, info=info)
+            if (info /= 0) infos(ifreq) = 2
          end if
 
-         do l = 1, n_pert
-            do k = 1, n_pert
-               alpha(k, l, ifreq) = -2.0_dp*sum(h_flat(:, k)*solution(:, l))
+         if (infos(ifreq) == 0) then
+            do l = 1, n_pert
+               do k = 1, n_pert
+                  alpha(k, l, ifreq) = -2.0_dp*sum(h_flat(:, k)*solution(:, l))
+               end do
+               if (present(response)) then
+                  response(:, :, l, ifreq) = reshape(solution(:, l), [n_vir, n_occ])
+               end if
             end do
-            if (present(response)) then
-               response(:, :, l, ifreq) = reshape(solution(:, l), [n_vir, n_occ])
-            end if
-         end do
-         if (talk) call tick(clock, ifreq, size(frequencies), "frequency")
+         end if
+         deallocate (lu, ipiv, solution)
       end do
+      !$omp end parallel do
+
+      ! Read after the region rather than raised inside it: `error_t` carries a
+      ! message, and threads setting one would be writing over each other.
+      if (any(infos == 1)) then
+         call error%set(ERROR_GENERIC, "dynamic response: the operator is singular")
+         return
+      end if
+      if (any(infos == 2)) then
+         call error%set(ERROR_GENERIC, "dynamic response: the solve failed")
+         return
+      end if
+      deallocate (infos)
+      if (talk) call tick(clock, n_freq, n_freq, "frequency")
 
       ! Hand the build back if the caller wants it, rather than freeing it.
       if (present(hessian) .and. .not. reuse) then
@@ -941,7 +982,7 @@ contains
       else if (.not. reuse) then
          deallocate (aplus, aminus, product)
       end if
-      deallocate (lu, ipiv, rhs_flat, h_flat, solution)
+      deallocate (rhs_flat, h_flat)
 
       deallocate (bounds, zero_h, c_occ, c_vir, gaps, h, work, eri0, operators)
       if (allocated(dip)) deallocate (dip)
@@ -1112,6 +1153,36 @@ contains
       deallocate (coul, exch)
       if (talk) call tick(clock, 3, 3, "step")
    end subroutine build_hessian_df
+
+   function concurrent_solves(n_ov, n_freq) result(concurrent)
+      !! How many frequency solves may run at once
+      !!
+      !! One, when the BLAS threads itself -- see `MQC_SEQUENTIAL_BLAS` in the
+      !! top-level CMakeLists for why the two cannot both be used.
+      !!
+      !! Otherwise a memory question and nothing else. `getrf` factorizes in place,
+      !! so every concurrent solve needs its own copy of the operator -- `n_ov^2`
+      !! doubles, 0.5 GB at 8350 pairs -- and that is the only thing that grows
+      !! with the count. There are never more than a dozen frequencies, and a
+      !! machine with the cores usually has the memory too.
+      use omp_lib, only: omp_get_max_threads
+      integer, intent(in) :: n_ov
+      integer, intent(in) :: n_freq
+      integer :: concurrent
+
+      integer(int64) :: per_solve
+
+#ifndef MQC_SEQUENTIAL_BLAS
+      ! A threaded BLAS already fills the machine inside each factorization, and
+      ! nesting a parallel loop around it takes concurrency away rather than
+      ! adding it -- MKL serialises a call made from a parallel region.
+      concurrent = 1
+      return
+#endif
+      per_solve = int(n_ov, int64)**2*8_int64
+      concurrent = int(max(1_int64, SOLVE_BATCH_BYTES/max(per_solve, 1_int64)))
+      concurrent = min(concurrent, n_freq, omp_get_max_threads())
+   end function concurrent_solves
 
    function mo_transform_fits(n_ao, n_occ, direct) result(fits)
       !! Can the whole Hessian be had by transformation rather than column by column
