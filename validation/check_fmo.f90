@@ -1,3 +1,9 @@
+!! The partition guards that used to live here -- ethane cut at C-C,
+!! cyclopropane into three CH2, and a 2.5 Angstrom dimer that must still be
+!! allowed -- are now test/test_mqc_fmo_partitions.f90. They are refusals
+!! rather than numbers, they need no SCF, and they run in 0.4 s where this
+!! program takes seconds, so they belong in the suite that runs on every
+!! commit.
 program check_fmo
    !! Check FMO2 against the supermolecular answer it is approximating
    !!
@@ -51,7 +57,6 @@ program check_fmo
    call mixed_case(1.0e-7_dp, n_bad)
    call separated_case(1.0e-9_dp, n_bad)
    call trimer_case(5.0e-3_dp, n_bad)
-   call partition_cases(n_bad)
    call level_ladder(n_bad)
 
    if (n_bad == 0) then
@@ -485,72 +490,6 @@ contains
       end do
       end do
    end subroutine level_ladder
-
-   subroutine partition_cases(n_bad)
-      !! A partition that cuts a covalent bond has to be refused, not answered
-      !!
-      !! There is no capping here -- no adjusted fragment orbitals, no hybrid
-      !! orbital projection, no hydrogen caps -- so a fragment with a dangling
-      !! valence is a question the method cannot be asked. The reason to test it
-      !! rather than trust it is that the failure used to be quiet in exactly
-      !! the cases that matter:
-      !!
-      !!   * Cutting one bond leaves both fragments with an odd electron count,
-      !!     and the closed-shell check caught that by accident.
-      !!   * Cutting an even number per fragment -- a ring, a double bond --
-      !!     left every count even, nothing objected, and cyclopropane split
-      !!     into three CH2 came back 0.28 Hartree low. That is 176 kcal/mol
-      !!     wearing the shape of an answer.
-      !!
-      !! The third case is the one that keeps the check honest in the other
-      !! direction: a hydrogen bond is not a covalent one, and a tightly bound
-      !! water dimer must still be accepted. A check that refused those would be
-      !! useless in precisely the systems this method is for.
-      integer, intent(inout) :: n_bad
-
-      real(dp) :: ethane(N_DIM, N_ETHANE)
-      real(dp) :: ring(N_DIM, N_RING)
-      real(dp) :: dimer(N_DIM, N_DIMER)
-
-      call logger%info("")
-      call logger%info("== partitions that cut bonds")
-
-      ethane = reshape([0.000_dp, 0.000_dp, 0.768_dp, &
-                        -1.019_dp, 0.000_dp, 1.157_dp, &
-                        0.510_dp, 0.883_dp, 1.157_dp, &
-                        0.510_dp, -0.883_dp, 1.157_dp, &
-                        0.000_dp, 0.000_dp, -0.768_dp, &
-                        1.019_dp, 0.000_dp, -1.157_dp, &
-                        -0.510_dp, -0.883_dp, -1.157_dp, &
-                        -0.510_dp, 0.883_dp, -1.157_dp], [N_DIM, N_ETHANE])
-      call must_refuse("ethane cut at C-C", [6, 1, 1, 1, 6, 1, 1, 1], ethane, &
-                       [1, 1, 1, 1, 2, 2, 2, 2], n_bad)
-
-      ! Three CH2, eight electrons each: every count even, so nothing but a
-      ! connectivity check stands between this and a confident wrong answer.
-      ring = reshape([0.8718_dp, 0.0000_dp, 0.0000_dp, &
-                      1.3818_dp, 0.0000_dp, 0.9500_dp, &
-                      1.3818_dp, 0.0000_dp, -0.9500_dp, &
-                      -0.4359_dp, 0.7550_dp, 0.0000_dp, &
-                      -0.6909_dp, 1.1967_dp, 0.9500_dp, &
-                      -0.6909_dp, 1.1967_dp, -0.9500_dp, &
-                      -0.4359_dp, -0.7550_dp, 0.0000_dp, &
-                      -0.6909_dp, -1.1967_dp, 0.9500_dp, &
-                      -0.6909_dp, -1.1967_dp, -0.9500_dp], [N_DIM, N_RING])
-      call must_refuse("cyclopropane cut into three CH2", [6, 1, 1, 6, 1, 1, 6, 1, 1], &
-                       ring, [1, 1, 1, 2, 2, 2, 3, 3, 3], n_bad)
-
-      ! And the other direction: 2.5 Angstrom is tighter than any hydrogen bond
-      ! these tests use, and must still be allowed through.
-      dimer = reshape([0.0000_dp, 0.0000_dp, 0.0000_dp, &
-                       0.0000_dp, -0.7572_dp, 0.5865_dp, &
-                       0.0000_dp, 0.7572_dp, 0.5865_dp, &
-                       0.0000_dp, 0.0000_dp, 2.5000_dp, &
-                       0.0000_dp, -0.7572_dp, 3.0865_dp, &
-                       0.0000_dp, 0.7572_dp, 3.0865_dp], [N_DIM, N_DIMER])
-      call must_allow("two waters 2.5 A apart", [8, 1, 1, 8, 1, 1], dimer, &
-                      [1, 1, 1, 2, 2, 2], n_bad)
-   end subroutine partition_cases
 
    subroutine must_refuse(label, z, coords_ang, owner, n_bad)
       character(len=*), intent(in) :: label
