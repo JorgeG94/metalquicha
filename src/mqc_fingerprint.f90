@@ -171,6 +171,11 @@ contains
          call h%text(trim(config%basis_set))
          call h%flag(config%use_spherical)
          call h%text(trim(config%scf%aux_basis_set))
+         ! Whether it was asked for, not only what it is. A double hybrid fits
+         ! its perturbative term when a deck names an auxiliary basis and not
+         ! when one merely defaulted, so two configs carrying the same string
+         ! for different reasons are two different energies.
+         call h%flag(config%scf%aux_basis_named)
          call h%text(trim(config%scf%guess))
          call h%flag(config%scf%unrestricted)
          call h%int(config%scf%max_iter)

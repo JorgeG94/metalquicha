@@ -194,6 +194,7 @@ contains
       end if
 
       m%options%aux_basis_set = config%scf%aux_basis_set
+      m%options%aux_basis_named = config%scf%aux_basis_named
       m%options%density_fitting = config%scf%density_fitting
       m%options%unrestricted = config%scf%unrestricted
       m%options%guess = config%scf%guess
@@ -249,9 +250,18 @@ contains
                                       config%dft%use_density_fitting
       if (len_trim(config%dft%aux_basis_set) > 0) then
          m%options%aux_basis_set = config%dft%aux_basis_set
+         m%options%aux_basis_named = .true.
       else
          m%options%aux_basis_set = config%scf%aux_basis_set
+         m%options%aux_basis_named = config%scf%aux_basis_named
       end if
+
+      ! Correlation, which on this path means a double hybrid's perturbative
+      ! term and nothing else. From `config%corr`, the same place Hartree-Fock
+      ! reads it, so one deck keyword means one thing whichever method carries
+      ! the MP2.
+      m%options%freeze_core = config%corr%freeze_core
+      m%options%n_frozen_core = config%corr%n_frozen_core
 
       ! Dispersion
       m%options%use_dispersion = config%dft%use_dispersion
