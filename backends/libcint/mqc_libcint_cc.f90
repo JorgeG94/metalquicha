@@ -36,12 +36,14 @@ module mqc_libcint_cc
    !! **Frozen core** drops orbitals from the active space before anything else
    !! happens, so nothing below this line knows they existed.
    !!
-   !! **What this is not.** Every integral block is materialised, including
-   !! `<ab||cd>` at n_vir^4 in spin orbitals. That is the wall, and it is
-   !! deliberate: correctness first, on systems small enough to check against
-   !! PySCF, with the particle-particle ladder as the obvious first thing to fit
-   !! or batch when this needs to be fast. See the memory note in
-   !! `run_libcint_ccsd`.
+   !! **What this is not.** Every antisymmetrised block is materialised in spin
+   !! orbitals, so `<ma||ef>` and `<ab||ej>` at n_occ n_vir^3 are the wall --
+   !! sixteen times their spatial size, which is the price of the formulation
+   !! above and is paid on both paths. What is *not* materialised is `<ab||cd>`,
+   !! assembled in batches by `particle_ladder`, and on the fitted path the
+   !! n_act^4 spatial tensor with it: RI-CCSD holds five spatial blocks with an
+   !! occupied index and the three-index `b_vv`, and nothing of fourth order in
+   !! the virtuals. See the memory note in `run_libcint_ccsd`.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_timing, only: timing_report_t
@@ -71,6 +73,11 @@ module mqc_libcint_cc
    !> the sizes where a pass has plenty of work.
    integer, parameter :: LADDER_BATCH = 256
 
+   !> The stage name the amplitude update accumulates under. Named because the
+   !> per-iteration row reads it back with `seconds_of` to print one iteration's
+   !> time, and a typo between the two would silently print zero.
+   character(len=*), parameter :: STAGE_ITER = "CCSD iterations"
+
    type :: cc_eris_t
       !! Antisymmetrised integrals, by block
       !!
@@ -87,6 +94,21 @@ module mqc_libcint_cc
       real(dp), allocatable :: ovvv(:, :, :, :)   !! <ma||ef>
       real(dp), allocatable :: vvvo(:, :, :, :)   !! <ab||ej>
    end type cc_eris_t
+
+   type :: cc_chem_t
+      !! Fitted spatial integrals, in chemists' notation, by block
+      !!
+      !! Only the blocks with at least one occupied index. `(vv|vv)` is absent
+      !! for the same reason `cc_eris_t` has no `vvvv`: it is read in one place
+      !! and assembled there, here from `b_vv` rather than from a stored tensor.
+      !! Together those two absences are what keeps RI-CCSD off the n_act^4
+      !! ceiling the conventional path sits on.
+      real(dp), allocatable :: oooo(:, :, :, :)   !! (ij|kl)
+      real(dp), allocatable :: ooov(:, :, :, :)   !! (ij|ka)
+      real(dp), allocatable :: oovv(:, :, :, :)   !! (ij|ab)
+      real(dp), allocatable :: ovov(:, :, :, :)   !! (ia|jb)
+      real(dp), allocatable :: ovvv(:, :, :, :)   !! (ia|bc)
+   end type cc_chem_t
 
    type :: cc_result_t
       !! What a converged coupled cluster calculation leaves behind
@@ -294,6 +316,196 @@ contains
 
    end subroutine build_cc_eris
 
+   pure function asym2(direct, keep_direct, exchange, keep_exchange) result(v)
+      !! <pq||rs> = (pr|qs) - (ps|qr), given the two chemists' integrals
+      !!
+      !! `asym` for the fitted path. It cannot look the integrals up itself --
+      !! which block they live in depends on which of the four indices are
+      !! occupied, and that is known at the call site and nowhere else -- so the
+      !! caller fetches and this decides. What stays here is the part worth
+      !! having in one place: which term is the direct one, which the exchange,
+      !! and that the exchange carries the minus.
+      real(dp), intent(in) :: direct, exchange
+      logical, intent(in) :: keep_direct, keep_exchange
+         !! Whether the spins of the pair each term couples agree
+      real(dp) :: v
+
+      v = 0.0_dp
+      if (keep_direct) v = v + direct
+      if (keep_exchange) v = v - exchange
+   end function asym2
+
+   subroutine build_cc_eris_fitted(chem, no, nv, eris)
+      !! The antisymmetrised blocks, from the fitted spatial ones
+      !!
+      !! Block for block the same result as `build_cc_eris`, reached without a
+      !! full spatial tensor to slice. Each of the eight is written against
+      !! whichever chemists' block its two terms fall in, using the pair
+      !! symmetry (pq|rs) = (qp|rs) = (pq|sr) = (rs|pq) to put the occupied
+      !! indices where the stored block has them; the mapping is stated above
+      !! each one because it is the only place it can be checked by reading.
+      !!
+      !! Occupied spin orbital `i` sits in spatial occupied orbital `(i+1)/2`
+      !! and virtual spin orbital `a` in spatial virtual orbital `(a+1)/2`, both
+      !! with spin `mod(index,2)` -- `no` is even, so a virtual's spin is the
+      !! same whether it is counted from one or from `no+1`, which is what lets
+      !! `same_spin` be used on the within-space indices directly.
+      type(cc_chem_t), intent(in) :: chem
+      integer, intent(in) :: no, nv
+      type(cc_eris_t), intent(out) :: eris
+
+      integer :: i, j, k, l, a, b, e, f, m, n
+
+      allocate (eris%oooo(no, no, no, no), eris%ooov(no, no, no, nv))
+      allocate (eris%oovv(no, no, nv, nv), eris%ovov(no, nv, no, nv))
+      allocate (eris%ovvo(no, nv, nv, no), eris%ovoo(no, nv, no, no))
+      allocate (eris%ovvv(no, nv, nv, nv), eris%vvvo(nv, nv, nv, no))
+
+      ! <ij||kl> = (ik|jl) - (il|jk)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(i, j, k, l) schedule(static) collapse(2)
+      do l = 1, no
+         do k = 1, no
+            do j = 1, no
+               do i = 1, no
+                  eris%oooo(i, j, k, l) = asym2( &
+                                          chem%oooo(spatial(i), spatial(k), spatial(j), spatial(l)), &
+                                          same_spin(i, k) .and. same_spin(j, l), &
+                                          chem%oooo(spatial(i), spatial(l), spatial(j), spatial(k)), &
+                                          same_spin(i, l) .and. same_spin(j, k))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <mn||ie> = (mi|ne) - (me|ni), and (me|ni) = (ni|me)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(m, n, i, e) schedule(static) collapse(2)
+      do e = 1, nv
+         do i = 1, no
+            do n = 1, no
+               do m = 1, no
+                  eris%ooov(m, n, i, e) = asym2( &
+                                          chem%ooov(spatial(m), spatial(i), spatial(n), spatial(e)), &
+                                          same_spin(m, i) .and. same_spin(n, e), &
+                                          chem%ooov(spatial(n), spatial(i), spatial(m), spatial(e)), &
+                                          same_spin(m, e) .and. same_spin(n, i))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <ij||ab> = (ia|jb) - (ib|ja)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(i, j, a, b) schedule(static) collapse(2)
+      do b = 1, nv
+         do a = 1, nv
+            do j = 1, no
+               do i = 1, no
+                  eris%oovv(i, j, a, b) = asym2( &
+                                          chem%ovov(spatial(i), spatial(a), spatial(j), spatial(b)), &
+                                          same_spin(i, a) .and. same_spin(j, b), &
+                                          chem%ovov(spatial(i), spatial(b), spatial(j), spatial(a)), &
+                                          same_spin(i, b) .and. same_spin(j, a))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <ia||jb> = (ij|ab) - (ib|aj), and (ib|aj) = (ib|ja)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(i, j, a, b) schedule(static) collapse(2)
+      do b = 1, nv
+         do j = 1, no
+            do a = 1, nv
+               do i = 1, no
+                  eris%ovov(i, a, j, b) = asym2( &
+                                          chem%oovv(spatial(i), spatial(j), spatial(a), spatial(b)), &
+                                          same_spin(i, j) .and. same_spin(a, b), &
+                                          chem%ovov(spatial(i), spatial(b), spatial(j), spatial(a)), &
+                                          same_spin(i, b) .and. same_spin(a, j))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <mb||ej> = (me|bj) - (mj|be), and (me|bj) = (me|jb)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(m, b, e, j) schedule(static) collapse(2)
+      do j = 1, no
+         do e = 1, nv
+            do b = 1, nv
+               do m = 1, no
+                  eris%ovvo(m, b, e, j) = asym2( &
+                                          chem%ovov(spatial(m), spatial(e), spatial(j), spatial(b)), &
+                                          same_spin(m, e) .and. same_spin(b, j), &
+                                          chem%oovv(spatial(m), spatial(j), spatial(b), spatial(e)), &
+                                          same_spin(m, j) .and. same_spin(b, e))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <mb||ij> = (mi|bj) - (mj|bi), and (mi|bj) = (mi|jb)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(m, b, i, j) schedule(static) collapse(2)
+      do j = 1, no
+         do i = 1, no
+            do b = 1, nv
+               do m = 1, no
+                  eris%ovoo(m, b, i, j) = asym2( &
+                                          chem%ooov(spatial(m), spatial(i), spatial(j), spatial(b)), &
+                                          same_spin(m, i) .and. same_spin(b, j), &
+                                          chem%ooov(spatial(m), spatial(j), spatial(i), spatial(b)), &
+                                          same_spin(m, j) .and. same_spin(b, i))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <ma||ef> = (me|af) - (mf|ae)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(m, a, e, f) schedule(static) collapse(2)
+      do f = 1, nv
+         do e = 1, nv
+            do a = 1, nv
+               do m = 1, no
+                  eris%ovvv(m, a, e, f) = asym2( &
+                                          chem%ovvv(spatial(m), spatial(e), spatial(a), spatial(f)), &
+                                          same_spin(m, e) .and. same_spin(a, f), &
+                                          chem%ovvv(spatial(m), spatial(f), spatial(a), spatial(e)), &
+                                          same_spin(m, f) .and. same_spin(a, e))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! <ab||ej> = (ae|bj) - (aj|be), and (ae|bj) = (jb|ae), (aj|be) = (ja|be)
+      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp    private(a, b, e, j) schedule(static) collapse(2)
+      do j = 1, no
+         do e = 1, nv
+            do b = 1, nv
+               do a = 1, nv
+                  eris%vvvo(a, b, e, j) = asym2( &
+                                          chem%ovvv(spatial(j), spatial(b), spatial(a), spatial(e)), &
+                                          same_spin(a, e) .and. same_spin(b, j), &
+                                          chem%ovvv(spatial(j), spatial(a), spatial(b), spatial(e)), &
+                                          same_spin(a, j) .and. same_spin(b, e))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine build_cc_eris_fitted
+
    subroutine spin_orbital_integrals(mo, n_so, w)
       !! The full antisymmetrised spin-orbital tensor <pq||rs>
       !!
@@ -326,12 +538,15 @@ contains
                                result, error, diis_vectors, aux)
       !! Drive CCSD, and optionally (T), to convergence
       !!
-      !! **Memory.** The spin-orbital tensor is (2 n_act)^4, which is sixteen
-      !! times the spatial one: 42 MB at 24 active orbitals, 1.1 GB at 48, and
-      !! out of reach not long after. That ceiling is why this is a reference
-      !! implementation and is checked on molecules that fit inside it. The (T)
-      !! step is the exception and holds no triples amplitude -- it works one
-      !! occupied triple at a time, n_vir^3 at once.
+      !! **Memory.** The spin-orbital blocks are sixteen times their spatial
+      !! size, and the two n_occ n_vir^3 ones set the ceiling. On the
+      !! conventional path the n_act^4 spatial tensor sits on top of them,
+      !! because the ladder reads (ae|bf) out of it and there is nowhere else to
+      !! get it; on the fitted path there is no such tensor at all -- the ladder
+      !! builds what it needs from `b_vv` for a few per cent of its own cost, so
+      !! RI-CCSD reaches further than CCSD rather than merely differing from it
+      !! by the fitting error. The (T) step holds no triples amplitude either --
+      !! it works one occupied triple at a time, n_vir^3 at once.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)              !! MO coefficients, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)
@@ -358,8 +573,9 @@ contains
          !! which is close enough to a convergence threshold to be argued about
          !! rather than diagnosed.
 
-      real(dp), allocatable :: eri(:, :), mo(:, :, :, :)
+      real(dp), allocatable :: eri(:, :), mo(:, :, :, :), b_vv(:, :)
       type(cc_eris_t) :: eris
+      type(cc_chem_t) :: chem
       real(dp), allocatable :: c_act(:, :), eps(:)
       real(dp), allocatable :: t1(:, :), t2(:, :, :, :), t1n(:, :), t2n(:, :, :, :)
       real(dp), allocatable :: flat(:), err_flat(:)
@@ -367,7 +583,7 @@ contains
       logical :: extrapolated
       integer :: n_ao, n_mo, n_act, n_o, n_v, no, nv, n_so, iter, diis_size
       integer :: i, a, s
-      real(dp) :: e_corr, e_old, de
+      real(dp) :: e_corr, e_old, de, t_iter
 
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -412,14 +628,31 @@ contains
          write (line, "(a,f0.1,a,f0.1,a)") "  integrals: ", integral_megabytes(no, nv), &
             " MB in blocks, against ", real(n_so, dp)**4*8.0_dp/1.0e6_dp, " MB for the full tensor"
          call logger%info(trim(line))
+         ! The spatial tensor is the conventional path's alone. Said out loud
+         ! because it is the difference between the two paths' ceilings and it
+         ! is otherwise invisible -- both report the same block total above.
+         if (.not. present(aux)) then
+            write (line, "(a,f0.1,a)") "  plus the spatial tensor: ", &
+               real(n_act, dp)**4*8.0_dp/1.0e6_dp, " MB, which density fitting does not build"
+            call logger%info(trim(line))
+         end if
       end if
 
       ! ---- integrals --------------------------------------------------------
+      !
+      ! The two paths differ in what they can avoid materialising. Conventional
+      ! has to form the n_act^4 spatial tensor -- the ladder reads (ae|bf) out of
+      ! it and there is nowhere else to get it. Fitted does not: the five spatial
+      ! blocks with an occupied index cover every antisymmetrised block, and the
+      ! ladder builds its own from `b_vv`. So `mo` and `b_vv` are alternatives,
+      ! never both, and everything downstream is told which by which one is
+      ! allocated.
       call clk%start()
       allocate (c_act(n_ao, n_act))
       c_act = coeff(:, frozen + 1:n_mo)
       if (present(aux)) then
-         call fitted_mo_tensor(mol, aux, c_act, mo, error)
+         call fitted_chem_blocks(mol, aux, c_act(:, 1:n_o), c_act(:, n_o + 1:n_act), &
+                                 chem, b_vv, error)
          if (error%has_error()) return
       else
          call mol%eris_packed(eri)
@@ -428,10 +661,17 @@ contains
       end if
       deallocate (c_act)
 
-      ! Blocks rather than the whole (2 n_act)^4 tensor, and `mo` is kept because
-      ! the particle-particle ladder assembles its own from it in batches.
+      ! Blocks rather than the whole (2 n_act)^4 tensor. On the conventional path
+      ! `mo` is kept afterwards because the ladder assembles its own from it in
+      ! batches; on the fitted one the spatial blocks are finished with here and
+      ! only `b_vv` outlives them.
       call clk%lap("AO->MO integrals")
-      call build_cc_eris(mo, no, nv, eris)
+      if (present(aux)) then
+         call build_cc_eris_fitted(chem, no, nv, eris)
+         deallocate (chem%oooo, chem%ooov, chem%oovv, chem%ovov, chem%ovvv)
+      else
+         call build_cc_eris(mo, no, nv, eris)
+      end if
       call clk%lap("CC integral blocks")
 
       ! Spin-orbital energies. Canonical, so the Fock matrix is this diagonal and
@@ -459,11 +699,18 @@ contains
 
       e_old = 0.0_dp
       result%converged = .false.
+      ! The amplitude update is timed per iteration and printed with the row.
+      ! Every iteration costs the same here -- there is no screening that
+      ! tightens as things converge -- so the first row is already the answer to
+      ! "how long is this going to take", which on a system large enough to be
+      ! worth asking about is the only thing anyone wants from the table.
       call convergence_header(verbose, "CCSD iterations", &
-                              "    iter                 E_corr          dE   diis", 50)
+                              "    iter                 E_corr          dE   diis       time", 60)
       do iter = 1, max_iter
-         call ccsd_iteration(mo, eris, eps, no, nv, t1, t2, t1n, t2n)
-         call clk%lap("CCSD iterations")
+         t_iter = clk%seconds_of(STAGE_ITER)
+         call ccsd_iteration(mo, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+         call clk%lap(STAGE_ITER)
+         t_iter = clk%seconds_of(STAGE_ITER) - t_iter
 
          ! Extrapolate on the amplitudes with the step as the error vector, which
          ! is the same trick `mqc_diis` already plays on the Fock matrix: the
@@ -482,7 +729,8 @@ contains
          e_corr = result%e_singles + result%e_doubles
          de = abs(e_corr - e_old)
          if (verbose) then
-            write (line, "(i8,f23.12,es12.3,i7)") iter, e_corr, de, diis%count()
+            write (line, "(i8,f23.12,es12.3,i7,f9.2,a)") &
+               iter, e_corr, de, diis%count(), t_iter, " s"
             call logger%info(trim(line))
          end if
 
@@ -518,42 +766,77 @@ contains
       result%e_correlation = result%e_singles + result%e_doubles + result%e_triples
    end subroutine run_libcint_ccsd
 
-   subroutine fitted_mo_tensor(mol, aux, c_act, mo, error)
-      !! The active MO tensor from the fitted three-index one
+   subroutine df_block_gemm(bl, br, nl, nr, block)
+      !! (pq|rs) = sum_P B^P_pq B^P_rs for one pair of fitted blocks
       !!
-      !!     (pq|rs) = sum_P B^P_pq B^P_rs
+      !! The product is a matrix over the two compound indices and the caller
+      !! wants it with four; an explicit-shape dummy takes the destination by
+      !! sequence association, so the gemm writes straight into the rank-four
+      !! array rather than into a temporary that is then reshaped. At `(ov|vv)`,
+      !! n_occ n_vir^3, that temporary was the peak.
+      real(dp), intent(in) :: bl(:, :), br(:, :)
+      integer, intent(in) :: nl, nr
+      real(dp), intent(out) :: block(nl, nr)
+
+      call pic_gemm(bl, br, block, transb="T")
+   end subroutine df_block_gemm
+
+   subroutine fitted_chem_blocks(mol, aux, c_occ, c_vir, chem, b_vv, error)
+      !! The fitted spatial integrals RI-CCSD actually reads
       !!
-      !! One gemm, because `build_df_mo_block` lays B out with the compound index
-      !! leading. That is the whole of RI-CCSD's integral step.
+      !! Every antisymmetrised block the amplitude equations want carries at
+      !! least one occupied index -- the sole exception is `<ab||ef>`, which the
+      !! particle-particle ladder assembles for itself from `b_vv`. So the five
+      !! blocks below are the whole of what has to be materialised, and the
+      !! largest of them is `(ov|vv)` at n_occ n_vir^3.
       !!
-      !! **This does not save memory yet, and is not meant to.** The n_act^4
-      !! tensor is still formed, so the ceiling is where it was; what changes is
-      !! the number, by the fitting error. Never forming it is the optimisation
-      !! that follows, and doing it in this order means the fitting can be
-      !! verified against PySCF before the loop structure changes underneath it --
-      !! the same order the conventional path was built in.
+      !! This is what RI buys, and until now it bought nothing: the previous
+      !! version formed the same n_act^4 tensor the conventional path forms, so
+      !! the ceiling was identical and only the numbers moved, by the fitting
+      !! error. Against that tensor these blocks are smaller by roughly
+      !! n_vir/n_occ -- and the one-time n_act^4 gemm that built it, naux n_act^4,
+      !! is gone with it.
       type(libcint_molecule_t), intent(in) :: mol, aux
-      real(dp), intent(in) :: c_act(:, :)
-      real(dp), allocatable, intent(out) :: mo(:, :, :, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
+      type(cc_chem_t), intent(out) :: chem
+      real(dp), allocatable, intent(out) :: b_vv(:, :)  !! (P, ab), kept for the ladder
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: b(:, :), mo2(:, :)
-      integer :: n_act
+      real(dp), allocatable :: b_oo(:, :), b_ov(:, :), b_vv_pq(:, :)
+      integer :: n_o, n_v
 
-      n_act = size(c_act, 2)
-      call build_df_mo_block(mol, aux, c_act, c_act, b, error)
+      n_o = size(c_occ, 2)
+      n_v = size(c_vir, 2)
+
+      ! `build_df_mo_block` lays the compound index out left-fastest, so
+      ! `b_ov` is (i,a) with i fastest -- which is the ordering every block
+      ! below is indexed in.
+      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error)
+      if (error%has_error()) return
+      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error)
+      if (error%has_error()) return
+      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error)
       if (error%has_error()) return
 
-      allocate (mo2(n_act*n_act, n_act*n_act))
-      call pic_gemm(b, b, mo2, transb="T")
-      deallocate (b)
+      allocate (chem%oooo(n_o, n_o, n_o, n_o), chem%ooov(n_o, n_o, n_o, n_v))
+      allocate (chem%oovv(n_o, n_o, n_v, n_v), chem%ovov(n_o, n_v, n_o, n_v))
+      allocate (chem%ovvv(n_o, n_v, n_v, n_v))
 
-      ! Reshaped rather than aliased: `asym` reads the tensor with four indices,
-      ! and it is the one function in this module worth not touching.
-      allocate (mo(n_act, n_act, n_act, n_act))
-      mo = reshape(mo2, [n_act, n_act, n_act, n_act])
-      deallocate (mo2)
-   end subroutine fitted_mo_tensor
+      call df_block_gemm(b_oo, b_oo, n_o*n_o, n_o*n_o, chem%oooo)
+      call df_block_gemm(b_oo, b_ov, n_o*n_o, n_o*n_v, chem%ooov)
+      call df_block_gemm(b_oo, b_vv_pq, n_o*n_o, n_v*n_v, chem%oovv)
+      call df_block_gemm(b_ov, b_ov, n_o*n_v, n_o*n_v, chem%ovov)
+      call df_block_gemm(b_ov, b_vv_pq, n_o*n_v, n_v*n_v, chem%ovvv)
+
+      deallocate (b_oo, b_ov)
+
+      ! Transposed because the ladder is the only thing that survives this
+      ! routine, and it wants the auxiliary index leading: it slices `b_vv` by
+      ! spatial orbital, which is contiguous in (P, ab) and strided the other
+      ! way round.
+      b_vv = transpose(b_vv_pq)
+      deallocate (b_vv_pq)
+   end subroutine fitted_chem_blocks
 
    subroutine mp2_amplitudes(eris, eps, no, nv, t2, e_mp2)
       !! First-order doubles, and the MP2 energy they give
@@ -624,12 +907,16 @@ contains
       !$omp end parallel do
    end subroutine ccsd_energy
 
-   subroutine ccsd_iteration(mo, eris, eps, no, nv, t1, t2, t1n, t2n)
+   subroutine ccsd_iteration(mo, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
       !! One CCSD amplitude update, through the Stanton et al. intermediates
-      real(dp), intent(in) :: mo(:, :, :, :)
-         !! The spatial tensor. Read only by the particle-particle ladder, which
-         !! assembles <ab||ef> in batches rather than holding it -- see
-         !! `particle_ladder`.
+      real(dp), allocatable, intent(in) :: mo(:, :, :, :)
+         !! The spatial tensor, on the conventional path. Read only by the
+         !! particle-particle ladder, which assembles <ab||ef> in batches rather
+         !! than holding it -- see `particle_ladder`.
+      real(dp), allocatable, intent(in) :: b_vv(:, :)
+         !! The fitted three-index virtual block, on the RI path. Exactly one of
+         !! this and `mo` is allocated; the ladder is the only thing that cares
+         !! which.
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps(:)
       integer, intent(in) :: no, nv
@@ -644,11 +931,21 @@ contains
       ! and both holes, which is not a matrix product in this layout.
       real(dp), allocatable :: tau2(:, :), taut(:, :, :, :)
       real(dp), allocatable :: fae(:, :), fmi(:, :), fme(:, :)
-      real(dp), allocatable :: wmnij(:, :), wmbej(:, :, :, :)
+      real(dp), allocatable :: wmnij(:, :)
       real(dp), allocatable :: oovv2(:, :), lad(:, :)
       real(dp), allocatable :: gae(:, :), gmi(:, :)
+      ! The ring term, in the layout that makes it a gemm. See the block that
+      ! builds them for why the compound indices are (me) and (bj).
+      real(dp), allocatable :: w2(:, :)          !! Wmbej as (me, bj)
+      real(dp), allocatable :: t2p(:, :)         !! t2(a,e,i,m) as (ai, me)
+      real(dp), allocatable :: ring2(:, :)       !! the ring, as (ai, bj)
+      real(dp), allocatable :: oovv_menf(:, :)   !! <mn||ef> as (me, nf)
+      real(dp), allocatable :: ttnf(:, :)        !! the damped doubles as (nf, bj)
+      real(dp), allocatable :: pz(:, :, :, :)    !! sum_e <mb||ej> t1(e,i)
+      real(dp), allocatable :: zz(:, :, :, :)    !! the t1 t1 half of the ring
       integer :: i, j, m, n, a, b, e, f, ab, ij, mn, ef
-      real(dp) :: acc, d, term
+      integer :: ai, aj, bi, bj
+      real(dp) :: acc, d
 
       allocate (tau2(nv*nv, no*no), taut(nv, nv, no, no))
       call build_tau(t1, t2, no, nv, tau2, taut)
@@ -730,7 +1027,7 @@ contains
       end do
 
       ! ---- two-body intermediates (Stanton 6-8) -----------------------------
-      allocate (wmnij(no*no, no*no), wmbej(no, nv, nv, no))
+      allocate (wmnij(no*no, no*no))
 
       ! The quadratic term of each ladder intermediate is a gemm, so it goes in
       ! first and the linear terms are added on top of it.
@@ -761,13 +1058,56 @@ contains
       ! one does not.
       allocate (lad(nv*nv, no*no))
       call pic_gemm(tau2, wmnij, lad, alpha=0.5_dp, beta=0.0_dp)
-      call particle_ladder(mo, eris, t1, tau2, oovv2, no, nv, lad)
+      call particle_ladder(mo, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
 
-      !$omp parallel do default(none) shared(eris, t1, t2, wmbej, no, nv) &
+      ! ---- the ring intermediate (Stanton 8) ---------------------------------
+      !
+      ! Held as W(me, bj) rather than W(m,b,e,j). Both the term that dominates
+      ! building it and the term that reads it contract over the particle-hole
+      ! pair (m,e), so in this layout both are gemms; written with the four
+      ! indices apart they are n_occ^3 n_vir^3 of scalar strided loads each, and
+      ! together they were most of a CCSD iteration.
+      allocate (w2(no*nv, nv*no))
+      allocate (oovv_menf(no*nv, no*nv), ttnf(no*nv, nv*no))
+
+      !$omp parallel do default(none) shared(eris, oovv_menf, no, nv) &
+      !$omp    private(m, n, e, f) schedule(static) collapse(2)
+      do f = 1, nv
+         do e = 1, nv
+            do n = 1, no
+               do m = 1, no
+                  oovv_menf((e - 1)*no + m, (f - 1)*no + n) = eris%oovv(m, n, e, f)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      !$omp parallel do default(none) shared(t1, t2, ttnf, no, nv) &
+      !$omp    private(b, j, n, f) schedule(static) collapse(2)
+      do j = 1, no
+         do b = 1, nv
+            do f = 1, nv
+               do n = 1, no
+                  ttnf((f - 1)*no + n, (j - 1)*nv + b) = &
+                     0.5_dp*t2(f, b, j, n) + t1(f, j)*t1(b, n)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! The quadratic term, which is the expensive one, as a single gemm.
+      call pic_gemm(oovv_menf, ttnf, w2, alpha=-1.0_dp, beta=0.0_dp)
+      deallocate (oovv_menf, ttnf)
+
+      ! The three linear terms on top of it. Both inner sums are one order of
+      ! n_vir cheaper than the one above, so they stay loops.
+      !$omp parallel do default(none) shared(eris, t1, w2, no, nv) &
       !$omp    private(m, b, e, j, f, n, acc) schedule(static) collapse(2)
       do j = 1, no
-         do e = 1, nv
-            do b = 1, nv
+         do b = 1, nv
+            do e = 1, nv
                do m = 1, no
                   acc = eris%ovvo(m, b, e, j)
                   do f = 1, nv
@@ -778,18 +1118,95 @@ contains
                      ! sign: -(-ooov) = +.
                      acc = acc + t1(b, n)*eris%ooov(m, n, j, e)
                   end do
-                  do n = 1, no
-                     do f = 1, nv
-                        acc = acc - (0.5_dp*t2(f, b, j, n) + t1(f, j)*t1(b, n)) &
-                              *eris%oovv(m, n, e, f)
-                     end do
-                  end do
-                  wmbej(m, b, e, j) = acc
+                  w2((e - 1)*no + m, (j - 1)*nv + b) = &
+                     w2((e - 1)*no + m, (j - 1)*nv + b) + acc
                end do
             end do
          end do
       end do
       !$omp end parallel do
+
+      ! ---- the ring contraction itself ---------------------------------------
+      !
+      !     R(a,i,b,j) = sum_me t2(a,e,i,m) W(m,b,e,j)
+      !                - sum_me t1(e,i) t1(a,m) <mb||ej>
+      !
+      ! The T2 equation wants this at four permutations of (ij) and (ab), and all
+      ! four are the same object read at permuted indices -- the trick
+      ! `triples_block` already plays over the virtuals. Contracting once and
+      ! indexing four times is a factor four off the arithmetic before the gemm
+      ! is worth anything at all.
+      allocate (t2p(nv*no, no*nv), ring2(nv*no, nv*no))
+
+      !$omp parallel do default(none) shared(t2, t2p, no, nv) &
+      !$omp    private(m, e, i, a) schedule(static) collapse(2)
+      do m = 1, no
+         do e = 1, nv
+            do i = 1, no
+               do a = 1, nv
+                  t2p((i - 1)*nv + a, (e - 1)*no + m) = t2(a, e, i, m)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      call pic_gemm(t2p, w2, ring2)
+      deallocate (t2p, w2)
+
+      ! The t1 t1 half factorises into two contractions of one index each, which
+      ! is n_occ^3 n_vir^2 rather than the n_occ^3 n_vir^3 it costs carried
+      ! through the quadruple loop.
+      allocate (pz(no, nv, no, no), zz(nv, nv, no, no))
+
+      !$omp parallel do default(none) shared(eris, t1, pz, no, nv) &
+      !$omp    private(i, j, b, m, e, acc) schedule(static) collapse(2)
+      do i = 1, no
+         do j = 1, no
+            do b = 1, nv
+               do m = 1, no
+                  acc = 0.0_dp
+                  do e = 1, nv
+                     acc = acc + eris%ovvo(m, b, e, j)*t1(e, i)
+                  end do
+                  pz(m, b, j, i) = acc
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      !$omp parallel do default(none) shared(t1, pz, zz, no, nv) &
+      !$omp    private(i, j, b, a, m, acc) schedule(static) collapse(2)
+      do i = 1, no
+         do j = 1, no
+            do b = 1, nv
+               do a = 1, nv
+                  acc = 0.0_dp
+                  do m = 1, no
+                     acc = acc + t1(a, m)*pz(m, b, j, i)
+                  end do
+                  zz(a, b, j, i) = acc
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      !$omp parallel do default(none) shared(ring2, zz, no, nv) &
+      !$omp    private(i, j, a, b) schedule(static) collapse(2)
+      do j = 1, no
+         do b = 1, nv
+            do i = 1, no
+               do a = 1, nv
+                  ring2((i - 1)*nv + a, (j - 1)*nv + b) = &
+                     ring2((i - 1)*nv + a, (j - 1)*nv + b) - zz(a, b, j, i)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+      deallocate (pz, zz)
 
       ! ---- T1 (Stanton 1) ---------------------------------------------------
       !$omp parallel do default(none) shared(eris, eps, t1, t2, fae, fmi, fme, t1n, no, nv) &
@@ -860,8 +1277,9 @@ contains
       end do
 
       !$omp parallel do default(none) &
-      !$omp    shared(eris, eps, t1, t2, lad, wmbej, gae, gmi, t2n, no, nv) &
-      !$omp    private(a, b, i, j, e, f, m, n, acc, d, term) schedule(static) collapse(2)
+      !$omp    shared(eris, eps, t1, t2, lad, ring2, gae, gmi, t2n, no, nv) &
+      !$omp    private(a, b, i, j, e, m, acc, d, ai, aj, bi, bj) &
+      !$omp    schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
             do b = 1, nv
@@ -881,23 +1299,14 @@ contains
                   ! Both ladders, already contracted above.
                   acc = acc + lad((b - 1)*nv + a, (j - 1)*no + i)
 
-                  ! Rings: P(ij)P(ab) over the four index pairings.
-                  do m = 1, no
-                     do e = 1, nv
-                        term = t2(a, e, i, m)*wmbej(m, b, e, j) &
-                               - t1(e, i)*t1(a, m)*eris%ovvo(m, b, e, j)
-                        acc = acc + term
-                        term = t2(a, e, j, m)*wmbej(m, b, e, i) &
-                               - t1(e, j)*t1(a, m)*eris%ovvo(m, b, e, i)
-                        acc = acc - term
-                        term = t2(b, e, i, m)*wmbej(m, a, e, j) &
-                               - t1(e, i)*t1(b, m)*eris%ovvo(m, a, e, j)
-                        acc = acc - term
-                        term = t2(b, e, j, m)*wmbej(m, a, e, i) &
-                               - t1(e, j)*t1(b, m)*eris%ovvo(m, a, e, i)
-                        acc = acc + term
-                     end do
-                  end do
+                  ! Rings: P(ij)P(ab) over the four index pairings, already
+                  ! contracted into `ring2` and only read here.
+                  ai = (i - 1)*nv + a
+                  aj = (j - 1)*nv + a
+                  bi = (i - 1)*nv + b
+                  bj = (j - 1)*nv + b
+                  acc = acc + ring2(ai, bj) - ring2(aj, bi) &
+                        - ring2(bi, aj) + ring2(bj, ai)
 
                   ! P(ij) sum_e t1(e,i) <ab||ej>
                   do e = 1, nv
@@ -918,11 +1327,11 @@ contains
       end do
       !$omp end parallel do
 
-      deallocate (tau2, taut, fae, fmi, fme, wmnij, wmbej, gae, gmi)
-      deallocate (oovv2, lad)
+      deallocate (tau2, taut, fae, fmi, fme, wmnij, gae, gmi)
+      deallocate (oovv2, lad, ring2)
    end subroutine ccsd_iteration
 
-   subroutine particle_ladder(mo, eris, t1, tau2, oovv2, no, nv, lad)
+   subroutine particle_ladder(mo, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
       !! The particle-particle ladder, never holding <ab||ef>
       !!
       !!     lad(ab,ij) += 1/2 sum_ef Wabef(ab,ef) tau(ef,ij)
@@ -944,7 +1353,17 @@ contains
       !!
       !! Nothing about the arithmetic changes. The energies are bit-identical to
       !! the version that held the whole array.
-      real(dp), intent(in) :: mo(:, :, :, :)
+      !!
+      !! **Where <ab||ef> comes from.** Exactly one of `mo` and `b_vv` is
+      !! allocated. `mo` is the conventional path's spatial tensor, read at
+      !! permuted indices. `b_vv` is the fitted three-index block, and the
+      !! spatial (a e | b f) for one pair of spatial (e, f) is then a gemm over
+      !! the auxiliary index -- which is why the fitted path never needs a
+      !! spatial tensor at all. Those gemms cost naux n_vir^4 an iteration
+      !! against the n_occ^2 n_vir^4 of the contraction they feed, so a few per
+      !! cent of the ladder buys the whole n_act^4 array.
+      real(dp), allocatable, intent(in) :: mo(:, :, :, :)
+      real(dp), allocatable, intent(in) :: b_vv(:, :)   !! (P, ab), spatial virtuals
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: t1(:, :), tau2(:, :), oovv2(:, :)
       integer, intent(in) :: no, nv
@@ -956,17 +1375,31 @@ contains
       !> assembly is cheap and it is the *number of passes* that costs: each one
       !> opens a parallel region, and at 256 the barrier time was larger than all
       !> the arithmetic in the routine.
-      real(dp), allocatable :: wblk(:, :), tau2t(:, :)
-      integer :: nv2, no2, ef0, ef1, nb, col, ef, a, b, e, f, m
+      real(dp), allocatable :: wblk(:, :), tau2t(:, :), tblk(:, :)
+      real(dp), allocatable :: gvv(:, :), gvt(:, :)
+      integer :: nv2, no2, ef0, ef1, nb, col, ef, a, b, e, f
+      integer :: nocc2, nvs, pa, pb, pe, pf, se, sf, sb, e0, f0
+      integer :: pe_have, pf_local, x, y
+      logical :: fitted
       real(dp) :: acc
 
       nv2 = nv*nv
       no2 = no*no
+      ! The occupied spin orbitals are the first `no`, and `no` is even, so a
+      ! virtual spin orbital `a` carries spin `mod(a,2)` and sits in spatial
+      ! orbital `nocc2 + (a+1)/2` -- or, counting virtuals only as `b_vv` does,
+      ! in `(a+1)/2`. Hoisting that out of `asym` is what lets the loop below
+      ! read plain 2-D slices instead of recomputing four index maps and two spin
+      ! tests for every one of the n_vir^4 elements.
+      nocc2 = no/2
+      nvs = nv/2
+      fitted = allocated(b_vv)
 
       allocate (tau2t(no2, nv2))
       tau2t = transpose(tau2)
 
       allocate (wblk(nv2, LADDER_BATCH))
+      allocate (tblk(nv, nv*LADDER_BATCH))
 
       do ef0 = 1, nv2, LADDER_BATCH
          ef1 = min(ef0 + LADDER_BATCH - 1, nv2)
@@ -976,36 +1409,139 @@ contains
          call pic_gemm(tau2, oovv2(:, ef0:ef1), wblk(:, 1:nb), &
                        alpha=0.25_dp, beta=0.0_dp)
 
-         !$omp parallel do default(none) &
-         !$omp    shared(mo, eris, t1, wblk, no, nv, nv2, ef0, nb) &
-         !$omp    private(col, ef, a, b, e, f, m, acc) schedule(static)
-         do col = 1, nb
-            ef = ef0 + col - 1
-            e = mod(ef - 1, nv) + 1
-            f = (ef - 1)/nv + 1
-            do b = 1, nv
-               do a = 1, nv
-                  ! The one place <ab||ef> is needed, straight from the spatial
-                  ! tensor. `asym` is the same function every other block was
-                  ! built with, so the notation conversion still happens once.
-                  acc = asym(mo, no + a, no + b, no + e, no + f)
-                  do m = 1, no
-                     ! <am||ef> = -<ma||ef>, and likewise for b.
-                     acc = acc + t1(b, m)*eris%ovvv(m, a, e, f) &
-                           - t1(a, m)*eris%ovvv(m, b, e, f)
+         ! The t1 dressing, sum_m t1(b,m) <ma||ef>, is n_occ n_vir^4 per
+         ! iteration -- the same order as the contraction this feeds -- and it is
+         ! a gemm. `ovvv` is laid out (m, a, e, f) and the batch is a contiguous
+         ! range of the compound (ef), so the block starting at (1, 1, e0, f0) is
+         ! exactly the (no, nv*nb) matrix the product wants; `ladder_t1_block`
+         ! exists only to give that block its rank.
+         e0 = mod(ef0 - 1, nv) + 1
+         f0 = (ef0 - 1)/nv + 1
+         call ladder_t1_block(no, nv, nb, t1, eris%ovvv(1, 1, e0, f0), tblk)
+
+         ! Two loops rather than one with a test in it. They differ only in
+         ! where <ab||ef> comes from, but that test sits under n_vir^4
+         ! iterations and the two paths want different things hoisted, so the
+         ! duplication is the cheaper of the two mistakes.
+         if (fitted) then
+            !$omp parallel default(none) &
+            !$omp    shared(b_vv, tblk, wblk, nv, nb, ef0, nvs) &
+            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
+            !$omp    private(gvv, gvt, pe_have, pf_local, x, y)
+            ! The fitted (x pe | y pf) for this column, built by the thread
+            ! that needs it rather than by a serial pass before the loop:
+            ! it is O(naux n_vir^3) an iteration and everything around it is
+            ! threaded, so a single gemm for it runs one core against
+            ! thirteen idle ones. Each column reads only its own (pe, pf)
+            ! block, so there is nothing to share.
+            !
+            ! `gvt` is its transpose. The direct integral is contiguous in
+            ! `a`; the exchange one is the same block with `a` and `b` the
+            ! other way round, which read in place is a stride of n_vir on
+            ! every one of n_vir^4 elements.
+            !
+            ! Consecutive columns are consecutive `e`, and two spin orbitals
+            ! share a spatial one, so the pair is rebuilt every second
+            ! column and not every column.
+            allocate (gvv(nvs, nvs), gvt(nvs, nvs))
+            pe_have = 0
+            pf_local = 0
+            !$omp do schedule(static)
+            do col = 1, nb
+               ef = ef0 + col - 1
+               e = mod(ef - 1, nv) + 1
+               f = (ef - 1)/nv + 1
+               se = mod(e, 2)
+               sf = mod(f, 2)
+               pe = (e + 1)/2
+               pf = (f + 1)/2
+               if (pe /= pe_have .or. pf /= pf_local) then
+                  call pic_gemm(b_vv(:, (pe - 1)*nvs + 1:pe*nvs), &
+                                b_vv(:, (pf - 1)*nvs + 1:pf*nvs), gvv, transa="T")
+                  ! Written out rather than `transpose`, which allocates a
+                  ! temporary and this runs n_vir^2 times an iteration.
+                  do y = 1, nvs
+                     do x = 1, nvs
+                        gvt(y, x) = gvv(x, y)
+                     end do
                   end do
-                  wblk((b - 1)*nv + a, col) = wblk((b - 1)*nv + a, col) + acc
+                  pe_have = pe
+                  pf_local = pf
+               end if
+               do b = 1, nv
+                  sb = mod(b, 2)
+                  pb = (b + 1)/2
+                  do a = 1, nv
+                     ! <ab||ef> = (ae|bf) - (af|be), the second being
+                     ! (be|af): the same block with the two virtuals swapped.
+                     pa = (a + 1)/2
+                     acc = 0.0_dp
+                     if (mod(a, 2) == se .and. sb == sf) acc = acc + gvv(pa, pb)
+                     if (mod(a, 2) == sf .and. sb == se) acc = acc - gvt(pa, pb)
+                     ! <am||ef> = -<ma||ef>, and likewise for b.
+                     acc = acc + tblk(b, (col - 1)*nv + a) - tblk(a, (col - 1)*nv + b)
+                     wblk((b - 1)*nv + a, col) = wblk((b - 1)*nv + a, col) + acc
+                  end do
                end do
             end do
-         end do
-         !$omp end parallel do
+            !$omp end do
+            deallocate (gvv, gvt)
+            !$omp end parallel
+         else
+            !$omp parallel do default(none) &
+            !$omp    shared(mo, tblk, wblk, nv, nb, ef0, nocc2) &
+            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
+            !$omp    schedule(static)
+            do col = 1, nb
+               ef = ef0 + col - 1
+               e = mod(ef - 1, nv) + 1
+               f = (ef - 1)/nv + 1
+               se = mod(e, 2)
+               sf = mod(f, 2)
+               pe = nocc2 + (e + 1)/2
+               pf = nocc2 + (f + 1)/2
+               do b = 1, nv
+                  sb = mod(b, 2)
+                  pb = nocc2 + (b + 1)/2
+                  do a = 1, nv
+                     ! The one place <ab||ef> is needed, straight from the
+                     ! spatial tensor. This is `asym` with the spin
+                     ! bookkeeping lifted out of the innermost loop -- the
+                     ! same two terms, the same signs.
+                     pa = nocc2 + (a + 1)/2
+                     acc = 0.0_dp
+                     if (mod(a, 2) == se .and. sb == sf) acc = acc + mo(pa, pe, pb, pf)
+                     if (mod(a, 2) == sf .and. sb == se) acc = acc - mo(pa, pf, pb, pe)
+                     ! <am||ef> = -<ma||ef>, and likewise for b.
+                     acc = acc + tblk(b, (col - 1)*nv + a) - tblk(a, (col - 1)*nv + b)
+                     wblk((b - 1)*nv + a, col) = wblk((b - 1)*nv + a, col) + acc
+                  end do
+               end do
+            end do
+            !$omp end parallel do
+         end if
 
          call pic_gemm(wblk(:, 1:nb), tau2t(:, ef0:ef1), lad, &
                        transb="T", alpha=0.5_dp, beta=1.0_dp)
       end do
 
-      deallocate (wblk, tau2t)
+      deallocate (wblk, tau2t, tblk)
    end subroutine particle_ladder
+
+   subroutine ladder_t1_block(no, nv, nb, t1, ovvv_blk, tmat)
+      !! sum_m t1(b,m) <ma||ef> over one batch of the compound (ef)
+      !!
+      !! The whole of this routine is one gemm. It exists because `eris%ovvv` is
+      !! rank four and the product wants it as the (no, nv*nb) matrix its memory
+      !! already is: an explicit-shape dummy takes the block by sequence
+      !! association, which an assumed-shape one cannot do. Nothing is copied.
+      integer, intent(in) :: no, nv, nb
+      real(dp), intent(in) :: t1(nv, no)
+      real(dp), intent(in) :: ovvv_blk(no, nv*nb)   !! <ma||ef>, (m, (a,ef))
+      real(dp), intent(out) :: tmat(nv, nv*nb)      !! (b, (a,ef))
+
+      call pic_gemm(t1, ovvv_blk, tmat)
+   end subroutine ladder_t1_block
 
    subroutine build_tau(t1, t2, no, nv, tau2, taut)
       !! The two effective doubles the intermediates are written in
@@ -1056,11 +1592,13 @@ contains
       !!     t3c D = P(i/jk) P(a/bc) [ sum_e t2(a,e,j,k) <ei||bc>
       !!                               - sum_m t2(b,c,i,m) <ma||jk> ]
       !!
-      !! The 1/36 is the price of summing every permutation of both triples
-      !! rather than restricting to i<j<k and a<b<c. Restricting is the obvious
-      !! optimisation and is deliberately not done here -- the unrestricted form
-      !! is what the equations say, and this is the pass that has to be right
-      !! before anything is made fast.
+      !! Both numerators are fully antisymmetric in (i,j,k), so the summand is
+      !! symmetric under permuting them and vanishes when two of them coincide.
+      !! Only i > j > k is therefore visited, weighted by six: exactly the same
+      !! number, a sixth of the work. The virtual permutations are *not*
+      !! restricted -- P(a/bc) is applied inside `triples_block`, which needs the
+      !! whole (a,b,c) cube to read at permuted indices, so there is nothing to
+      !! skip there.
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps(:), t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
@@ -1071,7 +1609,7 @@ contains
       real(dp), allocatable :: ovoo_p(:, :, :, :), oovv_p(:, :, :)
       real(dp), allocatable :: acc(:, :), bcc(:, :), gg(:, :, :), dd(:, :, :)
       integer :: i, j, k, a, b, c
-      real(dp) :: d, e_local
+      real(dp) :: d, d_occ, e_local
 
       e_triples = 0.0_dp
 
@@ -1084,29 +1622,31 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(eps, t1, t2, no, nv, ovvv_p, t2bc, ovoo_p, oovv_p) &
-      !$omp    private(i, j, k, a, b, c, d, t3c, t3d, e_local, acc, bcc, gg, dd) &
+      !$omp    private(i, j, k, a, b, c, d, d_occ, t3c, t3d, e_local, acc, bcc, gg, dd) &
       !$omp    reduction(+:e_triples)
       allocate (t3c(nv, nv, nv), t3d(nv, nv, nv))
       allocate (acc(nv, nv*nv), bcc(nv*nv, nv), gg(nv, nv, nv), dd(nv, nv, nv))
       !$omp do schedule(dynamic) collapse(2)
       do i = 1, no
          do j = 1, no
-            do k = 1, no
+            if (j >= i) cycle
+            do k = 1, j - 1
                call triples_block(t1, t2, no, nv, i, j, k, ovvv_p, t2bc, ovoo_p, &
                                   oovv_p, acc, bcc, gg, dd, t3c, t3d)
                e_local = 0.0_dp
+               d_occ = eps(i) + eps(j) + eps(k)
                do c = 1, nv
                   do b = 1, nv
                      do a = 1, nv
-                        d = eps(i) + eps(j) + eps(k) &
-                            - eps(no + a) - eps(no + b) - eps(no + c)
+                        d = d_occ - eps(no + a) - eps(no + b) - eps(no + c)
                         ! t3c and t3d arrive as numerators; dividing here rather
                         ! than twice inside the block keeps the block additive.
                         e_local = e_local + t3c(a, b, c)*(t3c(a, b, c) + t3d(a, b, c))/d
                      end do
                   end do
                end do
-               e_triples = e_triples + e_local/36.0_dp
+               ! Six, for the six orderings of {i,j,k} this one stands in for.
+               e_triples = e_triples + 6.0_dp*e_local/36.0_dp
             end do
          end do
       end do
