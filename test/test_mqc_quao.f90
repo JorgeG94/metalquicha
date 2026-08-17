@@ -776,9 +776,12 @@ contains
       integer, allocatable :: co(:), cn(:), vo(:), vn(:)
       integer :: i, core, valence
       real(dp), parameter :: REFERENCE(4) = &
-                             [5.639027_dp, 8.384177_dp, 17.116362_dp, 0.860434_dp]
+                             [5.7209628_dp, 8.3435350_dp, 17.1005039_dp, 0.8349982_dp]
+      !> C-O sigma, C-Cl sigma, C-H, C-O pi, from the same GAMESS run
+      real(dp), parameter :: BONDS(4) = &
+                             [0.9658297_dp, 0.9215974_dp, 0.9495433_dp, 0.9280916_dp]
 
-      call build_libcint_molecule(FC_Z, FC_SYM, FC, "cc-pvdz", mol, err)
+      call build_libcint_molecule(FC_Z, FC_SYM, FC, "6-31g", mol, err)
       call check(error,.not. err%has_error(), "formyl chloride should build")
       if (allocated(error)) return
       call run_libcint_rhf(mol, 32, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
@@ -829,14 +832,32 @@ contains
                  "the populations must sum to the 32 electrons of HCOCl")
       if (allocated(error)) return
 
-      ! Agreement is 0.004 at worst, on chlorine. That is not machine
-      ! precision and should not be: GAMESS Loewdin-orthogonalizes the free-atom
-      ! basis before the valence-virtual projection -- a step added in 2013 and
-      ! absent from the published equations -- and its valence and quasi-atomic
-      ! halves disagree about whether to use the rotated set or the raw one.
-      ! Those choices are recorded in the plan; the residual here is their size.
+      ! Per orbital pair rather than per atom: four atomic sums can agree while
+      ! the individual bonds do not. Magnitudes, since phases are a convention.
+      call check(error, abs(best_bond(quao, 1, 2) - BONDS(1)) < 2.0e-6_dp, &
+                 "C-O bond order against GAMESS")
+      if (allocated(error)) return
+      call check(error, abs(best_bond(quao, 1, 3) - BONDS(2)) < 2.0e-6_dp, &
+                 "C-Cl bond order against GAMESS")
+      if (allocated(error)) return
+      call check(error, abs(best_bond(quao, 1, 4) - BONDS(3)) < 2.0e-6_dp, &
+                 "C-H bond order against GAMESS")
+      if (allocated(error)) return
+
+      ! To 1e-6, on a basis chosen so that nothing else can hide in the
+      ! difference. An earlier version of this test used cc-pVDZ and agreed to
+      ! only 0.004, which was attributed here to the divergences between the
+      ! published construction and the shipped one -- GAMESS's 2013 Loewdin
+      ! pre-orthogonalization, and its two halves disagreeing about the rotated
+      ! versus raw free-atom set. That attribution was wrong. GAMESS's `ccd` is
+      ! a different basis from the Basis Set Exchange cc-pVDZ, worth 1.7
+      ! millihartree in the reference energy, and the population difference was
+      ! that. 6-31G has no d functions at all, the two total energies agree to
+      ! 9.5e-9, and the populations then agree to 1e-6. So those divergences do
+      ! not matter at this level -- which is worth knowing, and was only
+      ! learnable by removing the thing that was hiding it.
       do i = 1, 4
-         call check(error, abs(pop(i) - REFERENCE(i)) < 0.01_dp, &
+         call check(error, abs(pop(i) - REFERENCE(i)) < 2.0e-6_dp, &
                     "atom "//trim(FC_SYM(i))//" population against GAMESS")
          if (allocated(error)) return
       end do
