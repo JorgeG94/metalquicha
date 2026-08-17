@@ -13,6 +13,7 @@ module test_mqc_quao
    !! first-year course would draw.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
+   use pic_io, only: to_char
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    use mqc_aambs, only: aambs_dimensions, aambs_dimensions_t, aambs_element_counts
@@ -24,6 +25,8 @@ module test_mqc_quao
                                aambs_atom_ranges, quasi_atomic_orbitals, quao_result_t, &
                                orient_quasi_atomic_orbitals, kinetic_bond_orders, &
                                split_localize
+   use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
+                                      print_quao_report, quao_type_name, QUAO_TYPE_NONE
    implicit none
    private
 
@@ -77,7 +80,9 @@ contains
                   new_unittest("kinetic_bond_orders", test_kbo), &
                   new_unittest("split_localization_pairs_bonds", test_split), &
                   new_unittest("benzoquinone_against_paper_one", test_benzoquinone), &
-                  new_unittest("formyl_chloride_against_gamess", test_formyl_chloride) &
+                  new_unittest("formyl_chloride_against_gamess", test_formyl_chloride), &
+                  new_unittest("formyl_chloride_kei_bo", test_formyl_chloride_kei), &
+                  new_unittest("formyl_chloride_orbital_types", test_formyl_chloride_labels) &
                   ]
    end subroutine collect_mqc_quao_tests
 
@@ -741,6 +746,289 @@ contains
       end do
    end function count_above
 
+   subroutine formyl_chloride_quaos(mol, aambs, mixed, s_mbs, dims, quao, err, ok)
+      !! The whole pipeline on formyl chloride, in 6-31G
+      !!
+      !! The basis matters and is not a default. GAMESS's `ccd` is not the Basis
+      !! Set Exchange cc-pVDZ -- it is spherical where BSE's entry is Cartesian
+      !! -- and the difference is worth 1.7 millihartree in the reference energy,
+      !! which is far larger than anything the quasi-atomic construction could
+      !! disagree about. 6-31G has no d functions at all, so there is nothing for
+      !! that difference to hide in: the two total energies then agree to 9.5e-9
+      !! and every downstream comparison in this file becomes a statement about
+      !! the analysis rather than about the basis.
+      type(libcint_molecule_t), intent(out) :: mol, aambs
+      real(dp), allocatable, intent(out) :: mixed(:, :), s_mbs(:, :)
+      type(aambs_dimensions_t), intent(out) :: dims
+      type(quao_result_t), intent(out) :: quao
+      type(error_t), intent(inout) :: err
+      logical, intent(out) :: ok
+
+      type(rhf_result_t) :: scf
+      type(vvo_result_t) :: vvo
+      real(dp), allocatable :: proj(:, :), vi(:, :)
+      integer, allocatable :: co(:), cn(:), vo(:), vn(:)
+
+      ok = .false.
+      call build_libcint_molecule(FC_Z, FC_SYM, FC, "6-31g", mol, err)
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, 32, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      if (err%has_error()) return
+      if (.not. scf%converged) return
+
+      call build_aambs_molecule(FC_Z, FC_SYM, FC, aambs, err)
+      call aambs%overlap(s_mbs)
+      call mixed_basis_overlap(mol, aambs, mixed, err)
+      call aambs_dimensions(FC_Z, 32, dims, err)
+      if (err%has_error()) return
+
+      call mo_aambs_overlap(scf%orbitals, mixed, s_mbs, proj, err)
+      call valence_virtual_orbitals(scf%orbitals, proj, dims, vvo, err)
+      call aambs_atom_ranges(FC_Z, aambs, co, cn, vo, vn, err)
+      if (err%has_error()) return
+
+      allocate (vi(size(scf%orbitals, 1), dims%n_valocc + vvo%n_vvo))
+      vi(:, 1:dims%n_valocc) = scf%orbitals(:, dims%n_core + 1:dims%n_occupied)
+      vi(:, dims%n_valocc + 1:) = vvo%orbitals
+      call quasi_atomic_orbitals(FC_Z, vi, dims%n_valocc, mixed, vo, vn, quao, err)
+      call orient_quasi_atomic_orbitals(quao, err)
+      ok = .not. err%has_error()
+   end subroutine formyl_chloride_quaos
+
+   function orbital_with_occupation(quao, atom, occupation) result(index)
+      !! The orbital on `atom` holding `occupation` electrons, or zero
+      !!
+      !! How a GAMESS row is matched to one of ours. The orbitals within an atom
+      !! come out in whatever order the orientation produced, so they cannot be
+      !! compared by index; the occupation identifies them, and in every molecule
+      !! compared here no atom has two orbitals within 1e-3 of each other.
+      type(quao_result_t), intent(in) :: quao
+      integer, intent(in) :: atom
+      real(dp), intent(in) :: occupation
+      integer :: index
+      integer :: i, found
+
+      index = 0
+      found = 0
+      do i = 1, quao%n_quao
+         if (quao%atom_of(i) /= atom) cycle
+         if (abs(quao%population_bond_order(i, i) - occupation) > 1.0e-3_dp) cycle
+         found = found + 1
+         index = i
+      end do
+      ! Two matches is as useless as none, and silently taking the last would
+      ! turn an ambiguous lookup into a passing test.
+      if (found /= 1) index = 0
+   end function orbital_with_occupation
+
+   subroutine test_formyl_chloride_kei(error)
+      !! The KEI-BO column against GAMESS, row by row
+      !!
+      !! The kinetic bond order is the quantity Paper II is about, and it is the
+      !! one this code had no external check on: the populations and bond orders
+      !! were validated against GAMESS to 1e-6, but the kinetic interference
+      !! energy that turns them into an energy was only checked against itself.
+      !!
+      !! It is also the sharper test of the two. A bond order is a property of
+      !! the quasi-atomic *space*, which the SVDs fix; the kinetic bond order
+      !! multiplies it by an integral over the orbitals themselves, so it can
+      !! only come out right if the individual orbitals are right and not merely
+      !! the space they span. And its sign is meaningful where a bond order's is
+      !! not -- a phase flip changes both factors and cancels -- so these are
+      !! compared signed, which a bond order cannot be.
+      !!
+      !! Measured agreement is better than 1e-7 on every row, and worse than
+      !! 5e-8 on at least one. That is tighter than the 2e-6 the bond orders
+      !! themselves manage, which is not obvious and is not explained here --
+      !! multiplying by an integral could as easily have made it worse. The
+      !! tolerance below is five times the observed worst case rather than the
+      !! worst case itself, so a compiler or BLAS that rounds differently does
+      !! not fail it.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol, aambs
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: mixed(:, :), s_mbs(:, :), kinetic(:, :)
+      real(dp), allocatable :: kbo(:, :), interference(:, :)
+      logical :: ok
+      integer :: row, i, j
+
+      !> One row of the GAMESS 6-31G KEI-BO table: the occupation identifying the
+      !> orbital on each side, then the published bond order and KEI-BO.
+      !>
+      !>   0.9658297  -1.0806348  O(C) sigma with C(O) sigma
+      !>   0.9215974  -0.6899050  Cl(C) sigma with C(Cl) sigma
+      !>   0.9495433  -0.5699355  H(C) with C(H) sigma
+      !>   0.9280916  -0.4480652  O(C) pi with C(O) pi
+      !>  -0.3779555  -0.1468117  O lone pair with the C-Cl sigma
+      !>  -0.3065313  -0.0856982  Cl lone pair with the C-O pi
+      integer, parameter :: ATOM_I(6) = [2, 3, 4, 2, 2, 3]
+      integer, parameter :: ATOM_J(6) = [1, 1, 1, 1, 1, 1]
+      real(dp), parameter :: OCC_I(6) = [1.2306118_dp, 1.2010201_dp, 0.8349982_dp, &
+                                         1.2889523_dp, 1.8309190_dp, 1.9224348_dp]
+      real(dp), parameter :: OCC_J(6) = [0.7845094_dp, 0.9274214_dp, 1.2204192_dp, &
+                                         0.7886128_dp, 0.9274214_dp, 0.7886128_dp]
+      real(dp), parameter :: BOND(6) = [0.9658297_dp, 0.9215974_dp, 0.9495433_dp, &
+                                        0.9280916_dp, 0.3779555_dp, 0.3065313_dp]
+      real(dp), parameter :: KEI(6) = [-1.0806348_dp, -0.6899050_dp, -0.5699355_dp, &
+                                       -0.4480652_dp, -0.1468117_dp, -0.0856982_dp]
+
+      call formyl_chloride_quaos(mol, aambs, mixed, s_mbs, dims, quao, err, ok)
+      call check(error, ok, "the formyl chloride pipeline should succeed")
+      if (allocated(error)) return
+
+      call mol%kinetic(kinetic)
+      call kinetic_bond_orders(quao, kinetic, kbo, err, interference)
+      call check(error,.not. err%has_error(), "the kinetic bond orders should build")
+      if (allocated(error)) return
+
+      do row = 1, 6
+         i = orbital_with_occupation(quao, ATOM_I(row), OCC_I(row))
+         j = orbital_with_occupation(quao, ATOM_J(row), OCC_J(row))
+         call check(error, i > 0 .and. j > 0, "row "//trim(to_char(row))//" of the "// &
+                    "GAMESS table should match exactly one orbital on each atom")
+         if (allocated(error)) return
+
+         call check(error, abs(quao%population_bond_order(i, j)), BOND(row), &
+                    "row "//trim(to_char(row))//" bond order", thr=2.0e-6_dp)
+         if (allocated(error)) return
+         ! Signed. The two published numbers here are the only place in this file
+         ! where a sign can be compared at all.
+         call check(error, interference(i, j), KEI(row), &
+                    "row "//trim(to_char(row))//" KEI-BO", thr=5.0e-7_dp)
+         if (allocated(error)) return
+      end do
+
+      ! Paper II eq (2) against eq (1), which is the only thing separating the
+      ! two outputs and is easy to get backwards.
+      call check(error, maxval(abs(kbo - 0.1_dp*627.5094740631_dp*interference)) &
+                 < 1.0e-9_dp, "the kinetic bond order should be the interference "// &
+                 "energy scaled by 0.1 and converted to kcal/mol")
+
+      call mol%destroy()
+      call aambs%destroy()
+   end subroutine test_formyl_chloride_kei
+
+   subroutine test_formyl_chloride_labels(error)
+      !! Every orbital type in the GAMESS table, all thirteen of them
+      !!
+      !! The published table labels the complete valence space -- four bonding
+      !! orbitals on carbon, two lone pairs and two bonds on oxygen, three lone
+      !! pairs and a bond on chlorine, one on hydrogen -- which makes it a
+      !! stronger check than any single label. It fixes the sigma/pi split, the
+      !! s-versus-p lone-pair distinction, and which atom each bonding orbital
+      !! points at, and it does so for an sp2 carbon where three of the four
+      !! bonds are sigma and one is pi.
+      !!
+      !! Worth stating what this does *not* test: the thresholds. They are
+      !! GAMESS's, so agreeing with GAMESS says the rules were transcribed, not
+      !! that they are right. Nothing in the papers defines them.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol, aambs
+      type(quao_result_t) :: quao
+      type(quao_labels_t) :: labels
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: mixed(:, :), s_mbs(:, :), kinetic(:, :)
+      real(dp), allocatable :: kbo(:, :), interference(:, :)
+      logical :: ok
+      integer :: row, i
+
+      !> The ORBTYP and partner-atom columns of the GAMESS 6-31G table, indexed
+      !> by the occupation that identifies each orbital. Partner zero is GAMESS's
+      !> `NWB   0` -- an orbital bonded to nothing.
+      integer, parameter :: ATOM(13) = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4]
+      real(dp), parameter :: OCC(13) = &
+                             [1.2204192_dp, 0.9274214_dp, 0.7886128_dp, 0.7845094_dp, &
+                              1.9930519_dp, 1.8309190_dp, 1.2889523_dp, 1.2306118_dp, &
+                              1.9949292_dp, 1.9821198_dp, 1.9224348_dp, 1.2010201_dp, 0.8349982_dp]
+      character(len=7), parameter :: TYPE_NAME(13) = &
+                                     ["SIGMA  ", "SIGMA  ", "PI     ", "SIGMA  ", &
+                                      "SLP    ", "PLP    ", "PI     ", "SIGMA  ", &
+                                      "SLP    ", "PLP    ", "PLP    ", "SIGMA  ", "SIGMA  "]
+      integer, parameter :: PARTNER(13) = [4, 3, 2, 2, 0, 0, 1, 1, 0, 0, 0, 1, 1]
+
+      call formyl_chloride_quaos(mol, aambs, mixed, s_mbs, dims, quao, err, ok)
+      call check(error, ok, "the formyl chloride pipeline should succeed")
+      if (allocated(error)) return
+
+      call label_quasi_atomic_orbitals(quao, mol, aambs, mixed, s_mbs, FC_Z, FC, &
+                                       labels, err)
+      call check(error,.not. err%has_error(), "the labelling should succeed")
+      if (allocated(error)) return
+
+      do row = 1, 13
+         i = orbital_with_occupation(quao, ATOM(row), OCC(row))
+         call check(error, i > 0, "GAMESS orbital with occupation "// &
+                    trim(to_char(OCC(row)))//" on atom "//trim(to_char(ATOM(row)))// &
+                    " should match exactly one of ours")
+         if (allocated(error)) return
+
+         call check(error, quao_type_name(labels%orbital_type(i), labels%dominant_l(i)), &
+                    TYPE_NAME(row), "orbital type on atom "//trim(FC_SYM(ATOM(row))))
+         if (allocated(error)) return
+
+         if (PARTNER(row) == 0) then
+            call check(error, labels%partner_count(i), 0, &
+                       "a lone pair should be bonded to nothing")
+            if (allocated(error)) return
+         else
+            call check(error, labels%partner_count(i), 1, &
+                       "each bonding orbital here has exactly one partner")
+            if (allocated(error)) return
+            call check(error, quao%atom_of(labels%partner(i, 1)), PARTNER(row), &
+                       "the atom the bonding orbital points at")
+            if (allocated(error)) return
+         end if
+      end do
+
+      ! The sigma/pi split is a statement about direction, so assert the
+      ! direction directly rather than only through the label: formyl chloride is
+      ! planar in z, so every pi orbital must be perpendicular to that plane and
+      ! every sigma one in it.
+      i = orbital_with_occupation(quao, 2, 1.2889523_dp)
+      call check(error, abs(abs(labels%direction(3, i)) - 1.0_dp) < 1.0e-3_dp, &
+                 "the oxygen pi orbital should point out of the molecular plane")
+      if (allocated(error)) return
+      i = orbital_with_occupation(quao, 2, 1.2306118_dp)
+      call check(error, abs(labels%direction(3, i)) < 1.0e-3_dp, &
+                 "the oxygen sigma orbital should lie in the molecular plane")
+      if (allocated(error)) return
+
+      ! And the s/p composition, which is what SLP and PLP are really claiming.
+      i = orbital_with_occupation(quao, 2, 1.9930519_dp)
+      call check(error, labels%angular_character(0, i) > 0.5_dp, &
+                 "the oxygen s lone pair should be more than half s")
+      if (allocated(error)) return
+      i = orbital_with_occupation(quao, 2, 1.8309190_dp)
+      call check(error, labels%angular_character(1, i) > 0.5_dp, &
+                 "the oxygen p lone pair should be more than half p")
+      if (allocated(error)) return
+
+      ! Nothing is left unclassified: this molecule has no transition metal, so
+      ! every one of the thirteen orbitals should have been reached by a rule.
+      do i = 1, quao%n_quao
+         call check(error, labels%orbital_type(i) /= QUAO_TYPE_NONE, &
+                    "orbital "//trim(to_char(i))//" should have been classified")
+         if (allocated(error)) return
+      end do
+
+      ! And print it, which is what all of the above is for. Asserted only to
+      ! the extent that it runs -- the numbers in it are the ones checked above
+      ! and in `formyl_chloride_kei_bo` -- but printed rather than suppressed,
+      ! because the table is the deliverable and a test log is where anyone
+      ! changing this code will look at one.
+      call mol%kinetic(kinetic)
+      call kinetic_bond_orders(quao, kinetic, kbo, err, interference)
+      call check(error,.not. err%has_error(), "the kinetic bond orders should build")
+      if (allocated(error)) return
+      call print_quao_report(.true., quao, labels, interference, FC_SYM, dims%n_core)
+
+      call mol%destroy()
+      call aambs%destroy()
+   end subroutine test_formyl_chloride_labels
+
    subroutine test_formyl_chloride(error)
       !! Against GAMESS's own reference QUAO populations
       !!
@@ -766,14 +1054,12 @@ contains
       !! quasi-atomic space, not of how it was localized.
       type(error_type), allocatable, intent(out) :: error
       type(libcint_molecule_t) :: mol, aambs
-      type(rhf_result_t) :: scf
-      type(vvo_result_t) :: vvo
       type(quao_result_t) :: quao
       type(aambs_dimensions_t) :: dims
       type(error_t) :: err
-      real(dp), allocatable :: mixed(:, :), s_mbs(:, :), proj(:, :), vi(:, :)
+      real(dp), allocatable :: mixed(:, :), s_mbs(:, :)
       real(dp), allocatable :: pop(:)
-      integer, allocatable :: co(:), cn(:), vo(:), vn(:)
+      logical :: ok
       integer :: i, core, valence
       real(dp), parameter :: REFERENCE(4) = &
                              [5.7209628_dp, 8.3435350_dp, 17.1005039_dp, 0.8349982_dp]
@@ -781,18 +1067,8 @@ contains
       real(dp), parameter :: BONDS(4) = &
                              [0.9658297_dp, 0.9215974_dp, 0.9495433_dp, 0.9280916_dp]
 
-      call build_libcint_molecule(FC_Z, FC_SYM, FC, "6-31g", mol, err)
-      call check(error,.not. err%has_error(), "formyl chloride should build")
-      if (allocated(error)) return
-      call run_libcint_rhf(mol, 32, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
-      call check(error, scf%converged, "the SCF should converge")
-      if (allocated(error)) return
-
-      call build_aambs_molecule(FC_Z, FC_SYM, FC, aambs, err)
-      call aambs%overlap(s_mbs)
-      call mixed_basis_overlap(mol, aambs, mixed, err)
-      call aambs_dimensions(FC_Z, 32, dims, err)
-      call check(error,.not. err%has_error(), "the setup should succeed")
+      call formyl_chloride_quaos(mol, aambs, mixed, s_mbs, dims, quao, err, ok)
+      call check(error, ok, "the formyl chloride pipeline should succeed")
       if (allocated(error)) return
 
       ! C and O give five each, chlorine nine, hydrogen one.
@@ -800,20 +1076,6 @@ contains
       if (allocated(error)) return
       call check(error, dims%n_core, 7, "seven chemical-core orbitals, five of them "// &
                  "on chlorine")
-      if (allocated(error)) return
-
-      call mo_aambs_overlap(scf%orbitals, mixed, s_mbs, proj, err)
-      call valence_virtual_orbitals(scf%orbitals, proj, dims, vvo, err)
-      call aambs_atom_ranges(FC_Z, aambs, co, cn, vo, vn, err)
-      call check(error,.not. err%has_error(), "the valence-virtual step should succeed")
-      if (allocated(error)) return
-
-      allocate (vi(size(scf%orbitals, 1), dims%n_valocc + vvo%n_vvo))
-      vi(:, 1:dims%n_valocc) = scf%orbitals(:, dims%n_core + 1:dims%n_occupied)
-      vi(:, dims%n_valocc + 1:) = vvo%orbitals
-      call quasi_atomic_orbitals(FC_Z, vi, dims%n_valocc, mixed, vo, vn, quao, err)
-      call orient_quasi_atomic_orbitals(quao, err)
-      call check(error,.not. err%has_error(), "the quasi-atomic steps should succeed")
       if (allocated(error)) return
 
       allocate (pop(4))
