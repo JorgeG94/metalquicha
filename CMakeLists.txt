@@ -273,16 +273,6 @@ if(MQC_ENABLE_TBLITE)
   target_link_libraries(check_bond_orders PRIVATE ${main_lib})
 endif()
 
-# What counterpoise is worth, measured rather than asserted: the BSSE on one
-# monomer, and the interaction energy with and without the correction. Not a
-# ctest case -- it is a measurement, and the numbers move with basis and
-# separation by design.
-add_executable(check_counterpoise
-               ${PROJECT_SOURCE_DIR}/validation/check_counterpoise.f90)
-target_include_directories(check_counterpoise
-                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
-target_link_libraries(check_counterpoise PRIVATE ${main_lib} cint_fortran cint)
-
 add_executable(check_grid ${PROJECT_SOURCE_DIR}/validation/check_grid.f90)
 target_include_directories(check_grid PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_grid PRIVATE ${main_lib})

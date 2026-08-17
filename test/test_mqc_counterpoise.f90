@@ -20,6 +20,7 @@ module test_mqc_counterpoise
                                     build_fragment_from_indices
    use mqc_combinatorics, only: vmfc_subset_key, is_auxiliary_row, real_count_of
    use mqc_error, only: error_t
+   use pic_io, only: to_char
    implicit none
    private
 
@@ -52,7 +53,8 @@ contains
                   new_unittest("a_signed_index_ghosts_its_monomer", test_signed_indices), &
                   new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity), &
                   new_unittest("the_subset_key_ghosts_the_complement", test_subset_key), &
-                  new_unittest("an_auxiliary_row_is_never_summed", test_auxiliary) &
+                  new_unittest("an_auxiliary_row_is_never_summed", test_auxiliary), &
+                  new_unittest("bsse_shrinks_as_the_monomers_separate", test_bsse_decays) &
                   ]
    end subroutine collect_counterpoise
 
@@ -493,6 +495,93 @@ contains
       call check(error, int(real_count_of([1, 0])), 1, &
                  "padding is not a monomer")
    end subroutine test_auxiliary
+
+   subroutine test_bsse_decays(error)
+      !! Superposition error falls away as the monomers separate
+      !!
+      !! It exists because monomer A can reach B's basis functions, so it must
+      !! shrink with the overlap that lets it. That makes it monotone in the
+      !! separation, which is a stronger statement than "positive": a ghost
+      !! implementation that leaked some constant error would still be positive
+      !! everywhere and would not decay.
+      !!
+      !! At the far end the corrected and uncorrected interaction energies have
+      !! to meet, which is the check that the correction invents nothing where
+      !! there is no overlap left to correct.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: N_R = 3
+      real(dp), parameter :: R(N_R) = [3.0_dp, 4.0_dp, 6.0_dp]
+      real(dp) :: bsse(N_R), raw, corrected
+      integer :: k
+
+      do k = 1, N_R
+         call bsse_at(R(k), bsse(k), raw, corrected, error)
+         if (allocated(error)) return
+      end do
+
+      call check(error, all(bsse > 0.0_dp), &
+                 "the pair basis must lower a monomer at every separation")
+      if (allocated(error)) return
+
+      do k = 2, N_R
+         call check(error, bsse(k) < bsse(k - 1), &
+                    "superposition error must fall as the monomers separate")
+         if (allocated(error)) return
+      end do
+
+      ! Two orders of magnitude across three Angstrom -- overlap, not a constant.
+      call check(error, bsse(N_R) < bsse(1)/100.0_dp, &
+                 "the decay is too slow to be an overlap effect")
+      if (allocated(error)) return
+
+      ! `raw` and `corrected` are the last row's, at the widest separation.
+      call check(error, abs(raw - corrected) < 1.0e-7_dp, &
+                 "with no overlap left, correcting must change nothing")
+   end subroutine test_bsse_decays
+
+   subroutine bsse_at(sep, bsse, raw, corrected, error)
+      !! One separation: the BSSE on a monomer, and both interaction energies
+      real(dp), intent(in) :: sep
+      real(dp), intent(out) :: bsse, raw, corrected
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: alone, in_pair, dimer
+      type(rhf_result_t) :: scf_alone, scf_pair, scf_dimer
+      type(error_t) :: err
+      integer :: z(N_ATOMS), i
+      character(len=2) :: sym(N_ATOMS)
+      real(dp) :: c(3, N_ATOMS)
+
+      call dimer_geometry(z, sym, c)
+      c = c/ANG
+      do i = 1, N_MONOMER
+         c(1, i + N_MONOMER) = c(1, i) + sep
+      end do
+      c = c*ANG
+
+      call build_libcint_molecule(z(1:N_MONOMER), sym(1:N_MONOMER), &
+                                  c(:, 1:N_MONOMER), "6-31g", alone, err)
+      call run_libcint_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
+      call build_libcint_molecule(z, sym, c, "6-31g", in_pair, err, &
+                                  ghost=[.false., .false., .false., .true., .true., .true.])
+      call run_libcint_rhf(in_pair, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_pair, err)
+      call build_libcint_molecule(z, sym, c, "6-31g", dimer, err)
+      call run_libcint_rhf(dimer, 20, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_dimer, err)
+      if (err%has_error()) then
+         call check(error, .false., "SCF at "//to_char(sep)//": "//err%get_full_trace())
+         return
+      end if
+
+      ! Symmetric dimer, so one monomer's BSSE is the other's.
+      bsse = scf_alone%energy - scf_pair%energy
+      raw = scf_dimer%energy - 2.0_dp*scf_alone%energy
+      corrected = scf_dimer%energy - 2.0_dp*scf_pair%energy
+
+      call alone%destroy()
+      call in_pair%destroy()
+      call dimer%destroy()
+   end subroutine bsse_at
 
 end module test_mqc_counterpoise
 
