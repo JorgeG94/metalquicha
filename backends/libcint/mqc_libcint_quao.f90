@@ -39,6 +39,7 @@ module mqc_libcint_quao
    public :: quasi_atomic_orbitals
    public :: orient_quasi_atomic_orbitals
    public :: kinetic_bond_orders
+   public :: split_localize
    public :: quao_result_t
 
    real(dp), parameter :: ORIENT_CRIT = 1.0e-6_dp
@@ -88,6 +89,11 @@ module mqc_libcint_quao
          !! interatomic off-diagonal elements are bond orders. Paper I eq (5.2).
       integer :: n_quao = 0
       integer :: sweeps = 0            !! Jacobi sweeps the refinement took
+      real(dp), allocatable :: to_valence_internal(:, :)
+         !! (n_val, n_quao). Column `i` expands quasi-atomic orbital `i` in the
+         !! valence-internal orbitals, so its rows are indexed by those. Kept
+         !! because the split-localization works in this space rather than in
+         !! the atomic-orbital one.
       logical :: oriented = .false.
       real(dp) :: orientation_sum = 0.0_dp
          !! Paper I eq (5.5) after orientation
@@ -596,6 +602,7 @@ contains
 
       allocate (result%orbitals(n_ao, n_val))
       call pic_gemm(valence_internal, orthogonal, result%orbitals)
+      result%to_valence_internal = orthogonal
       result%n_quao = n_val
 
       ! The density in the quasi-atomic basis. Only the occupied
@@ -720,6 +727,9 @@ contains
          allocate (rotated(size(quao%orbitals, 1), n))
          call pic_gemm(quao%orbitals, rotation, rotated)
          call move_alloc(rotated, quao%orbitals)
+         allocate (rotated(size(quao%to_valence_internal, 1), n))
+         call pic_gemm(quao%to_valence_internal, rotation, rotated)
+         call move_alloc(rotated, quao%to_valence_internal)
       end block
       quao%population_bond_order = p
       quao%oriented = .true.
@@ -818,5 +828,153 @@ contains
       kbo = KBO_SCALE*t*quao%population_bond_order*HARTREE_TO_KCAL
       deallocate (work, t)
    end subroutine kinetic_bond_orders
+
+   subroutine split_localize(quao, n_occupied_valence, valence_internal, localized, error)
+      !! Localize the occupied and the empty valence orbitals separately
+      !!
+      !! Paper I section V.C: *"each localized occupied molecular orbital as
+      !! well as each localized valence-virtual orbital shall cover as few of
+      !! the oriented quasi-atomic orbitals as possible"*. Done in the two
+      !! blocks independently -- which is what "split" means, and what makes the
+      !! result different from ordinary localization.
+      !!
+      !! Localizing the occupied space alone gives bonds and lone pairs.
+      !! Localizing the empty valence space alone gives the antibonding partner
+      !! of each. Together they pair up, and that pairing is the point: a
+      !! bonding orbital and its antibonding counterpart, on the same two atoms,
+      !! from a calculation that was never told which atoms are bonded.
+      !!
+      !! Paper I notes that conventional localization instead produces
+      !! "rabbit-ear" lone pairs on oxygen, where this yields one of sigma type
+      !! and one of p type.
+      !!
+      !! The criterion is a fourth power again, and for the same reason as the
+      !! orientation: the sum of squares of each column is fixed at one by
+      !! orthonormality, so only higher moments can distinguish a spread-out
+      !! orbital from a concentrated one. The closed form is Paper I
+      !! eqs (A17)-(A24), **with the two corrigenda from Paper II** -- in (A22a)
+      !! `2 P_1112` should read `2 P_1122`, and in `P_c` `-6 P_1112` should read
+      !! `-6 P_1122`. Both are implemented in their corrected form; using the
+      !! printed ones rotates by a wrong angle that still converges, to a
+      !! different and worse answer.
+      type(quao_result_t), intent(in) :: quao
+      integer, intent(in) :: n_occupied_valence
+      real(dp), intent(in) :: valence_internal(:, :)   !! (n_ao, n_val)
+      real(dp), allocatable, intent(out) :: localized(:, :)
+         !! (n_ao, n_val): the localized occupied orbitals, then the localized
+         !! empty valence ones, in that order
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: block_t(:, :), coefficients(:, :), transform(:, :)
+      integer :: n_val, n_empty
+
+      if (error%has_error()) return
+      if (.not. quao%oriented) then
+         call error%set(ERROR_VALIDATION, "split localization is defined against the "// &
+                        "*oriented* quasi-atomic orbitals: the criterion counts how "// &
+                        "many of them each orbital covers, and before orientation they "// &
+                        "are an arbitrary basis of each atom's space.")
+         return
+      end if
+
+      n_val = quao%n_quao
+      n_empty = n_val - n_occupied_valence
+      allocate (localized(size(valence_internal, 1), n_val))
+      allocate (transform(n_val, n_val))
+      transform = 0.0_dp
+
+      ! `to_valence_internal(k, a)` expands quasi-atomic orbital `a` in the
+      ! valence-internal orbitals, so its transpose gives < QUAO | orbital >,
+      ! which is the overlap the criterion is built from.
+      if (n_occupied_valence > 0) then
+         coefficients = transpose(quao%to_valence_internal(1:n_occupied_valence, :))
+         call fourth_power_localize(coefficients, block_t, error)
+         if (error%has_error()) return
+         transform(1:n_occupied_valence, 1:n_occupied_valence) = block_t
+         deallocate (coefficients, block_t)
+      end if
+
+      if (n_empty > 0) then
+         coefficients = transpose(quao%to_valence_internal(n_occupied_valence + 1:, :))
+         call fourth_power_localize(coefficients, block_t, error)
+         if (error%has_error()) return
+         transform(n_occupied_valence + 1:, n_occupied_valence + 1:) = block_t
+         deallocate (coefficients, block_t)
+      end if
+
+      call pic_gemm(valence_internal, transform, localized)
+      deallocate (transform)
+   end subroutine split_localize
+
+   subroutine fourth_power_localize(coefficients, transform, error)
+      !! Maximize `sum_n sum_alpha (C T)_{alpha n}^4` over orthogonal `T`
+      !!
+      !! Paper I Appendix A.2. Each 2x2 rotation is closed form; the quarter
+      !! angle is what makes it a fourth-power criterion rather than a
+      !! second-power one.
+      real(dp), intent(in) :: coefficients(:, :)   !! (n_quao, n_orb)
+      real(dp), allocatable, intent(out) :: transform(:, :)   !! (n_orb, n_orb)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: r(:, :), ci(:), cj(:)
+      real(dp) :: p1111, p2222, p1122, p1112, p2221, pc, ps, q, gamma, c, s
+      integer :: n, i, j, sweep
+      logical :: moved
+
+      if (error%has_error()) return
+      n = size(coefficients, 2)
+      allocate (transform(n, n), r(size(coefficients, 1), n))
+      allocate (ci(size(coefficients, 1)), cj(size(coefficients, 1)))
+      transform = 0.0_dp
+      do i = 1, n
+         transform(i, i) = 1.0_dp
+      end do
+      r = coefficients
+      if (n < 2) return
+
+      do sweep = 1, ORIENT_MAX_SWEEPS
+         moved = .false.
+         do i = 1, n
+            do j = i + 1, n
+               p1111 = sum(r(:, i)**4)
+               p2222 = sum(r(:, j)**4)
+               p1122 = sum((r(:, i)*r(:, j))**2)
+               p1112 = sum(r(:, i)**3*r(:, j))
+               p2221 = sum(r(:, j)**3*r(:, i))
+
+               ! Paper II's corrigenda are in these two lines.
+               pc = 0.25_dp*(p1111 + p2222 - 6.0_dp*p1122)
+               ps = p1112 - p2221
+
+               q = sqrt(pc*pc + ps*ps)
+               if (q < ORIENT_FLOOR) cycle
+               ! Restricted to (-pi/4, pi/4), which atan2 already gives once
+               ! quartered: the functional has period pi/2 in this angle.
+               gamma = 0.25_dp*atan2(ps, pc)
+               if (abs(gamma) < ORIENT_CRIT) cycle
+
+               c = cos(gamma)
+               s = sin(gamma)
+               ci = c*r(:, i) + s*r(:, j)
+               cj = -s*r(:, i) + c*r(:, j)
+               r(:, i) = ci
+               r(:, j) = cj
+               ci = c*transform(:, i) + s*transform(:, j)
+               cj = -s*transform(:, i) + c*transform(:, j)
+               transform(:, i) = ci
+               transform(:, j) = cj
+               moved = .true.
+            end do
+         end do
+         if (.not. moved) exit
+      end do
+
+      if (sweep >= ORIENT_MAX_SWEEPS) then
+         call error%set(ERROR_VALIDATION, "the split localization did not settle in "// &
+                        to_char(ORIENT_MAX_SWEEPS)//" sweeps.")
+         return
+      end if
+      deallocate (r, ci, cj)
+   end subroutine fourth_power_localize
 
 end module mqc_libcint_quao

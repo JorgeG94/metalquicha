@@ -22,7 +22,8 @@ module test_mqc_quao
    use mqc_libcint_quao, only: build_aambs_molecule, mo_aambs_overlap, &
                                valence_virtual_orbitals, vvo_result_t, &
                                aambs_atom_ranges, quasi_atomic_orbitals, quao_result_t, &
-                               orient_quasi_atomic_orbitals, kinetic_bond_orders
+                               orient_quasi_atomic_orbitals, kinetic_bond_orders, &
+                               split_localize
    implicit none
    private
 
@@ -47,11 +48,12 @@ contains
                   new_unittest("orbitals_are_actually_atomic", test_atomic_character), &
                   new_unittest("water_bonding_pattern", test_water_pattern), &
                   new_unittest("orientation_concentrates_bonding", test_orientation), &
-                  new_unittest("kinetic_bond_orders", test_kbo) &
+                  new_unittest("kinetic_bond_orders", test_kbo), &
+                  new_unittest("split_localization_pairs_bonds", test_split) &
                   ]
    end subroutine collect_mqc_quao_tests
 
-   subroutine water_quaos(basis_name, quao, overlap, dims, err, ok)
+   subroutine water_quaos(basis_name, quao, overlap, dims, err, ok, vi_out)
       !! Everything from an SCF through to the quasi-atomic orbitals
       character(len=*), intent(in) :: basis_name
       type(quao_result_t), intent(out) :: quao
@@ -59,6 +61,7 @@ contains
       type(aambs_dimensions_t), intent(out) :: dims
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
+      real(dp), allocatable, intent(out), optional :: vi_out(:, :)
 
       type(libcint_molecule_t) :: mol, aambs
       type(rhf_result_t) :: scf
@@ -103,6 +106,7 @@ contains
       call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
                                  val_off, val_n, quao, err)
       ok = .not. err%has_error()
+      if (present(vi_out)) vi_out = valence_internal
 
       call mol%destroy()
       call aambs%destroy()
@@ -441,6 +445,115 @@ contains
                  "between them, however unevenly they share it")
       call mol%destroy()
    end subroutine test_kbo
+
+   subroutine test_split(error)
+      !! Localizing the two blocks separately pairs bonds with antibonds
+      !!
+      !! Water's valence-internal space is eight orbitals: four occupied and two
+      !! empty. Localizing them separately should give two O-H bonds and two
+      !! lone pairs among the occupied, and two O-H antibonds among the empty --
+      !! and each antibond should sit on the same two atoms as a bond.
+      !!
+      !! The assertion is that every localized orbital is concentrated: the
+      !! criterion counts how many quasi-atomic orbitals each one covers, so a
+      !! successful localization leaves each with one or two large components
+      !! and the rest near zero. That is checkable without knowing which orbital
+      !! turned out to be which.
+      type(error_type), allocatable, intent(out) :: error
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :), vi(:, :), localized(:, :)
+      real(dp), allocatable :: weights(:), work(:, :)
+      logical :: ok
+      real(dp) :: spread_before, spread_after, top_two
+      integer :: n, i, j
+
+      call water_quaos("cc-pvdz", quao, overlap, dims, err, ok, vi)
+      call check(error, ok, "the construction should succeed")
+      if (allocated(error)) return
+
+      ! Refused before orientation: the criterion is stated against the oriented
+      ! quasi-atomic orbitals.
+      call split_localize(quao, dims%n_valocc, vi, localized, err)
+      call check(error, err%has_error(), &
+                 "split localization should be refused before orientation")
+      if (allocated(error)) return
+      call err%clear()
+
+      call orient_quasi_atomic_orbitals(quao, err)
+      call check(error,.not. err%has_error(), "orientation should succeed")
+      if (allocated(error)) return
+
+      ! How concentrated the *unlocalized* orbitals are, for comparison.
+      n = quao%n_quao
+      spread_before = 0.0_dp
+      do i = 1, dims%n_valocc
+         spread_before = spread_before + sum(quao%to_valence_internal(i, :)**4)
+      end do
+
+      call split_localize(quao, dims%n_valocc, vi, localized, err)
+      call check(error,.not. err%has_error(), "split localization should succeed")
+      if (allocated(error)) return
+      call check(error, size(localized, 2), n, &
+                 "localization produces one orbital per valence-internal orbital")
+      if (allocated(error)) return
+
+      ! Still an orthonormal set: the transformation is orthogonal, so the
+      ! space is unchanged and only the description of it moved.
+      allocate (work(size(overlap, 1), n), weights(n))
+      call pic_gemm(overlap, localized, work)
+      do i = 1, n
+         weights(i) = dot_product(localized(:, i), work(:, i))
+      end do
+      call check(error, maxval(abs(weights - 1.0_dp)) < 1.0e-9_dp, &
+                 "the localized orbitals must stay normalized")
+      if (allocated(error)) return
+
+      ! Each localized orbital should be carried by one or two quasi-atomic
+      ! orbitals. A bond covers two; a lone pair covers one.
+      do i = 1, n
+         weights = 0.0_dp
+         do j = 1, n
+            weights(j) = dot_product(quao%orbitals(:, j), work(:, i))**2
+         end do
+         call sort_descending(weights)
+         top_two = weights(1) + weights(2)
+         call check(error, top_two > 0.85_dp, &
+                    "every localized orbital should be carried by at most two "// &
+                    "quasi-atomic orbitals -- a bond covers two, a lone pair one")
+         if (allocated(error)) return
+      end do
+
+      ! And the criterion it maximizes did go up.
+      spread_after = 0.0_dp
+      do i = 1, dims%n_valocc
+         do j = 1, n
+            spread_after = spread_after + &
+                           dot_product(quao%orbitals(:, j), work(:, i))**4
+         end do
+      end do
+      call check(error, spread_after > spread_before - 1.0e-10_dp, &
+                 "the fourth-power sum should not decrease")
+   end subroutine test_split
+
+   subroutine sort_descending(a)
+      !! Small insertion sort, largest first
+      real(dp), intent(inout) :: a(:)
+      real(dp) :: t
+      integer :: i, j
+
+      do i = 2, size(a)
+         t = a(i)
+         j = i - 1
+         do while (j >= 1)
+            if (a(j) >= t) exit
+            a(j + 1) = a(j)
+            j = j - 1
+         end do
+         a(j + 1) = t
+      end do
+   end subroutine sort_descending
 
 end module test_mqc_quao
 
