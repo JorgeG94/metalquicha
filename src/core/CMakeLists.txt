@@ -7,6 +7,7 @@ target_sources(
           mqc_program_limits.f90
           mqc_version.f90
           mqc_elements.f90
+          mqc_nuclear_repulsion.f90
           mqc_atomic_radii.f90
           mqc_atomic_guess_common.f90
           mqc_pcm_radii.f90

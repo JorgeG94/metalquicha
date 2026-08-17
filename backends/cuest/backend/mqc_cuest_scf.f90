@@ -63,6 +63,7 @@ module mqc_cuest_scf
    !! XC contribution.
    use, intrinsic :: iso_c_binding, only: c_int, c_int64_t, c_ptr
    use pic_types, only: dp
+   use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
@@ -134,17 +135,7 @@ contains
       real(dp), intent(in) :: coordinates(:, :)  !! (3, n_atoms)
       real(dp) :: energy
 
-      integer :: iatom, jatom
-      real(dp) :: distance
-
-      energy = 0.0_dp
-      do iatom = 1, size(atomic_numbers)
-         do jatom = iatom + 1, size(atomic_numbers)
-            distance = norm2(coordinates(:, iatom) - coordinates(:, jatom))
-            energy = energy + real(atomic_numbers(iatom), dp) &
-                     *real(atomic_numbers(jatom), dp)/distance
-         end do
-      end do
+      energy = nuclear_repulsion(real(atomic_numbers, dp), coordinates)
    end function nuclear_repulsion_energy
 
    subroutine build_guess_fock(guess, core_hamiltonian, overlap, guess_fock)

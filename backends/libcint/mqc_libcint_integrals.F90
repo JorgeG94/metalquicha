@@ -27,6 +27,7 @@ module mqc_libcint_integrals
    !! calculation is small by construction -- and the wrong one for anything
    !! else. Direct or density-fitted assembly is a different backend.
    use pic_types, only: dp
+   use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -92,6 +93,7 @@ module mqc_libcint_integrals
    public :: two_electron_block
    public :: two_electron_optimizer
    public :: ket_transformed_pairs
+   public :: max_block   !! Functions in the biggest shell, for sizing a scratch block
    ! Where an atom's functions live, and what angular momentum each carries.
    ! Both follow from the packing order in `molecule_build`, so they belong
    ! beside it rather than being re-derived by whatever needs them.
@@ -1823,16 +1825,7 @@ contains
       class(libcint_molecule_t), intent(in) :: this
       real(dp) :: energy
 
-      integer :: a, b
-      real(dp) :: r
-
-      energy = 0.0_dp
-      do a = 1, this%natm
-         do b = a + 1, this%natm
-            r = norm2(this%coords(:, a) - this%coords(:, b))
-            if (r > 0.0_dp) energy = energy + this%charges(a)*this%charges(b)/r
-         end do
-      end do
+      energy = nuclear_repulsion(this%charges, this%coords)
    end function molecule_nuclear_repulsion
 
    subroutine molecule_atom_subset(this, iatom, atom_mol, error)
@@ -2015,6 +2008,14 @@ contains
 
    pure function max_block(this) result(n)
       !! Largest number of functions any one shell contributes
+      !!
+      !! Public because three places wanted it and three places wrote it: this
+      !! one, and a `largest_shell` in each of the two gradient modules -- one of
+      !! those a copy of this and the other deriving the same number from
+      !! `shell_dim` instead of from the offsets. They agree, but only because
+      !! `shell_offset` is sized `nbas + 1` and every buffer in this module
+      !! already depends on that; three chances to stop agreeing was two too
+      !! many.
       type(libcint_molecule_t), intent(in) :: this
       integer :: n
 
