@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.4% of total for source files.">659 statements</a>
+                 title=" 3.3% of total for source files.">659 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -813,7 +813,7 @@ large graphs.</div>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">default_int</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">global_logger</span><span class="p">,</span><span class="w"> </span><span class="n">info_level</span>
 <a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">to_char</span>
-<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_combinatorics</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">next_combination</span><span class="p">,</span><span class="w"> </span><span class="n">next_combination_init</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_combinatorics</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">fragment_size_of</span><span class="p">,</span><span class="w"> </span><span class="n">next_combination</span><span class="p">,</span><span class="w"> </span><span class="n">next_combination_init</span>
 <a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span><span class="p">,</span><span class="w"> </span><span class="n">ERROR_VALIDATION</span>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">system_geometry_t</span>
 <a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
@@ -1150,7 +1150,7 @@ large graphs.</div>
 <a id="ln-343" name="ln-343" href="#ln-343"></a><span class="w">      </span><span class="c">! Find max atoms needed</span>
 <a id="ln-344" name="ln-344" href="#ln-344"></a><span class="w">      </span><span class="n">max_atoms_per_polymer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <a id="ln-345" name="ln-345" href="#ln-345"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_polymers</span>
-<a id="ln-346" name="ln-346" href="#ln-346"></a><span class="w">         </span><span class="n">polymer_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a id="ln-346" name="ln-346" href="#ln-346"></a><span class="w">         </span><span class="n">polymer_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment_size_of</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:))</span>
 <a id="ln-347" name="ln-347" href="#ln-347"></a><span class="w">         </span><span class="c">! Worst case: all atoms from all fragments in this polymer</span>
 <a id="ln-348" name="ln-348" href="#ln-348"></a><span class="w">         </span><span class="n">max_atoms_per_polymer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">max_atoms_per_polymer</span><span class="p">,</span><span class="w"> </span><span class="n">polymer_size</span><span class="o">*</span><span class="nb">maxval</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">))</span>
 <a id="ln-349" name="ln-349" href="#ln-349"></a><span class="w">      </span><span class="k">end do</span>
@@ -1161,7 +1161,7 @@ large graphs.</div>
 <a id="ln-354" name="ln-354" href="#ln-354"></a>
 <a id="ln-355" name="ln-355" href="#ln-355"></a><span class="w">      </span><span class="c">! Compute atoms for each polymer</span>
 <a id="ln-356" name="ln-356" href="#ln-356"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_polymers</span>
-<a id="ln-357" name="ln-357" href="#ln-357"></a><span class="w">         </span><span class="n">polymer_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a id="ln-357" name="ln-357" href="#ln-357"></a><span class="w">         </span><span class="n">polymer_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment_size_of</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:))</span>
 <a id="ln-358" name="ln-358" href="#ln-358"></a><span class="w">         </span><span class="k">block</span>
 <a id="ln-359" name="ln-359" href="#ln-359"></a><span class="k">            </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_list</span><span class="p">(:)</span>
 <a id="ln-360" name="ln-360" href="#ln-360"></a><span class="w">            </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
@@ -1792,7 +1792,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 02:55 +0000             </p>
+ on 2026-08-17 04:12 +0000             </p>
           </div>
         </div>
         <br>

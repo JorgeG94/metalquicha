@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">44 statements</a>
+                 title=" 0.3% of total for procedures.">56 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,9 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-has_next~6">has_next</a>
-            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-i~116">i</a>
-            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-indices~8">indices</a>
+            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-counterpoise~2">counterpoise</a>
+            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-has_next~5">has_next</a>
+            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-i~91">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-indices~4">indices</a>
+            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-key~3">key</a>
+            <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-key_len">key_len</a>
             <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-subset~3">subset</a>
             <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-subset_idx">subset_idx</a>
             <a class="list-group-item" href="../proc/compute_mbe_delta.html#variable-subset_size~2">subset_size</a>
@@ -177,7 +180,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm) result(delta_E)  
+    <h2>private  function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm, vmfc) result(delta_E)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -316,7 +319,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~9"></span>
+              <span class="anchor" id="variable-fragment_idx~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -331,7 +334,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~21"></span>
+              <span class="anchor" id="variable-fragment~28"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -361,7 +364,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -376,7 +379,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies"></span>
+              <span class="anchor" id="variable-delta_energies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -391,7 +394,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~36"></span>
+              <span class="anchor" id="variable-n~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -419,6 +422,23 @@ All subsets must have been computed already (guaranteed by processing fragments 
                 <p>MPI communicator for abort</p>
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-vmfc"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>vmfc</strong></td>
+            <td>
+                <p>Subtract each subset <em>in this fragment&rsquo;s basis</em> rather than in its
+own &ndash; the counterpoise correction. Absent means the ordinary
+expansion, which is every caller that predates it.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -441,109 +461,124 @@ All subsets must have been computed already (guaranteed by processing fragments 
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~compute_mbe_delta~~CallsGraph Pages: 1 -->
-<svg id="proccompute_mbe_deltaCallsGraph" width="567pt" height="158pt"
- viewBox="0.00 0.00 567.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~compute_mbe_delta~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<svg id="proccompute_mbe_deltaCallsGraph" width="567pt" height="200pt"
+ viewBox="0.00 0.00 567.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_mbe_delta~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
 <title>proc~~compute_mbe_delta~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 563,-154 563,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 563,-196 563,4 -4,4"/>
 <!-- proc~compute_mbe_delta -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_node1" class="node">
 <title>proc~compute_mbe_delta</title>
-<polygon fill="none" stroke="black" points="121,-87 0,-87 0,-63 121,-63 121,-87"/>
-<text text-anchor="middle" x="60.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_delta</text>
+<polygon fill="none" stroke="black" points="121,-108 0,-108 0,-84 121,-84 121,-108"/>
+<text text-anchor="middle" x="60.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_delta</text>
 </g>
 <!-- abort_comm -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_node2" class="node">
 <title>abort_comm</title>
-<polygon fill="#777777" stroke="#777777" points="316,-150 236,-150 236,-126 316,-126 316,-150"/>
-<text text-anchor="middle" x="276" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+<polygon fill="#777777" stroke="#777777" points="316,-192 236,-192 236,-168 316,-168 316,-192"/>
+<text text-anchor="middle" x="276" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;abort_comm -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_edge1" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;abort_comm</title>
-<path fill="none" stroke="#ff0000" d="M84.84,-87.15C103.82,-96.55 131.53,-109.25 157,-117 179.16,-123.74 204.35,-128.59 225.75,-131.91"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="225.52,-135.42 235.92,-133.43 226.55,-128.49 225.52,-135.42"/>
+<path fill="none" stroke="#ff0000" d="M75.66,-108.06C93.44,-122.53 125.45,-146.41 157,-159 178.77,-167.69 204.23,-172.8 225.92,-175.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="225.55,-179.27 235.91,-177.06 226.43,-172.33 225.55,-179.27"/>
 </g>
 <!-- error -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_node3" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="303,-108 249,-108 249,-84 303,-84 303,-108"/>
-<text text-anchor="middle" x="276" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="303,-150 249,-150 249,-126 303,-126 303,-150"/>
+<text text-anchor="middle" x="276" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;error -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_edge2" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M121.26,-80.88C158.94,-84.58 206.38,-89.25 238.53,-92.41"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="238.51,-95.93 248.81,-93.42 239.2,-88.96 238.51,-95.93"/>
+<path fill="none" stroke="#ff0000" d="M114.46,-108.04C128.28,-111.08 143.18,-114.25 157,-117 184.25,-122.42 215.19,-127.9 238.54,-131.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="238.25,-135.4 248.7,-133.63 239.43,-128.5 238.25,-135.4"/>
 </g>
 <!-- proc~fragment_lookup_find -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_node4" class="node">
 <title>proc~fragment_lookup_find</title>
 <g id="a_proc~~compute_mbe_delta~~CallsGraph_node4"><a xlink:href="../proc/fragment_lookup_find.html" xlink:title="fragment_lookup_t%fragment_lookup_find">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="395,-66 157,-66 157,-42 395,-42 395,-66"/>
-<text text-anchor="middle" x="276" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="395,-108 157,-108 157,-84 395,-84 395,-108"/>
+<text text-anchor="middle" x="276" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;proc~fragment_lookup_find -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_edge3" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#ff0000" d="M121.26,-69.12C129.41,-68.32 138.03,-67.47 146.84,-66.61"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="147.26,-70.08 156.87,-65.62 146.57,-63.12 147.26,-70.08"/>
+<path fill="none" stroke="#ff0000" d="M121.26,-96C129.41,-96 138.03,-96 146.84,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="146.87,-99.5 156.87,-96 146.87,-92.5 146.87,-99.5"/>
 </g>
 <!-- proc~get_next_combination -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_node5" class="node">
 <title>proc~get_next_combination</title>
 <g id="a_proc~~compute_mbe_delta~~CallsGraph_node5"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
-<polygon fill="#d9534f" stroke="#d9534f" points="341,-24 211,-24 211,0 341,0 341,-24"/>
-<text text-anchor="middle" x="276" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="341,-66 211,-66 211,-42 341,-42 341,-66"/>
+<text text-anchor="middle" x="276" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;proc~get_next_combination -->
 <g id="proc~~compute_mbe_delta~~CallsGraph_edge4" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#ff0000" d="M84.84,-62.85C103.82,-53.45 131.53,-40.75 157,-33 170.99,-28.75 186.19,-25.24 200.89,-22.4"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="201.76,-25.8 210.96,-20.54 200.49,-18.92 201.76,-25.8"/>
+<path fill="none" stroke="#ff0000" d="M114.46,-83.96C128.28,-80.92 143.18,-77.75 157,-75 171.18,-72.18 186.35,-69.35 200.93,-66.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="201.69,-70.13 210.92,-64.92 200.45,-63.24 201.69,-70.13"/>
+</g>
+<!-- proc~vmfc_subset_key -->
+<g id="proc~~compute_mbe_delta~~CallsGraph_node6" class="node">
+<title>proc~vmfc_subset_key</title>
+<g id="a_proc~~compute_mbe_delta~~CallsGraph_node6"><a xlink:href="../proc/vmfc_subset_key.html" xlink:title="vmfc_subset_key">
+<polygon fill="#d9534f" stroke="#d9534f" points="327.5,-24 224.5,-24 224.5,0 327.5,0 327.5,-24"/>
+<text text-anchor="middle" x="276" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">vmfc_subset_key</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_delta&#45;&gt;proc~vmfc_subset_key -->
+<g id="proc~~compute_mbe_delta~~CallsGraph_edge5" class="edge">
+<title>proc~compute_mbe_delta&#45;&gt;proc~vmfc_subset_key</title>
+<path fill="none" stroke="#ff0000" d="M75.66,-83.94C93.44,-69.47 125.45,-45.59 157,-33 175.02,-25.81 195.57,-21.07 214.41,-17.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="215.03,-21.4 224.38,-16.42 213.97,-14.48 215.03,-21.4"/>
 </g>
 <!-- fnv_1a_hash -->
-<g id="proc~~compute_mbe_delta~~CallsGraph_node6" class="node">
+<g id="proc~~compute_mbe_delta~~CallsGraph_node7" class="node">
 <title>fnv_1a_hash</title>
-<polygon fill="#777777" stroke="#777777" points="534.5,-108 455.5,-108 455.5,-84 534.5,-84 534.5,-108"/>
-<text text-anchor="middle" x="495" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
+<polygon fill="#777777" stroke="#777777" points="534.5,-150 455.5,-150 455.5,-126 534.5,-126 534.5,-150"/>
+<text text-anchor="middle" x="495" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;fnv_1a_hash -->
-<g id="proc~~compute_mbe_delta~~CallsGraph_edge5" class="edge">
+<g id="proc~~compute_mbe_delta~~CallsGraph_edge6" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;fnv_1a_hash</title>
-<path fill="none" stroke="#00ffff" d="M346.64,-66C362.55,-68.85 379.38,-71.95 395,-75 411.27,-78.17 428.99,-81.86 444.89,-85.25"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="444.52,-88.75 455.03,-87.43 445.99,-81.91 444.52,-88.75"/>
+<path fill="none" stroke="#00ff66" d="M346.64,-108C362.55,-110.85 379.38,-113.95 395,-117 411.27,-120.17 428.99,-123.86 444.89,-127.25"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="444.52,-130.75 455.03,-129.43 445.99,-123.91 444.52,-130.75"/>
 </g>
 <!-- proc~arrays_equal_internal -->
-<g id="proc~~compute_mbe_delta~~CallsGraph_node7" class="node">
+<g id="proc~~compute_mbe_delta~~CallsGraph_node8" class="node">
 <title>proc~arrays_equal_internal</title>
-<g id="a_proc~~compute_mbe_delta~~CallsGraph_node7"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="559,-66 431,-66 431,-42 559,-42 559,-66"/>
-<text text-anchor="middle" x="495" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
+<g id="a_proc~~compute_mbe_delta~~CallsGraph_node8"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="559,-108 431,-108 431,-84 559,-84 559,-108"/>
+<text text-anchor="middle" x="495" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal -->
-<g id="proc~~compute_mbe_delta~~CallsGraph_edge6" class="edge">
+<g id="proc~~compute_mbe_delta~~CallsGraph_edge7" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal</title>
-<path fill="none" stroke="#00ffff" d="M395.03,-54C403.79,-54 412.47,-54 420.83,-54"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="420.87,-57.5 430.87,-54 420.87,-50.5 420.87,-57.5"/>
+<path fill="none" stroke="#00ff66" d="M395.03,-96C403.79,-96 412.47,-96 420.83,-96"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="420.87,-99.5 430.87,-96 420.87,-92.5 420.87,-99.5"/>
 </g>
 <!-- sort -->
-<g id="proc~~compute_mbe_delta~~CallsGraph_node8" class="node">
+<g id="proc~~compute_mbe_delta~~CallsGraph_node9" class="node">
 <title>sort</title>
-<polygon fill="#777777" stroke="#777777" points="522,-24 468,-24 468,0 522,0 522,-24"/>
-<text text-anchor="middle" x="495" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
+<polygon fill="#777777" stroke="#777777" points="522,-66 468,-66 468,-42 522,-42 522,-66"/>
+<text text-anchor="middle" x="495" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;sort -->
-<g id="proc~~compute_mbe_delta~~CallsGraph_edge7" class="edge">
+<g id="proc~~compute_mbe_delta~~CallsGraph_edge8" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;sort</title>
-<path fill="none" stroke="#00ffff" d="M346.64,-42C362.55,-39.15 379.38,-36.05 395,-33 415.95,-28.91 439.32,-23.98 458.08,-19.92"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="458.96,-23.31 467.99,-17.76 457.48,-16.47 458.96,-23.31"/>
+<path fill="none" stroke="#00ff66" d="M346.64,-84C362.55,-81.15 379.38,-78.05 395,-75 415.95,-70.91 439.32,-65.98 458.08,-61.92"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="458.96,-65.31 467.99,-59.76 457.48,-58.47 458.96,-65.31"/>
 </g>
 </g>
 </svg>
@@ -874,7 +909,24 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next~6"></span>
+              <span class="anchor" id="variable-counterpoise~2"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>counterpoise</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_next~5"></span>
               logical,
             </td>
               <td>private</td>
@@ -891,7 +943,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~116"></span>
+              <span class="anchor" id="variable-i~91"></span>
               integer,
             </td>
               <td>private</td>
@@ -908,7 +960,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~8"></span>
+              <span class="anchor" id="variable-indices~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -917,6 +969,40 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>indices</strong>(MAX_MBE_LEVEL)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>key</strong>(MAX_MBE_LEVEL)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key_len"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>key_len</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -990,7 +1076,7 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">compute_mbe_delta</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">lookup</span><span class="p">,</span><span class="w"> </span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">delta_E</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w"> </span><span class="k">function </span><span class="n">compute_mbe_delta</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">lookup</span><span class="p">,</span><span class="w"> </span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">vmfc</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">delta_E</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Bottom-up computation of n-body correction (non-recursive, uses pre-computed subset deltas)</span>
 <span class="w">      </span><span class="c">!! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all subset deltaE values</span>
 <span class="w">      </span><span class="c">!! All subsets must have been computed already (guaranteed by processing fragments in order)</span>
@@ -1000,12 +1086,21 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">fragment_lookup_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lookup</span><span class="w">  </span><span class="c">!! Pre-built hash table for lookups</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energies</span><span class="p">(:),</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Pre-computed delta values</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span><span class="w">  </span><span class="c">!! MPI communicator for abort</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">vmfc</span>
+<span class="w">         </span><span class="c">!! Subtract each subset *in this fragment&#39;s basis* rather than in its</span>
+<span class="w">         </span><span class="c">!! own -- the counterpoise correction. Absent means the ordinary</span>
+<span class="w">         </span><span class="c">!! expansion, which is every caller that predates it.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">delta_E</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset_size</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">),</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">)</span><span class="w">  </span><span class="c">! Stack arrays to avoid heap contention</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset_idx</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_next</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">key</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">key_len</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_next</span><span class="p">,</span><span class="w"> </span><span class="n">counterpoise</span>
+
+<span class="w">      </span><span class="n">counterpoise</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">vmfc</span><span class="p">))</span><span class="w"> </span><span class="n">counterpoise</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vmfc</span>
 
 <span class="w">      </span><span class="c">! Start with the full n-mer energy</span>
 <span class="w">      </span><span class="n">delta_E</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">energies</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">)</span>
@@ -1019,20 +1114,30 @@ large graphs.</div>
 
 <span class="w">         </span><span class="c">! Loop through all combinations</span>
 <span class="w">         </span><span class="k">do</span>
-<span class="w">            </span><span class="c">! Build current subset</span>
-<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">subset_size</span>
-<span class="w">               </span><span class="n">subset</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="w">            </span><span class="k">end do</span>
+<span class="w">            </span><span class="c">! Build current subset. Under counterpoise the key names the chosen</span>
+<span class="w">            </span><span class="c">! monomers real and the rest of *this* fragment ghosted, so the</span>
+<span class="w">            </span><span class="c">! lookup finds the subset solved in the parent&#39;s basis rather than</span>
+<span class="w">            </span><span class="c">! its own -- which is the whole of the correction.</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">counterpoise</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">vmfc_subset_key</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">indices</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">subset_size</span><span class="p">),</span><span class="w"> </span><span class="n">subset_size</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="p">))</span>
+<span class="w">               </span><span class="n">key_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="k">               do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">subset_size</span>
+<span class="w">                  </span><span class="n">subset</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">               </span><span class="k">end do</span>
+<span class="k">               </span><span class="n">key</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">subset_size</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">subset_size</span><span class="p">)</span>
+<span class="w">               </span><span class="n">key_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subset_size</span>
+<span class="w">            </span><span class="k">end if</span>
 
 <span class="w">            </span><span class="c">! Look up subset index</span>
-<span class="w">            </span><span class="n">subset_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lookup</span><span class="p">%</span><span class="n">find</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">subset_size</span><span class="p">),</span><span class="w"> </span><span class="n">subset_size</span><span class="p">)</span>
+<span class="w">            </span><span class="n">subset_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lookup</span><span class="p">%</span><span class="n">find</span><span class="p">(</span><span class="n">key</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">key_len</span><span class="p">),</span><span class="w"> </span><span class="n">key_len</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">subset_idx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               block</span>
 <span class="k">                  use </span><span class="n">pic_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">to_char</span>
 <span class="w">                  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error_msg</span>
 <span class="w">                  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">j</span>
 <span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">error_msg</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0,a,*(i0,1x))&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Subset not found! Fragment idx=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                     </span><span class="s2">&quot; seeking subset: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">subset_size</span><span class="p">)</span>
+<span class="w">                     </span><span class="s2">&quot; seeking subset: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="p">(</span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">key_len</span><span class="p">)</span>
 <span class="w">                  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">error_msg</span><span class="p">))</span>
 <span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">error_msg</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,*(i0,1x))&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Full fragment: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">(</span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
 <span class="w">                  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">error_msg</span><span class="p">))</span>
@@ -1077,7 +1182,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 02:55 +0000             </p>
+ on 2026-08-17 04:12 +0000             </p>
           </div>
         </div>
         <br>

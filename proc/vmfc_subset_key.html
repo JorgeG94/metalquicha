@@ -1,0 +1,885 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>vmfc_subset_key &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>vmfc_subset_key
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">21 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_combinatorics.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_combinatorics.f90.html'>mqc_combinatorics.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></li>
+            <li class="breadcrumb-item active" aria-current="page">vmfc_subset_key</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-i~134">i</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-j~35">j</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-next~2">next</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-taken">taken</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/vmfc_subset_key.html#src">vmfc_subset_key</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public pure subroutine vmfc_subset_key(fragment, n, chosen, k, key)  
+</h2>
+    
+
+    <p>The subset key a counterpoise-corrected expansion looks up</p>
+<p>Ordinary MBE subtracts the subset {A} from the pair {A,B}. VMFC
+subtracts {A in the basis of AB} instead &ndash; the same monomers, solved
+in the parent&rsquo;s basis &ndash; so the superposition error that inflates the
+parent stands on both sides of the difference and cancels rather than
+surviving into the total.</p>
+<p>So the key is the chosen monomers positive and <em>everything else in the
+parent</em> negative. For the pair [1,2] choosing [1], that is [1,-2]. The
+recursion, the hash table and the dispatch are untouched: a signed key
+is just another key, and it sorts and hashes like any other.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~33"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong>(:)</td>
+            <td>
+                <p>The parent&rsquo;s monomers, all positive</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~35"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+                <p>How many of them</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-chosen~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>chosen</strong>(:)</td>
+            <td>
+                <p>Positions within <code>fragment</code>, size k</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~31"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key~8"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>key</strong>(:)</td>
+            <td>
+                <p>Size n: k real, then n-k ghosted</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~vmfc_subset_key~~CalledByGraph Pages: 1 -->
+<svg id="procvmfc_subset_keyCalledByGraph" width="641pt" height="195pt"
+ viewBox="0.00 0.00 641.00 195.48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~vmfc_subset_key~~CalledByGraph" class="graph" transform="scale(0.6 0.6) rotate(0) translate(4 322)">
+<title>proc~~vmfc_subset_key~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-322 1065,-322 1065,4 -4,4"/>
+<!-- proc~vmfc_subset_key -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node1" class="node">
+<title>proc~vmfc_subset_key</title>
+<polygon fill="none" stroke="black" points="1061,-108 958,-108 958,-84 1061,-84 1061,-108"/>
+<text text-anchor="middle" x="1009.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">vmfc_subset_key</text>
+</g>
+<!-- proc~add_vmfc_rows -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node2" class="node">
+<title>proc~add_vmfc_rows</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node2"><a xlink:href="../proc/add_vmfc_rows.html" xlink:title="add_vmfc_rows">
+<polygon fill="#d9534f" stroke="#d9534f" points="905.5,-192 811.5,-192 811.5,-168 905.5,-168 905.5,-192"/>
+<text text-anchor="middle" x="858.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_vmfc_rows</text>
+</a>
+</g>
+</g>
+<!-- proc~add_vmfc_rows&#45;&gt;proc~vmfc_subset_key -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge1" class="edge">
+<title>proc~add_vmfc_rows&#45;&gt;proc~vmfc_subset_key</title>
+<path fill="none" stroke="#ff0000" d="M880.85,-167.96C906.41,-153.56 949.38,-129.33 978.33,-113.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="980.2,-115.97 987.19,-108.01 976.76,-109.87 980.2,-115.97"/>
+</g>
+<!-- proc~compute_mbe_delta -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node3" class="node">
+<title>proc~compute_mbe_delta</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node3"><a xlink:href="../proc/compute_mbe_delta.html" xlink:title="compute_mbe_delta">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="919,-108 798,-108 798,-84 919,-84 919,-108"/>
+<text text-anchor="middle" x="858.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_delta</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_delta&#45;&gt;proc~vmfc_subset_key -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_mbe_delta&#45;&gt;proc~vmfc_subset_key</title>
+<path fill="none" stroke="#ff0000" d="M919.25,-96C928.64,-96 938.36,-96 947.78,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="947.84,-99.5 957.84,-96 947.84,-92.5 947.84,-99.5"/>
+</g>
+<!-- proc~compute_mbe_dipole -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node4" class="node">
+<title>proc~compute_mbe_dipole</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node4"><a xlink:href="../proc/compute_mbe_dipole.html" xlink:title="compute_mbe_dipole">
+<polygon fill="#d9534f" stroke="#d9534f" points="922,-66 795,-66 795,-42 922,-42 922,-66"/>
+<text text-anchor="middle" x="858.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_dipole</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_dipole&#45;&gt;proc~vmfc_subset_key -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge3" class="edge">
+<title>proc~compute_mbe_dipole&#45;&gt;proc~vmfc_subset_key</title>
+<path fill="none" stroke="#ff0000" d="M902.2,-66.04C918.87,-70.74 938.17,-76.18 955.71,-81.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="955.22,-84.62 965.8,-83.96 957.12,-77.88 955.22,-84.62"/>
+</g>
+<!-- proc~compute_mbe -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node5" class="node">
+<title>proc~compute_mbe</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node5"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="732.5,-66 643.5,-66 643.5,-42 732.5,-42 732.5,-66"/>
+<text text-anchor="middle" x="688" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~compute_mbe_delta -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge5" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~compute_mbe_delta</title>
+<path fill="none" stroke="#00ff00" d="M732.83,-64.93C753.13,-69.98 777.52,-76.06 799.33,-81.5"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="798.59,-84.92 809.14,-83.95 800.29,-78.13 798.59,-84.92"/>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~compute_mbe_dipole -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge6" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~compute_mbe_dipole</title>
+<path fill="none" stroke="#0000ff" d="M732.83,-54C748.65,-54 766.95,-54 784.58,-54"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="784.86,-57.5 794.86,-54 784.86,-50.5 784.86,-57.5"/>
+</g>
+<!-- proc~generate_mbe_term_list -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node6" class="node">
+<title>proc~generate_mbe_term_list</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node6"><a xlink:href="../proc/generate_mbe_term_list.html" xlink:title="generate_mbe_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="759,-213 617,-213 617,-189 759,-189 759,-213"/>
+<text text-anchor="middle" x="688" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_mbe_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~add_vmfc_rows -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge4" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~add_vmfc_rows</title>
+<path fill="none" stroke="#ff0000" d="M759.48,-192.22C773.42,-190.48 787.88,-188.68 801.28,-187.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="801.79,-190.47 811.28,-185.76 800.93,-183.52 801.79,-190.47"/>
+</g>
+<!-- proc~freeze_term_list -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node7" class="node">
+<title>proc~freeze_term_list</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node7"><a xlink:href="../proc/freeze_term_list.html" xlink:title="freeze_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="548,-271 451,-271 451,-247 548,-247 548,-271"/>
+<text text-anchor="middle" x="499.5" y="-256.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">freeze_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge9" class="edge">
+<title>proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#00ffff" d="M539.14,-246.98C568.03,-238 607.7,-225.66 638.68,-216.03"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="639.9,-219.31 648.41,-213 637.82,-212.63 639.9,-219.31"/>
+</g>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node8" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node8"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="570.5,-66 428.5,-66 428.5,-42 570.5,-42 570.5,-66"/>
+<text text-anchor="middle" x="499.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~compute_mbe -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge7" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M570.74,-54C591.4,-54 613.66,-54 633.12,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="633.32,-57.5 643.32,-54 633.32,-50.5 633.32,-57.5"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node9" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node9"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="581,-213 418,-213 418,-189 581,-189 581,-213"/>
+<text text-anchor="middle" x="499.5" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge10" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#00ffff" d="M581.22,-201C589.69,-201 598.29,-201 606.76,-201"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="606.99,-204.5 616.99,-201 606.99,-197.5 606.99,-204.5"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node10" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node10"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="576.5,-24 422.5,-24 422.5,0 576.5,0 576.5,-24"/>
+<text text-anchor="middle" x="499.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge8" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M553.94,-24.04C578.82,-29.64 608.36,-36.29 633.27,-41.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="632.76,-45.37 643.29,-44.16 634.3,-38.54 632.76,-45.37"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node11" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node11"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="379.5,-24 225.5,-24 225.5,0 379.5,0 379.5,-24"/>
+<text text-anchor="middle" x="302.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge14" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M379.73,-12C390.33,-12 401.29,-12 412.07,-12"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="412.32,-15.5 422.32,-12 412.32,-8.5 412.32,-15.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node12" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node12"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="359,-66 246,-66 246,-42 359,-42 359,-66"/>
+<text text-anchor="middle" x="302.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge12" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#7fff00" d="M359.12,-54C377.43,-54 398.17,-54 417.95,-54"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="418.19,-57.5 428.19,-54 418.19,-50.5 418.19,-57.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node13" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node13"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="349.5,-213 255.5,-213 255.5,-189 349.5,-189 349.5,-213"/>
+<text text-anchor="middle" x="302.5" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge13" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#00ffff" d="M349.71,-201C367.15,-201 387.65,-201 407.76,-201"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="407.91,-204.5 417.91,-201 407.91,-197.5 407.91,-204.5"/>
+</g>
+<!-- proc~run_geometry_optimization -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node14" class="node">
+<title>proc~run_geometry_optimization</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node14"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
+<polygon fill="#d9534f" stroke="#d9534f" points="382,-286 223,-286 223,-262 382,-262 382,-286"/>
+<text text-anchor="middle" x="302.5" y="-271.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
+</a>
+</g>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge11" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list</title>
+<path fill="none" stroke="#ff0000" d="M382.25,-267.94C401.78,-266.44 422.36,-264.86 440.68,-263.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="441.19,-266.92 450.89,-262.66 440.65,-259.94 441.19,-266.92"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node15" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node15"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="150,-66 37,-66 37,-42 150,-42 150,-66"/>
+<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge16" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M150.24,-54C176.47,-54 207.94,-54 235.36,-54"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="235.66,-57.5 245.66,-54 235.66,-50.5 235.66,-57.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node16" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node16"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-276 10.5,-276 10.5,-252 176.5,-252 176.5,-276"/>
+<text text-anchor="middle" x="93.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge17" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M153.02,-251.91C164.36,-249.23 176.1,-246.22 187,-243 212.36,-235.5 240.22,-225.33 262.11,-216.87"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="263.68,-220.02 271.72,-213.12 261.13,-213.5 263.68,-220.02"/>
+</g>
+<!-- proc~mbe_run_serial -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node17" class="node">
+<title>proc~mbe_run_serial</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node17"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="184,-24 3,-24 3,0 184,0 184,-24"/>
+<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge15" class="edge">
+<title>proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor</title>
+<path fill="none" stroke="#ff0000" d="M184.09,-12C194.41,-12 204.93,-12 215.21,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="215.4,-15.5 225.4,-12 215.4,-8.5 215.4,-15.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node18" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node18"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-234 0,-234 0,-210 187,-210 187,-234"/>
+<text text-anchor="middle" x="93.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge18" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M187.1,-212.61C206.99,-210.59 227.42,-208.52 245.42,-206.69"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="245.83,-210.17 255.42,-205.67 245.12,-203.2 245.83,-210.17"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node19" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node19"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="122.5,-192 64.5,-192 64.5,-168 122.5,-168 122.5,-192"/>
+<text text-anchor="middle" x="93.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge19" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M122.85,-182.88C154.22,-186.06 205.58,-191.27 245.2,-195.29"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="244.96,-198.78 255.26,-196.31 245.66,-191.82 244.96,-198.78"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node20" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node20"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="174,-150 13,-150 13,-126 174,-126 174,-150"/>
+<text text-anchor="middle" x="93.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge20" class="edge">
+<title>proc~session_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M153.02,-150.09C164.36,-152.77 176.1,-155.78 187,-159 212.36,-166.5 240.22,-176.67 262.11,-185.13"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="261.13,-188.5 271.72,-188.88 263.68,-181.98 261.13,-188.5"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node21" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node21"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="130,-108 57,-108 57,-84 130,-84 130,-108"/>
+<text text-anchor="middle" x="93.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge21" class="edge">
+<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M130.3,-100.62C147.93,-103.76 169.17,-108.86 187,-117 223.4,-133.61 259.66,-162.91 281.33,-182.14"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="279.12,-184.87 288.89,-188.97 283.82,-179.67 279.12,-184.87"/>
+</g>
+<!-- program~main -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_node22" class="node">
+<title>program~main</title>
+<g id="a_proc~~vmfc_subset_key~~CalledByGraph_node22"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-318 66.5,-318 66.5,-294 120.5,-294 120.5,-318"/>
+<text text-anchor="middle" x="93.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge22" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M120.82,-303.58C140.02,-300.98 166.2,-295.69 187,-285 206.04,-275.21 206.03,-266.05 223,-253 239.03,-240.67 257.9,-228.11 273.12,-218.42"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="275.01,-221.37 281.61,-213.08 271.29,-215.44 275.01,-221.37"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_geometry_optimization -->
+<g id="proc~~vmfc_subset_key~~CalledByGraph_edge23" class="edge">
+<title>program~main&#45;&gt;proc~run_geometry_optimization</title>
+<path fill="none" stroke="#7f00ff" d="M120.72,-301.95C144.28,-298.3 180.27,-292.74 213.95,-287.54"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="214.49,-290.99 223.84,-286.01 213.42,-284.07 214.49,-290.99"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocvmfc_subset_keyCalledByGraph = svgPanZoom('#procvmfc_subset_keyCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~134"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~35"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-next~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>next</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-taken"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>taken</strong>(n)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure subroutine </span><span class="n">vmfc_subset_key</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">chosen</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! The subset key a counterpoise-corrected expansion looks up</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Ordinary MBE subtracts the subset {A} from the pair {A,B}. VMFC</span>
+<span class="w">      </span><span class="c">!! subtracts {A in the basis of AB} instead -- the same monomers, solved</span>
+<span class="w">      </span><span class="c">!! in the parent&#39;s basis -- so the superposition error that inflates the</span>
+<span class="w">      </span><span class="c">!! parent stands on both sides of the difference and cancels rather than</span>
+<span class="w">      </span><span class="c">!! surviving into the total.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! So the key is the chosen monomers positive and *everything else in the</span>
+<span class="w">      </span><span class="c">!! parent* negative. For the pair [1,2] choosing [1], that is [1,-2]. The</span>
+<span class="w">      </span><span class="c">!! recursion, the hash table and the dispatch are untouched: a signed key</span>
+<span class="w">      </span><span class="c">!! is just another key, and it sorts and hashes like any other.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! The parent&#39;s monomers, all positive</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w">             </span><span class="c">!! How many of them</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">chosen</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! Positions within `fragment`, size k</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">k</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">key</span><span class="p">(:)</span><span class="w">       </span><span class="c">!! Size n: k real, then n-k ghosted</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">next</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">taken</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+<span class="w">         </span><span class="n">taken</span><span class="p">(</span><span class="n">chosen</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">key</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">(</span><span class="n">chosen</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      </span><span class="n">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span>
+<span class="w">      </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">taken</span><span class="p">(</span><span class="n">j</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">next</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">key</span><span class="p">(</span><span class="n">next</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">fragment</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+<span class="k">   end subroutine </span><span class="n">vmfc_subset_key</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-17 04:12 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

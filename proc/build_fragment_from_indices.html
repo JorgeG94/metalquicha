@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">88 statements</a>
+                 title=" 0.2% of total for procedures.">41 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,22 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_end">atom_end</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_global_idx">atom_global_idx</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_i~4">atom_i</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_j~4">atom_j</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_start">atom_start</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atoms_in_fragment~3">atoms_in_fragment</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atoms_per_monomer~2">atoms_per_monomer</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-frag_atom_idx">frag_atom_idx</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-i~96">i</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-iatom~15">iatom</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-j~22">j</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-mono_idx">mono_idx</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_atoms_no_caps">n_atoms_no_caps</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_caps~3">n_caps</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_monomers_in_frag">n_monomers_in_frag</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-use_explicit_fragments">use_explicit_fragments</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-first">first</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-i~37">i</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-j~8">j</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_here">n_here</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_real~2">n_real</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-real_indices">real_indices</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-union_indices">union_indices</a>
         </div>
       </div>
     </div>
@@ -187,16 +178,24 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment, error, bonds)  
+    <h2>public  subroutine build_fragment_from_indices(sys_geom, signed_indices, fragment, error, bonds)  
 </h2>
     
 
-    <p>Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds</p>
-<p>Extracts atoms from specified monomers and adds hydrogen caps where bonds are broken.
-Caps are always added at the end of the atom list.
-Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
-<p>Example: monomer_indices = [1, 3, 5] extracts waters 1, 3, and 5
-         If connectivity shows broken bonds, hydrogens are capped at positions of missing atoms</p>
+    <p>Build a fragment from monomer indices, ghosting any that are negative</p>
+<p><code>signed_indices</code> carries the sign as the distinction: a positive entry
+is a real monomer, a negative one is present as ghost centres. The
+geometry is the union either way, which is exactly what a
+counterpoise-corrected term needs &ndash; monomer A computed in the basis of
+the pair AB, so that the superposition error inflating AB appears on
+both sides of the difference and cancels.</p>
+<p>The sign rather than a second array because the index vector is what
+already crosses the wire, and its length is already sent. A separate
+ghost mask would mean a sixth message in a five-message payload whose
+correctness rests on per-source ordering &ndash; a change that deadlocks
+rather than fails if it is applied to the sender and not the receiver.</p>
+<p>All-positive input is exactly <code>build_fragment_from_indices</code>, which is
+what every task that exists today sends.</p>
 
 
     <h3>Arguments</h3>
@@ -212,7 +211,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~58"></span>
+              <span class="anchor" id="variable-sys_geom~18"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -227,7 +226,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_indices"></span>
+              <span class="anchor" id="variable-signed_indices"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -235,14 +234,14 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
               
             </td>
             <td>::</td>
-            <td><strong>monomer_indices</strong>(:)</td>
+            <td><strong>signed_indices</strong>(:)</td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~15"></span>
+              <span class="anchor" id="variable-fragment~10"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -257,7 +256,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~77"></span>
+              <span class="anchor" id="variable-error~20"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -272,7 +271,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~14"></span>
+              <span class="anchor" id="variable-bonds~6"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -282,7 +281,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
             <td>::</td>
             <td><strong>bonds</strong>(:)</td>
             <td>
-                <p>Connectivity information for capping</p>
+                
             </td>
         </tr>
     </tbody>
@@ -300,205 +299,238 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~build_fragment_from_indices~~CallsGraph Pages: 1 -->
-<svg id="procbuild_fragment_from_indicesCallsGraph" width="641pt" height="310pt"
- viewBox="0.00 0.00 641.00 309.58" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~build_fragment_from_indices~~CallsGraph" class="graph" transform="scale(0.95 0.95) rotate(0) translate(4 322)">
+<svg id="procbuild_fragment_from_indicesCallsGraph" width="641pt" height="251pt"
+ viewBox="0.00 0.00 641.00 250.86" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_fragment_from_indices~~CallsGraph" class="graph" transform="scale(0.77 0.77) rotate(0) translate(4 322)">
 <title>proc~~build_fragment_from_indices~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-322 671,-322 671,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-322 829,-322 829,4 -4,4"/>
 <!-- proc~build_fragment_from_indices -->
 <g id="proc~~build_fragment_from_indices~~CallsGraph_node1" class="node">
 <title>proc~build_fragment_from_indices</title>
-<polygon fill="none" stroke="black" points="166,-171 0,-171 0,-147 166,-147 166,-171"/>
-<text text-anchor="middle" x="83" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_fragment_from_indices</text>
+<polygon fill="none" stroke="black" points="166,-212 0,-212 0,-188 166,-188 166,-212"/>
+<text text-anchor="middle" x="83" y="-197.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_fragment_from_indices</text>
 </g>
-<!-- proc~add_hydrogen_caps -->
+<!-- proc~build_fragment_core -->
 <g id="proc~~build_fragment_from_indices~~CallsGraph_node2" class="node">
-<title>proc~add_hydrogen_caps</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node2"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="394,-318 276,-318 276,-294 394,-294 394,-318"/>
-<text text-anchor="middle" x="335" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+<title>proc~build_fragment_core</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node2"><a xlink:href="../proc/build_fragment_core.html" xlink:title="build_fragment_core">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-192 202,-192 202,-168 324,-168 324,-192"/>
+<text text-anchor="middle" x="263" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_core</text>
 </a>
 </g>
 </g>
-<!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~build_fragment_core -->
 <g id="proc~~build_fragment_from_indices~~CallsGraph_edge1" class="edge">
-<title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
-<path fill="none" stroke="#ff0000" d="M91.36,-171.19C107.66,-197.02 149.59,-257.18 202,-285 221.38,-295.28 244.44,-300.84 265.83,-303.75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="265.5,-307.23 275.84,-304.94 266.33,-300.28 265.5,-307.23"/>
-</g>
-<!-- proc~calculate_monomer_distance -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node3" class="node">
-<title>proc~calculate_monomer_distance</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node3"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="419.5,-276 250.5,-276 250.5,-252 419.5,-252 419.5,-276"/>
-<text text-anchor="middle" x="335" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
-</a>
-</g>
-</g>
-<!-- proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge2" class="edge">
-<title>proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance</title>
-<path fill="none" stroke="#ff0000" d="M96.59,-171.04C116.95,-189.75 159.17,-225.49 202,-243 214.07,-247.93 227.19,-251.71 240.34,-254.61"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="239.87,-258.09 250.37,-256.66 241.27,-251.23 239.87,-258.09"/>
-</g>
-<!-- proc~check_duplicate_atoms -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node4" class="node">
-<title>proc~check_duplicate_atoms</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node4"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
-<polygon fill="#d9534f" stroke="#d9534f" points="403.5,-234 266.5,-234 266.5,-210 403.5,-210 403.5,-234"/>
-<text text-anchor="middle" x="335" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
-</a>
-</g>
-</g>
-<!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge3" class="edge">
-<title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
-<path fill="none" stroke="#ff0000" d="M113.11,-171.06C136.72,-180.42 171.03,-193.1 202,-201 219.45,-205.45 238.46,-209.14 256.47,-212.11"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="255.93,-215.57 266.36,-213.69 257.03,-208.65 255.93,-215.57"/>
-</g>
-<!-- proc~count_hydrogen_caps -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node5" class="node">
-<title>proc~count_hydrogen_caps</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node5"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="399,-192 271,-192 271,-168 399,-168 399,-192"/>
-<text text-anchor="middle" x="335" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
-</a>
-</g>
-</g>
-<!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge4" class="edge">
-<title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
-<path fill="none" stroke="#ff0000" d="M166.21,-165.91C196.63,-168.46 230.9,-171.34 260.51,-173.83"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="260.51,-177.34 270.77,-174.69 261.1,-170.36 260.51,-177.34"/>
-</g>
-<!-- proc~error_add_context -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node6" class="node">
-<title>proc~error_add_context</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node6"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
-<polygon fill="#d9534f" stroke="#d9534f" points="412,-150 258,-150 258,-126 412,-126 412,-150"/>
-<text text-anchor="middle" x="335" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
-</a>
-</g>
-</g>
-<!-- proc~build_fragment_from_indices&#45;&gt;proc~error_add_context -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge5" class="edge">
-<title>proc~build_fragment_from_indices&#45;&gt;proc~error_add_context</title>
-<path fill="none" stroke="#ff0000" d="M166.21,-152.09C192.33,-149.9 221.29,-147.47 247.69,-145.25"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="248,-148.74 257.67,-144.41 247.41,-141.76 248,-148.74"/>
+<title>proc~build_fragment_from_indices&#45;&gt;proc~build_fragment_core</title>
+<path fill="none" stroke="#ff0000" d="M166.23,-190.76C174.77,-189.8 183.41,-188.83 191.81,-187.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="192.37,-191.35 201.91,-186.75 191.58,-184.39 192.37,-191.35"/>
 </g>
 <!-- proc~error_has_error -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node7" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node3" class="node">
 <title>proc~error_has_error</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node7"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="404.5,-108 265.5,-108 265.5,-84 404.5,-84 404.5,-108"/>
-<text text-anchor="middle" x="335" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node3"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="562.5,-318 423.5,-318 423.5,-294 562.5,-294 562.5,-318"/>
+<text text-anchor="middle" x="493" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~error_has_error -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge6" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge2" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff0000" d="M113.11,-146.94C136.72,-137.58 171.03,-124.9 202,-117 219.01,-112.66 237.49,-109.05 255.1,-106.12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="256.02,-109.52 265.34,-104.47 254.91,-102.6 256.02,-109.52"/>
+<path fill="none" stroke="#ff0000" d="M116.88,-212.05C140.45,-220.53 173.02,-231.94 202,-241 271.57,-262.75 288.78,-269.47 360,-285 377.06,-288.72 395.49,-292.07 413.02,-294.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="412.78,-298.45 423.21,-296.57 413.89,-291.53 412.78,-298.45"/>
 </g>
 <!-- proc~fragment_charge_multiplicity -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node8" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node4" class="node">
 <title>proc~fragment_charge_multiplicity</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node8"><a xlink:href="../proc/fragment_charge_multiplicity.html" xlink:title="fragment_charge_multiplicity">
-<polygon fill="#d9534f" stroke="#d9534f" points="419.5,-66 250.5,-66 250.5,-42 419.5,-42 419.5,-66"/>
-<text text-anchor="middle" x="335" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_charge_multiplicity</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node4"><a xlink:href="../proc/fragment_charge_multiplicity.html" xlink:title="fragment_charge_multiplicity">
+<polygon fill="#d9534f" stroke="#d9534f" points="577.5,-276 408.5,-276 408.5,-252 577.5,-252 577.5,-276"/>
+<text text-anchor="middle" x="493" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_charge_multiplicity</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_charge_multiplicity -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge7" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge3" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_charge_multiplicity</title>
-<path fill="none" stroke="#ff0000" d="M96.59,-146.96C116.95,-128.25 159.17,-92.51 202,-75 214.07,-70.07 227.19,-66.29 240.34,-63.39"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="241.27,-66.77 250.37,-61.34 239.87,-59.91 241.27,-66.77"/>
+<path fill="none" stroke="#ff0000" d="M160.74,-212.04C230.3,-222.95 332.72,-239.01 405.23,-250.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="404.83,-253.87 415.26,-251.96 405.92,-246.95 404.83,-253.87"/>
 </g>
 <!-- proc~fragment_compute_nelec -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node9" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node5" class="node">
 <title>proc~fragment_compute_nelec</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node9"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
-<polygon fill="#d9534f" stroke="#d9534f" points="468,-24 202,-24 202,0 468,0 468,-24"/>
-<text text-anchor="middle" x="335" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node5"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="626,-24 360,-24 360,0 626,0 626,-24"/>
+<text text-anchor="middle" x="493" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge8" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge4" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
-<path fill="none" stroke="#ff0000" d="M91.36,-146.81C107.66,-120.98 149.59,-60.82 202,-33 205.59,-31.1 209.3,-29.35 213.11,-27.76"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="214.63,-30.93 222.74,-24.1 212.15,-24.38 214.63,-30.93"/>
+<path fill="none" stroke="#ff0000" d="M99.07,-187.92C138.96,-156.63 251.66,-72.66 360,-33 366.67,-30.56 373.62,-28.4 380.71,-26.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="381.59,-29.88 390.43,-24.05 379.88,-23.09 381.59,-29.88"/>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge10" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M271.17,-192.19C285.12,-214.7 318.25,-262.52 360,-285 376.2,-293.73 395.04,-299.06 413.32,-302.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="412.97,-305.76 423.39,-303.84 414.05,-298.84 412.97,-305.76"/>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~fragment_charge_multiplicity -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge11" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~fragment_charge_multiplicity</title>
+<path fill="none" stroke="#ff0000" d="M278.21,-192.15C296.06,-206.72 328.21,-230.7 360,-243 372.07,-247.67 385.15,-251.3 398.22,-254.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="397.71,-257.6 408.2,-256.14 399.09,-250.73 397.71,-257.6"/>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge12" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#ff0000" d="M272.25,-167.84C283.9,-150.6 305.8,-118.04 324,-90 340.31,-64.87 334.98,-49.49 360,-33 362.45,-31.38 364.98,-29.88 367.58,-28.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="369.18,-31.59 376.65,-24.07 366.13,-25.29 369.18,-31.59"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node6" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node6"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="552,-66 434,-66 434,-42 552,-42 552,-66"/>
+<text text-anchor="middle" x="493" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge5" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#ff0000" d="M271.17,-167.81C285.12,-145.3 318.25,-97.48 360,-75 379.31,-64.6 402.36,-59.02 423.75,-56.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="424.25,-59.58 433.77,-54.92 423.43,-52.63 424.25,-59.58"/>
+</g>
+<!-- proc~calculate_monomer_distance -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node7" class="node">
+<title>proc~calculate_monomer_distance</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node7"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="577.5,-234 408.5,-234 408.5,-210 577.5,-210 577.5,-234"/>
+<text text-anchor="middle" x="493" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~calculate_monomer_distance -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge6" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~calculate_monomer_distance</title>
+<path fill="none" stroke="#ff0000" d="M316.7,-192.1C330.74,-195.17 345.92,-198.34 360,-201 373.39,-203.53 387.59,-206 401.52,-208.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="401.16,-211.8 411.6,-209.97 402.29,-204.89 401.16,-211.8"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node8" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node8"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="561.5,-192 424.5,-192 424.5,-168 561.5,-168 561.5,-192"/>
+<text text-anchor="middle" x="493" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge7" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#ff0000" d="M324.2,-180C351.7,-180 384.62,-180 413.98,-180"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="414.21,-183.5 424.21,-180 414.21,-176.5 414.21,-183.5"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node9" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node9"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="557,-150 429,-150 429,-126 557,-126 557,-150"/>
+<text text-anchor="middle" x="493" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge8" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#ff0000" d="M316.7,-167.9C330.74,-164.83 345.92,-161.66 360,-159 379.03,-155.41 399.68,-151.93 418.87,-148.86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="419.43,-152.32 428.76,-147.3 418.33,-145.41 419.43,-152.32"/>
+</g>
+<!-- proc~error_add_context -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node10" class="node">
+<title>proc~error_add_context</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node10"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="570,-108 416,-108 416,-84 570,-84 570,-108"/>
+<text text-anchor="middle" x="493" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~error_add_context -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge9" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#ff0000" d="M278.21,-167.85C296.06,-153.28 328.21,-129.3 360,-117 374.38,-111.44 390.19,-107.34 405.71,-104.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="406.63,-107.73 415.86,-102.51 405.39,-100.84 406.63,-107.73"/>
 </g>
 <!-- proc~to_angstrom -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node13" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node14" class="node">
 <title>proc~to_angstrom</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node13"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="625,-318 546,-318 546,-294 625,-294 625,-318"/>
-<text text-anchor="middle" x="585.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node14"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="783,-276 704,-276 704,-252 783,-252 783,-276"/>
+<text text-anchor="middle" x="743.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
 </a>
 </g>
 </g>
 <!-- proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge9" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge13" class="edge">
 <title>proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom</title>
-<path fill="none" stroke="#ffbf00" d="M413.17,-276C431.18,-278.88 450.27,-281.99 468,-285 490.38,-288.8 515.12,-293.22 536.04,-297.03"/>
-<polygon fill="#ffbf00" stroke="#ffbf00" points="535.5,-300.49 545.97,-298.85 536.76,-293.61 535.5,-300.49"/>
+<path fill="none" stroke="#cbff00" d="M571.17,-234C589.18,-236.88 608.27,-239.99 626,-243 648.38,-246.8 673.12,-251.22 694.04,-255.03"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="693.5,-258.49 703.97,-256.85 694.76,-251.61 693.5,-258.49"/>
 </g>
 <!-- error -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node10" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node11" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="612.5,-276 558.5,-276 558.5,-252 612.5,-252 612.5,-276"/>
-<text text-anchor="middle" x="585.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="770.5,-150 716.5,-150 716.5,-126 770.5,-126 770.5,-150"/>
+<text text-anchor="middle" x="743.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge10" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge14" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#7fff00" d="M403.53,-232.47C424.23,-235.75 447.07,-239.45 468,-243 494.88,-247.56 525.19,-253.04 548.16,-257.25"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="547.69,-260.72 558.15,-259.09 548.95,-253.84 547.69,-260.72"/>
+<path fill="none" stroke="#00ff66" d="M561.53,-169.53C582.23,-166.25 605.07,-162.55 626,-159 652.88,-154.44 683.19,-148.96 706.16,-144.75"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="706.95,-148.16 716.15,-142.91 705.69,-141.28 706.95,-148.16"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node11" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node12" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node11"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="667,-234 504,-234 504,-210 667,-210 667,-234"/>
-<text text-anchor="middle" x="585.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node12"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="825,-108 662,-108 662,-84 825,-84 825,-108"/>
+<text text-anchor="middle" x="743.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge11" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge15" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#7fff00" d="M403.58,-222C431.22,-222 463.62,-222 493.31,-222"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="493.68,-225.5 503.68,-222 493.68,-218.5 493.68,-225.5"/>
+<path fill="none" stroke="#00ff66" d="M561.79,-178.34C583.38,-175.49 606.66,-169.82 626,-159 647.46,-147 641.15,-130.03 662,-117 664.82,-115.24 667.78,-113.63 670.83,-112.15"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="672.43,-115.27 680.24,-108.1 669.67,-108.84 672.43,-115.27"/>
 </g>
 <!-- proc~error_set -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node12" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node13" class="node">
 <title>proc~error_set</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node12"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="638,-192 533,-192 533,-168 638,-168 638,-192"/>
-<text text-anchor="middle" x="585.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node13"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="796,-234 691,-234 691,-210 796,-210 796,-234"/>
+<text text-anchor="middle" x="743.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge12" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge16" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#7fff00" d="M403.53,-211.53C424.23,-208.25 447.07,-204.55 468,-201 485.78,-197.98 505.07,-194.57 522.73,-191.38"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="523.71,-194.76 532.92,-189.53 522.46,-187.87 523.71,-194.76"/>
+<path fill="none" stroke="#00ff66" d="M561.53,-190.47C582.23,-193.75 605.07,-197.45 626,-201 643.78,-204.02 663.07,-207.43 680.73,-210.62"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="680.46,-214.13 690.92,-212.47 681.71,-207.24 680.46,-214.13"/>
 </g>
 <!-- to_char -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node14" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node15" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="612.5,-150 558.5,-150 558.5,-126 612.5,-126 612.5,-150"/>
-<text text-anchor="middle" x="585.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="770.5,-192 716.5,-192 716.5,-168 770.5,-168 770.5,-192"/>
+<text text-anchor="middle" x="743.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge13" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge17" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#7fff00" d="M403.79,-220.34C425.38,-217.49 448.66,-211.82 468,-201 489.46,-189 483.15,-172.03 504,-159 517.21,-150.74 533.57,-145.72 548.09,-142.66"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="549.07,-146.04 558.26,-140.77 547.79,-139.16 549.07,-146.04"/>
+<path fill="none" stroke="#00ff66" d="M561.58,-180C608.21,-180 668.41,-180 706.24,-180"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="706.29,-183.5 716.29,-180 706.29,-176.5 706.29,-183.5"/>
 </g>
 </g>
 </svg>
@@ -992,7 +1024,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_end"></span>
+              <span class="anchor" id="variable-first"></span>
               integer,
             </td>
               <td>private</td>
@@ -1000,7 +1032,7 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>atom_end</strong></td>
+            <td><strong>first</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -1009,126 +1041,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_global_idx"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_global_idx</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_i~4"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_i</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_j~4"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_j</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_start"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_start</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atoms_in_fragment~3"></span>
-              integer,
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>atoms_in_fragment</strong>(:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                <p>List of all atom indices in this fragment</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atoms_per_monomer~2"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atoms_per_monomer</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-frag_atom_idx"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>frag_atom_idx</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-i~96"></span>
+              <span class="anchor" id="variable-i~37"></span>
               integer,
             </td>
               <td>private</td>
@@ -1145,24 +1058,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~15"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>iatom</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-j~22"></span>
+              <span class="anchor" id="variable-j~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -1179,7 +1075,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mono_idx"></span>
+              <span class="anchor" id="variable-n_here"></span>
               integer,
             </td>
               <td>private</td>
@@ -1187,7 +1083,7 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>mono_idx</strong></td>
+            <td><strong>n_here</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -1196,7 +1092,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms_no_caps"></span>
+              <span class="anchor" id="variable-n_real~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1204,7 +1100,7 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>n_atoms_no_caps</strong></td>
+            <td><strong>n_real</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -1213,15 +1109,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_caps~3"></span>
+              <span class="anchor" id="variable-real_indices"></span>
               integer,
             </td>
-              <td>private</td>
+              <td>private,</td>
             <td>
-              
+              allocatable
             </td>
             <td>::</td>
-            <td><strong>n_caps</strong></td>
+            <td><strong>real_indices</strong>(:)</td>
                 <td></td>
                 <td></td>
             <td>
@@ -1230,32 +1126,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers_in_frag"></span>
+              <span class="anchor" id="variable-union_indices"></span>
               integer,
             </td>
-              <td>private</td>
+              <td>private,</td>
             <td>
-              
+              allocatable
             </td>
             <td>::</td>
-            <td><strong>n_monomers_in_frag</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-use_explicit_fragments"></span>
-              logical,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>use_explicit_fragments</strong></td>
+            <td><strong>union_indices</strong>(:)</td>
                 <td></td>
                 <td></td>
             <td>
@@ -1278,136 +1157,78 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">signed_indices</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Build a fragment from monomer indices, ghosting any that are negative</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Extracts atoms from specified monomers and adds hydrogen caps where bonds are broken.</span>
-<span class="w">      </span><span class="c">!! Caps are always added at the end of the atom list.</span>
-<span class="w">      </span><span class="c">!! Supports both fixed-size (identical monomers) and variable-sized fragments.</span>
+<span class="w">      </span><span class="c">!! `signed_indices` carries the sign as the distinction: a positive entry</span>
+<span class="w">      </span><span class="c">!! is a real monomer, a negative one is present as ghost centres. The</span>
+<span class="w">      </span><span class="c">!! geometry is the union either way, which is exactly what a</span>
+<span class="w">      </span><span class="c">!! counterpoise-corrected term needs -- monomer A computed in the basis of</span>
+<span class="w">      </span><span class="c">!! the pair AB, so that the superposition error inflating AB appears on</span>
+<span class="w">      </span><span class="c">!! both sides of the difference and cancels.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Example: monomer_indices = [1, 3, 5] extracts waters 1, 3, and 5</span>
-<span class="w">      </span><span class="c">!!          If connectivity shows broken bonds, hydrogens are capped at positions of missing atoms</span>
+<span class="w">      </span><span class="c">!! The sign rather than a second array because the index vector is what</span>
+<span class="w">      </span><span class="c">!! already crosses the wire, and its length is already sent. A separate</span>
+<span class="w">      </span><span class="c">!! ghost mask would mean a sixth message in a five-message payload whose</span>
+<span class="w">      </span><span class="c">!! correctness rests on per-source ordering -- a change that deadlocks</span>
+<span class="w">      </span><span class="c">!! rather than fails if it is applied to the sender and not the receiver.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! All-positive input is exactly `build_fragment_from_indices`, which is</span>
+<span class="w">      </span><span class="c">!! what every task that exists today sends.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">signed_indices</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Connectivity information for capping</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
 
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers_in_frag</span><span class="p">,</span><span class="w"> </span><span class="n">atoms_per_monomer</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms_no_caps</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">mono_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_start</span><span class="p">,</span><span class="w"> </span><span class="n">atom_end</span><span class="p">,</span><span class="w"> </span><span class="n">frag_atom_idx</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_i</span><span class="p">,</span><span class="w"> </span><span class="n">atom_j</span><span class="p">,</span><span class="w"> </span><span class="n">n_caps</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atoms_in_fragment</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! List of all atom indices in this fragment</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_global_idx</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_explicit_fragments</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">union_indices</span><span class="p">(:),</span><span class="w"> </span><span class="n">real_indices</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">n_real</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">n_here</span>
 
-<span class="w">      </span><span class="n">n_monomers_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">monomer_indices</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">union_indices</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">signed_indices</span><span class="p">)))</span>
+<span class="w">      </span><span class="n">union_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">abs</span><span class="p">(</span><span class="n">signed_indices</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! Determine if we&#39;re using explicit fragment definitions or regular monomer-based</span>
-<span class="w">      </span><span class="n">use_explicit_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">build_fragment_core</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">union_indices</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_explicit_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Variable-sized fragments: count total atoms from fragment definitions</span>
-<span class="w">         </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers_in_frag</span>
-<span class="w">            </span><span class="n">mono_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">mono_idx</span><span class="p">)</span>
-<span class="w">         </span><span class="k">end do</span>
+<span class="k">      </span><span class="n">n_real</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">signed_indices</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_real</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">signed_indices</span><span class="p">))</span><span class="w"> </span><span class="k">return</span><span class="w">   </span><span class="c">! nothing ghosted</span>
 
-<span class="w">         </span><span class="c">! Build list of atom indices (0-indexed) from explicit fragment definitions</span>
-<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">(</span><span class="n">n_atoms_no_caps</span><span class="p">))</span>
-<span class="w">         </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers_in_frag</span>
-<span class="w">            </span><span class="n">mono_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">mono_idx</span><span class="p">)</span>
-<span class="w">               </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iatom</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">atoms_in_fragment</span><span class="p">(</span><span class="n">iatom</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">mono_idx</span><span class="p">)</span>
+<span class="w">      </span><span class="c">! Mark the ghosted monomers&#39; atoms. `build_fragment_from_indices` lays the</span>
+<span class="w">      </span><span class="c">! atoms out monomer by monomer in the order given, and appends any caps at</span>
+<span class="w">      </span><span class="c">! the end, so walking the same order finds them. Caps stay real: a cap</span>
+<span class="w">      </span><span class="c">! stands in for a bond this fragment cut, which is a property of the</span>
+<span class="w">      </span><span class="c">! fragment rather than of the monomer it replaces.</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">is_ghost</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="n">fragment</span><span class="p">%</span><span class="n">is_ghost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">signed_indices</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">n_here</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">union_indices</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            </span><span class="n">n_here</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">signed_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_here</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">is_ghost</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">end do</span>
-<span class="k">         end do</span>
-<span class="k">      else</span>
-<span class="w">         </span><span class="c">! Fixed-size monomers: use atoms_per_monomer</span>
-<span class="w">         </span><span class="n">atoms_per_monomer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
-<span class="w">         </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_monomers_in_frag</span><span class="o">*</span><span class="n">atoms_per_monomer</span>
+<span class="k">         end if</span>
+<span class="k">         </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_here</span>
+<span class="w">      </span><span class="k">end do</span>
 
-<span class="w">         </span><span class="c">! Build list of atom indices in this fragment (0-indexed to match bond indices)</span>
-<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">(</span><span class="n">n_atoms_no_caps</span><span class="p">))</span>
-<span class="w">         </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers_in_frag</span>
-<span class="w">            </span><span class="n">mono_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="n">atom_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">mono_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">atoms_per_monomer</span>
-<span class="w">            </span><span class="k">do </span><span class="n">atom_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">atoms_per_monomer</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iatom</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">atoms_in_fragment</span><span class="p">(</span><span class="n">iatom</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atom_start</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">atom_i</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">         end do</span>
-<span class="k">      end if</span>
-
-<span class="w">      </span><span class="c">! Count how many caps we need</span>
-<span class="w">      </span><span class="k">call </span><span class="n">count_hydrogen_caps</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">n_caps</span><span class="p">)</span>
-
-<span class="w">      </span><span class="c">! Allocate arrays with space for original atoms + caps</span>
-<span class="w">      </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_caps</span>
-<span class="w">      </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_caps</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">))</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_caps</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">n_caps</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">(</span><span class="n">n_atoms_no_caps</span><span class="p">))</span><span class="w">  </span><span class="c">! Only non-cap atoms</span>
-
-<span class="w">      </span><span class="c">! Copy original atoms and build local→global mapping</span>
-<span class="w">      </span><span class="n">frag_atom_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_explicit_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Variable-sized: copy atoms based on explicit fragment definitions</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers_in_frag</span>
-<span class="w">            </span><span class="n">mono_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">mono_idx</span><span class="p">)</span>
-<span class="w">               </span><span class="n">frag_atom_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frag_atom_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="c">! fragment_atoms is 0-indexed, so +1 for Fortran arrays</span>
-<span class="w">               </span><span class="n">atom_global_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">mono_idx</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">frag_atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">atom_global_idx</span><span class="p">)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">frag_atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">atom_global_idx</span><span class="p">)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">(</span><span class="n">frag_atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atom_global_idx</span><span class="w">  </span><span class="c">! Store 1-indexed global position</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">         end do</span>
-<span class="k">      else</span>
-<span class="w">         </span><span class="c">! Fixed-size: use atoms_per_monomer</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers_in_frag</span>
-<span class="w">            </span><span class="n">mono_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="n">atom_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">mono_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">atoms_per_monomer</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="n">atom_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mono_idx</span><span class="o">*</span><span class="n">atoms_per_monomer</span>
-
-<span class="w">            </span><span class="c">! Copy coordinates and elements</span>
-<span class="w">            </span><span class="k">do </span><span class="n">atom_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atom_start</span><span class="p">,</span><span class="w"> </span><span class="n">atom_end</span>
-<span class="w">               </span><span class="n">frag_atom_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frag_atom_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">frag_atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">atom_i</span><span class="p">)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">frag_atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">atom_i</span><span class="p">)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">(</span><span class="n">frag_atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atom_i</span><span class="w">  </span><span class="c">! Store 1-indexed global position</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">         end do</span>
-<span class="k">      end if</span>
-
-<span class="w">      </span><span class="c">! Add hydrogen caps at end (if any)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_caps</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">add_hydrogen_caps</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="p">)</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! Charge and multiplicity of the composite, by the same rule the</span>
-<span class="w">      </span><span class="c">! per-fragment breakdown reports -- computed in one place so the number</span>
-<span class="w">      </span><span class="c">! the SCF runs and the number the table prints cannot drift apart.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">fragment_charge_multiplicity</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">      </span><span class="c">! Charge and multiplicity belong to the real monomers alone -- a ghost has</span>
+<span class="w">      </span><span class="c">! no charge to contribute and no electrons to pair. Recomputed rather than</span>
+<span class="w">      </span><span class="c">! adjusted, so the rule stays in one place.</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">real_indices</span><span class="p">(</span><span class="n">n_real</span><span class="p">))</span>
+<span class="w">      </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">signed_indices</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">signed_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">real_indices</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">signed_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+<span class="k">      call </span><span class="n">fragment_charge_multiplicity</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">real_indices</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                        </span><span class="n">fragment</span><span class="p">%</span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">multiplicity</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">fragment</span><span class="p">%</span><span class="n">compute_nelec</span><span class="p">()</span>
-
-<span class="w">      </span><span class="c">! Validate: check for spatially overlapping atoms</span>
-<span class="w">      </span><span class="k">call </span><span class="n">check_duplicate_atoms</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">&quot;mqc_physical_fragment:build_fragment_from_indices&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">return</span>
-<span class="k">      end if</span>
-
-<span class="w">      </span><span class="c">! Calculate minimal distance between monomers in this fragment</span>
-<span class="w">      </span><span class="n">fragment</span><span class="p">%</span><span class="n">distance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">calculate_monomer_distance</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">)</span>
-
-<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">)</span>
-
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">build_fragment_from_indices</span>
 </pre></div>
 
@@ -1432,7 +1253,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 02:55 +0000             </p>
+ on 2026-08-17 04:12 +0000             </p>
           </div>
         </div>
         <br>

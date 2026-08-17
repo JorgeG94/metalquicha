@@ -145,6 +145,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Append a term unless an identical one is already present</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_vmfc_rows.html'>add_vmfc_rows</a></td>
+                 <td><a href='../module/mqc_frag_utils.html'>mqc_frag_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Add, for every n-mer, the subfragments solved in that n-mer&rsquo;s basis</p><a href="../proc/add_vmfc_rows.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/aimd_keys.html'>aimd_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -398,6 +404,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Build the molecular grid</p><a href="../proc/build_dft_grid.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/build_fragment_core.html'>build_fragment_core</a></td>
+                 <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds</p><a href="../proc/build_fragment_core.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/build_fragment_from_atom_list.html'>build_fragment_from_atom_list</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -407,7 +419,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../proc/build_fragment_from_indices.html'>build_fragment_from_indices</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
-                 <td><p>Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds</p><a href="../proc/build_fragment_from_indices.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Build a fragment from monomer indices, ghosting any that are negative</p><a href="../proc/build_fragment_from_indices.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_gmbe_task_table.html'>build_gmbe_task_table</a></td>
@@ -1482,6 +1494,12 @@ Returns true if the fragment itself OR any of its k-subsets (k &gt;= 2) exceeds
 the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/fragment_size_of.html'>fragment_size_of</a></td>
+                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td>Function</td>
+                 <td><p>How many monomers a polymer row names, padding excluded</p><a href="../proc/fragment_size_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/fragment_table_filename.html'>fragment_table_filename</a></td>
                  <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
                  <td>Function</td>
@@ -1773,15 +1791,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1791,27 +1809,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1821,15 +1839,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -2011,6 +2029,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/is_auxiliary_row.html'>is_auxiliary_row</a></td>
+                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td>Function</td>
+                 <td><p>Whether a row exists only to be subtracted, not to be summed</p><a href="../proc/is_auxiliary_row.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/is_declared.html'>is_declared</a></td>
@@ -3022,6 +3046,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Parse molecular geometry from XYZ format string</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/real_count_of.html'>real_count_of</a></td>
+                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td>Function</td>
+                 <td><p>How many of a row&rsquo;s monomers are real rather than ghosted</p><a href="../proc/real_count_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/receive_geometry.html'>receive_geometry</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
@@ -3658,6 +3688,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>The van der Waals radius of an element, in Bohr</p><a href="../proc/vdw_radius.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/vmfc_subset_key.html'>vmfc_subset_key</a></td>
+                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The subset key a counterpoise-corrected expansion looks up</p><a href="../proc/vmfc_subset_key.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
                  <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
@@ -3820,7 +3856,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 02:55 +0000             </p>
+ on 2026-08-17 04:12 +0000             </p>
           </div>
         </div>
         <br>

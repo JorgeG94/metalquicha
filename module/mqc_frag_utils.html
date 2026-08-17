@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.8% of total for modules and submodules.">165 statements</a>
+                 title=" 1.0% of total for modules and submodules.">203 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -160,6 +160,7 @@
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-apply_distance_screening">apply_distance_screening</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_mbe_term_list">generate_mbe_term_list</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-sort_fragments_by_size">sort_fragments_by_size</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-add_vmfc_rows">add_vmfc_rows</a>
         </div>
       </div>
     </div>
@@ -190,13 +191,13 @@ fragments, managing fragment lists, and performing many-body expansion calculati
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_fragment_lookup.html'>mqc_fragment_lookup</a></li>
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_fragment_lookup.html'>mqc_fragment_lookup</a></li>
+                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1198,7 +1199,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~13"></span>
+              <span class="anchor" id="variable-fragment~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1213,7 +1214,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~30"></span>
+              <span class="anchor" id="variable-n~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1228,7 +1229,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~45"></span>
+              <span class="anchor" id="variable-sys_geom~24"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1243,7 +1244,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~7"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1294,7 +1295,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~9"></span>
+              <span class="anchor" id="variable-polymers~7"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1324,7 +1325,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~44"></span>
+              <span class="anchor" id="variable-sys_geom~23"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1339,7 +1340,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~6"></span>
+              <span class="anchor" id="variable-driver_config~3"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1354,7 +1355,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~14"></span>
+              <span class="anchor" id="variable-max_level~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1394,7 +1395,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~43"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1409,7 +1410,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~2"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1424,7 +1425,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1439,7 +1440,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1454,7 +1455,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~5"></span>
+              <span class="anchor" id="variable-total_fragments~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -1496,7 +1497,7 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-polymers~8"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1526,7 +1527,77 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~15"></span>
+              <span class="anchor" id="variable-max_level~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-add_vmfc_rows"></span> <h3>private  subroutine <a href='../proc/add_vmfc_rows.html'>add_vmfc_rows</a>(polymers, total_fragments, max_level)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Add, for every n-mer, the subfragments solved in that n-mer&rsquo;s basis</p><a href="../proc/add_vmfc_rows.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~6"></span>
+              integer,
+            </td>
+<td>intent(inout),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_fragments~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_fragments</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1569,7 +1640,7 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 02:55 +0000             </p>
+ on 2026-08-17 04:12 +0000             </p>
           </div>
         </div>
         <br>

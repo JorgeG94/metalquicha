@@ -10,6 +10,7 @@ contains
       !! This is used when running with only 1 MPI rank
       !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_error, only: error_t
+      use mqc_combinatorics, only: fragment_size_of
       use mqc_result_types, only: mbe_result_t
       use mqc_json_output_types, only: json_output_data_t
       use mqc_checkpoint, only: checkpoint_t
@@ -58,7 +59,7 @@ contains
       ! for the entire expansion.
       call coord_timer%start()
       do frag_idx = 1_int64, total_fragments
-         fragment_size = count(polymers(frag_idx, :) > 0)
+         fragment_size = fragment_size_of(polymers(frag_idx, :))
          allocate (fragment_indices(fragment_size))
          fragment_indices = polymers(frag_idx, 1:fragment_size)
 
