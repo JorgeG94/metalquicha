@@ -516,7 +516,13 @@ contains
             call logger%info("  Functional:      "//trim(this%dft%functional))
          end if
          call logger%info("  Basis set:       "//trim(this%basis_set))
-         call logger%info("  Auxiliary basis: "//trim(this%scf%aux_basis_set))
+         ! Only when it is actually fitting something. The aux basis has a
+         ! non-empty default, so printing it unconditionally told every exact run
+         ! it had an auxiliary basis it was not using -- which read as "this is
+         ! density-fitted" when it was not.
+         if (this%scf%density_fitting) then
+            call logger%info("  Density fitting: "//trim(this%scf%aux_basis_set))
+         end if
          ! The angular form is not reported here any more, and deliberately.
          ! `use_spherical` is the flag cuEST builds its AO shells with, not a
          ! statement about the basis: the basis file decides, through its

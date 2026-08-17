@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for source files.">281 statements</a>
+                 title=" 1.4% of total for source files.">283 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1623,42 +1623,48 @@ large graphs.</div>
 <a id="ln-516" name="ln-516" href="#ln-516"></a><span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Functional:      &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">functional</span><span class="p">))</span>
 <a id="ln-517" name="ln-517" href="#ln-517"></a><span class="w">         </span><span class="k">end if</span>
 <a id="ln-518" name="ln-518" href="#ln-518"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Basis set:       &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">basis_set</span><span class="p">))</span>
-<a id="ln-519" name="ln-519" href="#ln-519"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Auxiliary basis: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">aux_basis_set</span><span class="p">))</span>
-<a id="ln-520" name="ln-520" href="#ln-520"></a><span class="w">         </span><span class="c">! The angular form is not reported here any more, and deliberately.</span>
-<a id="ln-521" name="ln-521" href="#ln-521"></a><span class="w">         </span><span class="c">! `use_spherical` is the flag cuEST builds its AO shells with, not a</span>
-<a id="ln-522" name="ln-522" href="#ln-522"></a><span class="w">         </span><span class="c">! statement about the basis: the basis file decides, through its</span>
-<a id="ln-523" name="ln-523" href="#ln-523"></a><span class="w">         </span><span class="c">! `function_type` entries, and 6-31G* is Cartesian whatever this says.</span>
-<a id="ln-524" name="ln-524" href="#ln-524"></a><span class="w">         </span><span class="c">! Printing this line beside a Cartesian basis claimed &quot;spherical</span>
-<a id="ln-525" name="ln-525" href="#ln-525"></a><span class="w">         </span><span class="c">! (pure)&quot; for a run that was not, which is the reporting half of the</span>
-<a id="ln-526" name="ln-526" href="#ln-526"></a><span class="w">         </span><span class="c">! bug it sat next to. The SCF prints the form it actually used, along</span>
-<a id="ln-527" name="ln-527" href="#ln-527"></a><span class="w">         </span><span class="c">! with the function count that distinguishes the two.</span>
-<a id="ln-528" name="ln-528" href="#ln-528"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_DFT</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-529" name="ln-529" href="#ln-529"></a><span class="k">            block</span>
-<a id="ln-530" name="ln-530" href="#ln-530"></a><span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid_line</span>
-<a id="ln-531" name="ln-531" href="#ln-531"></a><span class="w">               </span><span class="c">! Reported as the level unless a deck overrode it with explicit</span>
-<a id="ln-532" name="ln-532" href="#ln-532"></a><span class="w">               </span><span class="c">! counts, because the level is what the CPU path actually uses --</span>
-<a id="ln-533" name="ln-533" href="#ln-533"></a><span class="w">               </span><span class="c">! printing &quot;75 radial x 302&quot; for a level-3 run was true of neither</span>
-<a id="ln-534" name="ln-534" href="#ln-534"></a><span class="w">               </span><span class="c">! backend and is the reporting half of a bug rather than a bug&#39;s</span>
-<a id="ln-535" name="ln-535" href="#ln-535"></a><span class="w">               </span><span class="c">! symptom. The counts still appear when they are the thing in force.</span>
-<a id="ln-536" name="ln-536" href="#ln-536"></a><span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-537" name="ln-537" href="#ln-537"></a><span class="w">                   </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">grid_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-538" name="ln-538" href="#ln-538"></a><span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0,a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  XC grid:         &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-539" name="ln-539" href="#ln-539"></a><span class="w">                     </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; radial x &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span>
-<a id="ln-540" name="ln-540" href="#ln-540"></a><span class="w">               </span><span class="k">else</span>
-<a id="ln-541" name="ln-541" href="#ln-541"></a><span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  XC grid:         level &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-542" name="ln-542" href="#ln-542"></a><span class="w">                     </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">grid_level</span>
-<a id="ln-543" name="ln-543" href="#ln-543"></a><span class="w">               </span><span class="k">end if</span>
-<a id="ln-544" name="ln-544" href="#ln-544"></a><span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">grid_line</span><span class="p">))</span>
-<a id="ln-545" name="ln-545" href="#ln-545"></a><span class="w">            </span><span class="k">end block</span>
-<a id="ln-546" name="ln-546" href="#ln-546"></a><span class="k">         end if</span>
-<a id="ln-547" name="ln-547" href="#ln-547"></a>
-<a id="ln-548" name="ln-548" href="#ln-548"></a><span class="k">      case </span><span class="n">default</span>
-<a id="ln-549" name="ln-549" href="#ln-549"></a><span class="w">         </span><span class="k">return</span>
-<a id="ln-550" name="ln-550" href="#ln-550"></a><span class="k">      end select</span>
-<a id="ln-551" name="ln-551" href="#ln-551"></a>
-<a id="ln-552" name="ln-552" href="#ln-552"></a><span class="k">   end subroutine </span><span class="n">config_log_settings</span>
+<a id="ln-519" name="ln-519" href="#ln-519"></a><span class="w">         </span><span class="c">! Only when it is actually fitting something. The aux basis has a</span>
+<a id="ln-520" name="ln-520" href="#ln-520"></a><span class="w">         </span><span class="c">! non-empty default, so printing it unconditionally told every exact run</span>
+<a id="ln-521" name="ln-521" href="#ln-521"></a><span class="w">         </span><span class="c">! it had an auxiliary basis it was not using -- which read as &quot;this is</span>
+<a id="ln-522" name="ln-522" href="#ln-522"></a><span class="w">         </span><span class="c">! density-fitted&quot; when it was not.</span>
+<a id="ln-523" name="ln-523" href="#ln-523"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_fitting</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-524" name="ln-524" href="#ln-524"></a><span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Density fitting: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">aux_basis_set</span><span class="p">))</span>
+<a id="ln-525" name="ln-525" href="#ln-525"></a><span class="w">         </span><span class="k">end if</span>
+<a id="ln-526" name="ln-526" href="#ln-526"></a><span class="w">         </span><span class="c">! The angular form is not reported here any more, and deliberately.</span>
+<a id="ln-527" name="ln-527" href="#ln-527"></a><span class="w">         </span><span class="c">! `use_spherical` is the flag cuEST builds its AO shells with, not a</span>
+<a id="ln-528" name="ln-528" href="#ln-528"></a><span class="w">         </span><span class="c">! statement about the basis: the basis file decides, through its</span>
+<a id="ln-529" name="ln-529" href="#ln-529"></a><span class="w">         </span><span class="c">! `function_type` entries, and 6-31G* is Cartesian whatever this says.</span>
+<a id="ln-530" name="ln-530" href="#ln-530"></a><span class="w">         </span><span class="c">! Printing this line beside a Cartesian basis claimed &quot;spherical</span>
+<a id="ln-531" name="ln-531" href="#ln-531"></a><span class="w">         </span><span class="c">! (pure)&quot; for a run that was not, which is the reporting half of the</span>
+<a id="ln-532" name="ln-532" href="#ln-532"></a><span class="w">         </span><span class="c">! bug it sat next to. The SCF prints the form it actually used, along</span>
+<a id="ln-533" name="ln-533" href="#ln-533"></a><span class="w">         </span><span class="c">! with the function count that distinguishes the two.</span>
+<a id="ln-534" name="ln-534" href="#ln-534"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_DFT</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-535" name="ln-535" href="#ln-535"></a><span class="k">            block</span>
+<a id="ln-536" name="ln-536" href="#ln-536"></a><span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid_line</span>
+<a id="ln-537" name="ln-537" href="#ln-537"></a><span class="w">               </span><span class="c">! Reported as the level unless a deck overrode it with explicit</span>
+<a id="ln-538" name="ln-538" href="#ln-538"></a><span class="w">               </span><span class="c">! counts, because the level is what the CPU path actually uses --</span>
+<a id="ln-539" name="ln-539" href="#ln-539"></a><span class="w">               </span><span class="c">! printing &quot;75 radial x 302&quot; for a level-3 run was true of neither</span>
+<a id="ln-540" name="ln-540" href="#ln-540"></a><span class="w">               </span><span class="c">! backend and is the reporting half of a bug rather than a bug&#39;s</span>
+<a id="ln-541" name="ln-541" href="#ln-541"></a><span class="w">               </span><span class="c">! symptom. The counts still appear when they are the thing in force.</span>
+<a id="ln-542" name="ln-542" href="#ln-542"></a><span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-543" name="ln-543" href="#ln-543"></a><span class="w">                   </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">grid_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-544" name="ln-544" href="#ln-544"></a><span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0,a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  XC grid:         &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-545" name="ln-545" href="#ln-545"></a><span class="w">                     </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; radial x &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span>
+<a id="ln-546" name="ln-546" href="#ln-546"></a><span class="w">               </span><span class="k">else</span>
+<a id="ln-547" name="ln-547" href="#ln-547"></a><span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  XC grid:         level &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-548" name="ln-548" href="#ln-548"></a><span class="w">                     </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">grid_level</span>
+<a id="ln-549" name="ln-549" href="#ln-549"></a><span class="w">               </span><span class="k">end if</span>
+<a id="ln-550" name="ln-550" href="#ln-550"></a><span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">grid_line</span><span class="p">))</span>
+<a id="ln-551" name="ln-551" href="#ln-551"></a><span class="w">            </span><span class="k">end block</span>
+<a id="ln-552" name="ln-552" href="#ln-552"></a><span class="k">         end if</span>
 <a id="ln-553" name="ln-553" href="#ln-553"></a>
-<a id="ln-554" name="ln-554" href="#ln-554"></a><span class="k">end module </span><span class="n">mqc_method_config</span>
+<a id="ln-554" name="ln-554" href="#ln-554"></a><span class="k">      case </span><span class="n">default</span>
+<a id="ln-555" name="ln-555" href="#ln-555"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-556" name="ln-556" href="#ln-556"></a><span class="k">      end select</span>
+<a id="ln-557" name="ln-557" href="#ln-557"></a>
+<a id="ln-558" name="ln-558" href="#ln-558"></a><span class="k">   end subroutine </span><span class="n">config_log_settings</span>
+<a id="ln-559" name="ln-559" href="#ln-559"></a>
+<a id="ln-560" name="ln-560" href="#ln-560"></a><span class="k">end module </span><span class="n">mqc_method_config</span>
 </pre></div>
 
       </section>
@@ -1680,7 +1686,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 21:30 +0000             </p>
+ on 2026-08-17 00:33 +0000             </p>
           </div>
         </div>
         <br>

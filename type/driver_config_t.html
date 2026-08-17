@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.4% of total for derived types.</p>Including implementation: 24 statements,  0.7% of total for derived types.">24 statements</a>
+                 title="<p> 2.7% of total for derived types.</p>Including implementation: 27 statements,  0.8% of total for derived types.">27 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,24 +138,27 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/driver_config_t.html#variable-aimd">aimd</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-allow_overlapping_fragments">allow_overlapping_fragments</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-calc_type~5">calc_type</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-calc_type~2">calc_type</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-checkpoint_file">checkpoint_file</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-expansion_kind">expansion_kind</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_far_field">fmo_far_field</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_max_outer">fmo_max_outer</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_resppc">fmo_resppc</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_scf_density_tol">fmo_scf_density_tol</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_scf_energy_tol">fmo_scf_energy_tol</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_scf_max_iter">fmo_scf_max_iter</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fmo_tolerance">fmo_tolerance</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_breakdown">fragment_breakdown</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_cutoffs">fragment_cutoffs</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_potentials">fragment_potentials</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-global_groups~2">global_groups</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-hessian~2">hessian</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-global_groups">global_groups</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-hessian">hessian</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-max_intersection_level">max_intersection_level</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-method_config~5">method_config</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-method_config~2">method_config</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-nlevel">nlevel</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-nodes_per_group~2">nodes_per_group</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-nodes_per_group">nodes_per_group</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-optimization">optimization</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-scf~2">scf</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-scf">scf</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-skip_json_output">skip_json_output</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-unchecked_input">unchecked_input</a>
         </div>
@@ -561,7 +564,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~driver_config_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~driver_config_t~~InheritedByGraph_edge2" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M367.92,-54C361.89,-54 355.8,-54 350,-54"/>
 </g>
@@ -575,7 +578,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~driver_config_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~driver_config_t~~InheritedByGraph_edge4" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M382.74,-24.16C377.59,-26.71 372.49,-29.67 368,-33 358.13,-40.33 362.29,-54 350,-54"/>
 <path fill="none" stroke="#ff0000" d="M349,-54C346.46,-54 343.88,-54 341.27,-54"/>
@@ -684,7 +687,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~2"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -786,6 +789,57 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-fmo_scf_density_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fmo_scf_density_tol</strong></td>
+<td> =</td>
+                <td>1.0e-7_dp</td>
+            <td>
+                <p>Inner SCF density convergence</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fmo_scf_energy_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fmo_scf_energy_tol</strong></td>
+<td> =</td>
+                <td>1.0e-9_dp</td>
+            <td>
+                <p>Inner SCF energy convergence</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fmo_scf_max_iter"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fmo_scf_max_iter</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+                <p>Inner per-fragment SCF iteration cap</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-fmo_tolerance"></span>
               real(kind=dp),
             </td>
@@ -856,7 +910,7 @@ a flat array of paths and a deferred-length one cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
+              <span class="anchor" id="variable-global_groups"></span>
               integer,
             </td>
               <td>public</td>
@@ -873,7 +927,7 @@ a flat array of paths and a deferred-length one cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~2"></span>
+              <span class="anchor" id="variable-hessian"></span>
               type(<a href='hessian_keywords_t.html'>hessian_keywords_t</a>),
             </td>
               <td>public</td>
@@ -907,7 +961,7 @@ a flat array of paths and a deferred-length one cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~5"></span>
+              <span class="anchor" id="variable-method_config~2"></span>
               type(<a href='method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -941,7 +995,7 @@ a flat array of paths and a deferred-length one cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group"></span>
               integer,
             </td>
               <td>public</td>
@@ -975,7 +1029,7 @@ a flat array of paths and a deferred-length one cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~2"></span>
+              <span class="anchor" id="variable-scf"></span>
               type(<a href='scf_keywords_t.html'>scf_keywords_t</a>),
             </td>
               <td>public</td>
@@ -1051,6 +1105,9 @@ a flat array of paths and a deferred-length one cannot be.</p>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fmo_resppc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_dp</span><span class="w">    </span><span class="c">!! Point-charge cutoff; negative disables it</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fmo_max_outer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fmo_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-7_dp</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fmo_scf_max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="w">         </span><span class="c">!! Inner per-fragment SCF iteration cap</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fmo_scf_energy_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-9_dp</span><span class="w">   </span><span class="c">!! Inner SCF energy convergence</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fmo_scf_density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-7_dp</span><span class="w">  </span><span class="c">!! Inner SCF density convergence</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">999</span><span class="w">  </span><span class="c">!! Maximum k-way intersection depth for GMBE (default: no limit)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_cutoffs</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Distance cutoffs for n-mer screening (Angstrom)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">global_groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
@@ -1094,7 +1151,7 @@ a flat array of paths and a deferred-length one cannot be.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 21:30 +0000             </p>
+ on 2026-08-17 00:33 +0000             </p>
           </div>
         </div>
         <br>

@@ -273,6 +273,13 @@ module mqc_config_types
       integer :: fmo_max_outer = 50
       real(dp) :: fmo_tolerance = 1.0e-7_dp
          !! Outer (monomer) SCF convergence, on the monomer energy sum
+      integer :: fmo_scf_max_iter = 100
+      real(dp) :: fmo_scf_energy_tol = 1.0e-9_dp
+      real(dp) :: fmo_scf_density_tol = 1.0e-7_dp
+         !! The inner per-fragment SCF: iteration cap and the energy/density
+         !! convergence each monomer and n-mer SCF is held to. Independent of the
+         !! outer loop above, and of a top-level `keywords.scf`, so a fragment run
+         !! can be converged more loosely than a whole-system one would be.
       integer :: max_intersection_level = DEFAULT_MAX_INTERSECTION  !! Maximum k-way intersection depth for GMBE
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method

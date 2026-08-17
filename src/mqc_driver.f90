@@ -593,6 +593,9 @@ contains
             expansion%resppc = config%fmo_resppc
             expansion%max_outer = config%fmo_max_outer
             expansion%outer_tol = config%fmo_tolerance
+            expansion%scf_max_iter = config%fmo_scf_max_iter
+            expansion%scf_energy_tol = config%fmo_scf_energy_tol
+            expansion%scf_density_tol = config%fmo_scf_density_tol
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
@@ -1188,11 +1191,13 @@ contains
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &
-                                 aux_basis=trim(config%method_config%scf%aux_basis_set))
+                                 aux_basis=trim(config%method_config%scf%aux_basis_set), &
+                                 guess=trim(config%method_config%scf%guess))
       else
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
-                                 charge=sys_geom%charge, verbose=.true.)
+                                 charge=sys_geom%charge, verbose=.true., &
+                                 guess=trim(config%method_config%scf%guess))
       end if
       if (err%has_error()) then
          call logger%error("MAKEFP failed: "//err%get_message())

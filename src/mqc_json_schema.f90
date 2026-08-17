@@ -34,8 +34,10 @@ module mqc_json_schema
 
    public :: ensure_valid_json  !! Reject a deck the schema does not describe
 
-   integer, parameter :: MAX_KEYS = 16
-      !! Widest allow-list below; raising it is the only cost of a new key
+   integer, parameter :: MAX_KEYS = 20
+      !! Widest allow-list below; raising it is the only cost of a new key.
+      !! fragmentation_keys is the widest at 18 (its FMO inner-SCF controls
+      !! pushed it past 16), so this keeps a little headroom above that.
 
    type :: key_set_t
       !! The keys one object may contain, and which of them it must
@@ -358,6 +360,9 @@ contains
       call allow(keys, "resppc")
       call allow(keys, "max_outer")
       call allow(keys, "outer_tolerance")
+      call allow(keys, "scf_max_iter")
+      call allow(keys, "scf_energy_tolerance")
+      call allow(keys, "scf_density_tolerance")
       call allow(keys, "embedding")
       call allow(keys, "cutoff_method")
       call allow(keys, "distance_metric")

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">25 statements</a>
+                 title=" 0.2% of total for procedures.">28 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, energy, error, comm)  
+    <h2>public  subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, energy, error, comm)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -331,7 +331,7 @@ fragment, numbered from one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~2"></span>
+              <span class="anchor" id="variable-atomic_numbers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -346,7 +346,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~2"></span>
+              <span class="anchor" id="variable-element_symbols~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -361,7 +361,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~7"></span>
+              <span class="anchor" id="variable-coordinates~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -376,7 +376,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~2"></span>
+              <span class="anchor" id="variable-owner"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -391,7 +391,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~7"></span>
+              <span class="anchor" id="variable-basis_name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -406,7 +406,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp~2"></span>
+              <span class="anchor" id="variable-esp"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -421,7 +421,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~2"></span>
+              <span class="anchor" id="variable-expansion"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -436,7 +436,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field~2"></span>
+              <span class="anchor" id="variable-far_field"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -451,7 +451,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc~2"></span>
+              <span class="anchor" id="variable-resppc"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -466,7 +466,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~8"></span>
+              <span class="anchor" id="variable-level~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -481,7 +481,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer~2"></span>
+              <span class="anchor" id="variable-max_outer"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -496,7 +496,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol~2"></span>
+              <span class="anchor" id="variable-outer_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -511,7 +511,52 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~7"></span>
+              <span class="anchor" id="variable-scf_max_iter"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scf_max_iter</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scf_energy_tol"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scf_energy_tol</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scf_density_tol"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scf_density_tol</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -526,7 +571,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~49"></span>
+              <span class="anchor" id="variable-error~39"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -541,7 +586,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~8"></span>
+              <span class="anchor" id="variable-comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -830,7 +875,8 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_libcint_fmo</span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">element_symbols</span><span class="p">,</span><span class="w"> </span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">basis_name</span><span class="p">,</span><span class="w"> </span><span class="n">esp</span><span class="p">,</span><span class="w"> </span><span class="n">expansion</span><span class="p">,</span><span class="w"> </span><span class="n">far_field</span><span class="p">,</span><span class="w"> </span><span class="n">resppc</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">max_outer</span><span class="p">,</span><span class="w"> </span><span class="n">outer_tol</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
+<span class="w">                              </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">max_outer</span><span class="p">,</span><span class="w"> </span><span class="n">outer_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_max_iter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">scf_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_density_tol</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Run FMO2 (or EE-MBE) over a partitioned system</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Options arrive as plain scalars rather than the backend&#39;s own options</span>
@@ -849,6 +895,8 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_outer</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">outer_tol</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_max_iter</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_density_tol</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
@@ -863,7 +911,8 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">element_symbols</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="o">*</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">esp</span><span class="p">)</span><span class="o">*</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">expansion</span><span class="p">)</span><span class="o">*</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">far_field</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">resppc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="nb">huge</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">max_outer</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">outer_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">outer_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">scf_max_iter</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">scf_energy_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">scf_density_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_libcint_fmo</span>
 </pre></div>
@@ -889,7 +938,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 21:30 +0000             </p>
+ on 2026-08-17 00:33 +0000             </p>
           </div>
         </div>
         <br>

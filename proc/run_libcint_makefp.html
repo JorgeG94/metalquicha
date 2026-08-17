@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">17 statements</a>
+                 title=" 0.1% of total for procedures.">19 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, basis_name, name, path, error, charge, verbose, aux_basis)  
+    <h2>public  subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, basis_name, name, path, error, charge, verbose, aux_basis, guess)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -314,7 +314,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~3"></span>
+              <span class="anchor" id="variable-atomic_numbers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -329,7 +329,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~3"></span>
+              <span class="anchor" id="variable-element_symbols~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -344,7 +344,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~8"></span>
+              <span class="anchor" id="variable-coordinates~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -359,7 +359,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~8"></span>
+              <span class="anchor" id="variable-basis_name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -374,7 +374,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~8"></span>
+              <span class="anchor" id="variable-name~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -404,7 +404,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~50"></span>
+              <span class="anchor" id="variable-error~40"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -419,7 +419,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~6"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -449,7 +449,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis"></span>
+              <span class="anchor" id="variable-aux_basis~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -458,6 +458,21 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>aux_basis</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess~3"></span>
+              character(len=*),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>guess</strong></td>
             <td>
                 
             </td>
@@ -768,31 +783,31 @@ large graphs.</div>
 <g id="proc~~run_libcint_makefp~~CalledByGraph_node12" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~run_libcint_makefp~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
-<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_edge14" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M324.28,-14.07C358.12,-15.9 407.57,-18.57 443.55,-20.52"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="443.61,-24.02 453.78,-21.07 443.99,-17.03 443.61,-24.02"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_node13" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~run_libcint_makefp~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-150 246,-150 246,-126 324,-126 324,-150"/>
 <text text-anchor="middle" x="285" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~run_libcint_makefp~~CalledByGraph_edge11" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M324.28,-138C360.53,-138 414.7,-138 451.02,-138"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="451.22,-141.5 461.22,-138 451.22,-134.5 451.22,-141.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_node13" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_libcint_makefp~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
+<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_edge14" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M324.28,-14.07C358.12,-15.9 407.57,-18.57 443.55,-20.52"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="443.61,-24.02 453.78,-21.07 443.99,-17.03 443.61,-24.02"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~run_libcint_makefp~~CalledByGraph_node14" class="node">
@@ -833,11 +848,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_edge17" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0066ff" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_edge16" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ff66" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~run_libcint_makefp~~CalledByGraph_edge18" class="edge">
@@ -854,11 +869,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~run_libcint_makefp~~CalledByGraph_edge16" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ff66" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~run_libcint_makefp~~CalledByGraph_edge17" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0066ff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
 </g>
 </g>
 </svg>
@@ -963,7 +978,7 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_libcint_makefp</span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">element_symbols</span><span class="p">,</span><span class="w"> </span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">basis_name</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">aux_basis</span><span class="p">)</span>
+<span class="w">                                 </span><span class="n">aux_basis</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! No-op stand-in: an effective fragment potential needs the CPU backend</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
@@ -975,6 +990,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charge</span><span class="w">   </span><span class="c">!! Net charge; a fragment may be an ion</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aux_basis</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span>
 
 <span class="w">      </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                     </span><span class="s2">&quot;MAKEFP needs the CPU integral backend; build with &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -983,6 +999,7 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">element_symbols</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="o">*</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">*</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">charge</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">verbose</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">aux_basis</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">guess</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_libcint_makefp</span>
 </pre></div>
 
@@ -1007,7 +1024,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-16 21:30 +0000             </p>
+ on 2026-08-17 00:33 +0000             </p>
           </div>
         </div>
         <br>
