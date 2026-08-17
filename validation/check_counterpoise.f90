@@ -23,6 +23,10 @@ program check_counterpoise
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_error, only: error_t
+   use pic_timer, only: timer_type
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
+   use mqc_convergence_report, only: convergence_header, convergence_footer
    implicit none
 
    real(dp), parameter :: ANG = 1.8897261254578281_dp
@@ -40,6 +44,9 @@ program check_counterpoise
    logical, parameter :: GHOST_B(N_ATOMS) = &
                          [.false., .false., .false., .true., .true., .true.]
 
+   integer, parameter :: TABLE_WIDTH = 78
+
+   type(timer_type) :: total_clock, row_clock
    integer :: z(N_ATOMS)
    character(len=2) :: sym(N_ATOMS)
    real(dp) :: c(3, N_ATOMS)
@@ -48,18 +55,21 @@ program check_counterpoise
    z = [8, 1, 1, 8, 1, 1]
    sym = ["O ", "H ", "H ", "O ", "H ", "H "]
 
-   write (*, "(A)") "Water dimer, "//BASIS//", RHF"
-   write (*, "(A)") ""
-   write (*, "(A)") "   R/Ang      BSSE per monomer      raw dE        "// &
-      "CP-corrected dE"
-   write (*, "(A)") repeat("-", 68)
+   call convergence_header(.true., "Counterpoise on a water dimer, "//BASIS//", RHF", &
+                           "    R/Ang     BSSE/monomer         raw dE"// &
+                           "     CP-corrected dE      wall/s", TABLE_WIDTH)
+   call total_clock%start()
    do k = 1, N_SEP
       call one_separation(SEPS(k))
    end do
-   write (*, "(A)") ""
-   write (*, "(A)") "  BSSE falls away with overlap, so the two dE columns must"
-   write (*, "(A)") "  converge as R grows -- and the correction must not invent"
-   write (*, "(A)") "  anything where there is no overlap left to correct."
+   call total_clock%stop()
+   call logger%info("  "//repeat("-", TABLE_WIDTH))
+   call logger%info("  three SCFs per row, nine in "// &
+                    trim(seconds(total_clock%get_elapsed_time())))
+   call logger%info("")
+   call logger%info("  BSSE falls away with overlap, so the two dE columns must")
+   call logger%info("  converge as R grows -- and the correction must not invent")
+   call logger%info("  anything where there is no overlap left to correct.")
 
 contains
 
@@ -71,6 +81,7 @@ contains
       type(rhf_result_t) :: scf_alone, scf_pair, scf_dimer
       type(error_t) :: err
       real(dp) :: bsse, raw, corrected
+      character(len=128) :: line
       integer :: i
 
       c(:, 1) = [0.0_dp, 0.0_dp, 0.10077199_dp]
@@ -81,6 +92,7 @@ contains
          c(1, i + N_MONOMER) = c(1, i) + sep
       end do
       c = c*ANG
+      call row_clock%start()
 
       ! Monomer A in its own basis
       call build_libcint_molecule(z(1:N_MONOMER), sym(1:N_MONOMER), &
@@ -104,7 +116,10 @@ contains
       bsse = scf_alone%energy - scf_pair%energy
       raw = scf_dimer%energy - 2.0_dp*scf_alone%energy
       corrected = scf_dimer%energy - 2.0_dp*scf_pair%energy
-      write (*, "(F8.2,3ES19.8)") sep, bsse, raw, corrected
+      call row_clock%stop()
+      write (line, "(F9.2,3ES19.8,A12)") sep, bsse, raw, corrected, &
+         trim(seconds(row_clock%get_elapsed_time()))
+      call logger%info("  "//trim(line))
 
       call alone%destroy()
       call in_pair%destroy()
@@ -119,9 +134,18 @@ contains
 
       did_fail = err%has_error()
       if (did_fail) then
-         write (*, "(F8.2,A)") sep, "   failed: "//err%get_message()
+         call logger%info("  "//trim(to_char(sep))//"   failed: "//err%get_message())
          call err%clear()
       end if
    end function bailed
+
+   function seconds(t) result(text)
+      !! A wall time at a fixed width, so the column stays a column
+      real(dp), intent(in) :: t
+      character(len=16) :: text
+
+      write (text, "(F10.2,A)") t, " s"
+      text = adjustl(text)
+   end function seconds
 
 end program check_counterpoise

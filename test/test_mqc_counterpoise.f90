@@ -415,7 +415,6 @@ contains
       if (failed) call check(error, .false., "SCF: "//err%get_full_trace())
    end function bail
 
-
    subroutine test_subset_key(error)
       !! The key names the chosen monomers real and the rest as ghosts
       !!
