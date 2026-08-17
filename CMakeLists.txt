@@ -398,17 +398,18 @@ endif()
 # libcint.so in 9 seconds against 46 MB of pre-generated source and a long
 # build. For a backend whose job is to be correct and always available, build
 # time is the property that matters; if throughput ever does, libint can sit
-# behind the same interface later.
-# MQC_USE_LIBFINT picks libfint, the Fortran port of libcint, instead of
-# libcint itself.  Nothing under backends/libcint/ changes: libfint defines the
-# same `libcint_fortran` module with the same 25 procedures, so this program
-# cannot tell which one it linked.  That is the whole point of a port that is
-# bit-identical -- the swap is a build option, not a migration.
+# behind the same interface later. MQC_USE_LIBFINT picks libfint, the Fortran
+# port of libcint, instead of libcint itself.  Nothing under backends/libcint/
+# changes: libfint defines the same `libcint_fortran` module with the same 25
+# procedures, so this program cannot tell which one it linked.  That is the
+# whole point of a port that is bit-identical -- the swap is a build option, not
+# a migration.
 #
 # What changes is the dependency: libfint is Fortran with no C in it and no
 # LAPACK either, so an all-Fortran build of this program becomes possible.
 option(MQC_USE_LIBFINT
-       "Use libfint (the Fortran port) instead of libcint for CPU integrals" OFF)
+       "Use libfint (the Fortran port) instead of libcint for CPU integrals"
+       OFF)
 
 if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   include(FetchContent)
@@ -423,7 +424,8 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
   add_subdirectory(backends/libcint)
   message(
-    STATUS "libfint enabled: CPU Gaussian integrals, all-Fortran, no C and no BLAS")
+    STATUS
+      "libfint enabled: CPU Gaussian integrals, all-Fortran, no C and no BLAS")
 
 elseif(MQC_ENABLE_LIBCINT)
   include(FetchContent)
@@ -591,8 +593,8 @@ if(MQC_ENABLE_LIBXC AND MQC_ENABLE_LIBCINT)
   add_executable(check_dft ${PROJECT_SOURCE_DIR}/validation/check_dft.f90)
   target_include_directories(check_dft PRIVATE "${CMAKE_BINARY_DIR}/modules"
                                                ${libxc_BINARY_DIR})
-  target_link_libraries(check_dft PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS} xcf03
-                                          xc)
+  target_link_libraries(check_dft PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS}
+                                          xcf03 xc)
 endif()
 
 if(MQC_ENABLE_LIBXC)
@@ -607,7 +609,8 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/bench_scf_gradient.f90)
   target_include_directories(bench_scf_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_scf_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(bench_scf_gradient PRIVATE ${main_lib}
+                                                   ${MQC_INTEGRALS_LIBS})
 
   add_executable(bench_df_k ${PROJECT_SOURCE_DIR}/validation/bench_df_k.f90)
   target_include_directories(bench_df_k PRIVATE "${CMAKE_BINARY_DIR}/modules")
@@ -621,51 +624,58 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/check_partition_deriv.f90)
   target_include_directories(check_partition_deriv
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_partition_deriv PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_partition_deriv PRIVATE ${main_lib}
+                                                      ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_ao_deriv2
                  ${PROJECT_SOURCE_DIR}/validation/check_ao_deriv2.f90)
   target_include_directories(check_ao_deriv2
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_ao_deriv2 PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_ao_deriv2 PRIVATE ${main_lib}
+                                                ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_df_deriv
                  ${PROJECT_SOURCE_DIR}/validation/check_df_deriv.f90)
   target_include_directories(check_df_deriv
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_df_deriv PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_df_deriv PRIVATE ${main_lib}
+                                               ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_scf_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_scf_gradient.f90)
   target_include_directories(check_scf_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_scf_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_scf_gradient PRIVATE ${main_lib}
+                                                   ${MQC_INTEGRALS_LIBS})
 
   add_executable(bench_ri_mp2_gradient
                  ${PROJECT_SOURCE_DIR}/validation/bench_ri_mp2_gradient.f90)
   target_include_directories(bench_ri_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_ri_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(bench_ri_mp2_gradient PRIVATE ${main_lib}
+                                                      ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_xc_kernel
                  ${PROJECT_SOURCE_DIR}/validation/check_xc_kernel.f90)
   target_include_directories(check_xc_kernel
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_xc_kernel PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_xc_kernel PRIVATE ${main_lib}
+                                                ${MQC_INTEGRALS_LIBS})
 
   add_executable(
     check_xc_potential_gradient
     ${PROJECT_SOURCE_DIR}/validation/check_xc_potential_gradient.f90)
   target_include_directories(check_xc_potential_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_xc_potential_gradient PRIVATE ${main_lib}
-                                                            ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_xc_potential_gradient
+                        PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_dh_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_dh_gradient.f90)
   target_include_directories(check_dh_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_dh_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_dh_gradient PRIVATE ${main_lib}
+                                                  ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_df_cphf
                  ${PROJECT_SOURCE_DIR}/validation/check_df_cphf.f90)
@@ -677,7 +687,8 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/check_ri_mp2_gradient.f90)
   target_include_directories(check_ri_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_ri_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_ri_mp2_gradient PRIVATE ${main_lib}
+                                                      ${MQC_INTEGRALS_LIBS})
 
   add_executable(
     check_fitted_reference_gradient
@@ -698,13 +709,15 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/bench_mp2_gradient.f90)
   target_include_directories(bench_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(bench_mp2_gradient PRIVATE ${main_lib}
+                                                   ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_mp2_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_mp2_gradient.f90)
   target_include_directories(check_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_mp2_gradient PRIVATE ${main_lib}
+                                                   ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_charges
                  ${PROJECT_SOURCE_DIR}/validation/check_charges.f90)
@@ -761,7 +774,8 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/check_projection.f90)
   target_include_directories(check_projection
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_projection PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(check_projection PRIVATE ${main_lib}
+                                                 ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_libcint
                  ${PROJECT_SOURCE_DIR}/validation/check_libcint.f90)

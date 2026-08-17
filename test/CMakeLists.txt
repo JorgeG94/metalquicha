@@ -92,12 +92,14 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)
 
   addtest(mqc_libcint_cartesian)
-  target_link_libraries(test_mqc_libcint_cartesian PRIVATE ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(test_mqc_libcint_cartesian
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # That a general contraction reaches libcint as one shell rather than one per
   # coefficient column, and that merging them moves no basis function.
   addtest(mqc_libcint_contraction)
-  target_link_libraries(test_mqc_libcint_contraction PRIVATE ${MQC_INTEGRALS_LIBS})
+  target_link_libraries(test_mqc_libcint_contraction
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The unrestricted SCF, against the properties a reference energy cannot see:
   # closed-shell UHF must equal RHF, direct must equal in-core.
