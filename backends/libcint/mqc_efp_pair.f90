@@ -16,6 +16,7 @@ module mqc_efp_pair
    !! potential is a self-contained object, and the shipped GAMESS library potentials
    !! do not all name a basis this program has.
    use pic_types, only: dp
+   use mqc_physical_constants, only: PI
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, ANGULAR_FORM_CARTESIAN
@@ -42,8 +43,6 @@ module mqc_efp_pair
    !> anything unpacking one needs the same number, and two files agreeing by
    !> coincidence is how a packing convention drifts apart.
    public :: N_DQ_SLOTS, N_QQ_SLOTS
-
-   real(dp), parameter :: PI = 3.141592653589793_dp
 
    !> Overlap below which a pair's damping series is not evaluated at all,
    !> `efdrvr.src:4464`.

@@ -27,6 +27,7 @@ module mqc_efp_interaction
    !! way. Signs and component orders in a multipole expansion are exactly the
    !! things that look right and are wrong.
    use pic_types, only: dp
+   use mqc_physical_constants, only: PI
    use pic_logger, only: logger => global_logger, verbose_level
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -591,7 +592,6 @@ contains
       type(efp_fragment_t), intent(in) :: fragments(:)
       real(dp) :: energy
 
-      real(dp), parameter :: PI = 3.141592653589793_dp
       real(dp) :: sep(3)
       real(dp) :: c6, r6, dist
       integer :: fa, fb, ia, ib, k
