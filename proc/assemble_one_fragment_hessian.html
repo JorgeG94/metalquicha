@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-base~4">base</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-bwd_dip~2">bwd_dip</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-bwd_grad~2">bwd_grad</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-error~20">error</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-frag~4">frag</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-fragment_size~5">fragment_size</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-fwd_dip~2">fwd_dip</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-fwd_grad~2">fwd_grad</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-have_dipoles~2">have_dipoles</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-k~12">k</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-n_atoms~15">n_atoms</a>
-            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-n_disp~4">n_disp</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-base~2">base</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-bwd_dip">bwd_dip</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-bwd_grad">bwd_grad</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-error~33">error</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-frag~2">frag</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-fragment_size~4">fragment_size</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-fwd_dip">fwd_dip</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-fwd_grad">fwd_grad</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-have_dipoles">have_dipoles</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-k~9">k</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-n_atoms~8">n_atoms</a>
+            <a class="list-group-item" href="../proc/assemble_one_fragment_hessian.html#variable-n_disp~2">n_disp</a>
         </div>
       </div>
     </div>
@@ -191,8 +191,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -536,7 +536,7 @@ Hessian.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-f~3"></span>
+              <span class="anchor" id="variable-f~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -551,7 +551,7 @@ Hessian.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -566,7 +566,7 @@ Hessian.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~30"></span>
+              <span class="anchor" id="variable-sys_geom~18"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -581,7 +581,7 @@ Hessian.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_results~3"></span>
+              <span class="anchor" id="variable-task_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -596,7 +596,7 @@ Hessian.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_offset~6"></span>
+              <span class="anchor" id="variable-task_offset~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -641,7 +641,7 @@ Hessian.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~14"></span>
+              <span class="anchor" id="variable-world_comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1361,7 +1361,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-base~4"></span>
+              <span class="anchor" id="variable-base~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1378,7 +1378,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bwd_dip~2"></span>
+              <span class="anchor" id="variable-bwd_dip"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1395,7 +1395,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bwd_grad~2"></span>
+              <span class="anchor" id="variable-bwd_grad"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1412,7 +1412,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~20"></span>
+              <span class="anchor" id="variable-error~33"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1429,7 +1429,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag~4"></span>
+              <span class="anchor" id="variable-frag~2"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1446,7 +1446,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~5"></span>
+              <span class="anchor" id="variable-fragment_size~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1463,7 +1463,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fwd_dip~2"></span>
+              <span class="anchor" id="variable-fwd_dip"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1480,7 +1480,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fwd_grad~2"></span>
+              <span class="anchor" id="variable-fwd_grad"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1497,7 +1497,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-have_dipoles~2"></span>
+              <span class="anchor" id="variable-have_dipoles"></span>
               logical,
             </td>
               <td>private</td>
@@ -1514,7 +1514,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~12"></span>
+              <span class="anchor" id="variable-k~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -1531,7 +1531,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~15"></span>
+              <span class="anchor" id="variable-n_atoms~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -1548,7 +1548,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_disp~4"></span>
+              <span class="anchor" id="variable-n_disp~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1581,7 +1581,7 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">assemble_one_fragment_hessian</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">task_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                            </span><span class="n">task_offset</span><span class="p">,</span><span class="w"> </span><span class="n">frag_natoms</span><span class="p">,</span><span class="w"> </span><span class="n">frag_result</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Fold one fragment&#39;s displacement results into its Hessian, then release them</span>
+<span class="w">      </span><span class="c">!! Fold one fragment's displacement results into its Hessian, then release them</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The fragment owns a contiguous block of task results laid out by</span>
 <span class="w">      </span><span class="c">!! build_hessian_task_table as [reference, +1, -1, +2, -2, ...]. Gathering that</span>
@@ -1615,7 +1615,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">fragment_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment_size_of</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="p">:))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">fragment_size</span><span class="p">),</span><span class="w"> </span><span class="n">frag</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;assemble_one_fragment_hessian: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"assemble_one_fragment_hessian: "</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
 <span class="w">         </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
@@ -1628,8 +1628,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_disp</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">             </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="p">)%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Missing gradient for displacement &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot; of fragment &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Missing gradient for displacement "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">" of fragment "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
 <span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         </span><span class="n">fwd_grad</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)%</span><span class="n">gradient</span>
@@ -1648,7 +1648,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">frag_result</span><span class="p">%</span><span class="n">has_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
 <span class="w">      </span><span class="c">! The undisplaced point carries the energy, gradient and dipole that belong</span>
-<span class="w">      </span><span class="c">! beside this fragment&#39;s Hessian.</span>
+<span class="w">      </span><span class="c">! beside this fragment's Hessian.</span>
 <span class="w">      </span><span class="n">frag_result</span><span class="p">%</span><span class="n">energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="p">)%</span><span class="n">energy</span>
 <span class="w">      </span><span class="n">frag_result</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="p">)%</span><span class="n">has_energy</span>
 <span class="w">      </span><span class="n">frag_result</span><span class="p">%</span><span class="n">distance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="p">)%</span><span class="n">distance</span>
@@ -1670,7 +1670,7 @@ large graphs.</div>
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">fwd_grad</span><span class="p">,</span><span class="w"> </span><span class="n">bwd_grad</span><span class="p">,</span><span class="w"> </span><span class="n">fwd_dip</span><span class="p">,</span><span class="w"> </span><span class="n">bwd_dip</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">frag</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 
-<span class="w">      </span><span class="c">! Release this fragment&#39;s task results now that they are folded in</span>
+<span class="w">      </span><span class="c">! Release this fragment's task results now that they are folded in</span>
 <span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">n_disp</span>
 <span class="w">         </span><span class="k">call </span><span class="n">task_results</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">k</span><span class="p">)%</span><span class="n">destroy</span><span class="p">()</span>
 <span class="w">      </span><span class="k">end do</span>
@@ -1699,7 +1699,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

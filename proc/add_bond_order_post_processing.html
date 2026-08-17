@@ -213,7 +213,7 @@ point where both exist and hands back a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~4"></span>
+              <span class="anchor" id="variable-mol~5"></span>
               type(structure_type),
             </td>
 <td>intent(in)</td>
@@ -228,7 +228,7 @@ point where both exist and hands back a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~21"></span>
+              <span class="anchor" id="variable-result~11"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -584,9 +584,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">add_bond_order_post_processing</span><span class="p">(</span><span class="n">pproc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Ask tblite to compute Wiberg-Mayer bond orders during the single point</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Registered by name through tblite&#39;s own post-processing list rather than</span>
+<span class="w">      </span><span class="c">!! Registered by name through tblite's own post-processing list rather than</span>
 <span class="w">      </span><span class="c">!! calling `get_mayer_bond_orders` directly. The direct call needs the</span>
-<span class="w">      </span><span class="c">!! overlap and the density matrix, which means holding tblite&#39;s integrals</span>
+<span class="w">      </span><span class="c">!! overlap and the density matrix, which means holding tblite's integrals</span>
 <span class="w">      </span><span class="c">!! open across the calculation; the post-processor already runs at the</span>
 <span class="w">      </span><span class="c">!! point where both exist and hands back a matrix.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">post_processing_list</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pproc</span>
@@ -596,11 +596,11 @@ large graphs.</div>
 <span class="k">      type</span><span class="p">(</span><span class="n">error_type</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">perr</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">request</span>
 
-<span class="w">      </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;bond-orders&quot;</span>
+<span class="w">      </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bond-orders"</span>
 <span class="w">      </span><span class="k">call </span><span class="n">add_post_processing</span><span class="p">(</span><span class="n">pproc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">perr</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">perr</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;xtb bond orders: tblite refused the &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                               </span><span class="s2">&quot;post-processing request: &quot;</span><span class="o">//</span><span class="n">perr</span><span class="p">%</span><span class="n">message</span><span class="p">)</span>
+<span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"xtb bond orders: tblite refused the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                               </span><span class="s2">"post-processing request: "</span><span class="o">//</span><span class="n">perr</span><span class="p">%</span><span class="n">message</span><span class="p">)</span>
 <span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">   end subroutine </span><span class="n">add_bond_order_post_processing</span>
@@ -627,7 +627,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

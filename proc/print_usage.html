@@ -374,20 +374,20 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span>
 
 <span class="nb">      </span><span class="k">call </span><span class="nb">get_command_argument</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">prog_name</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="nb">stat</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">prog_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;pic_basis_reader&quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">prog_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"pic_basis_reader"</span>
 
 <span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Usage: &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">prog_name</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot; &lt;geometry.xyz&gt; &lt;basis_name&gt;&quot;</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"Usage: "</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">prog_name</span><span class="p">),</span><span class="w"> </span><span class="s2">" &lt;geometry.xyz&gt; &lt;basis_name&gt;"</span>
 <span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Arguments:&quot;</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;  geometry.xyz   XYZ format molecular geometry file&quot;</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;  basis_name     Name of basis set (e.g., 6-31G, 6-311G**)&quot;</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"Arguments:"</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"  geometry.xyz   XYZ format molecular geometry file"</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"  basis_name     Name of basis set (e.g., 6-31G, 6-311G**)"</span>
 <span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Options:&quot;</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;  -h, --help     Show this help message&quot;</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"Options:"</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"  -h, --help     Show this help message"</span>
 <span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Example:&quot;</span>
-<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;  &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">prog_name</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot; water.xyz 6-31G&quot;</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"Example:"</span>
+<span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">"  "</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">prog_name</span><span class="p">),</span><span class="w"> </span><span class="s2">" water.xyz 6-31G"</span>
 <span class="w">      </span><span class="k">print</span><span class="w"> </span><span class="o">*</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">print_usage</span>
@@ -414,7 +414,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

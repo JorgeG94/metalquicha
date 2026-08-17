@@ -281,7 +281,7 @@ large graphs.</div>
 <a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_pcm_radii</span>
 <a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Van der Waals radii, and the scaling that turns them into a solute cavity.</span>
 <a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!!</span>
-<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! **This is our data, which is the whole risk.** A continuum model&#39;s answer</span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! **This is our data, which is the whole risk.** A continuum model's answer</span>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! depends on the cavity more strongly than on almost anything else in it -- the</span>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! solvation energy goes roughly as 1/R -- so a radius that is wrong by a few</span>
 <a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! percent produces a solvation energy that is wrong by a few percent while</span>
@@ -290,7 +290,7 @@ large graphs.</div>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! place, with the paper it came from written beside it, and a test that pins</span>
 <a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="c">!! the values a reader is most likely to recognise.</span>
 <a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="c">!!</span>
-<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="w">   </span><span class="c">!! The values are Bondi&#39;s [J. Phys. Chem. 68, 441 (1964)], filled in for the</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="w">   </span><span class="c">!! The values are Bondi's [J. Phys. Chem. 68, 441 (1964)], filled in for the</span>
 <a id="ln-15" name="ln-15" href="#ln-15"></a><span class="w">   </span><span class="c">!! elements Bondi did not cover from Mantina et al. [J. Phys. Chem. A 113, 5806</span>
 <a id="ln-16" name="ln-16" href="#ln-16"></a><span class="w">   </span><span class="c">!! (2009)], which is the same combination PySCF, ORCA and Q-Chem use for their</span>
 <a id="ln-17" name="ln-17" href="#ln-17"></a><span class="w">   </span><span class="c">!! default PCM cavities. They are *van der Waals* radii and not the</span>
@@ -323,7 +323,7 @@ large graphs.</div>
 <a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">   </span><span class="c">!&gt; 1.2 is the long-standing convention, from the observation that the solute</span>
 <a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">   </span><span class="c">!&gt; cavity that reproduces experimental solvation energies is somewhat larger</span>
 <a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">   </span><span class="c">!&gt; than the bare van der Waals surface. It is a fitted number, not a derived</span>
-<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">   </span><span class="c">!&gt; one, and codes differ: Gaussian&#39;s UFF cavity and ORCA&#39;s default differ from</span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">   </span><span class="c">!&gt; one, and codes differ: Gaussian's UFF cavity and ORCA's default differ from</span>
 <a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">   </span><span class="c">!&gt; this and from each other. So it is a default rather than a constant, and a</span>
 <a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">   </span><span class="c">!&gt; deck can override it.</span>
 <a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">   </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_RADII_SCALE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.2_dp</span>
@@ -367,12 +367,12 @@ large graphs.</div>
 <a id="ln-88" name="ln-88" href="#ln-88"></a>
 <a id="ln-89" name="ln-89" href="#ln-89"></a><span class="w">      </span><span class="n">radius</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <a id="ln-90" name="ln-90" href="#ln-90"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atomic_number</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">atomic_number</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">MAX_PCM_ELEMENT</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">number_text</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">atomic_number</span>
-<a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;no cavity radius for element &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-93" name="ln-93" href="#ln-93"></a><span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">number_text</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: the continuum model here carries van &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-94" name="ln-94" href="#ln-94"></a><span class="w">                        </span><span class="s2">&quot;der Waals radii for hydrogen through argon only. Refused &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-95" name="ln-95" href="#ln-95"></a><span class="w">                        </span><span class="s2">&quot;rather than guessed, since a wrong cavity radius gives a &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-96" name="ln-96" href="#ln-96"></a><span class="w">                        </span><span class="s2">&quot;wrong solvation energy and nothing would say so.&quot;</span><span class="p">)</span>
+<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">number_text</span><span class="p">,</span><span class="w"> </span><span class="s2">"(i0)"</span><span class="p">)</span><span class="w"> </span><span class="n">atomic_number</span>
+<a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"no cavity radius for element "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-93" name="ln-93" href="#ln-93"></a><span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">number_text</span><span class="p">)</span><span class="o">//</span><span class="s2">": the continuum model here carries van "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-94" name="ln-94" href="#ln-94"></a><span class="w">                        </span><span class="s2">"der Waals radii for hydrogen through argon only. Refused "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-95" name="ln-95" href="#ln-95"></a><span class="w">                        </span><span class="s2">"rather than guessed, since a wrong cavity radius gives a "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-96" name="ln-96" href="#ln-96"></a><span class="w">                        </span><span class="s2">"wrong solvation energy and nothing would say so."</span><span class="p">)</span>
 <a id="ln-97" name="ln-97" href="#ln-97"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-98" name="ln-98" href="#ln-98"></a><span class="k">      end if</span>
 <a id="ln-99" name="ln-99" href="#ln-99"></a>
@@ -389,7 +389,7 @@ large graphs.</div>
 <a id="ln-110" name="ln-110" href="#ln-110"></a><span class="w">      </span><span class="k">call </span><span class="n">vdw_radius</span><span class="p">(</span><span class="n">atomic_number</span><span class="p">,</span><span class="w"> </span><span class="n">radius</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <a id="ln-111" name="ln-111" href="#ln-111"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <a id="ln-112" name="ln-112" href="#ln-112"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">scale</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;the cavity radius scale must be positive&quot;</span><span class="p">)</span>
+<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the cavity radius scale must be positive"</span><span class="p">)</span>
 <a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-115" name="ln-115" href="#ln-115"></a><span class="k">      end if</span>
 <a id="ln-116" name="ln-116" href="#ln-116"></a><span class="k">      </span><span class="n">radius</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">scale</span><span class="o">*</span><span class="n">radius</span>
@@ -417,7 +417,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

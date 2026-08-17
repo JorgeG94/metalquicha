@@ -1203,19 +1203,19 @@ large graphs.</div>
 <a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">      </span><span class="c">!! Total energy is computed as: scf + dh_pt2 + mp2%total() + cc%total()</span>
 <a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">           </span><span class="c">!! SCF/HF/KS reference energy (Hartree)</span>
 <a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dh_pt2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
-<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">         </span><span class="c">!! The perturbative part of a double hybrid&#39;s *functional*.</span>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">         </span><span class="c">!! The perturbative part of a double hybrid's *functional*.</span>
 <a id="ln-72" name="ln-72" href="#ln-72"></a><span class="w">         </span><span class="c">!!</span>
 <a id="ln-73" name="ln-73" href="#ln-73"></a><span class="w">         </span><span class="c">!! Separate from `mp2` on purpose, and the distinction is not cosmetic. A</span>
-<a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">         </span><span class="c">!! double hybrid&#39;s second-order term is a component of its exchange-</span>
+<a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">         </span><span class="c">!! double hybrid's second-order term is a component of its exchange-</span>
 <a id="ln-75" name="ln-75" href="#ln-75"></a><span class="w">         </span><span class="c">!! correlation functional, not a correction applied on top of a reference</span>
-<a id="ln-76" name="ln-76" href="#ln-76"></a><span class="w">         </span><span class="c">!! -- B2PLYP&#39;s energy is not &quot;B2PLYP plus MP2&quot;. Putting it in `mp2` would</span>
+<a id="ln-76" name="ln-76" href="#ln-76"></a><span class="w">         </span><span class="c">!! -- B2PLYP's energy is not "B2PLYP plus MP2". Putting it in `mp2` would</span>
 <a id="ln-77" name="ln-77" href="#ln-77"></a><span class="w">         </span><span class="c">!! give the right total today, for the wrong reason, and the wrong total</span>
 <a id="ln-78" name="ln-78" href="#ln-78"></a><span class="w">         </span><span class="c">!! the moment anyone asked for MP2 alongside a double hybrid: `total`</span>
 <a id="ln-79" name="ln-79" href="#ln-79"></a><span class="w">         </span><span class="c">!! would add it twice.</span>
 <a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">         </span><span class="c">!!</span>
 <a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">         </span><span class="c">!! Belongs with `scf` conceptually -- it is part of what the functional</span>
 <a id="ln-82" name="ln-82" href="#ln-82"></a><span class="w">         </span><span class="c">!! defines -- and is kept as its own field only so a run can report it.</span>
-<a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">         </span><span class="c">!! Already scaled by the functional&#39;s coefficient when it is stored.</span>
+<a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">         </span><span class="c">!! Already scaled by the functional's coefficient when it is stored.</span>
 <a id="ln-84" name="ln-84" href="#ln-84"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mp2_energy_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mp2</span><span class="w">          </span><span class="c">!! MP2 correlation components</span>
 <a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cc_energy_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cc</span><span class="w">            </span><span class="c">!! Coupled cluster correlation components</span>
 <a id="ln-86" name="ln-86" href="#ln-86"></a><span class="w">      </span><span class="c">! add more as needed, also need to modify the total energy function</span>
@@ -1245,7 +1245,7 @@ large graphs.</div>
 <a id="ln-110" name="ln-110" href="#ln-110"></a><span class="w">         </span><span class="c">!! here, which is why this is worth carrying rather than re-deriving</span>
 <a id="ln-111" name="ln-111" href="#ln-111"></a><span class="w">         </span><span class="c">!! from the geometry.</span>
 <a id="ln-112" name="ln-112" href="#ln-112"></a><span class="w">         </span><span class="c">!!</span>
-<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="w">         </span><span class="c">!! Atom indices are the fragment&#39;s own, so a fragment&#39;s matrix is</span>
+<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="w">         </span><span class="c">!! Atom indices are the fragment's own, so a fragment's matrix is</span>
 <a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">         </span><span class="c">!! fragment-local and includes its caps.</span>
 <a id="ln-115" name="ln-115" href="#ln-115"></a>
 <a id="ln-116" name="ln-116" href="#ln-116"></a><span class="w">      </span><span class="c">! Fragment metadata</span>
@@ -1268,7 +1268,7 @@ large graphs.</div>
 <a id="ln-133" name="ln-133" href="#ln-133"></a><span class="w">      </span><span class="c">!</span>
 <a id="ln-134" name="ln-134" href="#ln-134"></a><span class="w">      </span><span class="c">! **These do not add up.** Energies and dipoles are additive and the</span>
 <a id="ln-135" name="ln-135" href="#ln-135"></a><span class="w">      </span><span class="c">! expansion sums them; a gap is not, and there is no combination of</span>
-<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">      </span><span class="c">! fragment gaps that is the system&#39;s. So these stay per fragment and no</span>
+<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">      </span><span class="c">! fragment gaps that is the system's. So these stay per fragment and no</span>
 <a id="ln-137" name="ln-137" href="#ln-137"></a><span class="w">      </span><span class="c">! total is formed anywhere -- a summed gap would look like a number and</span>
 <a id="ln-138" name="ln-138" href="#ln-138"></a><span class="w">      </span><span class="c">! be nothing at all. For the gap of a molecule, run it unfragmented.</span>
 <a id="ln-139" name="ln-139" href="#ln-139"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">          </span><span class="c">!! Highest occupied orbital energy (Hartree)</span>
@@ -1280,7 +1280,7 @@ large graphs.</div>
 <a id="ln-145" name="ln-145" href="#ln-145"></a><span class="w">      </span><span class="c">! Tri-state rather than a logical, because either default would be a</span>
 <a id="ln-146" name="ln-146" href="#ln-146"></a><span class="w">      </span><span class="c">! lie: `.true.` makes a method that never reports look converged, and</span>
 <a id="ln-147" name="ln-147" href="#ln-147"></a><span class="w">      </span><span class="c">! `.false.` makes it look failed. A method that does not say leaves this</span>
-<a id="ln-148" name="ln-148" href="#ln-148"></a><span class="w">      </span><span class="c">! at SCF_UNKNOWN and the output prints &quot;?&quot; -- which is the truth, and</span>
+<a id="ln-148" name="ln-148" href="#ln-148"></a><span class="w">      </span><span class="c">! at SCF_UNKNOWN and the output prints "?" -- which is the truth, and</span>
 <a id="ln-149" name="ln-149" href="#ln-149"></a><span class="w">      </span><span class="c">! which shows up as something to fix rather than as a clean bill.</span>
 <a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SCF_UNKNOWN</span><span class="w">  </span><span class="c">!! Whether the SCF reached its thresholds</span>
 <a id="ln-151" name="ln-151" href="#ln-151"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="c">!! Cycles used, 0 if not reported</span>
@@ -1335,10 +1335,10 @@ large graphs.</div>
 <a id="ln-200" name="ln-200" href="#ln-200"></a><span class="w">   </span><span class="k">end function </span><span class="n">mp2_total</span>
 <a id="ln-201" name="ln-201" href="#ln-201"></a>
 <a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">   </span><span class="k">pure function </span><span class="n">mp2_scs</span><span class="p">(</span><span class="n">this</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">scs_energy</span><span class="p">)</span>
-<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">      </span><span class="c">!! Grimme&#39;s SCS-MP2 at its published factors, whatever this run used</span>
+<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">      </span><span class="c">!! Grimme's SCS-MP2 at its published factors, whatever this run used</span>
 <a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">      </span><span class="c">!!</span>
-<a id="ln-205" name="ln-205" href="#ln-205"></a><span class="w">      </span><span class="c">!! Fixed on purpose: `total` reports the run&#39;s own scaling, and this</span>
-<a id="ln-206" name="ln-206" href="#ln-206"></a><span class="w">      </span><span class="c">!! answers &quot;what would SCS-MP2 have given&quot;, which is a different</span>
+<a id="ln-205" name="ln-205" href="#ln-205"></a><span class="w">      </span><span class="c">!! Fixed on purpose: `total` reports the run's own scaling, and this</span>
+<a id="ln-206" name="ln-206" href="#ln-206"></a><span class="w">      </span><span class="c">!! answers "what would SCS-MP2 have given", which is a different</span>
 <a id="ln-207" name="ln-207" href="#ln-207"></a><span class="w">      </span><span class="c">!! question and the one worth being able to ask of any MP2 result.</span>
 <a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">mp2_energy_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <a id="ln-209" name="ln-209" href="#ln-209"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scs_energy</span>
@@ -1360,11 +1360,11 @@ large graphs.</div>
 <a id="ln-225" name="ln-225" href="#ln-225"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">mp2_energy_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <a id="ln-226" name="ln-226" href="#ln-226"></a>
 <a id="ln-227" name="ln-227" href="#ln-227"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">ss</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-228" name="ln-228" href="#ln-228"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;MP2 same-spin correlation energy is positive - possible instability!&quot;</span><span class="p">)</span>
+<a id="ln-228" name="ln-228" href="#ln-228"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"MP2 same-spin correlation energy is positive - possible instability!"</span><span class="p">)</span>
 <a id="ln-229" name="ln-229" href="#ln-229"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-230" name="ln-230" href="#ln-230"></a>
 <a id="ln-231" name="ln-231" href="#ln-231"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">os</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-232" name="ln-232" href="#ln-232"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;MP2 opposite-spin correlation energy is positive - possible instability!&quot;</span><span class="p">)</span>
+<a id="ln-232" name="ln-232" href="#ln-232"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"MP2 opposite-spin correlation energy is positive - possible instability!"</span><span class="p">)</span>
 <a id="ln-233" name="ln-233" href="#ln-233"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-234" name="ln-234" href="#ln-234"></a><span class="k">   end subroutine </span><span class="n">mp2_check_stability</span>
 <a id="ln-235" name="ln-235" href="#ln-235"></a>
@@ -1391,15 +1391,15 @@ large graphs.</div>
 <a id="ln-256" name="ln-256" href="#ln-256"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">cc_energy_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <a id="ln-257" name="ln-257" href="#ln-257"></a>
 <a id="ln-258" name="ln-258" href="#ln-258"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">singles</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-259" name="ln-259" href="#ln-259"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;CC singles correlation energy is positive - possible instability!&quot;</span><span class="p">)</span>
+<a id="ln-259" name="ln-259" href="#ln-259"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"CC singles correlation energy is positive - possible instability!"</span><span class="p">)</span>
 <a id="ln-260" name="ln-260" href="#ln-260"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-261" name="ln-261" href="#ln-261"></a>
 <a id="ln-262" name="ln-262" href="#ln-262"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">doubles</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-263" name="ln-263" href="#ln-263"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;CC doubles correlation energy is positive - possible instability!&quot;</span><span class="p">)</span>
+<a id="ln-263" name="ln-263" href="#ln-263"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"CC doubles correlation energy is positive - possible instability!"</span><span class="p">)</span>
 <a id="ln-264" name="ln-264" href="#ln-264"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-265" name="ln-265" href="#ln-265"></a>
 <a id="ln-266" name="ln-266" href="#ln-266"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">triples</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-267" name="ln-267" href="#ln-267"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;CC triples correlation energy is positive - possible instability!&quot;</span><span class="p">)</span>
+<a id="ln-267" name="ln-267" href="#ln-267"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"CC triples correlation energy is positive - possible instability!"</span><span class="p">)</span>
 <a id="ln-268" name="ln-268" href="#ln-268"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-269" name="ln-269" href="#ln-269"></a><span class="k">   end subroutine </span><span class="n">cc_check_stability</span>
 <a id="ln-270" name="ln-270" href="#ln-270"></a>
@@ -1529,7 +1529,7 @@ large graphs.</div>
 <a id="ln-394" name="ln-394" href="#ln-394"></a><span class="w">      </span><span class="c">! code per element. It is never empty: a zero-length message would leave</span>
 <a id="ln-395" name="ln-395" href="#ln-395"></a><span class="w">      </span><span class="c">! the coordinator with a failure it cannot name.</span>
 <a id="ln-396" name="ln-396" href="#ln-396"></a><span class="w">      </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">()</span>
-<a id="ln-397" name="ln-397" href="#ln-397"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Calculation failed without a diagnostic&quot;</span>
+<a id="ln-397" name="ln-397" href="#ln-397"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Calculation failed without a diagnostic"</span>
 <a id="ln-398" name="ln-398" href="#ln-398"></a><span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
 <a id="ln-399" name="ln-399" href="#ln-399"></a><span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">encoded</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
 <a id="ln-400" name="ln-400" href="#ln-400"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
@@ -1752,9 +1752,9 @@ large graphs.</div>
 <a id="ln-617" name="ln-617" href="#ln-617"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span>
 <a id="ln-618" name="ln-618" href="#ln-618"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">MPI_Status</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
 <a id="ln-619" name="ln-619" href="#ln-619"></a>
-<a id="ln-620" name="ln-620" href="#ln-620"></a><span class="w">      </span><span class="c">! Start from an empty result. pic-mpi&#39;s array receives allocate only when</span>
+<a id="ln-620" name="ln-620" href="#ln-620"></a><span class="w">      </span><span class="c">! Start from an empty result. pic-mpi's array receives allocate only when</span>
 <a id="ln-621" name="ln-621" href="#ln-621"></a><span class="w">      </span><span class="c">! the target is unallocated -- they will not resize a buffer that is</span>
-<a id="ln-622" name="ln-622" href="#ln-622"></a><span class="w">      </span><span class="c">! already there, yet still receive the sender&#39;s full element count into</span>
+<a id="ln-622" name="ln-622" href="#ln-622"></a><span class="w">      </span><span class="c">! already there, yet still receive the sender's full element count into</span>
 <a id="ln-623" name="ln-623" href="#ln-623"></a><span class="w">      </span><span class="c">! it. A caller reusing one result across messages of different shapes</span>
 <a id="ln-624" name="ln-624" href="#ln-624"></a><span class="w">      </span><span class="c">! (a relay loop forwarding fragments of unequal size, say) would overflow</span>
 <a id="ln-625" name="ln-625" href="#ln-625"></a><span class="w">      </span><span class="c">! the smaller allocation and corrupt the heap, surfacing much later as an</span>
@@ -1819,11 +1819,11 @@ large graphs.</div>
 <a id="ln-684" name="ln-684" href="#ln-684"></a>
 <a id="ln-685" name="ln-685" href="#ln-685"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
 <a id="ln-686" name="ln-686" href="#ln-686"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">SCF_CONVERGED</span><span class="p">)</span>
-<a id="ln-687" name="ln-687" href="#ln-687"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;yes&quot;</span>
+<a id="ln-687" name="ln-687" href="#ln-687"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"yes"</span>
 <a id="ln-688" name="ln-688" href="#ln-688"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">SCF_NOT_CONVERGED</span><span class="p">)</span>
-<a id="ln-689" name="ln-689" href="#ln-689"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;NO &quot;</span>
+<a id="ln-689" name="ln-689" href="#ln-689"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"NO "</span>
 <a id="ln-690" name="ln-690" href="#ln-690"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<a id="ln-691" name="ln-691" href="#ln-691"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;?  &quot;</span>
+<a id="ln-691" name="ln-691" href="#ln-691"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"?  "</span>
 <a id="ln-692" name="ln-692" href="#ln-692"></a><span class="w">      </span><span class="k">end select</span>
 <a id="ln-693" name="ln-693" href="#ln-693"></a><span class="k">   end function </span><span class="n">scf_status_label</span>
 <a id="ln-694" name="ln-694" href="#ln-694"></a>
@@ -1882,7 +1882,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

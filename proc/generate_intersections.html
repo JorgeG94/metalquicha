@@ -140,11 +140,11 @@
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-current_intersection">current_intersection</a>
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-current_n_intersect">current_n_intersect</a>
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-has_intersection~2">has_intersection</a>
-            <a class="list-group-item" href="../proc/generate_intersections.html#variable-i~120">i</a>
-            <a class="list-group-item" href="../proc/generate_intersections.html#variable-idx~9">idx</a>
+            <a class="list-group-item" href="../proc/generate_intersections.html#variable-i~14">i</a>
+            <a class="list-group-item" href="../proc/generate_intersections.html#variable-idx">idx</a>
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-intersection_count">intersection_count</a>
-            <a class="list-group-item" href="../proc/generate_intersections.html#variable-k~23">k</a>
-            <a class="list-group-item" href="../proc/generate_intersections.html#variable-max_atoms~7">max_atoms</a>
+            <a class="list-group-item" href="../proc/generate_intersections.html#variable-k~3">k</a>
+            <a class="list-group-item" href="../proc/generate_intersections.html#variable-max_atoms">max_atoms</a>
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-max_intersections">max_intersections</a>
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-max_k_level">max_k_level</a>
             <a class="list-group-item" href="../proc/generate_intersections.html#variable-temp_intersection~2">temp_intersection</a>
@@ -496,7 +496,7 @@ The max_intersection_level parameter controls the maximum depth to avoid combina
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~64"></span>
+              <span class="anchor" id="variable-sys_geom~11"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -511,7 +511,7 @@ The max_intersection_level parameter controls the maximum depth to avoid combina
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~6"></span>
+              <span class="anchor" id="variable-monomers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -526,7 +526,7 @@ The max_intersection_level parameter controls the maximum depth to avoid combina
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~15"></span>
+              <span class="anchor" id="variable-polymers~2"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -541,7 +541,7 @@ The max_intersection_level parameter controls the maximum depth to avoid combina
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~5"></span>
+              <span class="anchor" id="variable-n_monomers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -556,7 +556,7 @@ The max_intersection_level parameter controls the maximum depth to avoid combina
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~4"></span>
+              <span class="anchor" id="variable-max_intersection_level~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -907,7 +907,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~120"></span>
+              <span class="anchor" id="variable-i~14"></span>
               integer,
             </td>
               <td>private</td>
@@ -924,7 +924,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-idx~9"></span>
+              <span class="anchor" id="variable-idx"></span>
               integer,
             </td>
               <td>private</td>
@@ -958,7 +958,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~23"></span>
+              <span class="anchor" id="variable-k~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -975,7 +975,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~7"></span>
+              <span class="anchor" id="variable-max_atoms"></span>
               integer,
             </td>
               <td>private</td>
@@ -1188,10 +1188,10 @@ large graphs.</div>
 <span class="w">      </span><span class="n">max_k_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">max_intersection_level</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">max_k_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating k-way intersections up to k=&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">max_k_level</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                          </span><span class="s2">&quot; (limited by max_intersection_level)&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Generating k-way intersections up to k="</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">max_k_level</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="s2">" (limited by max_intersection_level)"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">else</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating all k-way intersections for GMBE (inclusion-exclusion principle)&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Generating all k-way intersections for GMBE (inclusion-exclusion principle)"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Loop over intersection levels k from 2 to max_k_level</span>
@@ -1215,15 +1215,15 @@ large graphs.</div>
 <span class="w">         </span><span class="n">intersection_sets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_intersections</span><span class="p">)</span>
 <span class="w">         </span><span class="n">intersection_levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp_levels</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_intersections</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generated &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_intersections</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; total intersections:&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Generated "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_intersections</span><span class="p">)</span><span class="o">//</span><span class="s2">" total intersections:"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">max_k_level</span>
 <span class="w">            </span><span class="n">idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">intersection_levels</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; intersections at level &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">//</span><span class="s2">" intersections at level "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end do</span>
 <span class="k">      else</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No intersections found (fragments are non-overlapping)&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"No intersections found (fragments are non-overlapping)"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">temp_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">temp_sets</span><span class="p">,</span><span class="w"> </span><span class="n">temp_levels</span><span class="p">)</span>
@@ -1252,7 +1252,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

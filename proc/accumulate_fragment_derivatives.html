@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-error~113">error</a>
-            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-fragment~28">fragment</a>
+            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-error~110">error</a>
+            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-fragment~32">fragment</a>
         </div>
       </div>
     </div>
@@ -182,8 +182,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -571,7 +571,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coeff~2"></span>
+              <span class="anchor" id="variable-coeff"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -646,7 +646,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~24"></span>
+              <span class="anchor" id="variable-world_comm~21"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1420,7 +1420,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~113"></span>
+              <span class="anchor" id="variable-error~110"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1437,7 +1437,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~28"></span>
+              <span class="anchor" id="variable-fragment~32"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1470,10 +1470,10 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">accumulate_fragment_derivatives</span><span class="p">(</span><span class="n">frag_result</span><span class="p">,</span><span class="w"> </span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">coeff</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                              </span><span class="n">do_grad</span><span class="p">,</span><span class="w"> </span><span class="n">do_hess</span><span class="p">,</span><span class="w"> </span><span class="n">do_dipole_derivs</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Fold coeff * (one fragment&#39;s derivatives) into the system-sized totals</span>
+<span class="w">      </span><span class="c">!! Fold coeff * (one fragment's derivatives) into the system-sized totals</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The fragment is rebuilt once and shared by all three quantities, and each is</span>
-<span class="w">      </span><span class="c">!! scatter-accumulated over that fragment&#39;s own atoms only -- no system-sized</span>
+<span class="w">      </span><span class="c">!! scatter-accumulated over that fragment's own atoms only -- no system-sized</span>
 <span class="w">      </span><span class="c">!! temporary is allocated or zeroed anywhere.</span>
 <span class="w">      </span><span class="c">!! Bond connectivity is accessed via sys_geom%bonds.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result_t</span>
@@ -1499,7 +1499,7 @@ large graphs.</div>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">world_comm</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">            </span><span class="k">else</span>
-<span class="k">               error stop</span><span class="w"> </span><span class="s2">&quot;Failed to build fragment while accumulating MBE derivatives&quot;</span>
+<span class="k">               error stop</span><span class="w"> </span><span class="s2">"Failed to build fragment while accumulating MBE derivatives"</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end if</span>
 
@@ -1544,7 +1544,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

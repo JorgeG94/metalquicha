@@ -292,14 +292,14 @@ to <code>libblas.a</code>. You can do this by knowing where BLAS is installed an
 
 <p>A minimal deck:</p>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;molecules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;xyz&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;water.xyz&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;molecular_charge&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;molecular_multiplicity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="nt">"schema"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"example"</span><span class="p">,</span><span class="w"> </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"molecules"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nt">"xyz"</span><span class="p">:</span><span class="w"> </span><span class="s2">"water.xyz"</span><span class="p">,</span><span class="w"> </span><span class="nt">"molecular_charge"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">"molecular_multiplicity"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gfn2&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;driver&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Energy&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;keywords&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;fragmentation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MBE&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gfn2"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"driver"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Energy"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"keywords"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"fragmentation"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MBE"</span><span class="p">,</span><span class="w"> </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -310,11 +310,11 @@ to <code>libblas.a</code>. You can do this by knowing where BLAS is installed an
 different fragments &ndash; that is derived, not declared.</p>
 <p><code>driver</code> is <code>Energy</code>, <code>Gradient</code> or <code>Hessian</code>.</p>
 <p>For Hartree-Fock or DFT rather than xTB:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hf&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;basis&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;def2-svp&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;aux_basis&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;def2-universal-jkfit&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;functional&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pbe0&quot;</span>
+<div class="codehilite"><pre><span></span><code><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hf"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"basis"</span><span class="p">:</span><span class="w"> </span><span class="s2">"def2-svp"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"aux_basis"</span><span class="p">:</span><span class="w"> </span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"functional"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pbe0"</span>
 <span class="p">}</span>
 </code></pre></div>
 
@@ -322,7 +322,7 @@ different fragments &ndash; that is derived, not declared.</p>
 cuEST when it is compiled in, otherwise libcint on the CPU. cuEST always
 density-fits J and K, so <code>aux_basis</code> is required there. libcint has both paths
 and uses exact integrals unless asked:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">&quot;keywords&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;scf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;density_fitting&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<div class="codehilite"><pre><span></span><code><span class="nt">"keywords"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"scf"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"density_fitting"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 
 <p>The full keyword reference is in
@@ -348,9 +348,9 @@ overrides that with an explicit path.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">mqc</span>
 
 <span class="k">with</span> <span class="n">mqc</span><span class="o">.</span><span class="n">session</span><span class="p">():</span>
-    <span class="n">cluster</span> <span class="o">=</span> <span class="n">mqc</span><span class="o">.</span><span class="n">System</span><span class="o">.</span><span class="n">from_xyz</span><span class="p">(</span><span class="s2">&quot;water20.xyz&quot;</span><span class="p">)</span>
+    <span class="n">cluster</span> <span class="o">=</span> <span class="n">mqc</span><span class="o">.</span><span class="n">System</span><span class="o">.</span><span class="n">from_xyz</span><span class="p">(</span><span class="s2">"water20.xyz"</span><span class="p">)</span>
     <span class="n">cluster</span><span class="o">.</span><span class="n">auto_monomers</span><span class="p">()</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">mqc</span><span class="o">.</span><span class="n">MBE</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;gfn2&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;w20&quot;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">mqc</span><span class="o">.</span><span class="n">MBE</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"gfn2"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"w20"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">energy</span><span class="p">)</span>
 </code></pre></div>
 
@@ -453,7 +453,7 @@ none.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

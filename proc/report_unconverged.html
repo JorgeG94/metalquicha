@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/report_unconverged.html#variable-i~149">i</a>
+            <a class="list-group-item" href="../proc/report_unconverged.html#variable-i~139">i</a>
             <a class="list-group-item" href="../proc/report_unconverged.html#variable-line~9">line</a>
             <a class="list-group-item" href="../proc/report_unconverged.html#variable-n_bad">n_bad</a>
             <a class="list-group-item" href="../proc/report_unconverged.html#variable-n_unknown">n_unknown</a>
@@ -615,7 +615,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~149"></span>
+              <span class="anchor" id="variable-i~139"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -728,28 +728,28 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_unknown</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">fragment_count</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! Every fragment silent means the method does not report, not that a</span>
 <span class="w">         </span><span class="c">! million SCFs each declined to answer.</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;SCF convergence not reported by this method&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"SCF convergence not reported by this method"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_bad</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0_int64</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments converged&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"All "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">)</span><span class="o">//</span><span class="s2">" fragments converged"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0,a,i0,a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;WARNING: &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n_bad</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; of &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">         </span><span class="s2">&quot; fragments did NOT converge -- this total is built from them&quot;</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i0,a,i0,a)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"WARNING: "</span><span class="p">,</span><span class="w"> </span><span class="n">n_bad</span><span class="p">,</span><span class="w"> </span><span class="s2">" of "</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="s2">" fragments did NOT converge -- this total is built from them"</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
 <span class="w">      </span><span class="n">shown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">scf_status</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">SCF_NOT_CONVERGED</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 <span class="k">         </span><span class="n">shown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shown</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">shown</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10_int64</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  fragment &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  fragment "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end do</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_bad</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10_int64</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  ... and &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_bad</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">10_int64</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                             </span><span class="s2">&quot; more; see the scf column of the fragment table&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  ... and "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_bad</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">10_int64</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">" more; see the scf column of the fragment table"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">   end subroutine </span><span class="n">report_unconverged</span>
 </pre></div>
@@ -775,7 +775,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-found~22">found</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-found~6">found</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-frag_path">frag_path</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-has_list">has_list</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-ifrag">ifrag</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-indices~4">indices</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-n_here~2">n_here</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-indices">indices</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-n_here">n_here</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-n_pot">n_pot</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-one">one</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-shared">shared</a>
@@ -210,7 +210,7 @@ refused here instead of being handed the wrong potential and run.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~23"></span>
+              <span class="anchor" id="variable-json~9"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -255,7 +255,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~6"></span>
+              <span class="anchor" id="variable-natoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -270,7 +270,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~6"></span>
+              <span class="anchor" id="variable-nfrag~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -285,7 +285,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~7"></span>
+              <span class="anchor" id="variable-fragments~4"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -315,7 +315,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~82"></span>
+              <span class="anchor" id="variable-error~17"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -690,18 +690,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M68.51,-54C78.77,-54 90.97,-54 103.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="103.91,-57.5 113.91,-54 103.91,-50.5 103.91,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~read_fragments~~CalledByGraph_node10" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~read_fragments~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~read_fragments~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="78,-24 0,-24 0,0 78,0 78,-24"/>
 <text text-anchor="middle" x="39" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~read_fragments~~CalledByGraph_edge9" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M78.34,-12C99.34,-12 125.52,-12 147.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="147.75,-15.5 157.75,-12 147.75,-8.5 147.75,-15.5"/>
 </g>
@@ -809,7 +809,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~22"></span>
+              <span class="anchor" id="variable-found~6"></span>
               logical,
             </td>
               <td>private</td>
@@ -877,7 +877,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~4"></span>
+              <span class="anchor" id="variable-indices"></span>
               integer,
             </td>
               <td>private,</td>
@@ -894,7 +894,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_here~2"></span>
+              <span class="anchor" id="variable-n_here"></span>
               integer,
             </td>
               <td>private</td>
@@ -1007,56 +1007,56 @@ large graphs.</div>
 
 <span class="w">      </span><span class="n">nfrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="n">uniform</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragments&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">nfrag</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragments"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">nfrag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">nfrag</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">nfrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.uniform_system&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">uniform</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".uniform_system"</span><span class="p">,</span><span class="w"> </span><span class="n">uniform</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! A single string broadcasts; a list is read per fragment. Which one was written</span>
 <span class="w">      </span><span class="c">! is settled by asking for the string first -- `json%get` on a list into a scalar</span>
 <span class="w">      </span><span class="c">! does not find one, so this distinguishes the two without inspecting types.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_potentials&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">shared</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragment_potentials"</span><span class="p">,</span><span class="w"> </span><span class="n">shared</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">)))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">shared</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      </span><span class="n">n_pot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_potentials&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">has_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_pot</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragment_potentials"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">has_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_pot</span><span class="p">)</span>
 <span class="w">      </span><span class="n">has_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">has_list</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_list</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_pot</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">nfrag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;: &#39;fragment_potentials&#39; has &quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">n_pot</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot; entries for &quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">nfrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">": 'fragment_potentials' has "</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">n_pot</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">" entries for "</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">nfrag</span><span class="p">)</span><span class="o">//</span><span class="s2">" fragments"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">shared</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">uniform</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">nfrag</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;: &#39;fragment_potentials&#39; is a single potential for &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">nfrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments, which only makes sense with &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;&#39;uniform_system&#39;: true&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">": 'fragment_potentials' is a single potential for "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">nfrag</span><span class="p">)</span><span class="o">//</span><span class="s2">" fragments, which only makes sense with "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"'uniform_system': true"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="n">nfrag</span><span class="p">))</span>
 <span class="w">      </span><span class="k">do </span><span class="n">ifrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span>
-<span class="w">         </span><span class="n">frag_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragments(&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span>
+<span class="w">         </span><span class="n">frag_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragments("</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span>
 
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">frag_path</span><span class="p">,</span><span class="w"> </span><span class="n">indices</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">indices</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="n">frag_path</span><span class="o">//</span><span class="s2">&quot; is not a list of atom indices&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="n">frag_path</span><span class="o">//</span><span class="s2">" is not a list of atom indices"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">         </span><span class="n">n_here</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_here</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">frag_path</span><span class="o">//</span><span class="s2">&quot; is empty&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">frag_path</span><span class="o">//</span><span class="s2">" is empty"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">any</span><span class="p">(</span><span class="n">indices</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">indices</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">natoms</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">frag_path</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;: atom index out of range for natoms=&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">natoms</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot; (indices are 0-based)&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s2">": atom index out of range for natoms="</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">natoms</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">" (indices are 0-based)"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">         </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">indices</span>
@@ -1065,9 +1065,9 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! is neutral singlets rather than an error.</span>
 <span class="w">         </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_charges(&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragment_charges("</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">charge</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_multiplicities(&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragment_multiplicities("</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">multiplicity</span><span class="p">)</span>
 
 <span class="w">         </span><span class="c">! A fragment with no potential named for it stays quantum, so an absent</span>
@@ -1076,7 +1076,7 @@ large graphs.</div>
 <span class="k">            </span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">potential</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">join_path</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="n">shared</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">has_list</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">one</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">one</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.fragment_potentials(&quot;</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">//</span><span class="s2">".fragment_potentials("</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">one</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">one</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">one</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1087,17 +1087,17 @@ large graphs.</div>
 <span class="k">      end do</span>
 
 <span class="w">      </span><span class="c">! The uniformity claim, checked. Atom count is what a potential has to agree with</span>
-<span class="w">      </span><span class="c">! for its own atoms to be superposable onto a fragment&#39;s, so it is the cheap</span>
+<span class="w">      </span><span class="c">! for its own atoms to be superposable onto a fragment's, so it is the cheap</span>
 <span class="w">      </span><span class="c">! necessary condition; the loader still has to check composition when it reads</span>
 <span class="w">      </span><span class="c">! the file, which is where the elements become known.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uniform</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         do </span><span class="n">ifrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="n">indices</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;: &#39;uniform_system&#39; is true but fragment &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; has &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">": 'uniform_system' is true but fragment "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)</span><span class="o">//</span><span class="s2">" has "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">indices</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot; atoms where the first has &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">" atoms where the first has "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="n">indices</span><span class="p">)))</span>
 <span class="w">               </span><span class="k">return</span>
 <span class="k">            end if</span>
@@ -1127,7 +1127,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -169,10 +169,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='../module/mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -367,7 +367,7 @@ threads, no speedup&rdquo; from &ldquo;one thread all along&rdquo;.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~28"></span>
+              <span class="anchor" id="variable-this~26"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -720,7 +720,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Give a worker rank its threads, and say what it got</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! This used to be an unconditional `omp_set_num_threads(1)`, which made</span>
-<span class="w">      </span><span class="c">!! &quot;one fragment per rank, several threads per rank&quot; impossible: the ranks</span>
+<span class="w">      </span><span class="c">!! "one fragment per rank, several threads per rank" impossible: the ranks</span>
 <span class="w">      </span><span class="c">!! that run the chemistry were clamped to one thread whatever the launcher</span>
 <span class="w">      </span><span class="c">!! asked for, so raising OMP_NUM_THREADS did nothing and the cause was</span>
 <span class="w">      </span><span class="c">!! nowhere near the command line.</span>
@@ -731,8 +731,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Fock build threads its own quartet loop, which is where they go.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Every rank reports its role and thread count because the failure this</span>
-<span class="w">      </span><span class="c">!! replaces was invisible: nothing in the output distinguished &quot;four</span>
-<span class="w">      </span><span class="c">!! threads, no speedup&quot; from &quot;one thread all along&quot;.</span>
+<span class="w">      </span><span class="c">!! replaces was invisible: nothing in the output distinguished "four</span>
+<span class="w">      </span><span class="c">!! threads, no speedup" from "one thread all along".</span>
 <span class="w">      </span><span class="k">use </span><span class="n">omp_lib</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">omp_set_num_threads</span><span class="p">,</span><span class="w"> </span><span class="n">omp_get_max_threads</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">needs_serial_execution</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">global_logger</span>
@@ -743,8 +743,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">needs_serial_execution</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">omp_set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">())</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                          </span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">role</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">omp_get_max_threads</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; thread(s)&quot;</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">"Rank "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">())</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="s2">": "</span><span class="o">//</span><span class="n">role</span><span class="o">//</span><span class="s2">", "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">omp_get_max_threads</span><span class="p">())</span><span class="o">//</span><span class="s2">" thread(s)"</span><span class="p">)</span>
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">set_worker_threads</span>
 </pre></div>
 
@@ -769,7 +769,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

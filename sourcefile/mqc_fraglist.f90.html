@@ -742,17 +742,17 @@ large graphs.</div>
 <a id="ln-79" name="ln-79" href="#ln-79"></a><span class="nb">      </span><span class="k">call </span><span class="n">this</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 <a id="ln-80" name="ln-80" href="#ln-80"></a>
 <a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_monomers</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-82" name="ln-82" href="#ln-82"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraglist: a system needs at least one monomer&quot;</span><span class="p">)</span>
+<a id="ln-82" name="ln-82" href="#ln-82"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"fraglist: a system needs at least one monomer"</span><span class="p">)</span>
 <a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-84" name="ln-84" href="#ln-84"></a><span class="k">      end if</span>
 <a id="ln-85" name="ln-85" href="#ln-85"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-86" name="ln-86" href="#ln-86"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-87" name="ln-87" href="#ln-87"></a><span class="w">                        </span><span class="s2">&quot;fraglist: max_level must be at least 2 to have any n-mer terms&quot;</span><span class="p">)</span>
+<a id="ln-87" name="ln-87" href="#ln-87"></a><span class="w">                        </span><span class="s2">"fraglist: max_level must be at least 2 to have any n-mer terms"</span><span class="p">)</span>
 <a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-89" name="ln-89" href="#ln-89"></a><span class="k">      end if</span>
 <a id="ln-90" name="ln-90" href="#ln-90"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-91" name="ln-91" href="#ln-91"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">                        </span><span class="s2">&quot;fraglist: max_level exceeds the number of monomers&quot;</span><span class="p">)</span>
+<a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">                        </span><span class="s2">"fraglist: max_level exceeds the number of monomers"</span><span class="p">)</span>
 <a id="ln-93" name="ln-93" href="#ln-93"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-94" name="ln-94" href="#ln-94"></a><span class="k">      end if</span>
 <a id="ln-95" name="ln-95" href="#ln-95"></a>
@@ -775,7 +775,7 @@ large graphs.</div>
 <a id="ln-112" name="ln-112" href="#ln-112"></a><span class="nb">   </span><span class="k">end subroutine </span><span class="n">fraglist_create</span>
 <a id="ln-113" name="ln-113" href="#ln-113"></a>
 <a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">fraglist_replace</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_terms</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<a id="ln-115" name="ln-115" href="#ln-115"></a><span class="w">      </span><span class="c">!! Take a caller&#39;s term list wholesale</span>
+<a id="ln-115" name="ln-115" href="#ln-115"></a><span class="w">      </span><span class="c">!! Take a caller's term list wholesale</span>
 <a id="ln-116" name="ln-116" href="#ln-116"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-117" name="ln-117" href="#ln-117"></a><span class="w">      </span><span class="c">!! Whatever was known about the old list -- distances above all -- does</span>
 <a id="ln-118" name="ln-118" href="#ln-118"></a><span class="w">      </span><span class="c">!! not describe the new one, so it is dropped rather than left to be read</span>
@@ -787,16 +787,16 @@ large graphs.</div>
 <a id="ln-124" name="ln-124" href="#ln-124"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <a id="ln-125" name="ln-125" href="#ln-125"></a>
 <a id="ln-126" name="ln-126" href="#ln-126"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_terms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-127" name="ln-127" href="#ln-127"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraglist: term count cannot be negative&quot;</span><span class="p">)</span>
+<a id="ln-127" name="ln-127" href="#ln-127"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"fraglist: term count cannot be negative"</span><span class="p">)</span>
 <a id="ln-128" name="ln-128" href="#ln-128"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-129" name="ln-129" href="#ln-129"></a><span class="k">      end if</span>
 <a id="ln-130" name="ln-130" href="#ln-130"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-131" name="ln-131" href="#ln-131"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraglist: max_level must be at least 1&quot;</span><span class="p">)</span>
+<a id="ln-131" name="ln-131" href="#ln-131"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"fraglist: max_level must be at least 1"</span><span class="p">)</span>
 <a id="ln-132" name="ln-132" href="#ln-132"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-133" name="ln-133" href="#ln-133"></a><span class="k">      end if</span>
 <a id="ln-134" name="ln-134" href="#ln-134"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n_terms</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-135" name="ln-135" href="#ln-135"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">                        </span><span class="s2">&quot;fraglist: the supplied array is smaller than the term count claims&quot;</span><span class="p">)</span>
+<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">                        </span><span class="s2">"fraglist: the supplied array is smaller than the term count claims"</span><span class="p">)</span>
 <a id="ln-137" name="ln-137" href="#ln-137"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-138" name="ln-138" href="#ln-138"></a><span class="k">      end if</span>
 <a id="ln-139" name="ln-139" href="#ln-139"></a>
@@ -819,7 +819,7 @@ large graphs.</div>
 <a id="ln-156" name="ln-156" href="#ln-156"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <a id="ln-157" name="ln-157" href="#ln-157"></a>
 <a id="ln-158" name="ln-158" href="#ln-158"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraglist: nothing to measure, the list is empty&quot;</span><span class="p">)</span>
+<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"fraglist: nothing to measure, the list is empty"</span><span class="p">)</span>
 <a id="ln-160" name="ln-160" href="#ln-160"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-161" name="ln-161" href="#ln-161"></a><span class="k">      end if</span>
 <a id="ln-162" name="ln-162" href="#ln-162"></a>
@@ -833,7 +833,7 @@ large graphs.</div>
 <a id="ln-170" name="ln-170" href="#ln-170"></a><span class="w">      </span><span class="c">!! Keep the terms the mask selects, in their existing order</span>
 <a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-172" name="ln-172" href="#ln-172"></a><span class="w">      </span><span class="c">!! The one operation every screen reduces to. Distance screening, an</span>
-<a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">      </span><span class="c">!! energy threshold read out of a previous run&#39;s CSV, and resuming from</span>
+<a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">      </span><span class="c">!! energy threshold read out of a previous run's CSV, and resuming from</span>
 <a id="ln-174" name="ln-174" href="#ln-174"></a><span class="w">      </span><span class="c">!! the terms a dead run never reached are the same call with a different</span>
 <a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">      </span><span class="c">!! mask -- which is the point of the list being an object.</span>
 <a id="ln-176" name="ln-176" href="#ln-176"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
@@ -846,7 +846,7 @@ large graphs.</div>
 <a id="ln-183" name="ln-183" href="#ln-183"></a>
 <a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-185" name="ln-185" href="#ln-185"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">                        </span><span class="s2">&quot;fraglist: the mask does not have one entry per term&quot;</span><span class="p">)</span>
+<a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">                        </span><span class="s2">"fraglist: the mask does not have one entry per term"</span><span class="p">)</span>
 <a id="ln-187" name="ln-187" href="#ln-187"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-188" name="ln-188" href="#ln-188"></a><span class="k">      end if</span>
 <a id="ln-189" name="ln-189" href="#ln-189"></a>
@@ -871,7 +871,7 @@ large graphs.</div>
 <a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">fraglist_close_subsets</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <a id="ln-209" name="ln-209" href="#ln-209"></a><span class="w">      </span><span class="c">!! Add back every subset of every surviving term</span>
 <a id="ln-210" name="ln-210" href="#ln-210"></a><span class="w">      </span><span class="c">!!</span>
-<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="w">      </span><span class="c">!! **A screened list is not usable until this has run.** An n-body term&#39;s</span>
+<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="w">      </span><span class="c">!! **A screened list is not usable until this has run.** An n-body term's</span>
 <a id="ln-212" name="ln-212" href="#ln-212"></a><span class="w">      </span><span class="c">!! contribution is its energy less the delta of every proper subset, so</span>
 <a id="ln-213" name="ln-213" href="#ln-213"></a><span class="w">      </span><span class="c">!! keeping a trimer whose dimers fell below the threshold does not</span>
 <a id="ln-214" name="ln-214" href="#ln-214"></a><span class="w">      </span><span class="c">!! approximate anything -- the assembly looks the subsets up and fails.</span>
@@ -894,7 +894,7 @@ large graphs.</div>
 <a id="ln-231" name="ln-231" href="#ln-231"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <a id="ln-232" name="ln-232" href="#ln-232"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">MAX_TERM_LEVEL</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-233" name="ln-233" href="#ln-233"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-234" name="ln-234" href="#ln-234"></a><span class="w">                        </span><span class="s2">&quot;fraglist: max_level exceeds what subset closure supports&quot;</span><span class="p">)</span>
+<a id="ln-234" name="ln-234" href="#ln-234"></a><span class="w">                        </span><span class="s2">"fraglist: max_level exceeds what subset closure supports"</span><span class="p">)</span>
 <a id="ln-235" name="ln-235" href="#ln-235"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-236" name="ln-236" href="#ln-236"></a><span class="k">      end if</span>
 <a id="ln-237" name="ln-237" href="#ln-237"></a>
@@ -1023,7 +1023,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

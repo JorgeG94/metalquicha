@@ -770,9 +770,9 @@ large graphs.</div>
 <a id="ln-31" name="ln-31" href="#ln-31"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coordinates_from_string</span><span class="p">,</span><span class="w"> </span><span class="n">coordinates_to_string</span>
 <a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">algorithm_from_string</span><span class="p">,</span><span class="w"> </span><span class="n">algorithm_to_string</span>
 <a id="ln-33" name="ln-33" href="#ln-33"></a>
-<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="w">   </span><span class="c">! This program&#39;s own numbering rather than DL-FIND&#39;s, even though DL-FIND is</span>
+<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="w">   </span><span class="c">! This program's own numbering rather than DL-FIND's, even though DL-FIND is</span>
 <a id="ln-35" name="ln-35" href="#ln-35"></a><span class="w">   </span><span class="c">! the only engine today and two of these would have mapped to themselves.</span>
-<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="w">   </span><span class="c">! The translation lives in the bridge so that a deck saying &quot;hdlc&quot; keeps</span>
+<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="w">   </span><span class="c">! The translation lives in the bridge so that a deck saying "hdlc" keeps</span>
 <a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">   </span><span class="c">! meaning HDLC if a second engine numbers them differently, and so that an</span>
 <a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">   </span><span class="c">! engine which cannot do internal coordinates at all refuses in its own</span>
 <a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">   </span><span class="c">! terms rather than silently optimizing in Cartesians.</span>
@@ -804,10 +804,10 @@ large graphs.</div>
 <a id="ln-65" name="ln-65" href="#ln-65"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">OPT_ALGO_PRFO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w">    </span><span class="c">!! Partitioned rational function, for a saddle</span>
 <a id="ln-66" name="ln-66" href="#ln-66"></a>
 <a id="ln-67" name="ln-67" href="#ln-67"></a><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">optimizer_settings_t</span>
-<a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">      </span><span class="c">!! One optimization&#39;s settings, as the deck asked for them</span>
+<a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">      </span><span class="c">!! One optimization's settings, as the deck asked for them</span>
 <a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">      </span><span class="c">!!</span>
-<a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">      </span><span class="c">!! A negative real or integer means &quot;leave the engine&#39;s own default</span>
-<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">      </span><span class="c">!! alone&quot;, which is DL-FIND&#39;s own convention internally and is why it is</span>
+<a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">      </span><span class="c">!! A negative real or integer means "leave the engine's own default</span>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">      </span><span class="c">!! alone", which is DL-FIND's own convention internally and is why it is</span>
 <a id="ln-72" name="ln-72" href="#ln-72"></a><span class="w">      </span><span class="c">!! used here rather than transcribing every default twice. The two</span>
 <a id="ln-73" name="ln-73" href="#ln-73"></a><span class="w">      </span><span class="c">!! settings a user actually reads back -- the step cap and the gradient</span>
 <a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">      </span><span class="c">!! threshold -- are given real defaults anyway, because a run that stops</span>
@@ -842,7 +842,7 @@ large graphs.</div>
 <a id="ln-103" name="ln-103" href="#ln-103"></a><span class="w">         </span><span class="c">!! Energy and gradient at a geometry, in atomic units</span>
 <a id="ln-104" name="ln-104" href="#ln-104"></a><span class="w">         </span><span class="c">!!</span>
 <a id="ln-105" name="ln-105" href="#ln-105"></a><span class="w">         </span><span class="c">!! Coordinates are Bohr and the gradient is Hartree/Bohr, both in the</span>
-<a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">         </span><span class="c">!! system&#39;s own atom order. Fragmentation and hydrogen caps have</span>
+<a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">         </span><span class="c">!! system's own atom order. Fragmentation and hydrogen caps have</span>
 <a id="ln-107" name="ln-107" href="#ln-107"></a><span class="w">         </span><span class="c">!! already been folded back in by the time an engine sees this, so an</span>
 <a id="ln-108" name="ln-108" href="#ln-108"></a><span class="w">         </span><span class="c">!! engine never learns whether the number it was handed came from one</span>
 <a id="ln-109" name="ln-109" href="#ln-109"></a><span class="w">         </span><span class="c">!! calculation or from twenty thousand.</span>
@@ -869,7 +869,7 @@ large graphs.</div>
 <a id="ln-130" name="ln-130" href="#ln-130"></a><span class="w">         </span><span class="c">!! energy evaluation, which includes the trial points of a line</span>
 <a id="ln-131" name="ln-131" href="#ln-131"></a><span class="w">         </span><span class="c">!! search and would make a trajectory that goes backwards. What the</span>
 <a id="ln-132" name="ln-132" href="#ln-132"></a><span class="w">         </span><span class="c">!! driver does with it (writes a frame, records it for the output</span>
-<a id="ln-133" name="ln-133" href="#ln-133"></a><span class="w">         </span><span class="c">!! document) is not the engine&#39;s business.</span>
+<a id="ln-133" name="ln-133" href="#ln-133"></a><span class="w">         </span><span class="c">!! document) is not the engine's business.</span>
 <a id="ln-134" name="ln-134" href="#ln-134"></a><span class="w">         </span><span class="k">import</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dp</span>
 <a id="ln-135" name="ln-135" href="#ln-135"></a><span class="w">         </span><span class="k">implicit none</span>
 <a id="ln-136" name="ln-136" href="#ln-136"></a><span class="k">         </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
@@ -889,15 +889,15 @@ large graphs.</div>
 <a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coordinates</span>
 <a id="ln-151" name="ln-151" href="#ln-151"></a>
 <a id="ln-152" name="ln-152" href="#ln-152"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">lowercase</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
-<a id="ln-153" name="ln-153" href="#ln-153"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;cartesian&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;cart&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;xyz&quot;</span><span class="p">)</span>
+<a id="ln-153" name="ln-153" href="#ln-153"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"cartesian"</span><span class="p">,</span><span class="w"> </span><span class="s2">"cart"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xyz"</span><span class="p">)</span>
 <a id="ln-154" name="ln-154" href="#ln-154"></a><span class="w">         </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_CARTESIAN</span>
-<a id="ln-155" name="ln-155" href="#ln-155"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;hdlc&quot;</span><span class="p">)</span>
+<a id="ln-155" name="ln-155" href="#ln-155"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"hdlc"</span><span class="p">)</span>
 <a id="ln-156" name="ln-156" href="#ln-156"></a><span class="w">         </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_HDLC</span>
-<a id="ln-157" name="ln-157" href="#ln-157"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dlc&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;internal&quot;</span><span class="p">)</span>
+<a id="ln-157" name="ln-157" href="#ln-157"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"dlc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"internal"</span><span class="p">)</span>
 <a id="ln-158" name="ln-158" href="#ln-158"></a><span class="w">         </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_DLC</span>
-<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;hdlc-tc&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hdlc_tc&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hdlctc&quot;</span><span class="p">)</span>
+<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"hdlc-tc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hdlc_tc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hdlctc"</span><span class="p">)</span>
 <a id="ln-160" name="ln-160" href="#ln-160"></a><span class="w">         </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_HDLC_TC</span>
-<a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dlc-tc&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dlc_tc&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dlctc&quot;</span><span class="p">)</span>
+<a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"dlc-tc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dlc_tc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dlctc"</span><span class="p">)</span>
 <a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">         </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_DLC_TC</span>
 <a id="ln-163" name="ln-163" href="#ln-163"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
 <a id="ln-164" name="ln-164" href="#ln-164"></a><span class="w">         </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_COORDS_UNKNOWN</span>
@@ -911,17 +911,17 @@ large graphs.</div>
 <a id="ln-172" name="ln-172" href="#ln-172"></a>
 <a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span>
 <a id="ln-174" name="ln-174" href="#ln-174"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_COORDS_CARTESIAN</span><span class="p">)</span>
-<a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cartesian&quot;</span>
+<a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"cartesian"</span>
 <a id="ln-176" name="ln-176" href="#ln-176"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_COORDS_HDLC</span><span class="p">)</span>
-<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hdlc&quot;</span>
+<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"hdlc"</span>
 <a id="ln-178" name="ln-178" href="#ln-178"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_COORDS_DLC</span><span class="p">)</span>
-<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dlc&quot;</span>
+<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dlc"</span>
 <a id="ln-180" name="ln-180" href="#ln-180"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_COORDS_HDLC_TC</span><span class="p">)</span>
-<a id="ln-181" name="ln-181" href="#ln-181"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hdlc-tc&quot;</span>
+<a id="ln-181" name="ln-181" href="#ln-181"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"hdlc-tc"</span>
 <a id="ln-182" name="ln-182" href="#ln-182"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_COORDS_DLC_TC</span><span class="p">)</span>
-<a id="ln-183" name="ln-183" href="#ln-183"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dlc-tc&quot;</span>
+<a id="ln-183" name="ln-183" href="#ln-183"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dlc-tc"</span>
 <a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;unknown&quot;</span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unknown"</span>
 <a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">      </span><span class="k">end select</span>
 <a id="ln-187" name="ln-187" href="#ln-187"></a><span class="k">   end function </span><span class="n">coordinates_to_string</span>
 <a id="ln-188" name="ln-188" href="#ln-188"></a>
@@ -931,13 +931,13 @@ large graphs.</div>
 <a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">algorithm</span>
 <a id="ln-193" name="ln-193" href="#ln-193"></a>
 <a id="ln-194" name="ln-194" href="#ln-194"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">lowercase</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
-<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;lbfgs&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;l-bfgs&quot;</span><span class="p">)</span>
+<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"lbfgs"</span><span class="p">,</span><span class="w"> </span><span class="s2">"l-bfgs"</span><span class="p">)</span>
 <a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_LBFGS</span>
-<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;cg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;conjugate-gradient&quot;</span><span class="p">)</span>
+<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"cg"</span><span class="p">,</span><span class="w"> </span><span class="s2">"conjugate-gradient"</span><span class="p">)</span>
 <a id="ln-198" name="ln-198" href="#ln-198"></a><span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_CG</span>
-<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;sd&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;steepest-descent&quot;</span><span class="p">)</span>
+<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"sd"</span><span class="p">,</span><span class="w"> </span><span class="s2">"steepest-descent"</span><span class="p">)</span>
 <a id="ln-200" name="ln-200" href="#ln-200"></a><span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_SD</span>
-<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;prfo&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;p-rfo&quot;</span><span class="p">)</span>
+<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"prfo"</span><span class="p">,</span><span class="w"> </span><span class="s2">"p-rfo"</span><span class="p">)</span>
 <a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_PRFO</span>
 <a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
 <a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_UNKNOWN</span>
@@ -951,15 +951,15 @@ large graphs.</div>
 <a id="ln-212" name="ln-212" href="#ln-212"></a>
 <a id="ln-213" name="ln-213" href="#ln-213"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">algorithm</span><span class="p">)</span>
 <a id="ln-214" name="ln-214" href="#ln-214"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_ALGO_SD</span><span class="p">)</span>
-<a id="ln-215" name="ln-215" href="#ln-215"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;steepest-descent&quot;</span>
+<a id="ln-215" name="ln-215" href="#ln-215"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steepest-descent"</span>
 <a id="ln-216" name="ln-216" href="#ln-216"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_ALGO_CG</span><span class="p">)</span>
-<a id="ln-217" name="ln-217" href="#ln-217"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;conjugate-gradient&quot;</span>
+<a id="ln-217" name="ln-217" href="#ln-217"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"conjugate-gradient"</span>
 <a id="ln-218" name="ln-218" href="#ln-218"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_ALGO_LBFGS</span><span class="p">)</span>
-<a id="ln-219" name="ln-219" href="#ln-219"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;lbfgs&quot;</span>
+<a id="ln-219" name="ln-219" href="#ln-219"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lbfgs"</span>
 <a id="ln-220" name="ln-220" href="#ln-220"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OPT_ALGO_PRFO</span><span class="p">)</span>
-<a id="ln-221" name="ln-221" href="#ln-221"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;prfo&quot;</span>
+<a id="ln-221" name="ln-221" href="#ln-221"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"prfo"</span>
 <a id="ln-222" name="ln-222" href="#ln-222"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<a id="ln-223" name="ln-223" href="#ln-223"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;unknown&quot;</span>
+<a id="ln-223" name="ln-223" href="#ln-223"></a><span class="w">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unknown"</span>
 <a id="ln-224" name="ln-224" href="#ln-224"></a><span class="w">      </span><span class="k">end select</span>
 <a id="ln-225" name="ln-225" href="#ln-225"></a><span class="k">   end function </span><span class="n">algorithm_to_string</span>
 <a id="ln-226" name="ln-226" href="#ln-226"></a>
@@ -972,7 +972,7 @@ large graphs.</div>
 <a id="ln-233" name="ln-233" href="#ln-233"></a>
 <a id="ln-234" name="ln-234" href="#ln-234"></a><span class="w">      </span><span class="n">lowered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
 <a id="ln-235" name="ln-235" href="#ln-235"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">lowered</span><span class="p">)</span>
-<a id="ln-236" name="ln-236" href="#ln-236"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">lowered</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s2">&quot;A&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">lowered</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s2">&quot;Z&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-236" name="ln-236" href="#ln-236"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">lowered</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s2">"A"</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">lowered</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s2">"Z"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-237" name="ln-237" href="#ln-237"></a><span class="k">            </span><span class="n">lowered</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">achar</span><span class="p">(</span><span class="nb">iachar</span><span class="p">(</span><span class="n">lowered</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">32</span><span class="p">)</span>
 <a id="ln-238" name="ln-238" href="#ln-238"></a><span class="w">         </span><span class="k">end if</span>
 <a id="ln-239" name="ln-239" href="#ln-239"></a><span class="k">      end do</span>
@@ -1000,7 +1000,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

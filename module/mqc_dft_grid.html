@@ -140,10 +140,10 @@
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-max_grid_level">MAX_GRID_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-min_grid_level">MIN_GRID_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-ang_points">ANG_POINTS</a>
-            <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-n_dim~2">N_DIM</a>
+            <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-n_dim~3">N_DIM</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-n_periods">N_PERIODS</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-period_last_z">PERIOD_LAST_Z</a>
-            <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-pi~3">PI</a>
+            <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-pi~4">PI</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-rad_grids">RAD_GRIDS</a>
         </div>
       </div>
@@ -233,12 +233,12 @@ default and is the one a production calculation should start from.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_dft_prune.html'>mqc_dft_prune</a></li>
-                  <li class="list-inline-item"><a href='mqc_dft_radial.html'>mqc_dft_radial</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_dft_partition.html'>mqc_dft_partition</a></li>
+                  <li class="list-inline-item"><a href='mqc_dft_radial.html'>mqc_dft_radial</a></li>
                   <li class="list-inline-item"><a href='mqc_lebedev.html'>mqc_lebedev</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -636,7 +636,7 @@ are the point counts directly, since that is what <code>lebedev_grid</code> take
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_dim~2"></span>
+              <span class="anchor" id="variable-n_dim~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -687,7 +687,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pi~3"></span>
+              <span class="anchor" id="variable-pi~4"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -755,7 +755,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-adjust"></span>
+              <span class="anchor" id="variable-adjust~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -772,7 +772,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~2"></span>
+              <span class="anchor" id="variable-atom~5"></span>
               integer,
             </td>
               <td>public,</td>
@@ -789,7 +789,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~7"></span>
+              <span class="anchor" id="variable-coords~11"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -806,7 +806,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~6"></span>
+              <span class="anchor" id="variable-n_points~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -863,7 +863,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~6"></span>
+              <span class="anchor" id="variable-scheme~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -880,7 +880,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weights~2"></span>
+              <span class="anchor" id="variable-weights~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -906,7 +906,7 @@ where the partition underflows.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_grid_t.html#boundprocedure-destroy~23'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_grid_destroy.html'>dft_grid_destroy</a></td>
+  <strong><a href='../type/dft_grid_t.html#boundprocedure-destroy~24'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_grid_destroy.html'>dft_grid_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -939,7 +939,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~7"></span>
+              <span class="anchor" id="variable-atomic_number~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -954,7 +954,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~13"></span>
+              <span class="anchor" id="variable-level~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -999,7 +999,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~6"></span>
+              <span class="anchor" id="variable-atomic_number~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1014,7 +1014,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~12"></span>
+              <span class="anchor" id="variable-level~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1059,7 +1059,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~14"></span>
+              <span class="anchor" id="variable-level~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1104,7 +1104,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~5"></span>
+              <span class="anchor" id="variable-atomic_number~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1154,7 +1154,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_coords"></span>
+              <span class="anchor" id="variable-atom_coords~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1169,7 +1169,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~6"></span>
+              <span class="anchor" id="variable-atomic_numbers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1199,7 +1199,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~93"></span>
+              <span class="anchor" id="variable-error~119"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1214,7 +1214,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~15"></span>
+              <span class="anchor" id="variable-level~21"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1229,7 +1229,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~7"></span>
+              <span class="anchor" id="variable-scheme~10"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1244,7 +1244,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-adjust~2"></span>
+              <span class="anchor" id="variable-adjust~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1344,7 +1344,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_coords~2"></span>
+              <span class="anchor" id="variable-atom_coords~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1359,7 +1359,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~7"></span>
+              <span class="anchor" id="variable-atomic_numbers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1374,7 +1374,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~8"></span>
+              <span class="anchor" id="variable-scheme~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1389,7 +1389,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-adjust~3"></span>
+              <span class="anchor" id="variable-adjust~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1404,7 +1404,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~94"></span>
+              <span class="anchor" id="variable-error~120"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1444,7 +1444,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~8"></span>
+              <span class="anchor" id="variable-atomic_number~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1459,7 +1459,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~16"></span>
+              <span class="anchor" id="variable-level~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1559,7 +1559,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~112"></span>
+              <span class="anchor" id="variable-this~134"></span>
               class(<a href='../type/dft_grid_t.html'>dft_grid_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1602,7 +1602,7 @@ where the partition underflows.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

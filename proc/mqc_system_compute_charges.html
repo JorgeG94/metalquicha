@@ -137,12 +137,12 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-basis_name~5">basis_name</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-error~30">error</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-h~8">h</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-i~53">i</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-n~12">n</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-error~52">error</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-h">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-i~49">i</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-n~18">n</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-q">q</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-symbols~4">symbols</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-symbols~3">symbols</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-which">which</a>
         </div>
       </div>
@@ -207,7 +207,7 @@ know that this cannot answer for it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~5"></span>
+              <span class="anchor" id="variable-handle"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -237,7 +237,7 @@ know that this cannot answer for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~2"></span>
+              <span class="anchor" id="variable-scheme~5"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -285,7 +285,7 @@ know that this cannot answer for it.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~17"></span>
+          <span class="anchor" id="variable-status~14"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -535,7 +535,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~30"></span>
+              <span class="anchor" id="variable-error~52"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -552,7 +552,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~8"></span>
+              <span class="anchor" id="variable-h"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -569,7 +569,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~53"></span>
+              <span class="anchor" id="variable-i~49"></span>
               integer,
             </td>
               <td>private</td>
@@ -586,7 +586,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
+              <span class="anchor" id="variable-n~18"></span>
               integer,
             </td>
               <td>private</td>
@@ -620,7 +620,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-symbols~4"></span>
+              <span class="anchor" id="variable-symbols~3"></span>
               character(len=2),
             </td>
               <td>private,</td>
@@ -669,10 +669,10 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_system_compute_charges</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">scheme_len</span><span class="p">,</span><span class="w"> </span><span class="n">scheme</span><span class="p">,</span><span class="w"> </span><span class="n">basis_len</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">      </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_system_compute_charges&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">"mqc_system_compute_charges"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Run one RHF over the whole system and keep its atomic charges</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `scheme` is &quot;chelpg&quot; or &quot;mulliken&quot;; an empty string takes chelpg, for</span>
+<span class="w">      </span><span class="c">!! `scheme` is "chelpg" or "mulliken"; an empty string takes chelpg, for</span>
 <span class="w">      </span><span class="c">!! the reason in the module header. `basis` is any basis the build carries;</span>
 <span class="w">      </span><span class="c">!! an empty string takes 6-31g, which is small enough to be affordable on</span>
 <span class="w">      </span><span class="c">!! the systems this gets pointed at and large enough that the charges mean</span>
@@ -697,25 +697,25 @@ large graphs.</div>
 
 <span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;null system handle&quot;</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"null system handle"</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_charges: set the geometry first&quot;</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mqc_system_compute_charges: set the geometry first"</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from_c</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span><span class="w"> </span><span class="n">scheme_len</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">which</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;chelpg&quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">which</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"chelpg"</span>
 <span class="w">      </span><span class="n">basis_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from_c</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">basis_len</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">basis_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31g&quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">basis_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"6-31g"</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">which</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">&quot;chelpg&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">&quot;mulliken&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_system_compute_charges: unknown scheme &#39;&quot;</span><span class="o">//</span><span class="n">which</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;&#39;; use &#39;chelpg&#39; or &#39;mulliken&#39;&quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">which</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">"chelpg"</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">"mulliken"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mqc_system_compute_charges: unknown scheme '"</span><span class="o">//</span><span class="n">which</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"'; use 'chelpg' or 'mulliken'"</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -761,7 +761,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

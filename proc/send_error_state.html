@@ -137,8 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/send_error_state.html#variable-encoded">encoded</a>
-            <a class="list-group-item" href="../proc/send_error_state.html#variable-i~31">i</a>
-            <a class="list-group-item" href="../proc/send_error_state.html#variable-n~3">n</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-i~43">i</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-n~15">n</a>
             <a class="list-group-item" href="../proc/send_error_state.html#variable-trace~2">trace</a>
         </div>
       </div>
@@ -200,7 +200,7 @@ face value, and the many-body expansion quietly sums zeros. Every
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~11"></span>
+              <span class="anchor" id="variable-result~19"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -215,7 +215,7 @@ face value, and the many-body expansion quietly sums zeros. Every
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~4"></span>
+              <span class="anchor" id="variable-comm~8"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -230,7 +230,7 @@ face value, and the many-body expansion quietly sums zeros. Every
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest"></span>
+              <span class="anchor" id="variable-dest~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -245,7 +245,7 @@ face value, and the many-body expansion quietly sums zeros. Every
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~3"></span>
+              <span class="anchor" id="variable-tag~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -840,7 +840,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~31"></span>
+              <span class="anchor" id="variable-i~43"></span>
               integer,
             </td>
               <td>private</td>
@@ -857,7 +857,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~3"></span>
+              <span class="anchor" id="variable-n~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -930,7 +930,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! code per element. It is never empty: a zero-length message would leave</span>
 <span class="w">      </span><span class="c">! the coordinator with a failure it cannot name.</span>
 <span class="w">      </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">()</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Calculation failed without a diagnostic&quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Calculation failed without a diagnostic"</span>
 <span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">encoded</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
@@ -961,7 +961,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

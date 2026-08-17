@@ -137,31 +137,31 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-basis">basis</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-calc_type~3">calc_type</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-checkpoint~2">checkpoint</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-driver_config">driver_config</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-energy~3">energy</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-calc_type~2">calc_type</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-checkpoint">checkpoint</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-driver_config~5">driver_config</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-energy~4">energy</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-esp">esp</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-expansion~2">expansion</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-expansion">expansion</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-far_field">far_field</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-global_groups~2">global_groups</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-group_ids~2">group_ids</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-group_leader_ranks~2">group_leader_ranks</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-level~5">level</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-group_ids">group_ids</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-group_leader_ranks">group_leader_ranks</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-level~6">level</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-max_outer">max_outer</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-method_config~2">method_config</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-n_fragments~2">n_fragments</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-node_leader_ranks~2">node_leader_ranks</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-node_leader_ranks">node_leader_ranks</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-nodes_per_group~2">nodes_per_group</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-num_nodes~2">num_nodes</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-num_nodes">num_nodes</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-outer_tol">outer_tol</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-owner~2">owner</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-resources~4">resources</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-owner">owner</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-resources">resources</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-resppc">resppc</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-scf_density_tol">scf_density_tol</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-scf_energy_tol">scf_energy_tol</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#variable-scf_max_iter">scf_max_iter</a>
-            <a class="list-group-item" href="../type/fmo_context_t.html#variable-sys_geom~13">sys_geom</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#variable-sys_geom~10">sys_geom</a>
         </div>
       </div>
     </div>
@@ -188,7 +188,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/fmo_context_t.html#boundprocedure-destroy~4">destroy</a>
+            <a class="list-group-item" href="../type/fmo_context_t.html#boundprocedure-destroy~3">destroy</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#boundprocedure-destroy_base">destroy_base</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#boundprocedure-has_geometry">has_geometry</a>
             <a class="list-group-item" href="../type/fmo_context_t.html#boundprocedure-has_mpi">has_mpi</a>
@@ -225,9 +225,9 @@ field the settled monomers make. Within a phase the tasks are
 independent; between monomer passes there is a barrier and a density
 exchange.</p>
 <p><code>esp</code> and <code>expansion</code> pick which method this is:</p>
-<div class="codehilite"><pre><span></span><code>&quot;exact&quot; + &quot;fmo&quot;   FMO2
-&quot;ptc&quot;   + &quot;mbe&quot;   electrostatically embedded MBE
-&quot;none&quot;  + &quot;mbe&quot;   plain MBE
+<div class="codehilite"><pre><span></span><code>"exact" + "fmo"   FMO2
+"ptc"   + "mbe"   electrostatically embedded MBE
+"none"  + "mbe"   plain MBE
 </code></pre></div>
 
 <p>The physics lives in the libcint backend and is reached through
@@ -716,7 +716,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~2"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -733,7 +733,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint~2"></span>
+              <span class="anchor" id="variable-checkpoint"></span>
               type(<a href='checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -753,7 +753,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -770,7 +770,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~3"></span>
+              <span class="anchor" id="variable-energy~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -804,7 +804,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~2"></span>
+              <span class="anchor" id="variable-expansion"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -855,7 +855,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids~2"></span>
+              <span class="anchor" id="variable-group_ids"></span>
               integer,
             </td>
               <td>public,</td>
@@ -872,7 +872,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks~2"></span>
+              <span class="anchor" id="variable-group_leader_ranks"></span>
               integer,
             </td>
               <td>public,</td>
@@ -889,7 +889,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~5"></span>
+              <span class="anchor" id="variable-level~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -959,7 +959,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~2"></span>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
               integer,
             </td>
               <td>public,</td>
@@ -993,7 +993,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~2"></span>
+              <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
               <td>public</td>
@@ -1027,7 +1027,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~2"></span>
+              <span class="anchor" id="variable-owner"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1044,7 +1044,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~4"></span>
+              <span class="anchor" id="variable-resources"></span>
               type(<a href='resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -1131,7 +1131,7 @@ convergence, held apart from the outer loop above.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~13"></span>
+              <span class="anchor" id="variable-sys_geom~10"></span>
               type(<a href='system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -1159,7 +1159,7 @@ convergence, held apart from the outer loop above.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~4"></span>
+      <span class="anchor" id="boundprocedure-destroy~3"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_destroy.html'>fmo_destroy</a>
@@ -1621,9 +1621,9 @@ convergence, held apart from the outer loop above.</p>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `esp` and `expansion` pick which method this is:</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!!     &quot;exact&quot; + &quot;fmo&quot;   FMO2</span>
-<span class="w">      </span><span class="c">!!     &quot;ptc&quot;   + &quot;mbe&quot;   electrostatically embedded MBE</span>
-<span class="w">      </span><span class="c">!!     &quot;none&quot;  + &quot;mbe&quot;   plain MBE</span>
+<span class="w">      </span><span class="c">!!     "exact" + "fmo"   FMO2</span>
+<span class="w">      </span><span class="c">!!     "ptc"   + "mbe"   electrostatically embedded MBE</span>
+<span class="w">      </span><span class="c">!!     "none"  + "mbe"   plain MBE</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The physics lives in the libcint backend and is reached through</span>
 <span class="w">      </span><span class="c">!! `mqc_libcint_bridge`, so a build without the backend refuses with a</span>
@@ -1631,10 +1631,10 @@ convergence, held apart from the outer loop above.</p>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">owner</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Fragment index per atom, numbered from one with no gaps</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31g&quot;</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">esp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;exact&quot;</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expansion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;fmo&quot;</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">far_field</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mulliken&quot;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"6-31g"</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">esp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"exact"</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expansion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fmo"</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">far_field</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mulliken"</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resppc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_dp</span>
 <span class="w">         </span><span class="c">!! Separation past which a neighbour becomes point charges. Negative</span>
 <span class="w">         </span><span class="c">!! disables the approximation.</span>
@@ -1680,7 +1680,7 @@ convergence, held apart from the outer loop above.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

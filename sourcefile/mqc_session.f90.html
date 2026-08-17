@@ -2340,7 +2340,7 @@ large graphs.</div>
 <a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!!</span>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! **`begin` does not return on every rank, and that is the point.** Under</span>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! `mpirun -np N python script.py` every rank starts an interpreter, but</span>
-<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! only rank 0 should execute the caller&#39;s script -- the others have no</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! only rank 0 should execute the caller's script -- the others have no</span>
 <a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! business deciding which fragments to compute, and running the setup N</span>
 <a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! times would at best waste it and at worst have N ranks disagree. So on</span>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! rank 0 `begin` returns and the caller carries on; on every other rank it</span>
@@ -2348,7 +2348,7 @@ large graphs.</div>
 <a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="c">!! A worker leaves that loop only to finalize and stop the process.</span>
 <a id="ln-14" name="ln-14" href="#ln-14"></a><span class="w">   </span><span class="c">!!</span>
 <a id="ln-15" name="ln-15" href="#ln-15"></a><span class="w">   </span><span class="c">!! The consequence to keep in mind: **anything the workers need must be</span>
-<a id="ln-16" name="ln-16" href="#ln-16"></a><span class="w">   </span><span class="c">!! sent to them.** They never read the input file, never see the caller&#39;s</span>
+<a id="ln-16" name="ln-16" href="#ln-16"></a><span class="w">   </span><span class="c">!! sent to them.** They never read the input file, never see the caller's</span>
 <a id="ln-17" name="ln-17" href="#ln-17"></a><span class="w">   </span><span class="c">!! geometry, and never run a line of the driving language. Code that used to</span>
 <a id="ln-18" name="ln-18" href="#ln-18"></a><span class="w">   </span><span class="c">!! rely on every rank parsing the same file independently -- which is what</span>
 <a id="ln-19" name="ln-19" href="#ln-19"></a><span class="w">   </span><span class="c">!! `main` does -- does not work here.</span>
@@ -2411,7 +2411,7 @@ large graphs.</div>
 <a id="ln-76" name="ln-76" href="#ln-76"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <a id="ln-77" name="ln-77" href="#ln-77"></a>
 <a id="ln-78" name="ln-78" href="#ln-78"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-79" name="ln-79" href="#ln-79"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mqc_session: already started&quot;</span><span class="p">)</span>
+<a id="ln-79" name="ln-79" href="#ln-79"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"mqc_session: already started"</span><span class="p">)</span>
 <a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-81" name="ln-81" href="#ln-81"></a><span class="k">      end if</span>
 <a id="ln-82" name="ln-82" href="#ln-82"></a>
@@ -2420,7 +2420,7 @@ large graphs.</div>
 <a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">      </span><span class="c">! MPI start-up raises IEEE_INVALID and IEEE_DIVIDE_BY_ZERO on every rank</span>
 <a id="ln-86" name="ln-86" href="#ln-86"></a><span class="w">      </span><span class="c">! whenever there is more than one of them -- measured, not guessed: the</span>
 <a id="ln-87" name="ln-87" href="#ln-87"></a><span class="w">      </span><span class="c">! flags are already set on return from pic_mpi_init and are untouched at</span>
-<a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">      </span><span class="c">! -np 1. They are the MPI implementation&#39;s arithmetic, not ours.</span>
+<a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">      </span><span class="c">! -np 1. They are the MPI implementation's arithmetic, not ours.</span>
 <a id="ln-89" name="ln-89" href="#ln-89"></a><span class="w">      </span><span class="c">!</span>
 <a id="ln-90" name="ln-90" href="#ln-90"></a><span class="w">      </span><span class="c">! Clearing them here rather than before the workers exit is what keeps</span>
 <a id="ln-91" name="ln-91" href="#ln-91"></a><span class="w">      </span><span class="c">! them useful. gfortran reports raised flags at STOP but not at END</span>
@@ -2439,7 +2439,7 @@ large graphs.</div>
 <a id="ln-104" name="ln-104" href="#ln-104"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">session_begin</span>
 <a id="ln-105" name="ln-105" href="#ln-105"></a>
 <a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">worker_loop</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
-<a id="ln-107" name="ln-107" href="#ln-107"></a><span class="w">      </span><span class="c">!! Wait for rank 0&#39;s instructions until told to stop, then stop</span>
+<a id="ln-107" name="ln-107" href="#ln-107"></a><span class="w">      </span><span class="c">!! Wait for rank 0's instructions until told to stop, then stop</span>
 <a id="ln-108" name="ln-108" href="#ln-108"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-109" name="ln-109" href="#ln-109"></a><span class="w">      </span><span class="c">!! This does not return to its caller. A worker that returned would carry</span>
 <a id="ln-110" name="ln-110" href="#ln-110"></a><span class="w">      </span><span class="c">!! on executing the driving script -- the very thing the session exists</span>
@@ -2472,7 +2472,7 @@ large graphs.</div>
 <a id="ln-137" name="ln-137" href="#ln-137"></a><span class="k">   end subroutine </span><span class="n">worker_loop</span>
 <a id="ln-138" name="ln-138" href="#ln-138"></a>
 <a id="ln-139" name="ln-139" href="#ln-139"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">worker_run</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
-<a id="ln-140" name="ln-140" href="#ln-140"></a><span class="w">      </span><span class="c">!! A worker&#39;s half of a calculation</span>
+<a id="ln-140" name="ln-140" href="#ln-140"></a><span class="w">      </span><span class="c">!! A worker's half of a calculation</span>
 <a id="ln-141" name="ln-141" href="#ln-141"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-142" name="ln-142" href="#ln-142"></a><span class="w">      </span><span class="c">!! Receives what rank 0 sends, in the order rank 0 sends it, and then</span>
 <a id="ln-143" name="ln-143" href="#ln-143"></a><span class="w">      </span><span class="c">!! calls the same `run_calculation` rank 0 does. The two sides are the</span>
@@ -2550,11 +2550,11 @@ large graphs.</div>
 <a id="ln-215" name="ln-215" href="#ln-215"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">driver</span>
 <a id="ln-216" name="ln-216" href="#ln-216"></a>
 <a id="ln-217" name="ln-217" href="#ln-217"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-218" name="ln-218" href="#ln-218"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mqc_session: no session to run in&quot;</span><span class="p">)</span>
+<a id="ln-218" name="ln-218" href="#ln-218"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"mqc_session: no session to run in"</span><span class="p">)</span>
 <a id="ln-219" name="ln-219" href="#ln-219"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-220" name="ln-220" href="#ln-220"></a><span class="k">      end if</span>
 <a id="ln-221" name="ln-221" href="#ln-221"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">rank</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-222" name="ln-222" href="#ln-222"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mqc_session: only rank 0 may drive a calculation&quot;</span><span class="p">)</span>
+<a id="ln-222" name="ln-222" href="#ln-222"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"mqc_session: only rank 0 may drive a calculation"</span><span class="p">)</span>
 <a id="ln-223" name="ln-223" href="#ln-223"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-224" name="ln-224" href="#ln-224"></a><span class="k">      end if</span>
 <a id="ln-225" name="ln-225" href="#ln-225"></a>
@@ -2575,10 +2575,10 @@ large graphs.</div>
 <a id="ln-240" name="ln-240" href="#ln-240"></a><span class="w">      </span><span class="c">! Checked here as well as in the driver, and the difference is what</span>
 <a id="ln-241" name="ln-241" href="#ln-241"></a><span class="w">      </span><span class="c">! happens on failure. The driver aborts the job, which is right for</span>
 <a id="ln-242" name="ln-242" href="#ln-242"></a><span class="w">      </span><span class="c">! `main` -- there is no one to tell -- and wrong for a driven run, where</span>
-<a id="ln-243" name="ln-243" href="#ln-243"></a><span class="w">      </span><span class="c">! it would take down the caller&#39;s interpreter and everything it had</span>
+<a id="ln-243" name="ln-243" href="#ln-243"></a><span class="w">      </span><span class="c">! it would take down the caller's interpreter and everything it had</span>
 <a id="ln-244" name="ln-244" href="#ln-244"></a><span class="w">      </span><span class="c">! built. Checking before the command goes out means a bad system or a</span>
 <a id="ln-245" name="ln-245" href="#ln-245"></a><span class="w">      </span><span class="c">! bad list comes back as an error the caller can act on, and the workers</span>
-<a id="ln-246" name="ln-246" href="#ln-246"></a><span class="w">      </span><span class="c">! never learn anything was attempted. The driver&#39;s copy stays as the</span>
+<a id="ln-246" name="ln-246" href="#ln-246"></a><span class="w">      </span><span class="c">! never learn anything was attempted. The driver's copy stays as the</span>
 <a id="ln-247" name="ln-247" href="#ln-247"></a><span class="w">      </span><span class="c">! backstop for every other entry path.</span>
 <a id="ln-248" name="ln-248" href="#ln-248"></a><span class="w">      </span><span class="k">call </span><span class="n">validate_system</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">unchecked_input</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <a id="ln-249" name="ln-249" href="#ln-249"></a><span class="w">                           </span><span class="n">check_bonds</span><span class="o">=</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">))</span>
@@ -2643,14 +2643,14 @@ large graphs.</div>
 <a id="ln-308" name="ln-308" href="#ln-308"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buffer</span>
 <a id="ln-309" name="ln-309" href="#ln-309"></a>
 <a id="ln-310" name="ln-310" href="#ln-310"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-311" name="ln-311" href="#ln-311"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mqc_session: no session to command&quot;</span><span class="p">)</span>
+<a id="ln-311" name="ln-311" href="#ln-311"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"mqc_session: no session to command"</span><span class="p">)</span>
 <a id="ln-312" name="ln-312" href="#ln-312"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-313" name="ln-313" href="#ln-313"></a><span class="k">      end if</span>
 <a id="ln-314" name="ln-314" href="#ln-314"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">rank</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-315" name="ln-315" href="#ln-315"></a><span class="w">         </span><span class="c">! Only rank 0 ever reaches here in a correct program; a worker issuing</span>
 <a id="ln-316" name="ln-316" href="#ln-316"></a><span class="w">         </span><span class="c">! a command would leave every other rank waiting on a broadcast that</span>
 <a id="ln-317" name="ln-317" href="#ln-317"></a><span class="w">         </span><span class="c">! never comes.</span>
-<a id="ln-318" name="ln-318" href="#ln-318"></a><span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mqc_session: only rank 0 may issue commands&quot;</span><span class="p">)</span>
+<a id="ln-318" name="ln-318" href="#ln-318"></a><span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"mqc_session: only rank 0 may issue commands"</span><span class="p">)</span>
 <a id="ln-319" name="ln-319" href="#ln-319"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-320" name="ln-320" href="#ln-320"></a><span class="k">      end if</span>
 <a id="ln-321" name="ln-321" href="#ln-321"></a>
@@ -2709,7 +2709,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

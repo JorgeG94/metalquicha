@@ -662,7 +662,7 @@ large graphs.</div>
         <h2><span class="anchor" id="src"></span>Source Code</h2>
         <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! Distance-based bond perception</span>
 <a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_bond_perception</span>
-<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Works out a molecule&#39;s connectivity from its geometry, so that a caller</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Works out a molecule's connectivity from its geometry, so that a caller</span>
 <a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!! fragmenting a covalent system does not have to enumerate every bond by</span>
 <a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! hand -- and, more usefully, so that a caller who did can be told what</span>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! they left out.</span>
@@ -691,7 +691,7 @@ large graphs.</div>
 <a id="ln-29" name="ln-29" href="#ln-29"></a><span class="k">   private</span>
 <a id="ln-30" name="ln-30" href="#ln-30"></a>
 <a id="ln-31" name="ln-31" href="#ln-31"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">perceive_bonds</span><span class="w">        </span><span class="c">!! Connectivity implied by the geometry</span>
-<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">missing_broken_bonds</span><span class="w">  </span><span class="c">!! Cut bonds a caller&#39;s list does not mention</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">missing_broken_bonds</span><span class="w">  </span><span class="c">!! Cut bonds a caller's list does not mention</span>
 <a id="ln-33" name="ln-33" href="#ln-33"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">auto_monomers</span><span class="w">         </span><span class="c">!! Partition into covalently connected molecules</span>
 <a id="ln-34" name="ln-34" href="#ln-34"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">connected_components</span><span class="w">  </span><span class="c">!! Which covalently connected group each atom is in</span>
 <a id="ln-35" name="ln-35" href="#ln-35"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_BOND_TOLERANCE</span>
@@ -706,7 +706,7 @@ large graphs.</div>
 <a id="ln-44" name="ln-44" href="#ln-44"></a><span class="k">   pure function </span><span class="n">bonded</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">jatom</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">is_bonded</span><span class="p">)</span>
 <a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="c">!! Whether two atoms are within bonding distance</span>
 <a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">      </span><span class="c">!!</span>
-<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">      </span><span class="c">!! Indices are 1-based here, into the geometry&#39;s own arrays; the bond</span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">      </span><span class="c">!! Indices are 1-based here, into the geometry's own arrays; the bond</span>
 <a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">      </span><span class="c">!! lists this module produces are 0-based, like everything else.</span>
 <a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">jatom</span>
@@ -821,7 +821,7 @@ large graphs.</div>
 <a id="ln-159" name="ln-159" href="#ln-159"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">missing_broken_bonds</span>
 <a id="ln-160" name="ln-160" href="#ln-160"></a>
 <a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">   </span><span class="k">pure function </span><span class="n">is_declared</span><span class="p">(</span><span class="n">declared</span><span class="p">,</span><span class="w"> </span><span class="n">n_declared</span><span class="p">,</span><span class="w"> </span><span class="n">candidate</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">found</span><span class="p">)</span>
-<a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">      </span><span class="c">!! Whether a bond appears in the caller&#39;s list, either way round</span>
+<a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">      </span><span class="c">!! Whether a bond appears in the caller's list, either way round</span>
 <a id="ln-163" name="ln-163" href="#ln-163"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">declared</span><span class="p">(:)</span>
 <a id="ln-164" name="ln-164" href="#ln-164"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_declared</span>
 <a id="ln-165" name="ln-165" href="#ln-165"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">candidate</span>
@@ -844,7 +844,7 @@ large graphs.</div>
 <a id="ln-182" name="ln-182" href="#ln-182"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">connected_components</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="n">n_components</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span>
 <a id="ln-183" name="ln-183" href="#ln-183"></a><span class="w">      </span><span class="c">!! Label each atom with the covalently connected group it belongs to</span>
 <a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">      </span><span class="c">!!</span>
-<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">      </span><span class="c">!! Components are numbered 1..n in first-atom order, so a group&#39;s number</span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">      </span><span class="c">!! Components are numbered 1..n in first-atom order, so a group's number</span>
 <a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">      </span><span class="c">!! reflects where it appears in the geometry rather than where the</span>
 <a id="ln-187" name="ln-187" href="#ln-187"></a><span class="w">      </span><span class="c">!! union-find happened to root it.</span>
 <a id="ln-188" name="ln-188" href="#ln-188"></a><span class="w">      </span><span class="c">!!</span>
@@ -909,14 +909,14 @@ large graphs.</div>
 <a id="ln-247" name="ln-247" href="#ln-247"></a><span class="w">      </span><span class="c">!! **It refuses on a single connected molecule**, which is the covalent</span>
 <a id="ln-248" name="ln-248" href="#ln-248"></a><span class="w">      </span><span class="c">!! case. There the components are a partition of one, which cannot be</span>
 <a id="ln-249" name="ln-249" href="#ln-249"></a><span class="w">      </span><span class="c">!! fragmented -- and the reason is not that the algorithm is too weak but</span>
-<a id="ln-250" name="ln-250" href="#ln-250"></a><span class="w">      </span><span class="c">!! that the question is genuinely the user&#39;s: where a molecule should be</span>
+<a id="ln-250" name="ln-250" href="#ln-250"></a><span class="w">      </span><span class="c">!! that the question is genuinely the user's: where a molecule should be</span>
 <a id="ln-251" name="ln-251" href="#ln-251"></a><span class="w">      </span><span class="c">!! cut is chemistry, not connectivity. A peptide can be split per residue,</span>
 <a id="ln-252" name="ln-252" href="#ln-252"></a><span class="w">      </span><span class="c">!! per secondary structure, or somewhere else entirely, and nothing in a</span>
 <a id="ln-253" name="ln-253" href="#ln-253"></a><span class="w">      </span><span class="c">!! bond graph prefers one. So it says so rather than guessing, and rather</span>
 <a id="ln-254" name="ln-254" href="#ln-254"></a><span class="w">      </span><span class="c">!! than returning a single monomer that quietly makes fragmentation a no-op.</span>
 <a id="ln-255" name="ln-255" href="#ln-255"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-256" name="ln-256" href="#ln-256"></a><span class="w">      </span><span class="c">!! Two connected molecules are a fine partition even if each is large --</span>
-<a id="ln-257" name="ln-257" href="#ln-257"></a><span class="w">      </span><span class="c">!! that is an ordinary MBE(2) on a dimer, and not this routine&#39;s business</span>
+<a id="ln-257" name="ln-257" href="#ln-257"></a><span class="w">      </span><span class="c">!! that is an ordinary MBE(2) on a dimer, and not this routine's business</span>
 <a id="ln-258" name="ln-258" href="#ln-258"></a><span class="w">      </span><span class="c">!! to second-guess.</span>
 <a id="ln-259" name="ln-259" href="#ln-259"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <a id="ln-260" name="ln-260" href="#ln-260"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -928,7 +928,7 @@ large graphs.</div>
 <a id="ln-266" name="ln-266" href="#ln-266"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root_i</span><span class="p">,</span><span class="w"> </span><span class="n">root_j</span><span class="p">,</span><span class="w"> </span><span class="n">slot</span>
 <a id="ln-267" name="ln-267" href="#ln-267"></a>
 <a id="ln-268" name="ln-268" href="#ln-268"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-269" name="ln-269" href="#ln-269"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;auto monomers: the system has no atoms&quot;</span><span class="p">)</span>
+<a id="ln-269" name="ln-269" href="#ln-269"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"auto monomers: the system has no atoms"</span><span class="p">)</span>
 <a id="ln-270" name="ln-270" href="#ln-270"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-271" name="ln-271" href="#ln-271"></a><span class="k">      end if</span>
 <a id="ln-272" name="ln-272" href="#ln-272"></a>
@@ -937,10 +937,10 @@ large graphs.</div>
 <a id="ln-275" name="ln-275" href="#ln-275"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_components</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-276" name="ln-276" href="#ln-276"></a><span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
 <a id="ln-277" name="ln-277" href="#ln-277"></a><span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-278" name="ln-278" href="#ln-278"></a><span class="w">                        </span><span class="s2">&quot;auto monomers: the system is one covalently connected &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-279" name="ln-279" href="#ln-279"></a><span class="w">                        </span><span class="s2">&quot;molecule, so there is nothing to partition. Where to cut it &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-280" name="ln-280" href="#ln-280"></a><span class="w">                        </span><span class="s2">&quot;is a chemical choice -- supply the monomers explicitly, and &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-281" name="ln-281" href="#ln-281"></a><span class="w">                        </span><span class="s2">&quot;the bonds they break&quot;</span><span class="p">)</span>
+<a id="ln-278" name="ln-278" href="#ln-278"></a><span class="w">                        </span><span class="s2">"auto monomers: the system is one covalently connected "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-279" name="ln-279" href="#ln-279"></a><span class="w">                        </span><span class="s2">"molecule, so there is nothing to partition. Where to cut it "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-280" name="ln-280" href="#ln-280"></a><span class="w">                        </span><span class="s2">"is a chemical choice -- supply the monomers explicitly, and "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-281" name="ln-281" href="#ln-281"></a><span class="w">                        </span><span class="s2">"the bonds they break"</span><span class="p">)</span>
 <a id="ln-282" name="ln-282" href="#ln-282"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-283" name="ln-283" href="#ln-283"></a><span class="k">      end if</span>
 <a id="ln-284" name="ln-284" href="#ln-284"></a>
@@ -986,7 +986,7 @@ large graphs.</div>
 <a id="ln-324" name="ln-324" href="#ln-324"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">auto_monomers</span>
 <a id="ln-325" name="ln-325" href="#ln-325"></a>
 <a id="ln-326" name="ln-326" href="#ln-326"></a><span class="w">   </span><span class="k">pure recursive function </span><span class="n">find_root</span><span class="p">(</span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
-<a id="ln-327" name="ln-327" href="#ln-327"></a><span class="w">      </span><span class="c">!! Representative of a node&#39;s component</span>
+<a id="ln-327" name="ln-327" href="#ln-327"></a><span class="w">      </span><span class="c">!! Representative of a node's component</span>
 <a id="ln-328" name="ln-328" href="#ln-328"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">component</span><span class="p">(:)</span>
 <a id="ln-329" name="ln-329" href="#ln-329"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">node</span>
 <a id="ln-330" name="ln-330" href="#ln-330"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span>
@@ -1038,7 +1038,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

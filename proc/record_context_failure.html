@@ -139,7 +139,7 @@
             <a class="list-group-item" href="../proc/record_context_failure.html#variable-ctx_error">ctx_error</a>
             <a class="list-group-item" href="../proc/record_context_failure.html#variable-first">first</a>
             <a class="list-group-item" href="../proc/record_context_failure.html#variable-only_convergence">only_convergence</a>
-            <a class="list-group-item" href="../proc/record_context_failure.html#variable-text~8">text</a>
+            <a class="list-group-item" href="../proc/record_context_failure.html#variable-text~6">text</a>
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ that means nothing, and <code>allow_crap_scf</code> is not a licence for that.</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~19"></span>
+              <span class="anchor" id="variable-ctx~16"></span>
               type(context_type),
             </td>
 <td>intent(inout)</td>
@@ -220,7 +220,7 @@ that means nothing, and <code>allow_crap_scf</code> is not a licence for that.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~20"></span>
+              <span class="anchor" id="variable-result~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -629,7 +629,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~8"></span>
+              <span class="anchor" id="variable-text~6"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -665,8 +665,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **Every error is drained, not just the first.** tblite logs each one</span>
 <span class="w">      </span><span class="c">!! and pops them in order, and a failed eigensolve has been seen to leave</span>
-<span class="w">      </span><span class="c">!! both &quot;(sygvd) failed to solve eigenvalue problem&quot; and an</span>
-<span class="w">      </span><span class="c">!! &quot;SCF not converged&quot; behind it. Reading one and stopping would let the</span>
+<span class="w">      </span><span class="c">!! both "(sygvd) failed to solve eigenvalue problem" and an</span>
+<span class="w">      </span><span class="c">!! "SCF not converged" behind it. Reading one and stopping would let the</span>
 <span class="w">      </span><span class="c">!! wrong message decide: a run allowed to tolerate non-convergence would</span>
 <span class="w">      </span><span class="c">!! then also tolerate a corrupted eigensolve, whose energy is not a poor</span>
 <span class="w">      </span><span class="c">!! answer but a meaningless one.</span>
@@ -682,15 +682,15 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">first</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">only_convergence</span>
 
-<span class="w">      </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;XTB calculation failed&quot;</span>
+<span class="w">      </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"XTB calculation failed"</span>
 <span class="w">      </span><span class="n">only_convergence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">      </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">failed</span><span class="p">())</span>
 <span class="w">         </span><span class="k">call </span><span class="n">ctx</span><span class="p">%</span><span class="n">get_error</span><span class="p">(</span><span class="n">ctx_error</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">ctx_error</span><span class="p">))</span><span class="w"> </span><span class="k">exit</span>
 <span class="k">         </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_error</span><span class="p">%</span><span class="n">message</span>
 <span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">ctx_error</span><span class="p">)</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;not converged&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">only_convergence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">first</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;XTB calculation failed&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">text</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="s2">"not converged"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">only_convergence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">first</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"XTB calculation failed"</span><span class="p">)</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">text</span>
 <span class="w">      </span><span class="k">end do</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">only_convergence</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -725,7 +725,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

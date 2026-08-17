@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/get_solvent_dielectric.html#variable-i~36">i</a>
+            <a class="list-group-item" href="../proc/get_solvent_dielectric.html#variable-i~29">i</a>
             <a class="list-group-item" href="../proc/get_solvent_dielectric.html#variable-name_lower">name_lower</a>
         </div>
       </div>
@@ -420,7 +420,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~36"></span>
+              <span class="anchor" id="variable-i~29"></span>
               integer,
             </td>
               <td>private</td>
@@ -482,102 +482,102 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! Convert to lowercase for case-insensitive matching</span>
 <span class="w">      </span><span class="n">name_lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solvent_name</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">name_lower</span><span class="p">)</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">name_lower</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s2">&quot;A&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">name_lower</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s2">&quot;Z&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">name_lower</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s2">"A"</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">name_lower</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s2">"Z"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">name_lower</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">char</span><span class="p">(</span><span class="nb">ichar</span><span class="p">(</span><span class="n">name_lower</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">32</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end do</span>
 
 <span class="k">      select case</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">name_lower</span><span class="p">))</span>
 <span class="w">         </span><span class="c">! Water</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;water&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;h2o&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"water"</span><span class="p">,</span><span class="w"> </span><span class="s2">"h2o"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="mf">8.4_wp</span>
 <span class="w">         </span><span class="c">! Alcohols</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;methanol&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ch3oh&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"methanol"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ch3oh"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="mf">2.7_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;ethanol&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;c2h5oh&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"ethanol"</span><span class="p">,</span><span class="w"> </span><span class="s2">"c2h5oh"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="mf">4.6_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;1-propanol&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;propanol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"1-propanol"</span><span class="p">,</span><span class="w"> </span><span class="s2">"propanol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="mf">0.1_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;2-propanol&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;isopropanol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"2-propanol"</span><span class="p">,</span><span class="w"> </span><span class="s2">"isopropanol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="mf">9.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;1-butanol&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;butanol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"1-butanol"</span><span class="p">,</span><span class="w"> </span><span class="s2">"butanol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="mf">7.5_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;2-butanol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"2-butanol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="mf">5.8_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;1-octanol&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;octanol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"1-octanol"</span><span class="p">,</span><span class="w"> </span><span class="s2">"octanol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">9.9_wp</span>
 <span class="w">         </span><span class="c">! Polar aprotic</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;acetone&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"acetone"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="mf">0.7_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;acetonitrile&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ch3cn&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"acetonitrile"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ch3cn"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="mf">7.5_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dmso&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dimethylsulfoxide&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"dmso"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dimethylsulfoxide"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="mf">6.7_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dmf&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dimethylformamide&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"dmf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dimethylformamide"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="mf">6.7_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;thf&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;tetrahydrofuran&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"thf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"tetrahydrofuran"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">7.6_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;formamide&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"formamide"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="mf">9.5_wp</span>
 <span class="w">         </span><span class="c">! Aromatics</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;benzene&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"benzene"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.3_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;toluene&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"toluene"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.4_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;pyridine&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"pyridine"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="mf">2.4_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;aniline&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"aniline"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">6.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;nitrobenzene&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"nitrobenzene"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="mf">4.8_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;chlorobenzene&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"chlorobenzene"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">5.6_wp</span>
 <span class="w">         </span><span class="c">! Halogenated</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;chloroform&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;chcl3&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"chloroform"</span><span class="p">,</span><span class="w"> </span><span class="s2">"chcl3"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">4.8_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dichloromethane&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ch2cl2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dcm&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"dichloromethane"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ch2cl2"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dcm"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">8.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;carbon tetrachloride&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ccl4&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"carbon tetrachloride"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ccl4"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.2_wp</span>
 <span class="w">         </span><span class="c">! Ethers</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;diethylether&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ether&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"diethylether"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ether"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">4.3_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dioxane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"dioxane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.2_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;furan&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"furan"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.9_wp</span>
 <span class="w">         </span><span class="c">! Alkanes</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;pentane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"pentane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.8_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;hexane&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;n-hexane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"hexane"</span><span class="p">,</span><span class="w"> </span><span class="s2">"n-hexane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;cyclohexane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"cyclohexane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;heptane&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;n-heptane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"heptane"</span><span class="p">,</span><span class="w"> </span><span class="s2">"n-heptane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;octane&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;n-octane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"octane"</span><span class="p">,</span><span class="w"> </span><span class="s2">"n-octane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;decane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"decane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;hexadecane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"hexadecane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_wp</span>
 <span class="w">         </span><span class="c">! Other</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;nitromethane&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"nitromethane"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="mf">5.9_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;cs2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;carbondisulfide&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"cs2"</span><span class="p">,</span><span class="w"> </span><span class="s2">"carbondisulfide"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.6_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;ethyl acetate&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ethylacetate&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"ethyl acetate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ethylacetate"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">6.0_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;acetic acid&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;aceticacid&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"acetic acid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"aceticacid"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">6.2_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;formic acid&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;formicacid&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"formic acid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"formicacid"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="mf">1.1_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;phenol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"phenol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">9.8_wp</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;woctanol&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"woctanol"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">8.1_wp</span>
 <span class="w">         </span><span class="c">! Infinite dielectric (conductor)</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e10_wp</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
 <span class="w">         </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_wp</span><span class="w">  </span><span class="c">! Unknown solvent</span>
@@ -606,7 +606,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

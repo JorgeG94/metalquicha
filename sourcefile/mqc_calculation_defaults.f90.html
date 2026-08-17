@@ -1153,7 +1153,7 @@ large graphs.</div>
         <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! Centralized default values for calculation parameters</span>
 <a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_calculation_defaults</span>
 <a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Provides compile-time constants for default calculation parameters.</span>
-<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!! These defaults are used throughout the codebase when users don&#39;t specify values.</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!! These defaults are used throughout the codebase when users don't specify values.</span>
 <a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! This single source of truth prevents divergence between serial and parallel paths.</span>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="k">implicit none</span>
@@ -1187,12 +1187,12 @@ large graphs.</div>
 <a id="ln-35" name="ln-35" href="#ln-35"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_OPT_MAX_STEPS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 <a id="ln-36" name="ln-36" href="#ln-36"></a>
 <a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">   </span><span class="c">!&gt; Convergence on the largest gradient component, Hartree/Bohr.</span>
-<a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">   </span><span class="c">!&gt; DL-FIND&#39;s own default, restated here so a deck that never mentions it</span>
+<a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">   </span><span class="c">!&gt; DL-FIND's own default, restated here so a deck that never mentions it</span>
 <a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">   </span><span class="c">!&gt; still gets a number this program can print and a user can look up.</span>
 <a id="ln-40" name="ln-40" href="#ln-40"></a><span class="w">   </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_OPT_GRADIENT_TOLERANCE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">4.5e-4_dp</span>
 <a id="ln-41" name="ln-41" href="#ln-41"></a>
-<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">   </span><span class="c">!&gt; Negative means &quot;leave the engine&#39;s own default alone&quot;. Used for the</span>
-<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">   </span><span class="c">!&gt; settings where DL-FIND&#39;s choice is better than a second one invented</span>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">   </span><span class="c">!&gt; Negative means "leave the engine's own default alone". Used for the</span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">   </span><span class="c">!&gt; settings where DL-FIND's choice is better than a second one invented</span>
 <a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">   </span><span class="c">!&gt; here: the step cap and the curvature history depend on the coordinate</span>
 <a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">   </span><span class="c">!&gt; system, which this program does not want to reason about.</span>
 <a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">   </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_OPT_ENERGY_TOLERANCE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
@@ -1214,7 +1214,7 @@ large graphs.</div>
 <a id="ln-62" name="ln-62" href="#ln-62"></a><span class="w">   </span><span class="c">!&gt; exchange-correlation grid, and that was measured to be wrong: on water in</span>
 <a id="ln-63" name="ln-63" href="#ln-63"></a><span class="w">   </span><span class="c">!&gt; water, 110 points per atom gave a dielectric energy 21% short of the</span>
 <a id="ln-64" name="ln-64" href="#ln-64"></a><span class="w">   </span><span class="c">!&gt; converged value (-8.07 mHartree against -10.21), while 302 agrees with</span>
-<a id="ln-65" name="ln-65" href="#ln-65"></a><span class="w">   </span><span class="c">!&gt; PySCF&#39;s C-PCM to 1.5% and reproduces its solvated dipole to 0.0013 D. A</span>
+<a id="ln-65" name="ln-65" href="#ln-65"></a><span class="w">   </span><span class="c">!&gt; PySCF's C-PCM to 1.5% and reproduces its solvated dipole to 0.0013 D. A</span>
 <a id="ln-66" name="ln-66" href="#ln-66"></a><span class="w">   </span><span class="c">!&gt; continuum surface is a two-dimensional integral of a function with a cusp</span>
 <a id="ln-67" name="ln-67" href="#ln-67"></a><span class="w">   </span><span class="c">!&gt; where spheres intersect, so it is not the easy quadrature it looks like.</span>
 <a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_PCM_NANG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">302</span>
@@ -1232,9 +1232,9 @@ large graphs.</div>
 <a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">   </span><span class="c">!&gt; [JCP 133, 244111 (2010)] fit 4.9 for Lebedev cavities, but cuEST takes the</span>
 <a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">   </span><span class="c">!&gt; exponents themselves rather than a prefactor and its convention is not</span>
 <a id="ln-82" name="ln-82" href="#ln-82"></a><span class="w">   </span><span class="c">!&gt; documented in the bindings -- so 4.9 here is not necessarily 4.9 there. Two</span>
-<a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">   </span><span class="c">!&gt; is the value that reproduces PySCF&#39;s C-PCM on water in water; at 4.9 the</span>
+<a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">   </span><span class="c">!&gt; is the value that reproduces PySCF's C-PCM on water in water; at 4.9 the</span>
 <a id="ln-84" name="ln-84" href="#ln-84"></a><span class="w">   </span><span class="c">!&gt; dielectric energy came out half. What that means is that this number</span>
-<a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">   </span><span class="c">!&gt; absorbs whatever cuEST&#39;s definition actually is, so it should be treated as</span>
+<a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">   </span><span class="c">!&gt; absorbs whatever cuEST's definition actually is, so it should be treated as</span>
 <a id="ln-86" name="ln-86" href="#ln-86"></a><span class="w">   </span><span class="c">!&gt; an empirical constant of this interface rather than a physical one, and it</span>
 <a id="ln-87" name="ln-87" href="#ln-87"></a><span class="w">   </span><span class="c">!&gt; is a keyword so it can be revisited.</span>
 <a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">   </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">DEFAULT_PCM_ZETA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_dp</span>
@@ -1251,8 +1251,8 @@ large graphs.</div>
 <a id="ln-99" name="ln-99" href="#ln-99"></a>
 <a id="ln-100" name="ln-100" href="#ln-100"></a><span class="w">   </span><span class="c">!! Displacement code carried by every work task.</span>
 <a id="ln-101" name="ln-101" href="#ln-101"></a><span class="w">   </span><span class="c">!!</span>
-<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="w">   </span><span class="c">!! DISP_WHOLE_FRAGMENT means &quot;run the requested calc_type on the fragment as it</span>
-<a id="ln-103" name="ln-103" href="#ln-103"></a><span class="w">   </span><span class="c">!! stands&quot; -- the original one-fragment-per-task behaviour, still used by every</span>
+<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="w">   </span><span class="c">!! DISP_WHOLE_FRAGMENT means "run the requested calc_type on the fragment as it</span>
+<a id="ln-103" name="ln-103" href="#ln-103"></a><span class="w">   </span><span class="c">!! stands" -- the original one-fragment-per-task behaviour, still used by every</span>
 <a id="ln-104" name="ln-104" href="#ln-104"></a><span class="w">   </span><span class="c">!! energy/gradient run and by the whole GMBE path. Any other value marks a task</span>
 <a id="ln-105" name="ln-105" href="#ln-105"></a><span class="w">   </span><span class="c">!! from a flattened Hessian queue: 0 is the undisplaced reference point and +/-k</span>
 <a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">   </span><span class="c">!! displaces coordinate k forward/backward (see build_hessian_task_table).</span>
@@ -1280,7 +1280,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/shell_angular_form.html#variable-found~13">found</a>
+            <a class="list-group-item" href="../proc/shell_angular_form.html#variable-found~24">found</a>
             <a class="list-group-item" href="../proc/shell_angular_form.html#variable-function_type">function_type</a>
         </div>
       </div>
@@ -202,7 +202,7 @@ flipping the convention on a typo.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~11"></span>
+              <span class="anchor" id="variable-json~24"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -217,7 +217,7 @@ flipping the convention on a typo.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~2"></span>
+              <span class="anchor" id="variable-element_key~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -232,7 +232,7 @@ flipping the convention on a typo.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ishell~2"></span>
+              <span class="anchor" id="variable-ishell~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -305,18 +305,18 @@ flipping the convention on a typo.</p>
 <path fill="none" stroke="#ff0000" d="M115.01,-41.66C130.05,-43.97 145.88,-46.39 159.49,-48.48"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="158.99,-51.94 169.41,-50 160.05,-45.03 158.99,-51.94"/>
 </g>
-<!-- proc~integer_to_key -->
+<!-- proc~integer_to_key~2 -->
 <g id="proc~~shell_angular_form~~CallsGraph_node3" class="node">
-<title>proc~integer_to_key</title>
-<g id="a_proc~~shell_angular_form~~CallsGraph_node3"><a xlink:href="../proc/integer_to_key.html" xlink:title="integer_to_key">
+<title>proc~integer_to_key~2</title>
+<g id="a_proc~~shell_angular_form~~CallsGraph_node3"><a xlink:href="../proc/integer_to_key~2.html" xlink:title="integer_to_key">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="242,-24 151,-24 151,0 242,0 242,-24"/>
 <text text-anchor="middle" x="196.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">integer_to_key</text>
 </a>
 </g>
 </g>
-<!-- proc~shell_angular_form&#45;&gt;proc~integer_to_key -->
+<!-- proc~shell_angular_form&#45;&gt;proc~integer_to_key~2 -->
 <g id="proc~~shell_angular_form~~CallsGraph_edge2" class="edge">
-<title>proc~shell_angular_form&#45;&gt;proc~integer_to_key</title>
+<title>proc~shell_angular_form&#45;&gt;proc~integer_to_key~2</title>
 <path fill="none" stroke="#ff0000" d="M115.01,-24.34C123.5,-23.04 132.25,-21.7 140.7,-20.4"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="141.47,-23.82 150.83,-18.85 140.41,-16.9 141.47,-23.82"/>
 </g>
@@ -555,7 +555,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~13"></span>
+              <span class="anchor" id="variable-found~24"></span>
               logical,
             </td>
               <td>private</td>
@@ -604,7 +604,7 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">shell_angular_form</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">element_key</span><span class="p">,</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">angular_momenta</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! What one shell entry&#39;s `function_type` says about the angular form</span>
+<span class="w">      </span><span class="c">!! What one shell entry's `function_type` says about the angular form</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Returns `ANGULAR_FORM_UNSET` for anything at or below p, whatever the</span>
 <span class="w">      </span><span class="c">!! file calls it. An s shell is one function and a p shell is three in</span>
@@ -629,11 +629,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">angular_momenta</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">angular_momenta</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
-<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;elements.&quot;</span><span class="o">//</span><span class="n">element_key</span><span class="o">//</span><span class="s2">&quot;.electron_shells(&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                    </span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">ishell</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;).function_type&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">function_type</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="s2">"elements."</span><span class="o">//</span><span class="n">element_key</span><span class="o">//</span><span class="s2">".electron_shells("</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                    </span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">ishell</span><span class="p">)</span><span class="o">//</span><span class="s2">").function_type"</span><span class="p">,</span><span class="w"> </span><span class="n">function_type</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ANGULAR_FORM_SPHERICAL</span>
-<span class="w">      </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">function_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;gto_cartesian&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">function_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"gto_cartesian"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ANGULAR_FORM_CARTESIAN</span>
 <span class="w">      </span><span class="k">else</span>
 <span class="k">         </span><span class="n">form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ANGULAR_FORM_SPHERICAL</span>
@@ -662,7 +662,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

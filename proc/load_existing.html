@@ -136,20 +136,20 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/load_existing.html#variable-capacity~3">capacity</a>
-            <a class="list-group-item" href="../proc/load_existing.html#variable-energy~14">energy</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-capacity">capacity</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-energy">energy</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-homo_in">homo_in</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-ios~2">ios</a>
-            <a class="list-group-item" href="../proc/load_existing.html#variable-islot~5">islot</a>
-            <a class="list-group-item" href="../proc/load_existing.html#variable-level~17">level</a>
-            <a class="list-group-item" href="../proc/load_existing.html#variable-line~6">line</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-islot">islot</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-level~4">level</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-line">line</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-lumo_in">lumo_in</a>
-            <a class="list-group-item" href="../proc/load_existing.html#variable-n~33">n</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-n~3">n</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-orbitals_in">orbitals_in</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-row">row</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-status_code">status_code</a>
             <a class="list-group-item" href="../proc/load_existing.html#variable-stored">stored</a>
-            <a class="list-group-item" href="../proc/load_existing.html#variable-unit~7">unit</a>
+            <a class="list-group-item" href="../proc/load_existing.html#variable-unit~2">unit</a>
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~114"></span>
+              <span class="anchor" id="variable-this~2"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -220,7 +220,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint~4"></span>
+              <span class="anchor" id="variable-fingerprint~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~99"></span>
+              <span class="anchor" id="variable-error~22"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -590,7 +590,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~3"></span>
+              <span class="anchor" id="variable-capacity"></span>
               integer,
             </td>
               <td>private</td>
@@ -607,7 +607,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~14"></span>
+              <span class="anchor" id="variable-energy"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -658,7 +658,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-islot~5"></span>
+              <span class="anchor" id="variable-islot"></span>
               integer,
             </td>
               <td>private</td>
@@ -675,7 +675,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~17"></span>
+              <span class="anchor" id="variable-level~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -692,7 +692,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~6"></span>
+              <span class="anchor" id="variable-line"></span>
               character(len=512),
             </td>
               <td>private</td>
@@ -726,7 +726,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~33"></span>
+              <span class="anchor" id="variable-n~3"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -811,7 +811,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~7"></span>
+              <span class="anchor" id="variable-unit~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -858,26 +858,26 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">homo_in</span><span class="p">,</span><span class="w"> </span><span class="n">lumo_in</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbitals_in</span>
 
-<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;old&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ios</span><span class="p">)</span>
+<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">"old"</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">"read"</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ios</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ios</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_IO</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;could not read checkpoint &quot;</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_IO</span><span class="p">,</span><span class="w"> </span><span class="s2">"could not read checkpoint "</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ios</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="k">      read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ios</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ios</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="n">MAGIC</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         close</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="o">//</span><span class="s2">&quot; is not a checkpoint file&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="o">//</span><span class="s2">" is not a checkpoint file"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      </span><span class="n">stored</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">MAGIC</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:)))</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stored</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">fingerprint</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         close</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;checkpoint &quot;</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="o">//</span><span class="s2">&quot; was written by a &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;different calculation (fingerprint &quot;</span><span class="o">//</span><span class="n">stored</span><span class="o">//</span><span class="s2">&quot;, this run is &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">fingerprint</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;). Its energies belong to another geometry, &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;basis or method; reusing them would give a converged total for &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;neither. Point system.checkpoint at another file, or delete this one.&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"checkpoint "</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="o">//</span><span class="s2">" was written by a "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"different calculation (fingerprint "</span><span class="o">//</span><span class="n">stored</span><span class="o">//</span><span class="s2">", this run is "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">fingerprint</span><span class="p">)</span><span class="o">//</span><span class="s2">"). Its energies belong to another geometry, "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"basis or method; reusing them would give a converged total for "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"neither. Point system.checkpoint at another file, or delete this one."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -889,7 +889,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
 <span class="w">      </span><span class="k">do</span>
-<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ios</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ios</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ios</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 <span class="w">         </span><span class="c">! A short read here is the last line of a job that was killed while</span>
@@ -946,7 +946,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

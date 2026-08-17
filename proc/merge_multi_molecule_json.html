@@ -136,14 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-basename~7">basename</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-dot_pos~2">dot_pos</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-file_exists~5">file_exists</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-imol~7">imol</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-io_stat~7">io_stat</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-line~10">line</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-output_file~5">output_file</a>
-            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-slash_pos~2">slash_pos</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-basename">basename</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-dot_pos">dot_pos</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-file_exists~3">file_exists</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-imol~2">imol</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-io_stat">io_stat</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-line~4">line</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-output_file">output_file</a>
+            <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-slash_pos">slash_pos</a>
             <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-unit_in">unit_in</a>
             <a class="list-group-item" href="../proc/merge_multi_molecule_json.html#variable-unit_out">unit_out</a>
         </div>
@@ -336,7 +336,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nmol~2"></span>
+              <span class="anchor" id="variable-nmol"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -682,7 +682,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~7"></span>
+              <span class="anchor" id="variable-basename"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -699,7 +699,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dot_pos~2"></span>
+              <span class="anchor" id="variable-dot_pos"></span>
               integer,
             </td>
               <td>private</td>
@@ -716,7 +716,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-file_exists~5"></span>
+              <span class="anchor" id="variable-file_exists~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -733,7 +733,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~7"></span>
+              <span class="anchor" id="variable-imol~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -750,7 +750,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~7"></span>
+              <span class="anchor" id="variable-io_stat"></span>
               integer,
             </td>
               <td>private</td>
@@ -767,7 +767,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~10"></span>
+              <span class="anchor" id="variable-line~4"></span>
               character(len=10000),
             </td>
               <td>private</td>
@@ -784,7 +784,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_file~5"></span>
+              <span class="anchor" id="variable-output_file"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -801,7 +801,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-slash_pos~2"></span>
+              <span class="anchor" id="variable-slash_pos"></span>
               integer,
             </td>
               <td>private</td>
@@ -879,47 +879,47 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">file_exists</span>
 
 <span class="w">      </span><span class="c">! Determine combined output filename from first individual file</span>
-<span class="w">      </span><span class="c">! Example: &quot;output_multi_structure_molecule_1.json&quot; -&gt; &quot;output_multi_structure.json&quot;</span>
+<span class="w">      </span><span class="c">! Example: "output_multi_structure_molecule_1.json" -&gt; "output_multi_structure.json"</span>
 <span class="w">      </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">individual_files</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="w">      </span><span class="n">slash_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">back</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.)</span>
+<span class="w">      </span><span class="n">slash_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span><span class="w"> </span><span class="s2">"/"</span><span class="p">,</span><span class="w"> </span><span class="n">back</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">slash_pos</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="n">slash_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:)</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Remove &quot;_molecule_1&quot; or similar suffix</span>
-<span class="w">      </span><span class="n">dot_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;_molecule_&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="c">! Remove "_molecule_1" or similar suffix</span>
+<span class="w">      </span><span class="n">dot_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span><span class="w"> </span><span class="s2">"_molecule_"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dot_pos</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">dot_pos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.json&quot;</span>
+<span class="k">         </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">dot_pos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s2">".json"</span>
 <span class="w">      </span><span class="k">else</span>
-<span class="k">         </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;output_combined.json&quot;</span>
+<span class="k">         </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"output_combined.json"</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Open combined output file</span>
-<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;write&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">"write"</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Failed to open "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">" for writing"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Merging &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; molecule JSON files into &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Merging "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">" molecule JSON files into "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
 
-<span class="w">      </span><span class="c">! Write opening brace and top-level key (basename without &quot;output_&quot; and &quot;.json&quot;)</span>
-<span class="w">      </span><span class="n">dot_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.json&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="c">! Write opening brace and top-level key (basename without "output_" and ".json")</span>
+<span class="w">      </span><span class="n">dot_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span><span class="w"> </span><span class="s2">".json"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dot_pos</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">output_file</span><span class="p">(</span><span class="mi">8</span><span class="p">:</span><span class="n">dot_pos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w">  </span><span class="c">! Skip &quot;output_&quot;</span>
+<span class="k">         </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">output_file</span><span class="p">(</span><span class="mi">8</span><span class="p">:</span><span class="n">dot_pos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w">  </span><span class="c">! Skip "output_"</span>
 <span class="w">      </span><span class="k">else</span>
-<span class="k">         </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;combined&quot;</span>
+<span class="k">         </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"combined"</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;{&quot;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  &quot;&#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&quot;: {&#39;</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"{"</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">)</span><span class="w"> </span><span class="s1">'  "'</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span><span class="o">//</span><span class="s1">'": {'</span>
 
 <span class="w">      </span><span class="c">! Process each individual JSON file</span>
 <span class="w">      </span><span class="k">do </span><span class="n">imol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nmol</span>
 <span class="w">         </span><span class="k">inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">individual_files</span><span class="p">(</span><span class="n">imol</span><span class="p">)),</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">file_exists</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">file_exists</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
-<span class="k">         open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit_in</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">individual_files</span><span class="p">(</span><span class="n">imol</span><span class="p">)),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;old&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="k">         open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit_in</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">individual_files</span><span class="p">(</span><span class="n">imol</span><span class="p">)),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">"old"</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">"read"</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
 <span class="w">         </span><span class="c">! Read all lines from the individual JSON file</span>
@@ -928,19 +928,19 @@ large graphs.</div>
 <span class="w">         </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit_in</span><span class="p">)</span>
 
 <span class="w">         </span><span class="c">! Delete individual file</span>
-<span class="w">         </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit_in</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">individual_files</span><span class="p">(</span><span class="n">imol</span><span class="p">)),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;old&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;readwrite&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit_in</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;delete&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit_in</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">individual_files</span><span class="p">(</span><span class="n">imol</span><span class="p">)),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">"old"</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">"readwrite"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit_in</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">"delete"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end do</span>
 
 <span class="w">      </span><span class="c">! Close last molecule</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;    }&quot;</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"    }"</span>
 
 <span class="w">      </span><span class="c">! Close top-level key and file</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  }&quot;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;}&quot;</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  }"</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"}"</span>
 
 <span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit_out</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Combined JSON written to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Combined JSON written to "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">merge_multi_molecule_json</span>
 </pre></div>
@@ -966,7 +966,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

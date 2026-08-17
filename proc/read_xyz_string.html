@@ -136,14 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-element~4">element</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-iatom~16">iatom</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-io_stat~6">io_stat</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-element~3">element</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-iatom~13">iatom</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-io_stat~4">io_stat</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-lines">lines</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-nlines">nlines</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-nlines~2">nlines</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-x~2">x</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-y~2">y</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-z~4">z</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-y">y</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-z~6">z</a>
         </div>
       </div>
     </div>
@@ -214,7 +214,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~2"></span>
+              <span class="anchor" id="variable-geom~6"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(out)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~48"></span>
+              <span class="anchor" id="variable-error~84"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -627,7 +627,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-element~4"></span>
+              <span class="anchor" id="variable-element~3"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -644,7 +644,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~16"></span>
+              <span class="anchor" id="variable-iatom~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -661,7 +661,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~6"></span>
+              <span class="anchor" id="variable-io_stat~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -695,7 +695,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlines"></span>
+              <span class="anchor" id="variable-nlines~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -729,7 +729,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-y~2"></span>
+              <span class="anchor" id="variable-y"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -746,7 +746,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z~4"></span>
+              <span class="anchor" id="variable-z~6"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -792,19 +792,19 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">split_lines</span><span class="p">(</span><span class="n">xyz_string</span><span class="p">,</span><span class="w"> </span><span class="n">lines</span><span class="p">,</span><span class="w"> </span><span class="n">nlines</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nlines</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;XYZ file must have at least 2 lines (natoms + comment)&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"XYZ file must have at least 2 lines (natoms + comment)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Read number of atoms from first line</span>
 <span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">lines</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Failed to read number of atoms from first line&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"Failed to read number of atoms from first line"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Number of atoms must be non-negative&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"Number of atoms must be non-negative"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -813,8 +813,8 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Check we have enough lines</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nlines</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;XYZ file has insufficient lines: expected &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;, got &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"XYZ file has insufficient lines: expected "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">))</span><span class="o">//</span><span class="s2">", got "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="n">nlines</span><span class="p">)))</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -827,9 +827,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">do </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span>
 <span class="w">         </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">lines</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">element</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Failed to parse atom data on line &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;: &#39;&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">lines</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"Failed to parse atom data on line "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">": '"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">lines</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">"'"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 
@@ -863,7 +863,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

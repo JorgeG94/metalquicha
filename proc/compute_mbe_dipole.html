@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-counterpoise~4">counterpoise</a>
             <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-has_next~9">has_next</a>
-            <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-i~147">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-i~137">i</a>
             <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-indices~10">indices</a>
             <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-key~8">key</a>
             <a class="list-group-item" href="../proc/compute_mbe_dipole.html#variable-key_len~2">key_len</a>
@@ -376,7 +376,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~29"></span>
+              <span class="anchor" id="variable-fragment~33"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -406,7 +406,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~10"></span>
+              <span class="anchor" id="variable-results~6"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -436,7 +436,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~49"></span>
+              <span class="anchor" id="variable-n~51"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -451,7 +451,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~25"></span>
+              <span class="anchor" id="variable-world_comm~22"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -961,7 +961,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~147"></span>
+              <span class="anchor" id="variable-i~137"></span>
               integer,
             </td>
               <td>private</td>
@@ -1128,7 +1128,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">do</span>
 <span class="w">            </span><span class="c">! Build current subset. Under counterpoise the key names the chosen</span>
 <span class="w">            </span><span class="c">! monomers real and the rest of *this* fragment ghosted, so the</span>
-<span class="w">            </span><span class="c">! lookup finds the subset solved in the parent&#39;s basis rather than</span>
+<span class="w">            </span><span class="c">! lookup finds the subset solved in the parent's basis rather than</span>
 <span class="w">            </span><span class="c">! its own -- which is the whole of the correction.</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">counterpoise</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">vmfc_subset_key</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">indices</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">subset_size</span><span class="p">),</span><span class="w"> </span><span class="n">subset_size</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="p">))</span>
@@ -1144,11 +1144,11 @@ large graphs.</div>
 <span class="w">            </span><span class="c">! Look up subset index</span>
 <span class="w">            </span><span class="n">subset_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lookup</span><span class="p">%</span><span class="n">find</span><span class="p">(</span><span class="n">key</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">key_len</span><span class="p">),</span><span class="w"> </span><span class="n">key_len</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">subset_idx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Subset not found in MBE dipole computation&quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Subset not found in MBE dipole computation"</span><span class="p">)</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">world_comm</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">                  call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">               </span><span class="k">else</span>
-<span class="k">                  error stop</span><span class="w"> </span><span class="s2">&quot;Subset not found in MBE dipole!&quot;</span>
+<span class="k">                  error stop</span><span class="w"> </span><span class="s2">"Subset not found in MBE dipole!"</span>
 <span class="w">               </span><span class="k">end if</span>
 <span class="k">            end if</span>
 
@@ -1186,7 +1186,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

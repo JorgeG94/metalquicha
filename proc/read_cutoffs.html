@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-prefix~2">PREFIX</a>
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-cutoff~3">cutoff</a>
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-found~19">found</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-prefix">PREFIX</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-cutoff~2">cutoff</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-found~3">found</a>
             <a class="list-group-item" href="../proc/read_cutoffs.html#variable-highest~2">highest</a>
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-level~9">level</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-level~2">level</a>
             <a class="list-group-item" href="../proc/read_cutoffs.html#variable-present_level">present_level</a>
             <a class="list-group-item" href="../proc/read_cutoffs.html#variable-previous">previous</a>
         </div>
@@ -206,7 +206,7 @@ interface.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~19"></span>
+              <span class="anchor" id="variable-json~5"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -221,7 +221,7 @@ interface.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~5"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -236,7 +236,7 @@ interface.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~78"></span>
+              <span class="anchor" id="variable-error~13"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -584,18 +584,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M68.51,-54C78.77,-54 90.97,-54 103.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="103.91,-57.5 113.91,-54 103.91,-50.5 103.91,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~read_cutoffs~~CalledByGraph_node10" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~read_cutoffs~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~read_cutoffs~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="78,-24 0,-24 0,0 78,0 78,-24"/>
 <text text-anchor="middle" x="39" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~read_cutoffs~~CalledByGraph_edge9" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M78.34,-12C99.34,-12 125.52,-12 147.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="147.75,-15.5 157.75,-12 147.75,-8.5 147.75,-15.5"/>
 </g>
@@ -703,7 +703,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-prefix~2"></span>
+              <span class="anchor" id="variable-prefix"></span>
               character(len=*),
             </td>
               <td>private,</td>
@@ -720,7 +720,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cutoff~3"></span>
+              <span class="anchor" id="variable-cutoff~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -737,7 +737,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~19"></span>
+              <span class="anchor" id="variable-found~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -771,7 +771,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~9"></span>
+              <span class="anchor" id="variable-level~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -839,26 +839,26 @@ parameter
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_cutoffs</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Per-level distance cutoffs from keywords.fragmentation.cutoffs</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Keys are either an n-mer name (&quot;dimer&quot;, &quot;trimer&quot;, ...) or the level as</span>
-<span class="w">      </span><span class="c">!! a decimal string (&quot;2&quot;, &quot;3&quot;, ...); both spellings mean the same level</span>
+<span class="w">      </span><span class="c">!! Keys are either an n-mer name ("dimer", "trimer", ...) or the level as</span>
+<span class="w">      </span><span class="c">!! a decimal string ("2", "3", ...); both spellings mean the same level</span>
 <span class="w">      </span><span class="c">!! and the JSON may mix them. The result is an array indexed by level and</span>
 <span class="w">      </span><span class="c">!! sized to the highest one present, so `fragment_cutoffs(3)` is the</span>
 <span class="w">      </span><span class="c">!! trimer cutoff whichever spelling produced it.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Both spellings are probed rather than enumerated because json-fortran</span>
-<span class="w">      </span><span class="c">!! offers no way to list an object&#39;s keys through the `json_file`</span>
+<span class="w">      </span><span class="c">!! offers no way to list an object's keys through the `json_file`</span>
 <span class="w">      </span><span class="c">!! interface.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">PREFIX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;keywords.fragmentation.cutoffs.&quot;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">PREFIX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"keywords.fragmentation.cutoffs."</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">highest</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cutoff</span><span class="p">,</span><span class="w"> </span><span class="n">previous</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">present_level</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">)</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;keywords.fragmentation.cutoffs&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"keywords.fragmentation.cutoffs"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
 <span class="k">      </span><span class="n">highest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
@@ -875,8 +875,8 @@ parameter
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">highest</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
 <span class="w">      </span><span class="c">! Sized to every supported level and filled with the same -1 sentinel the</span>
-<span class="w">      </span><span class="c">! .mqc parser uses, because downstream code reads &quot;no cutoff at this</span>
-<span class="w">      </span><span class="c">! level&quot; off that sentinel and would take a 0 as &quot;screen everything out&quot;.</span>
+<span class="w">      </span><span class="c">! .mqc parser uses, because downstream code reads "no cutoff at this</span>
+<span class="w">      </span><span class="c">! level" off that sentinel and would take a 0 as "screen everything out".</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">))</span>
 <span class="w">      </span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 
@@ -888,15 +888,15 @@ parameter
 <span class="w">         </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">PREFIX</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">level</span><span class="p">),</span><span class="w"> </span><span class="n">cutoff</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cutoff</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">PREFIX</span><span class="o">//</span><span class="n">int_to_key</span><span class="p">(</span><span class="n">level</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot; must be a positive number&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s2">" must be a positive number"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="w">         </span><span class="c">! A higher-order cutoff above a lower-order one would screen in more</span>
 <span class="w">         </span><span class="c">! trimers than dimers, which cannot be what anyone meant.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cutoff</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">previous</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords.fragmentation.cutoffs: the level-&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">level</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; cutoff exceeds a lower-order one; &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;cutoffs must decrease with n-mer level&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.fragmentation.cutoffs: the level-"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">level</span><span class="p">)</span><span class="o">//</span><span class="s2">" cutoff exceeds a lower-order one; "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"cutoffs must decrease with n-mer level"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">         </span><span class="n">previous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cutoff</span>
@@ -926,7 +926,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

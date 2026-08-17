@@ -455,18 +455,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M68.51,-54C78.77,-54 90.97,-54 103.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="103.91,-57.5 113.91,-54 103.91,-50.5 103.91,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~molecule_keys~~CalledByGraph_node10" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~molecule_keys~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~molecule_keys~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="78,-24 0,-24 0,0 78,0 78,-24"/>
 <text text-anchor="middle" x="39" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~molecule_keys~~CalledByGraph_edge9" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M78.34,-12C99.34,-12 125.52,-12 147.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="147.75,-15.5 157.75,-12 147.75,-8.5 147.75,-15.5"/>
 </g>
@@ -573,24 +573,24 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">molecule_keys</span><span class="p">()</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">key_set_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">keys</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;geometry&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;xyz&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;molecular_charge&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;molecular_multiplicity&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;connectivity&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragments&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragment_charges&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragment_multiplicities&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"symbols"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"geometry"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"xyz"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"molecular_charge"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"molecular_multiplicity"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"connectivity"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragments"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragment_charges"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragment_multiplicities"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">! One effective fragment potential per fragment, or a single one standing for all</span>
 <span class="w">      </span><span class="c">! of them when `uniform_system` says every fragment is the same species -- which</span>
 <span class="w">      </span><span class="c">! is what keeps a ten-thousand-water deck from repeating one filename ten</span>
 <span class="w">      </span><span class="c">! thousand times. A fragment with no potential named for it stays quantum, so</span>
 <span class="w">      </span><span class="c">! this is also how a mixed calculation is spelled.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragment_potentials&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;uniform_system&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">require</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;molecular_charge&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">require</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;molecular_multiplicity&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragment_potentials"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"uniform_system"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">require</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"molecular_charge"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">require</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"molecular_multiplicity"</span><span class="p">)</span>
 <span class="w">   </span><span class="k">end function </span><span class="n">molecule_keys</span>
 </pre></div>
 
@@ -615,7 +615,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

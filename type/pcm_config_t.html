@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-angular_points~3">angular_points</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-angular_points~4">angular_points</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-dielectric~4">dielectric</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-enabled">enabled</a>
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-max_iter~4">max_iter</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-max_iter~6">max_iter</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-radii_scale">radii_scale</a>
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-tolerance">tolerance</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-tolerance~10">tolerance</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-zeta">zeta</a>
         </div>
       </div>
@@ -280,7 +280,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~driver_config_t&#45;&gt;type~method_config_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge6" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge5" class="edge">
 <title>type~driver_config_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M363.73,-36.7C337.68,-40.93 304.3,-46.93 275,-54 265.51,-56.29 255.45,-59.09 245.88,-61.93"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="244.68,-58.64 236.13,-64.89 246.71,-65.34 244.68,-58.64"/>
@@ -296,7 +296,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge6" class="edge">
 <title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M552.59,-57.82C470.54,-62.28 336.39,-69.57 259.22,-73.76"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="258.98,-70.26 249.18,-74.3 259.36,-77.25 258.98,-70.26"/>
@@ -319,7 +319,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge10" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge9" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0000ff" d="M746.74,-83.84C741.59,-81.29 736.49,-78.33 732,-75 722.13,-67.67 726.29,-54 714,-54"/>
 </g>
@@ -347,7 +347,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge9" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge10" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0000ff" d="M746.74,-24.16C741.59,-26.71 736.49,-29.67 732,-33 722.13,-40.33 726.29,-54 714,-54"/>
 <path fill="none" stroke="#0000ff" d="M713,-54C710.46,-54 707.88,-54 705.27,-54"/>
@@ -426,7 +426,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~3"></span>
+              <span class="anchor" id="variable-angular_points~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -478,7 +478,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -512,7 +512,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance"></span>
+              <span class="anchor" id="variable-tolerance~10"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -559,7 +559,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_config_t</span>
 <span class="w">      </span><span class="c">!! A polarizable continuum: the cavity, the solvent, and the charge solve</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Backend-neutral in shape, but only the cuEST path implements it. tblite&#39;s</span>
+<span class="w">      </span><span class="c">!! Backend-neutral in shape, but only the cuEST path implements it. tblite's</span>
 <span class="w">      </span><span class="c">!! CPCM is configured through `xtb_config_t` and builds its own cavity; the</span>
 <span class="w">      </span><span class="c">!! two are separate models and share no settings.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
@@ -572,7 +572,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
 <span class="w">         </span><span class="c">!! Scaling from van der Waals radii, per `mqc_pcm_radii`.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">zeta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_dp</span>
 <span class="w">         </span><span class="c">!! Gaussian switching prefactor for the smooth surface. Unverified</span>
-<span class="w">         </span><span class="c">!! against cuEST&#39;s convention -- see `DEFAULT_PCM_ZETA`.</span>
+<span class="w">         </span><span class="c">!! against cuEST's convention -- see `DEFAULT_PCM_ZETA`.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-8_dp</span>
 <span class="w">         </span><span class="c">!! Residual the surface-charge solve must reach.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
@@ -600,7 +600,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

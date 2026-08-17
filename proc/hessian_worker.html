@@ -141,14 +141,14 @@
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-coord">coord</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-disp_idx~2">disp_idx</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-displaced_geom">displaced_geom</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~3">dummy_msg</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~2">dummy_msg</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~2">full_system</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-grad_result">grad_result</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-gradient_type~2">gradient_type</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-local_config~2">local_config</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~14">n_atoms</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~8">req</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~7">status</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~4">n_atoms</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~2">req</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~2">status</a>
         </div>
       </div>
     </div>
@@ -193,8 +193,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_method_base.html'>mqc_method_base</a></li>
               </ul>
             </li>
@@ -1338,7 +1338,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~11"></span>
+              <span class="anchor" id="variable-world_comm~3"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1353,7 +1353,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~26"></span>
+              <span class="anchor" id="variable-sys_geom~9"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1368,7 +1368,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~16"></span>
+              <span class="anchor" id="variable-config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2104,7 +2104,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dummy_msg~3"></span>
+              <span class="anchor" id="variable-dummy_msg~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -2189,7 +2189,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~14"></span>
+              <span class="anchor" id="variable-n_atoms~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -2206,7 +2206,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~8"></span>
+              <span class="anchor" id="variable-req~2"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -2223,7 +2223,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~7"></span>
+              <span class="anchor" id="variable-status~2"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -2313,12 +2313,12 @@ large graphs.</div>
 <span class="w">         </span><span class="k">call </span><span class="n">calculator</span><span class="p">%</span><span class="n">calc_gradient</span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">,</span><span class="w"> </span><span class="n">grad_result</span><span class="p">)</span>
 
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">grad_result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Worker gradient calculation error for forward displacement &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">grad_result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Worker gradient calculation error for forward displacement "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">grad_result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
 <span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">grad_result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Worker failed gradient for forward displacement &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">))</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Worker failed gradient for forward displacement "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">))</span>
 <span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 
@@ -2342,12 +2342,12 @@ large graphs.</div>
 <span class="w">         </span><span class="k">call </span><span class="n">calculator</span><span class="p">%</span><span class="n">calc_gradient</span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">,</span><span class="w"> </span><span class="n">grad_result</span><span class="p">)</span>
 
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">grad_result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Worker gradient calculation error for backward displacement &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">grad_result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Worker gradient calculation error for backward displacement "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">grad_result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
 <span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">grad_result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Worker failed gradient for backward displacement &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">))</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Worker failed gradient for backward displacement "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">disp_idx</span><span class="p">))</span>
 <span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 
@@ -2394,7 +2394,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

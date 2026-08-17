@@ -137,17 +137,17 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-color">color</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-config~6">config</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-error">error</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-config~24">config</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-error~92">error</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-has_fragmented_molecules">has_fragmented_molecules</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-imol">imol</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-imol~7">imol</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-individual_json_files">individual_json_files</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_name">mol_name</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_resources">mol_resources</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-molecules_processed">molecules_processed</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-my_rank">my_rank</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-my_rank~2">my_rank</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-num_ranks">num_ranks</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-sys_geom~6">sys_geom</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-sys_geom~55">sys_geom</a>
         </div>
       </div>
     </div>
@@ -191,10 +191,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_json.html'>mqc_json</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_json.html'>mqc_json</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
               </ul>
             </li>
@@ -782,7 +782,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~3"></span>
+              <span class="anchor" id="variable-resources~7"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -797,7 +797,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config"></span>
+              <span class="anchor" id="variable-mqc_config~7"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4113,7 +4113,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~6"></span>
+              <span class="anchor" id="variable-config~24"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>private</td>
@@ -4130,7 +4130,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error"></span>
+              <span class="anchor" id="variable-error~92"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -4164,7 +4164,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol"></span>
+              <span class="anchor" id="variable-imol~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -4249,7 +4249,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-my_rank"></span>
+              <span class="anchor" id="variable-my_rank~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -4283,7 +4283,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~55"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>private</td>
@@ -4352,24 +4352,24 @@ large graphs.</div>
 <span class="k">      end do</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Multi-molecule mode: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; molecules&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;MPI ranks: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Multi-molecule mode: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">" molecules"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"MPI ranks: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">))</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_fragmented_molecules</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Sequential execution (fragmented molecules detected)&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Each molecule will use all &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; rank(s) for its calculation&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Mode: Sequential execution (fragmented molecules detected)"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Each molecule will use all "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">)</span><span class="o">//</span><span class="s2">" rank(s) for its calculation"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Sequential execution (single rank)&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Mode: Sequential execution (single rank)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Parallel execution (one molecule per rank)&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Note: More ranks than molecules - ranks &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                             </span><span class="s2">&quot; to &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; will be idle&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Mode: Parallel execution (one molecule per rank)"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Note: More ranks than molecules - ranks "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">" to "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s2">" will be idle"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Parallel execution (one molecule per rank)&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Mode: Parallel execution (one molecule per rank)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Determine execution mode:</span>
@@ -4385,14 +4385,14 @@ large graphs.</div>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span>
 <span class="w">            </span><span class="k">else</span>
-<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;molecule_&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
+<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"molecule_"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"--------------------------------------------"</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Processing molecule "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="s2">"/"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"--------------------------------------------"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 
 <span class="w">            </span><span class="c">! Convert to driver configuration for this molecule</span>
@@ -4402,15 +4402,15 @@ large graphs.</div>
 <span class="w">            </span><span class="c">! Convert geometry for this molecule</span>
 <span class="w">            </span><span class="k">call </span><span class="n">config_to_system_geometry</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">&quot;mqc_driver:run_multi_molecule_calculation&quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">"mqc_driver:run_multi_molecule_calculation"</span><span class="p">)</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error converting geometry for &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Error converting geometry for "</span><span class="o">//</span><span class="n">mol_name</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
 <span class="w">               </span><span class="k">end if</span>
 <span class="k">               call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 
 <span class="w">            </span><span class="c">! Set output filename suffix for this molecule</span>
-<span class="w">            </span><span class="k">call </span><span class="n">set_molecule_suffix</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">mol_name</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">set_molecule_suffix</span><span class="p">(</span><span class="s2">"_"</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">mol_name</span><span class="p">))</span>
 
 <span class="w">            </span><span class="c">! Run calculation for this molecule</span>
 <span class="w">            </span><span class="k">call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">bonds</span><span class="p">)</span>
@@ -4422,7 +4422,7 @@ large graphs.</div>
 <span class="w">            </span><span class="k">call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Completed molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Completed molecule "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="s2">"/"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">            </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="k">end do</span>
@@ -4436,14 +4436,14 @@ large graphs.</div>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">                  </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span>
 <span class="w">               </span><span class="k">else</span>
-<span class="k">                  </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;molecule_&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
+<span class="k">                  </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"molecule_"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
 <span class="w">               </span><span class="k">end if</span>
 
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: Processing molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                </span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"--------------------------------------------"</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Rank "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">": Processing molecule "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                </span><span class="s2">"/"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"--------------------------------------------"</span><span class="p">)</span>
 
 <span class="w">               </span><span class="c">! Convert to driver configuration for this molecule</span>
 <span class="w">               </span><span class="k">call </span><span class="n">config_to_driver</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -4452,13 +4452,13 @@ large graphs.</div>
 <span class="w">               </span><span class="c">! Convert geometry for this molecule</span>
 <span class="w">               </span><span class="k">call </span><span class="n">config_to_system_geometry</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">)</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">&quot;mqc_driver:run_multi_molecule_calculation&quot;</span><span class="p">)</span>
-<span class="w">  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: Error converting geometry for &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
+<span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">"mqc_driver:run_multi_molecule_calculation"</span><span class="p">)</span>
+<span class="w">  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Rank "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">": Error converting geometry for "</span><span class="o">//</span><span class="n">mol_name</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
 <span class="w">                  </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">               </span><span class="k">end if</span>
 
 <span class="w">               </span><span class="c">! Set output filename suffix for this molecule</span>
-<span class="w">               </span><span class="k">call </span><span class="n">set_molecule_suffix</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">mol_name</span><span class="p">))</span>
+<span class="w">               </span><span class="k">call </span><span class="n">set_molecule_suffix</span><span class="p">(</span><span class="s2">"_"</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">mol_name</span><span class="p">))</span>
 
 <span class="w">               </span><span class="c">! Run calculation for this molecule (all ranks write JSON in parallel mode)</span>
 <span class="w">               </span><span class="k">call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -4470,8 +4470,8 @@ large graphs.</div>
 <span class="w">               </span><span class="c">! Clean up for this molecule</span>
 <span class="w">               </span><span class="k">call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: Completed molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                </span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Rank "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">": Completed molecule "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                </span><span class="s2">"/"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
 
 <span class="w">               </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">            </span><span class="k">end if</span>
@@ -4479,7 +4479,7 @@ large graphs.</div>
 
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">            </span><span class="c">! Idle rank - no molecules assigned</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: No molecules assigned (idle)&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">"Rank "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">": No molecules assigned (idle)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end if</span>
 
@@ -4495,11 +4495,11 @@ large graphs.</div>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span>
 <span class="w">            </span><span class="k">else</span>
-<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;molecule_&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
+<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"molecule_"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="w">            </span><span class="c">! Construct JSON filename pattern: output_&lt;basename&gt;_&lt;molname&gt;.json</span>
 <span class="w">            </span><span class="c">! This mirrors what get_output_json_filename() returns after set_molecule_suffix()</span>
-<span class="w">            </span><span class="k">call </span><span class="n">set_molecule_suffix</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">mol_name</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">set_molecule_suffix</span><span class="p">(</span><span class="s2">"_"</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">mol_name</span><span class="p">))</span>
 <span class="w">            </span><span class="n">individual_json_files</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_output_json_filename</span><span class="p">()</span>
 <span class="w">         </span><span class="k">end do</span>
 <span class="k">      end if</span>
@@ -4510,19 +4510,19 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; molecules completed&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"All "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">" molecules completed"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_fragmented_molecules</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Sequential (each molecule used all ranks)&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Execution: Sequential (each molecule used all ranks)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Sequential (single rank)&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Execution: Sequential (single rank)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">           call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Parallel (active ranks: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
+<span class="k">           call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Execution: Parallel (active ranks: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">"/"</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Parallel (all ranks active)&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Execution: Parallel (all ranks active)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">   end subroutine </span><span class="n">run_multi_molecule_calculations</span>
@@ -4549,7 +4549,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -396,7 +396,7 @@ large graphs.</div>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! almost gone. Pruning drops the order in those regions and keeps it in the</span>
 <a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! valence shell where the structure is.</span>
 <a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!!</span>
-<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! The NWChem scheme divides each atom&#39;s radial range into five zones by</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! The NWChem scheme divides each atom's radial range into five zones by</span>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! r/R_bragg, with thresholds depending on whether the element is H/He,</span>
 <a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="c">!! second row, or heavier, and assigns orders</span>
 <a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="c">!!</span>
@@ -455,11 +455,11 @@ large graphs.</div>
 <a id="ln-66" name="ln-66" href="#ln-66"></a>
 <a id="ln-67" name="ln-67" href="#ln-67"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
 <a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">PRUNE_NONE</span><span class="p">)</span>
-<a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
+<a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span>
 <a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">PRUNE_NWCHEM</span><span class="p">)</span>
-<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nwchem&quot;</span>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"nwchem"</span>
 <a id="ln-72" name="ln-72" href="#ln-72"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<a id="ln-73" name="ln-73" href="#ln-73"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;unknown&quot;</span>
+<a id="ln-73" name="ln-73" href="#ln-73"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unknown"</span>
 <a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">      </span><span class="k">end select</span>
 <a id="ln-75" name="ln-75" href="#ln-75"></a><span class="k">   end function </span><span class="n">prune_scheme_name</span>
 <a id="ln-76" name="ln-76" href="#ln-76"></a>
@@ -477,7 +477,7 @@ large graphs.</div>
 <a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scaled</span>
 <a id="ln-89" name="ln-89" href="#ln-89"></a>
 <a id="ln-90" name="ln-90" href="#ln-90"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;prune: orders must match the radial mesh&quot;</span><span class="p">)</span>
+<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"prune: orders must match the radial mesh"</span><span class="p">)</span>
 <a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-93" name="ln-93" href="#ln-93"></a><span class="k">      end if</span>
 <a id="ln-94" name="ln-94" href="#ln-94"></a>
@@ -487,7 +487,7 @@ large graphs.</div>
 <a id="ln-98" name="ln-98" href="#ln-98"></a><span class="k">      end if</span>
 <a id="ln-99" name="ln-99" href="#ln-99"></a>
 <a id="ln-100" name="ln-100" href="#ln-100"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">scheme</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">PRUNE_NWCHEM</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-101" name="ln-101" href="#ln-101"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;prune: unknown scheme&quot;</span><span class="p">)</span>
+<a id="ln-101" name="ln-101" href="#ln-101"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"prune: unknown scheme"</span><span class="p">)</span>
 <a id="ln-102" name="ln-102" href="#ln-102"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-103" name="ln-103" href="#ln-103"></a><span class="k">      end if</span>
 <a id="ln-104" name="ln-104" href="#ln-104"></a>
@@ -499,7 +499,7 @@ large graphs.</div>
 <a id="ln-110" name="ln-110" href="#ln-110"></a><span class="w">      </span><span class="k">else</span>
 <a id="ln-111" name="ln-111" href="#ln-111"></a><span class="k">         </span><span class="n">target_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">order_index</span><span class="p">(</span><span class="n">n_angular</span><span class="p">)</span>
 <a id="ln-112" name="ln-112" href="#ln-112"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">target_index</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;prune: target order is not a Lebedev order&quot;</span><span class="p">)</span>
+<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"prune: target order is not a Lebedev order"</span><span class="p">)</span>
 <a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">            </span><span class="k">return</span>
 <a id="ln-115" name="ln-115" href="#ln-115"></a><span class="k">         end if</span>
 <a id="ln-116" name="ln-116" href="#ln-116"></a><span class="k">         </span><span class="n">zone_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">PRUNE_ORDERS</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">PRUNE_ORDERS</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="n">PRUNE_ORDERS</span><span class="p">(</span><span class="n">target_index</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
@@ -559,7 +559,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

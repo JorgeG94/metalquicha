@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_fraglist_get.html#variable-base~5">base</a>
+            <a class="list-group-item" href="../proc/mqc_fraglist_get.html#variable-base~4">base</a>
             <a class="list-group-item" href="../proc/mqc_fraglist_get.html#variable-irow">irow</a>
-            <a class="list-group-item" href="../proc/mqc_fraglist_get.html#variable-iterm~5">iterm</a>
+            <a class="list-group-item" href="../proc/mqc_fraglist_get.html#variable-iterm~9">iterm</a>
             <a class="list-group-item" href="../proc/mqc_fraglist_get.html#variable-list~7">list</a>
         </div>
       </div>
@@ -199,7 +199,7 @@ overrun rather than a short read.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~15"></span>
+              <span class="anchor" id="variable-handle~27"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -214,7 +214,7 @@ overrun rather than a short read.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~11"></span>
+              <span class="anchor" id="variable-terms~13"></span>
               integer(kind=c_int),
             </td>
 <td>intent(inout)</td>
@@ -229,7 +229,7 @@ overrun rather than a short read.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~3"></span>
+              <span class="anchor" id="variable-n_terms~4"></span>
               integer(kind=c_int64_t),
             </td>
 <td></td>
@@ -244,7 +244,7 @@ overrun rather than a short read.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~14"></span>
+              <span class="anchor" id="variable-max_level~23"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -262,7 +262,7 @@ overrun rather than a short read.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~26"></span>
+          <span class="anchor" id="variable-status~33"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -284,7 +284,7 @@ overrun rather than a short read.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-base~5"></span>
+              <span class="anchor" id="variable-base~4"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -318,7 +318,7 @@ overrun rather than a short read.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~5"></span>
+              <span class="anchor" id="variable-iterm~9"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -367,8 +367,8 @@ overrun rather than a short read.</p>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_fraglist_get</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_terms</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_fraglist_get&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Copy the terms into a caller&#39;s buffer</span>
+<span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">"mqc_fraglist_get"</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Copy the terms into a caller's buffer</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `n_terms` and `max_level` are what the caller allocated for, and are</span>
 <span class="w">      </span><span class="c">!! checked rather than trusted: a buffer sized from a stale count is the</span>
@@ -376,10 +376,10 @@ overrun rather than a short read.</p>
 <span class="w">      </span><span class="c">!! overrun rather than a short read.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="c">! Sizes are declared before the array they shape: a dimension expression</span>
-<span class="w">      </span><span class="c">! can only name symbols already typed. Shaping from the caller&#39;s own</span>
+<span class="w">      </span><span class="c">! can only name symbols already typed. Shaping from the caller's own</span>
 <span class="w">      </span><span class="c">! arguments rather than leaving the array assumed-size makes a mismatch a</span>
 <span class="w">      </span><span class="c">! bounds error under a checking build instead of a silent overrun -- and</span>
-<span class="w">      </span><span class="c">! assumed-size arrays are on this project&#39;s forbidden list for that</span>
+<span class="w">      </span><span class="c">! assumed-size arrays are on this project's forbidden list for that</span>
 <span class="w">      </span><span class="c">! reason.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int64_t</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_terms</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_level</span>
@@ -393,13 +393,13 @@ overrun rather than a short read.</p>
 
 <span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;null fragment list handle&quot;</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"null fragment list handle"</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">list</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_terms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">list</span><span class="p">%</span><span class="n">n_terms</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">list</span><span class="p">%</span><span class="n">max_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_fraglist_get: the supplied buffer is smaller than the list&quot;</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mqc_fraglist_get: the supplied buffer is smaller than the list"</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -439,7 +439,7 @@ overrun rather than a short read.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

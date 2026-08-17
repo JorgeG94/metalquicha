@@ -181,7 +181,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~21"></span>
+              <span class="anchor" id="variable-json~7"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -226,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~10"></span>
+              <span class="anchor" id="variable-charge~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -241,7 +241,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~8"></span>
+              <span class="anchor" id="variable-multiplicity~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -256,7 +256,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~5"></span>
+              <span class="anchor" id="variable-geom~3"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -271,7 +271,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~5"></span>
+              <span class="anchor" id="variable-nfrag~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -286,7 +286,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~6"></span>
+              <span class="anchor" id="variable-fragments~3"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -316,7 +316,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~3"></span>
+              <span class="anchor" id="variable-nbonds"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -331,7 +331,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~3"></span>
+              <span class="anchor" id="variable-nbroken"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -346,7 +346,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds~2"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -361,7 +361,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~80"></span>
+              <span class="anchor" id="variable-error~15"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1019,18 +1019,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M277.51,-54C287.77,-54 299.97,-54 312.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="312.91,-57.5 322.91,-54 312.91,-50.5 312.91,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~read_molecule~~CalledByGraph_node9" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~read_molecule~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~read_molecule~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="287,-24 209,-24 209,0 287,0 287,-24"/>
 <text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~read_molecule~~CalledByGraph_edge8" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M287.34,-12C308.34,-12 334.52,-12 356.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="356.75,-15.5 366.75,-12 356.75,-8.5 356.75,-15.5"/>
 </g>
@@ -1043,9 +1043,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~read_molecule~~CalledByGraph_edge9" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#00ffff" d="M173.32,-12C181.93,-12 190.45,-12 198.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="198.69,-15.5 208.69,-12 198.69,-8.5 198.69,-15.5"/>
 </g>
@@ -1154,7 +1154,7 @@ large graphs.</div>
 <span class="w">                            </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">uniform</span><span class="p">,</span><span class="w"> </span><span class="n">nbonds</span><span class="p">,</span><span class="w"> </span><span class="n">nbroken</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! One entry of the molecules array</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prefix</span><span class="w">    </span><span class="c">!! e.g. &quot;molecules(1)&quot;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prefix</span><span class="w">    </span><span class="c">!! e.g. "molecules(1)"</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">base_dir</span><span class="w">  </span><span class="c">!! For resolving a relative xyz path</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">geometry_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">geom</span>
@@ -1174,12 +1174,12 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">read_molecule_geometry</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 
-<span class="k">      call </span><span class="n">require_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.molecular_charge&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">require_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".molecular_charge"</span><span class="p">,</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      call </span><span class="n">require_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.molecular_multiplicity&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">require_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".molecular_multiplicity"</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.molecular_multiplicity must be &gt;= 1&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">".molecular_multiplicity must be &gt;= 1"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -1212,7 +1212,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

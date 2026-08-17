@@ -136,15 +136,15 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-capacity~6">capacity</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-capacity~5">capacity</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-closed">closed</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-has_next~3">has_next</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~116">i</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~8">iterm</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~19">level</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~57">i</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~2">iterm</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~8">level</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-n_closed">n_closed</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-size_wanted">size_wanted</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-subset~2">subset</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-subset">subset</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-term~5">term</a>
         </div>
       </div>
@@ -213,7 +213,7 @@ The saving is real but it is in the tail, not the whole list.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~124"></span>
+              <span class="anchor" id="variable-this~72"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -228,7 +228,7 @@ The saving is real but it is in the tail, not the whole list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~105"></span>
+              <span class="anchor" id="variable-error~58"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -562,7 +562,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~6"></span>
+              <span class="anchor" id="variable-capacity~5"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -613,7 +613,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~116"></span>
+              <span class="anchor" id="variable-i~57"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -630,7 +630,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~8"></span>
+              <span class="anchor" id="variable-iterm~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -647,7 +647,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~19"></span>
+              <span class="anchor" id="variable-level~8"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -698,7 +698,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-subset~2"></span>
+              <span class="anchor" id="variable-subset"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -749,7 +749,7 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">fraglist_close_subsets</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Add back every subset of every surviving term</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **A screened list is not usable until this has run.** An n-body term&#39;s</span>
+<span class="w">      </span><span class="c">!! **A screened list is not usable until this has run.** An n-body term's</span>
 <span class="w">      </span><span class="c">!! contribution is its energy less the delta of every proper subset, so</span>
 <span class="w">      </span><span class="c">!! keeping a trimer whose dimers fell below the threshold does not</span>
 <span class="w">      </span><span class="c">!! approximate anything -- the assembly looks the subsets up and fails.</span>
@@ -772,7 +772,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">MAX_TERM_LEVEL</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;fraglist: max_level exceeds what subset closure supports&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">"fraglist: max_level exceeds what subset closure supports"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -826,7 +826,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

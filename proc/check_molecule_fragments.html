@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-charges~2">charges</a>
-            <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-found~9">found</a>
-            <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-fragments">fragments</a>
+            <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-found~33">found</a>
+            <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-fragments~7">fragments</a>
             <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-molecular_charge">molecular_charge</a>
             <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-n_charges">n_charges</a>
             <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-n_fragments~3">n_fragments</a>
             <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-n_mults">n_mults</a>
-            <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-total~8">total</a>
+            <a class="list-group-item" href="../proc/check_molecule_fragments.html#variable-total~9">total</a>
         </div>
       </div>
     </div>
@@ -232,7 +232,7 @@ a crash, which is why it is worth catching here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~4"></span>
+              <span class="anchor" id="variable-imol~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -247,7 +247,7 @@ a crash, which is why it is worth catching here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~40"></span>
+              <span class="anchor" id="variable-error~82"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -646,18 +646,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M68.51,-54C78.77,-54 90.97,-54 103.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="103.91,-57.5 113.91,-54 103.91,-50.5 103.91,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~check_molecule_fragments~~CalledByGraph_node10" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~check_molecule_fragments~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~check_molecule_fragments~~CalledByGraph_node10"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="78,-24 0,-24 0,0 78,0 78,-24"/>
 <text text-anchor="middle" x="39" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~check_molecule_fragments~~CalledByGraph_edge9" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M78.34,-12C99.34,-12 125.52,-12 147.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="147.75,-15.5 157.75,-12 147.75,-8.5 147.75,-15.5"/>
 </g>
@@ -782,7 +782,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~9"></span>
+              <span class="anchor" id="variable-found~33"></span>
               logical,
             </td>
               <td>private</td>
@@ -799,7 +799,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -884,7 +884,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~8"></span>
+              <span class="anchor" id="variable-total~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -930,43 +930,43 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">n_charges</span><span class="p">,</span><span class="w"> </span><span class="n">n_mults</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">molecular_charge</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragments&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragments"</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">associated</span><span class="p">(</span><span class="n">fragments</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      call </span><span class="n">core</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_fragments</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_fragments</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_path</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;: &#39;fragments&#39; must not be empty if it is given&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">": 'fragments' must not be empty if it is given"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      </span><span class="n">n_charges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">child_count</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragment_charges&quot;</span><span class="p">)</span>
+<span class="k">      </span><span class="n">n_charges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">child_count</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragment_charges"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_charges</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_charges</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">n_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_path</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;: &#39;fragment_charges&#39; has &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_charges</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot; entries for &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">": 'fragment_charges' has "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_charges</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">" entries for "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">" fragments"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      </span><span class="n">n_mults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">child_count</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragment_multiplicities&quot;</span><span class="p">)</span>
+<span class="k">      </span><span class="n">n_mults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">child_count</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragment_multiplicities"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_mults</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_mults</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">n_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_path</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;: &#39;fragment_multiplicities&#39; has &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_mults</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot; entries for &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">": 'fragment_multiplicities' has "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_mults</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">" entries for "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">n_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">" fragments"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_charges</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragment_charges&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">charges</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">"fragment_charges"</span><span class="p">,</span><span class="w"> </span><span class="n">charges</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum_integer_array</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">charges</span><span class="p">,</span><span class="w"> </span><span class="n">n_charges</span><span class="p">)</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;molecular_charge&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">molecular_charge</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span><span class="w"> </span><span class="s2">"molecular_charge"</span><span class="p">,</span><span class="w"> </span><span class="n">molecular_charge</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">total</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">molecular_charge</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_path</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;: fragment charges sum to &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot; but the molecular charge is &quot;</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">molecular_charge</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;; these must agree&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">": fragment charges sum to "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">" but the molecular charge is "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">molecular_charge</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"; these must agree"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">   end subroutine </span><span class="n">check_molecule_fragments</span>
 </pre></div>
@@ -992,7 +992,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

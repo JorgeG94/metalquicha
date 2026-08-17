@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/build_mbe_lookup_table.html#variable-fragment_size~14">fragment_size</a>
-            <a class="list-group-item" href="../proc/build_mbe_lookup_table.html#variable-i~148">i</a>
+            <a class="list-group-item" href="../proc/build_mbe_lookup_table.html#variable-i~138">i</a>
             <a class="list-group-item" href="../proc/build_mbe_lookup_table.html#variable-insert_error">insert_error</a>
             <a class="list-group-item" href="../proc/build_mbe_lookup_table.html#variable-lookup_timer">lookup_timer</a>
         </div>
@@ -375,7 +375,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~114"></span>
+              <span class="anchor" id="variable-error~111"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out),</td>
@@ -937,7 +937,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~148"></span>
+              <span class="anchor" id="variable-i~138"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1024,15 +1024,15 @@ large graphs.</div>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">insert_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">insert_error</span>
-<span class="w">               </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">&quot;build_mbe_lookup_table&quot;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">"build_mbe_lookup_table"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">            return</span>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
 <span class="k">      call </span><span class="n">lookup_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Time to build lookup table: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">lookup_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Hash table size: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">lookup</span><span class="p">%</span><span class="n">table_size</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;, entries: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">lookup</span><span class="p">%</span><span class="n">n_entries</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Time to build lookup table: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">lookup_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">" s"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Hash table size: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">lookup</span><span class="p">%</span><span class="n">table_size</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">", entries: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">lookup</span><span class="p">%</span><span class="n">n_entries</span><span class="p">))</span>
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">build_mbe_lookup_table</span>
 </pre></div>
 
@@ -1057,7 +1057,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

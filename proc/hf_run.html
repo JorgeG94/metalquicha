@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/hf_run.html#variable-backend_error~2">backend_error</a>
-            <a class="list-group-item" href="../proc/hf_run.html#variable-settings~9">settings</a>
+            <a class="list-group-item" href="../proc/hf_run.html#variable-settings~5">settings</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~132"></span>
+              <span class="anchor" id="variable-this~76"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -208,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~32"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~46"></span>
+              <span class="anchor" id="variable-result~30"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -637,7 +637,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~9"></span>
+              <span class="anchor" id="variable-settings~5"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -693,7 +693,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">cc_diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">cc_diis_size</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">scs_ss</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">scs_ss</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">scs_os</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">scs_os</span>
-<span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">functional</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w">        </span><span class="c">! empty selects pure Hartree-Fock</span>
+<span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">functional</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="w">        </span><span class="c">! empty selects pure Hartree-Fock</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">spherical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">spherical</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">verbose</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">device_rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">device_rank</span>
@@ -730,10 +730,10 @@ large graphs.</div>
 <span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">backend</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">BACKEND_CUEST</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">run_mp2</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">settings</span><span class="p">%</span><span class="n">run_cc</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;backend &#39;cuest&#39; was asked for, but &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                  </span><span class="s2">&quot;MP2 and coupled cluster have no GPU implementation &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                  </span><span class="s2">&quot;here -- they run through the CPU backend. Ask for &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                  </span><span class="s2">&quot;&#39;auto&#39;, or drop the correlated method.&quot;</span><span class="p">)</span>
+<span class="k">            call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"backend 'cuest' was asked for, but "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"MP2 and coupled cluster have no GPU implementation "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"here -- they run through the CPU backend. Ask for "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"'auto', or drop the correlated method."</span><span class="p">)</span>
 <span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -771,7 +771,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

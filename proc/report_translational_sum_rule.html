@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-iatom~19">iatom</a>
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-k~17">k</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-iatom~14">iatom</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-k~21">k</a>
             <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-kp">kp</a>
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-line~3">line</a>
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-n_atoms~30">n_atoms</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-line~7">line</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-n_atoms~23">n_atoms</a>
             <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-residual">residual</a>
             <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-sums">sums</a>
         </div>
@@ -204,7 +204,7 @@ as spurious IR intensity on the translational modes.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~5"></span>
+              <span class="anchor" id="variable-dipole_derivatives~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@ as spurious IR intensity on the translational modes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~9"></span>
+              <span class="anchor" id="variable-charge~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@ as spurious IR intensity on the translational modes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~6"></span>
+              <span class="anchor" id="variable-verbose~7"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -547,7 +547,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~19"></span>
+              <span class="anchor" id="variable-iatom~14"></span>
               integer,
             </td>
               <td>private</td>
@@ -564,7 +564,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~17"></span>
+              <span class="anchor" id="variable-k~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -598,7 +598,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~3"></span>
+              <span class="anchor" id="variable-line~7"></span>
               character(len=96),
             </td>
               <td>private</td>
@@ -615,7 +615,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~30"></span>
+              <span class="anchor" id="variable-n_atoms~23"></span>
               integer,
             </td>
               <td>private</td>
@@ -683,7 +683,7 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">report_translational_sum_rule</span><span class="p">(</span><span class="n">dipole_derivatives</span><span class="p">,</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Check the translational sum rule on the dipole derivatives</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!!   sum_A  d(mu_k)/d(R_{A,k&#39;})  =  Q * delta_{k,k&#39;}</span>
+<span class="w">      </span><span class="c">!!   sum_A  d(mu_k)/d(R_{A,k'})  =  Q * delta_{k,k'}</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Rigid translation of the whole molecule shifts every nucleus and the</span>
 <span class="w">      </span><span class="c">!! whole electron cloud together, so the dipole changes only by Q times</span>
@@ -724,13 +724,13 @@ large graphs.</div>
 <span class="k">      end do</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">residual</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1.0e-4_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,es10.2,a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">            </span><span class="s2">&quot;IR: dipole-derivative translational sum rule off by &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">            </span><span class="s2">&quot; a.u. -- intensities may be unreliable&quot;</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,es10.2,a)"</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="s2">"IR: dipole-derivative translational sum rule off by "</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="s2">" a.u. -- intensities may be unreliable"</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
 <span class="w">      </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,es10.2,a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">            </span><span class="s2">&quot;IR: dipole-derivative translational sum rule satisfied to &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; a.u.&quot;</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,es10.2,a)"</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="s2">"IR: dipole-derivative translational sum rule satisfied to "</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="s2">" a.u."</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">   end subroutine </span><span class="n">report_translational_sum_rule</span>
@@ -757,7 +757,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

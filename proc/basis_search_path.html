@@ -141,9 +141,9 @@
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-colon">colon</a>
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-env_length">env_length</a>
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-env_value">env_value</a>
-            <a class="list-group-item" href="../proc/basis_search_path.html#variable-n~26">n</a>
+            <a class="list-group-item" href="../proc/basis_search_path.html#variable-n~46">n</a>
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-start">start</a>
-            <a class="list-group-item" href="../proc/basis_search_path.html#variable-status~22">status</a>
+            <a class="list-group-item" href="../proc/basis_search_path.html#variable-status~31">status</a>
         </div>
       </div>
     </div>
@@ -428,7 +428,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~26"></span>
+              <span class="anchor" id="variable-n~46"></span>
               integer,
             </td>
               <td>private</td>
@@ -462,7 +462,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~22"></span>
+              <span class="anchor" id="variable-status~31"></span>
               integer,
             </td>
               <td>private</td>
@@ -517,7 +517,7 @@ parameter
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">env_length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">env_length</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">collected</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
-<span class="w">            </span><span class="n">colon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">env_value</span><span class="p">(</span><span class="n">start</span><span class="p">:</span><span class="n">env_length</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="n">colon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">env_value</span><span class="p">(</span><span class="n">start</span><span class="p">:</span><span class="n">env_length</span><span class="p">),</span><span class="w"> </span><span class="s2">":"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">colon</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">env_value</span><span class="p">(</span><span class="n">start</span><span class="p">:</span><span class="n">env_length</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">                  </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
@@ -536,7 +536,7 @@ parameter
 <span class="k">      end if</span>
 
 <span class="k">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">      </span><span class="n">collected</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;basis_sets&quot;</span>
+<span class="w">      </span><span class="n">collected</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"basis_sets"</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">MQC_DEFAULT_BASIS_DIR</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
@@ -569,7 +569,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

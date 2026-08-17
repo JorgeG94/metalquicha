@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-error~109">error</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-h~13">h</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-iterm~10">iterm</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-list~10">list</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-error~67">error</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-h~6">h</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-iterm~8">iterm</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-list">list</a>
             <a class="list-group-item" href="../proc/mqc_run.html#variable-n_supplied">n_supplied</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-result~43">result</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-session~2">session</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-result~33">result</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-session">session</a>
             <a class="list-group-item" href="../proc/mqc_run.html#variable-supplied">supplied</a>
         </div>
       </div>
@@ -222,7 +222,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~16"></span>
+              <span class="anchor" id="variable-terms~10"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -252,7 +252,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~8"></span>
+              <span class="anchor" id="variable-settings~6"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -282,7 +282,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~2"></span>
+              <span class="anchor" id="variable-label"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -297,7 +297,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output~4"></span>
+              <span class="anchor" id="variable-write_output~2"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -312,7 +312,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~17"></span>
+              <span class="anchor" id="variable-energy~14"></span>
               real(kind=c_double),
             </td>
 <td>intent(out)</td>
@@ -330,7 +330,7 @@ result are independent rather than a single switch.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~32"></span>
+          <span class="anchor" id="variable-status~18"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -4512,7 +4512,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~109"></span>
+              <span class="anchor" id="variable-error~67"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -4529,7 +4529,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~13"></span>
+              <span class="anchor" id="variable-h~6"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -4546,7 +4546,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~10"></span>
+              <span class="anchor" id="variable-iterm~8"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -4563,7 +4563,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-list~10"></span>
+              <span class="anchor" id="variable-list"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
               <td>private,</td>
@@ -4597,7 +4597,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~43"></span>
+              <span class="anchor" id="variable-result~33"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -4614,7 +4614,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-session~2"></span>
+              <span class="anchor" id="variable-session"></span>
               type(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
               <td>private,</td>
@@ -4663,10 +4663,10 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_run</span><span class="p">(</span><span class="nb">system</span><span class="p">,</span><span class="w"> </span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">settings_len</span><span class="p">,</span><span class="w"> </span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">label_len</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                    </span><span class="n">write_output</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_run&quot;</span><span class="p">)</span>
+<span class="w">                    </span><span class="n">write_output</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">"mqc_run"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Compute, and give the caller back a number</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `terms` may be null, which means &quot;generate the list yourself&quot; -- the</span>
+<span class="w">      </span><span class="c">!! `terms` may be null, which means "generate the list yourself" -- the</span>
 <span class="w">      </span><span class="c">!! ordinary fragmented run, with distance screening and sorting. A list</span>
 <span class="w">      </span><span class="c">!! that *is* supplied is taken as given, in the order given, and must be</span>
 <span class="w">      </span><span class="c">!! closed under subsets; `run_calculation` refuses one that is not.</span>
@@ -4695,7 +4695,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_c_double</span>
 <span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="nb">system</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_run: null system handle&quot;</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mqc_run: null system handle"</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="nb">system</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">)</span>
@@ -4714,7 +4714,7 @@ large graphs.</div>
 
 <span class="k">      </span><span class="n">session</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">current_session</span><span class="p">()</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">session</span><span class="p">%</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mqc_run: no session; call mqc_session_begin first&quot;</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mqc_run: no session; call mqc_session_begin first"</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -4785,7 +4785,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

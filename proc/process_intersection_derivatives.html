@@ -142,12 +142,12 @@
             <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-inter_error">inter_error</a>
             <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-inter_fragment">inter_fragment</a>
             <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-intersect_atoms">intersect_atoms</a>
-            <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-j~37">j</a>
+            <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-j~38">j</a>
             <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-n_intersect~3">n_intersect</a>
             <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-next_atoms">next_atoms</a>
             <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-next_n">next_n</a>
-            <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-term_gradient~2">term_gradient</a>
-            <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-term_hessian~2">term_hessian</a>
+            <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-term_gradient">term_gradient</a>
+            <a class="list-group-item" href="../proc/process_intersection_derivatives.html#variable-term_hessian">term_hessian</a>
         </div>
       </div>
     </div>
@@ -191,8 +191,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
@@ -762,7 +762,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~35"></span>
+              <span class="anchor" id="variable-k~28"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -837,7 +837,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~6"></span>
+              <span class="anchor" id="variable-total_gradient~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -852,7 +852,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~4"></span>
+              <span class="anchor" id="variable-total_hessian~2"></span>
               real(kind=dp),
             </td>
 <td>intent(inout),</td>
@@ -867,7 +867,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~18"></span>
+              <span class="anchor" id="variable-bonds~21"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -912,7 +912,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~6"></span>
+              <span class="anchor" id="variable-hess_dim~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -927,7 +927,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~28"></span>
+              <span class="anchor" id="variable-world_comm~25"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1628,7 +1628,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~37"></span>
+              <span class="anchor" id="variable-j~38"></span>
               integer,
             </td>
               <td>private</td>
@@ -1696,7 +1696,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term_gradient~2"></span>
+              <span class="anchor" id="variable-term_gradient"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1713,7 +1713,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term_hessian~2"></span>
+              <span class="anchor" id="variable-term_hessian"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1805,7 +1805,7 @@ large graphs.</div>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">world_comm</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">            </span><span class="k">else</span>
-<span class="k">               error stop</span><span class="w"> </span><span class="s2">&quot;Failed to build intersection fragment in GMBE&quot;</span>
+<span class="k">               error stop</span><span class="w"> </span><span class="s2">"Failed to build intersection fragment in GMBE"</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end if</span>
 
@@ -1829,7 +1829,7 @@ large graphs.</div>
 
 <span class="k">         call </span><span class="n">inter_fragment</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 <span class="w">      </span><span class="k">else</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;GMBE intersection has no atoms; skipping derivatives&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"GMBE intersection has no atoms; skipping derivatives"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">current_atoms</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">current_atoms</span><span class="p">)</span>
@@ -1857,7 +1857,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

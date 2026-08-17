@@ -1100,7 +1100,7 @@ large graphs.</div>
 <a id="ln-78" name="ln-78" href="#ln-78"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-79" name="ln-79" href="#ln-79"></a><span class="w">      </span><span class="c">!! Screening leaves the list closed under subsets already:</span>
 <a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">      </span><span class="c">!! `fragment_should_be_screened` drops an n-mer if *any* of its k-subsets</span>
-<a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">      </span><span class="c">!! exceeds the k-mer cutoff, so a surviving trimer&#39;s dimers all survived</span>
+<a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">      </span><span class="c">!! exceeds the k-mer cutoff, so a surviving trimer's dimers all survived</span>
 <a id="ln-82" name="ln-82" href="#ln-82"></a><span class="w">      </span><span class="c">!! too. Nothing further has to close it.</span>
 <a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">      </span><span class="k">use </span><span class="n">mqc_config_adapter</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">driver_config_t</span>
 <a id="ln-84" name="ln-84" href="#ln-84"></a>
@@ -1136,7 +1136,7 @@ large graphs.</div>
 <a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">      </span><span class="c">! Counterpoise rows are added after screening, so a pair that was screened</span>
 <a id="ln-115" name="ln-115" href="#ln-115"></a><span class="w">      </span><span class="c">! out does not bring its ghosted monomers along with it, and before the</span>
 <a id="ln-116" name="ln-116" href="#ln-116"></a><span class="w">      </span><span class="c">! size sort, so they are ordered with everything else.</span>
-<a id="ln-117" name="ln-117" href="#ln-117"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">counterpoise</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;vmfc&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-117" name="ln-117" href="#ln-117"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">counterpoise</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"vmfc"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <a id="ln-118" name="ln-118" href="#ln-118"></a><span class="k">         call </span><span class="n">add_vmfc_rows</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
 <a id="ln-119" name="ln-119" href="#ln-119"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-120" name="ln-120" href="#ln-120"></a>
@@ -1145,10 +1145,10 @@ large graphs.</div>
 <a id="ln-123" name="ln-123" href="#ln-123"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">generate_mbe_term_list</span>
 <a id="ln-124" name="ln-124" href="#ln-124"></a>
 <a id="ln-125" name="ln-125" href="#ln-125"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">add_vmfc_rows</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
-<a id="ln-126" name="ln-126" href="#ln-126"></a><span class="w">      </span><span class="c">!! Add, for every n-mer, the subfragments solved in that n-mer&#39;s basis</span>
+<a id="ln-126" name="ln-126" href="#ln-126"></a><span class="w">      </span><span class="c">!! Add, for every n-mer, the subfragments solved in that n-mer's basis</span>
 <a id="ln-127" name="ln-127" href="#ln-127"></a><span class="w">      </span><span class="c">!!</span>
 <a id="ln-128" name="ln-128" href="#ln-128"></a><span class="w">      </span><span class="c">!! For the pair [i,j] that is [i,-j] and [-i,j]: monomer i with j present</span>
-<a id="ln-129" name="ln-129" href="#ln-129"></a><span class="w">      </span><span class="c">!! as ghost centres, and the reverse. The pair&#39;s correction subtracts</span>
+<a id="ln-129" name="ln-129" href="#ln-129"></a><span class="w">      </span><span class="c">!! as ghost centres, and the reverse. The pair's correction subtracts</span>
 <a id="ln-130" name="ln-130" href="#ln-130"></a><span class="w">      </span><span class="c">!! those instead of the bare monomers, so the superposition error that</span>
 <a id="ln-131" name="ln-131" href="#ln-131"></a><span class="w">      </span><span class="c">!! inflates the pair stands on both sides and cancels.</span>
 <a id="ln-132" name="ln-132" href="#ln-132"></a><span class="w">      </span><span class="c">!!</span>
@@ -1260,10 +1260,10 @@ large graphs.</div>
 <a id="ln-238" name="ln-238" href="#ln-238"></a>
 <a id="ln-239" name="ln-239" href="#ln-239"></a><span class="w">      </span><span class="c">! Update total fragment count</span>
 <a id="ln-240" name="ln-240" href="#ln-240"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fragments_screened</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-241" name="ln-241" href="#ln-241"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Distance-based screening applied:&quot;</span><span class="p">)</span>
-<a id="ln-242" name="ln-242" href="#ln-242"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Fragments before screening: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">))</span>
-<a id="ln-243" name="ln-243" href="#ln-243"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Fragments screened out: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragments_screened</span><span class="p">))</span>
-<a id="ln-244" name="ln-244" href="#ln-244"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Fragments kept: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragments_kept</span><span class="p">))</span>
+<a id="ln-241" name="ln-241" href="#ln-241"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Distance-based screening applied:"</span><span class="p">)</span>
+<a id="ln-242" name="ln-242" href="#ln-242"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Fragments before screening: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">))</span>
+<a id="ln-243" name="ln-243" href="#ln-243"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Fragments screened out: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragments_screened</span><span class="p">))</span>
+<a id="ln-244" name="ln-244" href="#ln-244"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Fragments kept: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragments_kept</span><span class="p">))</span>
 <a id="ln-245" name="ln-245" href="#ln-245"></a><span class="w">         </span><span class="n">total_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragments_kept</span>
 <a id="ln-246" name="ln-246" href="#ln-246"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-247" name="ln-247" href="#ln-247"></a>
@@ -1368,7 +1368,7 @@ large graphs.</div>
 <a id="ln-346" name="ln-346" href="#ln-346"></a><span class="w">      </span><span class="n">polymers_copy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">polymers</span>
 <a id="ln-347" name="ln-347" href="#ln-347"></a>
 <a id="ln-348" name="ln-348" href="#ln-348"></a><span class="w">      </span><span class="c">! Reorder: new position j gets data from original position sort_indices(j)</span>
-<a id="ln-349" name="ln-349" href="#ln-349"></a><span class="w">      </span><span class="c">! NOTE: sort_indices already contains 1-indexed values, so don&#39;t add 1!</span>
+<a id="ln-349" name="ln-349" href="#ln-349"></a><span class="w">      </span><span class="c">! NOTE: sort_indices already contains 1-indexed values, so don't add 1!</span>
 <a id="ln-350" name="ln-350" href="#ln-350"></a><span class="w">      </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
 <a id="ln-351" name="ln-351" href="#ln-351"></a><span class="w">         </span><span class="n">sorted_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sort_indices</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w">  </span><span class="c">! Already 1-indexed!</span>
 <a id="ln-352" name="ln-352" href="#ln-352"></a><span class="w">         </span><span class="n">polymers</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">polymers_copy</span><span class="p">(</span><span class="n">sorted_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span>
@@ -1378,7 +1378,7 @@ large graphs.</div>
 <a id="ln-356" name="ln-356" href="#ln-356"></a><span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_sizes</span><span class="p">)</span>
 <a id="ln-357" name="ln-357" href="#ln-357"></a><span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">sort_indices</span><span class="p">)</span>
 <a id="ln-358" name="ln-358" href="#ln-358"></a>
-<a id="ln-359" name="ln-359" href="#ln-359"></a><span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fragments queue sorted!&quot;</span><span class="p">)</span>
+<a id="ln-359" name="ln-359" href="#ln-359"></a><span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Fragments queue sorted!"</span><span class="p">)</span>
 <a id="ln-360" name="ln-360" href="#ln-360"></a>
 <a id="ln-361" name="ln-361" href="#ln-361"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">sort_fragments_by_size</span>
 <a id="ln-362" name="ln-362" href="#ln-362"></a>
@@ -1404,7 +1404,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

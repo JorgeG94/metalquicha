@@ -1206,7 +1206,7 @@ large graphs.</div>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! touches a config only wants the *type* -- the driver, the adapter, the</span>
 <a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! MBE engine and the tests all import `mqc_config_t` and never parse</span>
 <a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! anything -- so tying the type to one file format would make every</span>
-<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! consumer depend on that format&#39;s parser. It also means a second reader</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! consumer depend on that format's parser. It also means a second reader</span>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! is a new module rather than a change to an existing one.</span>
 <a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="c">!!</span>
 <a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="c">!! Defaults are declared here, once, and a reader that finds no value for a</span>
@@ -1248,7 +1248,7 @@ large graphs.</div>
 <a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">      </span><span class="c">!&gt; quantum, which is how a mixed calculation is spelled -- there is no second way</span>
 <a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">      </span><span class="c">!&gt; to declare a fragment. The path is resolved relative to the deck, like `xyz`.</span>
 <a id="ln-51" name="ln-51" href="#ln-51"></a><span class="w">      </span><span class="c">!&gt;</span>
-<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">      </span><span class="c">!&gt; **A path, not a format.** GAMESS&#39;s `.efp` text is what exists today, but the</span>
+<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">      </span><span class="c">!&gt; **A path, not a format.** GAMESS's `.efp` text is what exists today, but the</span>
 <a id="ln-53" name="ln-53" href="#ln-53"></a><span class="w">      </span><span class="c">!&gt; potential is moving to JSON, so nothing here may require an extension or infer</span>
 <a id="ln-54" name="ln-54" href="#ln-54"></a><span class="w">      </span><span class="c">!&gt; a format from one. Whoever loads it dispatches on what the file actually is;</span>
 <a id="ln-55" name="ln-55" href="#ln-55"></a><span class="w">      </span><span class="c">!&gt; the deck only ever names it.</span>
@@ -1346,7 +1346,7 @@ large graphs.</div>
 <a id="ln-147" name="ln-147" href="#ln-147"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cc_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-8_dp</span>
 <a id="ln-148" name="ln-148" href="#ln-148"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cc_triples_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <a id="ln-149" name="ln-149" href="#ln-149"></a><span class="w">         </span><span class="c">!! Whether a deck named `triples` explicitly. Without this there is no</span>
-<a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">         </span><span class="c">!! way to tell &quot;triples: false&quot; from &quot;the key was absent&quot;, and the</span>
+<a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">         </span><span class="c">!! way to tell "triples: false" from "the key was absent", and the</span>
 <a id="ln-151" name="ln-151" href="#ln-151"></a><span class="w">         </span><span class="c">!! method name has to lose to an explicit keyword while winning over an</span>
 <a id="ln-152" name="ln-152" href="#ln-152"></a><span class="w">         </span><span class="c">!! absent one.</span>
 <a id="ln-153" name="ln-153" href="#ln-153"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cc_triples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
@@ -1367,21 +1367,21 @@ large graphs.</div>
 <a id="ln-168" name="ln-168" href="#ln-168"></a>
 <a id="ln-169" name="ln-169" href="#ln-169"></a><span class="w">      </span><span class="c">! keywords.pcm -- the polarizable continuum on the ab initio backends.</span>
 <a id="ln-170" name="ln-170" href="#ln-170"></a><span class="w">      </span><span class="c">!</span>
-<a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">      </span><span class="c">! Deliberately not the xTB solvation keys below. Those configure tblite&#39;s</span>
+<a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">      </span><span class="c">! Deliberately not the xTB solvation keys below. Those configure tblite's</span>
 <a id="ln-172" name="ln-172" href="#ln-172"></a><span class="w">      </span><span class="c">! own CPCM, which builds its own cavity with its own defaults</span>
 <a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">      </span><span class="c">! (cpcm_rscale is 1.0 there, against the 1.2 conventional for a van der</span>
-<a id="ln-174" name="ln-174" href="#ln-174"></a><span class="w">      </span><span class="c">! Waals cavity), and routing one implementation&#39;s settings into another&#39;s</span>
+<a id="ln-174" name="ln-174" href="#ln-174"></a><span class="w">      </span><span class="c">! Waals cavity), and routing one implementation's settings into another's</span>
 <a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">      </span><span class="c">! would make two different models look like one keyword.</span>
-<a id="ln-176" name="ln-176" href="#ln-176"></a><span class="w">      </span><span class="c">! Which integral backend to run on: &quot;auto&quot; (default), &quot;cuest&quot;/&quot;gpu&quot;, or</span>
-<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">      </span><span class="c">! &quot;libcint&quot;/&quot;cpu&quot;. A request that the build or the method cannot honour is</span>
+<a id="ln-176" name="ln-176" href="#ln-176"></a><span class="w">      </span><span class="c">! Which integral backend to run on: "auto" (default), "cuest"/"gpu", or</span>
+<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">      </span><span class="c">! "libcint"/"cpu". A request that the build or the method cannot honour is</span>
 <a id="ln-178" name="ln-178" href="#ln-178"></a><span class="w">      </span><span class="c">! refused, not substituted.</span>
-<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span>
+<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"auto"</span>
 <a id="ln-180" name="ln-180" href="#ln-180"></a>
 <a id="ln-181" name="ln-181" href="#ln-181"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <a id="ln-182" name="ln-182" href="#ln-182"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_dielectric</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 <a id="ln-183" name="ln-183" href="#ln-183"></a><span class="w">         </span><span class="c">!! Solvent dielectric constant. Required: there is no solvent-name</span>
 <a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">         </span><span class="c">!! table on this path, because inventing one that disagreed with</span>
-<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="c">!! tblite&#39;s would make the same deck mean two things.</span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="c">!! tblite's would make the same deck mean two things.</span>
 <a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_angular_points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_PCM_NANG</span>
 <a id="ln-187" name="ln-187" href="#ln-187"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_radii_scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_PCM_RSCALE</span>
 <a id="ln-188" name="ln-188" href="#ln-188"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_zeta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_PCM_ZETA</span>
@@ -1389,8 +1389,8 @@ large graphs.</div>
 <a id="ln-190" name="ln-190" href="#ln-190"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 <a id="ln-191" name="ln-191" href="#ln-191"></a>
 <a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">      </span><span class="c">! XTB solvation settings</span>
-<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvent</span><span class="w">  </span><span class="c">!! Solvent name (e.g., &quot;water&quot;, &quot;ethanol&quot;) or empty for gas phase</span>
-<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvation_model</span><span class="w">  </span><span class="c">!! Solvation model: &quot;alpb&quot; (default), &quot;gbsa&quot;, or &quot;cpcm&quot;</span>
+<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvent</span><span class="w">  </span><span class="c">!! Solvent name (e.g., "water", "ethanol") or empty for gas phase</span>
+<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvation_model</span><span class="w">  </span><span class="c">!! Solvation model: "alpb" (default), "gbsa", or "cpcm"</span>
 <a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_cds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w">               </span><span class="c">!! Include non-polar CDS terms in solvation (not for CPCM)</span>
 <a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w">             </span><span class="c">!! Include solution state shift in solvation (not for CPCM)</span>
 <a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">      </span><span class="c">! CPCM-specific settings</span>
@@ -1461,21 +1461,21 @@ large graphs.</div>
 <a id="ln-262" name="ln-262" href="#ln-262"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_FRAG_LEVEL</span>
 <a id="ln-263" name="ln-263" href="#ln-263"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <a id="ln-264" name="ln-264" href="#ln-264"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expansion_kind</span>
-<a id="ln-265" name="ln-265" href="#ln-265"></a><span class="w">         </span><span class="c">!! Which expansion runs: &quot;mbe&quot; (default), &quot;fmo&quot; or &quot;ee-mbe&quot;.</span>
+<a id="ln-265" name="ln-265" href="#ln-265"></a><span class="w">         </span><span class="c">!! Which expansion runs: "mbe" (default), "fmo" or "ee-mbe".</span>
 <a id="ln-266" name="ln-266" href="#ln-266"></a><span class="w">         </span><span class="c">!! GMBE is selected by `allow_overlapping_fragments` instead, which</span>
 <a id="ln-267" name="ln-267" href="#ln-267"></a><span class="w">         </span><span class="c">!! predates this and stays as it was.</span>
 <a id="ln-268" name="ln-268" href="#ln-268"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">counterpoise</span>
-<a id="ln-269" name="ln-269" href="#ln-269"></a><span class="w">         </span><span class="c">!! How basis-set superposition error is handled: &quot;none&quot; (default) or</span>
-<a id="ln-270" name="ln-270" href="#ln-270"></a><span class="w">         </span><span class="c">!! &quot;vmfc&quot;.</span>
+<a id="ln-269" name="ln-269" href="#ln-269"></a><span class="w">         </span><span class="c">!! How basis-set superposition error is handled: "none" (default) or</span>
+<a id="ln-270" name="ln-270" href="#ln-270"></a><span class="w">         </span><span class="c">!! "vmfc".</span>
 <a id="ln-271" name="ln-271" href="#ln-271"></a><span class="w">         </span><span class="c">!!</span>
-<a id="ln-272" name="ln-272" href="#ln-272"></a><span class="w">         </span><span class="c">!! Under &quot;none&quot; each subfragment is solved in its own basis, so a pair</span>
+<a id="ln-272" name="ln-272" href="#ln-272"></a><span class="w">         </span><span class="c">!! Under "none" each subfragment is solved in its own basis, so a pair</span>
 <a id="ln-273" name="ln-273" href="#ln-273"></a><span class="w">         </span><span class="c">!! borrows functions its monomers did not have and looks more bound</span>
 <a id="ln-274" name="ln-274" href="#ln-274"></a><span class="w">         </span><span class="c">!! than it is. That error lands in the pair term and survives</span>
-<a id="ln-275" name="ln-275" href="#ln-275"></a><span class="w">         </span><span class="c">!! truncation. &quot;vmfc&quot; solves every subfragment in its parent&#39;s basis</span>
+<a id="ln-275" name="ln-275" href="#ln-275"></a><span class="w">         </span><span class="c">!! truncation. "vmfc" solves every subfragment in its parent's basis</span>
 <a id="ln-276" name="ln-276" href="#ln-276"></a><span class="w">         </span><span class="c">!! instead -- valiron-mayer function counterpoise -- so the borrowing</span>
 <a id="ln-277" name="ln-277" href="#ln-277"></a><span class="w">         </span><span class="c">!! appears on both sides of each difference and cancels.</span>
 <a id="ln-278" name="ln-278" href="#ln-278"></a><span class="w">         </span><span class="c">!!</span>
-<a id="ln-279" name="ln-279" href="#ln-279"></a><span class="w">         </span><span class="c">!! It is not free: a monomer&#39;s energy stops being one number reusable</span>
+<a id="ln-279" name="ln-279" href="#ln-279"></a><span class="w">         </span><span class="c">!! It is not free: a monomer's energy stops being one number reusable</span>
 <a id="ln-280" name="ln-280" href="#ln-280"></a><span class="w">         </span><span class="c">!! across every pair it belongs to and becomes one number per pair, so</span>
 <a id="ln-281" name="ln-281" href="#ln-281"></a><span class="w">         </span><span class="c">!! a level-2 expansion goes from N + C(N,2) subcalculations to</span>
 <a id="ln-282" name="ln-282" href="#ln-282"></a><span class="w">         </span><span class="c">!! 3*C(N,2).</span>
@@ -1523,7 +1523,7 @@ large graphs.</div>
 <a id="ln-324" name="ln-324" href="#ln-324"></a><span class="w">         </span><span class="c">!! the escape exists; it is deliberately not a comfortable thing to</span>
 <a id="ln-325" name="ln-325" href="#ln-325"></a><span class="w">         </span><span class="c">!! reach for.</span>
 <a id="ln-326" name="ln-326" href="#ln-326"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_breakdown</span>
-<a id="ln-327" name="ln-327" href="#ln-327"></a><span class="w">         </span><span class="c">!! Where the per-fragment MBE table goes: &quot;csv&quot;, &quot;json&quot; or &quot;none&quot;</span>
+<a id="ln-327" name="ln-327" href="#ln-327"></a><span class="w">         </span><span class="c">!! Where the per-fragment MBE table goes: "csv", "json" or "none"</span>
 <a id="ln-328" name="ln-328" href="#ln-328"></a>
 <a id="ln-329" name="ln-329" href="#ln-329"></a><span class="w">   </span><span class="k">contains</span>
 <a id="ln-330" name="ln-330" href="#ln-330"></a><span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">config_destroy</span>
@@ -1618,7 +1618,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/freeze_term_list.html#variable-n_generated">n_generated</a>
-            <a class="list-group-item" href="../proc/freeze_term_list.html#variable-polymers~14">polymers</a>
+            <a class="list-group-item" href="../proc/freeze_term_list.html#variable-polymers~9">polymers</a>
         </div>
       </div>
     </div>
@@ -219,7 +219,7 @@ freeze through this route and the honest thing is to say so.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~61"></span>
+              <span class="anchor" id="variable-sys_geom~30"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@ freeze through this route and the honest thing is to say so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~32"></span>
+              <span class="anchor" id="variable-config~15"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -868,7 +868,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers~9"></span>
               integer,
             </td>
               <td>private,</td>
@@ -907,7 +907,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! further apart than the cutoff. Regenerate that at every step of an</span>
 <span class="w">      </span><span class="c">!! optimization and the list changes as the molecules move: a dimer</span>
 <span class="w">      </span><span class="c">!! crossing the cutoff enters or leaves the sum, and the total energy</span>
-<span class="w">      </span><span class="c">!! jumps by that dimer&#39;s whole interaction. The optimizer has no way to</span>
+<span class="w">      </span><span class="c">!! jumps by that dimer's whole interaction. The optimizer has no way to</span>
 <span class="w">      </span><span class="c">!! know that the function changed shape rather than the geometry being</span>
 <span class="w">      </span><span class="c">!! bad -- it reads the jump as real, rejects the step, shrinks the trust</span>
 <span class="w">      </span><span class="c">!! radius, and either stalls or converges to a point that is not a</span>
@@ -918,7 +918,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! the same one to every step through `supplied_terms`, which</span>
 <span class="w">      </span><span class="c">!! `run_calculation` takes as given and does not re-screen. The energy is</span>
 <span class="w">      </span><span class="c">!! then a fixed sum of a fixed set of subsystems -- a smooth function of</span>
-<span class="w">      </span><span class="c">!! the coordinates -- and its gradient is that function&#39;s actual</span>
+<span class="w">      </span><span class="c">!! the coordinates -- and its gradient is that function's actual</span>
 <span class="w">      </span><span class="c">!! derivative, which is what makes the optimization well posed at all.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **What is given up.** A term screened out at the start stays out even</span>
@@ -944,23 +944,23 @@ large graphs.</div>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">allow_overlapping_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;GMBE term lists cannot be frozen, and screening is active.&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  The intersection terms are rederived at every step, so a&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  fragment crossing a cutoff changes the energy expression&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  mid-optimization. Remove the cutoffs if this stalls.&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"GMBE term lists cannot be frozen, and screening is active."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  The intersection terms are rederived at every step, so a"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  fragment crossing a cutoff changes the energy expression"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  mid-optimization. Remove the cutoffs if this stalls."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         return</span>
 <span class="k">      end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">freeze_terms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;freeze_terms is off and distance screening is active.&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  The term list will be rebuilt at every geometry, which puts&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  steps in the energy the optimizer reads as real.&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"freeze_terms is off and distance screening is active."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  The term list will be rebuilt at every geometry, which puts"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  steps in the energy the optimizer reads as real."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         return</span>
 <span class="k">      end if</span>
@@ -976,10 +976,10 @@ large graphs.</div>
 <span class="w">      </span><span class="n">ctx_n_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_generated</span>
 <span class="w">      </span><span class="n">ctx_terms_frozen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Term list frozen at the starting geometry: &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                       </span><span class="n">to_char</span><span class="p">(</span><span class="n">ctx_n_terms</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; terms&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Term list frozen at the starting geometry: "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">to_char</span><span class="p">(</span><span class="n">ctx_n_terms</span><span class="p">)</span><span class="o">//</span><span class="s2">" terms"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    (distance screening applied once, not per step)&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"    (distance screening applied once, not per step)"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">   end subroutine </span><span class="n">freeze_term_list</span>
@@ -1006,7 +1006,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

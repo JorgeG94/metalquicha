@@ -138,10 +138,10 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-actual_max_k">actual_max_k</a>
             <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-combination~3">combination</a>
-            <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-idx~10">idx</a>
+            <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-idx~2">idx</a>
             <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-intersection_count~3">intersection_count</a>
-            <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-k~25">k</a>
-            <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-max_atoms~9">max_atoms</a>
+            <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-k~5">k</a>
+            <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-max_atoms~3">max_atoms</a>
             <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-max_intersections~2">max_intersections</a>
             <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-temp_intersections~3">temp_intersections</a>
             <a class="list-group-item" href="../proc/generate_intersections_from_atom_lists.html#variable-temp_levels~3">temp_levels</a>
@@ -189,8 +189,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -347,7 +347,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms_list~2"></span>
+              <span class="anchor" id="variable-n_atoms_list"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -803,7 +803,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-idx~10"></span>
+              <span class="anchor" id="variable-idx~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -837,7 +837,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~25"></span>
+              <span class="anchor" id="variable-k~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -854,7 +854,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~9"></span>
+              <span class="anchor" id="variable-max_atoms~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -991,7 +991,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">temp_sets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="n">intersection_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating k-way intersections (k=2 to &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">actual_max_k</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Generating k-way intersections (k=2 to "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">actual_max_k</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Loop over intersection levels k from 2 to actual_max_k</span>
 <span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">actual_max_k</span>
@@ -1013,18 +1013,18 @@ large graphs.</div>
 <span class="w">         </span><span class="n">intersection_sets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_sets</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_intersections</span><span class="p">)</span>
 <span class="w">         </span><span class="n">intersection_levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp_levels</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_intersections</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generated &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_intersections</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; total intersections:&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Generated "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_intersections</span><span class="p">)</span><span class="o">//</span><span class="s2">" total intersections:"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">actual_max_k</span>
 <span class="w">            </span><span class="n">idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">intersection_levels</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; intersections at level &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">//</span><span class="s2">" intersections at level "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end do</span>
 <span class="k">      else</span>
 <span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">intersections</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No intersections found&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"No intersections found"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">temp_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">temp_sets</span><span class="p">,</span><span class="w"> </span><span class="n">temp_levels</span><span class="p">)</span>
@@ -1052,7 +1052,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

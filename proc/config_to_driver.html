@@ -194,7 +194,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config~3"></span>
+              <span class="anchor" id="variable-mqc_config"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -209,7 +209,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -239,7 +239,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_rank~2"></span>
+              <span class="anchor" id="variable-node_rank"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -254,7 +254,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments~4"></span>
+              <span class="anchor" id="variable-n_fragments"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -274,7 +274,7 @@ the count from wherever the geometry came from instead.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~56"></span>
+              <span class="anchor" id="variable-error"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -614,18 +614,18 @@ large graphs.</div>
 <path fill="none" stroke="#7fff00" d="M428.62,-54C442.15,-54 459.11,-54 476.48,-54"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="476.72,-57.5 486.72,-54 476.72,-50.5 476.72,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~config_to_driver~~CalledByGraph_node7" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~config_to_driver~~CalledByGraph_node7"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~config_to_driver~~CalledByGraph_node7"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438,-24 360,-24 360,0 438,0 438,-24"/>
 <text text-anchor="middle" x="399" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~config_to_driver~~CalledByGraph_edge7" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ffff" d="M438.2,-12C462.67,-12 494.57,-12 520.44,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="520.76,-15.5 530.76,-12 520.76,-8.5 520.76,-15.5"/>
 </g>
@@ -638,9 +638,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~config_to_driver~~CalledByGraph_edge8" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#00ffff" d="M324.32,-12C332.93,-12 341.45,-12 349.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="349.69,-15.5 359.69,-12 349.69,-8.5 349.69,-15.5"/>
 </g>
@@ -798,7 +798,7 @@ large graphs.</div>
 <span class="w">                               </span><span class="n">n_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Convert mqc_config_t to minimal driver_config_t</span>
 <span class="w">      </span><span class="c">!! Extracts only the fields needed by the driver</span>
-<span class="w">      </span><span class="c">!! If molecule_index is provided, uses that molecule&#39;s fragment count</span>
+<span class="w">      </span><span class="c">!! If molecule_index is provided, uses that molecule's fragment count</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_config</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">driver_config</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">molecule_index</span><span class="w">  </span><span class="c">!! Which molecule to use (for multi-molecule mode)</span>
@@ -813,7 +813,7 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! How many fragments the system actually has, when the config does</span>
 <span class="w">         </span><span class="c">!! not say. A settings-only document -- the form a session broadcasts</span>
 <span class="w">         </span><span class="c">!! -- carries no molecules, so its own `nfrag` is 0, and the rule</span>
-<span class="w">         </span><span class="c">!! below would read that as &quot;unfragmented&quot; and quietly compute the</span>
+<span class="w">         </span><span class="c">!! below would read that as "unfragmented" and quietly compute the</span>
 <span class="w">         </span><span class="c">!! whole system as one piece. It converges and it looks right. Pass</span>
 <span class="w">         </span><span class="c">!! the count from wherever the geometry came from instead.</span>
 
@@ -858,7 +858,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">n_fragments</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">nfrag_to_use</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_fragments</span>
 <span class="w">      </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">molecule_index</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Multi-molecule mode: use specific molecule&#39;s fragment count</span>
+<span class="w">         </span><span class="c">! Multi-molecule mode: use specific molecule's fragment count</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">molecule_index</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">molecule_index</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">nfrag_to_use</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="k">else</span>
@@ -869,7 +869,7 @@ large graphs.</div>
 <span class="w">         </span><span class="n">nfrag_to_use</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nfrag</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Carry each fragment&#39;s potential through, in fragment order. Blank where a</span>
+<span class="w">      </span><span class="c">! Carry each fragment's potential through, in fragment order. Blank where a</span>
 <span class="w">      </span><span class="c">! fragment has none, which is a quantum fragment rather than a missing entry.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">copy_fragment_potentials</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="p">)</span>
 
@@ -931,7 +931,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_maxiter</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">convergence_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_tolerance</span>
-<span class="w">      </span><span class="c">! And again into the method&#39;s own SCF settings, which is the copy every</span>
+<span class="w">      </span><span class="c">! And again into the method's own SCF settings, which is the copy every</span>
 <span class="w">      </span><span class="c">! backend actually reads -- `configure_hf` takes max_iter and the</span>
 <span class="w">      </span><span class="c">! tolerances from `method_config%scf`, and the xTB calculator now does</span>
 <span class="w">      </span><span class="c">! too. Only `driver_config%scf` was being filled, so a deck asking for</span>
@@ -965,7 +965,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">dft_radial_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">dft_angular_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">dft_radial_points</span>
 <span class="w">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">dft_angular_points</span>
-<span class="w">         </span><span class="c">! Negative level means &quot;the counts are in charge&quot;, which is what the</span>
+<span class="w">         </span><span class="c">! Negative level means "the counts are in charge", which is what the</span>
 <span class="w">         </span><span class="c">! banner and the grid builder both read to decide which was asked for.</span>
 <span class="w">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">grid_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
 <span class="w">      </span><span class="k">end if</span>
@@ -974,7 +974,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_diis</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_diis_size</span>
 <span class="w">      </span><span class="c">! The method name settles the triples unless a deck said otherwise:</span>
-<span class="w">      </span><span class="c">! &quot;ccsd(t)&quot; and &quot;ccsd&quot; are separate method types, so the distinction</span>
+<span class="w">      </span><span class="c">! "ccsd(t)" and "ccsd" are separate method types, so the distinction</span>
 <span class="w">      </span><span class="c">! survives the parse and does not have to be recovered from the spelling</span>
 <span class="w">      </span><span class="c">! the way RI does.</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">include_triples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1026,7 +1026,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

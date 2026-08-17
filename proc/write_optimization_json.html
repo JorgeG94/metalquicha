@@ -138,12 +138,12 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-frame_obj">frame_obj</a>
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-geom_obj">geom_obj</a>
-            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-iatom~14">iatom</a>
+            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-iatom~19">iatom</a>
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-istep">istep</a>
-            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-json~14">json</a>
+            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-json~34">json</a>
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-main_obj~5">main_obj</a>
-            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-n_atoms~22">n_atoms</a>
-            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-root~18">root</a>
+            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-n_atoms~28">n_atoms</a>
+            <a class="list-group-item" href="../proc/write_optimization_json.html#variable-root~19">root</a>
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-status_ok">status_ok</a>
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-symbols_arr">symbols_arr</a>
             <a class="list-group-item" href="../proc/write_optimization_json.html#variable-traj_arr">traj_arr</a>
@@ -202,7 +202,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~7"></span>
+              <span class="anchor" id="variable-path~22"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -217,7 +217,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-record"></span>
+              <span class="anchor" id="variable-record~5"></span>
               type(<a href='../type/optimization_record_t.html'>optimization_record_t</a>),
             </td>
 <td>intent(in)</td>
@@ -232,7 +232,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~45"></span>
+              <span class="anchor" id="variable-error~93"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -684,7 +684,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~14"></span>
+              <span class="anchor" id="variable-iatom~19"></span>
               integer,
             </td>
               <td>private</td>
@@ -718,7 +718,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~14"></span>
+              <span class="anchor" id="variable-json~34"></span>
               type(json_core),
             </td>
               <td>private</td>
@@ -752,7 +752,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~22"></span>
+              <span class="anchor" id="variable-n_atoms~28"></span>
               integer,
             </td>
               <td>private</td>
@@ -769,7 +769,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~18"></span>
+              <span class="anchor" id="variable-root~19"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -866,59 +866,59 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">final_coordinates</span><span class="p">))</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">final_coordinates</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">initialize</span><span class="p">()</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;optimization&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"optimization"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Whether it converged goes first and is a boolean, not a phrase to be</span>
 <span class="w">      </span><span class="c">! grepped for. A run that stopped on the step cap still writes a geometry</span>
 <span class="w">      </span><span class="c">! and an energy, so this is the only field that distinguishes the two.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;converged&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">converged</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;steps&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">n_steps</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;energy_evaluations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">n_evaluations</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;final_energy&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">final_energy</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;final_gradient_max&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">final_gradient_max</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;gradient_tolerance&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">coordinates</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coordinates&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">coordinates</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">algorithm</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;algorithm&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">algorithm</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"converged"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">converged</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"steps"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">n_steps</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"energy_evaluations"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">n_evaluations</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"final_energy"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">final_energy</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"final_gradient_max"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">final_gradient_max</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"gradient_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">coordinates</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"coordinates"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">coordinates</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">algorithm</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"algorithm"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">algorithm</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Angstrom here, unlike everything internal, because every consumer of a</span>
 <span class="w">      </span><span class="c">! geometry outside this program works in Angstrom and a bare number in a</span>
 <span class="w">      </span><span class="c">! JSON field carries no units to correct by.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;final_geometry&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"final_geometry"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">geom_obj</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;units&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;angstrom&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;n_atoms&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"units"</span><span class="p">,</span><span class="w"> </span><span class="s2">"angstrom"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"n_atoms"</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! One at a time rather than an array constructor of trim()med strings:</span>
 <span class="w">         </span><span class="c">! a character array constructor pads every element to the longest, so</span>
-<span class="w">         </span><span class="c">! &quot;H&quot; comes back as &quot;H &quot; and a reader comparing it to &quot;H&quot; finds no</span>
+<span class="w">         </span><span class="c">! "H" comes back as "H " and a reader comparing it to "H" finds no</span>
 <span class="w">         </span><span class="c">! match. Building the array element by element keeps each string the</span>
 <span class="w">         </span><span class="c">! length it actually is.</span>
-<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">symbols_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">symbols_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"symbols"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="n">symbols_arr</span><span class="p">)</span>
 <span class="w">         </span><span class="k">do </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">symbols_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">symbols_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="nb">trim</span><span class="p">(</span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">iatom</span><span class="p">))))</span>
 <span class="w">         </span><span class="k">end do</span>
-<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;atomic_numbers&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"atomic_numbers"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">final_coordinates</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coordinates&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">geom_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"coordinates"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="p">[(</span><span class="n">to_angstrom</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">final_coordinates</span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">iatom</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                              </span><span class="p">(</span><span class="n">iatom</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                         </span><span class="n">iatom</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span><span class="p">)])</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">trajectory</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">traj_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;trajectory&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">traj_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"trajectory"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">traj_arr</span><span class="p">)</span>
 <span class="w">         </span><span class="k">do </span><span class="n">istep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">trajectory</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span>
 <span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">traj_arr</span><span class="p">,</span><span class="w"> </span><span class="n">frame_obj</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;step&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">istep</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;energy&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">trajectory_energies</span><span class="p">(</span><span class="n">istep</span><span class="p">))</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coordinates&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"step"</span><span class="p">,</span><span class="w"> </span><span class="n">istep</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"energy"</span><span class="p">,</span><span class="w"> </span><span class="n">record</span><span class="p">%</span><span class="n">trajectory_energies</span><span class="p">(</span><span class="n">istep</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frame_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">"coordinates"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="p">[(</span><span class="n">to_angstrom</span><span class="p">(</span><span class="n">record</span><span class="p">%</span><span class="n">trajectory</span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">iatom</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                          </span><span class="p">(</span><span class="n">iatom</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">istep</span><span class="p">)),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                            </span><span class="n">iatom</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span><span class="p">)])</span>
@@ -931,11 +931,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">status_ok</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_IO</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Could not write the optimization record to &quot;</span><span class="o">//</span><span class="n">path</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_IO</span><span class="p">,</span><span class="w"> </span><span class="s2">"Could not write the optimization record to "</span><span class="o">//</span><span class="n">path</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimization record written to &quot;</span><span class="o">//</span><span class="n">path</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Optimization record written to "</span><span class="o">//</span><span class="n">path</span><span class="p">)</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">write_optimization_json</span>
 </pre></div>
@@ -961,7 +961,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

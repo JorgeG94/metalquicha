@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-gradient_config">gradient_config</a>
-            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-line~5">line</a>
+            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-line~6">line</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-now_wall">now_wall</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-opt_time">opt_time</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-qc_time">qc_time</a>
-            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-result~36">result</a>
+            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-result~25">result</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-saved_level">saved_level</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-step_clock">step_clock</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-step_time">step_time</a>
@@ -2550,7 +2550,7 @@ unfragmented path tolerates (the workers no-op inside it).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~36"></span>
+              <span class="anchor" id="variable-n_atoms~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2565,7 +2565,7 @@ unfragmented path tolerates (the workers no-op inside it).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~9"></span>
+              <span class="anchor" id="variable-coords~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2595,7 +2595,7 @@ unfragmented path tolerates (the workers no-op inside it).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~10"></span>
+              <span class="anchor" id="variable-gradient~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2610,7 +2610,7 @@ unfragmented path tolerates (the workers no-op inside it).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~30"></span>
+              <span class="anchor" id="variable-status~12"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -4987,7 +4987,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~5"></span>
+              <span class="anchor" id="variable-line~6"></span>
               character(len=100),
             </td>
               <td>private</td>
@@ -5055,7 +5055,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~36"></span>
+              <span class="anchor" id="variable-result~25"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -5140,7 +5140,7 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">evaluate_energy_gradient</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! One energy and gradient, at the geometry the engine asked for</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Rank 0 only -- this is the engine&#39;s callback. It brings the workers to</span>
+<span class="w">      </span><span class="c">!! Rank 0 only -- this is the engine's callback. It brings the workers to</span>
 <span class="w">      </span><span class="c">!! the same geometry and then every rank enters `run_calculation`</span>
 <span class="w">      </span><span class="c">!! together, which is what the fragmented path requires and what the</span>
 <span class="w">      </span><span class="c">!! unfragmented path tolerates (the workers no-op inside it).</span>
@@ -5165,8 +5165,8 @@ large graphs.</div>
 <span class="w">      </span><span class="n">ctx_sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coords</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send_geometry</span><span class="p">(</span><span class="n">ctx_resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">ctx_sys_geom</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! The deck said &quot;Optimize&quot;; each step of one is a gradient. Copied and</span>
-<span class="w">      </span><span class="c">! overridden rather than mutated, so the caller&#39;s config still says what</span>
+<span class="w">      </span><span class="c">! The deck said "Optimize"; each step of one is a gradient. Copied and</span>
+<span class="w">      </span><span class="c">! overridden rather than mutated, so the caller's config still says what</span>
 <span class="w">      </span><span class="c">! the user asked for when this is over.</span>
 <span class="w">      </span><span class="n">gradient_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_config</span>
 <span class="w">      </span><span class="n">gradient_config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CALC_TYPE_GRADIENT</span>
@@ -5191,7 +5191,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Every evaluation is quantum chemistry, printed or not, so accumulate its</span>
 <span class="w">      </span><span class="c">! cost here. A printed step then reports the whole of it -- its own plus any</span>
-<span class="w">      </span><span class="c">! line-search probes since the last -- and the optimizer&#39;s share is what is</span>
+<span class="w">      </span><span class="c">! line-search probes since the last -- and the optimizer's share is what is</span>
 <span class="w">      </span><span class="c">! left of the wall-clock interval.</span>
 <span class="w">      </span><span class="n">ctx_qc_accum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_qc_accum</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">step_time</span>
 
@@ -5203,15 +5203,15 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! that to an optimizer is the worst shape a failure can take: it is a</span>
 <span class="w">      </span><span class="c">! perfectly plausible small gradient and the step taken on it looks fine.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">step_label</span><span class="p">()</span><span class="o">//</span><span class="s2">&quot; failed: &quot;</span><span class="o">//</span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">step_label</span><span class="p">()</span><span class="o">//</span><span class="s2">" failed: "</span><span class="o">//</span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
 <span class="w">         </span><span class="n">ctx_failed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">step_label</span><span class="p">()</span><span class="o">//</span><span class="s2">&quot; returned no gradient. The method named &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;in this deck cannot produce one.&quot;</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">step_label</span><span class="p">()</span><span class="o">//</span><span class="s2">" returned no gradient. The method named "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"in this deck cannot produce one."</span><span class="p">)</span>
 <span class="w">         </span><span class="n">ctx_failed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="k">return</span>
@@ -5223,7 +5223,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! One row of the step table, the same shape as the SCF and CCSD tables.</span>
 <span class="w">      </span><span class="c">! Probe evaluations do not print: they are not steps, and numbering them</span>
-<span class="w">      </span><span class="c">! would read as &quot;step 0&quot;. The header is emitted once by the driver before</span>
+<span class="w">      </span><span class="c">! would read as "step 0". The header is emitted once by the driver before</span>
 <span class="w">      </span><span class="c">! the engine starts (see optimize_geometry), the closing rule after it.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">ctx_probing</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">now_wall</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_wall</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">()</span>
@@ -5232,8 +5232,8 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! on the step: the L-BFGS update, the coordinate transform, its own</span>
 <span class="w">         </span><span class="c">! bookkeeping. Floored at zero against timer granularity.</span>
 <span class="w">         </span><span class="n">opt_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">now_wall</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ctx_last_print_wall</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">qc_time</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(i8,f23.12,es14.3,f10.2,a,f10.2,a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">ctx_n_evaluations</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">            </span><span class="nb">maxval</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">gradient</span><span class="p">)),</span><span class="w"> </span><span class="n">qc_time</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">opt_time</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; s&quot;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(i8,f23.12,es14.3,f10.2,a,f10.2,a)"</span><span class="p">)</span><span class="w"> </span><span class="n">ctx_n_evaluations</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="nb">maxval</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">gradient</span><span class="p">)),</span><span class="w"> </span><span class="n">qc_time</span><span class="p">,</span><span class="w"> </span><span class="s2">" s"</span><span class="p">,</span><span class="w"> </span><span class="n">opt_time</span><span class="p">,</span><span class="w"> </span><span class="s2">" s"</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
 <span class="w">         </span><span class="n">ctx_last_print_wall</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now_wall</span>
 <span class="w">         </span><span class="n">ctx_qc_accum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
@@ -5263,7 +5263,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

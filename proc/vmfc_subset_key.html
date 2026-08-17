@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-i~137">i</a>
-            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-j~33">j</a>
-            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-next~2">next</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-i~33">i</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-j~11">j</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-next">next</a>
             <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-taken">taken</a>
         </div>
       </div>
@@ -204,7 +204,7 @@ is just another key, and it sorts and hashes like any other.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~26"></span>
+              <span class="anchor" id="variable-fragment~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~41"></span>
+              <span class="anchor" id="variable-n~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-chosen~2"></span>
+              <span class="anchor" id="variable-chosen"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -249,7 +249,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~28"></span>
+              <span class="anchor" id="variable-k~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -264,7 +264,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~5"></span>
+              <span class="anchor" id="variable-key~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -734,7 +734,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~137"></span>
+              <span class="anchor" id="variable-i~33"></span>
               integer,
             </td>
               <td>private</td>
@@ -751,7 +751,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~33"></span>
+              <span class="anchor" id="variable-j~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -768,7 +768,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-next~2"></span>
+              <span class="anchor" id="variable-next"></span>
               integer,
             </td>
               <td>private</td>
@@ -821,7 +821,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Ordinary MBE subtracts the subset {A} from the pair {A,B}. VMFC</span>
 <span class="w">      </span><span class="c">!! subtracts {A in the basis of AB} instead -- the same monomers, solved</span>
-<span class="w">      </span><span class="c">!! in the parent&#39;s basis -- so the superposition error that inflates the</span>
+<span class="w">      </span><span class="c">!! in the parent's basis -- so the superposition error that inflates the</span>
 <span class="w">      </span><span class="c">!! parent stands on both sides of the difference and cancels rather than</span>
 <span class="w">      </span><span class="c">!! surviving into the total.</span>
 <span class="w">      </span><span class="c">!!</span>
@@ -829,7 +829,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! parent* negative. For the pair [1,2] choosing [1], that is [1,-2]. The</span>
 <span class="w">      </span><span class="c">!! recursion, the hash table and the dispatch are untouched: a signed key</span>
 <span class="w">      </span><span class="c">!! is just another key, and it sorts and hashes like any other.</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! The parent&#39;s monomers, all positive</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! The parent's monomers, all positive</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w">             </span><span class="c">!! How many of them</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">chosen</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! Positions within `fragment`, size k</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">k</span>
@@ -875,7 +875,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

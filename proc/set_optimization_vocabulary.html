@@ -186,7 +186,7 @@ that still has the string the user typed.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config~4"></span>
+              <span class="anchor" id="variable-mqc_config~2"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -201,7 +201,7 @@ that still has the string the user typed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~6"></span>
+              <span class="anchor" id="variable-driver_config~2"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -216,7 +216,7 @@ that still has the string the user typed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~57"></span>
+              <span class="anchor" id="variable-error~2"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -522,18 +522,18 @@ large graphs.</div>
 <path fill="none" stroke="#7fff00" d="M428.62,-54C442.15,-54 459.11,-54 476.48,-54"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="476.72,-57.5 486.72,-54 476.72,-50.5 476.72,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~set_optimization_vocabulary~~CalledByGraph_node8" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~set_optimization_vocabulary~~CalledByGraph_node8"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~set_optimization_vocabulary~~CalledByGraph_node8"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438,-24 360,-24 360,0 438,0 438,-24"/>
 <text text-anchor="middle" x="399" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~set_optimization_vocabulary~~CalledByGraph_edge8" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ffff" d="M438.2,-12C462.67,-12 494.57,-12 520.44,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="520.76,-15.5 530.76,-12 520.76,-8.5 520.76,-15.5"/>
 </g>
@@ -546,9 +546,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~set_optimization_vocabulary~~CalledByGraph_edge9" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#00ffff" d="M324.32,-12C332.93,-12 341.45,-12 349.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="349.69,-15.5 359.69,-12 349.69,-8.5 349.69,-15.5"/>
 </g>
@@ -671,8 +671,8 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">set_optimization_vocabulary</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Turn the two spelled optimization settings into constants</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Kept out of the reader on purpose: the reader&#39;s job is to get the</span>
-<span class="w">      </span><span class="c">!! document&#39;s values into the config, and the vocabulary of what those</span>
+<span class="w">      </span><span class="c">!! Kept out of the reader on purpose: the reader's job is to get the</span>
+<span class="w">      </span><span class="c">!! document's values into the config, and the vocabulary of what those</span>
 <span class="w">      </span><span class="c">!! values may say belongs with the type that holds the constants. An</span>
 <span class="w">      </span><span class="c">!! unrecognised spelling is refused here by name, which is the only place</span>
 <span class="w">      </span><span class="c">!! that still has the string the user typed.</span>
@@ -686,9 +686,9 @@ large graphs.</div>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_COORDS_UNKNOWN</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;Unknown keywords.optimization.coordinates: &#39;&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"Unknown keywords.optimization.coordinates: '"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="nb">trim</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_coordinates</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;&#39;. Use cartesian, hdlc or dlc.&quot;</span><span class="p">)</span>
+<span class="w">                              </span><span class="s2">"'. Use cartesian, hdlc or dlc."</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">            return</span>
 <span class="k">         end if</span>
@@ -700,9 +700,9 @@ large graphs.</div>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">algorithm</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_ALGO_UNKNOWN</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;Unknown keywords.optimization.algorithm: &#39;&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"Unknown keywords.optimization.algorithm: '"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="nb">trim</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_algorithm</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;&#39;. Use lbfgs, cg, sd or prfo.&quot;</span><span class="p">)</span>
+<span class="w">                              </span><span class="s2">"'. Use lbfgs, cg, sd or prfo."</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">            return</span>
 <span class="k">         end if</span>
@@ -732,7 +732,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/text64.html#variable-buffer~2">buffer</a>
+            <a class="list-group-item" href="../proc/text64.html#variable-buffer~11">buffer</a>
         </div>
       </div>
     </div>
@@ -191,7 +191,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~7"></span>
+              <span class="anchor" id="variable-value~12"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -209,7 +209,7 @@
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-out~2"></span>
+          <span class="anchor" id="variable-out~4"></span>
           character(len=:), allocatable
         </small>
       </h3>
@@ -454,31 +454,31 @@
 <g id="proc~~text64~~CalledByGraph_node15" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~text64~~CalledByGraph_node15"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="115,-66 37,-66 37,-42 115,-42 115,-66"/>
-<text text-anchor="middle" x="76" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~text64~~CalledByGraph_edge19" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M115.28,-61.9C149.12,-68.89 198.57,-79.09 234.55,-86.52"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="234.28,-90.03 244.78,-88.63 235.7,-83.18 234.28,-90.03"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~text64~~CalledByGraph_node16" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~text64~~CalledByGraph_node16"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
 <text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~text64~~CalledByGraph_edge17" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ffff" d="M115.28,-138C151.53,-138 205.7,-138 242.02,-138"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="242.22,-141.5 252.22,-138 242.22,-134.5 242.22,-141.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~text64~~CalledByGraph_node16" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~text64~~CalledByGraph_node16"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-66 37,-66 37,-42 115,-42 115,-66"/>
+<text text-anchor="middle" x="76" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~text64~~CalledByGraph_edge19" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M115.28,-61.9C149.12,-68.89 198.57,-79.09 234.55,-86.52"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="234.28,-90.03 244.78,-88.63 235.7,-83.18 234.28,-90.03"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~text64~~CalledByGraph_node17" class="node">
@@ -599,7 +599,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~2"></span>
+              <span class="anchor" id="variable-buffer~11"></span>
               character(len=24),
             </td>
               <td>private</td>
@@ -634,7 +634,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">value</span>
 <span class="k">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">out</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buffer</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(I0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">value</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="s2">"(I0)"</span><span class="p">)</span><span class="w"> </span><span class="k">value</span>
 <span class="k">      </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">buffer</span><span class="p">))</span>
 <span class="w">   </span><span class="k">end function </span><span class="n">text64</span>
 </pre></div>
@@ -660,7 +660,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -181,7 +181,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~4"></span>
+              <span class="anchor" id="variable-text~19"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -458,18 +458,18 @@ large graphs.</div>
 <path fill="none" stroke="#7fff00" d="M277.62,-54C291.15,-54 308.11,-54 325.48,-54"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="325.72,-57.5 335.72,-54 325.72,-50.5 325.72,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~algorithm_from_string~~CalledByGraph_node9" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~algorithm_from_string~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~algorithm_from_string~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="287,-24 209,-24 209,0 287,0 287,-24"/>
 <text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~algorithm_from_string~~CalledByGraph_edge9" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ffff" d="M287.2,-12C311.67,-12 343.57,-12 369.44,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="369.76,-15.5 379.76,-12 369.76,-8.5 369.76,-15.5"/>
 </g>
@@ -482,9 +482,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~algorithm_from_string~~CalledByGraph_edge10" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#00ffff" d="M173.32,-12C181.93,-12 190.45,-12 198.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="198.69,-15.5 208.69,-12 198.69,-8.5 198.69,-15.5"/>
 </g>
@@ -595,13 +595,13 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">algorithm</span>
 
 <span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">lowercase</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;lbfgs&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;l-bfgs&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"lbfgs"</span><span class="p">,</span><span class="w"> </span><span class="s2">"l-bfgs"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_LBFGS</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;cg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;conjugate-gradient&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"cg"</span><span class="p">,</span><span class="w"> </span><span class="s2">"conjugate-gradient"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_CG</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;sd&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;steepest-descent&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"sd"</span><span class="p">,</span><span class="w"> </span><span class="s2">"steepest-descent"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_SD</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;prfo&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;p-rfo&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"prfo"</span><span class="p">,</span><span class="w"> </span><span class="s2">"p-rfo"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_PRFO</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
 <span class="w">         </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_ALGO_UNKNOWN</span>
@@ -630,7 +630,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

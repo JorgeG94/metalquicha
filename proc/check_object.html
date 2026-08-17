@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/check_object.html#variable-child">child</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-found~3">found</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-found~27">found</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-ichild">ichild</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-ikey">ikey</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-n_children">n_children</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-name~8">name</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-n_children~2">n_children</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-name~7">name</a>
         </div>
       </div>
     </div>
@@ -227,7 +227,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~3"></span>
+              <span class="anchor" id="variable-path~19"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -257,7 +257,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~33"></span>
+              <span class="anchor" id="variable-error~75"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -686,18 +686,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M277.51,-75C287.77,-75 299.97,-75 312.66,-75"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="312.91,-78.5 322.91,-75 312.91,-71.5 312.91,-78.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~check_object~~CalledByGraph_node13" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~check_object~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~check_object~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="287,-45 209,-45 209,-21 287,-21 287,-45"/>
 <text text-anchor="middle" x="248" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~check_object~~CalledByGraph_edge16" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M287.34,-33C308.34,-33 334.52,-33 356.61,-33"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="356.75,-36.5 366.75,-33 356.75,-29.5 356.75,-36.5"/>
 </g>
@@ -710,9 +710,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~check_object~~CalledByGraph_edge17" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#00ffff" d="M173.32,-33C181.93,-33 190.45,-33 198.47,-33"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="198.69,-36.5 208.69,-33 198.69,-29.5 198.69,-36.5"/>
 </g>
@@ -837,7 +837,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~3"></span>
+              <span class="anchor" id="variable-found~27"></span>
               logical,
             </td>
               <td>private</td>
@@ -888,7 +888,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_children"></span>
+              <span class="anchor" id="variable-n_children~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -905,7 +905,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~8"></span>
+              <span class="anchor" id="variable-name~7"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -940,7 +940,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Every key of `object` must be in `keys`, and every required one present</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">core</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">object</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">path</span><span class="w">  </span><span class="c">!! For the message; &quot;&quot; at the root</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">path</span><span class="w">  </span><span class="c">!! For the message; "" at the root</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">key_set_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">keys</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
@@ -957,8 +957,8 @@ large graphs.</div>
 <span class="k">         call </span><span class="n">core</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">child</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">is_allowed</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Unknown key &quot;</span><span class="o">//</span><span class="n">quoted</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;. Allowed here: &quot;</span><span class="o">//</span><span class="n">allowed_list</span><span class="p">(</span><span class="n">keys</span><span class="p">))</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Unknown key "</span><span class="o">//</span><span class="n">quoted</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">". Allowed here: "</span><span class="o">//</span><span class="n">allowed_list</span><span class="p">(</span><span class="n">keys</span><span class="p">))</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
@@ -966,7 +966,7 @@ large graphs.</div>
 <span class="k">      do </span><span class="n">ikey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">keys</span><span class="p">%</span><span class="n">n_required</span>
 <span class="w">         </span><span class="k">call </span><span class="n">core</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">object</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">keys</span><span class="p">%</span><span class="n">required</span><span class="p">(</span><span class="n">ikey</span><span class="p">)),</span><span class="w"> </span><span class="n">child</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">associated</span><span class="p">(</span><span class="n">child</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Missing required key &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Missing required key "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">quoted</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">keys</span><span class="p">%</span><span class="n">required</span><span class="p">(</span><span class="n">ikey</span><span class="p">))))</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -995,7 +995,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

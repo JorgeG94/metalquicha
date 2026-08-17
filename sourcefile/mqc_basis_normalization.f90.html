@@ -286,7 +286,7 @@ large graphs.</div>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! applies the standard two-stage normalization: a per-primitive factor,</span>
 <a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! followed by an overall factor Q that normalizes the contracted function.</span>
 <a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!!</span>
-<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! The convention matches the one cuEST&#39;s own sample helpers use, so a basis</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! The convention matches the one cuEST's own sample helpers use, so a basis</span>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! normalized here reproduces the reference numbers exactly.</span>
 <a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span>
 <a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span><span class="p">,</span><span class="w"> </span><span class="n">ERROR_VALIDATION</span>
@@ -294,7 +294,7 @@ large graphs.</div>
 <a id="ln-15" name="ln-15" href="#ln-15"></a><span class="w">   </span><span class="k">implicit none</span>
 <a id="ln-16" name="ln-16" href="#ln-16"></a><span class="k">   private</span>
 <a id="ln-17" name="ln-17" href="#ln-17"></a>
-<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">normalize_shell_coefficients</span><span class="w">  </span><span class="c">!! Normalize one shell&#39;s coefficients</span>
+<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">normalize_shell_coefficients</span><span class="w">  </span><span class="c">!! Normalize one shell's coefficients</span>
 <a id="ln-19" name="ln-19" href="#ln-19"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">normalized_coefficients</span><span class="w">       </span><span class="c">!! Normalize raw exponent/coefficient arrays</span>
 <a id="ln-20" name="ln-20" href="#ln-20"></a>
 <a id="ln-21" name="ln-21" href="#ln-21"></a><span class="w">   </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">PI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.14159265358979323846_dp</span>
@@ -322,15 +322,15 @@ large graphs.</div>
 <a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">      </span><span class="n">n_prim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">exponents</span><span class="p">)</span>
 <a id="ln-44" name="ln-44" href="#ln-44"></a>
 <a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">any</span><span class="p">(</span><span class="n">exponents</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_prim</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Basis normalization: exponents must be positive&quot;</span><span class="p">)</span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Basis normalization: exponents must be positive"</span><span class="p">)</span>
 <a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-48" name="ln-48" href="#ln-48"></a><span class="k">      end if</span>
 <a id="ln-49" name="ln-49" href="#ln-49"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">ang_mom</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ang_mom</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">MAX_ANG_MOM</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Basis normalization: unsupported angular momentum&quot;</span><span class="p">)</span>
+<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Basis normalization: unsupported angular momentum"</span><span class="p">)</span>
 <a id="ln-51" name="ln-51" href="#ln-51"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-52" name="ln-52" href="#ln-52"></a><span class="k">      end if</span>
 <a id="ln-53" name="ln-53" href="#ln-53"></a><span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">normalization</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-54" name="ln-54" href="#ln-54"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Basis normalization: normalization must be positive&quot;</span><span class="p">)</span>
+<a id="ln-54" name="ln-54" href="#ln-54"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Basis normalization: normalization must be positive"</span><span class="p">)</span>
 <a id="ln-55" name="ln-55" href="#ln-55"></a><span class="w">         </span><span class="k">return</span>
 <a id="ln-56" name="ln-56" href="#ln-56"></a><span class="k">      end if</span>
 <a id="ln-57" name="ln-57" href="#ln-57"></a>
@@ -378,7 +378,7 @@ large graphs.</div>
 <a id="ln-99" name="ln-99" href="#ln-99"></a><span class="w">                                   </span><span class="n">shell</span><span class="p">%</span><span class="n">coefficients</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">shell</span><span class="p">%</span><span class="n">nfunc</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <a id="ln-100" name="ln-100" href="#ln-100"></a><span class="w">                                   </span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="n">normalized</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <a id="ln-101" name="ln-101" href="#ln-101"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">&quot;mqc_basis_normalization:normalize_shell_coefficients&quot;</span><span class="p">)</span>
+<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">add_context</span><span class="p">(</span><span class="s2">"mqc_basis_normalization:normalize_shell_coefficients"</span><span class="p">)</span>
 <a id="ln-103" name="ln-103" href="#ln-103"></a><span class="w">      </span><span class="k">end if</span>
 <a id="ln-104" name="ln-104" href="#ln-104"></a><span class="k">   end subroutine </span><span class="n">normalize_shell_coefficients</span>
 <a id="ln-105" name="ln-105" href="#ln-105"></a>
@@ -404,7 +404,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

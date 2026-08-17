@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-i~123">i</a>
+            <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-i~17">i</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-max_atoms_per_polymer">max_atoms_per_polymer</a>
-            <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-max_intersection_level~5">max_intersection_level</a>
+            <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-max_intersection_level~3">max_intersection_level</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-polymer_atoms">polymer_atoms</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-polymer_n_atoms">polymer_n_atoms</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-polymer_size~2">polymer_size</a>
@@ -185,9 +185,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_logger</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -505,7 +505,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~67"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -520,7 +520,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~16"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -550,7 +550,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~22"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -891,7 +891,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~123"></span>
+              <span class="anchor" id="variable-i~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -925,7 +925,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~5"></span>
+              <span class="anchor" id="variable-max_intersection_level~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1027,7 +1027,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_atoms_per_polymer</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">polymer_size</span><span class="p">,</span><span class="w"> </span><span class="n">max_intersection_level</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Computing atom compositions for &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_polymers</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; polymers...&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Computing atom compositions for "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_polymers</span><span class="p">)</span><span class="o">//</span><span class="s2">" polymers..."</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! First, compute atom list for each polymer</span>
 <span class="w">      </span><span class="c">! Find max atoms needed</span>
@@ -1055,14 +1055,14 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end block</span>
 <span class="k">      end do</span>
 
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Finding intersections between polymers...&quot;</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Finding intersections between polymers..."</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! For GMBE(N), limit intersections to level N+1 to prevent combinatorial explosion</span>
 <span class="w">      </span><span class="c">! GMBE(2): dimers → 3-way intersections max</span>
 <span class="w">      </span><span class="c">! GMBE(3): trimers → 4-way intersections max</span>
 <span class="w">      </span><span class="n">max_intersection_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max_level</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Limiting intersections to level &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">max_intersection_level</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                       </span><span class="s2">&quot; (polymer level &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">max_level</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; + 1)&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Limiting intersections to level "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">max_intersection_level</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="s2">" (polymer level "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">max_level</span><span class="p">)</span><span class="o">//</span><span class="s2">" + 1)"</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Now generate intersections between these polymer atom sets</span>
 <span class="w">      </span><span class="k">call </span><span class="n">generate_intersections_from_atom_lists</span><span class="p">(</span><span class="n">polymer_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">polymer_n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_polymers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1094,7 +1094,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

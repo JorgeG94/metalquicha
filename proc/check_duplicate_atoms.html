@@ -136,14 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-min_atom_distance">MIN_ATOM_DISTANCE</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-distance~4">distance</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-dx">dx</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-dy">dy</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-dz">dz</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-i~92">i</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-j~20">j</a>
-            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-n_atoms~28">n_atoms</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-min_atom_distance~2">MIN_ATOM_DISTANCE</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-distance~5">distance</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-dx~2">dx</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-dy~2">dy</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-dz~2">dz</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-i~128">i</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-j~36">j</a>
+            <a class="list-group-item" href="../proc/check_duplicate_atoms.html#variable-n_atoms~37">n_atoms</a>
         </div>
       </div>
     </div>
@@ -187,8 +187,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -331,7 +331,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~21"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -346,7 +346,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~69"></span>
+              <span class="anchor" id="variable-error~99"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1236,7 +1236,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-min_atom_distance"></span>
+              <span class="anchor" id="variable-min_atom_distance~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1253,7 +1253,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-distance~4"></span>
+              <span class="anchor" id="variable-distance~5"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1270,7 +1270,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dx"></span>
+              <span class="anchor" id="variable-dx~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1287,7 +1287,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dy"></span>
+              <span class="anchor" id="variable-dy~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1304,7 +1304,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dz"></span>
+              <span class="anchor" id="variable-dz~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1321,7 +1321,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~92"></span>
+              <span class="anchor" id="variable-i~128"></span>
               integer,
             </td>
               <td>private</td>
@@ -1338,7 +1338,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~20"></span>
+              <span class="anchor" id="variable-j~36"></span>
               integer,
             </td>
               <td>private</td>
@@ -1355,7 +1355,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~28"></span>
+              <span class="anchor" id="variable-n_atoms~37"></span>
               integer,
             </td>
               <td>private</td>
@@ -1415,25 +1415,25 @@ parameter
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">distance</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">MIN_ATOM_DISTANCE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">               </span><span class="c">! Build detailed error message</span>
 <span class="w">               </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;Fragment contains overlapping atoms &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; and &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot; (distance: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Bohr). &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;This indicates bad input geometry or a bug in fragment construction.&quot;</span><span class="p">)</span>
+<span class="w">                              </span><span class="s2">"Fragment contains overlapping atoms "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">" and "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">" (distance: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span><span class="o">//</span><span class="s2">" Bohr). "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"This indicates bad input geometry or a bug in fragment construction."</span><span class="p">)</span>
 
 <span class="w">               </span><span class="c">! Log detailed information for debugging</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;ERROR: Fragment contains overlapping atoms!&quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  Atoms &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; and &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; are too close together&quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  Distance: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Bohr (&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">distance</span><span class="o">*</span><span class="mf">0.529177_dp</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Angstrom)&quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  Atom &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"ERROR: Fragment contains overlapping atoms!"</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  Atoms "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">" and "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">//</span><span class="s2">" are too close together"</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  Distance: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span><span class="o">//</span><span class="s2">" Bohr ("</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">distance</span><span class="o">*</span><span class="mf">0.529177_dp</span><span class="p">)</span><span class="o">//</span><span class="s2">" Angstrom)"</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  Atom "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="s2">&quot; at (&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;) Bohr&quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  Atom &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">" at ("</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">", "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">", "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">") Bohr"</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  Atom "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">//</span><span class="s2">": "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="s2">&quot; at (&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot;) Bohr&quot;</span><span class="p">)</span>
+<span class="w">                                 </span><span class="s2">" at ("</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="s2">", "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="s2">", "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="s2">") Bohr"</span><span class="p">)</span>
 <span class="w">               </span><span class="k">return</span>
 <span class="k">            end if</span>
 <span class="k">         end do</span>
@@ -1462,7 +1462,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

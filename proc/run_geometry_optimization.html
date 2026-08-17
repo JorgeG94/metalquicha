@@ -136,15 +136,15 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-atomic_numbers~8">atomic_numbers</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-atomic_numbers~4">atomic_numbers</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-converged~2">converged</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-coords~8">coords</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-final_energy~3">final_energy</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-n_atoms~35">n_atoms</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-coords">coords</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-final_energy">final_energy</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-n_atoms~13">n_atoms</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-probe_status">probe_status</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-rank~6">rank</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-rank">rank</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-refused">refused</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-residues~2">residues</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-residues">residues</a>
         </div>
       </div>
     </div>
@@ -204,7 +204,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~14"></span>
+              <span class="anchor" id="variable-resources~3"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~28"></span>
+              <span class="anchor" id="variable-config~11"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~53"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -249,7 +249,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~15"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -264,7 +264,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~48"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -522,18 +522,18 @@ Rank 0 is the only rank whose copy should be written out.</p>
 <path fill="none" stroke="#ff0000" d="M81.21,-1437.15C87.32,-1540.45 132.44,-2272.47 195,-2483 255.11,-2685.28 399.22,-2900.64 445.46,-2966.63"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="442.69,-2968.78 451.31,-2974.93 448.41,-2964.74 442.69,-2968.78"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_node17" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~run_geometry_optimization~~CallsGraph_node17"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~run_geometry_optimization~~CallsGraph_node17"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="500,-1740 422,-1740 422,-1716 500,-1716 500,-1740"/>
 <text text-anchor="middle" x="461" y="-1725.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge16" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#ff0000" d="M94.44,-1437.14C115.84,-1455.7 158.18,-1492.12 195,-1522 282.53,-1593.04 389.1,-1674.36 435.95,-1709.84"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="433.9,-1712.68 443.99,-1715.92 438.12,-1707.1 433.9,-1712.68"/>
 </g>
@@ -789,9 +789,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 <path fill="none" stroke="#002eff" d="M473.63,-2999.05C495.92,-3021.21 547.21,-3067.92 601,-3087 732.56,-3133.67 1173.22,-3132.09 1303.15,-3130.55"/>
 <polygon fill="#002eff" stroke="#002eff" points="1303.4,-3134.04 1313.35,-3130.42 1303.31,-3127.04 1303.4,-3134.04"/>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;bcast -->
+<!-- proc~worker_loop&#45;&gt;bcast -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge40" class="edge">
-<title>proc~worker_loop~2&#45;&gt;bcast</title>
+<title>proc~worker_loop&#45;&gt;bcast</title>
 <path fill="none" stroke="#1700ff" d="M465.12,-1740.15C479.42,-1796.43 539.11,-2037.48 565,-2239 574,-2309.09 555.37,-2820.04 601,-2874 684.27,-2972.46 1078.77,-2867.3 1176,-2952 1228.35,-2997.6 1162.15,-3055.69 1212,-3104 1235.88,-3127.14 1274.45,-3132.27 1302.92,-3132.44"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="1303.34,-3135.94 1313.29,-3132.3 1303.24,-3128.94 1303.34,-3135.94"/>
 </g>
@@ -801,9 +801,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 <polygon fill="#777777" stroke="#777777" points="702.5,-1698 639.5,-1698 639.5,-1674 702.5,-1674 702.5,-1698"/>
 <text text-anchor="middle" x="671" y="-1683.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;configure -->
+<!-- proc~worker_loop&#45;&gt;configure -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge41" class="edge">
-<title>proc~worker_loop~2&#45;&gt;configure</title>
+<title>proc~worker_loop&#45;&gt;configure</title>
 <path fill="none" stroke="#1700ff" d="M500.15,-1720.3C536.71,-1712.92 591.7,-1701.81 629.14,-1694.25"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="630.09,-1697.63 639.2,-1692.22 628.71,-1690.77 630.09,-1697.63"/>
 </g>
@@ -816,9 +816,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~receive_geometry -->
+<!-- proc~worker_loop&#45;&gt;proc~receive_geometry -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge42" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~receive_geometry</title>
+<title>proc~worker_loop&#45;&gt;proc~receive_geometry</title>
 <path fill="none" stroke="#1700ff" d="M465.1,-1740.16C479.32,-1796.44 538.71,-2037.54 565,-2239 573.54,-2304.46 560.11,-2780.18 601,-2832 602.93,-2834.44 605.13,-2836.61 607.54,-2838.53"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="606.08,-2841.75 616.4,-2844.16 609.84,-2835.84 606.08,-2841.75"/>
 </g>
@@ -831,9 +831,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge43" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#1700ff" d="M500.15,-1728C537.56,-1728 594.29,-1728 631.74,-1728"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="631.76,-1731.5 641.76,-1728 631.76,-1724.5 631.76,-1731.5"/>
 </g>
@@ -2768,7 +2768,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~8"></span>
+              <span class="anchor" id="variable-atomic_numbers~4"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2802,7 +2802,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~8"></span>
+              <span class="anchor" id="variable-coords"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2819,7 +2819,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~3"></span>
+              <span class="anchor" id="variable-final_energy"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2836,7 +2836,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~35"></span>
+              <span class="anchor" id="variable-n_atoms~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -2870,7 +2870,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rank~6"></span>
+              <span class="anchor" id="variable-rank"></span>
               integer,
             </td>
               <td>private</td>
@@ -2904,7 +2904,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residues~2"></span>
+              <span class="anchor" id="variable-residues"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2963,7 +2963,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">&quot;run_geometry_optimization: an optimization is already running&quot;</span><span class="p">)</span>
+<span class="w">                        </span><span class="s2">"run_geometry_optimization: an optimization is already running"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -2974,22 +2974,22 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">dlfind_available</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s1">&#39;driver &quot;Optimize&quot; needs the DL-FIND backend; this build has none. &#39;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;Configure with -DMQC_ENABLE_DLFIND=ON.&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s1">'driver "Optimize" needs the DL-FIND backend; this build has none. '</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"Configure with -DMQC_ENABLE_DLFIND=ON."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_COORDS_UNKNOWN</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">            </span><span class="c">! A backstop for the callers that convert a config without passing</span>
 <span class="w">            </span><span class="c">! an error to `config_to_driver`. Reaching here means the spelling</span>
 <span class="w">            </span><span class="c">! was refused there and nobody was listening; optimizing in</span>
 <span class="w">            </span><span class="c">! whatever the default happened to be would be worse.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;Unknown keywords.optimization.coordinates. Use cartesian, &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;hdlc, hdlc-tc, dlc or dlc-tc.&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s2">"Unknown keywords.optimization.coordinates. Use cartesian, "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"hdlc, hdlc-tc, dlc or dlc-tc."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">algorithm</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_ALGO_UNKNOWN</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;Unknown keywords.optimization.algorithm. Use lbfgs, cg, sd or prfo.&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s2">"Unknown keywords.optimization.algorithm. Use lbfgs, cg, sd or prfo."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;Nothing to optimize: a single atom has no geometry.&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s2">"Nothing to optimize: a single atom has no geometry."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end if</span>
 
@@ -3013,12 +3013,12 @@ large graphs.</div>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">)</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">residues</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
 <span class="w">         </span><span class="k">call </span><span class="n">build_residues</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">residues</span><span class="p">)</span>
-<span class="w">         </span><span class="c">! Reported because HDLC&#39;s residues decide the coordinate system, and a</span>
+<span class="w">         </span><span class="c">! Reported because HDLC's residues decide the coordinate system, and a</span>
 <span class="w">         </span><span class="c">! wrong partition does not fail -- it converges early somewhere slightly</span>
 <span class="w">         </span><span class="c">! above the minimum. One residue for a system that visibly comes apart</span>
 <span class="w">         </span><span class="c">! is the sign of that, and it is invisible unless the count is printed.</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;  optimizer residues: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">residues</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                             </span><span class="s2">&quot; for &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; atoms&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">"  optimizer residues: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">residues</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">" for "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">" atoms"</span><span class="p">)</span>
 
 <span class="w">         </span><span class="c">! One gradient before handing over, to find out whether this method</span>
 <span class="w">         </span><span class="c">! can produce one at all.</span>
@@ -3037,27 +3037,27 @@ large graphs.</div>
 <span class="w">         </span><span class="k">call </span><span class="n">probe_gradient</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">probe_status</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">probe_status</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;This method cannot produce a gradient, so it cannot be &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">&quot;optimized. The message above says why.&quot;</span><span class="p">)</span>
+<span class="w">                           </span><span class="s2">"This method cannot produce a gradient, so it cannot be "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"optimized. The message above says why."</span><span class="p">)</span>
 <span class="w">            </span><span class="k">call </span><span class="n">stop_workers</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">)</span>
 <span class="w">            </span><span class="k">call </span><span class="n">end_context</span><span class="p">()</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 
-<span class="w">         </span><span class="c">! The step table&#39;s frame, shared with the SCF and CCSD tables. The rows</span>
-<span class="w">         </span><span class="c">! are written from the engine&#39;s callback as each step is accepted; the</span>
+<span class="w">         </span><span class="c">! The step table's frame, shared with the SCF and CCSD tables. The rows</span>
+<span class="w">         </span><span class="c">! are written from the engine's callback as each step is accepted; the</span>
 <span class="w">         </span><span class="c">! verdict and the totals are `report_result` below, so the table closes</span>
-<span class="w">         </span><span class="c">! on a plain rule rather than a &quot;converged in N&quot; line that would say the</span>
+<span class="w">         </span><span class="c">! on a plain rule rather than a "converged in N" line that would say the</span>
 <span class="w">         </span><span class="c">! same thing twice.</span>
 <span class="w">         </span><span class="n">ctx_qc_accum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">         </span><span class="n">ctx_last_print_wall</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">         </span><span class="k">call </span><span class="n">ctx_wall</span><span class="p">%</span><span class="n">start</span><span class="p">()</span>
-<span class="w">         </span><span class="k">call </span><span class="n">convergence_header</span><span class="p">(.</span><span class="n">true</span><span class="p">.,</span><span class="w"> </span><span class="s2">&quot;optimization steps&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="s2">&quot;    step                 energy        |g|max     qc_time    opt_time&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">69</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">convergence_header</span><span class="p">(.</span><span class="n">true</span><span class="p">.,</span><span class="w"> </span><span class="s2">"optimization steps"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">"    step                 energy        |g|max     qc_time    opt_time"</span><span class="p">,</span><span class="w"> </span><span class="mi">69</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">dlfind_optimize</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">residues</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">evaluate_energy_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">record_step</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">final_energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="o">//</span><span class="nb">repeat</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">69</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  "</span><span class="o">//</span><span class="nb">repeat</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span><span class="w"> </span><span class="mi">69</span><span class="p">))</span>
 
 <span class="w">         </span><span class="c">! Stop the workers whether or not that succeeded. A rank 0 that</span>
 <span class="w">         </span><span class="c">! returned an error without sending this would leave N-1 ranks</span>
@@ -3078,12 +3078,12 @@ large graphs.</div>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">converged</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;Geometry optimization did not converge in &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">max_steps</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; steps. &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;Largest gradient component &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">ctx_last_gradient_max</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Hartree/Bohr against a &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;target of &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                              </span><span class="s2">&quot;. The last geometry was still written.&quot;</span><span class="p">)</span>
+<span class="w">                              </span><span class="s2">"Geometry optimization did not converge in "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">max_steps</span><span class="p">)</span><span class="o">//</span><span class="s2">" steps. "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"Largest gradient component "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">to_char</span><span class="p">(</span><span class="n">ctx_last_gradient_max</span><span class="p">)</span><span class="o">//</span><span class="s2">" Hartree/Bohr against a "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"target of "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">". The last geometry was still written."</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end if</span>
 <span class="k">      else</span>
@@ -3116,7 +3116,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -621,8 +621,8 @@ large graphs.</div>
 <a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!!</span>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! A stub rather than a preprocessor conditional at each call site, matching</span>
 <a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! `mqc_cuest_bridge_stub` next door: the code that uses a checkpoint reads</span>
-<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! the same either way, and there is exactly one place where &quot;this build</span>
-<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! cannot do that&quot; is decided. `hdf5_checkpoint_available` is how a caller</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! the same either way, and there is exactly one place where "this build</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! cannot do that" is decided. `hdf5_checkpoint_available` is how a caller</span>
 <a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! asks in advance, so the refusal can name the build option instead of</span>
 <a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! failing somewhere less useful.</span>
 <a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span>
@@ -659,9 +659,9 @@ large graphs.</div>
 <a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <a id="ln-44" name="ln-44" href="#ln-44"></a>
 <a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">active</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">      </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;this build has no HDF5, so &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">                     </span><span class="s2">&quot; cannot be written; configure with -DMQC_ENABLE_HDF5=ON. &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">                     </span><span class="s2">&quot;Energy-only runs need no HDF5 and use the text format.&quot;</span><span class="p">)</span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">      </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"this build has no HDF5, so "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">                     </span><span class="s2">" cannot be written; configure with -DMQC_ENABLE_HDF5=ON. "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">                     </span><span class="s2">"Energy-only runs need no HDF5 and use the text format."</span><span class="p">)</span>
 <a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">fingerprint</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">max_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <a id="ln-50" name="ln-50" href="#ln-50"></a><span class="k">   end subroutine </span><span class="n">h5ck_open</span>
 <a id="ln-51" name="ln-51" href="#ln-51"></a>
@@ -724,7 +724,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

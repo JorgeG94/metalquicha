@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-calc">calc</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-ctx~17">ctx</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-ctx~14">ctx</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-dipole_wp">dipole_wp</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-energy~6">energy</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-error~26">error</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-mol">mol</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-energy~5">energy</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-error~35">error</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-mol~2">mol</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-num">num</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-pproc">pproc</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-verbosity">verbosity</a>
@@ -205,7 +205,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~63"></span>
+              <span class="anchor" id="variable-this~27"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -220,7 +220,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~3"></span>
+              <span class="anchor" id="variable-fragment"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~17"></span>
+              <span class="anchor" id="variable-result~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -904,7 +904,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~17"></span>
+              <span class="anchor" id="variable-ctx~14"></span>
               type(context_type),
             </td>
               <td>private</td>
@@ -938,7 +938,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~6"></span>
+              <span class="anchor" id="variable-energy~5"></span>
               real(kind=wp),
             </td>
               <td>private</td>
@@ -955,7 +955,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~26"></span>
+              <span class="anchor" id="variable-error~35"></span>
               type(error_type),
             </td>
               <td>private,</td>
@@ -972,7 +972,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol"></span>
+              <span class="anchor" id="variable-mol~2"></span>
               type(structure_type),
             </td>
               <td>private</td>
@@ -1126,18 +1126,18 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">results_type</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">xtb_results</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Calculating energy using &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Fragment has&quot;</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="s2">&quot;atoms&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: nelec =&quot;</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">nelec</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: charge =&quot;</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">charge</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Calculating energy using "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Fragment has"</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="s2">"atoms"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: nelec ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">nelec</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: charge ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">charge</span><span class="p">))</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Solvation: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; with solvent = &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Solvation: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">)</span><span class="o">//</span><span class="s2">" with solvent = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
 <span class="w">            </span><span class="k">else</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Solvation: alpb with solvent = &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Solvation: alpb with solvent = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         else</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Solvation: none (gas phase)&quot;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Solvation: none (gas phase)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end if</span>
 
@@ -1155,25 +1155,25 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Select and create appropriate GFN calculator</span>
 <span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">)</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;gfn1&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"gfn1"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">new_gfn1_calculator</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;gfn2&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"gfn2"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">new_gfn2_calculator</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<span class="w">         </span><span class="k">call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Unknown XTB variant: &quot;</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Unknown XTB variant: "</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">)</span>
 <span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end select</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Failed to create XTB calculator&quot;</span><span class="p">)</span>
+<span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="s2">"Failed to create XTB calculator"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! keywords.scf.maxiter had a home on this type and never reached the</span>
 <span class="w">      </span><span class="c">! calculator, so it silently did nothing for xTB -- a deck asking for a</span>
-<span class="w">      </span><span class="c">! tighter or looser iteration budget got tblite&#39;s default either way.</span>
+<span class="w">      </span><span class="c">! tighter or looser iteration budget got tblite's default either way.</span>
 <span class="w">      </span><span class="n">calc</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_iter</span>
 
 <span class="w">      </span><span class="c">! Add solvation if configured (either solvent name or direct dielectric)</span>
@@ -1183,12 +1183,12 @@ large graphs.</div>
 <span class="w">                                       </span><span class="n">this</span><span class="p">%</span><span class="n">use_cds</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">use_shift</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dielectric</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                       </span><span class="n">this</span><span class="p">%</span><span class="n">cpcm_nang</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">cpcm_rscale</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else</span>
-<span class="k">            call </span><span class="n">add_solvation_to_calc</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;alpb&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">            call </span><span class="n">add_solvation_to_calc</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">,</span><span class="w"> </span><span class="s2">"alpb"</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                       </span><span class="n">this</span><span class="p">%</span><span class="n">use_cds</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">use_shift</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dielectric</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                       </span><span class="n">this</span><span class="p">%</span><span class="n">cpcm_nang</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">cpcm_rscale</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Failed to add solvation: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">message</span><span class="p">)</span>
+<span class="k">            call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="s2">"Failed to add solvation: "</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">message</span><span class="p">)</span>
 <span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -1209,7 +1209,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! tblite reports a failed SCF by setting an error on the context and</span>
-<span class="w">      </span><span class="c">! returning anyway -- &quot;SCF not converged in N cycles&quot; among them. Not</span>
+<span class="w">      </span><span class="c">! returning anyway -- "SCF not converged in N cycles" among them. Not</span>
 <span class="w">      </span><span class="c">! asking meant taking an energy tblite had just disowned and adding it</span>
 <span class="w">      </span><span class="c">! to the expansion as though it were fine.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">failed</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
@@ -1245,9 +1245,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">has_dipole</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Energy =&quot;</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Dipole (e*Bohr) =&quot;</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;XTB: Dipole magnitude (Debye) =&quot;</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="mf">2.541746_dp</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Energy ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Dipole (e*Bohr) ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Dipole magnitude (Debye) ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="mf">2.541746_dp</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">num</span><span class="p">,</span><span class="w"> </span><span class="n">xyz</span><span class="p">)</span>
@@ -1276,7 +1276,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>

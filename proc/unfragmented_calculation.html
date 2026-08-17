@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error~18">error</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error~89">error</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-full_system~3">full_system</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~26">i</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result~7">result</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms">total_atoms</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~95">i</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result~41">result</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms~3">total_atoms</a>
         </div>
       </div>
     </div>
@@ -185,11 +185,11 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -530,7 +530,7 @@ If json_data is present, populates it for centralized JSON output</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~50"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -545,7 +545,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~18"></span>
+              <span class="anchor" id="variable-config~20"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -560,7 +560,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out~7"></span>
+              <span class="anchor" id="variable-result_out~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out),</td>
@@ -575,7 +575,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~28"></span>
+              <span class="anchor" id="variable-json_data~22"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1966,31 +1966,31 @@ large graphs.</div>
 <g id="proc~~unfragmented_calculation~~CalledByGraph_node13" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~unfragmented_calculation~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
-<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~unfragmented_calculation~~CalledByGraph_edge15" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M115.28,-14.07C149.12,-15.9 198.57,-18.57 234.55,-20.52"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="234.61,-24.02 244.78,-21.07 234.99,-17.03 234.61,-24.02"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~unfragmented_calculation~~CalledByGraph_node14" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~unfragmented_calculation~~CalledByGraph_node14"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
 <text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~unfragmented_calculation~~CalledByGraph_edge12" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M115.28,-138C151.53,-138 205.7,-138 242.02,-138"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="242.22,-141.5 252.22,-138 242.22,-134.5 242.22,-141.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~unfragmented_calculation~~CalledByGraph_node14" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~unfragmented_calculation~~CalledByGraph_node14"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
+<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~unfragmented_calculation~~CalledByGraph_edge15" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M115.28,-14.07C149.12,-15.9 198.57,-18.57 234.55,-20.52"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="234.61,-24.02 244.78,-21.07 234.99,-17.03 234.61,-24.02"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~unfragmented_calculation~~CalledByGraph_node15" class="node">
@@ -2111,7 +2111,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~18"></span>
+              <span class="anchor" id="variable-error~89"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2145,7 +2145,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~26"></span>
+              <span class="anchor" id="variable-i~95"></span>
               integer,
             </td>
               <td>private</td>
@@ -2162,7 +2162,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~7"></span>
+              <span class="anchor" id="variable-result~41"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -2179,7 +2179,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms"></span>
+              <span class="anchor" id="variable-total_atoms~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2234,10 +2234,10 @@ large graphs.</div>
 
 <span class="w">      </span><span class="n">total_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running unfragmented calculation&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Total atoms: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_atoms</span><span class="p">))</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Running unfragmented calculation"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Total atoms: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Build the full system as a single fragment</span>
 <span class="w">      </span><span class="c">! For overlapping fragments, we use the full system directly (not concatenating fragments)</span>
@@ -2259,7 +2259,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">check_duplicate_atoms</span><span class="p">(</span><span class="n">full_system</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
-<span class="w">         </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;Overlapping atoms in unfragmented system&quot;</span>
+<span class="w">         </span><span class="k">error stop</span><span class="w"> </span><span class="s2">"Overlapping atoms in unfragmented system"</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Process the full system</span>
@@ -2267,75 +2267,75 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Check for calculation errors</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unfragmented calculation failed: &quot;</span><span class="o">//</span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Unfragmented calculation failed: "</span><span class="o">//</span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">result_out</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">result_out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span>
 <span class="k">            return</span>
 <span class="k">         end if</span>
 
-<span class="k">         error stop</span><span class="w"> </span><span class="s2">&quot;Unfragmented calculation failed&quot;</span>
+<span class="k">         error stop</span><span class="w"> </span><span class="s2">"Unfragmented calculation failed"</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unfragmented calculation completed&quot;</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Unfragmented calculation completed"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">block</span>
 <span class="k">         </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_line</span><span class="w">  </span><span class="c">! Large buffer for Hessian matrix rows</span>
 <span class="w">         </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">current_log_level</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span>
 <span class="w">         </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hess_norm</span>
 
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,f25.15)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Final energy: &quot;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f25.15)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Final energy: "</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_dipole</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,3f15.8)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Dipole (e*Bohr): &quot;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,3f15.8)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Dipole (e*Bohr): "</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
-<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,f15.8)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Dipole magnitude (Debye): &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="mf">2.541746_dp</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f15.8)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Dipole magnitude (Debye): "</span><span class="p">,</span><span class="w"> </span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="mf">2.541746_dp</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end if</span>
 
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_orbitals</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,f15.8,a,f15.8)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  HOMO (Hartree): &quot;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">               </span><span class="s2">&quot;   LUMO: &quot;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">lumo</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f15.8,a,f15.8)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  HOMO (Hartree): "</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="s2">"   LUMO: "</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">lumo</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
-<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,f12.6)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  HOMO-LUMO gap (eV): &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f12.6)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  HOMO-LUMO gap (eV): "</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">               </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">lumo</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">homo</span><span class="p">)</span><span class="o">*</span><span class="n">HARTREE_TO_EV</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end if</span>
 
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,f25.15)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Gradient norm: &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f25.15)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Gradient norm: "</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 
 <span class="w">            </span><span class="c">! Print full gradient if verbose and system is small</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">configuration</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">current_log_level</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_log_level</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">verbose_level</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Gradient (Hartree/Bohr):&quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Gradient (Hartree/Bohr):"</span><span class="p">)</span>
 <span class="w">               </span><span class="k">do </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">total_atoms</span>
-<span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i5,a,3f20.12)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Atom &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i5,a,3f20.12)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Atom "</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="s2">": "</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                     </span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">)</span>
 <span class="w">                  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 <span class="w">               </span><span class="k">end do</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end if</span>
 
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">            </span><span class="c">! Compute Frobenius norm of Hessian</span>
 <span class="w">            </span><span class="n">hess_norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
-<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,f25.15)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Hessian Frobenius norm: &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">hess_norm</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f25.15)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Hessian Frobenius norm: "</span><span class="p">,</span><span class="w"> </span><span class="n">hess_norm</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 
 <span class="w">            </span><span class="c">! Print full Hessian if verbose and system is small</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">configuration</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">current_log_level</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_log_level</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">verbose_level</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Hessian matrix (Hartree/Bohr^2):&quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Hessian matrix (Hartree/Bohr^2):"</span><span class="p">)</span>
 <span class="w">               </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">total_atoms</span>
-<span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i5,a,999f15.8)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Row &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">total_atoms</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i5,a,999f15.8)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Row "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">": "</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">total_atoms</span><span class="p">)</span>
 <span class="w">                  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 <span class="w">               </span><span class="k">end do</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 
 <span class="w">            </span><span class="c">! Compute and print vibrational analysis</span>
@@ -2346,7 +2346,7 @@ large graphs.</div>
 <span class="w">               </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ii</span><span class="p">,</span><span class="w"> </span><span class="n">jj</span>
 
 <span class="w">               </span><span class="c">! First get projected Hessian for verbose output</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Computing vibrational analysis (projecting trans/rot modes)...&quot;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Computing vibrational analysis (projecting trans/rot modes)..."</span><span class="p">)</span>
 <span class="w">               </span><span class="k">call </span><span class="n">compute_vibrational_frequencies</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                    </span><span class="n">coordinates</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">project_trans_rot</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                    </span><span class="n">projected_hessian_out</span><span class="o">=</span><span class="n">projected_hessian</span><span class="p">)</span>
@@ -2354,14 +2354,14 @@ large graphs.</div>
 <span class="w">               </span><span class="c">! Print projected mass-weighted Hessian if verbose and small system</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_log_level</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">verbose_level</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">                  if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">projected_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                     call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-<span class="w">                     </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mass-weighted Hessian after trans/rot projection (a.u.):&quot;</span><span class="p">)</span>
+<span class="k">                     call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Mass-weighted Hessian after trans/rot projection (a.u.):"</span><span class="p">)</span>
 <span class="w">                     </span><span class="k">do </span><span class="n">ii</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">total_atoms</span>
-<span class="w">                        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i5,a,999f15.8)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Row &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ii</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">result_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i5,a,999f15.8)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Row "</span><span class="p">,</span><span class="w"> </span><span class="n">ii</span><span class="p">,</span><span class="w"> </span><span class="s2">": "</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="p">(</span><span class="n">projected_hessian</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span><span class="w"> </span><span class="n">jj</span><span class="p">),</span><span class="w"> </span><span class="n">jj</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">total_atoms</span><span class="p">)</span>
 <span class="w">                        </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">result_line</span><span class="p">))</span>
 <span class="w">                     </span><span class="k">end do</span>
-<span class="k">                     call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="k">                     call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
 <span class="w">                  </span><span class="k">end if</span>
 <span class="k">               end if</span>
 
@@ -2470,7 +2470,7 @@ large graphs.</div>
 <span class="w">            </span><span class="k">end block</span>
 <span class="k">         end if</span>
 <span class="k">      end block</span>
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Both, not either. These were exclusive, so asking for the result</span>
 <span class="w">      </span><span class="c">! silently suppressed the files -- and a session always asks for the</span>
@@ -2529,7 +2529,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 06:19 +0000             </p>
+ on 2026-08-17 10:10 +0000             </p>
           </div>
         </div>
         <br>
