@@ -21,7 +21,8 @@ module test_mqc_quao
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_quao, only: build_aambs_molecule, mo_aambs_overlap, &
                                valence_virtual_orbitals, vvo_result_t, &
-                               aambs_atom_ranges, quasi_atomic_orbitals, quao_result_t
+                               aambs_atom_ranges, quasi_atomic_orbitals, quao_result_t, &
+                               orient_quasi_atomic_orbitals, kinetic_bond_orders
    implicit none
    private
 
@@ -44,7 +45,9 @@ contains
                   new_unittest("orbitals_are_orthonormal", test_orthonormal), &
                   new_unittest("population_counts_the_electrons", test_populations), &
                   new_unittest("orbitals_are_actually_atomic", test_atomic_character), &
-                  new_unittest("water_bonding_pattern", test_water_pattern) &
+                  new_unittest("water_bonding_pattern", test_water_pattern), &
+                  new_unittest("orientation_concentrates_bonding", test_orientation), &
+                  new_unittest("kinetic_bond_orders", test_kbo) &
                   ]
    end subroutine collect_mqc_quao_tests
 
@@ -285,6 +288,159 @@ contains
       call check(error, n_lone >= 2, &
                  "oxygen should carry two nearly doubly occupied lone pairs")
    end subroutine test_water_pattern
+
+   subroutine test_orientation(error)
+      !! Orientation concentrates the bonding without creating any
+      !!
+      !! Two claims, and the pair of them is the whole content of Paper I
+      !! eqs (5.4) and (5.5). The interatomic block norms are *invariant* --
+      !! rotating inside an atom cannot change how much bonding there is between
+      !! two atoms -- while the fourth-power sum *increases*, because the same
+      !! total gets concentrated into fewer, larger elements.
+      !!
+      !! Before orientation each water hydrogen couples to two oxygen orbitals
+      !! at roughly 0.66 and 0.63; after it, one of them should carry almost the
+      !! whole bond.
+      type(error_type), allocatable, intent(out) :: error
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :)
+      logical :: ok
+      real(dp) :: before_norm, after_norm, before_sum, after_sum, best
+      integer :: i
+
+      call water_quaos("cc-pvdz", quao, overlap, dims, err, ok)
+      call check(error, ok, "the construction should succeed")
+      if (allocated(error)) return
+
+      before_norm = sqrt(sum(quao%population_bond_order(5, 1:4)**2))
+      before_sum = 0.0_dp
+      do i = 1, 4
+         before_sum = before_sum + quao%population_bond_order(5, i)**4
+      end do
+
+      call orient_quasi_atomic_orbitals(quao, err)
+      call check(error,.not. err%has_error(), "orientation should succeed")
+      if (allocated(error)) return
+      call check(error, quao%oriented, "the result should be marked oriented")
+      if (allocated(error)) return
+
+      after_norm = sqrt(sum(quao%population_bond_order(5, 1:4)**2))
+      after_sum = 0.0_dp
+      do i = 1, 4
+         after_sum = after_sum + quao%population_bond_order(5, i)**4
+      end do
+
+      ! eq (5.4): the block norm cannot move.
+      call check(error, abs(after_norm - before_norm) < 1.0e-9_dp, &
+                 "orientation must not change how much bonding there is between "// &
+                 "two atoms, only how it is distributed")
+      if (allocated(error)) return
+
+      ! eq (5.5): the fourth-power sum is what it maximizes.
+      call check(error, after_sum > before_sum - 1.0e-12_dp, &
+                 "the fourth-power sum should not decrease")
+      if (allocated(error)) return
+
+      ! And the point of it all: one oxygen orbital now carries the O-H bond.
+      best = 0.0_dp
+      do i = 1, 4
+         best = max(best, abs(quao%population_bond_order(5, i)))
+      end do
+      call check(error, best > 0.85_dp, &
+                 "after orientation one oxygen orbital should carry the O-H bond, "// &
+                 "rather than the bond being spread over several")
+      if (allocated(error)) return
+
+      ! The trace is a property of the density, not of the basis it is written in.
+      before_sum = 0.0_dp
+      do i = 1, quao%n_quao
+         before_sum = before_sum + quao%population_bond_order(i, i)
+      end do
+      call check(error, abs(before_sum - 8.0_dp) < 1.0e-9_dp, &
+                 "orientation must not change the electron count")
+   end subroutine test_orientation
+
+   subroutine test_kbo(error)
+      !! Kinetic bond orders: negative for bonds, and on the published scale
+      type(error_type), allocatable, intent(out) :: error
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      real(dp), allocatable :: overlap(:, :), kinetic(:, :), kbo(:, :)
+      logical :: ok
+      real(dp) :: strongest
+      integer :: i, best
+
+      call water_quaos("cc-pvdz", quao, overlap, dims, err, ok)
+      call check(error, ok, "the construction should succeed")
+      if (allocated(error)) return
+
+      ! Refused before orientation, because the individual couplings are
+      ! arbitrary until then.
+      call kinetic_bond_orders(quao, overlap, kbo, err)
+      call check(error, err%has_error(), &
+                 "kinetic bond orders should be refused before orientation")
+      if (allocated(error)) return
+      call err%clear()
+
+      call orient_quasi_atomic_orbitals(quao, err)
+      call check(error,.not. err%has_error(), "orientation should succeed")
+      if (allocated(error)) return
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", mol, err)
+      call check(error,.not. err%has_error(), "the molecule should rebuild")
+      if (allocated(error)) return
+      call mol%kinetic(kinetic)
+
+      call kinetic_bond_orders(quao, kinetic, kbo, err)
+      call check(error,.not. err%has_error(), "kinetic bond orders should build")
+      if (allocated(error)) return
+
+      ! The O-H bond. Paper IV reports C-H kinetic bond orders of -35 to -37
+      ! kcal/mol across a whole reaction path and Paper III -42.9 for N-H, so an
+      ! O-H bond should land in the same tens-of-kcal/mol range and be negative.
+      best = 1
+      strongest = 0.0_dp
+      do i = 1, 4
+         if (abs(quao%population_bond_order(5, i)) > strongest) then
+            strongest = abs(quao%population_bond_order(5, i))
+            best = i
+         end if
+      end do
+      call check(error, kbo(5, best) < -10.0_dp .and. kbo(5, best) > -200.0_dp, &
+                 "the O-H kinetic bond order should be bonding and on the scale of "// &
+                 "a chemical bond energy")
+      if (allocated(error)) return
+
+      ! Symmetric, like the matrix it is built from.
+      call check(error, abs(kbo(5, best) - kbo(best, 5)) < 1.0e-9_dp, &
+                 "the kinetic bond order matrix should be symmetric")
+      if (allocated(error)) return
+
+      ! The two O-H bonds are equivalent by symmetry. Not to machine precision:
+      ! the Jacobi sweep visits pairs in index order, so two orbitals related by
+      ! a symmetry the algorithm knows nothing about converge to the same answer
+      ! from different directions and stop a rotation apart.
+      strongest = 0.0_dp
+      do i = 1, 4
+         strongest = min(strongest, kbo(6, i))
+      end do
+      call check(error, abs(strongest - kbo(5, best)) < 1.0e-4_dp, &
+                 "the two O-H kinetic bond orders should match by symmetry")
+      if (allocated(error)) return
+
+      ! Water's shape, in one assertion: two lone pairs holding a pair each and
+      ! coupling to nothing, two bonds of 0.93, and the H->O charge transfer
+      ! that makes each bonding pair sum to exactly two electrons.
+      call check(error, abs(quao%population_bond_order(5, 5) + &
+                            quao%population_bond_order(best, best) - 2.0_dp) < 0.01_dp, &
+                 "the two orbitals forming an O-H bond should hold two electrons "// &
+                 "between them, however unevenly they share it")
+      call mol%destroy()
+   end subroutine test_kbo
 
 end module test_mqc_quao
 

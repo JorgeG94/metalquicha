@@ -37,7 +37,22 @@ module mqc_libcint_quao
    public :: vvo_result_t
    public :: aambs_atom_ranges       !! Where each atom's minimal-basis orbitals sit
    public :: quasi_atomic_orbitals
+   public :: orient_quasi_atomic_orbitals
+   public :: kinetic_bond_orders
    public :: quao_result_t
+
+   real(dp), parameter :: ORIENT_CRIT = 1.0e-6_dp
+      !! GAMESS's `CVGLOC` default, tested against the rotation angle.
+   real(dp), parameter :: ORIENT_FLOOR = 1.0e-8_dp
+      !! Below this the functional does not depend on the angle; skip the pair.
+   integer, parameter :: ORIENT_MAX_SWEEPS = 2000
+   real(dp), parameter :: KBO_SCALE = 0.1_dp
+      !! Paper II eq (2). Empirical, and admitted to be: raw kinetic
+      !! interference energies in organic molecules run about an order of
+      !! magnitude above the bond energies chemistry quotes, so they are scaled
+      !! to be comparable with them. Paper II says the treatment of resonance
+      !! integrals will be revisited.
+   real(dp), parameter :: HARTREE_TO_KCAL = 627.5094740631_dp
 
    real(dp), parameter :: JACOBI_CRIT = 1.0e-10_dp
       !! GAMESS's `CRIT` in `LOCAL_MODELORB_DRIV`. Both the rotation magnitude
@@ -73,6 +88,9 @@ module mqc_libcint_quao
          !! interatomic off-diagonal elements are bond orders. Paper I eq (5.2).
       integer :: n_quao = 0
       integer :: sweeps = 0            !! Jacobi sweeps the refinement took
+      logical :: oriented = .false.
+      real(dp) :: orientation_sum = 0.0_dp
+         !! Paper I eq (5.5) after orientation
       real(dp) :: atomic_character = 0.0_dp
          !! The maximized functional, Paper II eq (A.5), divided by the number of
          !! orbitals. One means every orbital lies entirely within its own atom's
@@ -592,5 +610,213 @@ contains
 
       deallocate (projection, claims, gram, half, orthogonal, occupied)
    end subroutine quasi_atomic_orbitals
+
+   subroutine orient_quasi_atomic_orbitals(quao, error)
+      !! Rotate within each atom until the bonding pattern appears
+      !!
+      !! Paper I eq (5.5). The sum of squares of each interatomic block of the
+      !! population-bond-order matrix is invariant under rotations inside an
+      !! atom -- eq (5.4) -- so no intra-atomic rotation can change how much
+      !! bonding there is between two atoms. What it can change is how that
+      !! total is distributed, and maximizing the sum of *fourth* powers
+      !! concentrates it: a few large bond orders and many near-zero ones,
+      !! rather than the same total smeared across every pair.
+      !!
+      !! That is what turns a basis into a picture. Before this step an O-H bond
+      !! of 0.93 might sit as 0.66 and 0.63 across two oxygen orbitals; after it,
+      !! one oxygen orbital points at the hydrogen and the others do not.
+      !! Hybridization is an output here rather than an assumption -- nothing
+      !! told it to build sp3 orbitals.
+      !!
+      !! The rotation angle is closed form and quartered, because the functional
+      !! is quartic where the atomic-character one was quadratic. GAMESS's
+      !! `ORIEN` computes the same R2 and R3; its thresholds are used here.
+      type(quao_result_t), intent(inout) :: quao
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: p(:, :), rotation(:, :), pi(:), pj(:)
+      real(dp) :: r2, r3, q, theta, c, s, before, after
+      integer :: n, i, j, k, sweep
+      logical :: moved
+
+      if (error%has_error()) return
+      n = quao%n_quao
+      allocate (p(n, n), rotation(n, n), pi(n), pj(n))
+      p = quao%population_bond_order
+      rotation = 0.0_dp
+      do i = 1, n
+         rotation(i, i) = 1.0_dp
+      end do
+
+      before = orientation_sum(p, quao%atom_of)
+      quao%sweeps = 0
+      do sweep = 1, ORIENT_MAX_SWEEPS
+         moved = .false.
+         do i = 1, n
+            do j = i + 1, n
+               ! Only *within* an atom. A rotation between atoms would change
+               ! which atom an orbital belongs to, which is the one thing the
+               ! previous stage established.
+               if (quao%atom_of(i) /= quao%atom_of(j)) cycle
+
+               r2 = 0.0_dp
+               r3 = 0.0_dp
+               do k = 1, n
+                  if (quao%atom_of(k) == quao%atom_of(i)) cycle
+                  r2 = r2 + p(i, k)**4 - 6.0_dp*p(i, k)**2*p(j, k)**2 + p(j, k)**4
+                  r3 = r3 + (p(i, k)**2 - p(j, k)**2)*p(i, k)*p(j, k)
+               end do
+               r2 = 0.25_dp*r2
+
+               q = sqrt(r2*r2 + r3*r3)
+               if (q < ORIENT_FLOOR) cycle
+               theta = 0.25_dp*atan2(r3/q, r2/q)
+               if (abs(theta) < ORIENT_CRIT) cycle
+
+               c = cos(theta)
+               s = sin(theta)
+               pi = c*p(i, :) + s*p(j, :)
+               pj = -s*p(i, :) + c*p(j, :)
+               p(i, :) = pi
+               p(j, :) = pj
+               pi = c*p(:, i) + s*p(:, j)
+               pj = -s*p(:, i) + c*p(:, j)
+               p(:, i) = pi
+               p(:, j) = pj
+               pi = c*rotation(:, i) + s*rotation(:, j)
+               pj = -s*rotation(:, i) + c*rotation(:, j)
+               rotation(:, i) = pi
+               rotation(:, j) = pj
+               moved = .true.
+            end do
+         end do
+         quao%sweeps = sweep
+         if (.not. moved) exit
+      end do
+
+      if (quao%sweeps >= ORIENT_MAX_SWEEPS) then
+         call error%set(ERROR_VALIDATION, "the orientation did not settle in "// &
+                        to_char(ORIENT_MAX_SWEEPS)//" sweeps.")
+         return
+      end if
+
+      ! The functional is being maximized, so it cannot come out lower than it
+      ! started. It would if the rotation sense disagreed with the angle the
+      ! closed form solves for, which is the sort of sign error that otherwise
+      ! produces a plausible-looking picture of the wrong thing.
+      after = orientation_sum(p, quao%atom_of)
+      if (after < before - 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "the orientation reduced the functional it "// &
+                        "is supposed to maximize, which means the rotations are being "// &
+                        "applied with the wrong sense.")
+         return
+      end if
+      quao%orientation_sum = after
+
+      call fix_phases(p, quao%atom_of, rotation)
+
+      block
+         real(dp), allocatable :: rotated(:, :)
+         allocate (rotated(size(quao%orbitals, 1), n))
+         call pic_gemm(quao%orbitals, rotation, rotated)
+         call move_alloc(rotated, quao%orbitals)
+      end block
+      quao%population_bond_order = p
+      quao%oriented = .true.
+      deallocate (p, rotation, pi, pj)
+   end subroutine orient_quasi_atomic_orbitals
+
+   pure function orientation_sum(p, atom_of) result(total)
+      !! Paper I eq (5.5), the quantity the orientation maximizes
+      real(dp), intent(in) :: p(:, :)
+      integer, intent(in) :: atom_of(:)
+      real(dp) :: total
+      integer :: i, j
+
+      total = 0.0_dp
+      do i = 1, size(atom_of)
+         do j = i + 1, size(atom_of)
+            if (atom_of(i) == atom_of(j)) cycle
+            total = total + p(i, j)**4
+         end do
+      end do
+   end function orientation_sum
+
+   subroutine fix_phases(p, atom_of, rotation)
+      !! Choose signs so the strongest interatomic coupling of each orbital is positive
+      !!
+      !! Nothing up to here fixes a phase -- eigenvectors come back however
+      !! LAPACK produced them -- so bond-order signs are arbitrary. This makes
+      !! them reproducible rather than meaningful: a convention, not physics.
+      !! The kinetic bond order does not need it, since both of its factors
+      !! change sign together.
+      real(dp), intent(inout) :: p(:, :)
+      integer, intent(in) :: atom_of(:)
+      real(dp), intent(inout) :: rotation(:, :)
+
+      integer :: n, i, j, best
+      real(dp) :: largest
+
+      n = size(atom_of)
+      do i = 1, n
+         best = 0
+         largest = 0.0_dp
+         do j = 1, n
+            if (atom_of(j) == atom_of(i)) cycle
+            if (abs(p(i, j)) > largest) then
+               largest = abs(p(i, j))
+               best = j
+            end if
+         end do
+         if (best == 0) cycle
+         if (p(i, best) >= 0.0_dp) cycle
+         p(i, :) = -p(i, :)
+         p(:, i) = -p(:, i)
+         rotation(:, i) = -rotation(:, i)
+      end do
+   end subroutine fix_phases
+
+   subroutine kinetic_bond_orders(quao, kinetic_ao, kbo, error)
+      !! Kinetic bond orders, kcal/mol, negative for a bonding interaction
+      !!
+      !!     k_{Aa,Bb} = 0.1 * < Aa | -1/2 nabla^2 | Bb > * p_{Aa,Bb}
+      !!
+      !! Paper II eq (2). The reasoning is that the covalent binding in an ab
+      !! initio wave function comes from kinetic interference between atomic
+      !! orbitals, and for orthonormal quasi-atomic orbitals that energy is
+      !! simply the product of the bond order and the kinetic integral.
+      !!
+      !! **The sign is meaningful where the bond order's is not.** A phase flip
+      !! changes both factors, so it cancels in the product -- which is exactly
+      !! why Paper II introduced this quantity. Negative means bonding, in every
+      !! case the papers report where the interaction is manifestly so.
+      !!
+      !! The factor of 0.1 is empirical and the papers say so. It brings the
+      !! numbers onto the scale of tabulated bond energies; it is not derived.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: kinetic_ao(:, :)    !! (n_ao, n_ao)
+      real(dp), allocatable, intent(out) :: kbo(:, :)   !! (n_quao, n_quao)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: work(:, :), t(:, :)
+      integer :: n
+
+      if (error%has_error()) return
+      if (.not. quao%oriented) then
+         call error%set(ERROR_VALIDATION, "kinetic bond orders are defined for the "// &
+                        "oriented quasi-atomic orbitals. Before orientation the "// &
+                        "interatomic couplings are distributed arbitrarily within each "// &
+                        "atom, so the individual numbers would not mean anything.")
+         return
+      end if
+
+      n = quao%n_quao
+      allocate (work(size(kinetic_ao, 1), n), t(n, n), kbo(n, n))
+      call pic_gemm(kinetic_ao, quao%orbitals, work)
+      call pic_gemm(quao%orbitals, work, t, transa="T")
+
+      kbo = KBO_SCALE*t*quao%population_bond_order*HARTREE_TO_KCAL
+      deallocate (work, t)
+   end subroutine kinetic_bond_orders
 
 end module mqc_libcint_quao
