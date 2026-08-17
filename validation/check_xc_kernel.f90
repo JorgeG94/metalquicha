@@ -90,6 +90,29 @@ program check_xc_kernel
                             0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
                    "sto-3g", 10, "b3lyp", [0.038235630_dp, 5.031696862_dp, 2.207720164_dp], n_bad)
 
+   ! A meta-GGA, where the kernel gains three second derivatives in tau
+   ! (`v2rhotau`, `v2sigmatau`, `v2tau2`) and the response density gains a tau
+   ! of its own. Nothing below the meta-GGA rung exercises any of that, so this
+   ! is the case that fails if the tau channel is dropped, double counted, or
+   ! given the wrong convention -- and the convention is the risk, since libxc's
+   ! tau is per spin.
+   call check_case("H2O / sto-3g, TPSS", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "sto-3g", 10, "tpss", &
+                   [0.035425788_dp, 5.059453553_dp, 2.251964609_dp], n_bad)
+
+   ! A second meta-GGA, and a heavily parametrised one: M06-L reaches tau
+   ! through a different working expression, so a term that happens to cancel
+   ! in TPSS's form does not cancel here.
+   call check_case("H2O / sto-3g, M06-L", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "sto-3g", 10, "m06-l", &
+                   [0.030952161_dp, 4.855462133_dp, 2.209799695_dp], n_bad)
+
    call check_case("HCN / sto-3g, BLYP", [1, 6, 7], ["H", "C", "N"], &
                    reshape([0.0_dp, 0.0_dp, -2.0_dp, &
                             0.0_dp, 0.0_dp, 0.0_dp, &
