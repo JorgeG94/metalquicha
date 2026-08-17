@@ -32,6 +32,8 @@ module mqc_method_hf
          !! Orbital basis set name
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K
+      logical :: aux_basis_named = .false.
+         !! Whether the deck asked for `aux_basis_set`. See `scf_config_t`.
       logical :: density_fitting = .false.
       logical :: run_mp2 = .false.
          !! Follow the reference with an MP2 correction. Set by the factory
@@ -119,6 +121,7 @@ contains
 
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
+      settings%aux_basis_named = this%options%aux_basis_named
       settings%density_fitting = this%options%density_fitting
       settings%run_mp2 = this%options%run_mp2
       settings%freeze_core = this%options%freeze_core

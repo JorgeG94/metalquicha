@@ -1030,7 +1030,15 @@ contains
                if (dh_frozen < 0) dh_frozen = core_orbital_count(fragment%element_numbers)
                if (.not. settings%freeze_core) dh_frozen = 0
 
-               ! Fitted when an auxiliary basis is available, exact otherwise. The
+               ! Fitted when the deck *named* an auxiliary basis, exact otherwise --
+               ! and `named` rather than merely present, because
+               ! `scf_config_t%aux_basis_set` carries a default that cuEST needs
+               ! and every deck therefore has one. Testing for its presence
+               ! fitted this term with a JKFIT set nobody asked for, which moved
+               ! the energy by 3e-9 and made an `Energy` run and a `Gradient` run
+               ! of the same deck disagree by exactly that.
+               !
+               ! The
                ! reference implementations of these functionals are density-fitted,
                ! so fitting is the comparable choice rather than a compromise -- but
                ! a deck that named no auxiliary basis should get an answer, not a
@@ -1045,7 +1053,7 @@ contains
                ! prevent. Until the fitted double hybrid gradient exists, the
                ! consistent pair is the exact one -- and it is the more accurate
                ! half of the pair anyway.
-               if (len_trim(settings%aux_basis_set) > 0 .and. .not. do_gradient) then
+               if (settings%aux_basis_named .and. .not. do_gradient) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (error%has_error()) then
                      call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -1059,7 +1067,7 @@ contains
                                           scf%energy, dh_mp2, error, n_frozen=dh_frozen)
                   call corr_aux%destroy()
                else
-                  if (do_gradient .and. len_trim(settings%aux_basis_set) > 0 &
+                  if (do_gradient .and. settings%aux_basis_named &
                       .and. settings%verbose) then
                      call logger%info("  double hybrid gradient: the PT2 term is "// &
                                       "computed with exact integrals, so that the "// &

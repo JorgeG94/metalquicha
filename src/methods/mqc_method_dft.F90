@@ -79,6 +79,8 @@ module mqc_method_dft
          !! Use RI-J approximation
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis. Required by the cuEST backend.
+      logical :: aux_basis_named = .false.
+         !! Whether the deck asked for it. See `scf_config_t`.
 
       ! Correlation, for the double hybrids. Nothing else on this path has a
       ! correlated term, but `b2plyp` and its relatives carry an MP2 and read
@@ -153,6 +155,7 @@ contains
 
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
+      settings%aux_basis_named = this%options%aux_basis_named
       settings%functional = this%options%functional
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose

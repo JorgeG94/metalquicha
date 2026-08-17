@@ -42,6 +42,9 @@ module mqc_cuest_iface
       ! a conventional correlation treatment is a combination someone will ask
       ! for, and the two flags have to be able to disagree.
       logical :: run_mp2 = .false.
+      logical :: aux_basis_named = .false.
+         !! Whether `aux_basis_set` was asked for or merely defaulted. The
+         !! default exists because cuEST needs one, so its presence says nothing.
       logical :: freeze_core = .false.
       integer :: n_frozen_core = -1     !! -1 means count it from the elements
       logical :: corr_density_fitting = .false.  !! RI for the correlation step
