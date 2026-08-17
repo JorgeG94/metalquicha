@@ -74,7 +74,7 @@ module mqc_libcint_cphf
    public :: distributed_dynamic_cross
    public :: casimir_polder_frequencies
    !> Exposed side by side so a check can hold both builds of the same matrices.
-   public :: build_hessian, build_hessian_df
+   public :: build_hessian, build_hessian_df, build_hessian_mo
    public :: fitted_potential_general
 
    !> CG iterations before giving up.
@@ -860,6 +860,12 @@ contains
          if (present(aux)) then
             call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
                                   progress=talk)
+         else if (mo_transform_fits(mol%nao, n_occ, direct)) then
+            ! Exact integrals, but assembled the way the fitted build assembles
+            ! them. The column build below is what this replaces, and it stays for
+            ! the systems whose AO tensor will not fit.
+            call build_hessian_mo(mol, eri0, c_occ, c_vir, gaps, aplus, aminus, error, &
+                                  progress=talk)
          else
             call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
                                aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
@@ -1102,6 +1108,199 @@ contains
       deallocate (bov, bvv, boo)
       if (talk) call tick(clock, 2, 3, "step")
 
+      call assemble_hessian(coul, exch, gaps, aplus, aminus)
+      deallocate (coul, exch)
+      if (talk) call tick(clock, 3, 3, "step")
+   end subroutine build_hessian_df
+
+   function mo_transform_fits(n_ao, n_occ, direct) result(fits)
+      !! Can the whole Hessian be had by transformation rather than column by column
+      !!
+      !! The transform needs the AO tensor in one piece. When the solve is already
+      !! holding it there is nothing to weigh; when it is integral-direct, building
+      !! one costs the `n_ao^4` the direct path exists to avoid, so it is worth it
+      !! only up to the same limit the stored path uses.
+      !!
+      !! Weighed against the peak rather than against the tensor: the first quarter
+      !! transform is live while the tensor still is, and it is `n_ao^3 * n_occ` --
+      !! a sixth of the tensor at ten atoms, and not ignorable at the limit.
+      integer, intent(in) :: n_ao
+      integer, intent(in) :: n_occ
+      logical, intent(in) :: direct
+      logical :: fits
+
+      if (.not. direct) then
+         fits = .true.
+         return
+      end if
+      fits = (real(n_ao, dp)**4 + real(n_ao, dp)**3*real(n_occ, dp))*8.0_dp <= IN_CORE_LIMIT
+   end function mo_transform_fits
+
+   subroutine build_hessian_mo(mol, eri_in, c_occ, c_vir, gaps, aplus, aminus, error, &
+                               progress)
+      !! `(A+B)` and `(A-B)` from exact integrals, transformed rather than probed
+      !!
+      !! **Why this replaces the column build.** `build_hessian` gets column `j` by
+      !! applying the operator to the unit vector `e_j`, which is a Fock build per
+      !! column -- `n_ov` of them. Batching amortises the *integral generation*
+      !! across a chunk, and that is all it amortises: the contraction still runs
+      !! once per quartet per column, so the cost is `n_quartets * n_ov` however the
+      !! columns are grouped. Measured on a ten-atom fragment at 85 orbitals,
+      !! widening the chunk from 64 columns to 464 made it four times *slower* per
+      !! column, which is what that cost model predicts and what a model where
+      !! integrals dominate does not.
+      !!
+      !! The operators are, written out,
+      !!
+      !!     (A+B)_{ai,bj} = d Deps + 4(ai|bj) - (ab|ij) - (aj|ib)
+      !!     (A-B)_{ai,bj} = d Deps          - (ab|ij) + (aj|ib)
+      !!
+      !! so what is actually wanted is two blocks of MO integrals, and those come
+      !! from one pass over the AO integrals followed by dense linear algebra. This
+      !! is `build_hessian_df`'s argument applied to exact integrals instead of
+      !! fitted ones, and the two share `assemble_hessian` so that the only
+      !! difference between them is the integrals.
+      !!
+      !! `(aj|ib)` needs no block of its own: it is `coul` read at permuted indices.
+      !!
+      !! **Cost.** Four quarter-transforms, none of which forms anything bigger than
+      !! `n_ao^3 * n_occ`. At 85 orbitals that is about 6 GFLOP against the column
+      !! build's 270, and every one of them is a gemm.
+      !!
+      !! **Memory** is what bounds it, and it is the AO tensor rather than anything
+      !! here: `n_ao^4`, checked against `IN_CORE_LIMIT` by the caller.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in), target :: eri_in(:, :, :, :)
+         !! Zero-sized to have this build its own with one integral pass
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: progress
+
+      real(dp), allocatable, target :: eri_own(:, :, :, :)
+      real(dp), pointer :: eri(:, :, :, :)
+      real(dp), allocatable :: half(:, :), pair_ov(:, :), pair_oo(:, :)
+      real(dp), allocatable :: step_ov(:, :), step_oo(:, :)
+      real(dp), allocatable :: coul(:, :), exch(:, :)
+      integer :: n_ao, n_vir, n_occ, n_ov, j
+      logical :: talk
+      type(timer_type) :: clock
+
+      character(len=MAX_LINE_LENGTH) :: line
+
+      talk = .false.
+      if (present(progress)) talk = progress
+      n_ao = size(c_occ, 1)
+      n_vir = size(gaps, 1)
+      n_occ = size(gaps, 2)
+      n_ov = n_vir*n_occ
+      if (talk) call clock%start()
+
+      if (size(eri_in) > 0) then
+         eri => eri_in
+         allocate (eri_own(0, 0, 0, 0))
+      else
+         call mol%eris(eri_own)
+         eri => eri_own
+      end if
+      if (talk) then
+         write (line, "(A,I0,A,F0.1,A)") "        exact Hessian: ", n_ov, &
+            " pairs by transformation, ", &
+            (real(n_ao, dp)**4 + 4.0_dp*real(n_ov, dp)**2)*8.0_dp/1.0e6_dp, " MB"
+         call logger%info(trim(line))
+         call tick(clock, 1, 3, "step")
+      end if
+
+      ! One: the last AO index onto the occupied space. `eri` is contiguous in
+      ! `(mu nu lambda)`, so this is a single gemm against a matrix of `n_ao^3` rows.
+      allocate (half(n_ao**3, n_occ))
+      call pic_gemm(reshape(eri, [n_ao**3, n_ao]), c_occ, half)
+      nullify (eri)
+      if (allocated(eri_own)) deallocate (eri_own)
+
+      ! Two: the third AO index, onto the virtuals for `(ai|bj)` and onto the
+      ! occupieds for `(ab|ij)`. Both read the same half-transformed tensor, which
+      ! is why the occupied index went first.
+      allocate (pair_ov(n_ao**2, n_ov), pair_oo(n_ao**2, n_occ*n_occ))
+      do j = 1, n_occ
+         call pic_gemm(reshape(half(:, j), [n_ao**2, n_ao]), c_vir, &
+                       pair_ov(:, 1 + (j - 1)*n_vir:j*n_vir))
+         call pic_gemm(reshape(half(:, j), [n_ao**2, n_ao]), c_occ, &
+                       pair_oo(:, 1 + (j - 1)*n_occ:j*n_occ))
+      end do
+      deallocate (half)
+      if (talk) call tick(clock, 2, 3, "step")
+
+      ! Three and four: the bra pair, the same way round. `step_*` holds the first
+      ! AO index transformed, with the second still in the AO basis.
+      allocate (step_ov(n_vir, n_ao*n_ov), step_oo(n_vir, n_ao*n_occ*n_occ))
+      call pic_gemm(c_vir, reshape(pair_ov, [n_ao, n_ao*n_ov]), step_ov, transa="T")
+      call pic_gemm(c_vir, reshape(pair_oo, [n_ao, n_ao*n_occ*n_occ]), step_oo, transa="T")
+      deallocate (pair_ov, pair_oo)
+
+      allocate (coul(n_ov, n_ov), exch(n_vir*n_vir, n_occ*n_occ))
+      call transform_second(step_ov, c_occ, n_vir, n_ao, n_ov, coul)
+      call transform_second(step_oo, c_vir, n_vir, n_ao, n_occ*n_occ, exch)
+      deallocate (step_ov, step_oo)
+
+      call assemble_hessian(coul, exch, gaps, aplus, aminus)
+      deallocate (coul, exch)
+      if (talk) call tick(clock, 3, 3, "step")
+   end subroutine build_hessian_mo
+
+   subroutine transform_second(step, c, n_vir, n_ao, n_right, out)
+      !! Transform the second AO index of `(a nu | right)` with `c`
+      !!
+      !! `step` is `(n_vir, n_ao * n_right)` with `nu` running fastest inside the
+      !! second extent, so for each column of the right-hand pair this is a small
+      !! gemm of `(n_vir, n_ao)` against `c`. The result's compound index runs
+      !! left-fastest -- `a` before `i` -- which is the layout `assemble_hessian`
+      !! and the solver both read.
+      real(dp), intent(in) :: step(:, :)
+      real(dp), intent(in) :: c(:, :)
+      integer, intent(in) :: n_vir, n_ao, n_right
+      real(dp), intent(out) :: out(:, :)
+
+      real(dp), allocatable :: slab(:, :)
+      integer :: r, n_left2
+
+      n_left2 = size(c, 2)
+      !$omp parallel default(none) private(r, slab) &
+      !$omp    shared(step, c, out, n_vir, n_ao, n_right, n_left2)
+      allocate (slab(n_vir, n_left2))
+      !$omp do schedule(static)
+      do r = 1, n_right
+         call pic_gemm(step(:, 1 + (r - 1)*n_ao:r*n_ao), c, slab)
+         out(:, r) = reshape(slab, [n_vir*n_left2])
+      end do
+      !$omp end do
+      deallocate (slab)
+      !$omp end parallel
+   end subroutine transform_second
+
+   subroutine assemble_hessian(coul, exch, gaps, aplus, aminus)
+      !! `(A+B)` and `(A-B)` from the two MO integral blocks they are made of
+      !!
+      !!     (A+B)_{ai,bj} = d Deps + 4(ai|bj) - (ab|ij) - (aj|ib)
+      !!     (A-B)_{ai,bj} = d Deps          - (ab|ij) + (aj|ib)
+      !!
+      !! Shared by the fitted build and the exact one, which differ only in where
+      !! `coul` and `exch` came from. That is the point of factoring it: whatever
+      !! `validation/check_df_hessian` measures between the two is then the fitting
+      !! error and cannot be a difference in how the operators were put together.
+      real(dp), intent(in) :: coul(:, :)   !! `(ai|bj)`, indexed `[a+(i-1)nv, b+(j-1)nv]`
+      real(dp), intent(in) :: exch(:, :)   !! `(ab|ij)`, indexed `[a+(b-1)nv, i+(j-1)no]`
+      real(dp), intent(in) :: gaps(:, :)
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+
+      real(dp), allocatable :: gap_flat(:)
+      real(dp) :: term_abij, term_ajib
+      integer :: n_vir, n_occ, n_ov, row, col, a, i, b, j
+
+      n_vir = size(gaps, 1)
+      n_occ = size(gaps, 2)
+      n_ov = n_vir*n_occ
+
       allocate (aplus(n_ov, n_ov), aminus(n_ov, n_ov))
       !$omp parallel do default(none) private(col, row, a, i, b, j, term_abij, term_ajib) &
       !$omp shared(n_ov, n_vir, n_occ, coul, exch, aplus, aminus) schedule(static)
@@ -1113,14 +1312,13 @@ contains
             i = (row - 1)/n_vir + 1
             term_abij = exch(a + (b - 1)*n_vir, i + (j - 1)*n_occ)
             ! `(aj|ib)`: the pair `(a,j)` against the pair `(b,i)`, both of which are
-            ! virtual-occupied, so both are indices into the same fitted matrix.
+            ! virtual-occupied, so both are indices into the same matrix.
             term_ajib = coul(a + (j - 1)*n_vir, b + (i - 1)*n_vir)
             aplus(row, col) = 4.0_dp*coul(row, col) - term_abij - term_ajib
             aminus(row, col) = term_ajib - term_abij
          end do
       end do
       !$omp end parallel do
-      deallocate (coul, exch)
 
       gap_flat = reshape(gaps, [n_ov])
       do col = 1, n_ov
@@ -1128,8 +1326,7 @@ contains
          aminus(col, col) = aminus(col, col) + gap_flat(col)
       end do
       deallocate (gap_flat)
-      if (talk) call tick(clock, 3, 3, "step")
-   end subroutine build_hessian_df
+   end subroutine assemble_hessian
 
    subroutine tick(clock, done, total, unit_name)
       !! One progress line: how far in, how long it has taken, what is left

@@ -24,7 +24,8 @@ module test_mqc_libcint_cphf
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
-   use mqc_libcint_cphf, only: cphf_solve, static_polarizability, distributed_polarizability
+   use mqc_libcint_cphf, only: cphf_solve, static_polarizability, distributed_polarizability, &
+                               build_hessian, build_hessian_mo
    use mqc_error, only: error_t
    implicit none
    private
@@ -64,7 +65,9 @@ contains
                                test_distributed_asymmetry), &
                   new_unittest("direct_and_stored_integrals_agree", test_direct), &
                   new_unittest("a_batch_of_densities_equals_one_at_a_time", &
-                               test_density_batch) &
+                               test_density_batch), &
+                  new_unittest("the_transformed_hessian_equals_the_probed_one", &
+                               test_hessian_transform) &
                   ]
    end subroutine collect_mqc_libcint_cphf_tests
 
@@ -747,6 +750,91 @@ contains
       call mol%destroy()
       deallocate (dip)
    end subroutine test_refusals
+
+   subroutine test_hessian_transform(error)
+      !! The transformed Hessian is the one the column build probes for
+      !!
+      !! `build_hessian` gets column `j` by applying the operator to the unit
+      !! vector `e_j` -- one Fock build per column, `n_ov` of them. `build_hessian_mo`
+      !! never forms a column: it transforms the integrals into the two MO blocks
+      !! the operators are made of and assembles them. Same operator, and on a
+      !! ten-atom fragment the difference between thirty-four seconds and two.
+      !!
+      !! What makes that substitution safe is only that the two agree, so this is
+      !! the test that has to exist for it. Nothing downstream would catch a
+      !! disagreement cheaply: the Hessian is reached through a makefp run, where
+      !! it reappears as a dynamic polarizability with no independent value to
+      !! check against.
+      !!
+      !! Element by element rather than by any norm, because the failure this
+      !! guards against is a permuted index -- `(aj|ib)` read where `(ab|ij)`
+      !! belongs -- which moves a few entries a long way and leaves a norm over
+      !! four thousand of them looking respectable.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable :: plus_col(:, :), minus_col(:, :)
+      real(dp), allocatable :: plus_mo(:, :), minus_mo(:, :)
+      integer :: n_ao, n_mo, n_occ, n_vir, a, i
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+
+      call mol%eris(eri)
+      allocate (zero_h(n_ao, n_ao), bounds(0, 0))
+      zero_h = 0.0_dp
+
+      ! The column build, on the stored tensor so that neither route involves the
+      ! direct build's thread-order reduction and any difference found is the
+      ! transformation's own.
+      call build_hessian(mol, .false., eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                         plus_col, minus_col, 8, err)
+      call check(error,.not. err%has_error(), "the column build failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call build_hessian_mo(mol, eri, c_occ, c_vir, gaps, plus_mo, minus_mo, err)
+      call check(error,.not. err%has_error(), "the transform failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, size(plus_mo, 1) == size(plus_col, 1) .and. &
+                 size(plus_mo, 2) == size(plus_col, 2), "the operators are different shapes")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(plus_mo - plus_col)) < 1.0e-10_dp, &
+                 "(A+B) disagrees between the transform and the column build")
+      if (allocated(error)) return
+      call check(error, maxval(abs(minus_mo - minus_col)) < 1.0e-10_dp, &
+                 "(A-B) disagrees between the transform and the column build")
+      if (allocated(error)) return
+
+      ! `(A-B)` is diagonal-dominant and symmetric, and the transform reads it out
+      ! of a permuted index; a transpose slipped in there would still match the
+      ! column build only if the column build had the same slip.
+      call check(error, maxval(abs(minus_mo - transpose(minus_mo))) < 1.0e-12_dp, &
+                 "(A-B) should be symmetric")
+
+      call mol%destroy()
+   end subroutine test_hessian_transform
 
 end module test_mqc_libcint_cphf
 
