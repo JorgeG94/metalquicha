@@ -181,12 +181,12 @@ Uses LAPACK eigenvalue decomposition via pic-blas interfaces.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item">pic_lapack_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -745,18 +745,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996.43,-57.75C973.88,-61.14 941.53,-66.86 914,-75 871.64,-87.53 824.92,-107.48 794.07,-121.57"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="792.25,-118.56 784.64,-125.93 795.18,-124.92 792.25,-118.56"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_vibrational_analysis~~UsedByGraph_node20" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_vibrational_analysis~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_vibrational_analysis~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1064.5,-24 986.5,-24 986.5,0 1064.5,0 1064.5,-24"/>
 <text text-anchor="middle" x="1025.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_vibrational_analysis~~UsedByGraph_edge13" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M986.32,-15.37C964.5,-18.23 937.01,-23.48 914,-33 861.91,-54.56 809.32,-95.26 780.93,-119.16"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="778.59,-116.56 773.25,-125.71 783.13,-121.88 778.59,-116.56"/>
 </g>
@@ -955,7 +955,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~9"></span>
+              <span class="anchor" id="variable-element_numbers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1025,7 +1025,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-eigenvalues~4"></span>
+              <span class="anchor" id="variable-eigenvalues~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1040,7 +1040,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~5"></span>
+              <span class="anchor" id="variable-reduced_masses~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1055,7 +1055,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~4"></span>
+              <span class="anchor" id="variable-force_constants~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1110,7 +1110,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~6"></span>
+              <span class="anchor" id="variable-dipole_derivatives~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1140,7 +1140,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~10"></span>
+              <span class="anchor" id="variable-element_numbers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1155,7 +1155,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~7"></span>
+              <span class="anchor" id="variable-ir_intensities~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1211,7 +1211,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~8"></span>
+              <span class="anchor" id="variable-element_numbers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1226,7 +1226,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~4"></span>
+              <span class="anchor" id="variable-reduced_masses~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1266,7 +1266,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~13"></span>
+              <span class="anchor" id="variable-hessian~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1281,7 +1281,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~5"></span>
+              <span class="anchor" id="variable-element_numbers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1296,7 +1296,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~9"></span>
+              <span class="anchor" id="variable-frequencies~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1311,7 +1311,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~3"></span>
+              <span class="anchor" id="variable-reduced_masses"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1326,7 +1326,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~3"></span>
+              <span class="anchor" id="variable-force_constants"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1386,7 +1386,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~13"></span>
+              <span class="anchor" id="variable-coordinates~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1431,7 +1431,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~5"></span>
+              <span class="anchor" id="variable-dipole_derivatives"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1446,7 +1446,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~6"></span>
+              <span class="anchor" id="variable-ir_intensities"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1486,7 +1486,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~12"></span>
+              <span class="anchor" id="variable-hessian~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1501,7 +1501,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~4"></span>
+              <span class="anchor" id="variable-element_numbers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1516,7 +1516,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~8"></span>
+              <span class="anchor" id="variable-frequencies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1561,7 +1561,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~12"></span>
+              <span class="anchor" id="variable-coordinates~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1631,7 +1631,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~14"></span>
+              <span class="anchor" id="variable-hessian~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1646,7 +1646,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~6"></span>
+              <span class="anchor" id="variable-element_numbers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1701,7 +1701,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~10"></span>
+              <span class="anchor" id="variable-frequencies~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1716,7 +1716,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~6"></span>
+              <span class="anchor" id="variable-reduced_masses~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1731,7 +1731,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~5"></span>
+              <span class="anchor" id="variable-force_constants~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1761,7 +1761,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~11"></span>
+              <span class="anchor" id="variable-element_numbers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1806,7 +1806,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~49"></span>
+              <span class="anchor" id="variable-n_atoms~14"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1821,7 +1821,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~8"></span>
+              <span class="anchor" id="variable-ir_intensities~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1836,7 +1836,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~15"></span>
+              <span class="anchor" id="variable-coordinates~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1936,7 +1936,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~14"></span>
+              <span class="anchor" id="variable-coordinates~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1951,7 +1951,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~7"></span>
+              <span class="anchor" id="variable-element_numbers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1994,7 +1994,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 11:10 +0000             </p>
+ on 2026-08-17 11:34 +0000             </p>
           </div>
         </div>
         <br>

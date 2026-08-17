@@ -231,8 +231,8 @@ with concrete implementations for standard MBE and generalized MBE (GMBE).</p>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
                   <li class="list-inline-item"><a href='mqc_checkpoint.html'>mqc_checkpoint</a></li>
+                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1279,18 +1279,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M495.56,-558C458.43,-558 392.99,-558 348.82,-558"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="348.64,-554.5 338.64,-558 348.64,-561.5 348.64,-554.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_many_body_expansion~~UsedByGraph_node20" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_many_body_expansion~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_many_body_expansion~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="564,-528 486,-528 486,-504 564,-504 564,-528"/>
 <text text-anchor="middle" x="525" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_many_body_expansion~~UsedByGraph_edge19" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M485.76,-523.27C447.6,-530.52 388.99,-541.66 348.47,-549.36"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="347.76,-545.93 338.58,-551.24 349.06,-552.81 347.76,-545.93"/>
 </g>
@@ -1476,7 +1476,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~52"></span>
+              <span class="anchor" id="variable-this~113"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1491,7 +1491,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~3"></span>
+              <span class="anchor" id="variable-json_data~24"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1537,7 +1537,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~51"></span>
+              <span class="anchor" id="variable-this~112"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1552,7 +1552,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~2"></span>
+              <span class="anchor" id="variable-json_data~23"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1603,7 +1603,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~6"></span>
+              <span class="anchor" id="variable-basis~5"></span>
               character(len=64),
             </td>
               <td>public</td>
@@ -1620,7 +1620,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -1637,7 +1637,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -1657,7 +1657,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -1674,7 +1674,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~7"></span>
+              <span class="anchor" id="variable-energy~17"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1708,7 +1708,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~2"></span>
+              <span class="anchor" id="variable-expansion~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1742,7 +1742,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1759,7 +1759,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1776,7 +1776,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1793,7 +1793,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~12"></span>
+              <span class="anchor" id="variable-level~22"></span>
               integer,
             </td>
               <td>public</td>
@@ -1829,7 +1829,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -1846,7 +1846,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments~3"></span>
+              <span class="anchor" id="variable-n_fragments~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1863,7 +1863,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1880,7 +1880,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~3"></span>
+              <span class="anchor" id="variable-nodes_per_group~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1897,7 +1897,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1931,7 +1931,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~4"></span>
+              <span class="anchor" id="variable-owner~5"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1948,7 +1948,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~15"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2035,7 +2035,7 @@ convergence, held apart from the outer loop above.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~83"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2061,7 +2061,7 @@ convergence, held apart from the outer loop above.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fmo_context_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_destroy.html'>fmo_destroy</a></td>
+  <strong><a href='../type/fmo_context_t.html#boundprocedure-destroy~23'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_destroy.html'>fmo_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2124,7 +2124,7 @@ convergence, held apart from the outer loop above.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2141,7 +2141,7 @@ convergence, held apart from the outer loop above.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -2161,7 +2161,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -2178,7 +2178,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2195,7 +2195,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2212,7 +2212,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2229,7 +2229,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2246,7 +2246,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms"></span>
+              <span class="anchor" id="variable-n_pie_terms~10"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2263,7 +2263,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2280,7 +2280,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~3"></span>
+              <span class="anchor" id="variable-nodes_per_group~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2297,7 +2297,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2314,7 +2314,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets"></span>
+              <span class="anchor" id="variable-pie_atom_sets~9"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2331,7 +2331,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients"></span>
+              <span class="anchor" id="variable-pie_coefficients~6"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2348,7 +2348,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~15"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2365,7 +2365,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~83"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2391,7 +2391,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/gmbe_context_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_destroy.html'>gmbe_destroy</a></td>
+  <strong><a href='../type/gmbe_context_t.html#boundprocedure-destroy~22'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_destroy.html'>gmbe_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2454,7 +2454,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2471,7 +2471,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -2491,7 +2491,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -2508,7 +2508,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2525,7 +2525,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2542,7 +2542,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2559,7 +2559,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2576,7 +2576,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2593,7 +2593,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~3"></span>
+              <span class="anchor" id="variable-nodes_per_group~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2610,7 +2610,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2627,7 +2627,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~15"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2644,7 +2644,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~83"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2723,7 +2723,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2740,7 +2740,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -2760,7 +2760,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -2777,7 +2777,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2794,7 +2794,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2811,7 +2811,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2828,7 +2828,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~30"></span>
               integer,
             </td>
               <td>public</td>
@@ -2845,7 +2845,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2862,7 +2862,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2879,7 +2879,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~3"></span>
+              <span class="anchor" id="variable-nodes_per_group~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2896,7 +2896,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2913,7 +2913,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~21"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2930,7 +2930,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~15"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2947,7 +2947,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~83"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2964,7 +2964,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
+              <span class="anchor" id="variable-total_fragments~10"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2990,7 +2990,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_context_t.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_destroy.html'>mbe_destroy</a></td>
+  <strong><a href='../type/mbe_context_t.html#boundprocedure-destroy~21'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_destroy.html'>mbe_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -3053,7 +3053,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-z~6"></span>
+              <span class="anchor" id="variable-z~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3098,7 +3098,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~54"></span>
+              <span class="anchor" id="variable-this~115"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3143,7 +3143,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~53"></span>
+              <span class="anchor" id="variable-this~114"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3193,7 +3193,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~59"></span>
+              <span class="anchor" id="variable-this~120"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3233,7 +3233,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~58"></span>
+              <span class="anchor" id="variable-this~119"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3248,7 +3248,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~4"></span>
+              <span class="anchor" id="variable-method_config~10"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3263,7 +3263,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~6"></span>
+              <span class="anchor" id="variable-calc_type~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3303,7 +3303,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~61"></span>
+              <span class="anchor" id="variable-this~122"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3318,7 +3318,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~5"></span>
+              <span class="anchor" id="variable-json_data~26"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -3358,7 +3358,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~62"></span>
+              <span class="anchor" id="variable-this~123"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3373,7 +3373,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~6"></span>
+              <span class="anchor" id="variable-json_data~27"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3413,7 +3413,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~60"></span>
+              <span class="anchor" id="variable-this~121"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3428,7 +3428,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~4"></span>
+              <span class="anchor" id="variable-json_data~25"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3468,7 +3468,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~66"></span>
+              <span class="anchor" id="variable-this~127"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3508,7 +3508,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~65"></span>
+              <span class="anchor" id="variable-this~126"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3523,7 +3523,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~5"></span>
+              <span class="anchor" id="variable-method_config~11"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3538,7 +3538,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~7"></span>
+              <span class="anchor" id="variable-calc_type~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3578,7 +3578,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~68"></span>
+              <span class="anchor" id="variable-this~129"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3593,7 +3593,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~10"></span>
+              <span class="anchor" id="variable-json_data~31"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3633,7 +3633,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~67"></span>
+              <span class="anchor" id="variable-this~128"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3648,7 +3648,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~9"></span>
+              <span class="anchor" id="variable-json_data~30"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3688,7 +3688,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~55"></span>
+              <span class="anchor" id="variable-this~116"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3728,7 +3728,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~57"></span>
+              <span class="anchor" id="variable-this~118"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3768,7 +3768,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~56"></span>
+              <span class="anchor" id="variable-this~117"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3783,7 +3783,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~3"></span>
+              <span class="anchor" id="variable-method_config~9"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3798,7 +3798,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~13"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3838,7 +3838,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~64"></span>
+              <span class="anchor" id="variable-this~125"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3853,7 +3853,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~8"></span>
+              <span class="anchor" id="variable-json_data~29"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3893,7 +3893,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~63"></span>
+              <span class="anchor" id="variable-this~124"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3908,7 +3908,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~7"></span>
+              <span class="anchor" id="variable-json_data~28"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3948,7 +3948,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~69"></span>
+              <span class="anchor" id="variable-this~130"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4006,7 +4006,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 11:10 +0000             </p>
+ on 2026-08-17 11:34 +0000             </p>
           </div>
         </div>
         <br>
