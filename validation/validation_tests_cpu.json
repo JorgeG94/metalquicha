@@ -1494,6 +1494,61 @@
             "type": "unfragmented"
         },
         {
+            "name": "RI-MP2 gradient over a fitted reference H2O sto-3g/cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_rimp2_dfref_grad.json",
+            "expected_energy": -74.997744213905,
+            "expected_gradient": [
+                [
+                    -8e-12,
+                    3.25e-10,
+                    -0.100057160617
+                ],
+                [
+                    1.3e-11,
+                    -0.031606308579,
+                    0.050028580444
+                ],
+                [
+                    1.1e-11,
+                    0.03160630828,
+                    0.050028580189
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 gradient over a fitted reference NH3 def2-svp/def2-svp-rifit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_nh3_def2-svp_rimp2_dfref_grad.json",
+            "expected_energy": -56.3395970169,
+            "expected_gradient": [
+                [
+                    -6.2e-11,
+                    5.52e-10,
+                    0.008288657852
+                ],
+                [
+                    -0.002408829865,
+                    1.85e-10,
+                    -0.002762886199
+                ],
+                [
+                    0.001204414396,
+                    -0.002086108069,
+                    -0.002762885651
+                ],
+                [
+                    0.001204415307,
+                    0.002086107638,
+                    -0.002762885741
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "DH B2PLYP gradient H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_b2plyp_grad.json",
             "expected_energy": -75.20973856727,

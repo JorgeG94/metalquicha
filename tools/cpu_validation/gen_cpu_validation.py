@@ -514,6 +514,29 @@ GRADIENT_RI_MP2_CASES = [
     ("nh3", "def2-svp", "def2-svp-rifit"),   # a second auxiliary family
 ]
 
+# The same, with the *reference* fitted as well -- as (molecule, basis, aux).
+# A different energy from the three above and not a cheaper route to one of
+# them: the response operator, both potentials built from the relaxed density,
+# and the whole reference two-electron derivative term move to the fitted
+# integrals, and the last of those stops being a four-centre contraction.
+#
+# Two entries and not a sweep, for the same reason the double hybrids get
+# three: the reference below is four converged SCF-plus-MP2 runs per component.
+# One auxiliary family each, since what distinguishes these cases from the ones
+# above is what is fitted rather than what it is fitted with.
+GRADIENT_DF_REF_CASES = [
+    ("water", "sto-3g", "cc-pvdz-rifit"),
+    ("nh3", "def2-svp", "def2-svp-rifit"),
+]
+
+# Level with the RI-MP2 bound rather than the looser Kohn-Sham one: there is no
+# quadrature anywhere in this, so the reference is limited by its own difference
+# formula and the SCF behind it, both of which sit near 1e-10 after Richardson.
+# Measured agreement is a few times 1e-9, with the largest contribution being
+# that our metric inverse is eigen-thresholded where PySCF's is not -- worth
+# about 6e-11 on a total energy, and not something either side can call an error.
+GRADIENT_DF_REF_TOLERANCE = 1.0e-7
+
 # The same gradient through the many-body expansion, as
 # (molecule, basis, fragments). Its reference is the supermolecule and that is
 # exact rather than tolerated: over two fragments the expansion collapses term
@@ -1006,6 +1029,89 @@ def pyscf_dh_gradient(atoms, basis, functional, level):
     return e0, gradient.tolist(), nao
 
 
+def pyscf_df_ref_mp2_gradient(atoms, basis, aux):
+    """RI-MP2 over a fitted reference, by finite difference of PySCF's energy.
+
+    **There is no analytic reference to be had.** PySCF ships no density-fitted
+    MP2 gradient for either reference -- `pyscf.mp.dfmp2.DFRMP2.nuc_grad_method`
+    raises `NotImplementedError` and there is no `pyscf.df.grad.mp2` -- so
+    unlike the exact-reference MP2 cases above there is nothing to call. What
+    PySCF does have is the *energy*, and differentiating that numerically gives
+    a reference that owes nothing to our assembly: not our Z-vector, not our
+    fitted response operator, not our reference derivative term.
+
+    **Both fits pinned to one auxiliary set.** PySCF picks a different one for
+    the correlation by default, and a comparison that lets it is comparing two
+    approximations rather than two implementations. Ours cannot express that
+    combination in the first place -- `model.aux_basis` is the only place a
+    fitting set is named -- so pinning is what makes the two the same energy.
+
+    **Richardson, for the reason `check_df_ref_gradient` gives.** A plain
+    central difference at 2.5e-3 leaves 5e-6, which is the size of a wrong
+    factor in one of the two exchange terms and would have to be absorbed by
+    loosening the tolerance past the point of being a check.
+    """
+    import numpy as np
+    from pyscf import df, gto, mp, scf
+
+    symbols = {a[0] for a in atoms}
+    orbital_form = molecule_form(basis, symbols)
+    aux_form = molecule_form(aux, symbols)
+    if CARTESIAN in (orbital_form, aux_form) and orbital_form != aux_form:
+        raise SystemExit(
+            f"{basis} is {orbital_form} and {aux} is {aux_form}; a fitting "
+            "integral whose centres disagree is refused rather than built")
+    cart = orbital_form == CARTESIAN
+    step = 2.5e-3
+
+    def energy(coords):
+        mol = gto.Mole()
+        mol.atom = [(s, tuple(c)) for (s, *_), c in zip(atoms, coords)]
+        mol.unit = "Angstrom"
+        mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+        mol.charge = 0
+        mol.spin = 0
+        mol.cart = cart
+        mol.verbose = 0
+        mol.build()
+        auxbasis = {s: bse_to_pyscf(aux, s) for s in symbols}
+        mf = scf.RHF(mol).density_fit(auxbasis=auxbasis)
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-9
+        mf.max_cycle = 200
+        mf.kernel()
+        if not mf.converged:
+            raise SystemExit("the reference SCF did not converge at a displaced "
+                             "geometry; a difference over that measures the "
+                             "iteration rather than the energy")
+        pt = mp.MP2(mf)
+        pt.frozen = 0
+        pt.with_df = df.DF(mol, auxbasis)
+        pt.kernel()
+        return float(mf.e_tot + pt.e_corr), mol.nao
+
+    base = np.array([[x, y, z] for _, x, y, z in atoms])
+    e0, nao = energy(base)
+
+    # Angstrom in, Hartree/Bohr out: the decks are written in Angstrom and the
+    # gradient is compared in atomic units.
+    gradient = np.zeros_like(base)
+    for ia in range(len(atoms)):
+        for comp in range(3):
+            def central(h):
+                shifted = base.copy()
+                shifted[ia, comp] = base[ia, comp] + h
+                plus, _ = energy(shifted)
+                shifted[ia, comp] = base[ia, comp] - h
+                minus, _ = energy(shifted)
+                return (plus - minus) / (2.0 * h)
+            coarse = central(step)
+            fine = central(0.5 * step)
+            gradient[ia, comp] = (4.0 * fine - coarse) / 3.0
+    gradient *= ANGSTROM_PER_BOHR
+    return e0, gradient.tolist(), nao
+
+
 def pyscf_uks(atoms, basis, functional, level, multiplicity):
     """Reference unrestricted Kohn-Sham total energy, on the same grid level.
 
@@ -1427,6 +1533,35 @@ def main():
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux in GRADIENT_DF_REF_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_df_ref_mp2_gradient(mol.atoms, basis, aux)
+        deck = deck_for(f"{CPU_MQC}/gradient",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_rimp2_dfref_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            # No `aux_only` here, unlike the case above: this one *does* want
+            # the reference fitted, and that single keyword is the whole
+            # difference between the two decks.
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
+                          correlation={"freeze_core": False})
+            d["keywords"]["scf"]["tolerance"] = 1e-12
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"RI-MP2 gradient over a fitted reference {mol.label} "
+                    f"{basis}/{aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_DF_REF_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {'RI-MP2/DF':9s} grad |g|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, functional in GRADIENT_DH_CASES:
