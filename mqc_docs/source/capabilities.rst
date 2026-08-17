@@ -684,3 +684,21 @@ For a 20-water cluster with cutoffs ``2=5.0, 3=4.0``:
 2. Start with lower fragmentation levels (MBE(2) or MBE(3))
 3. For overlapping systems, use GMBE(2) with controlled intersection depth
 4. Profile with small test systems before production runs
+
+Acknowledgements
+================
+
+Metalquicha builds on several external projects, without which much of the above
+would not exist:
+
+- **cuEST** -- the GPU quantum chemistry engine behind the ``cuest`` backend,
+  `NVIDIA cuEST <https://developer.nvidia.com/cuda/cuda-x-libraries/cuest>`_.
+  All GPU Hartree-Fock and Kohn-Sham energies, gradients and the PCM continuum
+  are assembled from its APIs.
+- **tblite** -- the semi-empirical engine behind the XTB methods,
+  `tblite <https://github.com/tblite/tblite>`_, providing GFN1-xTB and GFN2-xTB.
+- **DL-FIND** -- the geometry optimizer behind the ``Optimize`` driver,
+  `DL-FIND <https://www.chemshell.org/dl-find>`_, reached through
+  `libdlfind <https://github.com/digital-chemistry-laboratory/libdlfind>`_.
+
+We are grateful to their authors and maintainers.
