@@ -21,7 +21,8 @@ module mqc_driver
                              sort_fragments_by_size, generate_mbe_term_list
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
-   use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
+   use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, &
+                                 check_counterpoise_support
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, &
@@ -378,6 +379,15 @@ contains
                               check_bonds=allocated(sys_geom%bonds))
          if (validation_error%has_error()) then
             call logger%error("invalid system: "//validation_error%get_message())
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+
+         ! Ahead of the branch, because each of the three expansions below
+         ! ignores counterpoise in its own way and none of them says so.
+         call validation_error%clear()
+         call check_counterpoise_support(config, validation_error)
+         if (validation_error%has_error()) then
+            call logger%error(validation_error%get_message())
             call abort_comm(resources%mpi_comms%world_comm, 1)
          end if
       end if
