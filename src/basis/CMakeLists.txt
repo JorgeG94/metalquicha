@@ -1,7 +1,11 @@
 target_sources(
   ${main_lib}
-  PRIVATE mqc_basis_utils.F90 mqc_cgto.f90 mqc_ecp.f90
-          mqc_json_basis_reader.f90 mqc_json_ecp_reader.f90
+  PRIVATE mqc_aambs.f90
+          mqc_basis_utils.F90
+          mqc_cgto.f90
+          mqc_ecp.f90
+          mqc_json_basis_reader.f90
+          mqc_json_ecp_reader.f90
           mqc_basis_normalization.f90)
 
 # Where find_basis_file falls back to when neither $MQC_BASIS_PATH nor
