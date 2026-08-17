@@ -185,11 +185,11 @@ JSON output has been centralized in mqc_json_writer module</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
               </ul>
             </li>
@@ -860,18 +860,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M876.14,-138C830.48,-138 740.25,-138 685.36,-138"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="685.2,-134.5 675.2,-138 685.2,-141.5 685.2,-134.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_mbe_io~~UsedByGraph_node19" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_mbe_io~~UsedByGraph_node19"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_mbe_io~~UsedByGraph_node19"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="944.5,-108 866.5,-108 866.5,-84 944.5,-84 944.5,-108"/>
 <text text-anchor="middle" x="905.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_mbe_io~~UsedByGraph_edge20" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M866.25,-102.06C818.38,-109.65 736.47,-122.63 685.31,-130.74"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="684.52,-127.32 675.19,-132.34 685.62,-134.23 684.52,-127.32"/>
 </g>
@@ -1055,7 +1055,7 @@ Supports up to decamers (10-mers), then falls back to &ldquo;N-mers&rdquo; forma
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_level"></span>
+              <span class="anchor" id="variable-frag_level~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1107,7 +1107,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-polymers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1122,7 +1122,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
+              <span class="anchor" id="variable-fragment_count~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1137,7 +1137,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1152,7 +1152,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1167,7 +1167,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies"></span>
+              <span class="anchor" id="variable-delta_energies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1207,7 +1207,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~7"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1222,7 +1222,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag~5"></span>
+              <span class="anchor" id="variable-phys_frag~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1265,7 +1265,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 04:12 +0000             </p>
+ on 2026-08-17 04:54 +0000             </p>
           </div>
         </div>
         <br>
