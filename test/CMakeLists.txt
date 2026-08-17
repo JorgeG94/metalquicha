@@ -206,10 +206,10 @@ if(MQC_ENABLE_LIBCINT)
   # and the refusals happen before any SCF, so this is milliseconds rather than
   # the seconds check_fmo spends on the physics.
   addtest(mqc_fmo_partitions)
-  target_link_libraries(test_mqc_fmo_partitions PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_fmo_partitions PRIVATE ${MQC_INTEGRALS_LIBS})
 
   addtest(mqc_counterpoise)
-  target_link_libraries(test_mqc_counterpoise PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_counterpoise PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Which density symmetry each direct two-electron build may be given. The fast
   # one folds permutations into a multiplicity factor and is valid only for a
