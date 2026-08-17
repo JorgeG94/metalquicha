@@ -41,7 +41,8 @@ contains
                   new_unittest("counterpoise_is_refused_where_it_is_ignored", &
                                test_counterpoise_refusals), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
-                  new_unittest("dft_settings_reach_the_method", test_dft_roundtrip) &
+                  new_unittest("dft_settings_reach_the_method", test_dft_roundtrip), &
+                  new_unittest("pcm_reaches_every_reference", test_pcm_reaches_every_reference) &
                   ]
    end subroutine collect_mqc_config_roundtrip_tests
 
@@ -214,6 +215,94 @@ contains
                  "counterpoise with "//label//" must be refused, not ignored")
       call err%clear()
    end subroutine must_refuse
+
+   subroutine write_pcm_input(method, extra_model)
+      !! A deck asking for a continuum, for whichever reference
+      character(len=*), intent(in) :: method
+      character(len=*), intent(in) :: extra_model
+      integer :: unit
+
+      open (newunit=unit, file=SCRATCH_FILE, status="replace", action="write")
+      write (unit, "(A)") "{"
+      write (unit, "(A)") '  "schema": {"name": "roundtrip", "version": "1.0"},'
+      write (unit, "(A)") '  "model": {'
+      write (unit, "(A)") '    "method": "'//method//'",'
+      if (len_trim(extra_model) > 0) then
+         write (unit, "(A)") '    "basis": "cc-pvdz",'
+         write (unit, "(A)") "    "//extra_model
+      else
+         write (unit, "(A)") '    "basis": "cc-pvdz"'
+      end if
+      write (unit, "(A)") "  },"
+      write (unit, "(A)") '  "driver": "Energy",'
+      write (unit, "(A)") '  "keywords": {"pcm": {"dielectric": 78.4, "angular_points": 110}},'
+      write (unit, "(A)") '  "molecules": [{'
+      write (unit, "(A)") '    "symbols": ["He"], "geometry": [0.0, 0.0, 0.0],'
+      write (unit, "(A)") '    "molecular_charge": 0, "molecular_multiplicity": 1'
+      write (unit, "(A)") "  }]"
+      write (unit, "(A)") "}"
+      close (unit)
+   end subroutine write_pcm_input
+
+   subroutine test_pcm_reaches_every_reference(error)
+      !! A continuum is a property of the reference, not of the functional
+      !!
+      !! `keywords.pcm` parses, validates and reaches `method_config` whatever
+      !! the method is -- so a reference that forgets to copy it off the shared
+      !! config produces a gas-phase number for a deck that asked for solvent,
+      !! converged and of the right magnitude, with nothing in the output to say
+      !! so. Hartree-Fock did exactly that, and MP2 and coupled cluster inherited
+      !! it, because they are all configured through `configure_hf`.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+      class(qc_method_t), allocatable :: method
+      type(error_t) :: parse_error
+
+      call write_pcm_input("hf", "")
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call check(error,.not. parse_error%has_error(), "a deck with keywords.pcm should parse")
+      if (allocated(error)) return
+
+      call check(error, config%pcm_enabled, "keywords.pcm must survive parsing")
+      if (allocated(error)) return
+
+      call config_to_driver(config, driver)
+      call check(error, driver%method_config%pcm%enabled, &
+                 "pcm must survive the config adapter")
+      if (allocated(error)) return
+
+      allocate (method, source=create_method(driver%method_config))
+      select type (m => method)
+      type is (hf_method_t)
+         call check(error, m%options%pcm%enabled, &
+                    "pcm must reach the Hartree-Fock method, not just the Kohn-Sham one")
+         if (allocated(error)) return
+         call check(error, m%options%pcm%dielectric, 78.4_dp, &
+                    "the dielectric must reach the Hartree-Fock method")
+      class default
+         call check(error, .false., "method = hf should build an hf_method_t")
+      end select
+      deallocate (method)
+      if (allocated(error)) return
+
+      ! The path that already worked, so a fix to one cannot quietly break it.
+      call write_pcm_input("dft", '"functional": "pbe0"')
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call check(error,.not. parse_error%has_error(), "the Kohn-Sham deck should parse")
+      if (allocated(error)) return
+
+      call config_to_driver(config, driver)
+      allocate (method, source=create_method(driver%method_config))
+      select type (m => method)
+      type is (dft_method_t)
+         call check(error, m%options%pcm%enabled, "pcm must reach the Kohn-Sham method")
+      class default
+         call check(error, .false., "method = dft should build a dft_method_t")
+      end select
+   end subroutine test_pcm_reaches_every_reference
 
    subroutine test_hf_roundtrip(error)
       !> Error handling
