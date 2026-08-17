@@ -461,24 +461,23 @@ contains
       ! forty seconds of the hundred a tripeptide took, for a result that agrees to
       ! thirteen digits.
       if (present(aux_basis)) then
-         call distributed_dynamic_polarizability(mol, scf%orbitals, &
-                                                 scf%orbital_energies, pot%n_occ, &
-                                                 pot%frequencies, pot%dynamic_pol, &
-                                                 pot%centroids, error, n_core=core, &
-                                                 hessian=shared_hessian, &
-                                                 progress=talk, aux=aux)
+         call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
+                                      shared_hessian, error, progress=talk, aux=aux)
       else
-         call distributed_dynamic_polarizability(mol, scf%orbitals, &
-                                                 scf%orbital_energies, pot%n_occ, &
-                                                 pot%frequencies, pot%dynamic_pol, &
-                                                 pot%centroids, error, n_core=core, &
-                                                 hessian=shared_hessian, progress=talk)
+         call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
+                                      shared_hessian, error, progress=talk)
       end if
       if (error%has_error()) then
          call mol%destroy()
          return
       end if
-      if (talk) call report(stage, "dynamic dipole response, with the Hessian build", talk)
+      if (talk) then
+         write (line, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, " imaginary frequencies"
+         call logger%info(trim(line))
+         write (line, "(A)") "  dipole-quadrupole dispersion tensors"
+         call logger%info(trim(line))
+      end if
+      if (talk) call report(stage, "all three dynamic blocks, with the Hessian build", talk)
 
       ! The static block, solved against the Hessian the dynamic blocks just
       ! built rather than by iterating for it again.
@@ -490,23 +489,6 @@ contains
          return
       end if
       if (talk) call report(stage, "static polarizability", talk)
-
-      if (talk) then
-         write (line, "(A,I0,A)") "  polarizabilities at ", N_CASIMIR_POLDER, " imaginary frequencies"
-         call logger%info(trim(line))
-      end if
-
-      call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
-                                   shared_hessian, error, progress=talk)
-      if (error%has_error()) then
-         call mol%destroy()
-         return
-      end if
-      if (talk) then
-         write (line, "(A)") "  dipole-quadrupole dispersion tensors"
-         call logger%info(trim(line))
-      end if
-      if (talk) call report(stage, "the mixed and quadrupole blocks", talk)
 
       ! --- exchange repulsion: the LMO Fock matrix and the orbitals themselves --
       ! F in the LMO basis is W^T diag(eps) W with W = C_occ^T S C_loc, so no AO
@@ -591,7 +573,7 @@ contains
    end subroutine make_efp_potential
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
-                                      pot, hessian, error, progress)
+                                      pot, hessian, error, progress, aux)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -622,12 +604,15 @@ contains
       type(response_hessian_t), intent(inout) :: hessian
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: progress
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Fit the Hessian rather than build it exactly; passed straight through.
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
+      real(dp), allocatable :: both(:, :, :), all_blocks(:, :, :, :)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
       real(dp) :: com(3), r(3), alpha(3, 3)
       real(dp) :: mass_total, isotropic
-      integer :: i, a, b, c, d, k, f, n_freq
+      integer :: i, a, b, c, d, k, f, n_freq, n_both
 
       com = 0.0_dp
       mass_total = 0.0_dp
@@ -659,13 +644,48 @@ contains
       buck(:, :, QZX) = buck(:, :, QXZ)
       buck(:, :, QZY) = buck(:, :, QYZ)
 
-      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
-                                     pot%n_occ, pot%frequencies, buck, dip, raw, &
-                                     centroids, error, n_core=core, hessian=hessian, &
-                                     progress=progress)
+      ! All three dynamic blocks from one solve.
+      !
+      ! They are three contractions of one response, not three responses: the
+      ! dipole-dipole block measures and drives with `dip`, the mixed one measures
+      ! with `buck` and drives with `dip`, and the quadrupole one uses `buck` both
+      ! sides. So the *driving* operators are `dip` and `buck` together -- twelve of
+      ! them -- and every block is a slice of the twelve-by-twelve result.
+      !
+      ! Run as three calls this cost three sets of twelve factorizations of the same
+      ! shifted matrix, differing only in which right-hand sides came along. Two
+      ! thirds of that was redundant, and at 8350 pairs a factorization is eleven
+      ! seconds on one core.
+      !
+      ! The dipole-dipole slice is what `distributed_dynamic_polarizability` used to
+      ! return, which is the same projection with `measure` and `respond` both
+      ! `dip` -- so it is computed here now and the separate call is gone.
+      n_both = 3 + size(buck, 3)
+      allocate (both(mol%nao, mol%nao, n_both))
+      both(:, :, 1:3) = dip
+      both(:, :, 4:n_both) = buck
+
+      if (present(aux)) then
+         call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                        pot%n_occ, pot%frequencies, both, both, &
+                                        all_blocks, centroids, error, n_core=core, &
+                                        hessian=hessian, progress=progress, aux=aux)
+      else
+         call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                        pot%n_occ, pot%frequencies, both, both, &
+                                        all_blocks, centroids, error, n_core=core, &
+                                        hessian=hessian, progress=progress)
+      end if
       if (error%has_error()) return
+      deallocate (both)
 
       n_freq = size(pot%frequencies)
+      if (allocated(pot%centroids)) deallocate (pot%centroids)
+      allocate (pot%centroids, source=centroids)
+      allocate (pot%dynamic_pol(3, 3, pot%n_lmo, n_freq))
+      pot%dynamic_pol = all_blocks(1:3, 1:3, :, :)
+      allocate (raw(size(buck, 3), 3, pot%n_lmo, n_freq))
+      raw = all_blocks(4:n_both, 1:3, :, :)
       allocate (pot%dipquad(3, 3, 3, pot%n_lmo, n_freq))
       allocate (pot%dipquad_pre(3, 3, 3, pot%n_lmo, n_freq))
       do f = 1, n_freq
@@ -702,11 +722,9 @@ contains
       ! against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`, which
       ! `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied: our response
       ! summed over the orbitals and divided by three reproduces it to 1.5e-05.
-      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
-                                     pot%n_occ, pot%frequencies, buck, buck, qq, &
-                                     centroids, error, n_core=core, hessian=hessian, &
-                                     progress=progress)
-      if (error%has_error()) return
+      allocate (qq(size(buck, 3), size(buck, 3), pot%n_lmo, n_freq))
+      qq = all_blocks(4:n_both, 4:n_both, :, :)
+      deallocate (all_blocks)
 
       allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))
       do f = 1, n_freq
