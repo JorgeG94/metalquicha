@@ -205,6 +205,11 @@ contains
       m%options%density_tol = config%scf%density_convergence
       m%options%use_diis = config%scf%use_diis
       m%options%diis_size = config%scf%diis_size
+      ! Not from `config%dft`, and so easy to leave out: the continuum sits on
+      ! the shared config beside the SCF settings precisely because it applies
+      ! to any reference. `configure_dft` copied it and this did not, which made
+      ! `keywords.pcm` a no-op for Hartree-Fock, MP2 and coupled cluster.
+      m%options%pcm = config%pcm
    end subroutine configure_hf
 
    subroutine configure_dft(m, config)
