@@ -175,6 +175,7 @@ contains
       logical, intent(out) :: ok              !! False when the subspace is too small or singular
 
       real(dp), allocatable :: b_matrix(:, :)
+      real(dp) :: scale
       integer :: n, i, j
 
       ok = .false.
@@ -190,6 +191,22 @@ contains
                                      diis_slot_of_age(newest, n_stored, max_vectors, j))
          end do
       end do
+
+      ! Scale the error block to O(1) against the -1 constraint border. Its
+      ! entries are inner products of error vectors, so near convergence they
+      ! are ~|e|^2 -- around 1e-16 by the time the SCF is where it should stop,
+      ! against a border that stays -1. Eliminating that unscaled makes the
+      ! weights of a saturated subspace noise, and the failure is not a visible
+      ! blow-up: the density bottoms out and then drifts *away* from the fixed
+      ! point by a few percent an iteration, with the energy flat to 1e-14 the
+      ! whole time. An SCF then exhausts its iterations and returns a density
+      ! wrong by 1e-6, which every variational quantity absorbs and every
+      ! response property inherits.
+      !
+      ! The weights are invariant under this: scaling the block rescales the
+      ! Lagrange multiplier alone, which nothing reads.
+      scale = maxval(abs(b_matrix(1:n, 1:n)))
+      if (scale > 0.0_dp) b_matrix(1:n, 1:n) = b_matrix(1:n, 1:n)/scale
 
       call solve_diis(b_matrix, coefficients, ok)
       deallocate (b_matrix)

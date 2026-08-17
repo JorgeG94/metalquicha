@@ -138,6 +138,20 @@ contains
       call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, xc=xc)
       if (fail(error, n_bad)) return
 
+      ! An SCF that ran out of iterations returns its last iterate and no error,
+      ! so this has to be asked for. It is not a formality here: a reference
+      ! density wrong by 1e-6 moves the analytic polarizability by 1e-5 while
+      ! leaving a finite-field control -- which is variational, and so
+      ! second-order insensitive to exactly this -- looking correct. Every
+      ! disagreement in this file traced back to that and to nothing else.
+      if (.not. scf%converged) then
+         write (*, "(a,i0,a)") "  FAIL: the reference SCF did not converge in ", &
+            scf%iterations, " iterations"
+         n_bad = n_bad + 1
+         call mol%destroy()
+         return
+      end if
+
       ! The same reference, with and without the kernel in the response. The
       ! difference between these two is the whole of what this file tests: if
       ! they agree, `xc_kernel_apply` contributed nothing and the plumbing is
