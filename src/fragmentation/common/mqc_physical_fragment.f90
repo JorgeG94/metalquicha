@@ -20,7 +20,6 @@ module mqc_physical_fragment
    public :: system_geometry_t          !! Complete system geometry type
    public :: initialize_system_geometry  !! System geometry initialization
    public :: build_fragment_from_indices
-   public :: build_fragment_with_ghosts  !! Extract fragment from system
    public :: fragment_charge_multiplicity  !! Charge/multiplicity a set of monomers forms
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
@@ -254,7 +253,7 @@ contains
 
    end subroutine add_hydrogen_caps
 
-   subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment, error, bonds)
+   subroutine build_fragment_core(sys_geom, monomer_indices, fragment, error, bonds)
       !! Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds
       !!
       !! Extracts atoms from specified monomers and adds hydrogen caps where bonds are broken.
@@ -384,10 +383,10 @@ contains
 
       deallocate (atoms_in_fragment)
 
-   end subroutine build_fragment_from_indices
+   end subroutine build_fragment_core
 
-   subroutine build_fragment_with_ghosts(sys_geom, signed_indices, fragment, error, bonds)
-      !! Build a fragment where some monomers contribute basis functions only
+   subroutine build_fragment_from_indices(sys_geom, signed_indices, fragment, error, bonds)
+      !! Build a fragment from monomer indices, ghosting any that are negative
       !!
       !! `signed_indices` carries the sign as the distinction: a positive entry
       !! is a real monomer, a negative one is present as ghost centres. The
@@ -416,7 +415,7 @@ contains
       allocate (union_indices(size(signed_indices)))
       union_indices = abs(signed_indices)
 
-      call build_fragment_from_indices(sys_geom, union_indices, fragment, error, bonds)
+      call build_fragment_core(sys_geom, union_indices, fragment, error, bonds)
       if (error%has_error()) return
 
       n_real = count(signed_indices > 0)
@@ -458,7 +457,7 @@ contains
       call fragment_charge_multiplicity(sys_geom, real_indices, &
                                         fragment%charge, fragment%multiplicity)
       call fragment%compute_nelec()
-   end subroutine build_fragment_with_ghosts
+   end subroutine build_fragment_from_indices
 
    pure subroutine fragment_charge_multiplicity(sys_geom, monomer_indices, charge, multiplicity)
       !! Total charge and spin multiplicity of the fragment these monomers form

@@ -11,7 +11,7 @@ module mqc_frag_utils
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_combinatorics, only: fragment_size_of, &
+   use mqc_combinatorics, only: fragment_size_of, vmfc_subset_key, real_count_of, get_next_combination, &
                                 binomial, &
                                 get_nfrags, &
                                 create_monomer_list, &
@@ -110,9 +110,72 @@ contains
       deallocate (monomers)
 
       call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
+
+      ! Counterpoise rows are added after screening, so a pair that was screened
+      ! out does not bring its ghosted monomers along with it, and before the
+      ! size sort, so they are ordered with everything else.
+      if (driver_config%counterpoise == "vmfc") then
+         call add_vmfc_rows(polymers, total_fragments, max_level)
+      end if
+
       call sort_fragments_by_size(polymers, total_fragments, max_level)
 
    end subroutine generate_mbe_term_list
+
+   subroutine add_vmfc_rows(polymers, total_fragments, max_level)
+      !! Add, for every n-mer, the subfragments solved in that n-mer's basis
+      !!
+      !! For the pair [i,j] that is [i,-j] and [-i,j]: monomer i with j present
+      !! as ghost centres, and the reverse. The pair's correction subtracts
+      !! those instead of the bare monomers, so the superposition error that
+      !! inflates the pair stands on both sides and cancels.
+      !!
+      !! The rows are auxiliary -- `is_auxiliary_row` -- and are never summed
+      !! into the total. The one-body term keeps using each monomer in its own
+      !! basis, which is what the unghosted rows already are.
+      integer, allocatable, intent(inout) :: polymers(:, :)
+      integer(int64), intent(inout) :: total_fragments
+      integer, intent(in) :: max_level
+
+      integer, allocatable :: grown(:, :)
+      integer :: parent(max_level), key(max_level), chosen(max_level)
+      integer(int64) :: f, n_added, capacity
+      integer :: n, k, i
+      logical :: has_next
+
+      if (max_level < 2) return
+
+      ! Every n-mer of size n contributes 2^n - 2 proper subsets, so the worst
+      ! case is bounded but not small. Grown once here rather than reallocated
+      ! per row.
+      capacity = total_fragments*(2_int64**max_level)
+      allocate (grown(capacity, max_level))
+      grown = 0
+      grown(1:total_fragments, :) = polymers(1:total_fragments, :)
+      n_added = total_fragments
+
+      do f = 1, total_fragments
+         n = int(real_count_of(polymers(f, :)))
+         if (n < 2) cycle              ! a monomer has no subsets to ghost
+         parent(1:n) = polymers(f, 1:n)
+
+         do k = 1, n - 1
+            do i = 1, k
+               chosen(i) = i
+            end do
+            do
+               call vmfc_subset_key(parent(1:n), n, chosen(1:k), k, key(1:n))
+               n_added = n_added + 1_int64
+               grown(n_added, 1:n) = key(1:n)
+               call get_next_combination(chosen, k, n, has_next)
+               if (.not. has_next) exit
+            end do
+         end do
+      end do
+
+      call move_alloc(grown, polymers)
+      total_fragments = n_added
+   end subroutine add_vmfc_rows
 
    subroutine apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
       !! Apply distance-based screening to filter out fragments that exceed cutoff distances

@@ -11,6 +11,8 @@ module mqc_combinatorics
 
    public :: fragment_size_of      !! How many monomers a polymer row names
    public :: vmfc_subset_key       !! Counterpoise subset key: chosen real, rest ghosted
+   public :: is_auxiliary_row      !! A ghosted row: subtracted, never summed
+   public :: real_count_of         !! Real (non-ghosted) monomers in a row
    public :: binomial              !! Binomial coefficient calculation
    public :: get_nfrags            !! Calculate total number of fragments
    public :: create_monomer_list   !! Generate sequential monomer indices
@@ -76,6 +78,37 @@ contains
       end do
 
    end subroutine create_monomer_list
+
+   pure function is_auxiliary_row(row) result(aux)
+      !! Whether a row exists only to be subtracted, not to be summed
+      !!
+      !! A counterpoise expansion computes monomer A in the basis of the pair
+      !! AB. That energy belongs inside the pair's correction and nowhere else:
+      !!
+      !!     E = sum_i E_i(i)  +  sum_ij [ E_ij - E_i(ij) - E_j(ij) ]
+      !!
+      !! The one-body term uses each monomer in its *own* basis, so the ghosted
+      !! rows are auxiliary -- adding their deltas to the total as well would
+      !! count them twice. A negative entry is what marks them, which is the
+      !! same sign the fragment builder and the subset key already read.
+      integer(default_int), intent(in) :: row(:)
+      logical :: aux
+
+      aux = any(row < 0)
+   end function is_auxiliary_row
+
+   pure function real_count_of(row) result(n)
+      !! How many of a row's monomers are real rather than ghosted
+      !!
+      !! The subset recursion works over these: [1,-2] contains one real
+      !! monomer, so it has no proper subsets and its delta is its energy. Using
+      !! the full row size instead would send the recursion looking for subsets
+      !! that were never generated.
+      integer(default_int), intent(in) :: row(:)
+      integer(default_int) :: n
+
+      n = count(row > 0)
+   end function real_count_of
 
    pure subroutine vmfc_subset_key(fragment, n, chosen, k, key)
       !! The subset key a counterpoise-corrected expansion looks up

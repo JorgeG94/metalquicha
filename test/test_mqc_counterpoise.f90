@@ -17,8 +17,8 @@ module test_mqc_counterpoise
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
-                                    build_fragment_with_ghosts
-   use mqc_combinatorics, only: vmfc_subset_key
+                                    build_fragment_from_indices
+   use mqc_combinatorics, only: vmfc_subset_key, is_auxiliary_row, real_count_of
    use mqc_error, only: error_t
    implicit none
    private
@@ -51,7 +51,8 @@ contains
                   new_unittest("an_isolated_ghost_changes_nothing", test_far_ghost), &
                   new_unittest("a_signed_index_ghosts_its_monomer", test_signed_indices), &
                   new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity), &
-                  new_unittest("the_subset_key_ghosts_the_complement", test_subset_key) &
+                  new_unittest("the_subset_key_ghosts_the_complement", test_subset_key), &
+                  new_unittest("an_auxiliary_row_is_never_summed", test_auxiliary) &
                   ]
    end subroutine collect_counterpoise
 
@@ -277,12 +278,12 @@ contains
 
       call two_water_system(sys_geom)
 
-      call build_fragment_with_ghosts(sys_geom, [1, 2], pair, err)
+      call build_fragment_from_indices(sys_geom, [1, 2], pair, err)
       call check(error,.not. err%has_error(), "pair: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! Monomer A real, monomer B as ghosts: same atoms, half the electrons.
-      call build_fragment_with_ghosts(sys_geom, [1, -2], a_in_pair, err)
+      call build_fragment_from_indices(sys_geom, [1, -2], a_in_pair, err)
       call check(error,.not. err%has_error(), "A in pair: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -334,9 +335,9 @@ contains
       real(dp) :: e_int_cp
 
       call two_water_system(sys_geom)
-      call build_fragment_with_ghosts(sys_geom, [1, 2], pair, err)
-      call build_fragment_with_ghosts(sys_geom, [1, -2], a_ghosted, err)
-      call build_fragment_with_ghosts(sys_geom, [-1, 2], b_ghosted, err)
+      call build_fragment_from_indices(sys_geom, [1, 2], pair, err)
+      call build_fragment_from_indices(sys_geom, [1, -2], a_ghosted, err)
+      call build_fragment_from_indices(sys_geom, [-1, 2], b_ghosted, err)
       call check(error,.not. err%has_error(), "build: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -456,6 +457,42 @@ contains
       call check(error, all(key(1:2) > 0), &
                  "choosing everything should ghost nothing")
    end subroutine test_subset_key
+
+   subroutine test_auxiliary(error)
+      !! A ghosted row is auxiliary, and its size is its real monomers
+      !!
+      !! Both rules exist to stop the same double count. VMFC's one-body term
+      !! is each monomer in its *own* basis, so the ghosted rows belong inside
+      !! the pair correction and nowhere else -- summing their deltas as well
+      !! would count them twice. And [1,-2] has one real monomer, so it has no
+      !! proper subsets; using the row width instead would send the recursion
+      !! hunting for subsets that were never generated.
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error,.not. is_auxiliary_row([1, 2]), &
+                 "an ordinary pair is not auxiliary")
+      if (allocated(error)) return
+      call check(error,.not. is_auxiliary_row([1, 0]), &
+                 "a padded monomer row is not auxiliary")
+      if (allocated(error)) return
+      call check(error, is_auxiliary_row([1, -2]), &
+                 "a ghosted row is auxiliary")
+      if (allocated(error)) return
+      call check(error, is_auxiliary_row([-1, 2]), &
+                 "a ghosted row is auxiliary either way round")
+      if (allocated(error)) return
+
+      call check(error, int(real_count_of([1, 2])), 2, "a pair has two real")
+      if (allocated(error)) return
+      call check(error, int(real_count_of([1, -2])), 1, &
+                 "a monomer in the pair basis has one real monomer")
+      if (allocated(error)) return
+      call check(error, int(real_count_of([1, 3, -2])), 2, &
+                 "a dimer in the trimer basis has two real monomers")
+      if (allocated(error)) return
+      call check(error, int(real_count_of([1, 0])), 1, &
+                 "padding is not a monomer")
+   end subroutine test_auxiliary
 
 end module test_mqc_counterpoise
 
