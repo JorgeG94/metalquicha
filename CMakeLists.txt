@@ -458,11 +458,6 @@ if(MQC_ENABLE_HDF5)
   target_include_directories(check_hdf5 PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5 PRIVATE ${main_lib})
 
-  add_executable(check_hdf5_checkpoint
-                 ${PROJECT_SOURCE_DIR}/validation/check_hdf5_checkpoint.f90)
-  target_include_directories(check_hdf5_checkpoint
-                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_hdf5_checkpoint PRIVATE ${main_lib})
 endif()
 
 # Needs both: libcint for the density, libxc for the functional.
@@ -686,6 +681,74 @@ target_link_libraries(check_bcast PRIVATE ${main_lib})
 add_executable(check_session ${PROJECT_SOURCE_DIR}/validation/check_session.f90)
 target_include_directories(check_session PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_session PRIVATE ${main_lib})
+
+# The validation programs are built on demand, not as part of `cmake --build`.
+#
+# They are one-off checks, and several predate things they still name: the
+# reference is another program's output rather than anything in this tree, so
+# they cannot run in CI anyway. Building them by default bought nothing and cost
+# a broken build every time one of them drifted out of step with a guard it
+# depended on -- which is how a libcint-off job failed on a file nobody had
+# asked for.
+#
+# EXCLUDE_FROM_ALL rather than deleting them: each is still a target, so
+#
+# cmake --build build --target check_rhf
+#
+# builds exactly the one you want, and the ones still worth keeping can be
+# converted into test-drive tests -- where CI does run them -- one at a time
+# rather than in a single sweep.
+#
+# `if(TARGET)` because most of these sit behind a backend guard and simply do
+# not exist in a build without it.
+#
+# check_fmo, check_fmo_mpi and probe_esp are deliberately absent from this list:
+# `add_test` drives them, so they are part of the suite rather than manual
+# checks, and excluding them from the default build leaves ctest with three
+# entries and no executables to run.
+foreach(
+  mqc_validation_program IN
+  ITEMS bench_df_k
+        bench_efp
+        bench_mp2_gradient
+        bench_ri_mp2_gradient
+        bench_scf_gradient
+        check_ao
+        check_ao_deriv2
+        check_bcast
+        check_bcast_system
+        check_bond_orders
+        check_cc
+        check_charges
+        check_df
+        check_df_cphf
+        check_df_deriv
+        check_dft
+        check_direct
+        check_gradient
+        check_grid
+        check_hdf5
+        check_lebedev
+        check_libcint
+        check_libxc
+        check_mp2_gradient
+        check_partition
+        check_partition_deriv
+        check_projection
+        check_radial
+        check_rhf
+        check_ri_mp2_gradient
+        check_run
+        check_sapt
+        check_scf_gradient
+        check_session
+        check_session_run
+        sweep_fmo)
+  if(TARGET ${mqc_validation_program})
+    set_target_properties(${mqc_validation_program} PROPERTIES EXCLUDE_FROM_ALL
+                                                               TRUE)
+  endif()
+endforeach()
 
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})

@@ -233,6 +233,12 @@ addtest(mqc_capi_fraglist)
 addtest(mqc_capi_session)
 addtest(mqc_capi_run)
 
+# The checkpoint format only exists with HDF5 on, so the test that exercises its
+# ragged packing and sort ordering follows the same guard the format does.
+if(MQC_ENABLE_HDF5)
+  addtest(mqc_hdf5_checkpoint)
+endif()
+
 if(MQC_ENABLE_TBLITE)
   addtest(mqc_method_api)
   addtest(mqc_hessian_finite_diff)
