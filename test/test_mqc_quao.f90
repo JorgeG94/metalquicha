@@ -37,6 +37,16 @@ module test_mqc_quao
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
 
+   !> Formyl chloride, from the GAMESS test deck that ships reference QUAO
+   !> populations. Angstrom in the deck, Bohr here.
+   integer, parameter :: FC_Z(4) = [6, 8, 17, 1]
+   character(len=2), parameter :: FC_SYM(4) = ["C ", "O ", "Cl", "H "]
+   real(dp), parameter :: FC(3, 4) = reshape([ &
+                                             -1.3271546579_dp, -0.8536648799_dp, 0.0000000000_dp, &
+                                             -3.0122423412_dp, 0.5424647816_dp, 0.0000000000_dp, &
+                                             1.8500985686_dp, 0.1267628285_dp, 0.0000000000_dp, &
+                                             -1.4456215887_dp, -2.8971202257_dp, 0.0000000000_dp], [3, 4])
+
    integer, parameter :: BQ_Z(12) = [6, 6, 6, 6, 6, 6, 8, 8, 1, 1, 1, 1]
    character(len=2), parameter :: BQ_SYM(12) = ["C ", "C ", "C ", "C ", "C ", "C ", "O ", "O ", "H ", "H ", "H ", "H "]
    real(dp), parameter :: BQ(3, 12) = reshape([ &
@@ -66,7 +76,8 @@ contains
                   new_unittest("orientation_concentrates_bonding", test_orientation), &
                   new_unittest("kinetic_bond_orders", test_kbo), &
                   new_unittest("split_localization_pairs_bonds", test_split), &
-                  new_unittest("benzoquinone_against_paper_one", test_benzoquinone) &
+                  new_unittest("benzoquinone_against_paper_one", test_benzoquinone), &
+                  new_unittest("formyl_chloride_against_gamess", test_formyl_chloride) &
                   ]
    end subroutine collect_mqc_quao_tests
 
@@ -728,6 +739,110 @@ contains
          if (quao%population_bond_order(i, i) > threshold) n = n + 1
       end do
    end function count_above
+
+   subroutine test_formyl_chloride(error)
+      !! Against GAMESS's own reference QUAO populations
+      !!
+      !! From the GAMESS test deck for formyl chloride, which ships the answer
+      !! in its header:
+      !!
+      !!     ATOM     QUAO POP.      CHARGE
+      !!     1 C       5.639027     0.360973
+      !!     2 O       8.384177    -0.384177
+      !!     3 CL     17.116362    -0.116362
+      !!     4 H       0.860434     0.139566
+      !!
+      !! Unlike the benzoquinone comparison this fixes the geometry, the basis
+      !! and the method exactly -- RHF, cc-pVDZ, spherical -- so it is a
+      !! genuine head-to-head against the reference implementation rather than
+      !! a comparison against a figure whose structure is unavailable. It is
+      !! also the first element past the second row: chlorine's chemical core is
+      !! five orbitals, so ten of its electrons never enter the valence
+      !! construction and have to be added back.
+      !!
+      !! The deck notes the populations are the same for `local=svd` and
+      !! `local=ruednbrg`, which is worth knowing: they are a property of the
+      !! quasi-atomic space, not of how it was localized.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol, aambs
+      type(rhf_result_t) :: scf
+      type(vvo_result_t) :: vvo
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: mixed(:, :), s_mbs(:, :), proj(:, :), vi(:, :)
+      real(dp), allocatable :: pop(:)
+      integer, allocatable :: co(:), cn(:), vo(:), vn(:)
+      integer :: i, core, valence
+      real(dp), parameter :: REFERENCE(4) = &
+                             [5.639027_dp, 8.384177_dp, 17.116362_dp, 0.860434_dp]
+
+      call build_libcint_molecule(FC_Z, FC_SYM, FC, "cc-pvdz", mol, err)
+      call check(error,.not. err%has_error(), "formyl chloride should build")
+      if (allocated(error)) return
+      call run_libcint_rhf(mol, 32, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      call check(error, scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+
+      call build_aambs_molecule(FC_Z, FC_SYM, FC, aambs, err)
+      call aambs%overlap(s_mbs)
+      call mixed_basis_overlap(mol, aambs, mixed, err)
+      call aambs_dimensions(FC_Z, 32, dims, err)
+      call check(error,.not. err%has_error(), "the setup should succeed")
+      if (allocated(error)) return
+
+      ! C and O give five each, chlorine nine, hydrogen one.
+      call check(error, dims%n_mbs, 20, "formyl chloride has 20 minimal-basis orbitals")
+      if (allocated(error)) return
+      call check(error, dims%n_core, 7, "seven chemical-core orbitals, five of them "// &
+                 "on chlorine")
+      if (allocated(error)) return
+
+      call mo_aambs_overlap(scf%orbitals, mixed, s_mbs, proj, err)
+      call valence_virtual_orbitals(scf%orbitals, proj, dims, vvo, err)
+      call aambs_atom_ranges(FC_Z, aambs, co, cn, vo, vn, err)
+      call check(error,.not. err%has_error(), "the valence-virtual step should succeed")
+      if (allocated(error)) return
+
+      allocate (vi(size(scf%orbitals, 1), dims%n_valocc + vvo%n_vvo))
+      vi(:, 1:dims%n_valocc) = scf%orbitals(:, dims%n_core + 1:dims%n_occupied)
+      vi(:, dims%n_valocc + 1:) = vvo%orbitals
+      call quasi_atomic_orbitals(FC_Z, vi, dims%n_valocc, mixed, vo, vn, quao, err)
+      call orient_quasi_atomic_orbitals(quao, err)
+      call check(error,.not. err%has_error(), "the quasi-atomic steps should succeed")
+      if (allocated(error)) return
+
+      allocate (pop(4))
+      pop = 0.0_dp
+      do i = 1, quao%n_quao
+         pop(quao%atom_of(i)) = pop(quao%atom_of(i)) + quao%population_bond_order(i, i)
+      end do
+      do i = 1, 4
+         call aambs_element_counts(FC_Z(i), core, valence, err)
+         pop(i) = pop(i) + 2.0_dp*real(core, dp)
+      end do
+
+      ! Every electron, first: a population analysis that does not conserve
+      ! charge is wrong before any individual number is looked at.
+      call check(error, abs(sum(pop) - 32.0_dp) < 1.0e-8_dp, &
+                 "the populations must sum to the 32 electrons of HCOCl")
+      if (allocated(error)) return
+
+      ! Agreement is 0.004 at worst, on chlorine. That is not machine
+      ! precision and should not be: GAMESS Loewdin-orthogonalizes the free-atom
+      ! basis before the valence-virtual projection -- a step added in 2013 and
+      ! absent from the published equations -- and its valence and quasi-atomic
+      ! halves disagree about whether to use the rotated set or the raw one.
+      ! Those choices are recorded in the plan; the residual here is their size.
+      do i = 1, 4
+         call check(error, abs(pop(i) - REFERENCE(i)) < 0.01_dp, &
+                    "atom "//trim(FC_SYM(i))//" population against GAMESS")
+         if (allocated(error)) return
+      end do
+
+      call mol%destroy()
+      call aambs%destroy()
+   end subroutine test_formyl_chloride
 
 end module test_mqc_quao
 
