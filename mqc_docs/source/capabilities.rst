@@ -307,13 +307,35 @@ a finite difference that moves the grid with the nuclei -- because a
 disagreement seen only at the end of a Z-vector solve could be any of five
 things.
 
-One consequence is visible in the output. The perturbative term is normally
-density-fitted when the deck names an auxiliary basis, but **a gradient run
-computes it with exact integrals regardless**, because the assembled gradient
-differentiates exact integrals and the alternative is reporting a gradient
-beside an energy it does not belong to. A double hybrid energy and the energy
-printed by the same deck run as a gradient can therefore differ in the last
-few decimals; the gradient is consistent with the second one.
+**The perturbative term is fitted when the deck names an auxiliary basis**, and
+differentiated as fitted -- an ``Energy`` run and a ``Gradient`` run of one deck
+report the same energy. That is worth stating because it was not always true:
+until the fitted correlation gradient learned about functionals, a gradient run
+had to fall back to exact integrals to stay consistent with its own assembly,
+which left the two drivers disagreeing by the fitting error and left the dense
+:math:`n_{ao}^4` two-particle density in the one place fitting exists to remove
+it. Naming an auxiliary basis is now what makes a double hybrid gradient
+affordable, not merely comparable to the reference implementations.
+
+So there are three combinations a deck can ask for, and all three are
+differentiated as asked:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 30 30
+
+   * - Deck
+     - Correlation
+     - Reference
+   * - no auxiliary basis
+     - exact
+     - exact
+   * - ``model.aux_basis``
+     - fitted
+     - exact
+   * - ``+ keywords.scf.density_fitting``
+     - fitted
+     - fitted
 
 What is refused rather than approximated
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

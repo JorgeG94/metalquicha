@@ -1576,22 +1576,22 @@
         {
             "name": "DH B2PLYP gradient over a fitted reference H2O sto-3g/cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_b2plyp_dfref_grad.json",
-            "expected_energy": -75.210556532568,
+            "expected_energy": -75.21055452719,
             "expected_gradient": [
                 [
-                    1.2e-11,
-                    3.06e-10,
-                    -0.103869644446
+                    -1e-12,
+                    2.76e-10,
+                    -0.103869051906
                 ],
                 [
-                    -1.2e-11,
-                    -0.03625327539,
-                    0.051934822354
+                    1.5e-11,
+                    -0.036253176496,
+                    0.051934526068
                 ],
                 [
-                    1.1e-11,
-                    0.036253275068,
-                    0.05193482233
+                    2.03e-10,
+                    0.036253176188,
+                    0.05193452585
                 ]
             ],
             "gradient_tolerance": 1e-07,

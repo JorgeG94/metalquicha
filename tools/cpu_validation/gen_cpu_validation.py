@@ -1178,14 +1178,14 @@ def pyscf_mp2_df_ref_gradient(atoms, basis, aux):
 def pyscf_dh_df_ref_gradient(atoms, basis, aux, functional, level):
     """A double hybrid over a fitted reference, by finite difference.
 
-    The Kohn-Sham half is fitted; the perturbative half is not, which is what
-    our own gradient run does and for the same reason -- the assembled gradient
-    differentiates exact correlation integrals, and pairing it with a fitted
-    correlation energy would report a gradient of a function nobody computed.
+    Both halves fitted, and pinned to one auxiliary set, which is what a deck
+    naming `model.aux_basis` alongside `keywords.scf.density_fitting` asks for:
+    fitted correlation is differentiated as fitted rather than dropped back to
+    exact integrals. PySCF picks a different auxiliary for correlation by
+    default, and a comparison that let it would be comparing two approximations.
     """
     import numpy as np
-    from pyscf import dft, gto
-    from pyscf.mp import mp2 as conventional_mp2
+    from pyscf import df, dft, gto, mp
 
     xc, c_pt2 = DH_SEMILOCAL[functional]
     symbols = {a[0] for a in atoms}
@@ -1213,8 +1213,9 @@ def pyscf_dh_df_ref_gradient(atoms, basis, aux, functional, level):
         if not mf.converged:
             raise SystemExit("the reference SCF did not converge at a displaced "
                              "geometry")
-        pt = conventional_mp2.RMP2(_exact_eri_view(dft.RKS(mol), mf))
+        pt = mp.MP2(mf)
         pt.frozen = 0
+        pt.with_df = df.DF(mol, {s: bse_to_pyscf(aux, s) for s in symbols})
         pt.kernel()
         return float(mf.e_tot + c_pt2 * pt.e_corr), mol.nao
 
