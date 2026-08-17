@@ -15,7 +15,7 @@ module test_mqc_quao
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
-   use mqc_aambs, only: aambs_dimensions, aambs_dimensions_t
+   use mqc_aambs, only: aambs_dimensions, aambs_dimensions_t, aambs_element_counts
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
                                     mixed_basis_overlap
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
@@ -37,6 +37,22 @@ module test_mqc_quao
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
 
+   integer, parameter :: BQ_Z(12) = [6, 6, 6, 6, 6, 6, 8, 8, 1, 1, 1, 1]
+   character(len=2), parameter :: BQ_SYM(12) = ["C ", "C ", "C ", "C ", "C ", "C ", "O ", "O ", "H ", "H ", "H ", "H "]
+   real(dp), parameter :: BQ(3, 12) = reshape([ &
+                                              1.6803690372_dp, 2.1213574156_dp, -0.1919168058_dp, &
+                                              2.6490048546_dp, -0.4712787984_dp, 0.1259370182_dp, &
+                                              1.0841264295_dp, -2.4470479338_dp, 0.3038963069_dp, &
+                                              -1.6803709269_dp, -2.1213479669_dp, 0.1919394826_dp, &
+                                              -2.6490086340_dp, 0.4712844676_dp, -0.1259067826_dp, &
+                                              -1.0841320987_dp, 2.4470536030_dp, -0.3038641815_dp, &
+                                              -3.1157709870_dp, -3.9333250904_dp, 0.3550870979_dp, &
+                                              3.1157728768_dp, 3.9333175315_dp, -0.3551985917_dp, &
+                                              4.6825807122_dp, -0.6674682750_dp, 0.2038069626_dp, &
+                                              1.7542478801_dp, -4.3645190183_dp, 0.5366595429_dp, &
+                                              -1.7542592184_dp, 4.3645227977_dp, -0.5366519840_dp, &
+                                              -4.6825807122_dp, 0.6674701648_dp, -0.2038031832_dp], [3, 12])
+
 contains
 
    subroutine collect_mqc_quao_tests(testsuite)
@@ -49,7 +65,8 @@ contains
                   new_unittest("water_bonding_pattern", test_water_pattern), &
                   new_unittest("orientation_concentrates_bonding", test_orientation), &
                   new_unittest("kinetic_bond_orders", test_kbo), &
-                  new_unittest("split_localization_pairs_bonds", test_split) &
+                  new_unittest("split_localization_pairs_bonds", test_split), &
+                  new_unittest("benzoquinone_against_paper_one", test_benzoquinone) &
                   ]
    end subroutine collect_mqc_quao_tests
 
@@ -554,6 +571,163 @@ contains
          a(j + 1) = t
       end do
    end subroutine sort_descending
+
+   subroutine test_benzoquinone(error)
+      !! Paper I Figure 5 and Table IV, on 1,4-benzoquinone
+      !!
+      !! The first check against published chemistry rather than against an
+      !! invariant. Twelve atoms, 44 minimal-basis orbitals, 16 valence-virtual
+      !! orbitals to recover -- enough that the per-atom machinery is actually
+      !! exercised, where water needed almost none of it.
+      !!
+      !! The geometry is not Paper I's: it gives none, saying only
+      !! "HF-optimized", so this uses an ordinary molecular-mechanics structure.
+      !! Bond orders and populations are therefore expected to agree to about
+      !! the second decimal rather than exactly -- which is still a real test,
+      !! because every one of these numbers is a specific published value and
+      !! the pattern of six distinct bond types is not something a broken
+      !! implementation reproduces by accident.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol, aambs
+      type(rhf_result_t) :: scf
+      type(vvo_result_t) :: vvo
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: mixed(:, :), s_mbs(:, :), proj(:, :), vi(:, :)
+      real(dp), allocatable :: pop(:)
+      integer, allocatable :: co(:), cn(:), vo(:), vn(:)
+      integer :: i, core, valence
+
+      call build_libcint_molecule(BQ_Z, BQ_SYM, BQ, "cc-pvdz", mol, err)
+      call check(error,.not. err%has_error(), "benzoquinone should build")
+      if (allocated(error)) return
+      call run_libcint_rhf(mol, 56, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      call check(error, scf%converged, "the benzoquinone SCF should converge")
+      if (allocated(error)) return
+
+      call build_aambs_molecule(BQ_Z, BQ_SYM, BQ, aambs, err)
+      call aambs%overlap(s_mbs)
+      call mixed_basis_overlap(mol, aambs, mixed, err)
+      call aambs_dimensions(BQ_Z, 56, dims, err)
+      call check(error,.not. err%has_error(), "the setup should succeed")
+      if (allocated(error)) return
+
+      ! Six carbons at five minimal-basis orbitals each, two oxygens at five,
+      ! four hydrogens at one.
+      call check(error, dims%n_mbs, 44, "benzoquinone has 44 minimal-basis orbitals")
+      if (allocated(error)) return
+      call check(error, dims%n_vvo, 16, "sixteen valence-virtual orbitals to recover")
+      if (allocated(error)) return
+
+      call mo_aambs_overlap(scf%orbitals, mixed, s_mbs, proj, err)
+      call valence_virtual_orbitals(scf%orbitals, proj, dims, vvo, err)
+      call check(error,.not. err%has_error(), "the valence-virtual step should succeed")
+      if (allocated(error)) return
+
+      ! Paper I Table I quotes 0.99999 retained against 0.105-0.272 rejected
+      ! across its eight molecules; this should land in the same band.
+      call check(error, vvo%smallest_retained > 0.99_dp, &
+                 "the retained singular values should be near one")
+      if (allocated(error)) return
+      call check(error, vvo%largest_rejected < 0.3_dp, &
+                 "the rejected singular values should be well below")
+      if (allocated(error)) return
+
+      call aambs_atom_ranges(BQ_Z, aambs, co, cn, vo, vn, err)
+      allocate (vi(size(scf%orbitals, 1), dims%n_valocc + vvo%n_vvo))
+      vi(:, 1:dims%n_valocc) = scf%orbitals(:, dims%n_core + 1:dims%n_occupied)
+      vi(:, dims%n_valocc + 1:) = vvo%orbitals
+      call quasi_atomic_orbitals(BQ_Z, vi, dims%n_valocc, mixed, vo, vn, quao, err)
+      call orient_quasi_atomic_orbitals(quao, err)
+      call check(error,.not. err%has_error(), "the quasi-atomic steps should succeed")
+      if (allocated(error)) return
+
+      ! Table IV, cc-pVDZ column: O 8.442, carbonyl C 5.568, CH carbon 6.163,
+      ! H 0.832. Core electrons included, which Paper I does not say outright but
+      ! its own sum to 56 electrons requires.
+      allocate (pop(size(BQ_Z)))
+      pop = 0.0_dp
+      do i = 1, quao%n_quao
+         pop(quao%atom_of(i)) = pop(quao%atom_of(i)) + quao%population_bond_order(i, i)
+      end do
+      do i = 1, size(BQ_Z)
+         call aambs_element_counts(BQ_Z(i), core, valence, err)
+         pop(i) = pop(i) + 2.0_dp*real(core, dp)
+      end do
+
+      call check(error, abs(pop(1) - 5.568_dp) < 0.05_dp, &
+                 "carbonyl carbon population, Paper I Table IV")
+      if (allocated(error)) return
+      call check(error, abs(pop(2) - 6.163_dp) < 0.05_dp, &
+                 "CH carbon population, Paper I Table IV")
+      if (allocated(error)) return
+      call check(error, abs(pop(7) - 8.442_dp) < 0.05_dp, &
+                 "oxygen population, Paper I Table IV")
+      if (allocated(error)) return
+      call check(error, abs(pop(9) - 0.832_dp) < 0.05_dp, &
+                 "hydrogen population, Paper I Table IV")
+      if (allocated(error)) return
+
+      ! Every electron accounted for.
+      call check(error, abs(sum(pop) - 56.0_dp) < 1.0e-8_dp, &
+                 "the populations must sum to benzoquinone's 56 electrons")
+      if (allocated(error)) return
+
+      ! Figure 5: the six bond types, by magnitude. Assert |p| -- phases are a
+      ! convention, and the papers note negative bond orders describe bonding.
+      call check(error, best_bond(quao, 1, 8) > 0.95_dp, &
+                 "C-O sigma bond order, Paper I Figure 5 gives 0.97")
+      if (allocated(error)) return
+      call check(error, best_bond(quao, 2, 3) > 0.97_dp, &
+                 "C-C sigma bond order, Paper I Figure 5 gives 0.99")
+      if (allocated(error)) return
+      call check(error, best_bond(quao, 2, 9) > 0.95_dp, &
+                 "C-H bond order, Paper I Figure 5 gives 0.97")
+      if (allocated(error)) return
+
+      ! The two oxygen lone pairs, 1.99 and 1.90 in Figure 5.
+      call check(error, count_above(quao, 7, 1.98_dp) >= 1, &
+                 "oxygen should carry a nearly full sigma lone pair")
+      if (allocated(error)) return
+      call check(error, count_above(quao, 7, 1.85_dp) >= 2, &
+                 "oxygen should carry two lone pairs, Paper I Figure 5 gives "// &
+                 "1.99 and 1.90")
+
+      call mol%destroy()
+      call aambs%destroy()
+   end subroutine test_benzoquinone
+
+   function best_bond(quao, atom_a, atom_b) result(largest)
+      !! The largest bond-order magnitude between two atoms
+      type(quao_result_t), intent(in) :: quao
+      integer, intent(in) :: atom_a, atom_b
+      real(dp) :: largest
+      integer :: i, j
+
+      largest = 0.0_dp
+      do i = 1, quao%n_quao
+         if (quao%atom_of(i) /= atom_a) cycle
+         do j = 1, quao%n_quao
+            if (quao%atom_of(j) /= atom_b) cycle
+            largest = max(largest, abs(quao%population_bond_order(i, j)))
+         end do
+      end do
+   end function best_bond
+
+   function count_above(quao, atom, threshold) result(n)
+      !! How many of an atom's orbitals hold more than `threshold` electrons
+      type(quao_result_t), intent(in) :: quao
+      integer, intent(in) :: atom
+      real(dp), intent(in) :: threshold
+      integer :: n, i
+
+      n = 0
+      do i = 1, quao%n_quao
+         if (quao%atom_of(i) /= atom) cycle
+         if (quao%population_bond_order(i, i) > threshold) n = n + 1
+      end do
+   end function count_above
 
 end module test_mqc_quao
 
