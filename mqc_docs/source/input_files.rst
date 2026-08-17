@@ -564,6 +564,8 @@ Fragmentation Options
      "allow_overlapping_fragments": false,
      "level": 2,
      "max_intersection_level": 3,
+     "expansion": "mbe",
+     "counterpoise": "none",
      "embedding": "none",
      "cutoff_method": "distance",
      "distance_metric": "min",
@@ -579,6 +581,9 @@ Fragmentation Options
 - ``allow_overlapping_fragments``: ``true`` for GMBE, ``false`` for standard MBE (default: ``false``)
 - ``level``: Maximum fragment size (1=monomers only, 2=up to dimers, 3=up to trimers, etc.)
 - ``max_intersection_level``: For GMBE only - maximum k-way intersection depth (default: level + 1)
+- ``expansion``: ``"mbe"`` (default), ``"fmo"`` or ``"ee-mbe"`` - see :doc:`fmo`
+- ``counterpoise``: ``"none"`` (default) or ``"vmfc"`` for the basis-set
+  superposition correction - see :doc:`counterpoise`
 - ``embedding``: Fragment embedding scheme (currently only ``"none"`` supported)
 - ``cutoff_method``: How to include fragments (``"distance"``, ``"all"``)
 - ``distance_metric``: For distance cutoffs: ``"min"``, ``"max"``, ``"com"`` (center of mass)

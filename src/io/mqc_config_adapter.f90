@@ -12,7 +12,8 @@ module mqc_config_adapter
                                   coordinates_from_string, algorithm_from_string, &
                                   OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN
    use mqc_method_config, only: method_config_t
-   use mqc_method_types, only: METHOD_TYPE_CCSD_T
+   use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
+                               METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -21,6 +22,7 @@ module mqc_config_adapter
    public :: config_to_driver, config_to_system_geometry
    public :: get_logger_level  !! Convert log level string to integer
    public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
+   public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
 
    !! Runtime configuration for driver (internal use only)
    type :: driver_config_t
@@ -318,6 +320,75 @@ contains
       end if
 
    end subroutine set_optimization_vocabulary
+
+   subroutine check_counterpoise_support(driver_config, error)
+      !! Refuse a counterpoise request the chosen expansion cannot honour
+      !!
+      !! Counterpoise is carried by ghosted rows in the MBE term list and by
+      !! the `is_ghost` mask on the fragments those rows build. Three things
+      !! read neither, and each fails differently:
+      !!
+      !!   * **GMBE** and **FMO/EE-MBE** build their own term lists and never
+      !!     call `generate_mbe_term_list`, so the setting is simply not seen.
+      !!     The answer that comes back is a valid uncorrected one, which is
+      !!     the worst kind of wrong -- it is the number the deck asked this
+      !!     program *not* to produce, and nothing about it says so.
+      !!   * the **xTB and EFP** paths take `element_numbers` as the atom list
+      !!     and never consult `is_ghost`, so a ghosted monomer is computed as
+      !!     though its ghost centres were nuclei, against an electron count
+      !!     derived without them. That is not an approximation, it is a
+      !!     different molecule with the wrong charge.
+      !!
+      !! An unrecognised spelling is refused for the same reason `none` cannot
+      !! be told from a typo once it reaches the term list.
+      type(driver_config_t), intent(in) :: driver_config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: scheme
+
+      scheme = trim(driver_config%counterpoise)
+      if (scheme == "none" .or. len(scheme) == 0) return
+
+      if (scheme /= "vmfc") then
+         call error%set(ERROR_VALIDATION, &
+                        "Unknown keywords.fragmentation.counterpoise: '"//scheme// &
+                        "'. Use vmfc, or none.")
+         return
+      end if
+
+      if (driver_config%allow_overlapping_fragments) then
+         call error%set(ERROR_VALIDATION, &
+                        "counterpoise is not available for GMBE. GMBE builds its "// &
+                        "terms by inclusion-exclusion over overlapping primaries "// &
+                        "rather than from the subset list counterpoise ghosts, so "// &
+                        "the request would be ignored and an uncorrected energy "// &
+                        "returned. Use MBE, or drop counterpoise.")
+         return
+      end if
+
+      if (trim(driver_config%expansion_kind) /= "mbe") then
+         call error%set(ERROR_VALIDATION, &
+                        "counterpoise is not available for expansion '"// &
+                        trim(driver_config%expansion_kind)//"'. An embedded "// &
+                        "expansion builds its own term list and would ignore the "// &
+                        "request. Use the plain expansion, or drop counterpoise.")
+         return
+      end if
+
+      select case (driver_config%method_config%method_type)
+      case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_EFP2)
+         call error%set(ERROR_VALIDATION, &
+                        "counterpoise needs a method with a basis set to ghost. "// &
+                        "The semi-empirical and EFP paths take every centre as a "// &
+                        "real atom, so a ghosted term would be computed as a "// &
+                        "different molecule rather than as a basis-set correction. "// &
+                        "Use an ab initio method, or drop counterpoise.")
+      case default
+         ! An ab initio method: the libcint path reads `is_ghost` and honours it.
+      end select
+
+   end subroutine check_counterpoise_support
+
    subroutine copy_fragment_potentials(mqc_config, driver_config, molecule_index)
       !! The per-fragment potential paths, in fragment order
       !!

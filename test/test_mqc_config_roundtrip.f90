@@ -16,7 +16,9 @@ module test_mqc_config_roundtrip
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
-   use mqc_config_adapter, only: driver_config_t, config_to_driver
+   use mqc_config_adapter, only: driver_config_t, config_to_driver, &
+                                 check_counterpoise_support
+   use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
    use mqc_method_base, only: qc_method_t
    use mqc_method_factory, only: create_method
    use mqc_method_hf, only: hf_method_t
@@ -36,6 +38,8 @@ contains
 
       testsuite = [ &
                   new_unittest("counterpoise_roundtrip", test_counterpoise_roundtrip), &
+                  new_unittest("counterpoise_is_refused_where_it_is_ignored", &
+                               test_counterpoise_refusals), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
                   new_unittest("dft_settings_reach_the_method", test_dft_roundtrip) &
                   ]
@@ -141,6 +145,75 @@ contains
       call check(error, trim(driver%counterpoise), "none", &
                  "a scheme of none should reach the driver as itself")
    end subroutine test_counterpoise_roundtrip
+
+   subroutine test_counterpoise_refusals(error)
+      !! Every combination that would silently drop the correction is refused
+      !!
+      !! This is the failure mode worth a test: none of these crash. GMBE and
+      !! the embedded expansions build their own term lists and never see the
+      !! setting, so they return a perfectly convergent *uncorrected* energy.
+      !! The semi-empirical and EFP paths do worse -- they take the ghost
+      !! centres as nuclei and answer a different molecule. Both look like
+      !! results.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: driver
+      type(error_t) :: err
+
+      ! The supported combination, so a guard that refuses everything fails here
+      driver%counterpoise = "vmfc"
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .false.
+      driver%method_config%method_type = METHOD_TYPE_HF
+      call check_counterpoise_support(driver, err)
+      call check(error,.not. err%has_error(), &
+                 "vmfc under plain MBE with an ab initio method must be allowed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      ! ... and none is always allowed, whatever else is set
+      call err%clear()
+      driver%counterpoise = "none"
+      driver%allow_overlapping_fragments = .true.
+      call check_counterpoise_support(driver, err)
+      call check(error,.not. err%has_error(), "no counterpoise is never a conflict")
+      if (allocated(error)) return
+
+      call must_refuse(error, err, "GMBE", "vmfc", "mbe", .true., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "EE-MBE", "vmfc", "ee-mbe", .false., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "FMO", "vmfc", "fmo", .false., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "GFN2", "vmfc", "mbe", .false., METHOD_TYPE_GFN2)
+      if (allocated(error)) return
+      call must_refuse(error, err, "EFP2", "vmfc", "mbe", .false., METHOD_TYPE_EFP2)
+      if (allocated(error)) return
+
+      ! A scheme this program does not implement must not read as `none`
+      call must_refuse(error, err, "an unknown scheme", "ssfc", "mbe", .false., &
+                       METHOD_TYPE_HF)
+   end subroutine test_counterpoise_refusals
+
+   subroutine must_refuse(error, err, label, scheme, expansion, overlapping, method_type)
+      !! This combination must come back as an error rather than as a number
+      type(error_type), allocatable, intent(inout) :: error
+      type(error_t), intent(inout) :: err
+      character(len=*), intent(in) :: label, scheme, expansion
+      logical, intent(in) :: overlapping
+      integer, intent(in) :: method_type
+
+      type(driver_config_t) :: driver
+
+      call err%clear()
+      driver%counterpoise = scheme
+      driver%expansion_kind = expansion
+      driver%allow_overlapping_fragments = overlapping
+      driver%method_config%method_type = method_type
+      call check_counterpoise_support(driver, err)
+      call check(error, err%has_error(), &
+                 "counterpoise with "//label//" must be refused, not ignored")
+      call err%clear()
+   end subroutine must_refuse
 
    subroutine test_hf_roundtrip(error)
       !> Error handling
