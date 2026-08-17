@@ -36,6 +36,10 @@ module test_mqc_efp_pair
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
+   !> Built on first use by `water_fragment`, then copied. See its comment.
+   type(efp_fragment_t), save :: cached_water
+   logical, save :: cached_ready = .false.
+
 contains
 
    subroutine collect_mqc_efp_pair_tests(testsuite)
@@ -57,6 +61,16 @@ contains
    end subroutine collect_mqc_efp_pair_tests
 
    subroutine water_fragment(frag, err)
+      !! One water's potential, built once and copied thereafter
+      !!
+      !! Building it is an SCF plus the response solves behind the
+      !! polarizabilities -- seconds, and identical every time, since the
+      !! geometry and basis are fixed. Every test here needs one or two, so
+      !! doing it per call meant twenty builds of the same thing and made this
+      !! file a quarter of the whole suite's runtime on its own.
+      !!
+      !! The cached copy is handed out by assignment, so a test that modifies
+      !! its fragment -- the rotation tests do -- cannot disturb the next one.
       type(efp_fragment_t), intent(out) :: frag
       type(error_t), intent(inout) :: err
 
@@ -66,6 +80,11 @@ contains
       character(len=2) :: symbols(3)
       character(len=*), parameter :: path = "test_efp_pair.efp"
       integer :: unit, stat
+
+      if (cached_ready) then
+         frag = cached_water
+         return
+      end if
 
       z = [8, 1, 1]
       symbols = ["O ", "H ", "H "]
@@ -81,6 +100,10 @@ contains
       call pot%destroy()
       open (newunit=unit, file=path, status="old", iostat=stat)
       if (stat == 0) close (unit, status="delete")
+      if (.not. err%has_error()) then
+         cached_water = frag
+         cached_ready = .true.
+      end if
    end subroutine water_fragment
 
    subroutine test_blocks(error)

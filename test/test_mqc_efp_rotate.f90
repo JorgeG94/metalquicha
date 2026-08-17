@@ -30,6 +30,12 @@ module test_mqc_efp_rotate
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
+   !> Built once by `water_fragment` and copied thereafter: it is an SCF plus
+   !> the response solves behind the polarizabilities, identical every time,
+   !> and every test here wants one.
+   type(efp_fragment_t), save :: cached_water
+   logical, save :: cached_ready = .false.
+
 contains
 
    subroutine collect_mqc_efp_rotate_tests(testsuite)
@@ -75,6 +81,10 @@ contains
       character(len=*), parameter :: path = "test_efp_rotate.efp"
       integer :: unit, stat
 
+      if (cached_ready) then
+         frag = cached_water
+         return
+      end if
       z = [8, 1, 1]
       symbols = ["O ", "H ", "H "]
       c = reshape([0.00000000000000_dp, 0.00000000009155_dp, 0.10077199490609_dp, &
@@ -89,6 +99,10 @@ contains
       call pot%destroy()
       open (newunit=unit, file=path, status="old", iostat=stat)
       if (stat == 0) close (unit, status="delete")
+      if (.not. err%has_error()) then
+         cached_water = frag
+         cached_ready = .true.
+      end if
    end subroutine water_fragment
 
    subroutine test_superpose(error)

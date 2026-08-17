@@ -68,7 +68,7 @@ contains
       call fresh()
 
       call ck%open(PATH, FP, 2, err)
-      call check(error, .not. err%has_error(), "open for writing: "//err%get_message())
+      call check(error,.not. err%has_error(), "open for writing: "//err%get_message())
       if (allocated(error)) return
 
       call ck%record([2, 3], -2.5_dp, 1, 6, gradient=ramp(3, 6, BASE_DIMER_23))
@@ -78,7 +78,7 @@ contains
       call ck%close()
 
       call back%open(PATH, FP, 2, err)
-      call check(error, .not. err%has_error(), "reopen: "//err%get_message())
+      call check(error,.not. err%has_error(), "reopen: "//err%get_message())
       if (allocated(error)) return
       call check(error, back%n_loaded == 3_int64, "three records came back")
       if (allocated(error)) return
@@ -131,7 +131,7 @@ contains
       if (allocated(error)) return
 
       call back%lookup([4, 5], found, energy, status, natoms)
-      call check(error, .not. found, "a term nobody wrote must not be found")
+      call check(error,.not. found, "a term nobody wrote must not be found")
 
       call back%close()
       call fresh()
@@ -151,7 +151,7 @@ contains
 
       call fresh()
       call ck%open(PATH, FP, 2, err)
-      call check(error, .not. err%has_error(), "open: "//err%get_message())
+      call check(error,.not. err%has_error(), "open: "//err%get_message())
       if (allocated(error)) return
       call ck%record([1, 0], -0.5_dp, 1, 3)
       call ck%close()

@@ -44,6 +44,12 @@ module test_mqc_efp_interaction
    !> GAMESS's Bohr, as everywhere else that compares against it.
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
+   !> The water potential every `dimer` call needs, built once. Only the
+   !> translation differs between calls; the potential is an SCF plus the
+   !> response solves behind the polarizabilities, identical each time.
+   type(efp_fragment_t), save :: cached_water
+   logical, save :: cached_ready = .false.
+
    !> GAMESS's electrostatic energy for the dimer, per truncation rank.
    real(dp), parameter :: E_RANK0 = 0.005641619_dp
    real(dp), parameter :: E_RANK1 = 0.003913482_dp
@@ -102,25 +108,34 @@ contains
       character(len=2) :: symbols(3)
       character(len=*), parameter :: path = "test_efp_interaction.efp"
 
-      z = [8, 1, 1]
-      symbols = ["O ", "H ", "H "]
-      ! validation/inputs/sample_inputs/w1.xyz, which is the geometry the GAMESS
-      ! reference energies above were generated from. The multipoles depend on it,
-      ! so a different water -- even the one the other checks here use -- gives a
-      ! different energy and the references stop meaning anything.
-      c = reshape([0.00000000000000_dp, 0.00000000009155_dp, 0.10077199490609_dp, &
-                   0.00000000000000_dp, 0.77250895271063_dp, -0.46780199741728_dp, &
-                   0.00000000000000_dp, -0.77250895280218_dp, -0.46780199748881_dp], &
-                  [3, 3])*ANG
+      if (cached_ready) then
+         frags(1) = cached_water
+         frags(2) = cached_water
+      else
+         z = [8, 1, 1]
+         symbols = ["O ", "H ", "H "]
+         ! validation/inputs/sample_inputs/w1.xyz, which is the geometry the GAMESS
+         ! reference energies above were generated from. The multipoles depend on it,
+         ! so a different water -- even the one the other checks here use -- gives a
+         ! different energy and the references stop meaning anything.
+         c = reshape([0.00000000000000_dp, 0.00000000009155_dp, 0.10077199490609_dp, &
+                      0.00000000000000_dp, 0.77250895271063_dp, -0.46780199741728_dp, &
+                      0.00000000000000_dp, -0.77250895280218_dp, -0.46780199748881_dp], &
+                     [3, 3])*ANG
 
-      call make_efp_potential(z, symbols, c, "6-31g*", "WATER", pot, err)
-      if (err%has_error()) return
-      call write_efp_potential(pot, path, err)
-      if (err%has_error()) return
-      call read_efp_potential(path, frags(1), err)
-      if (err%has_error()) return
-      call read_efp_potential(path, frags(2), err)
-      if (err%has_error()) return
+         call make_efp_potential(z, symbols, c, "6-31g*", "WATER", pot, err)
+         if (err%has_error()) return
+         call write_efp_potential(pot, path, err)
+         if (err%has_error()) return
+         call read_efp_potential(path, frags(1), err)
+         if (err%has_error()) return
+         call read_efp_potential(path, frags(2), err)
+         if (err%has_error()) return
+         cached_water = frags(1)
+         cached_ready = .true.
+         call pot%destroy()
+         call delete(path)
+      end if
 
       offset = 0.0_dp
       if (present(shift)) offset = shift
@@ -131,8 +146,6 @@ contains
       call build_efp_system(frags, translations, system, err)
       call frags(1)%destroy()
       call frags(2)%destroy()
-      call pot%destroy()
-      call delete(path)
    end subroutine dimer
 
    subroutine test_rank0(error)
