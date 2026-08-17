@@ -399,7 +399,33 @@ endif()
 # build. For a backend whose job is to be correct and always available, build
 # time is the property that matters; if throughput ever does, libint can sit
 # behind the same interface later.
-if(MQC_ENABLE_LIBCINT)
+# MQC_USE_LIBFINT picks libfint, the Fortran port of libcint, instead of
+# libcint itself.  Nothing under backends/libcint/ changes: libfint defines the
+# same `libcint_fortran` module with the same 25 procedures, so this program
+# cannot tell which one it linked.  That is the whole point of a port that is
+# bit-identical -- the swap is a build option, not a migration.
+#
+# What changes is the dependency: libfint is Fortran with no C in it and no
+# LAPACK either, so an all-Fortran build of this program becomes possible.
+option(MQC_USE_LIBFINT
+       "Use libfint (the Fortran port) instead of libcint for CPU integrals" OFF)
+
+if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
+  include(FetchContent)
+  FetchContent_Declare(
+    libfint
+    GIT_REPOSITORY https://github.com/JorgeG94/libfint.git
+    GIT_TAG main)
+  FetchContent_MakeAvailable(libfint)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
+  # One target, not two: libfint has no C library beside it.
+  set(MQC_INTEGRALS_LIBS fint)
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
+  add_subdirectory(backends/libcint)
+  message(
+    STATUS "libfint enabled: CPU Gaussian integrals, all-Fortran, no C and no BLAS")
+
+elseif(MQC_ENABLE_LIBCINT)
   include(FetchContent)
   FetchContent_Declare(
     libcint
@@ -460,6 +486,7 @@ if(MQC_ENABLE_LIBCINT)
   # this project's export set -- which a fetched third-party library is never
   # going to join. Scoping them to the build keeps the integrals backend
   # internal, which it is.
+  set(MQC_INTEGRALS_LIBS cint_fortran cint)
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:cint_fortran>
                                             $<BUILD_INTERFACE:cint>)
 
@@ -564,7 +591,7 @@ if(MQC_ENABLE_LIBXC AND MQC_ENABLE_LIBCINT)
   add_executable(check_dft ${PROJECT_SOURCE_DIR}/validation/check_dft.f90)
   target_include_directories(check_dft PRIVATE "${CMAKE_BINARY_DIR}/modules"
                                                ${libxc_BINARY_DIR})
-  target_link_libraries(check_dft PRIVATE ${main_lib} cint_fortran cint xcf03
+  target_link_libraries(check_dft PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS} xcf03
                                           xc)
 endif()
 
@@ -580,12 +607,11 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/bench_scf_gradient.f90)
   target_include_directories(bench_scf_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_scf_gradient PRIVATE ${main_lib} cint_fortran
-                                                   cint)
+  target_link_libraries(bench_scf_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(bench_df_k ${PROJECT_SOURCE_DIR}/validation/bench_df_k.f90)
   target_include_directories(bench_df_k PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_df_k PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(bench_df_k PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   # The analytic gradient against finite differences of its own energy, and
   # against translational invariance. Not a ctest case: it converges an SCF per
@@ -595,34 +621,31 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/check_partition_deriv.f90)
   target_include_directories(check_partition_deriv
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_partition_deriv PRIVATE ${main_lib} cint_fortran
-                                                      cint)
+  target_link_libraries(check_partition_deriv PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_ao_deriv2
                  ${PROJECT_SOURCE_DIR}/validation/check_ao_deriv2.f90)
   target_include_directories(check_ao_deriv2
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_ao_deriv2 PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_ao_deriv2 PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_df_deriv
                  ${PROJECT_SOURCE_DIR}/validation/check_df_deriv.f90)
   target_include_directories(check_df_deriv
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_df_deriv PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_df_deriv PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_scf_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_scf_gradient.f90)
   target_include_directories(check_scf_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_scf_gradient PRIVATE ${main_lib} cint_fortran
-                                                   cint)
+  target_link_libraries(check_scf_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(bench_ri_mp2_gradient
                  ${PROJECT_SOURCE_DIR}/validation/bench_ri_mp2_gradient.f90)
   target_include_directories(bench_ri_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_ri_mp2_gradient PRIVATE ${main_lib} cint_fortran
-                                                      cint)
+  target_link_libraries(bench_ri_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_xc_kernel
                  ${PROJECT_SOURCE_DIR}/validation/check_xc_kernel.f90)
@@ -648,14 +671,13 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/check_df_cphf.f90)
   target_include_directories(check_df_cphf
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_df_cphf PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_df_cphf PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_ri_mp2_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_ri_mp2_gradient.f90)
   target_include_directories(check_ri_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_ri_mp2_gradient PRIVATE ${main_lib} cint_fortran
-                                                      cint)
+  target_link_libraries(check_ri_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(
     check_fitted_reference_gradient
@@ -676,27 +698,25 @@ if(MQC_ENABLE_LIBCINT)
                  ${PROJECT_SOURCE_DIR}/validation/bench_mp2_gradient.f90)
   target_include_directories(bench_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_mp2_gradient PRIVATE ${main_lib} cint_fortran
-                                                   cint)
+  target_link_libraries(bench_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_mp2_gradient
                  ${PROJECT_SOURCE_DIR}/validation/check_mp2_gradient.f90)
   target_include_directories(check_mp2_gradient
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_mp2_gradient PRIVATE ${main_lib} cint_fortran
-                                                   cint)
+  target_link_libraries(check_mp2_gradient PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_charges
                  ${PROJECT_SOURCE_DIR}/validation/check_charges.f90)
   target_include_directories(check_charges
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_charges PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_charges PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_fmo_mpi
                  ${PROJECT_SOURCE_DIR}/validation/check_fmo_mpi.f90)
   target_include_directories(check_fmo_mpi
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_fmo_mpi PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_fmo_mpi PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   if(MQC_ENABLE_TESTING)
     # The physics, on one rank.
@@ -723,57 +743,57 @@ if(MQC_ENABLE_LIBCINT)
 
   add_executable(probe_esp ${PROJECT_SOURCE_DIR}/validation/probe_esp.f90)
   target_include_directories(probe_esp PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(probe_esp PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(probe_esp PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(sweep_fmo ${PROJECT_SOURCE_DIR}/validation/sweep_fmo.f90)
   target_include_directories(sweep_fmo PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(sweep_fmo PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(sweep_fmo PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_fmo ${PROJECT_SOURCE_DIR}/validation/check_fmo.f90)
   target_include_directories(check_fmo PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_fmo PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_fmo PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_direct PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_projection
                  ${PROJECT_SOURCE_DIR}/validation/check_projection.f90)
   target_include_directories(check_projection
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_projection PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_projection PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_libcint
                  ${PROJECT_SOURCE_DIR}/validation/check_libcint.f90)
   target_include_directories(check_libcint
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_libcint PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_libcint PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_df ${PROJECT_SOURCE_DIR}/validation/check_df.f90)
   target_include_directories(check_df PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_df PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_df PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_rhf ${PROJECT_SOURCE_DIR}/validation/check_rhf.f90)
   target_include_directories(check_rhf PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_rhf PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_rhf PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   # What an EFP interaction energy costs at cluster size. A dimer is too small
   # to time, so this builds a lattice of fragments.
   add_executable(bench_efp ${PROJECT_SOURCE_DIR}/validation/bench_efp.f90)
   target_include_directories(bench_efp PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(bench_efp PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(bench_efp PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_cc ${PROJECT_SOURCE_DIR}/validation/check_cc.f90)
   target_include_directories(check_cc PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_cc PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_cc PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_sapt ${PROJECT_SOURCE_DIR}/validation/check_sapt.f90)
   target_include_directories(check_sapt PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_sapt PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_sapt PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 
   add_executable(check_ao ${PROJECT_SOURCE_DIR}/validation/check_ao.f90)
   target_include_directories(check_ao PRIVATE "${CMAKE_BINARY_DIR}/modules")
-  target_link_libraries(check_ao PRIVATE ${main_lib} cint_fortran cint)
+  target_link_libraries(check_ao PRIVATE ${main_lib} ${MQC_INTEGRALS_LIBS})
 endif()
 
 add_executable(check_session_run
