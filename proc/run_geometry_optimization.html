@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-atomic_numbers~6">atomic_numbers</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-atomic_numbers~12">atomic_numbers</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-converged~3">converged</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-coords~6">coords</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-coords~8">coords</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-final_energy~3">final_energy</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-n_atoms~20">n_atoms</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-n_atoms~45">n_atoms</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-probe_status">probe_status</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-rank">rank</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-rank~6">rank</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-refused">refused</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-residues~2">residues</a>
         </div>
@@ -204,7 +204,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~8"></span>
+              <span class="anchor" id="variable-resources~14"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~16"></span>
+              <span class="anchor" id="variable-config~28"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~34"></span>
+              <span class="anchor" id="variable-sys_geom~73"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -249,7 +249,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~10"></span>
+              <span class="anchor" id="variable-bonds~17"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -264,7 +264,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~65"></span>
+              <span class="anchor" id="variable-error~104"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -522,18 +522,18 @@ Rank 0 is the only rank whose copy should be written out.</p>
 <path fill="none" stroke="#ff0000" d="M80.39,-1475.28C79.17,-1620.52 70.58,-3026.94 195,-3155.18 249.93,-3211.79 349.36,-3204.49 409.57,-3193.32"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="410.47,-3196.71 419.61,-3191.36 409.12,-3189.84 410.47,-3196.71"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_node17" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~run_geometry_optimization~~CallsGraph_node17"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_geometry_optimization~~CallsGraph_node17"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="500,-2957.18 422,-2957.18 422,-2933.18 500,-2933.18 500,-2957.18"/>
 <text text-anchor="middle" x="461" y="-2942.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge16" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#ff0000" d="M81.96,-1475.38C87.72,-1518.06 112.73,-1662.23 195,-1738.18 238.27,-1778.12 285.64,-1732.09 321,-1779.18 396.03,-1879.1 285.64,-2800.61 357,-2903.18 369.65,-2921.37 391.65,-2931.69 412.08,-2937.54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="411.37,-2940.97 421.93,-2940.07 413.11,-2934.19 411.37,-2940.97"/>
 </g>
@@ -789,9 +789,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 <path fill="none" stroke="#002eff" d="M502.1,-3186.2C612.28,-3198.63 927.95,-3225.02 1176,-3155.18 1229.93,-3139.99 1285.21,-3103.68 1315.67,-3081.48"/>
 <polygon fill="#002eff" stroke="#002eff" points="1317.99,-3084.12 1323.94,-3075.36 1313.82,-3078.5 1317.99,-3084.12"/>
 </g>
-<!-- proc~worker_loop&#45;&gt;bcast -->
+<!-- proc~worker_loop~2&#45;&gt;bcast -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge40" class="edge">
-<title>proc~worker_loop&#45;&gt;bcast</title>
+<title>proc~worker_loop~2&#45;&gt;bcast</title>
 <path fill="none" stroke="#1700ff" d="M474.88,-2957.36C497.97,-2978.3 548.91,-3020.5 601,-3037.18 733.8,-3079.71 1173.59,-3068.76 1303.23,-3064.49"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="1303.54,-3067.98 1313.42,-3064.14 1303.3,-3060.98 1303.54,-3067.98"/>
 </g>
@@ -801,9 +801,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 <polygon fill="#777777" stroke="#777777" points="702.5,-2957.18 639.5,-2957.18 639.5,-2933.18 702.5,-2933.18 702.5,-2957.18"/>
 <text text-anchor="middle" x="671" y="-2942.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure</text>
 </g>
-<!-- proc~worker_loop&#45;&gt;configure -->
+<!-- proc~worker_loop~2&#45;&gt;configure -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge41" class="edge">
-<title>proc~worker_loop&#45;&gt;configure</title>
+<title>proc~worker_loop~2&#45;&gt;configure</title>
 <path fill="none" stroke="#1700ff" d="M500.15,-2945.18C536.71,-2945.18 591.7,-2945.18 629.14,-2945.18"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="629.2,-2948.68 639.2,-2945.18 629.2,-2941.68 629.2,-2948.68"/>
 </g>
@@ -816,9 +816,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~receive_geometry -->
+<!-- proc~worker_loop~2&#45;&gt;proc~receive_geometry -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge42" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~receive_geometry</title>
+<title>proc~worker_loop~2&#45;&gt;proc~receive_geometry</title>
 <path fill="none" stroke="#1700ff" d="M471.94,-2957.24C493.21,-2982.36 545.72,-3040.82 601,-3075.18 607.13,-3078.99 613.9,-3082.38 620.75,-3085.36"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="619.48,-3088.62 630.06,-3089.15 622.12,-3082.14 619.48,-3088.62"/>
 </g>
@@ -831,9 +831,9 @@ Rank 0 is the only rank whose copy should be written out.</p>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
 <g id="proc~~run_geometry_optimization~~CallsGraph_edge43" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#1700ff" d="M494.99,-2933.09C515.46,-2925.26 542.13,-2914.44 565,-2903.18 581.62,-2895 584.02,-2889.59 601,-2882.18 610.91,-2877.85 621.99,-2874.05 632.32,-2870.92"/>
 <polygon fill="#1700ff" stroke="#1700ff" points="633.31,-2874.28 641.94,-2868.12 631.36,-2867.55 633.31,-2874.28"/>
 </g>
@@ -2666,7 +2666,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~6"></span>
+              <span class="anchor" id="variable-atomic_numbers~12"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2700,7 +2700,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~6"></span>
+              <span class="anchor" id="variable-coords~8"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2734,7 +2734,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~20"></span>
+              <span class="anchor" id="variable-n_atoms~45"></span>
               integer,
             </td>
               <td>private</td>
@@ -2768,7 +2768,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rank"></span>
+              <span class="anchor" id="variable-rank~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -3014,7 +3014,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 00:33 +0000             </p>
+ on 2026-08-17 02:21 +0000             </p>
           </div>
         </div>
         <br>
