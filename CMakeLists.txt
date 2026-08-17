@@ -738,8 +738,11 @@ foreach(
         check_df
         check_df_cphf
         check_df_deriv
+        check_df_ref_gradient
         check_dft
+        check_dh_gradient
         check_direct
+        check_fitted_reference_gradient
         check_gradient
         check_grid
         check_hdf5
@@ -758,6 +761,8 @@ foreach(
         check_scf_gradient
         check_session
         check_session_run
+        check_xc_kernel
+        check_xc_potential_gradient
         sweep_fmo)
   if(TARGET ${mqc_validation_program})
     set_target_properties(${mqc_validation_program} PROPERTIES EXCLUDE_FROM_ALL
