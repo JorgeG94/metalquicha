@@ -463,6 +463,20 @@ contains
                        message="the direct sigma differs from the projected one")
             if (allocated(error)) return
          end do
+
+         ! And again with the intermediate forced into many small runs. The
+         ! answer cannot depend on how it was cut up, and one run per alpha
+         ! string is the most cutting up there is -- which is also the case
+         ! where a contribution landing outside the run being built would show.
+         call ormas_sigma_direct(space, closure, folded, alpha_links, beta_links, &
+                                 ci, direct, err, max_columns=1_int64)
+         call check(error,.not. err%has_error(), "the tiled sigma failed")
+         if (allocated(error)) return
+         do d = 1, ndet
+            call check(error, direct(d), projected(d), thr=1.0e-11_dp, &
+                       message="the sigma depends on how the intermediate was tiled")
+            if (allocated(error)) return
+         end do
       end do
 
       ! And symmetric, which is a different claim from matching the projected
@@ -643,7 +657,8 @@ contains
       call model_integrals(norb, h1e, eri, dominant=.true.)
       call build_ormas_space(first_orbital, norb, na, nb, min_e, max_e, space, err)
       call ormas_solve(space, h1e, eri, 1, energies, vectors, err)
-      call ormas_density_matrices(space, vectors(:, 1), dm1, dm2, err)
+      call ormas_density_matrices(space, vectors(:, 1), dm1, dm2, err, &
+                                  max_columns=1_int64)
       call check(error,.not. err%has_error(), "building the densities failed")
       if (allocated(error)) return
 

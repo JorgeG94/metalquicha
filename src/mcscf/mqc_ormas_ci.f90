@@ -36,6 +36,12 @@ module mqc_ormas_ci
    public :: ormas_solve
    public :: ormas_gather
    public :: build_ormas_links
+
+   integer(int64), parameter :: GATHER_BUDGET = 256_int64*1024_int64*1024_int64
+      !! Bytes the excitation intermediate may occupy at once. It is built one
+      !! run of alpha strings at a time and consumed before the next, so this
+      !! bounds the memory rather than the problem: a larger space means more
+      !! runs, not a larger array.
    public :: ormas_density_matrices
 
    type, extends(sigma_operator_t) :: ormas_operator_t
@@ -382,7 +388,7 @@ contains
    end subroutine ormas_lowest
 
    subroutine ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
-                                 ci, sigma, error)
+                                 ci, sigma, error, max_columns)
       !! `sigma = H c` without ever visiting the complete space
       !!
       !! The same three passes as the unrestricted build -- apply an excitation
@@ -409,61 +415,71 @@ contains
       real(dp), intent(in) :: ci(:)
       real(dp), intent(out) :: sigma(:)
       type(error_t), intent(inout) :: error
+      integer(int64), intent(in), optional :: max_columns   !! Testing only
 
       real(dp), allocatable :: gathered(:, :), contracted(:, :)
       integer :: norb, npair, ia, ib, ia2, ib2, ga, gb, row, pair
+      integer :: alpha_lo, alpha_hi
+      integer(int64) :: base, ncols
       real(dp) :: weight
 
       if (error%has_error()) return
 
       norb = space%n_active_orbitals
       npair = norb*norb
-
-      call ormas_gather(space, closure, alpha_table, beta_table, ci, gathered)
-
-      allocate (contracted(npair, closure%n_determinants))
-      call pic_gemm(folded, gathered, contracted)
-
-      ! Scatter: read the intermediate where it lives, write the sigma where the
-      ! excitation lands -- keeping only what lands back inside the space.
       sigma = 0.0_dp
-      do ia = 1, alpha_table%n_strings
-         ga = space%alpha_string_class(ia)
-         do row = 1, alpha_table%n_rows
-            ia2 = alpha_table%dest(row, ia)
-            if (ia2 == 0) cycle
-            pair = alpha_table%cre(row, ia) + (alpha_table%des(row, ia) - 1)*norb
-            weight = real(alpha_table%phase(row, ia), dp)
+
+      alpha_lo = 1
+      do while (alpha_lo <= alpha_table%n_strings)
+         alpha_hi = tile_end(space, closure, alpha_lo, alpha_table%n_strings, max_columns)
+         base = closure%alpha_base(alpha_lo)
+         ncols = tile_columns(closure, alpha_lo, alpha_hi, space)
+
+         allocate (gathered(npair, ncols), contracted(npair, ncols))
+         call ormas_gather(space, closure, alpha_table, beta_table, ci, &
+                           alpha_lo, alpha_hi, gathered)
+         call pic_gemm(folded, gathered, contracted)
+
+         ! Scatter: read the intermediate inside this run and write the sigma
+         ! wherever the excitation lands back in the space. Both halves read at
+         ! the run's own alpha strings, so no column outside it is touched.
+         do ia = alpha_lo, alpha_hi
+            ga = space%alpha_string_class(ia)
+            do row = 1, alpha_table%n_rows
+               ia2 = alpha_table%dest(row, ia)
+               if (ia2 == 0) cycle
+               pair = alpha_table%cre(row, ia) + (alpha_table%des(row, ia) - 1)*norb
+               weight = real(alpha_table%phase(row, ia), dp)
+               do ib = 1, beta_table%n_strings
+                  gb = space%beta_string_class(ib)
+                  if (.not. closure%present(gb, ga)) cycle
+                  if (.not. space%compatible(gb, space%alpha_string_class(ia2))) cycle
+                  sigma(determinant_address_local(space, ia2, ib)) = &
+                     sigma(determinant_address_local(space, ia2, ib)) &
+                     + weight*contracted(pair, closure_address(closure, space, ia, ib) - base)
+               end do
+            end do
+
             do ib = 1, beta_table%n_strings
                gb = space%beta_string_class(ib)
                if (.not. closure%present(gb, ga)) cycle
-               if (.not. space%compatible(gb, space%alpha_string_class(ia2))) cycle
-               sigma(determinant_address_local(space, ia2, ib)) = &
-                  sigma(determinant_address_local(space, ia2, ib)) &
-                  + weight*contracted(pair, closure_address(closure, space, ia, ib))
+               do row = 1, beta_table%n_rows
+                  ib2 = beta_table%dest(row, ib)
+                  if (ib2 == 0) cycle
+                  if (.not. space%compatible(space%beta_string_class(ib2), ga)) cycle
+                  pair = beta_table%cre(row, ib) + (beta_table%des(row, ib) - 1)*norb
+                  weight = real(beta_table%phase(row, ib), dp)
+                  sigma(determinant_address_local(space, ia, ib2)) = &
+                     sigma(determinant_address_local(space, ia, ib2)) &
+                     + weight*contracted(pair, closure_address(closure, space, ia, ib) - base)
+               end do
             end do
          end do
+
+         deallocate (gathered, contracted)
+         alpha_lo = alpha_hi + 1
       end do
 
-      do ib = 1, beta_table%n_strings
-         gb = space%beta_string_class(ib)
-         do row = 1, beta_table%n_rows
-            ib2 = beta_table%dest(row, ib)
-            if (ib2 == 0) cycle
-            pair = beta_table%cre(row, ib) + (beta_table%des(row, ib) - 1)*norb
-            weight = real(beta_table%phase(row, ib), dp)
-            do ia = 1, alpha_table%n_strings
-               ga = space%alpha_string_class(ia)
-               if (.not. closure%present(gb, ga)) cycle
-               if (.not. space%compatible(space%beta_string_class(ib2), ga)) cycle
-               sigma(determinant_address_local(space, ia, ib2)) = &
-                  sigma(determinant_address_local(space, ia, ib2)) &
-                  + weight*contracted(pair, closure_address(closure, space, ia, ib))
-            end do
-         end do
-      end do
-
-      deallocate (gathered, contracted)
    end subroutine ormas_sigma_direct
 
    subroutine build_ormas_links(space, strings, alpha_spin, table, error)
@@ -535,71 +551,124 @@ contains
       end do
    end subroutine build_ormas_links
 
-   subroutine ormas_gather(space, closure, alpha_table, beta_table, ci, gathered)
-      !! `E_pq |c>` for every orbital pair at once, on the closure
+   pure function tile_end(space, closure, alpha_lo, n_alpha_strings, max_columns) result(alpha_hi)
+      !! The longest run of alpha strings from here that stays inside the budget
       !!
-      !! Column `d` and row `p + (q-1) n_orb` hold the closure-determinant-`d`
-      !! component of `E_pq |c>`. The closure and not the space, because that is
-      !! where the result of one excitation lives.
+      !! At least one string always, even where that one exceeds the budget by
+      !! itself: a single alpha string's row of the closure is the smallest
+      !! thing this can work on, and a large allocation beats a refusal.
+      type(ormas_space_t), intent(in) :: space
+      type(ormas_closure_t), intent(in) :: closure
+      integer, intent(in) :: alpha_lo, n_alpha_strings
+      integer(int64), intent(in), optional :: max_columns
+         !! Overrides the budget. Only a test has a reason to: the runs have to
+         !! give the same answer as one pass over everything, and on any space
+         !! small enough to check that against, the budget is never reached.
+      integer :: alpha_hi
+
+      integer(int64) :: limit
+      integer :: norb
+
+      norb = space%n_active_orbitals
+      limit = max(1_int64, GATHER_BUDGET/(8_int64*int(norb, int64)*int(norb, int64)))
+      if (present(max_columns)) limit = max(1_int64, max_columns)
+
+      alpha_hi = alpha_lo
+      do while (alpha_hi < n_alpha_strings)
+         if (tile_columns(closure, alpha_lo, alpha_hi + 1, space) > limit) exit
+         alpha_hi = alpha_hi + 1
+      end do
+   end function tile_end
+
+   pure function tile_columns(closure, alpha_lo, alpha_hi, space) result(columns)
+      !! How many closure determinants a run of alpha strings owns
+      type(ormas_closure_t), intent(in) :: closure
+      type(ormas_space_t), intent(in) :: space
+      integer, intent(in) :: alpha_lo, alpha_hi
+      integer(int64) :: columns
+
+      columns = closure%alpha_base(alpha_hi) &
+                + closure%row_length(space%alpha_string_class(alpha_hi)) &
+                - closure%alpha_base(alpha_lo)
+   end function tile_columns
+
+   subroutine ormas_gather(space, closure, alpha_table, beta_table, ci, &
+                           alpha_lo, alpha_hi, gathered)
+      !! `E_pq |c>` for every orbital pair, over one run of alpha strings
       !!
-      !! Shared between the sigma build and the density matrices, for the same
-      !! reason the complete-space code shares its own: both are made entirely
-      !! of this one operation and it carries the excitation phases. A second
-      !! copy would be a second place for a sign to go wrong, and the copy the
-      !! densities used would be exercised only where a sign error leaves the
-      !! energy alone -- so every test that looks at an energy would pass.
+      !! Column `d` and row `p + (q-1) n_orb` hold the component on closure
+      !! determinant `alpha_base(alpha_lo) + d` of `E_pq |c>`.
+      !!
+      !! The whole intermediate is `n_orb^2` by the size of the closure, and for
+      !! anything worth restricting that does not fit -- singles and doubles on
+      !! methanol would want 39 GB of it. But the contraction that consumes it
+      !! treats each determinant column independently, so it can be built a run
+      !! of alpha strings at a time and consumed before the next is built. The
+      !! closure is laid out alpha-major, so a run of alpha strings is a
+      !! contiguous block of columns and no gathering is repeated.
+      !!
+      !! **The alpha half is driven from the destination**, which is what makes
+      !! a tile self-contained: contributions to a column can come from an alpha
+      !! string outside the run, so enumerating by source would need every tile
+      !! to sweep every string. Reading the excitation table from the other end
+      !! costs nothing and needs no second table -- the row of `a2` that leads
+      !! back to `a` is the same excitation with the orbitals exchanged, and the
+      !! phase is the same because the occupied orbitals it steps over are the
+      !! same. Hence the swapped `des`/`cre` below, which is deliberate.
+      !!
+      !! The beta half needs no such trick: a beta excitation leaves the alpha
+      !! string alone, so everything it writes is already in the run.
       type(ormas_space_t), intent(in) :: space
       type(ormas_closure_t), intent(in) :: closure
       type(link_table_t), intent(in) :: alpha_table, beta_table
-         !! From `build_ormas_links`, so indexed the same way the strings are
       real(dp), intent(in) :: ci(:)
-      real(dp), allocatable, intent(out) :: gathered(:, :)
+      integer, intent(in) :: alpha_lo, alpha_hi
+      real(dp), intent(out) :: gathered(:, :)
 
-      integer :: norb, npair, ia, ib, ia2, ib2, ga, gb, row, pair
+      integer :: norb, ia, ib, ia2, ib2, ga, gb, row, pair
+      integer(int64) :: base, column
       real(dp) :: weight
 
       norb = space%n_active_orbitals
-      npair = norb*norb
-
-      allocate (gathered(npair, closure%n_determinants))
+      base = closure%alpha_base(alpha_lo)
       gathered = 0.0_dp
 
-      do ia = 1, alpha_table%n_strings
-         ga = space%alpha_string_class(ia)
+      do ia2 = alpha_lo, alpha_hi
          do row = 1, alpha_table%n_rows
-            ia2 = alpha_table%dest(row, ia)
-            if (ia2 == 0) cycle
-            pair = alpha_table%cre(row, ia) + (alpha_table%des(row, ia) - 1)*norb
-            weight = real(alpha_table%phase(row, ia), dp)
+            ia = alpha_table%dest(row, ia2)
+            if (ia == 0) cycle
+            ga = space%alpha_string_class(ia)
+            pair = alpha_table%des(row, ia2) + (alpha_table%cre(row, ia2) - 1)*norb
+            weight = real(alpha_table%phase(row, ia2), dp)
             do ib = 1, beta_table%n_strings
                gb = space%beta_string_class(ib)
                if (.not. space%compatible(gb, ga)) cycle
-               gathered(pair, closure_address(closure, space, ia2, ib)) = &
-                  gathered(pair, closure_address(closure, space, ia2, ib)) &
-                  + weight*ci(determinant_address_local(space, ia, ib))
+               column = closure_address(closure, space, ia2, ib) - base
+               gathered(pair, column) = gathered(pair, column) &
+                                        + weight*ci(determinant_address_local(space, ia, ib))
             end do
          end do
       end do
 
-      do ib = 1, beta_table%n_strings
-         gb = space%beta_string_class(ib)
-         do row = 1, beta_table%n_rows
-            ib2 = beta_table%dest(row, ib)
-            if (ib2 == 0) cycle
-            pair = beta_table%cre(row, ib) + (beta_table%des(row, ib) - 1)*norb
-            weight = real(beta_table%phase(row, ib), dp)
-            do ia = 1, alpha_table%n_strings
-               ga = space%alpha_string_class(ia)
-               if (.not. space%compatible(gb, ga)) cycle
-               gathered(pair, closure_address(closure, space, ia, ib2)) = &
-                  gathered(pair, closure_address(closure, space, ia, ib2)) &
-                  + weight*ci(determinant_address_local(space, ia, ib))
+      do ia = alpha_lo, alpha_hi
+         ga = space%alpha_string_class(ia)
+         do ib = 1, beta_table%n_strings
+            gb = space%beta_string_class(ib)
+            if (.not. space%compatible(gb, ga)) cycle
+            do row = 1, beta_table%n_rows
+               ib2 = beta_table%dest(row, ib)
+               if (ib2 == 0) cycle
+               pair = beta_table%cre(row, ib) + (beta_table%des(row, ib) - 1)*norb
+               weight = real(beta_table%phase(row, ib), dp)
+               column = closure_address(closure, space, ia, ib2) - base
+               gathered(pair, column) = gathered(pair, column) &
+                                        + weight*ci(determinant_address_local(space, ia, ib))
             end do
          end do
       end do
    end subroutine ormas_gather
 
-   subroutine ormas_density_matrices(space, ci, dm1, dm2, error)
+   subroutine ormas_density_matrices(space, ci, dm1, dm2, error, max_columns)
       !! Spin-traced one- and two-particle density matrices
       !!
       !! `D_pq = <Psi|E_pq|Psi>` and `d_pqrs = <Psi|E_pq E_rs|Psi> - delta_qr
@@ -618,12 +687,16 @@ contains
       real(dp), intent(in) :: ci(:)
       real(dp), allocatable, intent(out) :: dm1(:, :), dm2(:, :, :, :)
       type(error_t), intent(inout) :: error
+      integer(int64), intent(in), optional :: max_columns   !! Testing only
 
       type(ormas_closure_t) :: closure
       type(link_table_t) :: alpha_table, beta_table
       integer(int64), allocatable :: alpha(:), beta(:)
       real(dp), allocatable :: gathered(:, :), paired(:, :), embedded(:)
+      real(dp), allocatable :: block_pair(:, :)
       integer :: norb, npair, p, q, r, s, pq, qp, rs, ia, ib, ga, gb
+      integer :: alpha_lo, alpha_hi
+      integer(int64) :: base, ncols
 
       if (error%has_error()) return
 
@@ -635,8 +708,6 @@ contains
       call build_ormas_links(space, alpha, .true., alpha_table, error)
       call build_ormas_links(space, beta, .false., beta_table, error)
       if (error%has_error()) return
-
-      call ormas_gather(space, closure, alpha_table, beta_table, ci, gathered)
 
       ! The vector seen from the closure: itself where the space reaches, zero
       ! everywhere the closure went further.
@@ -652,16 +723,36 @@ contains
          end do
       end do
 
-      allocate (dm1(norb, norb))
-      do q = 1, norb
-         do p = 1, norb
-            pq = p + (q - 1)*norb
-            dm1(p, q) = dot_product(gathered(pq, :), embedded)
-         end do
-      end do
+      ! Both quantities are sums over closure determinants, so both accumulate
+      ! run by run and neither needs the whole intermediate at once.
+      allocate (dm1(norb, norb), paired(npair, npair))
+      dm1 = 0.0_dp
+      paired = 0.0_dp
 
-      allocate (paired(npair, npair))
-      call pic_gemm(gathered, gathered, paired, transb="T")
+      alpha_lo = 1
+      do while (alpha_lo <= alpha_table%n_strings)
+         alpha_hi = tile_end(space, closure, alpha_lo, alpha_table%n_strings, max_columns)
+         base = closure%alpha_base(alpha_lo)
+         ncols = tile_columns(closure, alpha_lo, alpha_hi, space)
+
+         allocate (gathered(npair, ncols), block_pair(npair, npair))
+         call ormas_gather(space, closure, alpha_table, beta_table, ci, &
+                           alpha_lo, alpha_hi, gathered)
+
+         do q = 1, norb
+            do p = 1, norb
+               pq = p + (q - 1)*norb
+               dm1(p, q) = dm1(p, q) &
+                           + dot_product(gathered(pq, :), embedded(base + 1:base + ncols))
+            end do
+         end do
+
+         call pic_gemm(gathered, gathered, block_pair, transb="T")
+         paired = paired + block_pair
+
+         deallocate (gathered, block_pair)
+         alpha_lo = alpha_hi + 1
+      end do
 
       allocate (dm2(norb, norb, norb, norb))
       do s = 1, norb
@@ -683,7 +774,7 @@ contains
          end do
       end do
 
-      deallocate (gathered, paired, embedded)
+      deallocate (paired, embedded)
       call closure%destroy()
       call alpha_table%destroy()
       call beta_table%destroy()
