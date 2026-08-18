@@ -39,6 +39,7 @@ module mqc_libcint_casci
    use mqc_libcint_mp2, only: transform_block
    use mqc_determinants, only: link_table_t, build_link_table, n_strings
    use mqc_ci, only: absorb_one_electron, ci_diagonal
+   use mqc_rdm, only: active_space_rdms
    use mqc_davidson, only: davidson_lowest, davidson_result_t
    implicit none
    private
@@ -56,6 +57,11 @@ module mqc_libcint_casci
       real(dp), allocatable :: ci_vector(:, :)
          !! (n_alpha_strings, n_beta_strings), the ground root
       real(dp), allocatable :: vectors(:, :, :)   !! All roots
+      real(dp), allocatable :: dm1(:, :)
+         !! (n_active, n_active) one-particle density of the ground root, in the
+         !! active orbital basis. Built here rather than left to the caller
+         !! because doing it outside means rebuilding the excitation tables,
+         !! which this routine has already built and thrown away.
       integer :: n_determinants = 0
       integer :: iterations = 0
       integer :: sigma_products = 0
@@ -232,6 +238,12 @@ contains
       call move_alloc(davidson%vectors, result%vectors)
       allocate (result%ci_vector(alpha%n_strings, beta%n_strings))
       result%ci_vector = result%vectors(:, :, 1)
+      block
+         real(dp), allocatable :: dm2(:, :, :, :)
+         call active_space_rdms(result%ci_vector, alpha, beta, result%dm1, dm2, error)
+         if (error%has_error()) return
+         deallocate (dm2)
+      end block
 
       if (loud) then
          call logger%info("")

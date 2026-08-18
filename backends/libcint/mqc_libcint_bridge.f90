@@ -37,7 +37,8 @@ module mqc_libcint_bridge
    use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
    use mqc_libcint_casci, only: casci_result_t, run_libcint_casci
-   use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf
+   use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf, &
+                                natural_orbitals
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
@@ -1418,6 +1419,8 @@ contains
       type(casscf_result_t) :: casscf
       type(casci_result_t) :: casci
       type(error_t) :: error
+      type(error_t) :: analysis_error
+      real(dp), allocatable :: natural(:, :), occupations(:)
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       character(len=MAX_LINE_LENGTH) :: line
       integer :: iatom, diis_size
@@ -1548,6 +1551,35 @@ contains
          if (settings%verbose) then
             write (line, "(a,f20.12)") "  E(CASCI)       ", casci%energy
             call logger%info(trim(line))
+         end if
+      end if
+
+      ! ---- analyses on the correlated wave function --------------------------
+      !
+      ! The natural orbitals rather than the optimised ones, and the occupations
+      ! with them. An MCSCF has no "occupied orbitals" the way a reference
+      ! determinant does -- the active ones carry fractional occupation and the
+      ! optimised set is not ordered by it -- so the analysis is given the basis
+      ! in which the density is diagonal and told what the diagonal is.
+      if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
+         call analysis_error%clear()
+         if (settings%mcscf%optimize_orbitals) then
+            call natural_orbitals(casscf%orbitals, space(1), space(2), casscf%dm1, &
+                                  natural, occupations, analysis_error)
+         else
+            call natural_orbitals(scf%orbitals, space(1), space(2), casci%dm1, &
+                                  natural, occupations, analysis_error)
+         end if
+         if (.not. analysis_error%has_error()) then
+            call run_quao_analysis(mol, fragment%element_numbers, symbols, &
+                                   fragment%coordinates, natural, fragment%nelec, &
+                                   analysis_error, &
+                                   threshold=settings%bonding_threshold, &
+                                   occupations=occupations)
+         end if
+         if (analysis_error%has_error()) then
+            call logger%warning("  the bonding analysis could not run: "// &
+                                analysis_error%get_message())
          end if
       end if
 

@@ -63,6 +63,7 @@ module mqc_libcint_mcscf
    public :: approximate_hessian
    public :: run_libcint_casscf
    public :: casscf_result_t
+   public :: natural_orbitals
 
    real(dp), parameter :: HESSIAN_FLOOR = 0.05_dp
       !! Smallest denominator a step is allowed to divide by. Without it a pair
@@ -672,6 +673,64 @@ contains
 
       deallocate (work, metric, vectors, values, scaled, inverse_root)
    end subroutine symmetric_orthonormalize
+
+   subroutine natural_orbitals(orbitals, n_inactive, n_active, dm1, natural, &
+                               occupations, error)
+      !! The orbitals that diagonalise the one-particle density, and their occupations
+      !!
+      !! An MCSCF wave function has no "occupied orbitals" in the sense a
+      !! Hartree-Fock one does: the active orbitals carry fractional occupation
+      !! and the optimised orbitals are not ordered by it at all. The natural
+      !! orbitals are the closest thing -- the basis in which the density is
+      !! diagonal -- and sorting them by occupation is what lets anything
+      !! written for a reference determinant be pointed at a correlated one.
+      !!
+      !! The density is block diagonal (two on the inactive diagonal, the active
+      !! block, zero on the virtual), so the inactive and virtual orbitals come
+      !! through untouched and only the active block is rotated. Diagonalising
+      !! the whole thing anyway costs nothing at this size and means the
+      !! Hartree-Fock case needs no separate path: there the density is already
+      !! diagonal and the "rotation" is the identity.
+      real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in) :: dm1(:, :)           !! Active one-particle density
+      real(dp), allocatable, intent(out) :: natural(:, :)
+      real(dp), allocatable, intent(out) :: occupations(:)
+         !! Descending, so the leading columns are the most occupied
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: density(:, :), values(:), ordered(:, :)
+      integer :: n_ao, n_mo, i, info
+
+      if (error%has_error()) return
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+
+      allocate (density(n_mo, n_mo), values(n_mo))
+      density = 0.0_dp
+      do i = 1, n_inactive
+         density(i, i) = 2.0_dp
+      end do
+      density(n_inactive + 1:n_inactive + n_active, &
+              n_inactive + 1:n_inactive + n_active) = dm1
+
+      call pic_syev(density, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "the one-particle density could not be "// &
+                        "diagonalized (info = "//to_char(info)//")")
+         return
+      end if
+
+      ! `pic_syev` returns ascending; occupations want the opposite.
+      allocate (natural(n_ao, n_mo), occupations(n_mo), ordered(n_mo, n_mo))
+      do i = 1, n_mo
+         occupations(i) = values(n_mo - i + 1)
+         ordered(:, i) = density(:, n_mo - i + 1)
+      end do
+      call pic_gemm(orbitals, ordered, natural)
+
+      deallocate (density, values, ordered)
+   end subroutine natural_orbitals
 
    subroutine solve_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                        alpha, beta, guess, have_guess, ci, error)

@@ -281,6 +281,7 @@ contains
       type(method_config_t), intent(in) :: config
 
       ! Common settings
+      m%options%properties = config%properties
       m%options%basis_set = config%basis_set
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose

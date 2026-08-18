@@ -18,6 +18,7 @@ module mqc_libcint_bonding
    !! But nothing here supplies a correlated density yet, so what is analysed is
    !! the reference determinant.
    use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -76,7 +77,8 @@ contains
    end function bonding_analysis_name
 
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
-                                orbitals, n_electrons, error, verbose, threshold)
+                                orbitals, n_electrons, error, verbose, threshold, &
+                                occupations)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -89,6 +91,15 @@ contains
       real(dp), intent(in), optional :: threshold
          !! kcal/mol. Pairs whose kinetic bond order is weaker are counted and
          !! not printed.
+      real(dp), intent(in), optional :: occupations(:)
+         !! (n_mo) occupation of each orbital, which must then be a *natural*
+         !! orbital -- the density has to be diagonal in the basis given for
+         !! these numbers to be its whole content.
+         !!
+         !! Absent means the reference determinant: two electrons in each of the
+         !! first `n_occupied` orbitals. Present is what a correlated wave
+         !! function supplies, and is the only difference between analysing one
+         !! and analysing the other.
 
       type(libcint_molecule_t) :: aambs
       type(aambs_dimensions_t) :: dims
@@ -98,6 +109,7 @@ contains
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
       real(dp), allocatable :: kbo(:, :), interference(:, :), populations(:)
+      real(dp), allocatable :: valence_density(:, :)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -134,8 +146,30 @@ contains
          orbitals(:, dims%n_core + 1:dims%n_occupied)
       valence_internal(:, dims%n_valocc + 1:) = vvo%orbitals
 
-      call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
-                                 mixed, val_off, val_n, quao, error)
+      ! The density in the valence-internal basis. For a reference determinant
+      ! this is two on the occupied diagonal and zero elsewhere, which is what
+      ! `quasi_atomic_orbitals` assumes when nothing is passed. For a correlated
+      ! one it is neither diagonal nor idempotent, and it has to be projected:
+      !
+      !     D_vi = W^T diag(n) W ,   W = C^T S V
+      !
+      ! with `V` the valence-internal orbitals and `C` the natural orbitals.
+      ! **The projection is not optional even though the density is diagonal in
+      ! `C`.** The valence-virtual orbitals are combinations of virtuals with
+      ! *different* occupations, so the density restricted to this space has
+      ! off-diagonal elements even when the full one does not. Reading
+      ! occupations straight off the diagonal would silently drop them.
+      if (present(occupations)) then
+         call project_density(mol, orbitals, occupations, valence_internal, &
+                              valence_density, error)
+         if (error%has_error()) return
+         call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
+                                    mixed, val_off, val_n, quao, error, &
+                                    valence_density=valence_density)
+      else
+         call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
+                                    mixed, val_off, val_n, quao, error)
+      end if
       call orient_quasi_atomic_orbitals(quao, error)
       if (error%has_error()) return
 
@@ -180,6 +214,28 @@ contains
          write (line, "(4x,a8,f13.6)") "total   ", sum(populations)
          call logger%info(trim(line))
 
+         ! **The populations need not sum to the electron count, and when they
+         ! do not it is a statement about the analysis rather than an error.**
+         ! The quasi-atomic orbitals span the occupied valence orbitals plus the
+         ! valence-virtual ones, and nothing else. A reference determinant puts
+         ! every valence electron inside that space, so the sum is exact. A
+         ! correlated density does not: the valence-virtual orbitals are chosen
+         ! to look like free-atom orbitals, not to be natural orbitals, so
+         ! whatever occupation sits outside their span is not recovered.
+         !
+         ! It is small -- 3.7 millielectrons of 14 for N2 CAS(6,6) in cc-pVDZ --
+         ! and it is the honest measure of how much of the correlated wave
+         ! function this analysis is describing. Printed rather than hidden,
+         ! because a population analysis quietly losing electrons is the kind of
+         ! thing that gets discovered much later and from much further away.
+         if (abs(sum(populations) - real(n_electrons, dp)) > 1.0e-6_dp) then
+            write (line, "(a,f10.6,a,i0,a)") &
+               "    outside the valence space ", &
+               real(n_electrons, dp) - sum(populations), " of ", n_electrons, &
+               " electrons"
+            call logger%info(trim(line))
+         end if
+
          call print_quao_report(.true., quao, labels, interference, element_symbols, &
                                 dims%n_core, kinetic_bond_order=kbo, &
                                 threshold=threshold)
@@ -207,5 +263,47 @@ contains
       deallocate (s_mbs, mixed, projection, valence_internal, kinetic, kbo)
       deallocate (interference, core_off, core_n, val_off, val_n)
    end subroutine run_quao_analysis
+
+   subroutine project_density(mol, natural, occupations, valence_internal, &
+                              density, error)
+      !! `D_vi = W^T diag(n) W` with `W = C^T S V`
+      !!
+      !! The one-particle density, expressed in the valence-internal basis. `C`
+      !! must be natural orbitals -- the density diagonal in that basis with the
+      !! given occupations -- because that is the assumption the whole
+      !! expression rests on.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: natural(:, :)           !! (n_ao, n_mo)
+      real(dp), intent(in) :: occupations(:)          !! (n_mo)
+      real(dp), intent(in) :: valence_internal(:, :)  !! (n_ao, n_val)
+      real(dp), allocatable, intent(out) :: density(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: overlap(:, :), work(:, :), weights(:, :), scaled(:, :)
+      integer :: n_ao, n_mo, n_val, i
+
+      if (error%has_error()) return
+      n_ao = size(natural, 1)
+      n_mo = size(natural, 2)
+      n_val = size(valence_internal, 2)
+      if (size(occupations) /= n_mo) then
+         call error%set(ERROR_VALIDATION, "there are "//to_char(size(occupations))// &
+                        " occupations for "//to_char(n_mo)//" orbitals.")
+         return
+      end if
+
+      call mol%overlap(overlap)
+      allocate (work(n_ao, n_val), weights(n_mo, n_val))
+      call pic_gemm(overlap, valence_internal, work)
+      call pic_gemm(natural, work, weights, transa="T")
+
+      allocate (scaled(n_mo, n_val), density(n_val, n_val))
+      do i = 1, n_mo
+         scaled(i, :) = occupations(i)*weights(i, :)
+      end do
+      call pic_gemm(weights, scaled, density, transa="T")
+
+      deallocate (overlap, work, weights, scaled)
+   end subroutine project_density
 
 end module mqc_libcint_bonding

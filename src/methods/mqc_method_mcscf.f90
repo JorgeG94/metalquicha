@@ -21,7 +21,7 @@ module mqc_method_mcscf
    !! has no CI at all, so there is nothing to choose between.
    use pic_types, only: dp
    use mqc_method_base, only: qc_method_t
-   use mqc_method_config, only: pcm_config_t
+   use mqc_method_config, only: pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_VALIDATION
@@ -34,6 +34,7 @@ module mqc_method_mcscf
 
    type :: mcscf_options_t
       !! MCSCF/CASSCF calculation options
+      type(properties_config_t) :: properties
       type(pcm_config_t) :: pcm
          !! Continuum solvation. Carried so the refusal can be made where the
          !! request arrives; the CPU path has no cavity.
@@ -134,6 +135,8 @@ contains
       ! begins with a closed-shell SCF and the backend takes the same settings
       ! object for it that Hartree-Fock does.
       settings%pcm = this%options%pcm
+      settings%bonding_analysis = this%options%properties%bonding_analysis
+      settings%bonding_threshold = this%options%properties%bonding_threshold
       settings%basis_set = this%options%basis_set
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
