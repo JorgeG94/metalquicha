@@ -41,7 +41,7 @@ contains
                   new_unittest("spatial_ccsd_matches_pyscf_cc_pvdz", test_pyscf_reference), &
                   new_unittest("fitted_path_agrees_with_spin_orbital", test_fitted_identity), &
                   new_unittest("frozen_core_agrees_between_formulations", test_frozen_identity), &
-                  new_unittest("triples_are_refused_not_silently_zero", test_triples_refused) &
+                  new_unittest("spatial_triples_equal_spin_orbital_triples", test_triples_identity) &
                   ]
    end subroutine collect_mqc_libcint_rcc_tests
 
@@ -70,7 +70,7 @@ contains
                            in_core=.true.)
    end subroutine converged_water
 
-   subroutine both_paths(basis, frozen, spin, spatial, ok)
+   subroutine both_paths(basis, frozen, spin, spatial, ok, triples)
       !! Run the two formulations over one set of converged orbitals
       !!
       !! One SCF, not two: the amplitudes are being compared, so any difference
@@ -81,24 +81,29 @@ contains
       type(cc_result_t), intent(out) :: spin
       type(rcc_result_t), intent(out) :: spatial
       logical, intent(out) :: ok
+      logical, intent(in), optional :: triples
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: err
+      logical :: want_t
+
+      want_t = .false.
+      if (present(triples)) want_t = triples
 
       ok = .false.
       call converged_water(mol, scf, err, basis)
       if (err%has_error() .or. .not. scf%converged) return
 
       call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
-                            60, 1.0e-10_dp, .false., .false., spin, err)
+                            60, 1.0e-10_dp, want_t, .false., spin, err)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
 
       call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
-                             60, 1.0e-10_dp, .false., .false., spatial, err)
+                             60, 1.0e-10_dp, want_t, .false., spatial, err)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -258,6 +263,8 @@ contains
       type(rcc_result_t) :: spatial
       logical :: ok
 
+      real(dp), parameter :: E_T_PVDZ_F1 = -0.003015723855_dp   ! PySCF, check_cc.f90
+
       call both_paths("sto-3g", 1, spin, spatial, ok)
       call check(error, ok, "both paths must converge with a frozen core")
       if (allocated(error)) return
@@ -268,30 +275,72 @@ contains
 
       call check(error, abs(spatial%e_correlation - spin%e_singles - spin%e_doubles) &
                  < 1.0e-9_dp, "frozen-core CCSD must agree between formulations")
-   end subroutine test_frozen_identity
-
-   subroutine test_triples_refused(error)
-      !! Asking for (T) on the spatial path fails rather than returning zero
-      !!
-      !! The triples are not implemented here yet. Returning a zero for them
-      !! would report a CCSD(T) energy that is wrong by exactly the term that
-      !! was asked for, and nothing downstream could tell -- `e_triples` is zero
-      !! for a genuine CCSD run too.
-      type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
-      type(rhf_result_t) :: scf
-      type(error_t) :: err
-      type(rcc_result_t) :: spatial
-
-      call converged_water(mol, scf, err, "sto-3g")
-      call check(error,.not. err%has_error() .and. scf%converged, "water SCF must converge")
       if (allocated(error)) return
 
-      call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, 0, &
-                             60, 1.0e-10_dp, .true., .false., spatial, err)
-      call check(error, err%has_error(), "(T) on the spatial path must be refused")
-      call mol%destroy()
-   end subroutine test_triples_refused
+      ! And the triples with a core frozen, in cc-pVDZ where the reference is
+      ! quoted. The triples index the occupied space three times over, so a
+      ! frozen-core offset that survives CCSD can still fail here.
+      call both_paths("cc-pvdz", 1, spin, spatial, ok, triples=.true.)
+      call check(error, ok, "both paths must converge, frozen core with triples")
+      if (allocated(error)) return
+
+      call check(error, abs(spatial%e_triples - spin%e_triples) < 1.0e-9_dp, &
+                 "frozen-core (T) must agree between formulations")
+      if (allocated(error)) return
+
+      call check(error, abs(spatial%e_triples - E_T_PVDZ_F1) < 1.0e-8_dp, &
+                 "frozen-core (T) must reproduce PySCF")
+   end subroutine test_frozen_identity
+
+   subroutine test_triples_identity(error)
+      !! The (T) corrections must agree, and match PySCF
+      !!
+      !! Its own case rather than folded into the CCSD comparison because (T)
+      !! is a separate algorithm reading the same amplitudes: it can be wrong
+      !! while CCSD is right, and a converged CCSD is the precondition for it
+      !! meaning anything at all.
+      !!
+      !! Checked in both bases. STO-3G is where a wrong permutation table still
+      !! gives a plausible magnitude -- four virtual orbitals leave few distinct
+      !! triples -- and cc-pVDZ is where it cannot hide.
+      type(error_type), allocatable, intent(out) :: error
+      type(cc_result_t) :: spin
+      type(rcc_result_t) :: spatial
+      logical :: ok
+
+      real(dp), parameter :: E_T_STO3G = -0.000072742387_dp   ! PySCF, check_cc.f90
+      real(dp), parameter :: E_T_PVDZ = -0.003037892387_dp
+
+      call both_paths("sto-3g", 0, spin, spatial, ok, triples=.true.)
+      call check(error, ok, "both paths must converge with triples")
+      if (allocated(error)) return
+
+      call check(error, abs(spatial%e_triples - spin%e_triples) < 1.0e-10_dp, &
+                 "spatial and spin-orbital (T) must agree in STO-3G")
+      if (allocated(error)) return
+
+      call check(error, abs(spatial%e_triples - E_T_STO3G) < 1.0e-9_dp, &
+                 "spatial (T) must reproduce PySCF in STO-3G")
+      if (allocated(error)) return
+
+      call both_paths("cc-pvdz", 0, spin, spatial, ok, triples=.true.)
+      call check(error, ok, "both paths must converge with triples in cc-pVDZ")
+      if (allocated(error)) return
+
+      call check(error, abs(spatial%e_triples - spin%e_triples) < 1.0e-9_dp, &
+                 "spatial and spin-orbital (T) must agree in cc-pVDZ")
+      if (allocated(error)) return
+
+      call check(error, abs(spatial%e_triples - E_T_PVDZ) < 1.0e-8_dp, &
+                 "spatial (T) must reproduce PySCF in cc-pVDZ")
+      if (allocated(error)) return
+
+      ! (T) must lower the energy further for a closed-shell molecule at its
+      ! minimum. A sign error in the permutation table is the failure this
+      ! catches that the magnitude comparisons above might not.
+      call check(error, spatial%e_triples < 0.0_dp, &
+                 "(T) must be negative here")
+   end subroutine test_triples_identity
 
 end module test_mqc_libcint_rcc
 

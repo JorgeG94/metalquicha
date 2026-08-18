@@ -76,6 +76,13 @@ module mqc_libcint_rcc
 
    character(len=*), parameter :: STAGE_ITER = "RCCSD iterations"
 
+   !> Orderings of a triple of labels. Three distinct virtual orbitals name the
+   !> same physical triple six ways, and the (T) energy expression sums over
+   !> every pairing of one such ordering with one ordering of the occupied
+   !> labels -- so this six is 3! and nothing else, and appears wherever either
+   !> set is enumerated.
+   integer, parameter :: N_TRIPLE_PERMS = 6
+
    type :: rcc_eris_t
       !! Spatial MO integrals in chemists' notation, by block
       !!
@@ -1124,16 +1131,6 @@ contains
          return
       end if
 
-      ! (T) is not on this path yet. Refused rather than silently returning zero:
-      ! a CCSD(T) deck that got CCSD and a zero triples term would report a
-      ! number that is wrong by exactly the thing that was asked for.
-      if (want_triples) then
-         call error%set(ERROR_VALIDATION, "RCCSD: the perturbative triples are not "// &
-                        "implemented in the spatial-orbital path yet. Run CCSD, or take "// &
-                        "CCSD(T) through the spin-orbital path.")
-         return
-      end if
-
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
 
@@ -1228,12 +1225,29 @@ contains
       call diis%destroy()
       call convergence_footer(verbose, result%converged, result%iterations, "iterations", 50)
 
-      result%e_correlation = result%e_singles + result%e_doubles + result%e_triples
-
       if (.not. result%converged) then
          call error%set(ERROR_VALIDATION, "RCCSD did not converge")
          return
       end if
+
+      ! (T) only on a converged reference: it is a correction evaluated once at
+      ! the fixed point, and taking it on amplitudes that are still moving would
+      ! give a number with no meaning rather than a slightly worse one.
+      if (want_triples) then
+         call triples_correction(eris, eps_o, eps_v, t1, t2, no, nv, result%e_triples)
+         call clk%lap("(T) correction")
+         if (verbose) then
+            write (line, "(a,f20.12)") "  (T)                = ", result%e_triples
+            call logger%info(trim(line))
+         end if
+      end if
+
+      result%e_correlation = result%e_singles + result%e_doubles + result%e_triples
+
+      ! Same breakdown the spin-orbital driver prints, and under the same stage
+      ! names, so the two can be laid side by side without translating.
+      call clk%finish()
+      call clk%report("RCCSD", verbose)
    end subroutine run_libcint_rccsd
 
    pure function int_text(n) result(text)
@@ -1286,5 +1300,220 @@ contains
       err_flat(1:n1) = reshape(t1n - t1, [n1])
       err_flat(n1 + 1:) = reshape(t2n - t2, [no*no*nv*nv])
    end subroutine pack_step
+
+   !===========================================================================
+   ! Perturbative triples
+   !
+   ! JCP 94, 442 (1991), as PySCF's cc/ccsd_t_slow.py writes it. The paper's
+   ! Eq. (1) has a known error in its restriction, which that file notes and
+   ! corrects to [ia] >= [jb] >= [kc]; the loop below follows the corrected
+   ! form rather than the printed one.
+   !
+   ! Three index identities let the reordered blocks that file builds be read
+   ! straight out of the ones already held, so no fourth transposed copy of
+   ! `ovvv` -- the largest block -- is ever allocated:
+   !
+   !     vvov(a,b,i,f) = ovvv(i,a,f,b)     (ia|fb)
+   !     vooo(a,i,j,m) = ooov(j,m,i,a)     (ia|jm)
+   !     vvoo(a,b,i,j) = ovov(i,a,j,b)     (ia|jb)
+   !
+   ! Memory is `n_occ^3` per intermediate and twelve of them are live at once,
+   ! which is kilobytes -- the triples are a time problem, not a space one, and
+   ! deliberately hold no `t3`.
+   !===========================================================================
+
+   pure subroutine permuted_triple(p, i, j, k, pi, pj, pk)
+      !! The six orderings of (i,j,k), in the same order as those of (a,b,c)
+      !!
+      !! Pairing the two is the whole trick of the energy expression: the
+      !! permutation applied to the virtual labels is mirrored in the occupied
+      !! ones, so one index into a table of six covers both.
+      integer, intent(in) :: p, i, j, k
+      integer, intent(out) :: pi, pj, pk
+
+      !> Which of (i,j,k) lands in each slot, for the six orderings in the
+      !> order they are named in the reference: ijk, ikj, jik, jki, kij, kji.
+      integer, parameter :: SLOT(3, N_TRIPLE_PERMS) = reshape([ &
+                                                              1, 2, 3, &
+                                                              1, 3, 2, &
+                                                              2, 1, 3, &
+                                                              2, 3, 1, &
+                                                              3, 1, 2, &
+                                                              3, 2, 1], [3, N_TRIPLE_PERMS])
+
+      integer :: t(3)
+
+      t = [i, j, k]
+      pi = t(SLOT(1, p))
+      pj = t(SLOT(2, p))
+      pk = t(SLOT(3, p))
+   end subroutine permuted_triple
+
+   subroutine triples_w(eris, t2, no, nv, a, b, c, w)
+      !! w(i,j,k) = sum_f (ia|fb) t2(k,j,c,f) - sum_m (ia|jm) t2(m,k,b,c)
+      type(rcc_eris_t), intent(in) :: eris
+      real(dp), intent(in) :: t2(:, :, :, :)
+      integer, intent(in) :: no, nv, a, b, c
+      real(dp), intent(out) :: w(:, :, :)
+
+      integer :: i, j, k, f, m
+      real(dp) :: acc
+
+      do k = 1, no
+         do j = 1, no
+            do i = 1, no
+               acc = 0.0_dp
+               do f = 1, nv
+                  acc = acc + eris%ovvv(i, a, f, b)*t2(k, j, c, f)
+               end do
+               do m = 1, no
+                  acc = acc - eris%ooov(j, m, i, a)*t2(m, k, b, c)
+               end do
+               w(i, j, k) = acc
+            end do
+         end do
+      end do
+   end subroutine triples_w
+
+   subroutine triples_v(eris, t1, no, a, b, c, v)
+      !! v(i,j,k) = (ia|jb) t1(k,c)
+      !!
+      !! The reference's second term, `t2(i,j,a,b) f_vo(c,k)`, is absent: the
+      !! occupied-virtual Fock block vanishes for canonical orbitals, which this
+      !! module assumes throughout.
+      type(rcc_eris_t), intent(in) :: eris
+      real(dp), intent(in) :: t1(:, :)
+      integer, intent(in) :: no, a, b, c
+      real(dp), intent(out) :: v(:, :, :)
+
+      integer :: i, j, k
+
+      do k = 1, no
+         do j = 1, no
+            do i = 1, no
+               v(i, j, k) = eris%ovov(i, a, j, b)*t1(k, c)
+            end do
+         end do
+      end do
+   end subroutine triples_v
+
+   subroutine triples_r3(x, d3, no, z)
+      !! z = [4x(i,j,k) + x(k,i,j) + x(j,k,i) - 2x(k,j,i) - 2x(i,k,j) - 2x(j,i,k)] / d3
+      real(dp), intent(in) :: x(:, :, :), d3(:, :, :)
+      integer, intent(in) :: no
+      real(dp), intent(out) :: z(:, :, :)
+
+      integer :: i, j, k
+
+      do k = 1, no
+         do j = 1, no
+            do i = 1, no
+               z(i, j, k) = (4.0_dp*x(i, j, k) + x(k, i, j) + x(j, k, i) &
+                             - 2.0_dp*x(k, j, i) - 2.0_dp*x(i, k, j) &
+                             - 2.0_dp*x(j, i, k))/d3(i, j, k)
+            end do
+         end do
+      end do
+   end subroutine triples_r3
+
+   subroutine triples_correction(eris, eps_o, eps_v, t1, t2, no, nv, e_triples)
+      !! The (T) correction, one virtual triple at a time
+      !!
+      !! The outer loop runs a >= b >= c and weights the denominator to recover
+      !! the terms it skipped -- six-fold when all three coincide, two-fold when
+      !! exactly two do. That is where the factor of six in the cost goes, and
+      !! it is worth having: the six W intermediates a triple needs are the same
+      !! six whichever order the virtuals are named in.
+      type(rcc_eris_t), intent(in) :: eris
+      real(dp), intent(in) :: eps_o(:), eps_v(:)
+      real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
+      integer, intent(in) :: no, nv
+      real(dp), intent(out) :: e_triples
+
+      !> Which W pairs with which occupied permutation, for each Z. Row is the
+      !> Z's virtual permutation, column the occupied one, entry the W's. This
+      !> is the S3 multiplication table and is written out rather than derived:
+      !> deriving it needs a convention for whether a permutation acts on
+      !> positions or on labels, and getting that backwards transposes half the
+      !> table into a still-symmetric, still-plausible, wrong answer.
+      integer, parameter :: WMAP(N_TRIPLE_PERMS, N_TRIPLE_PERMS) = reshape([ &
+                                                                           1, 2, 3, 4, 5, 6, &
+                                                                           2, 1, 5, 6, 3, 4, &
+                                                                           3, 4, 1, 2, 6, 5, &
+                                                                           4, 3, 6, 5, 1, 2, &
+                                                                           5, 6, 2, 1, 4, 3, &
+                                                                           6, 5, 4, 3, 2, 1], &
+                                                                           [N_TRIPLE_PERMS, N_TRIPLE_PERMS], order=[2, 1])
+
+      real(dp), allocatable :: w(:, :, :, :), z(:, :, :, :), x(:, :, :), d3(:, :, :)
+      integer :: a, b, c, i, j, k, p, q, pi, pj, pk
+      integer :: trip(3), perm(3, N_TRIPLE_PERMS)
+      real(dp) :: scale, acc
+
+      allocate (w(no, no, no, N_TRIPLE_PERMS), z(no, no, no, N_TRIPLE_PERMS))
+      allocate (x(no, no, no), d3(no, no, no))
+
+      e_triples = 0.0_dp
+
+      do a = 1, nv
+         do b = 1, a
+            do c = 1, b
+               ! The six orderings of this virtual triple, in the same order
+               ! `permuted_triple` gives the occupied ones.
+               perm(:, 1) = [a, b, c]
+               perm(:, 2) = [a, c, b]
+               perm(:, 3) = [b, a, c]
+               perm(:, 4) = [b, c, a]
+               perm(:, 5) = [c, a, b]
+               perm(:, 6) = [c, b, a]
+
+               scale = 1.0_dp
+               if (a == c) then
+                  scale = 6.0_dp          ! a == b == c
+               else if (a == b .or. b == c) then
+                  scale = 2.0_dp
+               end if
+
+               do k = 1, no
+                  do j = 1, no
+                     do i = 1, no
+                        d3(i, j, k) = scale*(eps_o(i) + eps_o(j) + eps_o(k) &
+                                             - eps_v(a) - eps_v(b) - eps_v(c))
+                     end do
+                  end do
+               end do
+
+               do p = 1, N_TRIPLE_PERMS
+                  trip = perm(:, p)
+                  call triples_w(eris, t2, no, nv, trip(1), trip(2), trip(3), w(:, :, :, p))
+                  call triples_v(eris, t1, no, trip(1), trip(2), trip(3), x)
+                  x = w(:, :, :, p) + 0.5_dp*x
+                  call triples_r3(x, d3, no, z(:, :, :, p))
+               end do
+
+               ! The thirty-six terms: every Z against every occupied
+               ! permutation of the W the table pairs it with.
+               do p = 1, N_TRIPLE_PERMS
+                  do q = 1, N_TRIPLE_PERMS
+                     acc = 0.0_dp
+                     do k = 1, no
+                        do j = 1, no
+                           do i = 1, no
+                              call permuted_triple(q, i, j, k, pi, pj, pk)
+                              acc = acc + w(pi, pj, pk, WMAP(p, q))*z(i, j, k, p)
+                           end do
+                        end do
+                     end do
+                     e_triples = e_triples + acc
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      e_triples = 2.0_dp*e_triples
+
+      deallocate (w, z, x, d3)
+   end subroutine triples_correction
 
 end module mqc_libcint_rcc
