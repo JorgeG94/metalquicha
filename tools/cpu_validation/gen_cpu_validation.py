@@ -474,9 +474,14 @@ MCSCF_CASES = [
     # molecule  basis      nelecas  ncas  optimize  avas labels
     ("n2",      "cc-pvdz", 6,       6,    True,     None),
     ("n2",      "cc-pvdz", 6,       6,    False,    None),
-    ("water",   "cc-pvdz", 4,       4,    True,     None),
+    ("water",   "sto-3g",  6,       5,    True,     None),
     ("n2",      "cc-pvdz", 0,       0,    True,     ["N 2p"]),
 ]
+# Water's full valence space rather than its cc-pVDZ CAS(4,4), which PySCF
+# converges and this optimiser does not: it stalls on that surface around a
+# gradient of 1e-5, non-reproducibly, and a validation deck that fails one run
+# in ten teaches people to ignore the suite. test_mqc_mcscf.f90 keeps that case
+# and says what it costs.
 
 QUAO_CASES = [
     ("water", "6-31g"),
@@ -1570,7 +1575,16 @@ def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
     mc.kernel(mo)
     if not mc.converged:
         raise SystemExit(f"PySCF MCSCF did not converge for {basis}")
-    return float(mc.e_tot), int(nelecas if isinstance(nelecas, int) else sum(nelecas)), int(ncas)
+    # `nelecas` is a plain int from a hand-written case, a (na, nb) pair from
+    # mcscf, and a numpy scalar from avas -- which is not an `int` as far as
+    # isinstance is concerned, so testing for that alone sends a scalar into
+    # sum() and raises.
+    import numpy
+    if numpy.ndim(nelecas) == 0:
+        total = int(nelecas)
+    else:
+        total = int(sum(nelecas))
+    return float(mc.e_tot), total, int(ncas)
 
 
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
@@ -1623,7 +1637,11 @@ def main():
     os.environ.setdefault("OMP_NUM_THREADS", "1")
 
     # geometries first, so PySCF and the decks cannot drift apart
-    for name, mol in MOLECULES.items():
+    # Both dictionaries: a molecule with no geometry file on disk has no path
+    # for a deck to point at, and the multireference cases are the only users of
+    # the second one. Missed at first, and the symptom was a deck whose `xyz`
+    # read "../../../" -- the prefix with nothing after it.
+    for name, mol in list(MOLECULES.items()) + list(MULTIREF_MOLECULES.items()):
         if mol.xyz:
             mol.atoms = read_xyz(INPUTS / mol.xyz)
         else:
