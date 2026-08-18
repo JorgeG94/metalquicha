@@ -251,9 +251,9 @@ contains
       !! N2, cc-pVDZ, CAS(6,6)
       !!
       !! The textbook active space: six electrons in the three bonding and three
-      !! antibonding orbitals of the triple bond. It converges in about thirty
-      !! macro-iterations, which is what a well-conditioned case looks like for
-      !! a first-order method.
+      !! antibonding orbitals of the triple bond. Twenty-one macro-iterations
+      !! with DIIS, thirty-three without, which is what a well-conditioned case
+      !! looks like for a first-order method.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(casscf_result_t) :: result
@@ -281,10 +281,17 @@ contains
       !!
       !! Slower than nitrogen by a factor of three, and the reason is worth
       !! recording rather than hiding behind a larger iteration cap: the energy
-      !! surface here has a long flat valley, and a first-order optimiser
-      !! crawls along it -- iterations eleven to thirty gain ten microhartree
-      !! between them. A second-order method would not care. This is the case
-      !! that says what the two-step algorithm costs.
+      !! surface here has a long flat valley, and a first-order optimiser crawls
+      !! along it -- iterations eleven to twenty-five gain a few tens of
+      !! microhartree between them, taking steps well inside the trust radius.
+      !! DIIS brings it from about 102 macro-iterations to about 60; a
+      !! second-order method would not care at all. This is the case that says
+      !! what the two-step algorithm costs.
+      !!
+      !! The count varies by ten or so between runs at identical settings,
+      !! because the threaded Fock builds are not bit-reproducible and the
+      !! valley is flat enough to amplify that. The iteration cap is set well
+      !! above it for that reason; it is not a convergence criterion.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(casscf_result_t) :: result

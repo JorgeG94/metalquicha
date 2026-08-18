@@ -50,6 +50,8 @@ module mqc_libcint_mcscf
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_rdm, only: active_space_rdms
    use pic_logger, only: logger => global_logger
+   use pic_lapack_interfaces, only: pic_syev
+   use mqc_diis, only: diis_state_t
    implicit none
    private
 
@@ -67,6 +69,17 @@ module mqc_libcint_mcscf
       !! of orbitals that happen to be close in energy takes an enormous step on
       !! a small gradient, which is how a first-order optimiser diverges on its
       !! first iteration rather than its fiftieth.
+      !!
+      !! **It is a genuine optimum, not a safety margin, and the direction is
+      !! counter-intuitive.** The obvious reading of a slow case is that the
+      !! floor is too high and the steps too short -- water crawls through a
+      !! flat valley taking steps well inside the trust radius, which looks
+      !! exactly like that. It is wrong. Lowering the floor makes it
+      !! monotonically worse: 0.05, 0.02, 0.01, 0.005 and 0.002 cost 58, 87, 95,
+      !! 145 and 192 iterations, because the longer steps overshoot, get
+      !! rejected, and shrink the trust radius. Raising it is worse too -- 0.1,
+      !! 0.2 and 0.4 cost 80, 115 and 206. Both directions were measured before
+      !! this number was settled on.
    real(dp), parameter :: MAX_ROTATION = 0.2_dp
       !! Largest rotation angle the trust radius is allowed to grow back to, in
       !! radians. Roughly 11 degrees.
@@ -74,6 +87,14 @@ module mqc_libcint_mcscf
       !! If backtracking has shrunk the trust radius this far and the energy
       !! still rises, the step direction is not a descent direction and halving
       !! it again will not help. Better to stop and say so.
+   integer, parameter :: DIIS_VECTORS = 12
+      !! Orbital sets kept for extrapolation.
+      !!
+      !! Measured across 6, 10, 16 and 24 on water and nitrogen: nitrogen sits
+      !! at 21 iterations regardless, and water moves between 56 and 75 with no
+      !! trend -- which is the same spread it shows run to run at fixed
+      !! settings, from the threaded Fock builds. So this is not a lever, and
+      !! the value is a middle one rather than a tuned one.
    real(dp), parameter :: TRUST_GROWTH = 1.3_dp
       !! How fast the trust radius recovers after a successful step. Slower than
       !! it shrinks, which is the usual asymmetry: an over-long step costs a
@@ -405,11 +426,14 @@ contains
       real(dp), allocatable :: current(:, :), updated(:, :)
       real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
       real(dp), allocatable :: gradient(:, :), hessian(:, :), kappa(:, :), rotation(:, :)
-      real(dp), allocatable :: step_matrix(:, :)
+      real(dp), allocatable :: step_matrix(:, :), overlap(:, :), flat(:)
+      real(dp), allocatable :: candidate(:, :)
       real(dp), allocatable :: guess(:, :, :)
+      type(diis_state_t) :: diis
+      logical :: extrapolated
       character(len=160) :: line
       real(dp) :: tol, largest, previous, trust, scaling
-      integer :: cycles, iteration, n_ao, n_mo, trial
+      integer :: cycles, iteration, n_ao, n_mo, trial, diis_failures
       logical :: loud, have_guess, accepted
 
       integer, parameter :: MAX_BACKTRACKS = 12
@@ -425,11 +449,17 @@ contains
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
       allocate (current(n_ao, n_mo), updated(n_ao, n_mo), step_matrix(n_mo, n_mo))
+      allocate (candidate(n_ao, n_mo))
+      diis_failures = 0
       current = orbitals
 
       call build_link_table(n_active, n_alpha, alpha, error)
       call build_link_table(n_active, n_beta, beta, error)
       if (error%has_error()) return
+
+      call mol%overlap(overlap)
+      call diis%init(DIIS_VECTORS, n_ao*n_mo, n_mo*n_mo)
+      allocate (flat(n_ao*n_mo))
 
       if (loud) then
          call logger%info("")
@@ -488,7 +518,58 @@ contains
          ! halving the radius costs a CI solve when it happens and removes the
          ! failure mode entirely.
          accepted = .false.
+
+         ! ---- extrapolate, once, at full step length -----------------------
+         !
+         ! **A failed extrapolation must not shrink the trust radius.** The
+         ! trust radius governs the *gradient* step, and DIIS failing says
+         ! nothing about whether that step was too long -- it says the subspace
+         ! has gone stale. Conflating the two was measured: the trust radius
+         ! collapsed to 3e-3 against a gradient of 2e-2, every step became
+         ! useless, and water stalled indefinitely at -76.042 having converged
+         ! cleanly without DIIS at all. So the extrapolation gets one attempt of
+         ! its own, and only the gradient step below can shrink the radius.
+         scaling = maxval(abs(kappa))
+         if (scaling > trust) then
+            step_matrix = kappa*(trust/scaling)
+         else
+            step_matrix = kappa
+         end if
+         if (allocated(rotation)) deallocate (rotation)
+         call rotation_matrix(step_matrix, rotation)
+         call pic_gemm(current, rotation, updated)
+
+         call diis%push(reshape(updated, [n_ao*n_mo]), reshape(gradient, [n_mo*n_mo]))
+         if (iteration > 1) then
+            flat = reshape(updated, [n_ao*n_mo])
+            call diis%extrapolate(flat, extrapolated)
+            if (extrapolated) then
+               candidate = reshape(flat, [n_ao, n_mo])
+               call symmetric_orthonormalize(overlap, candidate, error)
+               if (error%has_error()) return
+               call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
+                             alpha, beta, guess, have_guess, trial_ci, error)
+               if (error%has_error()) return
+               if (trial_ci%energy < ci%energy) then
+                  current = candidate
+                  ci = trial_ci
+                  accepted = .true.
+                  diis_failures = 0
+               else
+                  ! A stale subspace keeps producing the same bad direction, so
+                  ! it is cleared rather than left to fail every iteration.
+                  diis_failures = diis_failures + 1
+                  if (diis_failures >= 2) then
+                     call diis%init(DIIS_VECTORS, n_ao*n_mo, n_mo*n_mo)
+                     diis_failures = 0
+                  end if
+               end if
+            end if
+         end if
+
+         ! ---- otherwise the gradient step, backtracking until it descends ---
          do trial = 1, MAX_BACKTRACKS
+            if (accepted) exit
             scaling = maxval(abs(kappa))
             if (scaling > trust) then
                step_matrix = kappa*(trust/scaling)
@@ -541,6 +622,56 @@ contains
       call alpha%destroy()
       call beta%destroy()
    end subroutine run_libcint_casscf
+
+   subroutine symmetric_orthonormalize(overlap, orbitals, error)
+      !! Restore orthonormality to orbitals that a linear combination broke
+      !!
+      !! `C <- C (C^T S C)^{-1/2}`, which is the change that moves every orbital
+      !! as little as possible -- the right choice here because the input is
+      !! already nearly orthonormal and the aim is to repair it, not to impose
+      !! some other structure on it.
+      !!
+      !! Needed because DIIS extrapolates a *linear* combination of orbital sets
+      !! and orthonormality is not linear. This is the price of extrapolating
+      !! the orbitals directly instead of the rotation parameters that produced
+      !! them; the alternative needs a matrix logarithm to recover those
+      !! parameters from a product of exponentials, which is more machinery for
+      !! the same answer.
+      real(dp), intent(in) :: overlap(:, :)      !! AO overlap
+      real(dp), intent(inout) :: orbitals(:, :)  !! (n_ao, n_mo)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: metric(:, :), vectors(:, :), values(:)
+      real(dp), allocatable :: scaled(:, :), inverse_root(:, :), work(:, :)
+      integer :: n_ao, n_mo, i, info
+
+      if (error%has_error()) return
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+
+      allocate (work(n_ao, n_mo), metric(n_mo, n_mo))
+      call pic_gemm(overlap, orbitals, work)
+      call pic_gemm(orbitals, work, metric, transa="T")
+
+      allocate (vectors(n_mo, n_mo), values(n_mo), scaled(n_mo, n_mo))
+      allocate (inverse_root(n_mo, n_mo))
+      vectors = metric
+      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      if (info /= 0 .or. values(1) <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "the extrapolated orbitals are linearly "// &
+                        "dependent and cannot be orthonormalized. The DIIS subspace "// &
+                        "has produced a combination that is not a set of orbitals.")
+         return
+      end if
+      do i = 1, n_mo
+         scaled(:, i) = vectors(:, i)/sqrt(values(i))
+      end do
+      call pic_gemm(scaled, vectors, inverse_root, transb="T")
+      call pic_gemm(orbitals, inverse_root, work)
+      orbitals = work
+
+      deallocate (work, metric, vectors, values, scaled, inverse_root)
+   end subroutine symmetric_orthonormalize
 
    subroutine solve_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                        alpha, beta, guess, have_guess, ci, error)
