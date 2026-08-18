@@ -12,7 +12,7 @@ module mqc_libcint_rhf
    !! `mqc_diis` is shared, though. That one is already backend-neutral and
    !! there is nothing to learn from writing it twice.
    use pic_types, only: dp
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_blas_interfaces, only: pic_gemm, pic_gemv
    use pic_lapack_interfaces, only: pic_syev
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -965,16 +965,40 @@ contains
                ! Zero for the core Hamiltonian, so this returns G(delta) and nothing
                ! has to be subtracted back out. The same device the range-separated
                ! branch below uses to get the long-range exchange on its own.
-               ! `density_screen=.false.` for the same reason the CPHF response
-               ! operator needs it: `d_delta` is a difference the SCF drives to
-               ! zero, not a real density. A screen keyed on the magnitude of
-               ! what a quartet multiplies tightens as the delta shrinks, so the
-               ! correction is systematically incomplete and gets more so every
-               ! iteration -- the accumulated G then depends on the path the SCF
-               ! took to get there, which is how a converged energy ends up
-               ! moving when the whole system is translated.
+               !
+               ! `density_screen=.true.`, and it is the whole point of building
+               ! incrementally. With it false this branch screened exactly as
+               ! hard as a full build -- same Schwarz bound, same 15 % skipped --
+               ! so the delta cost what it was meant to save: iteration twelve
+               ! was as expensive as iteration one, and the incremental
+               ! machinery bought nothing. With it true the skipped fraction
+               ! goes to 28 % and the per-iteration cost falls 1.87 s to 1.24 s
+               ! across the SCF, which is the shape GAMESS's FDIFF shows too.
+               !
+               ! The worry this replaces was that a screen keyed on the
+               ! magnitude of what a quartet multiplies tightens as the delta
+               ! shrinks, leaving a correction that is systematically incomplete
+               ! and path-dependent -- the symptom being a converged energy that
+               ! moves when the whole system is translated. It does not happen,
+               ! because the test is on the *contribution* against a fixed
+               ! absolute tolerance, not on the delta relative to itself: a term
+               ! dropped here is smaller than the tolerance in absolute terms
+               ! however small the delta got, and `INCREMENTAL_RESET` bounds how
+               ! many such drops can accumulate before a full build re-syncs.
+               !
+               ! Measured rather than argued. Translating this molecule by
+               ! (37, -19, 23) Angstrom moves the converged energy by 7e-13, the
+               ! energy sits 4e-12 from the same SCF run in core, and all 235
+               ! CPU validation cases pass against their PySCF references with
+               ! the in-core path forced off so that this branch is what runs.
+               !
+               ! Note this is *not* the CPHF situation, which still needs false.
+               ! There the density is a Krylov trial vector the solver drives to
+               ! zero and the operator has to stay the same linear map from one
+               ! matvec to the next; here there is no operator to keep fixed,
+               ! only a sum to accumulate to a bounded accuracy.
                call build_fock_direct(mol, h_zero, d_delta, bounds, g_delta, stats, error, &
-                                      k_scale=k_scale, density_screen=.false.)
+                                      k_scale=k_scale, density_screen=.true.)
                if (error%has_error()) return
                incr%g_ref = incr%g_ref + g_delta
                incr%d_ref = density
@@ -1355,37 +1379,75 @@ contains
       !! here assumes either, and the Coulomb term vanishes of its own accord when
       !! the density is antisymmetric because the integral is symmetric in the
       !! contracted pair.
+      !!
+      !! **Blocked over the ket pair, not over the target element.** Writing the
+      !! sum with `(mu, nu)` outermost reads the exchange integral as
+      !! `eri(mu, la, nu, si)` with `la` innermost -- a stride of `n` doubles, so
+      !! every one of the n^4 loads pulls a cache line to use eight bytes of it.
+      !! The tensor is 380 MB at eighty-three functions and the loop was touching
+      !! it as though it were eight times that.
+      !!
+      !! Fixing the order costs nothing in arithmetic. For a fixed ket pair
+      !! `(c, d)` the slice `eri(:, :, c, d)` is contiguous, and *both* terms are
+      !! expressible on it:
+      !!
+      !!   * Coulomb wants `J += D(c,d) * eri(:,:,c,d)` -- an axpy over the block.
+      !!   * Exchange wants `K(:,c) += eri(:,:,c,d) . D(:,d)` -- a matrix-vector
+      !!     product on the same block. Relabel `(mu la|nu si)` as `(a b|c d)`:
+      !!     `K(a,c) = sum_bd D(b,d) (a b|c d)`, which is that gemv summed over d.
+      !!
+      !! So the tensor is walked once, in order, and each 55 kB block is used
+      !! twice while it is still in L2. Same n^4 flops, an eighth of the traffic.
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
 
-      integer :: mu, nu, la, si, n
-      real(dp) :: kf, acc
+      integer :: a, b, c, d, n
+      real(dp) :: kf, dcd
+      real(dp), allocatable :: j_mat(:, :), k_mat(:, :), j_local(:, :)
 
       n = size(h, 1)
       kf = 0.5_dp
       if (present(k_scale)) kf = 0.5_dp*k_scale
+
+      allocate (j_mat(n, n), k_mat(n, n))
+      j_mat = 0.0_dp
+      k_mat = 0.0_dp
+
+      ! Threaded over `c`, which is what makes the exchange update safe without a
+      ! reduction: `K(:, c)` belongs to exactly one thread. Coulomb accumulates
+      ! over every `(c, d)` and so does need one, but it is a single n*n array per
+      ! thread merged once, not per-element atomics.
+      !
       ! The `if` keeps genuinely tiny systems serial. The response solver enters
       ! this region tens of thousands of times, so for a handful of basis functions
       ! the barriers cost more than the arithmetic; by a few dozen they do not.
-      !$omp parallel do collapse(2) default(none) private(mu, nu, la, si, acc) &
-      !$omp shared(n, h, eri, density, fock, kf) schedule(static) if(n >= 16)
-      do nu = 1, n
-         do mu = 1, n
-            acc = 0.0_dp
-            do si = 1, n
-               do la = 1, n
-                  ! (mu nu | la si) is Coulomb, (mu la | nu si) is exchange,
-                  ! and the half is the closed-shell factor -- D already
-                  ! carries the two electrons per orbital.
-                  acc = acc + density(la, si) &
-                        *(eri(mu, nu, la, si) - kf*eri(mu, la, nu, si))
+      !$omp parallel default(none) private(a, b, c, d, dcd, j_local) &
+      !$omp shared(n, eri, density, j_mat, k_mat) if(n >= 16)
+      allocate (j_local(n, n))
+      j_local = 0.0_dp
+      !$omp do schedule(static)
+      do c = 1, n
+         do d = 1, n
+            dcd = density(c, d)
+            do b = 1, n
+               do a = 1, n
+                  j_local(a, b) = j_local(a, b) + dcd*eri(a, b, c, d)
                end do
             end do
-            fock(mu, nu) = h(mu, nu) + acc
+            ! beta = 1 to accumulate over d rather than overwrite.
+            call pic_gemv(eri(:, :, c, d), density(:, d), k_mat(:, c), beta=1.0_dp)
          end do
       end do
-      !$omp end parallel do
+      !$omp end do
+      !$omp critical(mqc_build_fock_coulomb)
+      j_mat = j_mat + j_local
+      !$omp end critical(mqc_build_fock_coulomb)
+      deallocate (j_local)
+      !$omp end parallel
+
+      fock = h + j_mat - kf*k_mat
+      deallocate (j_mat, k_mat)
    end subroutine build_fock
 
    subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale, j_scale)

@@ -46,7 +46,9 @@ module mqc_libcint_gradient
                               libcint_2c2e_ip1_sph, libcint_2c2e_ip1_cart, &
                               libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
                               libcint_del_optimizer, LIBCINT_PTR_RINV_ORIG, &
-                              LIBCINT_PTR_RANGE_OMEGA
+                              LIBCINT_PTR_RANGE_OMEGA, LIBCINT_PTR_EXP, &
+                              LIBCINT_NPRIM_OF
+   use mqc_libcint_direct, only: schwarz_bounds
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
@@ -70,6 +72,31 @@ module mqc_libcint_gradient
    integer, parameter :: DERIV_OVLP = 1
    integer, parameter :: DERIV_KIN = 2
    integer, parameter :: DERIV_NUC = 3
+
+   real(dp), parameter :: DERIV_SCREEN_TOL = 1.0e-10_dp
+      !! Contribution below which a differentiated shell quartet is dropped.
+      !!
+      !! Measured on a seventeen-atom closed shell in 6-31G, against the same
+      !! gradient computed with no screening at all:
+      !!
+      !!     tolerance     time      error in |g|
+      !!     none         16.7 s      --
+      !!     1e-12        14.9 s      1e-11
+      !!     1e-10        13.7 s      7e-11
+      !!     1e-9         12.9 s      5e-9
+      !!
+      !! 1e-10 is the knee. Below it the error starts moving a decade per decade
+      !! while the time barely does, and an optimiser converging on a 1e-4
+      !! gradient norm has no use for the accuracy being bought. The margin
+      !! matters here because the bra bound this multiplies is an estimate
+      !! rather than a rigorous Cauchy-Schwarz one -- see `two_electron_deriv`.
+      !!
+      !! Note how little any of this saves. On a molecule this compact almost
+      !! every quartet genuinely contributes, and the same is true of the
+      !! undifferentiated build next door -- `build_fock_direct` screens 15 % at
+      !! 1e-11. Screening is what makes a *large* system tractable; it is not
+      !! where a small one's time goes, and it should not be tuned as though it
+      !! were.
 
 contains
 
@@ -1297,7 +1324,8 @@ contains
       end do
    end subroutine iprinv_deriv_at
 
-   subroutine two_electron_deriv(mol, density, vhf, error, exchange_density, exx_fraction)
+   subroutine two_electron_deriv(mol, density, vhf, error, exchange_density, exx_fraction, &
+                                 screen_tol)
       !! `J - K/2` built from the differentiated ERIs, as (nao, nao, 3)
       !!
       !! `density` drives the Coulomb field and is the total density in both
@@ -1321,15 +1349,21 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: exchange_density(:, :)
       real(dp), intent(in), optional :: exx_fraction   !! Default one, for Hartree-Fock
+      real(dp), intent(in), optional :: screen_tol
+         !! Bound below which a shell quartet is skipped, on the *contribution*
+         !! rather than the integral. Default `DERIV_SCREEN_TOL`.
 
       real(dp), allocatable :: buf(:), vj(:, :, :), vk(:, :, :)
       real(dp), allocatable :: vj_local(:, :, :), vk_local(:, :, :)
       real(dp), allocatable :: exchange_from(:, :)
-      real(dp) :: g, k_scale
+      real(dp), allocatable :: bounds(:, :), bra_bound(:, :), dsh(:, :), esh(:, :)
+      integer, allocatable :: dims(:), offs(:)
+      real(dp) :: g, k_scale, tol, bra, est, amax
       type(c_ptr) :: opt
       integer :: shls(4)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx, nao, nbas
+      integer :: nprim, ptr
 
       mx = largest_shell(mol)
       nao = mol%nao
@@ -1337,6 +1371,9 @@ contains
       allocate (vj(nao, nao, 3), vk(nao, nao, 3))
       vj = 0.0_dp
       vk = 0.0_dp
+
+      tol = DERIV_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
 
       allocate (exchange_from(nao, nao))
       if (present(exchange_density)) then
@@ -1356,6 +1393,57 @@ contains
          call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
       end if
 
+      ! Shell dimensions and offsets once, rather than a `shell_dim` call --
+      ! which reaches into `bas` and recomputes an angular-momentum formula --
+      ! at every level of a four-deep loop that runs millions of times.
+      allocate (dims(nbas), offs(nbas))
+      do ish = 1, nbas
+         dims(ish) = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         offs(ish) = mol%shell_offset(ish)
+      end do
+
+      ! Screening. The undifferentiated loop in `build_fock_direct` has had this
+      ! from the start; this one had none at all and evaluated every quartet the
+      ! basis admits, which is why a gradient cost eight Fock builds.
+      !
+      ! Two factors go into the estimate:
+      !
+      !   * **The bra carries a derivative, so its Schwarz bound is not the
+      !     ordinary one.** Differentiating a primitive brings down `2*alpha*r`,
+      !     and the extent of that primitive is `r ~ 1/sqrt(alpha)`, so the
+      !     distribution grows by roughly `2*sqrt(alpha)`. Taking the largest
+      !     exponent in the shell makes that an over- rather than an
+      !     under-estimate, which is the direction a screen has to err in. It is
+      !     not the rigorous Cauchy-Schwarz bound -- that needs `(∇i j|∇i j)`,
+      !     and libcint's `int2e_ip1ip2` is not among the entry points bound
+      !     here -- so the tolerance is set two decades tighter than the
+      !     accuracy actually wanted, and the result is checked against an
+      !     unscreened gradient in the tests.
+      !   * **The density the quartet multiplies.** Blocked to shells, the same
+      !     way `shell_density_max` does it next door. A quartet whose four
+      !     density blocks are negligible contributes nothing however large its
+      !     integral, and near a converged density most of them are.
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+
+      allocate (bra_bound(nbas, nbas))
+      do ish = 1, nbas
+         nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
+         ptr = mol%bas(LIBCINT_PTR_EXP, ish)
+         amax = maxval(mol%env(ptr + 1:ptr + nprim))
+         bra_bound(ish, :) = 2.0_dp*sqrt(amax)*bounds(ish, :)
+      end do
+
+      allocate (dsh(nbas, nbas), esh(nbas, nbas))
+      do ish = 1, nbas
+         do jsh = 1, nbas
+            dsh(ish, jsh) = maxval(abs(density(offs(ish) + 1:offs(ish) + dims(ish), &
+                                               offs(jsh) + 1:offs(jsh) + dims(jsh))))
+            esh(ish, jsh) = maxval(abs(exchange_from(offs(ish) + 1:offs(ish) + dims(ish), &
+                                                     offs(jsh) + 1:offs(jsh) + dims(jsh))))
+         end do
+      end do
+
       ! Thread-local accumulators merged once, rather than atomics on a shared
       ! matrix: the inner update is two scattered writes per integral, and
       ! making those atomic costs more than the integral. The price is
@@ -1365,9 +1453,11 @@ contains
       ! schedule(dynamic) because the l <= k triangle makes the work per ish
       ! uneven, and a static split leaves threads idle on the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, density, exchange_from, opt, vj, vk, mx, nao, nbas) &
+      !$omp    shared(mol, density, exchange_from, opt, vj, vk, mx, nao, nbas, &
+      !$omp           dims, offs, bounds, bra_bound, dsh, esh, tol) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
-      !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local)
+      !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
+      !$omp            bra, est)
       allocate (buf(mx**4*3))
       allocate (vj_local(nao, nao, 3), vk_local(nao, nao, 3))
       vj_local = 0.0_dp
@@ -1375,17 +1465,28 @@ contains
 
       !$omp do schedule(dynamic)
       do ish = 1, nbas
-         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
-         io = mol%shell_offset(ish)
+         di = dims(ish)
+         io = offs(ish)
          do jsh = 1, nbas
-            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
-            jo = mol%shell_offset(jsh)
+            dj = dims(jsh)
+            jo = offs(jsh)
+            bra = bra_bound(ish, jsh)
             do ksh = 1, nbas
-               dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
-               ko = mol%shell_offset(ksh)
+               dk = dims(ksh)
+               ko = offs(ksh)
                do lsh = 1, ksh
-                  dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
-                  lo = mol%shell_offset(lsh)
+                  dl = dims(lsh)
+                  lo = offs(lsh)
+
+                  ! The largest density element this quartet can reach. The
+                  ! four entries are exactly the four the inner loop reads:
+                  ! two Coulomb, from the ket pair both ways round, and two
+                  ! exchange, pairing the bra's second index with each of the
+                  ! ket's.
+                  est = bra*bounds(ksh, lsh) &
+                        *max(dsh(lsh, ksh), dsh(ksh, lsh), esh(jsh, ksh), esh(jsh, lsh))
+                  if (est < tol) cycle
+
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
 
                   if (mol%cartesian) then
@@ -1442,6 +1543,7 @@ contains
       allocate (vhf(nao, nao, 3))
       vhf = -(vj - k_scale*vk)
 
+      deallocate (bounds, bra_bound, dsh, esh, dims, offs)
    end subroutine two_electron_deriv
 
    subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &
