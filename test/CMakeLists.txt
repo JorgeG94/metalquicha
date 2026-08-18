@@ -175,6 +175,14 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_cc)
   target_link_libraries(test_mqc_libcint_cc PRIVATE cint_fortran cint)
 
+  # Spin-adapted coupled cluster, tied to the spin-orbital path above. For a
+  # closed shell the two are the same theory written twice and must agree to
+  # machine precision, which catches the transposed index that a reference
+  # energy alone would not -- see the module header for why that is the failure
+  # mode worth designing against.
+  addtest(mqc_libcint_rcc)
+  target_link_libraries(test_mqc_libcint_rcc PRIVATE cint_fortran cint)
+
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_libcint_mp2)
