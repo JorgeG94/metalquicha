@@ -517,7 +517,7 @@ contains
    end subroutine valence_virtual_orbitals
 
    subroutine quasi_atomic_orbitals(atomic_numbers, valence_internal, n_occupied_valence, &
-                                    mixed, offset, count, result, error)
+                                    mixed, offset, count, result, error, valence_density)
       !! Quasi-atomic orbitals for the valence-internal space
       !!
       !! Each atom claims the combinations of valence-internal orbitals that
@@ -541,16 +541,45 @@ contains
          !! (n_ao, n_val): the occupied valence orbitals followed by the
          !! valence-virtual ones, orthonormal
       integer, intent(in) :: n_occupied_valence
-         !! How many of those columns are occupied. The rest are empty.
+         !! How many of those columns are occupied. The rest are empty. Used to
+         !! build the closed-shell density when `valence_density` is absent, and
+         !! for nothing else.
       real(dp), intent(in) :: mixed(:, :)      !! < AO | AAMBS >, (n_ao, n_mbs)
       integer, intent(in) :: offset(:), count(:)   !! Valence AAMBS range per atom
       type(quao_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: valence_density(:, :)
+         !! (n_val, n_val), the one-particle density matrix in the
+         !! valence-internal orbital basis. Absent means the closed-shell
+         !! density -- two electrons in each of the first `n_occupied_valence`
+         !! orbitals, none in the rest -- which is what a Hartree-Fock or
+         !! Kohn-Sham reference gives and is the only case Paper I treats.
+         !!
+         !! **This is the argument a correlated wave function needs.** An MCSCF
+         !! density is not idempotent: its active orbitals carry fractional
+         !! occupations, so it cannot be written as a projector onto some set of
+         !! filled orbitals and the closed-shell shortcut below does not apply
+         !! to it. Nothing else in the construction cares -- the quasi-atomic
+         !! orbitals themselves come from overlaps with free-atom orbitals and
+         !! never see an occupation -- so this one argument is the whole
+         !! difference between analysing a reference and analysing a correlated
+         !! wave function.
+         !!
+         !! **It has to be in the basis of the `valence_internal` passed with
+         !! it, and that basis is not reproducible.** Where the molecule has
+         !! degenerate valence orbitals a threaded SCF returns a different basis
+         !! of the degenerate space from one run to the next -- measured at 1.4
+         !! in the transformation matrix for water between two identical calls,
+         !! while the quasi-atomic orbitals and the populations that come out
+         !! agree to 4e-13. So a density built against orbitals from a *different*
+         !! run of the SCF describes a different set of orbitals in the same
+         !! numbers, and nothing here can detect that. Build both from one wave
+         !! function and pass them together.
 
       real(dp), allocatable :: projection(:, :), sigma(:, :), block(:, :)
       real(dp), allocatable :: claims(:, :), gram(:, :), half(:, :), orthogonal(:, :)
-      real(dp), allocatable :: occupied(:, :)
-      integer :: n_ao, n_val, natm, iatom, m, filled
+      real(dp), allocatable :: density(:, :), work(:, :)
+      integer :: n_ao, n_val, natm, iatom, m, filled, i
 
       if (error%has_error()) return
       n_ao = size(valence_internal, 1)
@@ -605,17 +634,46 @@ contains
       result%to_valence_internal = orthogonal
       result%n_quao = n_val
 
-      ! The density in the quasi-atomic basis. Only the occupied
-      ! valence-internal orbitals carry electrons, two each, so this is
-      ! 2 U_occ U_occ^T with U the transformation from valence-internal
-      ! orbitals to quasi-atomic ones -- Paper I eq (5.2).
-      allocate (occupied(n_occupied_valence, n_val))
-      occupied = orthogonal(1:n_occupied_valence, :)
-      allocate (result%population_bond_order(n_val, n_val))
-      call pic_gemm(occupied, occupied, result%population_bond_order, transa="T", &
-                    alpha=2.0_dp, beta=0.0_dp)
+      ! The density in the quasi-atomic basis, Paper I eq (5.2): a change of
+      ! basis of the one-particle density matrix by U, the transformation from
+      ! valence-internal orbitals to quasi-atomic ones.
+      !
+      !     P = U^T D U
+      !
+      ! For a closed shell D is 2 on the occupied diagonal and zero elsewhere,
+      ! and this collapses to 2 U_occ U_occ^T -- which is what the code used to
+      ! compute directly. It is written out in full instead because the general
+      ! form is the one a correlated density needs and two routes to the same
+      ! matrix is one route too many: the closed-shell shortcut would be exercised
+      ! by every test and the general path by almost none.
+      !
+      ! U is orthogonal -- symmetric orthogonalization followed by Jacobi
+      ! rotations -- so the trace survives, and the quasi-atomic populations sum
+      ! to the electron count for any D whatsoever. That is the invariant worth
+      ! knowing here, because it is the one that does not depend on idempotency.
+      allocate (density(n_val, n_val))
+      if (present(valence_density)) then
+         if (size(valence_density, 1) /= n_val .or. size(valence_density, 2) /= n_val) then
+            call error%set(ERROR_VALIDATION, "the supplied density is "// &
+                           to_char(size(valence_density, 1))//" by "// &
+                           to_char(size(valence_density, 2))//" but the "// &
+                           "valence-internal space has "//to_char(n_val)//" orbitals. "// &
+                           "It has to be expressed in that basis, in that order.")
+            return
+         end if
+         density = valence_density
+      else
+         density = 0.0_dp
+         do i = 1, n_occupied_valence
+            density(i, i) = 2.0_dp
+         end do
+      end if
 
-      deallocate (projection, claims, gram, half, orthogonal, occupied)
+      allocate (work(n_val, n_val), result%population_bond_order(n_val, n_val))
+      call pic_gemm(density, orthogonal, work)
+      call pic_gemm(orthogonal, work, result%population_bond_order, transa="T")
+
+      deallocate (projection, claims, gram, half, orthogonal, density, work)
    end subroutine quasi_atomic_orbitals
 
    subroutine orient_quasi_atomic_orbitals(quao, error)

@@ -79,6 +79,7 @@ contains
                   new_unittest("orientation_concentrates_bonding", test_orientation), &
                   new_unittest("kinetic_bond_orders", test_kbo), &
                   new_unittest("split_localization_pairs_bonds", test_split), &
+                  new_unittest("density_can_be_supplied", test_supplied_density), &
                   new_unittest("benzoquinone_against_paper_one", test_benzoquinone), &
                   new_unittest("formyl_chloride_against_gamess", test_formyl_chloride), &
                   new_unittest("formyl_chloride_kei_bo", test_formyl_chloride_kei), &
@@ -86,7 +87,8 @@ contains
                   ]
    end subroutine collect_mqc_quao_tests
 
-   subroutine water_quaos(basis_name, quao, overlap, dims, err, ok, vi_out)
+   subroutine water_quaos(basis_name, quao, overlap, dims, err, ok, vi_out, density, &
+                          mixed_out, voff_out, vcount_out)
       !! Everything from an SCF through to the quasi-atomic orbitals
       character(len=*), intent(in) :: basis_name
       type(quao_result_t), intent(out) :: quao
@@ -95,6 +97,15 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
       real(dp), allocatable, intent(out), optional :: vi_out(:, :)
+      real(dp), intent(in), optional :: density(:, :)
+         !! Passed straight through to `quasi_atomic_orbitals`. Absent leaves it
+         !! to build the closed-shell density itself, which is the path every
+         !! other test in this file takes.
+      real(dp), allocatable, intent(out), optional :: mixed_out(:, :)
+      integer, allocatable, intent(out), optional :: voff_out(:), vcount_out(:)
+         !! Enough to call `quasi_atomic_orbitals` again on the same inputs.
+         !! Needed because the valence-internal basis is not reproducible between
+         !! two runs -- see `test_supplied_density`.
 
       type(libcint_molecule_t) :: mol, aambs
       type(rhf_result_t) :: scf
@@ -136,10 +147,18 @@ contains
          scf%orbitals(:, dims%n_core + 1:dims%n_occupied)
       valence_internal(:, n_valocc + 1:) = vvo%orbitals
 
-      call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
-                                 val_off, val_n, quao, err)
+      if (present(density)) then
+         call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
+                                    val_off, val_n, quao, err, valence_density=density)
+      else
+         call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
+                                    val_off, val_n, quao, err)
+      end if
       ok = .not. err%has_error()
       if (present(vi_out)) vi_out = valence_internal
+      if (present(mixed_out)) mixed_out = mixed
+      if (present(voff_out)) voff_out = val_off
+      if (present(vcount_out)) vcount_out = val_n
 
       call mol%destroy()
       call aambs%destroy()
@@ -745,6 +764,146 @@ contains
          if (quao%population_bond_order(i, i) > threshold) n = n + 1
       end do
    end function count_above
+
+   subroutine test_supplied_density(error)
+      !! A density given explicitly, instead of assumed closed-shell
+      !!
+      !! The construction takes an optional one-particle density in the
+      !! valence-internal basis and forms `P = U^T D U`. Everything else in this
+      !! file exercises the default, which builds the closed-shell density
+      !! itself; this is the path a correlated wave function arrives on, and it
+      !! is worth checking now rather than when there is an MCSCF to blame.
+      !!
+      !! **Every density below is applied to one construction**, not to a fresh
+      !! one each time. That is not tidiness: the valence-internal basis is *not*
+      !! reproducible between two runs of the pipeline. Water has degenerate
+      !! valence orbitals, a threaded SCF returns a different basis of that
+      !! degenerate space run to run, and the quasi-atomic transformation `U`
+      !! shifts to compensate -- measured at 1.4 between two identical calls.
+      !! What comes out the other side is stable to 4e-13: the quasi-atomic
+      !! orbitals in the AO basis, and the population-bond-order matrix. So the
+      !! physics is well defined and the intermediate coordinate system is not,
+      !! and a test that compares `U` across two runs is testing the threading.
+      type(error_type), allocatable, intent(out) :: error
+      type(quao_result_t) :: reference, supplied
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :), vi(:, :), mixed(:, :)
+      real(dp), allocatable :: d(:, :), expected(:, :)
+      integer, allocatable :: voff(:), vcount(:)
+      logical :: ok
+      integer :: i, j, n, occ
+      real(dp) :: total
+
+      call water_quaos("cc-pvdz", reference, overlap, dims, err, ok, vi, &
+                       mixed_out=mixed, voff_out=voff, vcount_out=vcount)
+      call check(error, ok, "the reference construction should succeed")
+      if (allocated(error)) return
+      n = reference%n_quao
+      occ = dims%n_valocc
+
+      ! ---- the closed-shell density, written out -----------------------------
+      !
+      ! The same answer, reached without assuming idempotency. Machine precision
+      ! rather than a tolerance: it is the same arithmetic on the same numbers.
+      allocate (d(n, n))
+      d = 0.0_dp
+      do i = 1, occ
+         d(i, i) = 2.0_dp
+      end do
+      call quasi_atomic_orbitals(WATER_Z, vi, occ, mixed, voff, vcount, supplied, err, &
+                                 valence_density=d)
+      call check(error,.not. err%has_error(), "an explicit closed-shell density "// &
+                 "should be accepted")
+      if (allocated(error)) return
+      call check(error, maxval(abs(supplied%population_bond_order &
+                                   - reference%population_bond_order)) < 1.0e-13_dp, &
+                 "handing over the closed-shell density explicitly must reproduce "// &
+                 "the density the routine builds for itself")
+      if (allocated(error)) return
+
+      ! ---- a dense density, against the transformation done by hand ----------
+      !
+      ! There is no dense *closed-shell* density to test with: `2 P_occ` is the
+      ! projector onto the span of the first `occ` basis vectors, and that matrix
+      ! is diagonal whichever orthonormal set is used to build it. So exercising
+      ! the off-diagonal path at all needs a density no wave function would
+      ! produce, checked against the algebra rather than against physics.
+      !
+      ! Worth doing because of what it catches: `U D U^T` instead of `U^T D U`
+      ! agrees for every diagonal `D` whose non-zero entries are equal -- which
+      ! is to say, for the closed-shell case that every other test in this file
+      ! uses. Nothing else here would notice a transposed transformation.
+      do i = 1, n
+         do j = 1, n
+            d(i, j) = 1.0_dp/real(i + j, dp)
+         end do
+      end do
+      call quasi_atomic_orbitals(WATER_Z, vi, occ, mixed, voff, vcount, supplied, err, &
+                                 valence_density=d)
+      call check(error,.not. err%has_error(), "a dense density should be accepted")
+      if (allocated(error)) return
+      expected = matmul(transpose(supplied%to_valence_internal), &
+                        matmul(d, supplied%to_valence_internal))
+      call check(error, maxval(abs(supplied%population_bond_order - expected)) &
+                 < 1.0e-11_dp, "the population-bond-order matrix should be U^T D U "// &
+                 "for the U the same construction reports")
+      if (allocated(error)) return
+
+      ! ---- a density that is not idempotent ----------------------------------
+      !
+      ! Two configurations: occupation moved out of the highest filled valence
+      ! orbital into the lowest empty one, which is what a CAS(2,2) does to a
+      ! bonding/antibonding pair. `2 U_occ U_occ^T` cannot express this at all --
+      ! there is no set of filled orbitals it is the projector onto -- so this is
+      ! the case the old code could not have been given.
+      d = 0.0_dp
+      do i = 1, occ
+         d(i, i) = 2.0_dp
+      end do
+      d(occ, occ) = 1.7_dp
+      d(occ + 1, occ + 1) = 0.3_dp
+      call quasi_atomic_orbitals(WATER_Z, vi, occ, mixed, voff, vcount, supplied, err, &
+                                 valence_density=d)
+      call check(error,.not. err%has_error(), "a fractionally occupied density "// &
+                 "should be accepted")
+      if (allocated(error)) return
+
+      ! The trace survives an orthogonal change of basis and `U` is orthogonal,
+      ! so the populations sum to the electron count whatever `D` is. This is the
+      ! invariant that does not depend on idempotency, and the first thing that
+      ! would break if the closed-shell shortcut were ever put back.
+      total = 0.0_dp
+      do i = 1, n
+         total = total + supplied%population_bond_order(i, i)
+      end do
+      call check(error, abs(total - (2.0_dp*real(occ, dp) - 2.0_dp + 1.7_dp + 0.3_dp)) &
+                 < 1.0e-12_dp, "the populations must sum to the electron count when "// &
+                 "the occupations are fractional")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(supplied%population_bond_order &
+                                   - reference%population_bond_order)) > 1.0e-3_dp, &
+                 "moving occupation into an empty valence orbital should change the "// &
+                 "answer -- if it does not, the argument is being ignored")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(supplied%population_bond_order &
+                                   - transpose(supplied%population_bond_order))) &
+                 < 1.0e-12_dp, "the population-bond-order matrix should stay symmetric")
+      if (allocated(error)) return
+
+      ! ---- a density of the wrong shape is refused ---------------------------
+      deallocate (d)
+      allocate (d(n + 1, n + 1))
+      d = 0.0_dp
+      call quasi_atomic_orbitals(WATER_Z, vi, occ, mixed, voff, vcount, supplied, err, &
+                                 valence_density=d)
+      call check(error, err%has_error(), &
+                 "a density that is not in the valence-internal basis should be "// &
+                 "refused rather than silently sliced")
+      call err%clear()
+   end subroutine test_supplied_density
 
    subroutine formyl_chloride_quaos(mol, aambs, mixed, s_mbs, dims, quao, err, ok)
       !! The whole pipeline on formyl chloride, in 6-31G
