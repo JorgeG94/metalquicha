@@ -77,16 +77,15 @@ module mqc_ormas_space
          !! The windows, **after tightening** -- see `tighten_windows`. These
          !! are the numbers the compatibility test uses, and they can differ
          !! from what the user wrote.
-      integer, allocatable :: alpha_min(:), alpha_max(:)
-      integer, allocatable :: beta_min(:), beta_max(:)
-         !! Per-spin bounds implied by the windows. Necessary but *not*
-         !! sufficient: they exist so the two spins can be enumerated
-         !! independently, and the real constraint is reimposed by
-         !! `compatible`. A class list built from these alone is too generous.
-
       integer :: n_alpha_classes = 0, n_beta_classes = 0
       integer, allocatable :: alpha_class(:, :), beta_class(:, :)
-         !! `(subspace, class)` -- the occupation vectors, in enumeration order
+         !! `(subspace, class)` -- every way that spin's electrons can be spread
+         !! over the subspaces, in enumeration order, whether or not the windows
+         !! leave any use for it. Classes that pair with nothing cost a row of
+         !! `compatible` and are worth that: the alternative is a per-spin bound
+         !! that is necessary but not sufficient, which means a second, wider
+         !! list of strings the moment anything needs to step outside the space
+         !! -- and stepping outside is what an excitation does.
       integer(int64), allocatable :: alpha_class_size(:), beta_class_size(:)
          !! Strings in each class: the product over subspaces of `C(orbitals,
          !! electrons)`, since within a class the subspaces are independent
@@ -334,36 +333,6 @@ contains
       end do
    end subroutine tighten_windows
 
-   pure subroutine derive_spin_bounds(space)
-      !! The loosest per-spin bounds the windows imply
-      !!
-      !! The windows constrain alpha and beta together, which would force the
-      !! two spins to be enumerated jointly. These bounds are the tightest
-      !! box that contains the joint constraint and factorises, so the strings
-      !! can be generated one spin at a time; what they let through that the
-      !! real constraint does not is caught later, once per class pair, by
-      !! `compatible`. Using them *as* the constraint would be wrong.
-      type(ormas_space_t), intent(inout) :: space
-
-      integer :: k, room, forced_by_window, forced_by_others
-
-      do k = 1, space%n_subspaces
-         room = min(space%n_orbitals(k), space%max_electrons(k))
-         space%alpha_max(k) = min(room, space%n_alpha)
-         space%beta_max(k) = min(room, space%n_beta)
-      end do
-
-      do k = 1, space%n_subspaces
-         forced_by_window = max(0, space%min_electrons(k) - space%beta_max(k))
-         forced_by_others = space%n_alpha - (sum(space%alpha_max) - space%alpha_max(k))
-         space%alpha_min(k) = max(forced_by_window, forced_by_others)
-
-         forced_by_window = max(0, space%min_electrons(k) - space%alpha_max(k))
-         forced_by_others = space%n_beta - (sum(space%beta_max) - space%beta_max(k))
-         space%beta_min(k) = max(forced_by_window, forced_by_others)
-      end do
-   end subroutine derive_spin_bounds
-
    subroutine class_string_tables(classes, n_orbitals, sizes, offsets, string_class)
       !! Per-class string counts, their running totals, and the inverse map
       integer, intent(in) :: classes(:, :), n_orbitals(:)
@@ -485,8 +454,6 @@ contains
 
       allocate (space%first_orbital(n_subspaces), space%n_orbitals(n_subspaces))
       allocate (space%min_electrons(n_subspaces), space%max_electrons(n_subspaces))
-      allocate (space%alpha_min(n_subspaces), space%alpha_max(n_subspaces))
-      allocate (space%beta_min(n_subspaces), space%beta_max(n_subspaces))
 
       space%first_orbital = first_orbital
       space%min_electrons = min_electrons
@@ -508,11 +475,13 @@ contains
       if (error%has_error()) return
 
       call tighten_windows(space, n_alpha + n_beta)
-      call derive_spin_bounds(space)
 
-      call enumerate_classes(space%alpha_max, space%alpha_min, n_alpha, &
+      ! Capacity is what a subspace can physically hold of one spin, and there
+      ! is no lower bound: the windows constrain the two spins together, so
+      ! neither alone is restricted by them. `compatible` decides everything.
+      call enumerate_classes(space%n_orbitals, spread(0, 1, n_subspaces), n_alpha, &
                              space%alpha_class, space%n_alpha_classes)
-      call enumerate_classes(space%beta_max, space%beta_min, n_beta, &
+      call enumerate_classes(space%n_orbitals, spread(0, 1, n_subspaces), n_beta, &
                              space%beta_class, space%n_beta_classes)
 
       if (space%n_alpha_classes == 0 .or. space%n_beta_classes == 0) then
@@ -775,10 +744,6 @@ contains
       if (allocated(this%n_orbitals)) deallocate (this%n_orbitals)
       if (allocated(this%min_electrons)) deallocate (this%min_electrons)
       if (allocated(this%max_electrons)) deallocate (this%max_electrons)
-      if (allocated(this%alpha_min)) deallocate (this%alpha_min)
-      if (allocated(this%alpha_max)) deallocate (this%alpha_max)
-      if (allocated(this%beta_min)) deallocate (this%beta_min)
-      if (allocated(this%beta_max)) deallocate (this%beta_max)
       if (allocated(this%alpha_class)) deallocate (this%alpha_class)
       if (allocated(this%beta_class)) deallocate (this%beta_class)
       if (allocated(this%alpha_class_size)) deallocate (this%alpha_class_size)

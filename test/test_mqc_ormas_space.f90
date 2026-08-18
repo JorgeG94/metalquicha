@@ -54,7 +54,7 @@ contains
                   new_unittest("open_windows_are_still_a_cas", test_cas_degeneracy), &
                   new_unittest("strings_match_the_worked_example", test_strings), &
                   new_unittest("string_addressing_round_trips", test_string_round_trip), &
-                  new_unittest("strings_outside_the_space_are_rejected", test_outside), &
+                  new_unittest("dead_classes_pair_with_nothing", test_outside), &
                   new_unittest("the_worked_determinant_list", test_worked_determinants), &
                   new_unittest("refusals", test_refusals) &
                   ]
@@ -83,13 +83,6 @@ contains
       call check(error, space%n_alpha_classes, 3)
       if (allocated(error)) return
       call check(error, space%n_beta_classes, 3)
-      if (allocated(error)) return
-
-      ! The per-spin bounds are wide open here: the real restriction, that the
-      ! first subspace holds at least two electrons, survives only in the grid.
-      call check(error, all(space%alpha_min == [0, 0]), "alpha minima")
-      if (allocated(error)) return
-      call check(error, all(space%alpha_max == [2, 2]), "alpha maxima")
       if (allocated(error)) return
 
       expected_class = reshape([2, 0, 1, 1, 0, 2], [2, 3])
@@ -610,39 +603,52 @@ contains
    end subroutine test_string_round_trip
 
    subroutine test_outside(error)
-      !! A string the bounds exclude addresses to nothing
+      !! Every string exists; some of them pair with nothing
       !!
-      !! Six orbitals in two subspaces with the second needing at least three
-      !! electrons: no string may put both of one spin's electrons in the
-      !! first subspace. Three of the fifteen strings of the full space are
-      !! excluded that way, and asking for their address gives zero rather
-      !! than a wrong answer -- which matters because an excitation generator
-      !! leaving the space is the normal case here, not a fault.
+      !! Six orbitals in two subspaces, the second needing at least three
+      !! electrons. No determinant may put both of one spin's electrons in the
+      !! first subspace -- but the *string* that does so still exists and still
+      !! has an address, because a string is not a determinant and an excitation
+      !! will need to name it. What it does not have is a partner: its
+      !! occupation class is compatible with no class of the other spin.
+      !!
+      !! Keeping such strings is what lets one list serve both the space and
+      !! anything that steps outside it, which is what an excitation does.
       type(error_type), allocatable, intent(out) :: error
 
       type(ormas_space_t) :: space
       type(error_t) :: err
       integer(int64), allocatable :: alpha(:), beta(:)
+      integer(int64) :: at
+      integer :: dead
 
       call build_ormas_space([1, 4], 6, 2, 2, [0, 3], [6, 6], space, err)
       call ormas_strings(space, alpha, beta, err)
       call check(error,.not. err%has_error(), "generating the strings failed")
       if (allocated(error)) return
 
-      call check(error, size(alpha), 12, "strings the bounds allow")
+      call check(error, size(alpha), 15, "every string of the full space is kept")
       if (allocated(error)) return
 
-      ! Orbitals 1 and 2, both in the first subspace.
-      call check(error, ormas_string_address(space, 3_int64, .true.) == 0_int64, &
-                 "a string outside the space was given an address")
+      ! Orbitals 1 and 2, both in the first subspace: a real string, with an
+      ! address, whose class pairs with nothing.
+      at = ormas_string_address(space, 3_int64, .true.)
+      call check(error, at > 0_int64, "a string was denied an address")
       if (allocated(error)) return
-      ! Orbitals 1 and 3, likewise.
-      call check(error, ormas_string_address(space, 5_int64, .true.) == 0_int64, &
-                 "a string outside the space was given an address")
+      dead = space%alpha_string_class(int(at))
+      call check(error,.not. any(space%compatible(:, dead)), &
+                 "a class the windows exclude found a partner")
       if (allocated(error)) return
-      ! Orbitals 1 and 4 straddle the two subspaces, so this one is inside.
-      call check(error, ormas_string_address(space, 9_int64, .true.) > 0_int64, &
-                 "a string inside the space was rejected")
+
+      ! Orbitals 1 and 4 straddle the subspaces, so this class does pair.
+      at = ormas_string_address(space, 9_int64, .true.)
+      call check(error, any(space%compatible(:, space%alpha_string_class(int(at)))), &
+                 "a usable class was left with no partner")
+      if (allocated(error)) return
+
+      ! The grid decides the determinant count, not which strings exist, so
+      ! keeping the dead ones changes nothing.
+      call check(error, space%n_determinants == 63_int64, "determinant count")
       if (allocated(error)) return
 
       call space%destroy()
