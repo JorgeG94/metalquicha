@@ -179,6 +179,15 @@ module mqc_method_config
          !! Number of active orbitals
       integer :: n_inactive_orbitals = -1
          !! Inactive orbitals (-1 = auto from nelec)
+      logical :: optimize_orbitals = .true.
+         !! Move the orbitals as well as the CI coefficients.
+         !!
+         !! True is CASSCF, false is CASCI on whatever the reference SCF
+         !! produced. Both spellings parse to `METHOD_TYPE_MCSCF`, so by the
+         !! time a method is built the distinction no longer exists in the type
+         !! -- it is carried here instead, defaulted from the method name by the
+         !! reader and overridable by `keywords.mcscf.optimize_orbitals`. Same
+         !! arrangement as coupled cluster's triples.
 
       ! State averaging
       integer :: n_states = 1
@@ -465,6 +474,7 @@ contains
       this%mcscf%n_active_electrons = 0
       this%mcscf%n_active_orbitals = 0
       this%mcscf%n_inactive_orbitals = -1
+      this%mcscf%optimize_orbitals = .true.
       this%mcscf%n_states = 1
       if (allocated(this%mcscf%state_weights)) deallocate (this%mcscf%state_weights)
       this%mcscf%max_macro_iter = 100

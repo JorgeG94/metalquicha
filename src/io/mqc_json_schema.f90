@@ -114,6 +114,8 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "cc", cc_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "mcscf", mcscf_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "aimd", aimd_keys(), error)
@@ -205,6 +207,7 @@ contains
       call allow(keys, "xtb")
       call allow(keys, "correlation")
       call allow(keys, "cc")
+      call allow(keys, "mcscf")
       call allow(keys, "dft")
       call allow(keys, "pcm")
       call allow(keys, "guess")
@@ -331,6 +334,31 @@ contains
       call allow(keys, "diis")
       call allow(keys, "diis_size")
    end function cc_keys
+
+   function mcscf_keys() result(keys)
+      !! The active space, and how hard to work at it
+      !!
+      !! **Only what the backend actually acts on is listed.** `mcscf_config_t`
+      !! carries fields for state averaging and for a CASPT2/NEVPT2 correction,
+      !! and none of that is implemented -- `run_libcint_casscf` optimises one
+      !! state and there is no perturbative step at all. Allowing the keys would
+      !! mean a deck could ask for a three-state average, get a ground-state
+      !! energy, and find nothing in the output to say so. Left out, the
+      !! validator refuses the key and lists what may be written instead, which
+      !! is the difference between "not yet" and "quietly ignored".
+      !!
+      !! `max_micro_iter` and a CI threshold are absent for a duller reason:
+      !! neither routine underneath takes them. The macro loop pins its CASCI at
+      !! 1e-11 so the orbital gradient it differentiates is not contaminated by
+      !! a loose CI, and that is not a knob worth exposing.
+      type(key_set_t) :: keys
+      call allow(keys, "n_active_electrons")
+      call allow(keys, "n_active_orbitals")
+      call allow(keys, "n_inactive_orbitals")
+      call allow(keys, "optimize_orbitals")
+      call allow(keys, "max_macro_iter")
+      call allow(keys, "orbital_convergence")
+   end function mcscf_keys
 
    function hessian_keys() result(keys)
       type(key_set_t) :: keys

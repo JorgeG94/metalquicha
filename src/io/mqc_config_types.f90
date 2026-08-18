@@ -166,6 +166,19 @@ module mqc_config_types
       logical :: cc_triples = .false.
       logical :: cc_diis = .true.
       integer :: cc_diis_size = 8
+      ! keywords.mcscf -- the active space, for CASSCF and CASCI
+      integer :: mcscf_n_active_electrons = 0
+      integer :: mcscf_n_active_orbitals = 0
+      integer :: mcscf_n_inactive_orbitals = -1
+         !! -1 derives it from the electron count: every electron the active
+         !! space does not hold is in a doubly occupied orbital.
+      logical :: mcscf_optimize_orbitals = .true.
+         !! CASSCF when true, CASCI when false. "casci" and "casscf" parse to
+         !! the same method type, so the spelling is the only place the
+         !! distinction survives; the reader defaults this from it and lets
+         !! `keywords.mcscf.optimize_orbitals` override.
+      integer :: mcscf_max_macro_iter = 100
+      real(dp) :: mcscf_orbital_convergence = 1.0e-6_dp
       ! keywords.dft -- the quadrature, not the functional
       integer :: dft_grid_level = 3
       integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge

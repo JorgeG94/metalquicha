@@ -14,6 +14,7 @@ module mqc_libcint_bridge
    private
 
    public :: run_libcint_hf
+   public :: run_libcint_mcscf
    public :: run_libcint_fmo
    public :: run_libcint_makefp
    public :: run_libcint_charges
@@ -187,5 +188,23 @@ contains
       if (len_trim(settings%basis_set) == 0 .or. fragment%n_atoms < 0) return
       if (present(want_gradient)) return
    end subroutine run_libcint_hf
+
+   subroutine run_libcint_mcscf(settings, fragment, result)
+      !! No-op stand-in: CASSCF and CASCI need the CPU integral backend
+      !!
+      !! All of it does -- the reference SCF, the active-space transform, the
+      !! determinant machinery and the orbital optimiser are all behind
+      !! `MQC_ENABLE_LIBCINT`, and there is no GPU path to fall through to.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(inout) :: result
+
+      call result%error%set(ERROR_VALIDATION, &
+                            "a multiconfigurational calculation needs the CPU integral "// &
+                            "backend; build with -DMQC_ENABLE_LIBCINT=ON")
+      result%has_error = .true.
+      result%has_energy = .false.
+      if (len_trim(settings%basis_set) == 0 .or. fragment%n_atoms < 0) return
+   end subroutine run_libcint_mcscf
 
 end module mqc_libcint_bridge

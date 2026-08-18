@@ -36,17 +36,30 @@ module mqc_libcint_bridge
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
+   use mqc_libcint_casci, only: casci_result_t, run_libcint_casci
+   use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
    public :: run_libcint_hf
+   public :: run_libcint_mcscf
    public :: run_libcint_fmo
    public :: run_libcint_makefp
    public :: run_libcint_charges
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
+
+   real(dp), parameter :: CI_TOLERANCE = 1.0e-11_dp
+      !! Residual the CASCI Davidson is driven to on the CASCI-only path.
+      !!
+      !! The same number `mqc_libcint_mcscf` pins its own inner CASCI at, and
+      !! deliberately not a keyword. A CASCI *is* its CI energy -- there is
+      !! nothing downstream to absorb a loose solve the way a CASSCF macro-step
+      !! absorbs one -- so the only defensible setting is "tight", and 1e-11 on
+      !! a hundred-hartree total is inside what a threaded Fock build
+      !! reproduces.
 
    real(dp), parameter :: ERI_CORE_BUDGET_BYTES = 2.0e9_dp
       !! How much the stored two-electron tensor may take before the SCF goes
@@ -1264,6 +1277,293 @@ contains
          name = "spherical"
       end if
    end function angular_form_name
+
+   subroutine resolve_active_space(settings, fragment, n_ao, space, error)
+      !! Turn the deck's active space into the four integers the CI needs
+      !!
+      !! Everything refusable about a CASSCF request is refusable here, before a
+      !! single integral is computed, and that is deliberate: an active space is
+      !! four small integers that either describe a valid CI problem or do not,
+      !! and finding out that they do not after an SCF has run is a waste of the
+      !! SCF and a worse error message.
+      !!
+      !! **The spin split comes from the molecular multiplicity, not from a
+      !! keyword.** `n_active_electrons` says how many electrons the CI
+      !! distributes; the multiplicity says how they are distributed between
+      !! the spin channels. Every inactive orbital is doubly occupied and so
+      !! contributes nothing to Ms, which means the whole of the molecule's
+      !! excess alpha population has to sit in the active space -- so
+      !! `n_alpha - n_beta = multiplicity - 1` exactly. A separate keyword for
+      !! this would be a second place to say the same thing, and the two could
+      !! disagree.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(physical_fragment_t), intent(in) :: fragment
+      integer, intent(in) :: n_ao
+      integer, intent(out) :: space(4)
+         !! n_inactive, n_active, n_alpha, n_beta -- in that order
+      type(error_t), intent(inout) :: error
+
+      integer :: n_active_electrons, n_active, n_inactive, n_alpha, n_beta
+      integer :: unpaired, closed_shell_electrons
+
+      space = 0
+      n_active_electrons = settings%mcscf%n_active_electrons
+      n_active = settings%mcscf%n_active_orbitals
+
+      ! An unset active space is the one mistake worth naming in full, because
+      ! it is what a first CASSCF deck gets wrong and there is no sensible
+      ! default to fall back on: "all the valence orbitals" is a different
+      ! number for every molecule, and guessing one would produce a converged
+      ! energy for a calculation nobody asked for.
+      if (n_active_electrons <= 0 .or. n_active <= 0) then
+         call error%set(ERROR_VALIDATION, "a multiconfigurational method needs an "// &
+                        "active space, and this deck has none. Set "// &
+                        "keywords.mcscf.n_active_electrons and "// &
+                        "keywords.mcscf.n_active_orbitals -- for example 6 and 6 for "// &
+                        "the three bonding and three antibonding orbitals of a triple "// &
+                        "bond. There is no default: the right active space is a "// &
+                        "property of the chemistry, not of the molecule.")
+         return
+      end if
+
+      unpaired = fragment%multiplicity - 1
+      if (mod(n_active_electrons - unpaired, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "an active space of "// &
+                        to_text(n_active_electrons)//" electrons cannot have "// &
+                        "multiplicity "//to_text(fragment%multiplicity)//": the two "// &
+                        "differ in parity, so there is no way to split the electrons "// &
+                        "into alpha and beta counts. Change either the electron count "// &
+                        "or the multiplicity by one.")
+         return
+      end if
+      n_alpha = (n_active_electrons + unpaired)/2
+      n_beta = (n_active_electrons - unpaired)/2
+
+      if (n_beta < 0 .or. n_alpha > n_active) then
+         call error%set(ERROR_VALIDATION, "an active space of "//to_text(n_active)// &
+                        " orbitals cannot hold "//to_text(n_alpha)//" alpha and "// &
+                        to_text(n_beta)//" beta electrons at multiplicity "// &
+                        to_text(fragment%multiplicity)//". Widen the active space or "// &
+                        "put fewer electrons in it.")
+         return
+      end if
+
+      ! Every electron the active space does not hold is in a doubly occupied
+      ! orbital, so the inactive count follows from the electron count and does
+      ! not normally have to be said. It is settable because a deck may want to
+      ! freeze more orbitals than the arithmetic gives -- but then the electrons
+      ! have to add up, which is what the second branch checks.
+      closed_shell_electrons = fragment%nelec - n_active_electrons
+      if (settings%mcscf%n_inactive_orbitals < 0) then
+         if (closed_shell_electrons < 0 .or. mod(closed_shell_electrons, 2) /= 0) then
+            call error%set(ERROR_VALIDATION, "cannot derive the inactive orbitals: "// &
+                           to_text(fragment%nelec)//" electrons less an active space "// &
+                           "of "//to_text(n_active_electrons)//" leaves "// &
+                           to_text(closed_shell_electrons)//", which is not a "// &
+                           "non-negative even number of doubly occupied electrons. "// &
+                           "Set keywords.mcscf.n_inactive_orbitals if the partition is "// &
+                           "meant to be something other than the obvious one.")
+            return
+         end if
+         n_inactive = closed_shell_electrons/2
+      else
+         n_inactive = settings%mcscf%n_inactive_orbitals
+         if (2*n_inactive + n_active_electrons /= fragment%nelec) then
+            call error%set(ERROR_VALIDATION, "the orbital partition does not account "// &
+                           "for every electron: "//to_text(n_inactive)//" inactive "// &
+                           "orbitals hold "//to_text(2*n_inactive)//" electrons and "// &
+                           "the active space "//to_text(n_active_electrons)//", which "// &
+                           "is "//to_text(2*n_inactive + n_active_electrons)//" against "// &
+                           "the molecule's "//to_text(fragment%nelec)//".")
+            return
+         end if
+      end if
+
+      ! The virtual space may be empty -- a CAS in a minimal basis legitimately
+      ! uses every orbital -- but it may not be negative.
+      if (n_inactive + n_active > n_ao) then
+         call error%set(ERROR_VALIDATION, to_text(n_inactive)//" inactive plus "// &
+                        to_text(n_active)//" active orbitals is more than the "// &
+                        to_text(n_ao)//" the basis '"//trim(settings%basis_set)// &
+                        "' provides. Use a larger basis or a smaller active space.")
+         return
+      end if
+
+      space = [n_inactive, n_active, n_alpha, n_beta]
+   end subroutine resolve_active_space
+
+   subroutine run_libcint_mcscf(settings, fragment, result)
+      !! CASSCF, or CASCI on the reference orbitals, for one fragment
+      !!
+      !! Three steps, and the middle one is the reason this is not just a call
+      !! into `mqc_libcint_mcscf`: a closed-shell SCF supplies the orbitals the
+      !! active space is carved out of. CASSCF then moves them and CASCI does
+      !! not, which is the only difference between the two -- same wavefunction,
+      !! same active space, same CI solver.
+      !!
+      !! **The reference is restricted, and an open-shell molecule is refused
+      !! rather than run unrestricted.** The active-space integrals are built
+      !! from one set of orbitals with an inactive count, exactly as the MP2
+      !! transform is, so alpha and beta orbital sets have nowhere to go. That
+      !! is a restriction on the *reference*, not on the state: a triplet with
+      !! an even electron count is perfectly reachable here, because the
+      !! multiplicity enters through the CI's alpha and beta string counts and
+      !! not through the SCF.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(inout) :: result
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(casscf_result_t) :: casscf
+      type(casci_result_t) :: casci
+      type(error_t) :: error
+      character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
+      character(len=MAX_LINE_LENGTH) :: line
+      integer :: iatom, diis_size
+      integer :: space(4)
+
+      if (settings%pcm%enabled) then
+         call result%error%set(ERROR_VALIDATION, "continuum solvation (keywords.pcm) is "// &
+                               "not implemented for multiconfigurational methods on the "// &
+                               "CPU backend. Refused rather than run in the gas phase.")
+         result%has_error = .true.
+         return
+      end if
+
+      if (mod(fragment%nelec, 2) /= 0) then
+         call result%error%set(ERROR_VALIDATION, "a multiconfigurational calculation "// &
+                               "here starts from a closed-shell SCF, and "// &
+                               to_text(fragment%nelec)//" electrons have no restricted "// &
+                               "solution. An open-shell reference would need separate "// &
+                               "alpha and beta transforms into the active space, which "// &
+                               "are not implemented. An open-shell *state* on an "// &
+                               "even-electron molecule is fine -- set the multiplicity "// &
+                               "and the CI will find it.")
+         result%has_error = .true.
+         return
+      end if
+
+      allocate (symbols(fragment%n_atoms))
+      do iatom = 1, fragment%n_atoms
+         symbols(iatom) = element_number_to_symbol(fragment%element_numbers(iatom))
+      end do
+
+      call build_libcint_molecule(fragment%element_numbers, symbols, &
+                                  fragment%coordinates, trim(settings%basis_set), &
+                                  mol, error, ghost=ghost_of(fragment))
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, error%get_message())
+         result%has_error = .true.
+         return
+      end if
+
+      ! Before the SCF, so a malformed active space costs nothing to discover.
+      call resolve_active_space(settings, fragment, mol%nao, space, error)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, error%get_message())
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
+      if (settings%verbose) then
+         write (line, "(a,i0,a,i0,a,i0,a,i0,a,i0,a)") "  active space: CAS(", &
+            settings%mcscf%n_active_electrons, ",", space(2), "), ", space(1), &
+            " inactive, ", space(3), " alpha and ", space(4), " beta active electrons"
+         call logger%info(trim(line))
+      end if
+
+      diis_size = settings%diis_size
+      if (.not. settings%use_diis) diis_size = 0
+
+      call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+                           settings%density_tol, settings%verbose, scf, error, &
+                           diis_vectors=diis_size)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, error%get_message())
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+      ! The reference is a starting point for CASSCF and the answer itself for
+      ! CASCI, so a reference that did not converge is refused in both cases --
+      ! `allow_crap_scf` is about reporting an unconverged SCF as a result, and
+      ! nothing downstream of this one would say it had happened.
+      if (.not. scf%converged) then
+         call result%error%set(ERROR_VALIDATION, "the reference SCF did not converge in "// &
+                               to_text(settings%max_iter)//" iterations, so there are no "// &
+                               "orbitals to build an active space from")
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
+      if (settings%mcscf%optimize_orbitals) then
+         call run_libcint_casscf(mol, scf%orbitals, space(1), space(2), space(3), space(4), &
+                                 casscf, error, &
+                                 max_iterations=settings%mcscf%max_macro_iter, &
+                                 gradient_tol=settings%mcscf%orbital_convergence, &
+                                 verbose=settings%verbose)
+         if (.not. error%has_error() .and. .not. casscf%converged) then
+            call error%set(ERROR_VALIDATION, "the orbital optimisation did not reach an "// &
+                           "orbital gradient of "// &
+                           to_real_text(settings%mcscf%orbital_convergence)//" in "// &
+                           to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
+                           "(it stopped at "//to_real_text(casscf%gradient_norm)// &
+                           "). Raise keywords.mcscf.max_macro_iter.")
+         end if
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         ! A CASSCF total is a complete energy, not a correction to a reference,
+         ! so it goes in the slot `energy_total` adds unconditionally. There is
+         ! no separate multiconfigurational component to report beside it: the
+         ! "correlation" a CAS recovers is not separable from the reference the
+         ! way an MP2 or a coupled-cluster correction is, because the orbitals
+         ! underneath it are no longer the Hartree-Fock ones.
+         result%energy%scf = casscf%energy
+         if (settings%verbose) then
+            write (line, "(a,f20.12)") "  E(CASSCF)      ", casscf%energy
+            call logger%info(trim(line))
+         end if
+      else
+         ! Not `orbital_convergence`, which is a gradient threshold and means
+         ! nothing to a Davidson, and not a keyword either: the CI is the whole
+         ! answer on this path, so there is no reason to solve it loosely. The
+         ! same threshold the CASSCF macro loop pins its own CASCI at.
+         call run_libcint_casci(mol, scf%orbitals, space(1), space(2), space(3), space(4), &
+                                casci, error, verbose=settings%verbose, &
+                                tolerance=CI_TOLERANCE)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         result%energy%scf = casci%energy
+         if (settings%verbose) then
+            write (line, "(a,f20.12)") "  E(CASCI)       ", casci%energy
+            call logger%info(trim(line))
+         end if
+      end if
+
+      result%scf_status = SCF_CONVERGED
+      result%has_energy = .true.
+      call mol%destroy()
+   end subroutine run_libcint_mcscf
+
+   pure function to_real_text(value) result(out)
+      !! A small real in exponent form, for an error message
+      real(dp), intent(in) :: value
+      character(len=:), allocatable :: out
+      character(len=24) :: buffer
+      write (buffer, "(es9.2)") value
+      out = trim(adjustl(buffer))
+   end function to_real_text
 
    pure function to_text(value) result(out)
       integer, intent(in) :: value

@@ -12,7 +12,7 @@ module mqc_cuest_iface
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
-   use mqc_method_config, only: pcm_config_t
+   use mqc_method_config, only: pcm_config_t, mcscf_config_t
    implicit none
    private
 
@@ -80,6 +80,16 @@ module mqc_cuest_iface
 
       type(pcm_config_t) :: pcm
          !! Read by the CPU backend only; cuEST always fits.
+
+      ! The active space, when a multiconfigurational method is what is being
+      ! run. Carried whole for the same reason the continuum is: the active
+      ! space, the orbital partition and the convergence thresholds only mean
+      ! anything together, and every other SCF setting a CASSCF needs -- the
+      ! basis, the reference SCF's iteration cap and tolerances -- is already
+      ! on this type. A CASSCF *is* an SCF followed by more work, so it takes
+      ! the same settings object rather than a parallel one.
+      type(mcscf_config_t) :: mcscf
+         !! Read by the CPU backend only; cuEST has no CI.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""
          !! Exchange-correlation functional; empty means Hartree-Fock

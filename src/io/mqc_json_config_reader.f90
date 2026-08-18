@@ -40,7 +40,8 @@ module mqc_json_config_reader
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
-                               method_wants_density_fitting, method_type_to_string
+                               method_wants_density_fitting, method_type_to_string, &
+                               method_is_casci
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, BACKEND_CUEST
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
@@ -173,14 +174,21 @@ contains
       ! Likewise "ri-mp2" and "df-mp2", which the method type cannot distinguish
       ! from "mp2". A later keyword can still turn it off.
       config%corr_density_fitting = method_wants_density_fitting(text)
+      ! And likewise "casci", which the method type cannot distinguish from
+      ! "casscf" -- both are METHOD_TYPE_MCSCF, because they are the same
+      ! wavefunction and differ only in whether the orbitals are allowed to
+      ! move. Read here while the spelling still exists;
+      ! `keywords.mcscf.optimize_orbitals` below can still override it.
+      config%mcscf_optimize_orbitals = .not. method_is_casci(text)
+      call optional_string(json, "model.basis", config%basis)
+      call optional_string(json, "model.aux_basis", config%aux_basis)
+      call optional_string(json, "model.functional", config%functional)
+
+      ! ---- properties ------------------------------------------------------
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &
                          config%bonding_threshold)
-
-      call optional_string(json, "model.basis", config%basis)
-      call optional_string(json, "model.aux_basis", config%aux_basis)
-      call optional_string(json, "model.functional", config%functional)
 
       ! ---- driver ----------------------------------------------------------
       call require_string(json, "driver", text, error)
@@ -241,6 +249,25 @@ contains
       ! absent, which cannot distinguish absent from false on its own.
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
+      call optional_int(json, "keywords.mcscf.n_active_electrons", &
+                        config%mcscf_n_active_electrons)
+      call optional_int(json, "keywords.mcscf.n_active_orbitals", &
+                        config%mcscf_n_active_orbitals)
+      call optional_int(json, "keywords.mcscf.n_inactive_orbitals", &
+                        config%mcscf_n_inactive_orbitals)
+      call optional_int(json, "keywords.mcscf.max_macro_iter", config%mcscf_max_macro_iter)
+      call optional_real(json, "keywords.mcscf.orbital_convergence", &
+                         config%mcscf_orbital_convergence)
+      ! Read last of the group, and deliberately with plain `optional_logical`
+      ! rather than the `_seen` variant the triples use. The field already holds
+      ! what the method spelling implied, and `optional_logical` leaves it there
+      ! when the key is absent -- so "present wins over the name, absent loses to
+      ! it" falls out without a second flag. The triples need `_seen` only
+      ! because their default is settled in the adapter, one hop after the
+      ! spelling has been discarded; this one is settled here, where it still
+      ! exists.
+      call optional_logical(json, "keywords.mcscf.optimize_orbitals", &
+                            config%mcscf_optimize_orbitals)
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
       ! The continuum is switched on by the presence of the block rather than by a
       ! flag inside it: a deck that names a dielectric wants solvent, and a
