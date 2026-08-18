@@ -32,7 +32,8 @@ module test_mqc_ormas_space
    use mqc_error, only: error_t
    use mqc_determinants, only: generate_strings
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space, &
-                              determinant_address, describes_a_cas
+                              determinant_address, describes_a_cas, &
+                              ormas_strings, ormas_string_address
    implicit none
    private
 
@@ -51,6 +52,10 @@ contains
                   new_unittest("compatibility_is_symmetric", test_symmetry), &
                   new_unittest("windows_are_tightened", test_tightening), &
                   new_unittest("open_windows_are_still_a_cas", test_cas_degeneracy), &
+                  new_unittest("strings_match_the_worked_example", test_strings), &
+                  new_unittest("string_addressing_round_trips", test_string_round_trip), &
+                  new_unittest("strings_outside_the_space_are_rejected", test_outside), &
+                  new_unittest("the_worked_determinant_list", test_worked_determinants), &
                   new_unittest("refusals", test_refusals) &
                   ]
    end subroutine collect_mqc_ormas_space_tests
@@ -483,6 +488,199 @@ contains
       if (allocated(error)) return
       call space%destroy()
    end subroutine test_cas_degeneracy
+
+   subroutine test_strings(error)
+      !! The six strings of the two-subspace partition, as bit patterns
+      !!
+      !! Class (2,0) puts both electrons in orbitals 1-2; class (1,1) takes one
+      !! from each subspace with the second varying fastest, giving (1,3),
+      !! (1,4), (2,3), (2,4); class (0,2) puts both in orbitals 3-4. Bit `k` is
+      !! orbital `k + 1`, so those are 3, 5, 9, 6, 10, 12 -- an order that is
+      !! *not* ascending numerically, because the class grouping outranks it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      integer(int64), allocatable :: alpha(:), beta(:)
+
+      call build_ormas_space([1, 3], 4, 2, 2, [2, 0], [4, 2], space, err)
+      call ormas_strings(space, alpha, beta, err)
+      call check(error,.not. err%has_error(), "generating the strings failed")
+      if (allocated(error)) return
+
+      call check(error, size(alpha), 6, "how many alpha strings")
+      if (allocated(error)) return
+      call check(error, all(alpha == [3_int64, 5_int64, 9_int64, 6_int64, 10_int64, 12_int64]), &
+                 "alpha strings")
+      if (allocated(error)) return
+      call check(error, all(beta == alpha), "the two spins have the same strings here")
+      if (allocated(error)) return
+
+      call space%destroy()
+   end subroutine test_strings
+
+   subroutine round_trips(space, error)
+      !! Every string of a space addresses back to where it was found
+      type(ormas_space_t), intent(in) :: space
+      type(error_type), allocatable, intent(inout) :: error
+
+      integer(int64), allocatable :: alpha(:), beta(:)
+      type(error_t) :: err
+      integer(int64) :: i
+
+      call ormas_strings(space, alpha, beta, err)
+      if (err%has_error()) return
+
+      do i = 1, size(alpha, kind=int64)
+         call check(error, ormas_string_address(space, alpha(i), .true.) == i, &
+                    "an alpha string does not address back to itself")
+         if (allocated(error)) return
+         call check(error, popcnt(alpha(i)), space%n_alpha, "alpha electron count")
+         if (allocated(error)) return
+
+         ! Generation walks the classes in order, so a string's position must
+         ! fall inside the range its class was allotted.
+         call check(error, i > space%alpha_offset(space%alpha_string_class(int(i))) .and. &
+                    i <= space%alpha_offset(space%alpha_string_class(int(i)) + 1), &
+                    "a string sits outside its own class's range")
+         if (allocated(error)) return
+      end do
+
+      do i = 1, size(beta, kind=int64)
+         call check(error, ormas_string_address(space, beta(i), .false.) == i, &
+                    "a beta string does not address back to itself")
+         if (allocated(error)) return
+         call check(error, popcnt(beta(i)), space%n_beta, "beta electron count")
+         if (allocated(error)) return
+      end do
+   end subroutine round_trips
+
+   subroutine test_string_round_trip(error)
+      !! Generation and addressing are inverse, over every string of several
+      !! partitions
+      !!
+      !! The two are written independently -- one builds a string from a class
+      !! by taking a product over subspaces, the other takes a string apart and
+      !! reconstructs a mixed-radix index -- so agreeing over the whole list is
+      !! a real constraint on both, not a tautology.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+
+      call build_ormas_space([1, 3], 4, 2, 2, [2, 0], [4, 2], space, err)
+      call round_trips(space, error)
+      if (allocated(error)) return
+      call space%destroy()
+
+      call build_ormas_space([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], space, err)
+      call round_trips(space, error)
+      if (allocated(error)) return
+      call space%destroy()
+
+      ! Subspaces of unequal width, so the mixed-radix weights differ.
+      call build_ormas_space([1, 4], 7, 3, 3, [4, 0], [6, 2], space, err)
+      call round_trips(space, error)
+      if (allocated(error)) return
+      call space%destroy()
+
+      ! Unequal spins, so the two lists are genuinely different.
+      call build_ormas_space([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], space, err)
+      call round_trips(space, error)
+      if (allocated(error)) return
+      call space%destroy()
+   end subroutine test_string_round_trip
+
+   subroutine test_outside(error)
+      !! A string the bounds exclude addresses to nothing
+      !!
+      !! Six orbitals in two subspaces with the second needing at least three
+      !! electrons: no string may put both of one spin's electrons in the
+      !! first subspace. Three of the fifteen strings of the full space are
+      !! excluded that way, and asking for their address gives zero rather
+      !! than a wrong answer -- which matters because an excitation generator
+      !! leaving the space is the normal case here, not a fault.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      integer(int64), allocatable :: alpha(:), beta(:)
+
+      call build_ormas_space([1, 4], 6, 2, 2, [0, 3], [6, 6], space, err)
+      call ormas_strings(space, alpha, beta, err)
+      call check(error,.not. err%has_error(), "generating the strings failed")
+      if (allocated(error)) return
+
+      call check(error, size(alpha), 12, "strings the bounds allow")
+      if (allocated(error)) return
+
+      ! Orbitals 1 and 2, both in the first subspace.
+      call check(error, ormas_string_address(space, 3_int64, .true.) == 0_int64, &
+                 "a string outside the space was given an address")
+      if (allocated(error)) return
+      ! Orbitals 1 and 3, likewise.
+      call check(error, ormas_string_address(space, 5_int64, .true.) == 0_int64, &
+                 "a string outside the space was given an address")
+      if (allocated(error)) return
+      ! Orbitals 1 and 4 straddle the two subspaces, so this one is inside.
+      call check(error, ormas_string_address(space, 9_int64, .true.) > 0_int64, &
+                 "a string inside the space was rejected")
+      if (allocated(error)) return
+
+      call space%destroy()
+   end subroutine test_outside
+
+   subroutine test_worked_determinants(error)
+      !! Rows of the determinant list worked out by hand, by their strings
+      !!
+      !! Now that a string index means something concrete, the addressing can
+      !! be checked against determinants named the way a person would name
+      !! them -- which orbitals each spin occupies -- rather than against
+      !! indices that came out of the same machinery being tested.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer :: a, b
+
+      call build_ormas_space([1, 3], 4, 2, 2, [2, 0], [4, 2], space, err)
+      call ormas_strings(space, alpha, beta, err)
+      call check(error,.not. err%has_error(), "building the partition failed")
+      if (allocated(error)) return
+
+      ! alpha (1,3) with beta (2,4) is the eleventh determinant
+      a = int(ormas_string_address(space, 5_int64, .true.))
+      b = int(ormas_string_address(space, 10_int64, .false.))
+      call check(error, determinant_address(space, a, b) == 11_int64, "det 11")
+      if (allocated(error)) return
+
+      ! alpha (1,4) with beta (1,3) is the thirteenth
+      a = int(ormas_string_address(space, 9_int64, .true.))
+      b = int(ormas_string_address(space, 5_int64, .false.))
+      call check(error, determinant_address(space, a, b) == 13_int64, "det 13")
+      if (allocated(error)) return
+
+      ! alpha (2,3) with beta (2,3) is the twentieth
+      a = int(ormas_string_address(space, 6_int64, .true.))
+      call check(error, determinant_address(space, a, a) == 20_int64, "det 20")
+      if (allocated(error)) return
+
+      ! alpha (2,4) with beta (1,2) is the twenty-second
+      a = int(ormas_string_address(space, 10_int64, .true.))
+      b = int(ormas_string_address(space, 3_int64, .false.))
+      call check(error, determinant_address(space, a, b) == 22_int64, "det 22")
+      if (allocated(error)) return
+
+      ! alpha (1,2) with beta (3,4) is the sixth -- the last of the first row,
+      ! reached only because class (2,0) is compatible with every beta class
+      a = int(ormas_string_address(space, 3_int64, .true.))
+      b = int(ormas_string_address(space, 12_int64, .false.))
+      call check(error, determinant_address(space, a, b) == 6_int64, "det 6")
+      if (allocated(error)) return
+
+      call space%destroy()
+   end subroutine test_worked_determinants
 
    subroutine test_refusals(error)
       !! The partitions that describe nothing, and are said so

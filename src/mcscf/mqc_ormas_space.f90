@@ -38,6 +38,7 @@ module mqc_ormas_space
    use pic_types, only: int64, int32
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_determinants, only: generate_strings, string_address
    implicit none
    private
 
@@ -46,6 +47,8 @@ module mqc_ormas_space
    public :: build_ormas_space
    public :: determinant_address
    public :: describes_a_cas
+   public :: ormas_strings
+   public :: ormas_string_address
 
    integer, parameter :: MAX_SUBSPACES = 16
       !! Far above anything meaningful -- the cost of a subspace is another
@@ -589,6 +592,180 @@ contains
          binomial(space%n_active_orbitals, space%n_alpha)* &
          binomial(space%n_active_orbitals, space%n_beta)
    end function describes_a_cas
+
+   pure function subspace_string(space, subspace, string) result(part)
+      !! The bits of a string belonging to one subspace, shifted down to zero
+      type(ormas_space_t), intent(in) :: space
+      integer, intent(in) :: subspace
+      integer(int64), intent(in) :: string
+      integer(int64) :: part
+
+      integer :: shift, width
+
+      shift = space%first_orbital(subspace) - 1
+      width = space%n_orbitals(subspace)
+      part = iand(ishft(string, -shift), ishft(1_int64, width) - 1_int64)
+   end function subspace_string
+
+   pure function occupation_of(space, string) result(occupation)
+      !! How many electrons a string puts in each subspace
+      type(ormas_space_t), intent(in) :: space
+      integer(int64), intent(in) :: string
+      integer :: occupation(space%n_subspaces)
+
+      integer :: k
+
+      do k = 1, space%n_subspaces
+         occupation(k) = popcnt(subspace_string(space, k, string))
+      end do
+   end function occupation_of
+
+   pure function class_holding(classes, occupation) result(which)
+      !! Which class an occupation vector is, or zero if the bounds exclude it
+      !!
+      !! A scan, because the class list is short -- a partition with enough
+      !! subspaces for this to matter would be unreadable long before it was
+      !! slow. If that ever stops being true this is the one place to change.
+      integer, intent(in) :: classes(:, :), occupation(:)
+      integer :: which
+
+      integer :: g
+
+      which = 0
+      do g = 1, size(classes, 2)
+         if (all(classes(:, g) == occupation)) then
+            which = g
+            return
+         end if
+      end do
+   end function class_holding
+
+   subroutine strings_of_one_spin(space, classes, offsets, strings, error)
+      !! Every string of one spin, in global index order
+      !!
+      !! Within a class the subspaces are independent, so the strings are the
+      !! product of each subspace's own strings -- taken with the *last*
+      !! subspace varying fastest, which is the order the mixed-radix address
+      !! in `within_class_rank` inverts. Each subspace's own strings come from
+      !! `mqc_determinants`, so the ordering inside a subspace is the same
+      !! ascending-bit-pattern one used everywhere else in this code and there
+      !! is only one combinatorial kernel to be wrong.
+      type(ormas_space_t), intent(in) :: space
+      integer, intent(in) :: classes(:, :)
+      integer(int64), intent(in) :: offsets(:)
+      integer(int64), allocatable, intent(out) :: strings(:)
+      type(error_t), intent(inout) :: error
+
+      integer(int64), allocatable :: part(:)
+      integer(int64) :: index, stride, block
+      integer :: n_classes, g, k, shift
+      integer :: sizes(space%n_subspaces)
+
+      if (error%has_error()) return
+
+      n_classes = size(classes, 2)
+      allocate (strings(offsets(n_classes + 1)))
+      strings = 0_int64
+
+      do g = 1, n_classes
+         do k = 1, space%n_subspaces
+            sizes(k) = int(binomial(space%n_orbitals(k), classes(k, g)))
+         end do
+
+         stride = 1_int64
+         do k = space%n_subspaces, 1, -1
+            call generate_strings(space%n_orbitals(k), classes(k, g), part, error)
+            if (error%has_error()) return
+
+            shift = space%first_orbital(k) - 1
+            ! Repeat this subspace's strings every `stride` determinants, so
+            ! subspace `n_subspaces` changes on every step and subspace 1 only
+            ! after a full sweep of all the others.
+            do index = offsets(g) + 1_int64, offsets(g + 1)
+               block = mod((index - offsets(g) - 1_int64)/stride, int(sizes(k), int64))
+               strings(index) = ior(strings(index), ishft(part(block + 1_int64), shift))
+            end do
+
+            stride = stride*int(sizes(k), int64)
+            deallocate (part)
+         end do
+      end do
+   end subroutine strings_of_one_spin
+
+   pure function within_class_rank(space, classes, which, string) result(rank)
+      !! Where a string sits among those of its own class, 1-based
+      !!
+      !! Mixed radix over the subspaces with the last as the least significant
+      !! digit, each digit being that subspace's own address.
+      type(ormas_space_t), intent(in) :: space
+      integer, intent(in) :: classes(:, :)
+      integer, intent(in) :: which
+      integer(int64), intent(in) :: string
+      integer(int64) :: rank
+
+      integer :: k, j
+      integer(int64) :: digit, weight
+
+      rank = 1_int64
+      do k = 1, space%n_subspaces
+         digit = int(string_address(space%n_orbitals(k), classes(k, which), &
+                                    subspace_string(space, k, string)), int64) - 1_int64
+         weight = 1_int64
+         do j = k + 1, space%n_subspaces
+            weight = weight*binomial(space%n_orbitals(j), classes(j, which))
+         end do
+         rank = rank + digit*weight
+      end do
+   end function within_class_rank
+
+   subroutine ormas_strings(space, alpha, beta, error)
+      !! Every alpha and beta string of the space, in global index order
+      !!
+      !! Both spins together because nothing wants one without the other, and
+      !! because when the two spins have the same electron count the lists are
+      !! identical -- a property the spin-transpose bookkeeping later depends
+      !! on, and one that follows from the per-spin bounds being derived by the
+      !! same expression from the same windows.
+      type(ormas_space_t), intent(in) :: space
+      integer(int64), allocatable, intent(out) :: alpha(:), beta(:)
+      type(error_t), intent(inout) :: error
+
+      call strings_of_one_spin(space, space%alpha_class, space%alpha_offset, alpha, error)
+      if (error%has_error()) return
+      call strings_of_one_spin(space, space%beta_class, space%beta_offset, beta, error)
+   end subroutine ormas_strings
+
+   pure function ormas_string_address(space, string, alpha_spin) result(index)
+      !! Where a string sits in its spin's list, 1-based, or zero if it is not
+      !! in the space at all
+      !!
+      !! Zero rather than an error because this is the inverse an excitation
+      !! generator calls on every string it produces, most of which are inside
+      !! the space and some of which are not -- leaving the space is the normal
+      !! case ORMAS exists to express, not a fault. The caller must check.
+      type(ormas_space_t), intent(in) :: space
+      integer(int64), intent(in) :: string
+      logical, intent(in) :: alpha_spin
+      integer(int64) :: index
+
+      integer :: occupation(space%n_subspaces)
+      integer :: which
+
+      index = 0_int64
+      occupation = occupation_of(space, string)
+
+      if (alpha_spin) then
+         which = class_holding(space%alpha_class, occupation)
+         if (which == 0) return
+         index = space%alpha_offset(which) + &
+                 within_class_rank(space, space%alpha_class, which, string)
+      else
+         which = class_holding(space%beta_class, occupation)
+         if (which == 0) return
+         index = space%beta_offset(which) + &
+                 within_class_rank(space, space%beta_class, which, string)
+      end if
+   end function ormas_string_address
 
    pure subroutine ormas_space_destroy(this)
       !! Give back everything the partition holds
