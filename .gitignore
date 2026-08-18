@@ -100,3 +100,10 @@ Testing/
 # pyscf-forge DFDH writes a profiler log beside whatever invoked it. Only the
 # validation reference generator ever calls it, and the log is never wanted.
 tmp_timing.log
+
+# Throwaway Fortran drivers for poking at the library by hand -- see
+# scratch/README.md, which is the only tracked thing in there. Nothing under
+# scratch/ is built by the CMake build or run by ctest.
+scratch/*
+!scratch/README.md
+!scratch/build.sh
