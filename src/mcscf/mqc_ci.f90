@@ -39,6 +39,7 @@ module mqc_ci
    public :: sigma_vector
    public :: ci_hamiltonian
    public :: ci_diagonal
+   public :: apply_excitations
 
 contains
 
@@ -136,6 +137,63 @@ contains
       deallocate (f1e)
    end subroutine absorb_one_electron
 
+   subroutine apply_excitations(ci, alpha, beta, gathered)
+      !! `E_pq |c>` for every orbital pair at once
+      !!
+      !! Returns `(n_orbitals^2, n_determinants)`, column `d` and row
+      !! `p + (q-1) n_orb` holding the determinant-`d` component of `E_pq |c>`.
+      !!
+      !! Shared between the sigma build and the density matrices, which is not
+      !! an economy but a correctness argument: both are built entirely out of
+      !! this one operation, and it carries the excitation phases. Two copies
+      !! would be two places for a sign to go wrong, and the second copy would
+      !! be exercised only by the density matrices -- where a sign error does
+      !! not change the energy at all and so would survive every test that
+      !! looks at one.
+      !!
+      !! Alpha excitations move the first index of the vector and beta the
+      !! second. That is the only place the two spins differ anywhere in the CI.
+      real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
+      type(link_table_t), intent(in) :: alpha, beta
+      real(dp), allocatable, intent(out) :: gathered(:, :)
+
+      integer :: norb, na, nb, npair, ndet, source, target_string, row, pair, ia, ib
+      real(dp) :: weight
+
+      norb = alpha%n_orbitals
+      na = alpha%n_strings
+      nb = beta%n_strings
+      npair = norb*norb
+      ndet = na*nb
+
+      allocate (gathered(npair, ndet))
+      gathered = 0.0_dp
+
+      do source = 1, na
+         do row = 1, alpha%n_rows
+            pair = alpha%cre(row, source) + (alpha%des(row, source) - 1)*norb
+            target_string = alpha%dest(row, source)
+            weight = real(alpha%phase(row, source), dp)
+            do ib = 1, nb
+               gathered(pair, target_string + (ib - 1)*na) = &
+                  gathered(pair, target_string + (ib - 1)*na) + weight*ci(source, ib)
+            end do
+         end do
+      end do
+
+      do source = 1, nb
+         do row = 1, beta%n_rows
+            pair = beta%cre(row, source) + (beta%des(row, source) - 1)*norb
+            target_string = beta%dest(row, source)
+            weight = real(beta%phase(row, source), dp)
+            do ia = 1, na
+               gathered(pair, ia + (target_string - 1)*na) = &
+                  gathered(pair, ia + (target_string - 1)*na) + weight*ci(ia, source)
+            end do
+         end do
+      end do
+   end subroutine apply_excitations
+
    subroutine sigma_vector(folded, ci, alpha, beta, sigma, error)
       !! `sigma = H c`, with `H` the folded tensor acting as `E_pq E_rs`
       !!
@@ -190,34 +248,7 @@ contains
          return
       end if
 
-      allocate (gathered(npair, ndet))
-      gathered = 0.0_dp
-
-      ! E_pq applied to the vector: alpha excitations move the first index.
-      do source = 1, na
-         do row = 1, alpha%n_rows
-            pair = alpha%cre(row, source) + (alpha%des(row, source) - 1)*norb
-            target_string = alpha%dest(row, source)
-            weight = real(alpha%phase(row, source), dp)
-            do ib = 1, nb
-               gathered(pair, target_string + (ib - 1)*na) = &
-                  gathered(pair, target_string + (ib - 1)*na) + weight*ci(source, ib)
-            end do
-         end do
-      end do
-
-      ! and beta excitations the second.
-      do source = 1, nb
-         do row = 1, beta%n_rows
-            pair = beta%cre(row, source) + (beta%des(row, source) - 1)*norb
-            target_string = beta%dest(row, source)
-            weight = real(beta%phase(row, source), dp)
-            do ia = 1, na
-               gathered(pair, ia + (target_string - 1)*na) = &
-                  gathered(pair, ia + (target_string - 1)*na) + weight*ci(ia, source)
-            end do
-         end do
-      end do
+      call apply_excitations(ci, alpha, beta, gathered)
 
       ! The whole two-electron contraction, as one matrix multiply.
       allocate (contracted(npair, ndet))
