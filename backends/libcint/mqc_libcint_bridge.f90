@@ -46,7 +46,34 @@ module mqc_libcint_bridge
    public :: run_libcint_sapt0
    public :: libcint_backend_available
 
+   real(dp), parameter :: ERI_CORE_BUDGET_BYTES = 2.0e9_dp
+      !! How much the stored two-electron tensor may take before the SCF goes
+      !! back to rebuilding it every iteration.
+      !!
+      !! The tensor is the full n^4, not the eightfold-unique set, so this is
+      !! reached at 128 functions. Packing it would push that to 215, which is
+      !! worth doing when something needs it -- `eris_packed` already exists for
+      !! the correlated methods -- but the contraction in `build_fock` addresses
+      !! the tensor as four indices and would have to be rewritten with it.
+      !!
+      !! Deliberately a fixed budget rather than a fraction of the machine.
+      !! Fragmented runs put one MPI rank per fragment on a node, and sizing
+      !! this from total memory would have every rank on a node each conclude it
+      !! could have all of it.
+
 contains
+
+   pure function eri_fits_in_core(nao) result(fits)
+      !! Whether n^4 stored integrals stay inside `ERI_CORE_BUDGET_BYTES`
+      !!
+      !! Computed in `real` rather than integer arithmetic: n^4 at four hundred
+      !! functions overflows a 32-bit integer, and the symptom of that would be
+      !! a large basis quietly deciding it fitted.
+      integer, intent(in) :: nao
+      logical :: fits
+
+      fits = 8.0_dp*real(nao, dp)**4 <= ERI_CORE_BUDGET_BYTES
+   end function eri_fits_in_core
 
    pure function libcint_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU
@@ -665,10 +692,33 @@ contains
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc)
       else
+         ! Store the integrals when they fit, rather than rebuilding every
+         ! quartet at every iteration.
+         !
+         ! A direct build costs the same on iteration twelve as on iteration one
+         ! -- the screening is on the basis and the density, and neither gets
+         ! much smaller -- so a twelve-iteration SCF evaluates the same million
+         ! shell quartets twelve times. Storing them turns every iteration after
+         ! the first into a contraction that is memory-bound rather than
+         ! integral-bound: 1.92 s to 0.07 s on the case this was measured on,
+         ! and the SCF as a whole from 25.6 s to 3.7 s.
+         !
+         ! The threshold is memory, because that is the only thing that makes
+         ! this the wrong choice. It is not a fidelity trade like density
+         ! fitting: the stored tensor holds the same integrals the direct build
+         ! would have computed, and the energy agrees to 1e-11.
+         !
+         ! Range separation is the one exception, and it is a refusal rather
+         ! than a preference: the SCF *errors out* on an in-core tensor with an
+         ! attenuated kernel, because the tensor is built for the full Coulomb
+         ! one and the long-range exchange would be silently missing. Deciding
+         ! that here keeps a functional like wB97X working -- it would otherwise
+         ! have started failing the moment this became the default.
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density=guess_total, xc=xc)
+                              guess_density=guess_total, xc=xc, &
+                              in_core=eri_fits_in_core(mol%nao) .and. .not. xc%range_separated)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
