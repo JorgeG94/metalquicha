@@ -18,12 +18,13 @@ module mqc_ormas_ci
    use pic_io, only: to_char
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_determinants, only: link_table_t, string_address, build_link_table
+   use mqc_determinants, only: link_table_t, string_address, build_link_table, &
+                               excitation_phase
    use mqc_ci, only: sigma_vector, absorb_one_electron
    use mqc_davidson, only: sigma_operator_t, davidson_flat
    use pic_blas_interfaces, only: pic_gemm
    use mqc_ormas_space, only: ormas_space_t, ormas_closure_t, closure_address, &
-                              build_ormas_closure, ormas_strings
+                              build_ormas_closure, ormas_strings, ormas_string_address
    implicit none
    private
 
@@ -34,6 +35,7 @@ module mqc_ormas_ci
    public :: ormas_sigma_direct
    public :: ormas_solve
    public :: ormas_gather
+   public :: build_ormas_links
    public :: ormas_density_matrices
 
    type, extends(sigma_operator_t) :: ormas_operator_t
@@ -46,7 +48,6 @@ module mqc_ormas_ci
       type(ormas_closure_t), pointer :: closure => null()
       real(dp), pointer :: folded(:, :) => null()
       type(link_table_t), pointer :: alpha_table => null(), beta_table => null()
-      integer, allocatable :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
    contains
       procedure :: apply => ormas_apply
    end type ormas_operator_t
@@ -381,7 +382,7 @@ contains
    end subroutine ormas_lowest
 
    subroutine ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
-                                 in_alpha, in_beta, from_alpha, from_beta, ci, sigma, error)
+                                 ci, sigma, error)
       !! `sigma = H c` without ever visiting the complete space
       !!
       !! The same three passes as the unrestricted build -- apply an excitation
@@ -404,8 +405,7 @@ contains
       type(ormas_closure_t), intent(in) :: closure
       real(dp), intent(in) :: folded(:, :)
       type(link_table_t), intent(in) :: alpha_table, beta_table
-      integer, intent(in) :: in_alpha(:), in_beta(:)      !! class order -> bit order
-      integer, intent(in) :: from_alpha(:), from_beta(:)  !! bit order -> class order
+         !! From `build_ormas_links`
       real(dp), intent(in) :: ci(:)
       real(dp), intent(out) :: sigma(:)
       type(error_t), intent(inout) :: error
@@ -419,8 +419,7 @@ contains
       norb = space%n_active_orbitals
       npair = norb*norb
 
-      call ormas_gather(space, closure, alpha_table, beta_table, in_alpha, in_beta, &
-                        from_alpha, from_beta, ci, gathered)
+      call ormas_gather(space, closure, alpha_table, beta_table, ci, gathered)
 
       allocate (contracted(npair, closure%n_determinants))
       call pic_gemm(folded, gathered, contracted)
@@ -428,14 +427,14 @@ contains
       ! Scatter: read the intermediate where it lives, write the sigma where the
       ! excitation lands -- keeping only what lands back inside the space.
       sigma = 0.0_dp
-      do ia = 1, size(in_alpha)
+      do ia = 1, alpha_table%n_strings
          ga = space%alpha_string_class(ia)
          do row = 1, alpha_table%n_rows
-            pair = alpha_table%cre(row, in_alpha(ia)) &
-                   + (alpha_table%des(row, in_alpha(ia)) - 1)*norb
-            ia2 = from_alpha(alpha_table%dest(row, in_alpha(ia)))
-            weight = real(alpha_table%phase(row, in_alpha(ia)), dp)
-            do ib = 1, size(in_beta)
+            ia2 = alpha_table%dest(row, ia)
+            if (ia2 == 0) cycle
+            pair = alpha_table%cre(row, ia) + (alpha_table%des(row, ia) - 1)*norb
+            weight = real(alpha_table%phase(row, ia), dp)
+            do ib = 1, beta_table%n_strings
                gb = space%beta_string_class(ib)
                if (.not. closure%present(gb, ga)) cycle
                if (.not. space%compatible(gb, space%alpha_string_class(ia2))) cycle
@@ -446,14 +445,14 @@ contains
          end do
       end do
 
-      do ib = 1, size(in_beta)
+      do ib = 1, beta_table%n_strings
          gb = space%beta_string_class(ib)
          do row = 1, beta_table%n_rows
-            pair = beta_table%cre(row, in_beta(ib)) &
-                   + (beta_table%des(row, in_beta(ib)) - 1)*norb
-            ib2 = from_beta(beta_table%dest(row, in_beta(ib)))
-            weight = real(beta_table%phase(row, in_beta(ib)), dp)
-            do ia = 1, size(in_alpha)
+            ib2 = beta_table%dest(row, ib)
+            if (ib2 == 0) cycle
+            pair = beta_table%cre(row, ib) + (beta_table%des(row, ib) - 1)*norb
+            weight = real(beta_table%phase(row, ib), dp)
+            do ia = 1, alpha_table%n_strings
                ga = space%alpha_string_class(ia)
                if (.not. closure%present(gb, ga)) cycle
                if (.not. space%compatible(space%beta_string_class(ib2), ga)) cycle
@@ -467,8 +466,76 @@ contains
       deallocate (gathered, contracted)
    end subroutine ormas_sigma_direct
 
-   subroutine ormas_gather(space, closure, alpha_table, beta_table, in_alpha, in_beta, &
-                           from_alpha, from_beta, ci, gathered)
+   subroutine build_ormas_links(space, strings, alpha_spin, table, error)
+      !! Every single excitation out of every string the space keeps
+      !!
+      !! The same table `mqc_determinants` builds for a complete space, over the
+      !! pruned string list instead of all `C(norb, nelec)` of them -- which is
+      !! the point, because that table is one of the objects that made a real
+      !! restricted space unreachable. Singles and doubles from seven orbitals
+      !! into twenty-nine has 8,347,680 strings and needs 136,620 of them.
+      !!
+      !! `dest` is zero where the excitation leaves the kept classes altogether.
+      !! That is not an error and not rare: it is what an excitation does at the
+      !! edge of a restricted space, and the callers skip it. Nothing is lost by
+      !! doing so, because a string outside the kept set is more than one
+      !! excitation from the space and can carry no weight the sigma will read.
+      type(ormas_space_t), intent(in) :: space
+      integer(int64), intent(in) :: strings(:)
+      logical, intent(in) :: alpha_spin
+      type(link_table_t), intent(out) :: table
+      type(error_t), intent(inout) :: error
+
+      integer :: norb, nelec, n_strings, s, p, q, row
+      integer(int64) :: excited, target_index
+
+      if (error%has_error()) return
+
+      norb = space%n_active_orbitals
+      nelec = space%n_beta
+      if (alpha_spin) nelec = space%n_alpha
+      n_strings = size(strings)
+
+      table%n_orbitals = norb
+      table%n_electrons = nelec
+      table%n_strings = n_strings
+      table%n_rows = nelec*(norb - nelec) + nelec
+
+      allocate (table%cre(table%n_rows, n_strings), table%des(table%n_rows, n_strings))
+      allocate (table%dest(table%n_rows, n_strings), table%phase(table%n_rows, n_strings))
+      table%cre = 1
+      table%des = 1
+      table%dest = 0
+      table%phase = 0
+
+      do s = 1, n_strings
+         row = 0
+         ! The diagonals first, matching the complete-space table's layout.
+         do q = 1, norb
+            if (.not. btest(strings(s), q - 1)) cycle
+            row = row + 1
+            table%cre(row, s) = q
+            table%des(row, s) = q
+            table%dest(row, s) = s
+            table%phase(row, s) = 1
+         end do
+         do q = 1, norb
+            if (.not. btest(strings(s), q - 1)) cycle
+            do p = 1, norb
+               if (btest(strings(s), p - 1)) cycle
+               excited = ibset(ibclr(strings(s), q - 1), p - 1)
+               target_index = ormas_string_address(space, excited, alpha_spin)
+               row = row + 1
+               table%cre(row, s) = p
+               table%des(row, s) = q
+               table%dest(row, s) = int(target_index)
+               table%phase(row, s) = excitation_phase(p, q, strings(s))
+            end do
+         end do
+      end do
+   end subroutine build_ormas_links
+
+   subroutine ormas_gather(space, closure, alpha_table, beta_table, ci, gathered)
       !! `E_pq |c>` for every orbital pair at once, on the closure
       !!
       !! Column `d` and row `p + (q-1) n_orb` hold the closure-determinant-`d`
@@ -484,7 +551,7 @@ contains
       type(ormas_space_t), intent(in) :: space
       type(ormas_closure_t), intent(in) :: closure
       type(link_table_t), intent(in) :: alpha_table, beta_table
-      integer, intent(in) :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
+         !! From `build_ormas_links`, so indexed the same way the strings are
       real(dp), intent(in) :: ci(:)
       real(dp), allocatable, intent(out) :: gathered(:, :)
 
@@ -497,14 +564,14 @@ contains
       allocate (gathered(npair, closure%n_determinants))
       gathered = 0.0_dp
 
-      do ia = 1, size(in_alpha)
+      do ia = 1, alpha_table%n_strings
          ga = space%alpha_string_class(ia)
          do row = 1, alpha_table%n_rows
-            pair = alpha_table%cre(row, in_alpha(ia)) &
-                   + (alpha_table%des(row, in_alpha(ia)) - 1)*norb
-            ia2 = from_alpha(alpha_table%dest(row, in_alpha(ia)))
-            weight = real(alpha_table%phase(row, in_alpha(ia)), dp)
-            do ib = 1, size(in_beta)
+            ia2 = alpha_table%dest(row, ia)
+            if (ia2 == 0) cycle
+            pair = alpha_table%cre(row, ia) + (alpha_table%des(row, ia) - 1)*norb
+            weight = real(alpha_table%phase(row, ia), dp)
+            do ib = 1, beta_table%n_strings
                gb = space%beta_string_class(ib)
                if (.not. space%compatible(gb, ga)) cycle
                gathered(pair, closure_address(closure, space, ia2, ib)) = &
@@ -514,14 +581,14 @@ contains
          end do
       end do
 
-      do ib = 1, size(in_beta)
+      do ib = 1, beta_table%n_strings
          gb = space%beta_string_class(ib)
          do row = 1, beta_table%n_rows
-            pair = beta_table%cre(row, in_beta(ib)) &
-                   + (beta_table%des(row, in_beta(ib)) - 1)*norb
-            ib2 = from_beta(beta_table%dest(row, in_beta(ib)))
-            weight = real(beta_table%phase(row, in_beta(ib)), dp)
-            do ia = 1, size(in_alpha)
+            ib2 = beta_table%dest(row, ib)
+            if (ib2 == 0) cycle
+            pair = beta_table%cre(row, ib) + (beta_table%des(row, ib) - 1)*norb
+            weight = real(beta_table%phase(row, ib), dp)
+            do ia = 1, alpha_table%n_strings
                ga = space%alpha_string_class(ia)
                if (.not. space%compatible(gb, ga)) cycle
                gathered(pair, closure_address(closure, space, ia, ib2)) = &
@@ -555,7 +622,6 @@ contains
       type(ormas_closure_t) :: closure
       type(link_table_t) :: alpha_table, beta_table
       integer(int64), allocatable :: alpha(:), beta(:)
-      integer, allocatable :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
       real(dp), allocatable :: gathered(:, :), paired(:, :), embedded(:)
       integer :: norb, npair, p, q, r, s, pq, qp, rs, ia, ib, ga, gb
 
@@ -565,22 +631,20 @@ contains
       npair = norb*norb
 
       call ormas_strings(space, alpha, beta, error)
-      call full_space_index(space, alpha, beta, in_alpha, in_beta, from_alpha, from_beta)
       call build_ormas_closure(space, closure, error)
-      call build_link_table(norb, space%n_alpha, alpha_table, error)
-      call build_link_table(norb, space%n_beta, beta_table, error)
+      call build_ormas_links(space, alpha, .true., alpha_table, error)
+      call build_ormas_links(space, beta, .false., beta_table, error)
       if (error%has_error()) return
 
-      call ormas_gather(space, closure, alpha_table, beta_table, in_alpha, in_beta, &
-                        from_alpha, from_beta, ci, gathered)
+      call ormas_gather(space, closure, alpha_table, beta_table, ci, gathered)
 
       ! The vector seen from the closure: itself where the space reaches, zero
       ! everywhere the closure went further.
       allocate (embedded(closure%n_determinants))
       embedded = 0.0_dp
-      do ia = 1, size(in_alpha)
+      do ia = 1, size(alpha)
          ga = space%alpha_string_class(ia)
-         do ib = 1, size(in_beta)
+         do ib = 1, size(beta)
             gb = space%beta_string_class(ib)
             if (.not. space%compatible(gb, ga)) cycle
             embedded(closure_address(closure, space, ia, ib)) = &
@@ -633,8 +697,7 @@ contains
       type(error_t), intent(inout) :: error
 
       call ormas_sigma_direct(this%space, this%closure, this%folded, this%alpha_table, &
-                              this%beta_table, this%in_alpha, this%in_beta, &
-                              this%from_alpha, this%from_beta, vector, image, error)
+                              this%beta_table, vector, image, error)
    end subroutine ormas_apply
 
    subroutine ormas_solve(space, h1e, eri, n_roots, energies, vectors, error, &
@@ -670,13 +733,11 @@ contains
       if (error%has_error()) return
 
       call ormas_strings(space, alpha, beta, error)
-      call full_space_index(space, alpha, beta, operator%in_alpha, operator%in_beta, &
-                            operator%from_alpha, operator%from_beta)
       call build_ormas_closure(space, closure, error)
       call ormas_diagonal(space, alpha, beta, h1e, eri, diagonal, error)
       call absorb_one_electron(h1e, eri, space%n_alpha + space%n_beta, folded, error)
-      call build_link_table(space%n_active_orbitals, space%n_alpha, alpha_table, error)
-      call build_link_table(space%n_active_orbitals, space%n_beta, beta_table, error)
+      call build_ormas_links(space, alpha, .true., alpha_table, error)
+      call build_ormas_links(space, beta, .false., beta_table, error)
       if (error%has_error()) return
 
       operator%space => space

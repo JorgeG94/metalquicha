@@ -449,6 +449,116 @@ contains
       end do
    end subroutine layout_addressing
 
+   subroutine build_grid(space)
+      !! Which pairs of occupation classes the windows allow
+      type(ormas_space_t), intent(inout) :: space
+
+      integer :: ga, gb, k
+      logical :: allowed
+
+      if (allocated(space%compatible)) deallocate (space%compatible)
+      allocate (space%compatible(space%n_beta_classes, space%n_alpha_classes))
+
+      do ga = 1, space%n_alpha_classes
+         do gb = 1, space%n_beta_classes
+            allowed = .true.
+            do k = 1, space%n_subspaces
+               associate (occupancy => space%alpha_class(k, ga) + space%beta_class(k, gb))
+                  if (occupancy < space%min_electrons(k)) allowed = .false.
+                  if (occupancy > space%max_electrons(k)) allowed = .false.
+               end associate
+            end do
+            space%compatible(gb, ga) = allowed
+         end do
+      end do
+   end subroutine build_grid
+
+   subroutine drop_unreachable_classes(space)
+      !! Keep the classes the space uses and the ones an excitation can reach
+      !!
+      !! A class earns its place by appearing in some allowed pair, or by being
+      !! one excitation away from one that does. Anything further away can hold
+      !! no determinant of the space and can be reached by nothing the sigma
+      !! build ever forms, so its strings are weight without use.
+      !!
+      !! **One move, not none.** Pruning to the classes that appear in the space
+      !! would be tighter -- it is what GAMESS does -- and it would be wrong
+      !! here. An excitation routinely leaves the space and the intermediate has
+      !! to name where it went; a program whose sigma works on determinant pairs
+      !! never names that string and can afford the tighter bound. Ours is a
+      !! vector indexed by determinant, so every class the closure touches needs
+      !! to exist.
+      !!
+      !! The saving is nothing on a small space and decisive on a real one:
+      !! singles and doubles from seven orbitals into twenty-nine keeps 136,620
+      !! alpha strings out of 8,347,680, and every per-string table shrinks with
+      !! them.
+      type(ormas_space_t), intent(inout) :: space
+
+      logical, allocatable :: keep_alpha(:), keep_beta(:)
+      integer :: ga, gb
+
+      allocate (keep_alpha(space%n_alpha_classes), keep_beta(space%n_beta_classes))
+      keep_alpha = .false.
+      keep_beta = .false.
+
+      do ga = 1, space%n_alpha_classes
+         do gb = 1, space%n_beta_classes
+            if (.not. space%compatible(gb, ga)) cycle
+            keep_alpha(ga) = .true.
+            keep_beta(gb) = .true.
+         end do
+      end do
+
+      call widen_by_one_move(space%alpha_class, keep_alpha)
+      call widen_by_one_move(space%beta_class, keep_beta)
+
+      call keep_classes(space%alpha_class, keep_alpha, space%n_alpha_classes)
+      call keep_classes(space%beta_class, keep_beta, space%n_beta_classes)
+
+      deallocate (keep_alpha, keep_beta)
+   end subroutine drop_unreachable_classes
+
+   pure subroutine widen_by_one_move(classes, keep)
+      !! Add every class one excitation away from one already kept
+      integer, intent(in) :: classes(:, :)
+      logical, intent(inout) :: keep(:)
+
+      logical :: seed(size(keep))
+      integer :: g, s
+
+      seed = keep
+      do g = 1, size(keep)
+         if (keep(g)) cycle
+         do s = 1, size(keep)
+            if (.not. seed(s)) cycle
+            if (one_move_apart(classes(:, g), classes(:, s))) then
+               keep(g) = .true.
+               exit
+            end if
+         end do
+      end do
+   end subroutine widen_by_one_move
+
+   subroutine keep_classes(classes, keep, n_classes)
+      !! Compact a class list down to the kept entries, in the same order
+      integer, allocatable, intent(inout) :: classes(:, :)
+      logical, intent(in) :: keep(:)
+      integer, intent(out) :: n_classes
+
+      integer, allocatable :: kept(:, :)
+      integer :: g
+
+      allocate (kept(size(classes, 1), count(keep)))
+      n_classes = 0
+      do g = 1, size(keep)
+         if (.not. keep(g)) cycle
+         n_classes = n_classes + 1
+         kept(:, n_classes) = classes(:, g)
+      end do
+      call move_alloc(kept, classes)
+   end subroutine keep_classes
+
    subroutine build_addressing(space, error)
       !! The space's own addressing, from its compatibility grid
       type(ormas_space_t), intent(inout) :: space
@@ -476,8 +586,7 @@ contains
       type(ormas_space_t), intent(out) :: space
       type(error_t), intent(inout) :: error
 
-      integer :: n_subspaces, k, ga, gb
-      logical :: allowed
+      integer :: n_subspaces, k
 
       if (error%has_error()) return
 
@@ -539,26 +648,16 @@ contains
          return
       end if
 
+      call build_grid(space)
+      call drop_unreachable_classes(space)
+      call build_grid(space)
+
       call class_string_tables(space%alpha_class, space%n_orbitals, &
                                space%alpha_class_size, space%alpha_offset, &
                                space%alpha_string_class)
       call class_string_tables(space%beta_class, space%n_orbitals, &
                                space%beta_class_size, space%beta_offset, &
                                space%beta_string_class)
-
-      allocate (space%compatible(space%n_beta_classes, space%n_alpha_classes))
-      do ga = 1, space%n_alpha_classes
-         do gb = 1, space%n_beta_classes
-            allowed = .true.
-            do k = 1, n_subspaces
-               associate (occupancy => space%alpha_class(k, ga) + space%beta_class(k, gb))
-                  if (occupancy < space%min_electrons(k)) allowed = .false.
-                  if (occupancy > space%max_electrons(k)) allowed = .false.
-               end associate
-            end do
-            space%compatible(gb, ga) = allowed
-         end do
-      end do
 
       if (.not. any(space%compatible)) then
          call error%set(ERROR_VALIDATION, "no pairing of an alpha and a beta "// &

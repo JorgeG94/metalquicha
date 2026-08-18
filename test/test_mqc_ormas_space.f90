@@ -55,6 +55,7 @@ contains
                   new_unittest("strings_match_the_worked_example", test_strings), &
                   new_unittest("string_addressing_round_trips", test_string_round_trip), &
                   new_unittest("dead_classes_pair_with_nothing", test_outside), &
+                  new_unittest("unreachable_classes_are_dropped", test_pruning), &
                   new_unittest("the_worked_determinant_list", test_worked_determinants), &
                   new_unittest("refusals", test_refusals) &
                   ]
@@ -705,6 +706,57 @@ contains
 
       call space%destroy()
    end subroutine test_worked_determinants
+
+   subroutine test_pruning(error)
+      !! Classes further than one excitation from the space are not kept
+      !!
+      !! Twelve orbitals in three subspaces, the third barred from holding any
+      !! electron at all. Of the ten ways to spread three electrons of one spin,
+      !! only three appear in a determinant; four more sit one excitation away
+      !! and have to be kept, because the sigma build's intermediate lands on
+      !! them and needs to name where it landed. The remaining three -- two or
+      !! three electrons in the barred subspace -- are two excitations out and
+      !! can be reached by nothing.
+      !!
+      !! Small here, and the reason to do it at all is not. For singles and
+      !! doubles from seven orbitals into twenty-nine this keeps 136,620 alpha
+      !! strings out of 8,347,680, and every table indexed by a string shrinks
+      !! by the same factor.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer :: g
+
+      call build_ormas_space([1, 5, 9], 12, 3, 3, [4, 0, 0], [6, 2, 0], space, err)
+      call check(error,.not. err%has_error(), "building the partition failed")
+      if (allocated(error)) return
+
+      call check(error, space%n_alpha_classes, 7, &
+                 "seven of the ten classes are within one excitation of the space")
+      if (allocated(error)) return
+
+      ! Nothing kept may put two or more electrons in the barred subspace: that
+      ! is two excitations from anything the space contains.
+      do g = 1, space%n_alpha_classes
+         call check(error, space%alpha_class(3, g) <= 1, &
+                    "a class two excitations out was kept")
+         if (allocated(error)) return
+      end do
+
+      call ormas_strings(space, alpha, beta, err)
+      call check(error, size(alpha), 168, "and the strings shrink with the classes")
+      if (allocated(error)) return
+
+      ! Dropping them changes nothing about the space itself.
+      call check(error, space%n_determinants == &
+                 brute_force_count([1, 5, 9], 12, 3, 3, [4, 0, 0], [6, 2, 0]), &
+                 "pruning changed which determinants exist")
+      if (allocated(error)) return
+
+      call space%destroy()
+   end subroutine test_pruning
 
    subroutine test_refusals(error)
       !! The partitions that describe nothing, and are said so

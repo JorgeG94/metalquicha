@@ -38,7 +38,7 @@ module test_mqc_ormas_ci
    use mqc_rdm, only: rdm_energy, active_space_rdms
    use mqc_ormas_ci, only: ormas_diagonal, full_space_index, ormas_lowest, &
                            ormas_sigma, ormas_sigma_direct, ormas_solve, &
-                           ormas_density_matrices
+                           ormas_density_matrices, build_ormas_links
    implicit none
    private
 
@@ -410,8 +410,9 @@ contains
       type(ormas_closure_t) :: closure
       type(error_t) :: err
       type(link_table_t) :: alpha_table, beta_table
+      type(link_table_t) :: alpha_links, beta_links
       integer(int64), allocatable :: alpha(:), beta(:)
-      integer, allocatable :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
+      integer, allocatable :: in_alpha(:), in_beta(:)
       real(dp), allocatable :: h1e(:, :), eri(:, :, :, :), folded(:, :)
       real(dp), allocatable :: ci(:), projected(:), direct(:)
       integer :: ndet, d, trial
@@ -423,7 +424,9 @@ contains
 
       call build_ormas_space(first_orbital, norb, na, nb, min_e, max_e, space, err)
       call ormas_strings(space, alpha, beta, err)
-      call full_space_index(space, alpha, beta, in_alpha, in_beta, from_alpha, from_beta)
+      call full_space_index(space, alpha, beta, in_alpha, in_beta)
+      call build_ormas_links(space, alpha, .true., alpha_links, err)
+      call build_ormas_links(space, beta, .false., beta_links, err)
       call build_ormas_closure(space, closure, err)
       call check(error,.not. err%has_error(), "building the closure failed")
       if (allocated(error)) return
@@ -450,8 +453,8 @@ contains
 
          call ormas_sigma(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
                           ci, projected, err)
-         call ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
-                                 in_alpha, in_beta, from_alpha, from_beta, ci, direct, err)
+         call ormas_sigma_direct(space, closure, folded, alpha_links, beta_links, &
+                                 ci, direct, err)
          call check(error,.not. err%has_error(), "a sigma build failed")
          if (allocated(error)) return
 
@@ -474,8 +477,8 @@ contains
          do d = 1, ndet
             ci = 0.0_dp
             ci(d) = 1.0_dp
-            call ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
-                                    in_alpha, in_beta, from_alpha, from_beta, ci, direct, err)
+            call ormas_sigma_direct(space, closure, folded, alpha_links, beta_links, &
+                                    ci, direct, err)
             matrix(:, d) = direct
          end do
          worst = 0.0_dp
@@ -494,6 +497,8 @@ contains
       call closure%destroy()
       call alpha_table%destroy()
       call beta_table%destroy()
+      call alpha_links%destroy()
+      call beta_links%destroy()
    end subroutine direct_matches
 
    subroutine test_direct(error)
@@ -531,6 +536,13 @@ contains
       ! And a partition that restricts nothing, where the closure is the whole
       ! rectangle and the two builds must agree trivially.
       call direct_matches([1, 3], 4, 2, 2, [0, 0], [4, 4], error)
+      if (allocated(error)) return
+
+      ! A partition where classes are actually dropped -- three of the ten sit
+      ! two excitations out and their strings are never built. The projected
+      ! build knows nothing of that and works over the complete space, so this
+      ! is where a class pruned too eagerly would show as a missing term.
+      call direct_matches([1, 5, 9], 12, 3, 3, [4, 0, 0], [6, 2, 0], error)
       if (allocated(error)) return
    end subroutine test_direct
 
