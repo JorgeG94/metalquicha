@@ -1599,31 +1599,33 @@ contains
       pk = t(SLOT(3, p))
    end subroutine permuted_triple
 
-   subroutine triples_w(eris, t2, no, nv, a, b, c, w)
-      !! w(i,j,k) = sum_f (ia|fb) t2(k,j,c,f) - sum_m (ia|jm) t2(m,k,b,c)
+   subroutine triples_term2(eris, t2, no, u, v, w3, w)
+      !! w(i,j,k) -= sum_m (iu|jm) t2(m,k,v,w3), the ring half of W
+      !!
+      !! Left as a loop nest. It is O(n_occ^4 n_vir^3) against the other half's
+      !! O(n_occ^3 n_vir^4), so at any size where the triples are worth running
+      !! it is a twenty-sixth of the work, and the gemm that would replace it is
+      !! n_occ^2 by n_occ by n_occ -- too small to pay for the call.
       type(rcc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: t2(:, :, :, :)
-      integer, intent(in) :: no, nv, a, b, c
-      real(dp), intent(out) :: w(:, :, :)
+      integer, intent(in) :: no, u, v, w3
+      real(dp), intent(inout) :: w(:, :, :)
 
-      integer :: i, j, k, f, m
+      integer :: i, j, k, m
       real(dp) :: acc
 
       do k = 1, no
          do j = 1, no
             do i = 1, no
                acc = 0.0_dp
-               do f = 1, nv
-                  acc = acc + eris%ovvv(i, a, f, b)*t2(k, j, c, f)
-               end do
                do m = 1, no
-                  acc = acc - eris%ooov(j, m, i, a)*t2(m, k, b, c)
+                  acc = acc + eris%ooov(j, m, i, u)*t2(m, k, v, w3)
                end do
-               w(i, j, k) = acc
+               w(i, j, k) = w(i, j, k) - acc
             end do
          end do
       end do
-   end subroutine triples_w
+   end subroutine triples_term2
 
    subroutine triples_v(eris, t1, no, a, b, c, v)
       !! v(i,j,k) = (ia|jb) t1(k,c)
@@ -1666,14 +1668,82 @@ contains
       end do
    end subroutine triples_r3
 
+   subroutine triples_pack_t2(t2, no, nv, tt)
+      !! tt(f, (c,j,k)) = t2(k,j,c,f), built once for the whole (T)
+      !!
+      !! The particle half of W contracts over a virtual `f` against t2, and
+      !! wants it with `f` leading. n_vir by n_occ^2 n_vir is a few tens of
+      !! thousands of doubles, so it is built whole rather than per triple --
+      !! which is what lets the batched products below take contiguous slices of
+      !! it instead of gathering.
+      real(dp), intent(in) :: t2(:, :, :, :)
+      integer, intent(in) :: no, nv
+      real(dp), intent(out) :: tt(:, :)
+
+      integer :: c, f, j, k
+
+      do c = 1, nv
+         do f = 1, nv
+            do j = 1, no
+               do k = 1, no
+                  tt(f, (c - 1)*no*no + (j - 1)*no + k) = t2(k, j, c, f)
+               end do
+            end do
+         end do
+      end do
+   end subroutine triples_pack_t2
+
+   subroutine triples_pack_ovvv(eris, no, nv, nc, fixed, fixed_first, mmt)
+      !! mmt(f, (c,i)) = (iu|fv) for the four permutations whose pair carries c
+      !!
+      !! `fixed_first` says which side of the pair the loop's fixed virtual sits
+      !! on: true gives (i,fixed|f,c), false gives (i,c|f,fixed). Transposed --
+      !! `f` leading rather than `i` -- so that the column range for c = 1..nc is
+      !! contiguous and the product can take it without a copy.
+      type(rcc_eris_t), intent(in) :: eris
+      integer, intent(in) :: no, nv, nc, fixed
+      logical, intent(in) :: fixed_first
+      real(dp), intent(out) :: mmt(:, :)
+
+      integer :: c, i, f
+
+      do c = 1, nc
+         do f = 1, nv
+            do i = 1, no
+               if (fixed_first) then
+                  mmt(f, (c - 1)*no + i) = eris%ovvv(i, fixed, f, c)
+               else
+                  mmt(f, (c - 1)*no + i) = eris%ovvv(i, c, f, fixed)
+               end if
+            end do
+         end do
+      end do
+   end subroutine triples_pack_ovvv
+
    subroutine triples_correction(eris, eps_o, eps_v, t1, t2, no, nv, e_triples)
-      !! The (T) correction, one virtual triple at a time
+      !! The (T) correction, batched over the innermost virtual
       !!
       !! The outer loop runs a >= b >= c and weights the denominator to recover
       !! the terms it skipped -- six-fold when all three coincide, two-fold when
-      !! exactly two do. That is where the factor of six in the cost goes, and
-      !! it is worth having: the six W intermediates a triple needs are the same
-      !! six whichever order the virtuals are named in.
+      !! exactly two do.
+      !!
+      !! **Why the c loop is not innermost any more.** The particle half of W is
+      !! O(n_occ^3 n_vir^4) and dominates everything else in the triples, but per
+      !! (a,b,c) it is only n_occ n_vir by n_occ^2 -- a few thousand flops, far
+      !! too small a matrix product to reach any useful fraction of peak, and
+      !! called n_vir^3 times so that the call overhead alone is measurable.
+      !!
+      !! Batching the whole c range of a given (a,b) into one product fixes the
+      !! shape without changing the arithmetic. The six permutations split two
+      !! ways by where c appears, which is the whole of the bookkeeping below:
+      !!
+      !!   p = 1,3      c is the third index, so the integral half is fixed and
+      !!                the amplitude half stacks   -> (n_occ x n_vir) (n_vir x n_occ^2 nc)
+      !!   p = 2,4,5,6  c is in the pair, so the amplitude half is fixed and the
+      !!                integral half stacks        -> (nc n_occ x n_vir) (n_vir x n_occ^2)
+      !!
+      !! Everything downstream -- the denominators, r3, and the thirty-six-term
+      !! sum -- is unchanged and still runs one (a,b,c) at a time.
       type(rcc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps_o(:), eps_v(:)
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
@@ -1695,27 +1765,96 @@ contains
                                                                            6, 5, 4, 3, 2, 1], &
                                                                            [N_TRIPLE_PERMS, N_TRIPLE_PERMS], order=[2, 1])
 
-      real(dp), allocatable :: w(:, :, :, :), z(:, :, :, :), x(:, :, :), d3(:, :, :)
-      integer :: a, b, c, i, j, k, p, q, pi, pj, pk
+      real(dp), allocatable :: w(:, :, :, :, :), z(:, :, :, :), x(:, :, :), d3(:, :, :)
+      real(dp), allocatable :: tt(:, :), mfix(:, :), mmt(:, :), r1(:, :), r2(:, :)
+      integer, allocatable :: pidx(:, :)
+      integer :: a, b, c, i, j, k, p, q, pi, pj, pk, nc, no2
       integer :: trip(3), perm(3, N_TRIPLE_PERMS)
       real(dp) :: scale, acc
 
-      allocate (w(no, no, no, N_TRIPLE_PERMS), z(no, no, no, N_TRIPLE_PERMS))
+      no2 = no*no
+
+      allocate (w(no, no, no, N_TRIPLE_PERMS, nv), z(no, no, no, N_TRIPLE_PERMS))
       allocate (x(no, no, no), d3(no, no, no))
+      allocate (tt(nv, no2*nv), mfix(no, nv), mmt(nv, nv*no))
+      allocate (r1(no, no2*nv), r2(nv*no, no2))
+
+      ! Where each occupied permutation sends each (i,j,k), once.
+      !
+      ! The thirty-six-term sum below touches n_occ^3 elements for each of
+      ! thirty-six pairings of every triple, so any per-element work there is
+      ! multiplied by tens of millions. Resolving the permutation by a table
+      ! lookup rather than by a call was worth 35% of the whole correction.
+      allocate (pidx(no*no*no, N_TRIPLE_PERMS))
+      do q = 1, N_TRIPLE_PERMS
+         do k = 1, no
+            do j = 1, no
+               do i = 1, no
+                  call permuted_triple(q, i, j, k, pi, pj, pk)
+                  pidx(i + (j - 1)*no + (k - 1)*no2, q) = pi + (pj - 1)*no + (pk - 1)*no2
+               end do
+            end do
+         end do
+      end do
+
+      call triples_pack_t2(t2, no, nv, tt)
 
       e_triples = 0.0_dp
 
       do a = 1, nv
          do b = 1, a
-            do c = 1, b
-               ! The six orderings of this virtual triple, in the same order
-               ! `permuted_triple` gives the occupied ones.
+            nc = b
+
+            ! ---- p = 1 and 3: the pair is fixed, the amplitudes stack -------
+            do concurrent(i=1:no, k=1:nv)
+               mfix(i, k) = eris%ovvv(i, a, k, b)
+            end do
+            call pic_gemm(mfix, tt(:, 1:no2*nc), r1(:, 1:no2*nc))
+            call scatter_w_third(r1, no, nc, 1, w)
+
+            do concurrent(i=1:no, k=1:nv)
+               mfix(i, k) = eris%ovvv(i, b, k, a)
+            end do
+            call pic_gemm(mfix, tt(:, 1:no2*nc), r1(:, 1:no2*nc))
+            call scatter_w_third(r1, no, nc, 3, w)
+
+            ! ---- p = 2, 4, 5, 6: the amplitudes are fixed, the pair stacks --
+            ! The third index is b for p = 2 and 5, a for p = 4 and 6, so each
+            ! takes the matching contiguous block of `tt`.
+            call triples_pack_ovvv(eris, no, nv, nc, a, .true., mmt)
+            call pic_gemm(mmt(:, 1:nc*no), tt(:, (b - 1)*no2 + 1:b*no2), &
+                          r2(1:nc*no, :), transa="T")
+            call scatter_w_pair(r2, no, nc, 2, w)
+
+            call triples_pack_ovvv(eris, no, nv, nc, b, .true., mmt)
+            call pic_gemm(mmt(:, 1:nc*no), tt(:, (a - 1)*no2 + 1:a*no2), &
+                          r2(1:nc*no, :), transa="T")
+            call scatter_w_pair(r2, no, nc, 4, w)
+
+            call triples_pack_ovvv(eris, no, nv, nc, a, .false., mmt)
+            call pic_gemm(mmt(:, 1:nc*no), tt(:, (b - 1)*no2 + 1:b*no2), &
+                          r2(1:nc*no, :), transa="T")
+            call scatter_w_pair(r2, no, nc, 5, w)
+
+            call triples_pack_ovvv(eris, no, nv, nc, b, .false., mmt)
+            call pic_gemm(mmt(:, 1:nc*no), tt(:, (a - 1)*no2 + 1:a*no2), &
+                          r2(1:nc*no, :), transa="T")
+            call scatter_w_pair(r2, no, nc, 6, w)
+
+            do c = 1, nc
                perm(:, 1) = [a, b, c]
                perm(:, 2) = [a, c, b]
                perm(:, 3) = [b, a, c]
                perm(:, 4) = [b, c, a]
                perm(:, 5) = [c, a, b]
                perm(:, 6) = [c, b, a]
+
+               ! The ring half, still one permutation at a time.
+               do p = 1, N_TRIPLE_PERMS
+                  trip = perm(:, p)
+                  call triples_term2(eris, t2, no, trip(1), trip(2), trip(3), &
+                                     w(:, :, :, p, c))
+               end do
 
                scale = 1.0_dp
                if (a == c) then
@@ -1735,9 +1874,8 @@ contains
 
                do p = 1, N_TRIPLE_PERMS
                   trip = perm(:, p)
-                  call triples_w(eris, t2, no, nv, trip(1), trip(2), trip(3), w(:, :, :, p))
                   call triples_v(eris, t1, no, trip(1), trip(2), trip(3), x)
-                  x = w(:, :, :, p) + 0.5_dp*x
+                  x = w(:, :, :, p, c) + 0.5_dp*x
                   call triples_r3(x, d3, no, z(:, :, :, p))
                end do
 
@@ -1745,16 +1883,9 @@ contains
                ! permutation of the W the table pairs it with.
                do p = 1, N_TRIPLE_PERMS
                   do q = 1, N_TRIPLE_PERMS
-                     acc = 0.0_dp
-                     do k = 1, no
-                        do j = 1, no
-                           do i = 1, no
-                              call permuted_triple(q, i, j, k, pi, pj, pk)
-                              acc = acc + w(pi, pj, pk, WMAP(p, q))*z(i, j, k, p)
-                           end do
-                        end do
-                     end do
-                     e_triples = e_triples + acc
+                     e_triples = e_triples &
+                                 + triples_dot(no*no*no, pidx(1, q), &
+                                               w(1, 1, 1, WMAP(p, q), c), z(1, 1, 1, p))
                   end do
                end do
             end do
@@ -1763,7 +1894,65 @@ contains
 
       e_triples = 2.0_dp*e_triples
 
-      deallocate (w, z, x, d3)
+      deallocate (w, z, x, d3, tt, mfix, mmt, r1, r2, pidx)
    end subroutine triples_correction
+
+   pure function triples_dot(no3, permuted, wblk, zblk) result(acc)
+      !! sum over one occupied permutation of W against Z
+      !!
+      !! Both blocks are n_occ^3 contiguous doubles -- one permutation's W and
+      !! one Z, taken by sequence association out of the arrays that hold all
+      !! six of each. `permuted` is where the permutation sends each flat index,
+      !! so the permutation costs a load rather than a call.
+      integer, intent(in) :: no3
+      integer, intent(in) :: permuted(no3)
+      real(dp), intent(in) :: wblk(no3), zblk(no3)
+      real(dp) :: acc
+
+      integer :: n
+
+      acc = 0.0_dp
+      do n = 1, no3
+         acc = acc + wblk(permuted(n))*zblk(n)
+      end do
+   end function triples_dot
+
+   subroutine scatter_w_third(r, no, nc, p, w)
+      !! R(i, (c,j,k)) -> w(i,j,k,p,c), for the permutations where c is third
+      real(dp), intent(in) :: r(:, :)
+      integer, intent(in) :: no, nc, p
+      real(dp), intent(inout) :: w(:, :, :, :, :)
+
+      integer :: c, i, j, k
+
+      do c = 1, nc
+         do k = 1, no
+            do j = 1, no
+               do i = 1, no
+                  w(i, j, k, p, c) = r(i, (c - 1)*no*no + (j - 1)*no + k)
+               end do
+            end do
+         end do
+      end do
+   end subroutine scatter_w_third
+
+   subroutine scatter_w_pair(r, no, nc, p, w)
+      !! R((c,i), (j,k)) -> w(i,j,k,p,c), for the permutations where c is paired
+      real(dp), intent(in) :: r(:, :)
+      integer, intent(in) :: no, nc, p
+      real(dp), intent(inout) :: w(:, :, :, :, :)
+
+      integer :: c, i, j, k
+
+      do c = 1, nc
+         do k = 1, no
+            do j = 1, no
+               do i = 1, no
+                  w(i, j, k, p, c) = r((c - 1)*no + i, (j - 1)*no + k)
+               end do
+            end do
+         end do
+      end do
+   end subroutine scatter_w_pair
 
 end module mqc_libcint_rcc
