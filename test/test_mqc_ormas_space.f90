@@ -287,7 +287,15 @@ contains
    end function brute_force_count
 
    subroutine test_brute_force(error)
-      !! Every count, against an enumeration that knows nothing of classes
+      !! Every count, twice over: against an enumeration that knows nothing of
+      !! classes, and against a number computed outside this language
+      !!
+      !! The literals come from `tools/ormas_reference/ormas_reference.py`,
+      !! which enumerates determinants by brute force over spin-orbital sets
+      !! and has itself been checked against `pyscf.fci` on unrestricted
+      !! windows. Two independent counts agreeing is worth more than either --
+      !! the local oracle shares this file's understanding of what the windows
+      !! mean, and the external one does not.
       type(error_type), allocatable, intent(out) :: error
 
       type(ormas_space_t) :: space
@@ -297,12 +305,16 @@ contains
       call check(error, space%n_determinants == &
                  brute_force_count([1, 3], 4, 2, 2, [2, 0], [4, 2]), "two subspaces")
       if (allocated(error)) return
+      call check(error, space%n_determinants == 27_int64, "against the python reference")
+      if (allocated(error)) return
       call space%destroy()
 
       call build_ormas_space([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], space, err)
       call check(error, space%n_determinants == &
                  brute_force_count([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2]), &
                  "three subspaces")
+      if (allocated(error)) return
+      call check(error, space%n_determinants == 236_int64, "against the python reference")
       if (allocated(error)) return
       call space%destroy()
 
@@ -311,6 +323,8 @@ contains
       call build_ormas_space([1, 4], 7, 3, 3, [4, 0], [6, 2], space, err)
       call check(error, space%n_determinants == &
                  brute_force_count([1, 4], 7, 3, 3, [4, 0], [6, 2]), "a truncated CI")
+      if (allocated(error)) return
+      call check(error, space%n_determinants == 205_int64, "against the python reference")
       if (allocated(error)) return
       call space%destroy()
 
@@ -321,6 +335,8 @@ contains
                  brute_force_count([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2]), &
                  "more alpha than beta")
       if (allocated(error)) return
+      call check(error, space%n_determinants == 100_int64, "against the python reference")
+      if (allocated(error)) return
       call space%destroy()
 
       ! Windows the tightening pass rewrites -- see `test_tightening`.
@@ -328,6 +344,8 @@ contains
       call check(error, space%n_determinants == &
                  brute_force_count([1, 4], 6, 2, 2, [0, 3], [6, 6]), &
                  "windows that get tightened")
+      if (allocated(error)) return
+      call check(error, space%n_determinants == 63_int64, "against the python reference")
       if (allocated(error)) return
       call space%destroy()
    end subroutine test_brute_force

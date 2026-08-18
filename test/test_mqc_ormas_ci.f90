@@ -21,6 +21,13 @@ module test_mqc_ormas_ci
    !! `agrees_with_the_cas_diagonal` closes the loop from the other side: a
    !! partition that restricts nothing must reproduce, element for element, the
    !! diagonal that `mqc_ci` was validated against PySCF for.
+   !!
+   !! The traces come from `tools/ormas_reference/ormas_reference.py`, which
+   !! builds the same model Hamiltonian and the same partitions in Python and
+   !! is itself checked against `pyscf.fci`. It shares no code, no ordering and
+   !! no language with any of this, so agreement is not two readings of one
+   !! mistake -- and unlike the element-by-element comparison, a trace notices
+   !! a determinant that was visited twice.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp, int64
    use mqc_error, only: error_t
@@ -129,10 +136,18 @@ contains
       end do
    end function slater_diagonal
 
-   subroutine check_one_partition(first_orbital, norb, na, nb, min_e, max_e, error)
+   subroutine check_one_partition(first_orbital, norb, na, nb, min_e, max_e, trace, error)
       !! Every determinant of one partition, by Slater rules and by address
+      !!
+      !! `trace` is the sum of the diagonal, computed independently by
+      !! `tools/ormas_reference/ormas_reference.py`. Being a sum it does not
+      !! care what order the determinants were enumerated in, which is what
+      !! lets a number from another language check this one at all -- and it
+      !! catches a determinant counted twice or missed, which comparing
+      !! elements one at a time cannot.
       integer, intent(in) :: first_orbital(:), min_e(:), max_e(:)
       integer, intent(in) :: norb, na, nb
+      real(dp), intent(in) :: trace
       type(error_type), allocatable, intent(inout) :: error
 
       type(ormas_space_t) :: space
@@ -177,6 +192,10 @@ contains
                  "formula reaches")
       if (allocated(error)) return
 
+      call check(error, sum(diagonal), trace, thr=1.0e-9_dp, &
+                 message="the trace disagrees with the python reference")
+      if (allocated(error)) return
+
       deallocate (seen, diagonal, h1e, eri, alpha, beta)
       call space%destroy()
    end subroutine check_one_partition
@@ -185,19 +204,28 @@ contains
       !! Four partitions, every determinant of each
       type(error_type), allocatable, intent(out) :: error
 
-      call check_one_partition([1, 3], 4, 2, 2, [2, 0], [4, 2], error)
+      call check_one_partition([1, 3], 4, 2, 2, [2, 0], [4, 2], &
+                               -20.010664176292_dp, error)
       if (allocated(error)) return
 
-      call check_one_partition([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], error)
+      call check_one_partition([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], &
+                               -173.027624139105_dp, error)
       if (allocated(error)) return
 
       ! Subspaces of unequal width.
-      call check_one_partition([1, 4], 7, 3, 3, [4, 0], [6, 2], error)
+      call check_one_partition([1, 4], 7, 3, 3, [4, 0], [6, 2], &
+                               -155.090056159540_dp, error)
       if (allocated(error)) return
 
       ! Unequal spins, so the alpha and beta class lists differ and the layout
       ! is not symmetric.
-      call check_one_partition([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], error)
+      call check_one_partition([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], &
+                               -67.145428591886_dp, error)
+      if (allocated(error)) return
+
+      ! Windows the tightening pass rewrites.
+      call check_one_partition([1, 4], 6, 2, 2, [0, 3], [6, 6], &
+                               -28.034091825652_dp, error)
       if (allocated(error)) return
    end subroutine test_slater
 
