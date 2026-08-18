@@ -73,6 +73,7 @@ contains
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
                   new_unittest("bonding_analysis_property", test_bonding_analysis), &
                   new_unittest("avas_orbital_labels", test_avas_keywords), &
+                  new_unittest("ormas_partition", test_ormas_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1250,6 +1251,70 @@ contains
       call check(error, parse_error%has_error(), &
                  "a settings-only analysis block should be refused")
    end subroutine test_bonding_analysis
+
+   subroutine test_ormas_keywords(error)
+      !! `keywords.mcscf.ormas`, the subspaces and their occupation windows
+      !!
+      !! Three lists of the same length: where each subspace starts, and the
+      !! fewest and most electrons it may hold counting both spins. Lengths that
+      !! disagree are a typo in the deck, so they are caught here with the key
+      !! names rather than four layers down as a complaint about enumerating
+      !! occupation classes.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 6, "n_active_orbitals": 7, '// &
+                      '"ormas": {"subspaces": [1, 4], "min_electrons": [4, 0], '// &
+                      '"max_electrons": [6, 2]}}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%mcscf_ormas_subspaces), &
+                 "the partition should have been read")
+      if (allocated(error)) return
+      call check(error, size(config%mcscf_ormas_subspaces), 2, "two subspaces")
+      if (allocated(error)) return
+      call check(error, all(config%mcscf_ormas_subspaces == [1, 4]), "where they start")
+      if (allocated(error)) return
+      call check(error, all(config%mcscf_ormas_min_electrons == [4, 0]), "the minima")
+      if (allocated(error)) return
+      call check(error, all(config%mcscf_ormas_max_electrons == [6, 2]), "the maxima")
+      if (allocated(error)) return
+
+      ! Absent leaves the arrays unallocated, which is what a complete active
+      ! space looks like from here.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 6, "n_active_orbitals": 6}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%mcscf_ormas_subspaces), &
+                 "no ormas block should leave the partition unset")
+      if (allocated(error)) return
+
+      ! Lists of different lengths.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 6, "n_active_orbitals": 7, '// &
+                      '"ormas": {"subspaces": [1, 4], "min_electrons": [4], '// &
+                      '"max_electrons": [6, 2]}}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "three lists of different lengths are not a partition")
+      if (allocated(error)) return
+
+      ! A window list with no subspaces to go with it.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 6, "n_active_orbitals": 7, '// &
+                      '"ormas": {"min_electrons": [4, 0], "max_electrons": [6, 2]}}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a partition with no subspaces should be refused")
+      if (allocated(error)) return
+   end subroutine test_ormas_keywords
 
    subroutine test_avas_keywords(error)
       !! `keywords.mcscf.avas`, and that it cannot coexist with explicit counts
