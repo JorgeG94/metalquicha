@@ -13,6 +13,7 @@ module mqc_method_config
    public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
    public :: correlation_config_t, cc_config_t, f12_config_t
    public :: pcm_config_t
+   public :: properties_config_t
 
    !============================================================================
    ! SCF Configuration (shared by HF and DFT)
@@ -161,6 +162,11 @@ module mqc_method_config
       integer :: max_iter = 100
          !! Iterations that solve is allowed.
    end type pcm_config_t
+
+   type :: properties_config_t
+      !! Analyses to run once the wave function exists
+      character(len=32) :: bonding_analysis = "none"
+   end type properties_config_t
 
    type :: mcscf_config_t
       !! Configuration for MCSCF/CASSCF method
@@ -318,6 +324,7 @@ module mqc_method_config
       !----- Shared configurations -----
       type(scf_config_t) :: scf
       type(pcm_config_t) :: pcm
+      type(properties_config_t) :: properties
          !! Shared SCF settings (used by HF and DFT)
       type(correlation_config_t) :: corr
          !! Shared correlation settings (used by MP2, CC, etc.)

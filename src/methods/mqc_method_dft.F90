@@ -16,7 +16,7 @@ module mqc_method_dft
    !! cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
-   use mqc_method_config, only: pcm_config_t
+   use mqc_method_config, only: pcm_config_t, properties_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
@@ -102,6 +102,7 @@ module mqc_method_dft
          !! Use DIIS for SCF convergence
       integer :: diis_size = 8
          !! Number of Fock matrices in DIIS
+      type(properties_config_t) :: properties
       type(pcm_config_t) :: pcm
          !! Continuum solvation. Only the cuEST path implements it; the CPU
          !! backend ignores it, which `run_cuest_scf`'s stub makes visible.
@@ -180,6 +181,7 @@ contains
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
       settings%pcm = this%options%pcm
+      settings%bonding_analysis = this%options%properties%bonding_analysis
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST
       ! has no four-index path so it fits regardless and ignores this, per the
       ! note at the top of this module; on the libcint side it is a real choice.

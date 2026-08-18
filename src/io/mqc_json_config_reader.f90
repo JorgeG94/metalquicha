@@ -173,6 +173,8 @@ contains
       ! Likewise "ri-mp2" and "df-mp2", which the method type cannot distinguish
       ! from "mp2". A later keyword can still turn it off.
       config%corr_density_fitting = method_wants_density_fitting(text)
+      call optional_string(json, "properties.bonding_analysis", config%bonding_analysis)
+
       call optional_string(json, "model.basis", config%basis)
       call optional_string(json, "model.aux_basis", config%aux_basis)
       call optional_string(json, "model.functional", config%functional)

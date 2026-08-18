@@ -69,6 +69,13 @@ module mqc_cuest_iface
       ! A polarizable continuum, when one was asked for. Carried whole rather
       ! than field by field: the cavity, the solvent and the charge solve travel
       ! together, and a backend either builds a continuum or does not.
+      character(len=32) :: bonding_analysis = "none"
+         !! A post-SCF analysis to run once the orbitals are converged, from
+         !! `properties.bonding_analysis`. Travels with the SCF settings because
+         !! it needs what only the backend has -- the molecule and the converged
+         !! orbitals -- and because it is not a fragment property: it is a
+         !! statement about the wave function this object describes.
+
       type(pcm_config_t) :: pcm
          !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.

@@ -112,6 +112,13 @@ module mqc_config_types
       integer :: index_base = 0  !! 0-based or 1-based indexing
       character(len=:), allocatable :: units  !! angstrom or bohr
 
+      ! Properties asked for alongside the energy. Not settings for *how* to
+      ! compute -- those are `keywords` -- but requests for something extra to
+      ! be reported once the wave function exists.
+      character(len=:), allocatable :: bonding_analysis
+         !! From `properties.bonding_analysis`. Absent or "none" means no
+         !! analysis; "gms_quao" means the quasi-atomic bonding picture.
+
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2
       character(len=:), allocatable :: basis
