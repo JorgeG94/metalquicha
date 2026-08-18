@@ -49,6 +49,9 @@ module mqc_ormas_space
    public :: describes_a_cas
    public :: ormas_strings
    public :: ormas_string_address
+   public :: ormas_closure_t
+   public :: build_ormas_closure
+   public :: closure_address
 
    integer, parameter :: MAX_SUBSPACES = 16
       !! Far above anything meaningful -- the cost of a subspace is another
@@ -115,6 +118,30 @@ module mqc_ormas_space
    contains
       procedure :: destroy => ormas_space_destroy
    end type ormas_space_t
+
+   type :: ormas_closure_t
+      !! The space plus one excitation, and where a determinant sits in it
+      !!
+      !! A sigma build applies an excitation to the vector, contracts, and
+      !! applies another. The vector in the middle is the trouble: an excitation
+      !! may take a determinant out of the space and the second bring it back,
+      !! so the intermediate does not live on the space -- it lives on the space
+      !! widened by one excitation. Truncating it to the space loses exactly
+      !! those terms, quietly, in a way no symmetry or count would reveal.
+      !!
+      !! Membership depends on the strings only through their classes, as
+      !! everything here does, so this is another grid over the same class lists
+      !! and the same strings, addressed by the same three tables. Nothing about
+      !! the layout is new; only which pairs are in it.
+      logical, allocatable :: present(:, :)
+         !! `(beta class, alpha class)` -- reachable in one excitation, or in
+         !! the space already
+      integer(int64), allocatable :: row_length(:), class_base(:)
+      integer(int64), allocatable :: block_offset(:, :), alpha_base(:)
+      integer(int64) :: n_determinants = 0_int64
+   contains
+      procedure :: destroy => ormas_closure_destroy
+   end type ormas_closure_t
 
 contains
 
@@ -359,42 +386,52 @@ contains
       end do
    end subroutine class_string_tables
 
-   subroutine build_addressing(space, error)
-      !! Turn the compatibility bitmap into an address for every determinant
+   subroutine layout_addressing(grid, alpha_size, beta_size, alpha_offset, &
+                                alpha_string_class, row_length, class_base, &
+                                block_offset, alpha_base, n_determinants, error)
+      !! Turn a grid of allowed class pairs into an address for every pair
       !!
-      !! Alpha-major: each alpha string owns a contiguous run of determinants,
-      !! and inside that run the beta classes appear in order, each contributing
-      !! a dense block of its own strings. So three tables suffice -- how long
-      !! a row is, where each beta class starts within it, and where each alpha
-      !! string's row starts overall.
-      type(ormas_space_t), intent(inout) :: space
+      !! Alpha-major: each alpha string owns a contiguous run, and inside it the
+      !! beta classes appear in order, each contributing a dense block of its own
+      !! strings. Three tables say it all -- how long a row is, where each beta
+      !! class starts within one, and where each alpha string's row begins.
+      !!
+      !! Written against a grid rather than against a space because the space
+      !! and its one-excitation closure differ in nothing else.
+      logical, intent(in) :: grid(:, :)
+      integer(int64), intent(in) :: alpha_size(:), beta_size(:), alpha_offset(:)
+      integer, intent(in) :: alpha_string_class(:)
+      integer(int64), allocatable, intent(out) :: row_length(:), class_base(:)
+      integer(int64), allocatable, intent(out) :: block_offset(:, :), alpha_base(:)
+      integer(int64), intent(out) :: n_determinants
       type(error_t), intent(inout) :: error
 
-      integer :: ga, gb, a
+      integer :: n_alpha_classes, n_beta_classes, ga, gb, a
       integer(int64) :: running, total
 
-      allocate (space%row_length(space%n_alpha_classes))
-      allocate (space%class_base(space%n_alpha_classes))
-      allocate (space%block_offset(space%n_beta_classes, space%n_alpha_classes))
+      n_alpha_classes = size(alpha_size)
+      n_beta_classes = size(beta_size)
 
-      space%block_offset = 0_int64
+      allocate (row_length(n_alpha_classes), class_base(n_alpha_classes))
+      allocate (block_offset(n_beta_classes, n_alpha_classes))
+      block_offset = 0_int64
 
-      do ga = 1, space%n_alpha_classes
+      do ga = 1, n_alpha_classes
          running = 0_int64
-         do gb = 1, space%n_beta_classes
-            if (.not. space%compatible(gb, ga)) cycle
-            space%block_offset(gb, ga) = running
-            running = running + space%beta_class_size(gb)
+         do gb = 1, n_beta_classes
+            if (.not. grid(gb, ga)) cycle
+            block_offset(gb, ga) = running
+            running = running + beta_size(gb)
          end do
-         space%row_length(ga) = running
+         row_length(ga) = running
       end do
 
       total = 0_int64
-      do ga = 1, space%n_alpha_classes
-         space%class_base(ga) = total
-         total = total + space%alpha_class_size(ga)*space%row_length(ga)
+      do ga = 1, n_alpha_classes
+         class_base(ga) = total
+         total = total + alpha_size(ga)*row_length(ga)
       end do
-      space%n_determinants = total
+      n_determinants = total
 
       if (total > int(huge(1_int32), int64)) then
          call error%set(ERROR_VALIDATION, "this partition has "//to_char(total)// &
@@ -404,13 +441,24 @@ contains
          return
       end if
 
-      allocate (space%alpha_base(space%alpha_offset(space%n_alpha_classes + 1)))
-      do a = 1, int(space%alpha_offset(space%n_alpha_classes + 1))
-         ga = space%alpha_string_class(a)
-         space%alpha_base(a) = space%class_base(ga) + &
-                               (int(a, int64) - space%alpha_offset(ga) - 1_int64)* &
-                               space%row_length(ga)
+      allocate (alpha_base(size(alpha_string_class)))
+      do a = 1, size(alpha_string_class)
+         ga = alpha_string_class(a)
+         alpha_base(a) = class_base(ga) + &
+                         (int(a, int64) - alpha_offset(ga) - 1_int64)*row_length(ga)
       end do
+   end subroutine layout_addressing
+
+   subroutine build_addressing(space, error)
+      !! The space's own addressing, from its compatibility grid
+      type(ormas_space_t), intent(inout) :: space
+      type(error_t), intent(inout) :: error
+
+      call layout_addressing(space%compatible, space%alpha_class_size, &
+                             space%beta_class_size, space%alpha_offset, &
+                             space%alpha_string_class, space%row_length, &
+                             space%class_base, space%block_offset, space%alpha_base, &
+                             space%n_determinants, error)
    end subroutine build_addressing
 
    subroutine build_ormas_space(first_orbital, n_active_orbitals, n_alpha, n_beta, &
@@ -735,6 +783,92 @@ contains
                  within_class_rank(space, space%beta_class, which, string)
       end if
    end function ormas_string_address
+
+   pure function one_move_apart(left, right) result(reachable)
+      !! Whether two occupation vectors differ by moving one electron
+      !!
+      !! Equal counts too: an excitation inside a subspace changes no
+      !! occupation at all, and those determinants are in the closure as surely
+      !! as the ones that move between subspaces.
+      integer, intent(in) :: left(:), right(:)
+      logical :: reachable
+
+      integer :: difference(size(left))
+
+      difference = left - right
+      reachable = sum(abs(difference)) <= 2 .and. sum(difference) == 0
+   end function one_move_apart
+
+   subroutine build_ormas_closure(space, closure, error)
+      !! The space widened by one excitation of either spin
+      !!
+      !! A pair of classes belongs if one excitation of the alpha string, or one
+      !! of the beta string, could have arrived there from a pair that is in the
+      !! space. Never both at once: a single excitation moves one spin.
+      type(ormas_space_t), intent(in) :: space
+      type(ormas_closure_t), intent(out) :: closure
+      type(error_t), intent(inout) :: error
+
+      integer :: ga, gb, source
+
+      if (error%has_error()) return
+
+      allocate (closure%present(space%n_beta_classes, space%n_alpha_classes))
+      closure%present = .false.
+
+      do ga = 1, space%n_alpha_classes
+         do gb = 1, space%n_beta_classes
+            do source = 1, space%n_alpha_classes
+               if (.not. space%compatible(gb, source)) cycle
+               if (one_move_apart(space%alpha_class(:, ga), space%alpha_class(:, source))) then
+                  closure%present(gb, ga) = .true.
+                  exit
+               end if
+            end do
+            if (closure%present(gb, ga)) cycle
+            do source = 1, space%n_beta_classes
+               if (.not. space%compatible(source, ga)) cycle
+               if (one_move_apart(space%beta_class(:, gb), space%beta_class(:, source))) then
+                  closure%present(gb, ga) = .true.
+                  exit
+               end if
+            end do
+         end do
+      end do
+
+      call layout_addressing(closure%present, space%alpha_class_size, &
+                             space%beta_class_size, space%alpha_offset, &
+                             space%alpha_string_class, closure%row_length, &
+                             closure%class_base, closure%block_offset, &
+                             closure%alpha_base, closure%n_determinants, error)
+   end subroutine build_ormas_closure
+
+   pure function closure_address(closure, space, alpha_string, beta_string) result(address)
+      !! Where a determinant sits in the widened space
+      type(ormas_closure_t), intent(in) :: closure
+      type(ormas_space_t), intent(in) :: space
+      integer, intent(in) :: alpha_string, beta_string
+      integer(int64) :: address
+
+      integer :: ga, gb
+
+      ga = space%alpha_string_class(alpha_string)
+      gb = space%beta_string_class(beta_string)
+      address = closure%alpha_base(alpha_string) + closure%block_offset(gb, ga) &
+                + (int(beta_string, int64) - space%beta_offset(gb))
+   end function closure_address
+
+   pure subroutine ormas_closure_destroy(this)
+      !! Give back everything the closure holds
+      class(ormas_closure_t), intent(inout) :: this
+
+      if (allocated(this%present)) deallocate (this%present)
+      if (allocated(this%row_length)) deallocate (this%row_length)
+      if (allocated(this%class_base)) deallocate (this%class_base)
+      if (allocated(this%block_offset)) deallocate (this%block_offset)
+      if (allocated(this%alpha_base)) deallocate (this%alpha_base)
+      this%n_determinants = 0_int64
+   end subroutine ormas_closure_destroy
 
    pure subroutine ormas_space_destroy(this)
       !! Give back everything the partition holds

@@ -33,9 +33,10 @@ module test_mqc_ormas_ci
    use mqc_error, only: error_t
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space, ormas_strings, &
-                              determinant_address
+                              determinant_address, ormas_closure_t, build_ormas_closure
    use mqc_ci, only: ci_diagonal, absorb_one_electron
-   use mqc_ormas_ci, only: ormas_diagonal, full_space_index, ormas_lowest
+   use mqc_ormas_ci, only: ormas_diagonal, full_space_index, ormas_lowest, &
+                           ormas_sigma, ormas_sigma_direct
    implicit none
    private
 
@@ -53,6 +54,7 @@ contains
                   new_unittest("matches_slater_rules", test_slater), &
                   new_unittest("agrees_with_the_cas_diagonal", test_against_cas), &
                   new_unittest("energies_match_the_python_reference", test_energies), &
+                  new_unittest("direct_sigma_matches_the_projected_one", test_direct), &
                   new_unittest("rejects_mismatched_integrals", test_refusals) &
                   ]
    end subroutine collect_mqc_ormas_ci_tests
@@ -378,6 +380,113 @@ contains
                        [-1.121243956258_dp, -1.121240844637_dp, -1.121137600250_dp], error)
       if (allocated(error)) return
    end subroutine test_energies
+
+   subroutine direct_matches(first_orbital, norb, na, nb, min_e, max_e, error)
+      !! One partition: the two sigma builds, on several vectors
+      integer, intent(in) :: first_orbital(:), min_e(:), max_e(:)
+      integer, intent(in) :: norb, na, nb
+      type(error_type), allocatable, intent(inout) :: error
+
+      type(ormas_space_t) :: space
+      type(ormas_closure_t) :: closure
+      type(error_t) :: err
+      type(link_table_t) :: alpha_table, beta_table
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer, allocatable :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
+      real(dp), allocatable :: h1e(:, :), eri(:, :, :, :), folded(:, :)
+      real(dp), allocatable :: ci(:), projected(:), direct(:)
+      integer :: ndet, d, trial
+
+      call model_integrals(norb, h1e, eri)
+      call absorb_one_electron(h1e, eri, na + nb, folded, err)
+      call build_link_table(norb, na, alpha_table, err)
+      call build_link_table(norb, nb, beta_table, err)
+
+      call build_ormas_space(first_orbital, norb, na, nb, min_e, max_e, space, err)
+      call ormas_strings(space, alpha, beta, err)
+      call full_space_index(space, alpha, beta, in_alpha, in_beta, from_alpha, from_beta)
+      call build_ormas_closure(space, closure, err)
+      call check(error,.not. err%has_error(), "building the closure failed")
+      if (allocated(error)) return
+
+      ! Wider than the space, because an excitation leaves it; narrower than the
+      ! rectangle, because that is the saving the whole exercise is for.
+      call check(error, closure%n_determinants >= space%n_determinants, &
+                 "the closure does not contain the space")
+      if (allocated(error)) return
+      call check(error, closure%n_determinants <= &
+                 int(size(alpha), int64)*int(size(beta), int64), &
+                 "the closure exceeds the complete space")
+      if (allocated(error)) return
+
+      ndet = int(space%n_determinants)
+      allocate (ci(ndet), projected(ndet), direct(ndet))
+
+      do trial = 1, 3
+         ! Deterministic and spread over several orders of magnitude, so a term
+         ! dropped anywhere shows rather than hiding under a larger one.
+         do d = 1, ndet
+            ci(d) = sin(real(d*trial, dp))/real(d + trial, dp)
+         end do
+
+         call ormas_sigma(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
+                          ci, projected, err)
+         call ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
+                                 in_alpha, in_beta, from_alpha, from_beta, ci, direct, err)
+         call check(error,.not. err%has_error(), "a sigma build failed")
+         if (allocated(error)) return
+
+         do d = 1, ndet
+            call check(error, direct(d), projected(d), thr=1.0e-11_dp, &
+                       message="the direct sigma differs from the projected one")
+            if (allocated(error)) return
+         end do
+      end do
+
+      deallocate (ci, projected, direct)
+      call space%destroy()
+      call closure%destroy()
+      call alpha_table%destroy()
+      call beta_table%destroy()
+   end subroutine direct_matches
+
+   subroutine test_direct(error)
+      !! The sigma that stays inside the closure, against the one that does not
+      !!
+      !! The projected build is already known good -- its energies reproduce an
+      !! independent reference that itself reproduces PySCF. So this asks a
+      !! single sharp question: does restricting the intermediate to the space
+      !! plus one excitation lose anything? If the closure were too small the
+      !! two would differ, and differ in exactly the terms that are hardest to
+      !! reason about -- a double excitation whose intermediate step is outside
+      !! the space, which no count and no symmetry would miss.
+      !!
+      !! Compared vector by vector rather than through an energy. An eigenvalue
+      !! is a scalar summary and a wrong sigma can still produce a plausible
+      !! one; two sigma vectors agreeing at every determinant, on several
+      !! unrelated inputs, cannot be a coincidence.
+      type(error_type), allocatable, intent(out) :: error
+
+      call direct_matches([1, 3], 4, 2, 2, [2, 0], [4, 2], error)
+      if (allocated(error)) return
+
+      call direct_matches([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], error)
+      if (allocated(error)) return
+
+      call direct_matches([1, 4], 7, 3, 3, [4, 0], [6, 2], error)
+      if (allocated(error)) return
+
+      call direct_matches([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], error)
+      if (allocated(error)) return
+
+      call direct_matches([1, 4], 6, 2, 2, [0, 3], [6, 6], error)
+      if (allocated(error)) return
+
+      ! And a partition that restricts nothing, where the closure is the whole
+      ! rectangle and the two builds must agree trivially.
+      call direct_matches([1, 3], 4, 2, 2, [0, 0], [4, 4], error)
+      if (allocated(error)) return
+   end subroutine test_direct
 
    subroutine test_refusals(error)
       !! Integrals that do not span the partition are refused

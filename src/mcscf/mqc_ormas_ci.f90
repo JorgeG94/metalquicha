@@ -20,7 +20,8 @@ module mqc_ormas_ci
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_determinants, only: link_table_t, string_address
    use mqc_ci, only: sigma_vector
-   use mqc_ormas_space, only: ormas_space_t
+   use pic_blas_interfaces, only: pic_gemm
+   use mqc_ormas_space, only: ormas_space_t, ormas_closure_t, closure_address
    implicit none
    private
 
@@ -28,6 +29,7 @@ module mqc_ormas_ci
    public :: full_space_index
    public :: ormas_sigma
    public :: ormas_lowest
+   public :: ormas_sigma_direct
 
 contains
 
@@ -185,7 +187,7 @@ contains
       deallocate (occ_a, occ_b)
    end subroutine ormas_diagonal
 
-   subroutine full_space_index(space, alpha, beta, in_alpha, in_beta)
+   subroutine full_space_index(space, alpha, beta, in_alpha, in_beta, from_alpha, from_beta)
       !! Where each of the space's strings sits in the unrestricted list
       !!
       !! The restricted space groups its strings by occupation class; the
@@ -196,6 +198,7 @@ contains
       type(ormas_space_t), intent(in) :: space
       integer(int64), intent(in) :: alpha(:), beta(:)
       integer, allocatable, intent(out) :: in_alpha(:), in_beta(:)
+      integer, allocatable, intent(out), optional :: from_alpha(:), from_beta(:)
 
       integer :: i
 
@@ -206,6 +209,21 @@ contains
       do i = 1, size(beta)
          in_beta(i) = string_address(space%n_active_orbitals, space%n_beta, beta(i))
       end do
+
+      ! Every string of the complete space is kept, so the map is onto and its
+      ! inverse is a permutation rather than a partial one.
+      if (present(from_alpha)) then
+         allocate (from_alpha(size(alpha)))
+         do i = 1, size(alpha)
+            from_alpha(in_alpha(i)) = i
+         end do
+      end if
+      if (present(from_beta)) then
+         allocate (from_beta(size(beta)))
+         do i = 1, size(beta)
+            from_beta(in_beta(i)) = i
+         end do
+      end if
    end subroutine full_space_index
 
    subroutine ormas_sigma(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
@@ -341,5 +359,128 @@ contains
       energies = values(1:n_roots)
       deallocate (matrix, unit, column, values)
    end subroutine ormas_lowest
+
+   subroutine ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
+                                 in_alpha, in_beta, from_alpha, from_beta, ci, sigma, error)
+      !! `sigma = H c` without ever visiting the complete space
+      !!
+      !! The same three passes as the unrestricted build -- apply an excitation
+      !! to the vector for every orbital pair at once, contract that against the
+      !! Hamiltonian, apply an excitation again -- with the intermediate living
+      !! on the closure rather than on the whole rectangle.
+      !!
+      !! That is the only real difference and it is the whole point. The
+      !! intermediate has to be wider than the space, because an excitation can
+      !! leave and a second bring it back; it does not have to be as wide as the
+      !! complete space, because two excitations from the space is further than
+      !! anything here reaches. One excitation is exactly enough, and for a
+      !! restricted space that is a far smaller set than the rectangle the
+      !! projected build pays for.
+      !!
+      !! The excitation tables are the unrestricted ones, indexed by bit
+      !! pattern; the strings here are grouped by occupation class. `in_*` and
+      !! `from_*` carry an index between the two orderings, in each direction.
+      type(ormas_space_t), intent(in) :: space
+      type(ormas_closure_t), intent(in) :: closure
+      real(dp), intent(in) :: folded(:, :)
+      type(link_table_t), intent(in) :: alpha_table, beta_table
+      integer, intent(in) :: in_alpha(:), in_beta(:)      !! class order -> bit order
+      integer, intent(in) :: from_alpha(:), from_beta(:)  !! bit order -> class order
+      real(dp), intent(in) :: ci(:)
+      real(dp), intent(out) :: sigma(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: gathered(:, :), contracted(:, :)
+      integer :: norb, npair, ia, ib, ia2, ib2, ga, gb, row, pair
+      real(dp) :: weight
+
+      if (error%has_error()) return
+
+      norb = space%n_active_orbitals
+      npair = norb*norb
+
+      allocate (gathered(npair, closure%n_determinants))
+      gathered = 0.0_dp
+
+      ! Gather: read the vector where it lives, write the intermediate where the
+      ! excitation lands.
+      do ia = 1, size(in_alpha)
+         ga = space%alpha_string_class(ia)
+         do row = 1, alpha_table%n_rows
+            pair = alpha_table%cre(row, in_alpha(ia)) &
+                   + (alpha_table%des(row, in_alpha(ia)) - 1)*norb
+            ia2 = from_alpha(alpha_table%dest(row, in_alpha(ia)))
+            weight = real(alpha_table%phase(row, in_alpha(ia)), dp)
+            do ib = 1, size(in_beta)
+               gb = space%beta_string_class(ib)
+               if (.not. space%compatible(gb, ga)) cycle
+               gathered(pair, closure_address(closure, space, ia2, ib)) = &
+                  gathered(pair, closure_address(closure, space, ia2, ib)) &
+                  + weight*ci(determinant_address_local(space, ia, ib))
+            end do
+         end do
+      end do
+
+      do ib = 1, size(in_beta)
+         gb = space%beta_string_class(ib)
+         do row = 1, beta_table%n_rows
+            pair = beta_table%cre(row, in_beta(ib)) &
+                   + (beta_table%des(row, in_beta(ib)) - 1)*norb
+            ib2 = from_beta(beta_table%dest(row, in_beta(ib)))
+            weight = real(beta_table%phase(row, in_beta(ib)), dp)
+            do ia = 1, size(in_alpha)
+               ga = space%alpha_string_class(ia)
+               if (.not. space%compatible(gb, ga)) cycle
+               gathered(pair, closure_address(closure, space, ia, ib2)) = &
+                  gathered(pair, closure_address(closure, space, ia, ib2)) &
+                  + weight*ci(determinant_address_local(space, ia, ib))
+            end do
+         end do
+      end do
+
+      allocate (contracted(npair, closure%n_determinants))
+      call pic_gemm(folded, gathered, contracted)
+
+      ! Scatter: read the intermediate where it lives, write the sigma where the
+      ! excitation lands -- keeping only what lands back inside the space.
+      sigma = 0.0_dp
+      do ia = 1, size(in_alpha)
+         ga = space%alpha_string_class(ia)
+         do row = 1, alpha_table%n_rows
+            pair = alpha_table%cre(row, in_alpha(ia)) &
+                   + (alpha_table%des(row, in_alpha(ia)) - 1)*norb
+            ia2 = from_alpha(alpha_table%dest(row, in_alpha(ia)))
+            weight = real(alpha_table%phase(row, in_alpha(ia)), dp)
+            do ib = 1, size(in_beta)
+               gb = space%beta_string_class(ib)
+               if (.not. closure%present(gb, ga)) cycle
+               if (.not. space%compatible(gb, space%alpha_string_class(ia2))) cycle
+               sigma(determinant_address_local(space, ia2, ib)) = &
+                  sigma(determinant_address_local(space, ia2, ib)) &
+                  + weight*contracted(pair, closure_address(closure, space, ia, ib))
+            end do
+         end do
+      end do
+
+      do ib = 1, size(in_beta)
+         gb = space%beta_string_class(ib)
+         do row = 1, beta_table%n_rows
+            pair = beta_table%cre(row, in_beta(ib)) &
+                   + (beta_table%des(row, in_beta(ib)) - 1)*norb
+            ib2 = from_beta(beta_table%dest(row, in_beta(ib)))
+            weight = real(beta_table%phase(row, in_beta(ib)), dp)
+            do ia = 1, size(in_alpha)
+               ga = space%alpha_string_class(ia)
+               if (.not. closure%present(gb, ga)) cycle
+               if (.not. space%compatible(space%beta_string_class(ib2), ga)) cycle
+               sigma(determinant_address_local(space, ia, ib2)) = &
+                  sigma(determinant_address_local(space, ia, ib2)) &
+                  + weight*contracted(pair, closure_address(closure, space, ia, ib))
+            end do
+         end do
+      end do
+
+      deallocate (gathered, contracted)
+   end subroutine ormas_sigma_direct
 
 end module mqc_ormas_ci
