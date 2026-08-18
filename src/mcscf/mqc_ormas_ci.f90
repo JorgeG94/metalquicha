@@ -33,6 +33,8 @@ module mqc_ormas_ci
    public :: ormas_lowest
    public :: ormas_sigma_direct
    public :: ormas_solve
+   public :: ormas_gather
+   public :: ormas_density_matrices
 
    type, extends(sigma_operator_t) :: ormas_operator_t
       !! The restricted Hamiltonian, as something Davidson can multiply by
@@ -417,44 +419,8 @@ contains
       norb = space%n_active_orbitals
       npair = norb*norb
 
-      allocate (gathered(npair, closure%n_determinants))
-      gathered = 0.0_dp
-
-      ! Gather: read the vector where it lives, write the intermediate where the
-      ! excitation lands.
-      do ia = 1, size(in_alpha)
-         ga = space%alpha_string_class(ia)
-         do row = 1, alpha_table%n_rows
-            pair = alpha_table%cre(row, in_alpha(ia)) &
-                   + (alpha_table%des(row, in_alpha(ia)) - 1)*norb
-            ia2 = from_alpha(alpha_table%dest(row, in_alpha(ia)))
-            weight = real(alpha_table%phase(row, in_alpha(ia)), dp)
-            do ib = 1, size(in_beta)
-               gb = space%beta_string_class(ib)
-               if (.not. space%compatible(gb, ga)) cycle
-               gathered(pair, closure_address(closure, space, ia2, ib)) = &
-                  gathered(pair, closure_address(closure, space, ia2, ib)) &
-                  + weight*ci(determinant_address_local(space, ia, ib))
-            end do
-         end do
-      end do
-
-      do ib = 1, size(in_beta)
-         gb = space%beta_string_class(ib)
-         do row = 1, beta_table%n_rows
-            pair = beta_table%cre(row, in_beta(ib)) &
-                   + (beta_table%des(row, in_beta(ib)) - 1)*norb
-            ib2 = from_beta(beta_table%dest(row, in_beta(ib)))
-            weight = real(beta_table%phase(row, in_beta(ib)), dp)
-            do ia = 1, size(in_alpha)
-               ga = space%alpha_string_class(ia)
-               if (.not. space%compatible(gb, ga)) cycle
-               gathered(pair, closure_address(closure, space, ia, ib2)) = &
-                  gathered(pair, closure_address(closure, space, ia, ib2)) &
-                  + weight*ci(determinant_address_local(space, ia, ib))
-            end do
-         end do
-      end do
+      call ormas_gather(space, closure, alpha_table, beta_table, in_alpha, in_beta, &
+                        from_alpha, from_beta, ci, gathered)
 
       allocate (contracted(npair, closure%n_determinants))
       call pic_gemm(folded, gathered, contracted)
@@ -500,6 +466,164 @@ contains
 
       deallocate (gathered, contracted)
    end subroutine ormas_sigma_direct
+
+   subroutine ormas_gather(space, closure, alpha_table, beta_table, in_alpha, in_beta, &
+                           from_alpha, from_beta, ci, gathered)
+      !! `E_pq |c>` for every orbital pair at once, on the closure
+      !!
+      !! Column `d` and row `p + (q-1) n_orb` hold the closure-determinant-`d`
+      !! component of `E_pq |c>`. The closure and not the space, because that is
+      !! where the result of one excitation lives.
+      !!
+      !! Shared between the sigma build and the density matrices, for the same
+      !! reason the complete-space code shares its own: both are made entirely
+      !! of this one operation and it carries the excitation phases. A second
+      !! copy would be a second place for a sign to go wrong, and the copy the
+      !! densities used would be exercised only where a sign error leaves the
+      !! energy alone -- so every test that looks at an energy would pass.
+      type(ormas_space_t), intent(in) :: space
+      type(ormas_closure_t), intent(in) :: closure
+      type(link_table_t), intent(in) :: alpha_table, beta_table
+      integer, intent(in) :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
+      real(dp), intent(in) :: ci(:)
+      real(dp), allocatable, intent(out) :: gathered(:, :)
+
+      integer :: norb, npair, ia, ib, ia2, ib2, ga, gb, row, pair
+      real(dp) :: weight
+
+      norb = space%n_active_orbitals
+      npair = norb*norb
+
+      allocate (gathered(npair, closure%n_determinants))
+      gathered = 0.0_dp
+
+      do ia = 1, size(in_alpha)
+         ga = space%alpha_string_class(ia)
+         do row = 1, alpha_table%n_rows
+            pair = alpha_table%cre(row, in_alpha(ia)) &
+                   + (alpha_table%des(row, in_alpha(ia)) - 1)*norb
+            ia2 = from_alpha(alpha_table%dest(row, in_alpha(ia)))
+            weight = real(alpha_table%phase(row, in_alpha(ia)), dp)
+            do ib = 1, size(in_beta)
+               gb = space%beta_string_class(ib)
+               if (.not. space%compatible(gb, ga)) cycle
+               gathered(pair, closure_address(closure, space, ia2, ib)) = &
+                  gathered(pair, closure_address(closure, space, ia2, ib)) &
+                  + weight*ci(determinant_address_local(space, ia, ib))
+            end do
+         end do
+      end do
+
+      do ib = 1, size(in_beta)
+         gb = space%beta_string_class(ib)
+         do row = 1, beta_table%n_rows
+            pair = beta_table%cre(row, in_beta(ib)) &
+                   + (beta_table%des(row, in_beta(ib)) - 1)*norb
+            ib2 = from_beta(beta_table%dest(row, in_beta(ib)))
+            weight = real(beta_table%phase(row, in_beta(ib)), dp)
+            do ia = 1, size(in_alpha)
+               ga = space%alpha_string_class(ia)
+               if (.not. space%compatible(gb, ga)) cycle
+               gathered(pair, closure_address(closure, space, ia, ib2)) = &
+                  gathered(pair, closure_address(closure, space, ia, ib2)) &
+                  + weight*ci(determinant_address_local(space, ia, ib))
+            end do
+         end do
+      end do
+   end subroutine ormas_gather
+
+   subroutine ormas_density_matrices(space, ci, dm1, dm2, error)
+      !! Spin-traced one- and two-particle density matrices
+      !!
+      !! `D_pq = <Psi|E_pq|Psi>` and `d_pqrs = <Psi|E_pq E_rs|Psi> - delta_qr
+      !! <Psi|E_ps|Psi>`, the second being what contracts with `(pq|rs)` to give
+      !! the two-electron energy.
+      !!
+      !! The one-particle matrix needs nothing outside the space: it contracts
+      !! the intermediate back against the vector, and the vector is zero
+      !! wherever the windows exclude. The two-particle matrix does need the
+      !! closure, and this is the sharpest place that shows -- it is
+      !! `<E_qp Psi|E_rs Psi>`, an inner product of two intermediates, and both
+      !! of them have weight on determinants the space does not contain. Summing
+      !! only over the space would drop those products silently, leaving density
+      !! matrices whose traces are all correct and whose energy is not.
+      type(ormas_space_t), intent(in), target :: space
+      real(dp), intent(in) :: ci(:)
+      real(dp), allocatable, intent(out) :: dm1(:, :), dm2(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      type(ormas_closure_t) :: closure
+      type(link_table_t) :: alpha_table, beta_table
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer, allocatable :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
+      real(dp), allocatable :: gathered(:, :), paired(:, :), embedded(:)
+      integer :: norb, npair, p, q, r, s, pq, qp, rs, ia, ib, ga, gb
+
+      if (error%has_error()) return
+
+      norb = space%n_active_orbitals
+      npair = norb*norb
+
+      call ormas_strings(space, alpha, beta, error)
+      call full_space_index(space, alpha, beta, in_alpha, in_beta, from_alpha, from_beta)
+      call build_ormas_closure(space, closure, error)
+      call build_link_table(norb, space%n_alpha, alpha_table, error)
+      call build_link_table(norb, space%n_beta, beta_table, error)
+      if (error%has_error()) return
+
+      call ormas_gather(space, closure, alpha_table, beta_table, in_alpha, in_beta, &
+                        from_alpha, from_beta, ci, gathered)
+
+      ! The vector seen from the closure: itself where the space reaches, zero
+      ! everywhere the closure went further.
+      allocate (embedded(closure%n_determinants))
+      embedded = 0.0_dp
+      do ia = 1, size(in_alpha)
+         ga = space%alpha_string_class(ia)
+         do ib = 1, size(in_beta)
+            gb = space%beta_string_class(ib)
+            if (.not. space%compatible(gb, ga)) cycle
+            embedded(closure_address(closure, space, ia, ib)) = &
+               ci(determinant_address_local(space, ia, ib))
+         end do
+      end do
+
+      allocate (dm1(norb, norb))
+      do q = 1, norb
+         do p = 1, norb
+            pq = p + (q - 1)*norb
+            dm1(p, q) = dot_product(gathered(pq, :), embedded)
+         end do
+      end do
+
+      allocate (paired(npair, npair))
+      call pic_gemm(gathered, gathered, paired, transb="T")
+
+      allocate (dm2(norb, norb, norb, norb))
+      do s = 1, norb
+         do r = 1, norb
+            rs = r + (s - 1)*norb
+            do q = 1, norb
+               do p = 1, norb
+                  qp = q + (p - 1)*norb
+                  dm2(p, q, r, s) = paired(qp, rs)
+               end do
+            end do
+         end do
+      end do
+      do s = 1, norb
+         do r = 1, norb
+            do p = 1, norb
+               dm2(p, r, r, s) = dm2(p, r, r, s) - dm1(p, s)
+            end do
+         end do
+      end do
+
+      deallocate (gathered, paired, embedded)
+      call closure%destroy()
+      call alpha_table%destroy()
+      call beta_table%destroy()
+   end subroutine ormas_density_matrices
 
    subroutine ormas_apply(this, vector, image, error)
       !! One matrix-vector product over the restricted space

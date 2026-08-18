@@ -35,8 +35,10 @@ module test_mqc_ormas_ci
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space, ormas_strings, &
                               determinant_address, ormas_closure_t, build_ormas_closure
    use mqc_ci, only: ci_diagonal, absorb_one_electron
+   use mqc_rdm, only: rdm_energy, active_space_rdms
    use mqc_ormas_ci, only: ormas_diagonal, full_space_index, ormas_lowest, &
-                           ormas_sigma, ormas_sigma_direct, ormas_solve
+                           ormas_sigma, ormas_sigma_direct, ormas_solve, &
+                           ormas_density_matrices
    implicit none
    private
 
@@ -56,6 +58,7 @@ contains
                   new_unittest("energies_match_the_python_reference", test_energies), &
                   new_unittest("direct_sigma_matches_the_projected_one", test_direct), &
                   new_unittest("iterative_solver_finds_the_same_states", test_iterative), &
+                  new_unittest("densities_rebuild_the_energy", test_densities), &
                   new_unittest("rejects_mismatched_integrals", test_refusals) &
                   ]
    end subroutine collect_mqc_ormas_ci_tests
@@ -610,6 +613,137 @@ contains
                         [-27.880210126288_dp, -27.766902778851_dp, -25.947416001524_dp], error)
       if (allocated(error)) return
    end subroutine test_iterative
+
+   subroutine densities_of(first_orbital, norb, na, nb, min_e, max_e, error)
+      !! One partition: solve, take densities, rebuild the energy from them
+      integer, intent(in) :: first_orbital(:), min_e(:), max_e(:)
+      integer, intent(in) :: norb, na, nb
+      type(error_type), allocatable, intent(inout) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      real(dp), allocatable :: h1e(:, :), eri(:, :, :, :)
+      real(dp), allocatable :: energies(:), vectors(:, :)
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
+      real(dp) :: electrons
+      integer :: p
+
+      call model_integrals(norb, h1e, eri, dominant=.true.)
+      call build_ormas_space(first_orbital, norb, na, nb, min_e, max_e, space, err)
+      call ormas_solve(space, h1e, eri, 1, energies, vectors, err)
+      call ormas_density_matrices(space, vectors(:, 1), dm1, dm2, err)
+      call check(error,.not. err%has_error(), "building the densities failed")
+      if (allocated(error)) return
+
+      ! The electron count, which a wrong intermediate would usually still get
+      ! right -- worth asserting, and worth not stopping at.
+      electrons = 0.0_dp
+      do p = 1, norb
+         electrons = electrons + dm1(p, p)
+      end do
+      call check(error, electrons, real(na + nb, dp), thr=1.0e-10_dp, &
+                 message="the one-particle density does not hold the electrons")
+      if (allocated(error)) return
+
+      ! The energy, which it would not. Reached by arithmetic that shares
+      ! nothing with the eigensolver: a contraction of two density matrices
+      ! against the integrals, against a Davidson eigenvalue.
+      call check(error, rdm_energy(h1e, eri, dm1, dm2), energies(1), thr=1.0e-9_dp, &
+                 message="the densities do not rebuild the CI energy")
+      if (allocated(error)) return
+
+      call space%destroy()
+   end subroutine densities_of
+
+   subroutine test_densities(error)
+      !! The density matrices, by the one check that catches everything
+      !!
+      !! Contracting them back against the integrals has to give the energy the
+      !! CI already found. The two numbers are reached by completely different
+      !! arithmetic, so a transposed index, a factor of two, or an intermediate
+      !! summed over the space instead of its closure will not survive it --
+      !! while every trace identity would still hold in all three cases.
+      !!
+      !! That last one is the reason this test is here rather than left to a
+      !! trace. The two-particle matrix is an inner product of two
+      !! intermediates, both of which have weight outside the space; restricting
+      !! the sum to the space loses those products quietly and leaves densities
+      !! that look entirely healthy.
+      type(error_type), allocatable, intent(out) :: error
+
+      call densities_of([1, 3], 4, 2, 2, [2, 0], [4, 2], error)
+      if (allocated(error)) return
+
+      call densities_of([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], error)
+      if (allocated(error)) return
+
+      call densities_of([1, 4], 7, 3, 3, [4, 0], [6, 2], error)
+      if (allocated(error)) return
+
+      call densities_of([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], error)
+      if (allocated(error)) return
+
+      call densities_of([1, 4], 6, 2, 2, [0, 3], [6, 6], error)
+      if (allocated(error)) return
+
+      ! And against the complete-space densities where the two must agree.
+      call densities_against_cas(error)
+   end subroutine test_densities
+
+   subroutine densities_against_cas(error)
+      !! With windows that restrict nothing, `mqc_rdm`'s answer, element by
+      !! element
+      type(error_type), allocatable, intent(inout) :: error
+
+      integer, parameter :: NORB = 4, NA = 2, NB = 2
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      type(link_table_t) :: alpha_table, beta_table
+      real(dp), allocatable :: h1e(:, :), eri(:, :, :, :)
+      real(dp), allocatable :: energies(:), vectors(:, :)
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
+      real(dp), allocatable :: ref1(:, :), ref2(:, :, :, :), square(:, :)
+      integer :: p, q, r, s
+
+      call model_integrals(NORB, h1e, eri, dominant=.true.)
+      call build_ormas_space([1], NORB, NA, NB, [NA + NB], [NA + NB], space, err)
+      call ormas_solve(space, h1e, eri, 1, energies, vectors, err)
+      call ormas_density_matrices(space, vectors(:, 1), dm1, dm2, err)
+      call check(error,.not. err%has_error(), "the restricted densities failed")
+      if (allocated(error)) return
+
+      call build_link_table(NORB, NA, alpha_table, err)
+      call build_link_table(NORB, NB, beta_table, err)
+      allocate (square(alpha_table%n_strings, beta_table%n_strings))
+      square = reshape(vectors(:, 1), [alpha_table%n_strings, beta_table%n_strings])
+      call active_space_rdms(square, alpha_table, beta_table, ref1, ref2, err)
+      call check(error,.not. err%has_error(), "the complete-space densities failed")
+      if (allocated(error)) return
+
+      do q = 1, NORB
+         do p = 1, NORB
+            call check(error, dm1(p, q), ref1(p, q), thr=1.0e-10_dp, &
+                       message="the one-particle densities differ")
+            if (allocated(error)) return
+         end do
+      end do
+      do s = 1, NORB
+         do r = 1, NORB
+            do q = 1, NORB
+               do p = 1, NORB
+                  call check(error, dm2(p, q, r, s), ref2(p, q, r, s), thr=1.0e-10_dp, &
+                             message="the two-particle densities differ")
+                  if (allocated(error)) return
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (square)
+      call space%destroy()
+      call alpha_table%destroy()
+      call beta_table%destroy()
+   end subroutine densities_against_cas
 
    subroutine test_refusals(error)
       !! Integrals that do not span the partition are refused
