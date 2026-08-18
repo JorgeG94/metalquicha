@@ -132,6 +132,44 @@ contains
       call check(error,.not. is_redundant(5, 1, 2, 2), "virtual with inactive")
       if (allocated(error)) return
       call check(error,.not. is_redundant(5, 3, 2, 2), "virtual with active")
+      if (allocated(error)) return
+
+      ! Now restrict the occupations. Four active orbitals -- 3, 4, 5, 6 -- cut
+      ! into two subspaces at active positions 1 and 3, so orbitals 3-4 and 5-6.
+      !
+      ! Within a subspace the wave function still reaches every arrangement, so
+      ! mixing two of them changes nothing. Across the boundary it does not, and
+      ! the rotation becomes a real parameter -- which is the whole reason a
+      ! CASSCF cannot be pointed at a restricted space unaltered.
+      call check(error, is_redundant(3, 4, 2, 4, [1, 3]), &
+                 "two active orbitals inside one subspace")
+      if (allocated(error)) return
+      call check(error, is_redundant(5, 6, 2, 4, [1, 3]), &
+                 "two active orbitals inside the other")
+      if (allocated(error)) return
+      call check(error,.not. is_redundant(3, 5, 2, 4, [1, 3]), &
+                 "two active orbitals either side of a subspace boundary")
+      if (allocated(error)) return
+      call check(error,.not. is_redundant(4, 5, 2, 4, [1, 3]), &
+                 "and again across the boundary")
+      if (allocated(error)) return
+
+      ! One subspace covering everything is a complete active space, and has to
+      ! agree with the answer given when no partition is mentioned at all.
+      call check(error, is_redundant(3, 6, 2, 4, [1]), &
+                 "one subspace is a complete active space")
+      if (allocated(error)) return
+      call check(error, is_redundant(3, 6, 2, 4), &
+                 "as is saying nothing about subspaces")
+      if (allocated(error)) return
+
+      ! The partition says nothing about the other blocks: an active orbital
+      ! still rotates freely against an inactive or a virtual one.
+      call check(error,.not. is_redundant(3, 1, 2, 4, [1, 3]), &
+                 "active with inactive, restricted or not")
+      if (allocated(error)) return
+      call check(error, is_redundant(1, 2, 2, 4, [1, 3]), &
+                 "and inactive with inactive is still redundant")
    end subroutine test_redundant
 
    subroutine test_gradient(error)

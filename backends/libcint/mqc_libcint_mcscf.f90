@@ -60,6 +60,7 @@ module mqc_libcint_mcscf
    public :: orbital_gradient
    public :: rotation_matrix
    public :: is_redundant
+   public :: subspace_of
    public :: approximate_hessian
    public :: run_libcint_casscf
    public :: casscf_result_t
@@ -136,15 +137,32 @@ module mqc_libcint_mcscf
 
 contains
 
-   pure function is_redundant(p, q, n_inactive, n_active) result(redundant)
+   pure function is_redundant(p, q, n_inactive, n_active, subspaces) result(redundant)
       !! Whether rotating `p` into `q` changes the wave function at all
       !!
-      !! It does not if both are inactive, both active, or both virtual. For the
-      !! active-active case this is specific to a *complete* active space: a
-      !! restricted one does distinguish its orbitals and those rotations become
-      !! real parameters, which is one of several reasons RASSCF is not a small
-      !! change to this code.
+      !! It does not if both are inactive or both virtual: the wave function is
+      !! built from those sets, not from the orbitals inside them.
+      !!
+      !! **The active-active case depends on the space.** A complete active
+      !! space distributes its electrons over its orbitals in every way there
+      !! is, so mixing two of them reaches nothing new and the rotation is
+      !! redundant. Restrict the occupations and that stops being true the
+      !! moment the two orbitals fall in different subspaces -- the wave
+      !! function then does distinguish them, and the rotation is a real
+      !! parameter with a real gradient. Two orbitals *within* one subspace are
+      !! redundant again, because a subspace is complete in itself.
+      !!
+      !! Getting this wrong is not loud. Treat a real parameter as redundant and
+      !! the optimiser converges, reports a small gradient, and stops somewhere
+      !! that is not a stationary point; treat a redundant one as real and the
+      !! Hessian acquires a null direction. `subspaces` absent means a complete
+      !! active space, which is the case the rest of this module was written
+      !! for.
       integer, intent(in) :: p, q, n_inactive, n_active
+      integer, intent(in), optional :: subspaces(:)
+         !! Active orbital each subspace starts at, ascending, as
+         !! `keywords.mcscf.ormas.subspaces` gives it. Absent is one subspace
+         !! covering everything.
       logical :: redundant
 
       integer :: class_p, class_q
@@ -152,7 +170,29 @@ contains
       class_p = orbital_class(p, n_inactive, n_active)
       class_q = orbital_class(q, n_inactive, n_active)
       redundant = (class_p == class_q)
+
+      if (redundant .and. class_p == 2 .and. present(subspaces)) then
+         redundant = subspace_of(p - n_inactive, subspaces) == &
+            subspace_of(q - n_inactive, subspaces)
+      end if
    end function is_redundant
+
+   pure function subspace_of(active_orbital, subspaces) result(which)
+      !! Which subspace an active orbital belongs to, counting from 1
+      !!
+      !! `subspaces` is ascending and its first entry is 1, so the answer is the
+      !! last entry not past the orbital.
+      integer, intent(in) :: active_orbital
+      integer, intent(in) :: subspaces(:)
+      integer :: which
+
+      integer :: k
+
+      which = 1
+      do k = 1, size(subspaces)
+         if (subspaces(k) <= active_orbital) which = k
+      end do
+   end function subspace_of
 
    pure function orbital_class(p, n_inactive, n_active) result(class_index)
       !! 1 inactive, 2 active, 3 virtual
