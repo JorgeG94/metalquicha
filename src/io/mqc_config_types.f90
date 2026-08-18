@@ -167,6 +167,10 @@ module mqc_config_types
       logical :: cc_diis = .true.
       integer :: cc_diis_size = 8
       ! keywords.mcscf -- the active space, for CASSCF and CASCI
+      character(len=:), allocatable :: mcscf_avas_orbitals(:)
+         !! Atomic orbital labels from `keywords.mcscf.avas.orbitals`, e.g.
+         !! "N 2p". Unallocated means the active space was given by counts.
+      real(dp) :: mcscf_avas_threshold = 0.2_dp
       integer :: mcscf_n_active_electrons = 0
       integer :: mcscf_n_active_orbitals = 0
       integer :: mcscf_n_inactive_orbitals = -1

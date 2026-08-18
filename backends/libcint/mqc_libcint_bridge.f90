@@ -37,6 +37,7 @@ module mqc_libcint_bridge
    use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
    use mqc_libcint_casci, only: casci_result_t, run_libcint_casci
+   use mqc_libcint_avas, only: avas_select, avas_result_t
    use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf, &
                                 natural_orbitals
    use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -1420,7 +1421,9 @@ contains
       type(casci_result_t) :: casci
       type(error_t) :: error
       type(error_t) :: analysis_error
-      real(dp), allocatable :: natural(:, :), occupations(:)
+      type(avas_result_t) :: avas
+      logical :: use_avas
+      real(dp), allocatable :: natural(:, :), occupations(:), reference(:, :)
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       character(len=MAX_LINE_LENGTH) :: line
       integer :: iatom, diis_size
@@ -1462,15 +1465,20 @@ contains
       end if
 
       ! Before the SCF, so a malformed active space costs nothing to discover.
-      call resolve_active_space(settings, fragment, mol%nao, space, error)
-      if (error%has_error()) then
-         call result%error%set(ERROR_VALIDATION, error%get_message())
-         result%has_error = .true.
-         call mol%destroy()
-         return
+      ! Skipped when AVAS is choosing: the counts do not exist yet and cannot,
+      ! since the selection needs converged orbitals to project.
+      use_avas = allocated(settings%mcscf%avas_orbitals)
+      if (.not. use_avas) then
+         call resolve_active_space(settings, fragment, mol%nao, space, error)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
       end if
 
-      if (settings%verbose) then
+      if (settings%verbose .and. .not. use_avas) then
          write (line, "(a,i0,a,i0,a,i0,a,i0,a,i0,a)") "  active space: CAS(", &
             settings%mcscf%n_active_electrons, ",", space(2), "), ", space(1), &
             " inactive, ", space(3), " alpha and ", space(4), " beta active electrons"
@@ -1502,8 +1510,39 @@ contains
          return
       end if
 
+      ! ---- AVAS, if the deck named orbitals rather than counts ---------------
+      !
+      ! Here rather than before the SCF because the projection needs converged
+      ! orbitals: it asks which *molecular* orbitals carry the atomic character
+      ! requested, and there are none to ask about until the SCF has run.
+      allocate (reference(size(scf%orbitals, 1), size(scf%orbitals, 2)))
+      reference = scf%orbitals
+      if (use_avas) then
+         call avas_select(mol, fragment%element_numbers, symbols, fragment%coordinates, &
+                          scf%orbitals, scf%n_occupied, settings%mcscf%avas_orbitals, &
+                          avas, error, threshold=settings%mcscf%avas_threshold, &
+                          verbose=settings%verbose)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         reference = avas%orbitals
+         space = [avas%n_inactive, avas%n_active, avas%n_active_electrons/2, &
+                  avas%n_active_electrons/2]
+         if (modulo(avas%n_active_electrons, 2) /= 0) then
+            call result%error%set(ERROR_VALIDATION, "AVAS selected an odd number of "// &
+                                  "active electrons, which a closed-shell reference "// &
+                                  "cannot distribute evenly over two spins.")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+      end if
+
       if (settings%mcscf%optimize_orbitals) then
-         call run_libcint_casscf(mol, scf%orbitals, space(1), space(2), space(3), space(4), &
+         call run_libcint_casscf(mol, reference, space(1), space(2), space(3), space(4), &
                                  casscf, error, &
                                  max_iterations=settings%mcscf%max_macro_iter, &
                                  gradient_tol=settings%mcscf%orbital_convergence, &
@@ -1538,7 +1577,7 @@ contains
          ! nothing to a Davidson, and not a keyword either: the CI is the whole
          ! answer on this path, so there is no reason to solve it loosely. The
          ! same threshold the CASSCF macro loop pins its own CASCI at.
-         call run_libcint_casci(mol, scf%orbitals, space(1), space(2), space(3), space(4), &
+         call run_libcint_casci(mol, reference, space(1), space(2), space(3), space(4), &
                                 casci, error, verbose=settings%verbose, &
                                 tolerance=CI_TOLERANCE)
          if (error%has_error()) then
@@ -1567,7 +1606,7 @@ contains
             call natural_orbitals(casscf%orbitals, space(1), space(2), casscf%dm1, &
                                   natural, occupations, analysis_error)
          else
-            call natural_orbitals(scf%orbitals, space(1), space(2), casci%dm1, &
+            call natural_orbitals(reference, space(1), space(2), casci%dm1, &
                                   natural, occupations, analysis_error)
          end if
          if (.not. analysis_error%has_error()) then

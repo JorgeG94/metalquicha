@@ -116,6 +116,8 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "mcscf", mcscf_keys(), error)
       if (error%has_error()) return
+      call check_avas_group(core, root, error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "aimd", aimd_keys(), error)
@@ -240,6 +242,18 @@ contains
       call require(keys, "type")
    end function bonding_analysis_keys
 
+   function avas_keys() result(keys)
+      !! Choosing the active space by atomic orbital character
+      !!
+      !! `orbitals` is a list of labels like `["N 2s", "N 2p"]`. Required, since
+      !! an AVAS block that names no orbitals is asking for a selection based on
+      !! nothing.
+      type(key_set_t) :: keys
+      call allow(keys, "orbitals")
+      call allow(keys, "threshold")
+      call require(keys, "orbitals")
+   end function avas_keys
+
    function guess_keys() result(keys)
       type(key_set_t) :: keys
       call allow(keys, "type")
@@ -352,6 +366,7 @@ contains
       !! 1e-11 so the orbital gradient it differentiates is not contaminated by
       !! a loose CI, and that is not a knob worth exposing.
       type(key_set_t) :: keys
+      call allow(keys, "avas")
       call allow(keys, "n_active_electrons")
       call allow(keys, "n_active_orbitals")
       call allow(keys, "n_inactive_orbitals")
@@ -531,6 +546,53 @@ contains
       if (.not. found .or. .not. associated(child)) return
       call check_object(core, child, parent_name//"."//name, keys, error)
    end subroutine check_grandchild_object
+
+   subroutine check_avas_group(core, root, error)
+      !! `keywords.mcscf.avas`, and that it does not fight the explicit space
+      !!
+      !! An active space can be named directly, by counts, or chosen by AVAS
+      !! from orbital labels. Giving both is refused rather than resolved by
+      !! precedence: two ways of saying one thing leaves the deck's meaning
+      !! depending on which the reader reaches first, and the counts a user
+      !! wrote would be silently discarded in favour of whatever the projection
+      !! decided.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: keywords, mcscf, avas, entry
+      logical :: found, has_counts
+
+      if (error%has_error()) return
+      call core%get(root, "keywords", keywords, found)
+      if (.not. found .or. .not. associated(keywords)) return
+      call core%get(keywords, "mcscf", mcscf, found)
+      if (.not. found .or. .not. associated(mcscf)) return
+      call core%get(mcscf, "avas", avas, found)
+      if (.not. found .or. .not. associated(avas)) return
+
+      call check_object(core, avas, "keywords.mcscf.avas", avas_keys(), error)
+      if (error%has_error()) return
+
+      has_counts = .false.
+      call core%get(mcscf, "n_active_electrons", entry, found)
+      if (found .and. associated(entry)) has_counts = .true.
+      call core%get(mcscf, "n_active_orbitals", entry, found)
+      if (found .and. associated(entry)) has_counts = .true.
+      if (has_counts) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf gives both an AVAS block "// &
+                        "and an explicit active space. AVAS chooses the space from "// &
+                        "the orbital labels, so the counts would be discarded. Give "// &
+                        "one or the other.")
+         return
+      end if
+
+      if (child_count(core, avas, "orbitals") <= 0) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.avas.orbitals is empty. It "// &
+                        "lists the atomic orbitals the active space should be built "// &
+                        'from, like ["N 2s", "N 2p"].')
+      end if
+   end subroutine check_avas_group
 
    subroutine check_bonding_analysis(core, root, error)
       !! The value of `properties.bonding_analysis` names an analysis we have

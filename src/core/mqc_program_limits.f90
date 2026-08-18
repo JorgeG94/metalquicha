@@ -60,6 +60,10 @@ module mqc_program_limits
    integer, parameter, public :: MAX_LINE_LENGTH = 1024
 
    !> Maximum length for element symbols (e.g., "He", "Uue")
+   integer, parameter, public :: MAX_ORBITAL_LABEL_LEN = 8
+      !! "Cr 3d" and its longest relatives. An atomic orbital label is an
+      !! element symbol, a space, a principal quantum number and a subshell
+      !! letter, so eight characters is generous.
    integer, parameter, public :: MAX_ELEMENT_SYMBOL_LEN = 4
 
    !> JSON output format for real numbers (scientific notation)

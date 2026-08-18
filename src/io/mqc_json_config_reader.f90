@@ -35,7 +35,8 @@ module mqc_json_config_reader
    !! to contain only keys this module knows about.
    use pic_io, only: to_char
    use pic_types, only: dp
-   use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_MBE_LEVEL
+   use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_MBE_LEVEL, &
+                                 MAX_ORBITAL_LABEL_LEN
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string
@@ -249,6 +250,10 @@ contains
       ! absent, which cannot distinguish absent from false on its own.
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
+      call read_avas_orbitals(json, config, error)
+      if (error%has_error()) return
+      call optional_real(json, "keywords.mcscf.avas.threshold", &
+                         config%mcscf_avas_threshold)
       call optional_int(json, "keywords.mcscf.n_active_electrons", &
                         config%mcscf_n_active_electrons)
       call optional_int(json, "keywords.mcscf.n_active_orbitals", &
@@ -596,6 +601,35 @@ contains
       call read_connectivity(json, prefix, geom%natoms, nfrag, fragments, &
                              nbonds, nbroken, bonds, error)
    end subroutine read_molecule
+
+   subroutine read_avas_orbitals(json, config, error)
+      !! `keywords.mcscf.avas.orbitals`, a list of atomic orbital labels
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: label
+      integer :: n_labels, i
+      logical :: found
+
+      if (error%has_error()) return
+      call json%info("keywords.mcscf.avas.orbitals", found=found, n_children=n_labels)
+      if (.not. found .or. n_labels <= 0) return
+
+      allocate (character(len=MAX_ORBITAL_LABEL_LEN) :: config%mcscf_avas_orbitals(n_labels))
+      do i = 1, n_labels
+         call require_string(json, "keywords.mcscf.avas.orbitals("//int_to_key(i)//")", &
+                             label, error)
+         if (error%has_error()) return
+         if (len_trim(label) > MAX_ORBITAL_LABEL_LEN) then
+            call error%set(ERROR_VALIDATION, "the orbital label '"//trim(label)// &
+                           "' is longer than "//int_to_key(MAX_ORBITAL_LABEL_LEN)// &
+                           " characters. They read like 'N 2p' or 'Cr 3d'.")
+            return
+         end if
+         config%mcscf_avas_orbitals(i) = trim(adjustl(label))
+      end do
+   end subroutine read_avas_orbitals
 
    subroutine read_molecule_geometry(json, prefix, base_dir, geom, error)
       !! Either an xyz file reference or inline symbols plus a flat coordinate list

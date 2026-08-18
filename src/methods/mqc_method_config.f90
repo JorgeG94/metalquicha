@@ -4,6 +4,7 @@ module mqc_method_config
    !! Uses composition pattern: method_config_t contains nested config types
    !! for each method family. The factory reads from the appropriate nested type.
    use pic_types, only: int32, dp
+   use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_config_types, only: guess_step_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    implicit none
@@ -173,6 +174,10 @@ module mqc_method_config
       !! Configuration for MCSCF/CASSCF method
 
       ! Active space definition
+      character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
+         !! Atomic orbital labels the active space should be built from, e.g.
+         !! "N 2p". Unallocated means the space was given by counts instead.
+      real(dp) :: avas_threshold = 0.2_dp
       integer :: n_active_electrons = 0
          !! Number of active electrons
       integer :: n_active_orbitals = 0

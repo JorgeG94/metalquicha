@@ -287,6 +287,10 @@ contains
       m%options%verbose = config%verbose
 
       ! Active space from config%mcscf
+      if (allocated(config%mcscf%avas_orbitals)) then
+         m%options%avas_orbitals = config%mcscf%avas_orbitals
+      end if
+      m%options%avas_threshold = config%mcscf%avas_threshold
       m%options%n_active_electrons = config%mcscf%n_active_electrons
       m%options%n_active_orbitals = config%mcscf%n_active_orbitals
       m%options%n_inactive_orbitals = config%mcscf%n_inactive_orbitals

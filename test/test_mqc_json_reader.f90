@@ -71,6 +71,7 @@ contains
                   new_unittest("uniform_system_broadcast", test_uniform_system), &
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
                   new_unittest("bonding_analysis_property", test_bonding_analysis), &
+                  new_unittest("avas_orbital_labels", test_avas_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1208,6 +1209,74 @@ contains
       call check(error, parse_error%has_error(), &
                  "a settings-only analysis block should be refused")
    end subroutine test_bonding_analysis
+
+   subroutine test_avas_keywords(error)
+      !! `keywords.mcscf.avas`, and that it cannot coexist with explicit counts
+      !!
+      !! An active space can be named two ways -- by counts, or by the atomic
+      !! orbitals it should be built from -- and giving both is refused rather
+      !! than resolved by precedence. AVAS decides the space from the labels, so
+      !! whichever counts a deck also wrote would be silently discarded, and a
+      !! deck whose meaning depends on which key the reader reached first is
+      !! worse than one that is rejected.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"avas": {"orbitals": ["N 2s", "N 2p"], '// &
+                      '"threshold": 0.3}}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%mcscf_avas_orbitals), &
+                 "the orbital labels should have been read")
+      if (allocated(error)) return
+      call check(error, size(config%mcscf_avas_orbitals), 2, "two labels")
+      if (allocated(error)) return
+      call check(error, trim(config%mcscf_avas_orbitals(1)), "N 2s", "the first label")
+      if (allocated(error)) return
+      call check(error, trim(config%mcscf_avas_orbitals(2)), "N 2p", "the second")
+      if (allocated(error)) return
+      call check(error, abs(config%mcscf_avas_threshold - 0.3_dp) < 1.0e-12_dp, &
+                 "and the threshold")
+      if (allocated(error)) return
+
+      ! Absent leaves the threshold at the published default.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"avas": {"orbitals": ["N 2p"]}}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(config%mcscf_avas_threshold - 0.2_dp) < 1.0e-12_dp, &
+                 "an unmentioned threshold should keep the published default")
+      if (allocated(error)) return
+
+      ! Both ways of naming a space at once.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"avas": {"orbitals": ["N 2p"]}, '// &
+                      '"n_active_electrons": 6, "n_active_orbitals": 6}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "naming the space twice should be refused rather than resolved")
+      if (allocated(error)) return
+
+      ! A block that selects on nothing.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"avas": {"orbitals": []}}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an empty orbital list should be refused")
+      if (allocated(error)) return
+
+      ! And a misspelled key inside the block.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"avas": {"orbitals": ["N 2p"], "cutoff": 0.2}}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled setting inside the avas block should be refused")
+   end subroutine test_avas_keywords
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config

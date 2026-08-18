@@ -264,6 +264,10 @@ contains
       if (mqc_config%cc_triples_set) then
          driver_config%method_config%cc%include_triples = mqc_config%cc_triples
       end if
+      if (allocated(mqc_config%mcscf_avas_orbitals)) then
+         driver_config%method_config%mcscf%avas_orbitals = mqc_config%mcscf_avas_orbitals
+      end if
+      driver_config%method_config%mcscf%avas_threshold = mqc_config%mcscf_avas_threshold
       driver_config%method_config%mcscf%n_active_electrons = &
          mqc_config%mcscf_n_active_electrons
       driver_config%method_config%mcscf%n_active_orbitals = &

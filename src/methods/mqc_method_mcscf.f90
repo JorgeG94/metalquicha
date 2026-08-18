@@ -20,6 +20,7 @@ module mqc_method_mcscf
    !! There is no cuEST path and no `#ifdef` here, unlike Hartree-Fock: cuEST
    !! has no CI at all, so there is nothing to choose between.
    use pic_types, only: dp
+   use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_method_base, only: qc_method_t
    use mqc_method_config, only: pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t
@@ -46,6 +47,8 @@ module mqc_method_mcscf
          !! Print iteration details
 
       ! Active space definition
+      character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
+      real(dp) :: avas_threshold = 0.2_dp
       integer :: n_active_electrons = 0
          !! Number of active electrons (CAS)
       integer :: n_active_orbitals = 0
@@ -147,6 +150,10 @@ contains
       settings%use_diis = this%options%use_diis
       settings%diis_size = this%options%diis_size
 
+      if (allocated(this%options%avas_orbitals)) then
+         settings%mcscf%avas_orbitals = this%options%avas_orbitals
+      end if
+      settings%mcscf%avas_threshold = this%options%avas_threshold
       settings%mcscf%n_active_electrons = this%options%n_active_electrons
       settings%mcscf%n_active_orbitals = this%options%n_active_orbitals
       settings%mcscf%n_inactive_orbitals = this%options%n_inactive_orbitals
