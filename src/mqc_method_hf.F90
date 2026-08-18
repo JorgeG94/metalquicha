@@ -13,7 +13,7 @@ module mqc_method_hf
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
    use mqc_method_base, only: qc_method_t
-   use mqc_method_config, only: pcm_config_t
+   use mqc_method_config, only: pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -29,6 +29,7 @@ module mqc_method_hf
 
    type :: hf_options_t
       !! Hartree-Fock calculation options
+      type(properties_config_t) :: properties
       type(pcm_config_t) :: pcm
          !! Continuum solvation. Carried here as well as on the Kohn-Sham
          !! options because a continuum is a property of the reference, not of
@@ -127,6 +128,8 @@ contains
       type(error_t) :: backend_error
 
       settings%pcm = this%options%pcm
+      settings%bonding_analysis = this%options%properties%bonding_analysis
+      settings%bonding_threshold = this%options%properties%bonding_threshold
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.1% of total for modules and submodules.">606 statements</a>
+                 title=" 3.2% of total for modules and submodules.">641 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -169,6 +169,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-aimd_keys">aimd_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-allowed_list">allowed_list</a>
+            <a class="list-group-item" href="../module/mqc_json_schema.html#proc-bonding_analysis_keys">bonding_analysis_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-cc_keys">cc_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-child_count">child_count</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-correlation_keys">correlation_keys</a>
@@ -188,6 +189,7 @@
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-nmer_level">nmer_level</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-optimization_keys">optimization_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-pcm_keys">pcm_keys</a>
+            <a class="list-group-item" href="../module/mqc_json_schema.html#proc-properties_keys">properties_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-quoted">quoted</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-root_keys">root_keys</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-scf_keys">scf_keys</a>
@@ -209,6 +211,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-ensure_valid_json">ensure_valid_json</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-allow">allow</a>
+            <a class="list-group-item" href="../module/mqc_json_schema.html#proc-check_bonding_analysis">check_bonding_analysis</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-check_child_object">check_child_object</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-check_cutoffs">check_cutoffs</a>
             <a class="list-group-item" href="../module/mqc_json_schema.html#proc-check_grandchild_object">check_grandchild_object</a>
@@ -769,7 +772,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~27"></span>
+              <span class="anchor" id="variable-keys~29"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -788,6 +791,24 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <h4>
     Return Value
     <small>character(len=:), allocatable</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-bonding_analysis_keys"></span> <h3>private  function <a href='../proc/bonding_analysis_keys.html'>bonding_analysis_keys</a>() result(keys)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Settings for the quasi-atomic bonding analysis</p><a href="../proc/bonding_analysis_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+    <h4>
+    Return Value
+    <small>type(<a href='../type/key_set_t.html'>key_set_t</a>)</small>
     </h4>
     
 
@@ -832,7 +853,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~11"></span>
+              <span class="anchor" id="variable-core~12"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -862,7 +883,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~21"></span>
+              <span class="anchor" id="variable-name~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -997,7 +1018,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~10"></span>
+              <span class="anchor" id="variable-core~11"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1027,7 +1048,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~20"></span>
+              <span class="anchor" id="variable-name~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1090,7 +1111,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~21"></span>
+              <span class="anchor" id="variable-value~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1135,7 +1156,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~26"></span>
+              <span class="anchor" id="variable-keys~28"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1150,7 +1171,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~18"></span>
+              <span class="anchor" id="variable-name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1267,7 +1288,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~7"></span>
+              <span class="anchor" id="variable-imol~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1312,7 +1333,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~22"></span>
+              <span class="anchor" id="variable-name~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1374,6 +1395,24 @@ pushed it past 16), so this keeps a little headroom above that.</p>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-properties_keys"></span> <h3>private  function <a href='../proc/properties_keys.html'>properties_keys</a>() result(keys)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Things to report once the wave function exists</p><a href="../proc/properties_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+    <h4>
+    Return Value
+    <small>type(<a href='../type/key_set_t.html'>key_set_t</a>)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-quoted"></span> <h3>private pure function <a href='../proc/quoted.html'>quoted</a>(path, name) result(text)  
 </h3></div>
     <div class="card-body">
@@ -1393,7 +1432,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~21"></span>
+              <span class="anchor" id="variable-path~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1408,7 +1447,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~19"></span>
+              <span class="anchor" id="variable-name~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1453,7 +1492,7 @@ pushed it past 16), so this keeps a little headroom above that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings_only~3"></span>
+              <span class="anchor" id="variable-settings_only~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1554,7 +1593,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~12"></span>
+              <span class="anchor" id="variable-core~13"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1569,7 +1608,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~4"></span>
+              <span class="anchor" id="variable-array"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1584,7 +1623,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~30"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1670,7 +1709,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~33"></span>
+              <span class="anchor" id="variable-json"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1685,7 +1724,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~91"></span>
+              <span class="anchor" id="variable-error"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1700,7 +1739,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings_only~2"></span>
+              <span class="anchor" id="variable-settings_only"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1740,7 +1779,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~24"></span>
+              <span class="anchor" id="variable-keys~26"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1755,7 +1794,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~16"></span>
+              <span class="anchor" id="variable-name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1764,6 +1803,76 @@ guess would be read, validated and then silently ignored.</p>
             </td>
             <td>::</td>
             <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-check_bonding_analysis"></span> <h3>private  subroutine <a href='../proc/check_bonding_analysis.html'>check_bonding_analysis</a>(core, root, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The value of <code>properties.bonding_analysis</code> names an analysis we have</p><a href="../proc/check_bonding_analysis.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core~5"></span>
+              type(json_core),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>core</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~3"></span>
+              type(json_value),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~5"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
             <td>
 
             </td>
@@ -1810,7 +1919,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~4"></span>
+              <span class="anchor" id="variable-parent"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1825,7 +1934,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~13"></span>
+              <span class="anchor" id="variable-name~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1840,7 +1949,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~22"></span>
+              <span class="anchor" id="variable-keys~24"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1855,7 +1964,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~93"></span>
+              <span class="anchor" id="variable-error~3"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1895,7 +2004,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~6"></span>
+              <span class="anchor" id="variable-core~7"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1910,7 +2019,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~15"></span>
+              <span class="anchor" id="variable-root~5"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1925,7 +2034,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~96"></span>
+              <span class="anchor" id="variable-error~7"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1980,7 +2089,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~13"></span>
+              <span class="anchor" id="variable-root~2"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -2010,7 +2119,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~14"></span>
+              <span class="anchor" id="variable-name~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2025,7 +2134,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~23"></span>
+              <span class="anchor" id="variable-keys~25"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2040,7 +2149,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~94"></span>
+              <span class="anchor" id="variable-error~4"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2080,7 +2189,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~9"></span>
+              <span class="anchor" id="variable-core~10"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -2110,7 +2219,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~6"></span>
+              <span class="anchor" id="variable-imol~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2125,7 +2234,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~99"></span>
+              <span class="anchor" id="variable-error~10"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2165,7 +2274,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~8"></span>
+              <span class="anchor" id="variable-core~9"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -2195,7 +2304,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~5"></span>
+              <span class="anchor" id="variable-imol~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2210,7 +2319,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~98"></span>
+              <span class="anchor" id="variable-error~9"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2250,7 +2359,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~7"></span>
+              <span class="anchor" id="variable-core~8"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -2265,7 +2374,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~16"></span>
+              <span class="anchor" id="variable-root~6"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -2280,7 +2389,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~97"></span>
+              <span class="anchor" id="variable-error~8"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2350,7 +2459,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~20"></span>
+              <span class="anchor" id="variable-path"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2365,7 +2474,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~21"></span>
+              <span class="anchor" id="variable-keys~23"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2380,7 +2489,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~92"></span>
+              <span class="anchor" id="variable-error~2"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2420,7 +2529,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-keys~25"></span>
+              <span class="anchor" id="variable-keys~27"></span>
               type(<a href='../type/key_set_t.html'>key_set_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2435,7 +2544,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~17"></span>
+              <span class="anchor" id="variable-name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2475,7 +2584,7 @@ guess would be read, validated and then silently ignored.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-core~5"></span>
+              <span class="anchor" id="variable-core~6"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -2490,7 +2599,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~14"></span>
+              <span class="anchor" id="variable-root~4"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -2505,7 +2614,7 @@ guess would be read, validated and then silently ignored.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~6"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2548,7 +2657,7 @@ guess would be read, validated and then silently ignored.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-18 04:25 +0000             </p>
+ on 2026-08-18 06:16 +0000             </p>
           </div>
         </div>
         <br>
