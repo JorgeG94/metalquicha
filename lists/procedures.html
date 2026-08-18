@@ -108,6 +108,18 @@
                  <td><p>Locate <code>aambs/aambs.json</code> on the basis search path</p><a href="../proc/aambs_file.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/aambs_shell_labels.html'>aambs_shell_labels</a></td>
+                 <td><a href='../module/mqc_aambs.html'>mqc_aambs</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Which atom, shell and angular momentum each minimal-basis function is</p><a href="../proc/aambs_shell_labels.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/absorb_one_electron.html'>absorb_one_electron</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold the one-electron Hamiltonian into the two-electron tensor</p><a href="../proc/absorb_one_electron.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/accumulate_fragment_derivatives.html'>accumulate_fragment_derivatives</a></td>
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
@@ -124,6 +136,12 @@
                  <td><a href='../module/mqc_acknowledgements.html'>mqc_acknowledgements</a></td>
                  <td>Function</td>
                  <td><p>Which library will actually do the work, as one of ACK_*</p><a href="../proc/acknowledged_backend.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/active_space_rdms.html'>active_space_rdms</a></td>
+                 <td><a href='../module/mqc_rdm.html'>mqc_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Spin-traced one- and two-particle density matrices</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/add_bond_order_post_processing.html'>add_bond_order_post_processing</a></td>
@@ -175,6 +193,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Add, for every n-mer, the subfragments solved in that n-mer&rsquo;s basis</p><a href="../proc/add_vmfc_rows.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/address_to_string.html'>address_to_string</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Function</td>
+                 <td><p>The inverse of <code>string_address</code></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/aimd_keys.html'>aimd_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -222,6 +246,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td>Subroutine</td>
                  <td><p>Apply distance-based screening to filter out fragments that exceed cutoff distances
 Modifies polymers array in-place and updates total_fragments count</p><a href="../proc/apply_distance_screening.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/apply_excitations.html'>apply_excitations</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>E_pq |c&gt;</code> for every orbital pair at once</p><a href="../proc/apply_excitations.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/apply_log_level.html'>apply_log_level</a></td>
@@ -300,6 +330,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_version.html'>mqc_version</a></td>
                  <td>Function</td>
                  <td><p>&ldquo;yes&rdquo; or &ldquo;no&rdquo;, in the shape a script can split on</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/avas_keys.html'>avas_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Choosing the active space by atomic orbital character</p><a href="../proc/avas_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/banner.html'>banner</a></td>
@@ -410,6 +446,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/binomial~2.html'>binomial</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Function</td>
+                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/bond_is_broken.html'>bond_is_broken</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Function</td>
@@ -468,6 +510,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Expand the screened fragment list into the flat list of independent evaluations</p><a href="../proc/build_hessian_task_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_link_table.html'>build_link_table</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Tabulate every single excitation out of every string</p><a href="../proc/build_link_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_mbe_lookup_table.html'>build_mbe_lookup_table</a></td>
@@ -604,6 +652,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>A C character array as a Fortran string</p><a href="../proc/chars_to_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_avas_group.html'>check_avas_group</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.mcscf.avas</code>, and that it does not fight the explicit space</p><a href="../proc/check_avas_group.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_bonding_analysis.html'>check_bonding_analysis</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
@@ -673,6 +727,12 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><p>Every key of <code>object</code> must be in <code>keys</code>, and every required one present</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_space.html'>check_space</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The three ways an active space can be one this module cannot address</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_subset_closure.html'>check_subset_closure</a></td>
                  <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
                  <td>Subroutine</td>
@@ -713,6 +773,18 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td><p>Entries in <code>object.name</code>, or 0 when it is absent</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ci_diagonal.html'>ci_diagonal</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The diagonal of the CI Hamiltonian, without touching the rest of it</p><a href="../proc/ci_diagonal.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ci_hamiltonian.html'>ci_hamiltonian</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The Hamiltonian as a dense matrix, one column at a time</p><a href="../proc/ci_hamiltonian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/clamp_level.html'>clamp_level</a></td>
@@ -1053,6 +1125,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>The live session, for Fortran code that needs its communicators</p><a href="../proc/current_session.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/davidson_lowest.html'>davidson_lowest</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The <code>n_roots</code> lowest eigenpairs of the CI Hamiltonian</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/dfs_pie_accumulate.html'>dfs_pie_accumulate</a></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
@@ -1211,6 +1289,12 @@ Covers the complete periodic table (elements 1-118)</p></td>
                  <td><p>Period of an element, 1 to 7, for indexing the level tables</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/element_shells.html'>element_shells</a></td>
+                 <td><a href='../module/mqc_aambs.html'>mqc_aambs</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The principal and angular numbers of one element&rsquo;s shells, in file order</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/element_symbol_of.html'>element_symbol_of</a></td>
                  <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
                  <td>Function</td>
@@ -1322,6 +1406,12 @@ Resets the stack trace</p></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
                  <td><p>One energy and gradient, at the geometry the engine asked for</p><a href="../proc/evaluate_energy_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/excitation_phase.html'>excitation_phase</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Function</td>
+                 <td><p>The sign of <code>a^dagger_create a_destroy |string&gt;</code>, or zero</p><a href="../proc/excitation_phase.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/expand_orbit.html'>expand_orbit</a></td>
@@ -1633,6 +1723,12 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
                  <td>Subroutine</td>
                  <td><p>Generate all k-way intersections for polymers at any level (GMBE-N)
 This works with dynamically generated polymers, not just base fragments</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/generate_strings.html'>generate_strings</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every string, in address order</p><a href="../proc/generate_strings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/geometry_destroy.html'>geometry_destroy</a></td>
@@ -2018,6 +2114,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Run a density-fitted RHF calculation through cuEST</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/initial_basis.html'>initial_basis</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Starting vectors: the supplied ones, or the lowest determinants</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/initialize_fragmented_system.html'>initialize_fragmented_system</a></td>
                  <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
                  <td>Subroutine</td>
@@ -2068,15 +2170,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
-                 <td>Function</td>
-                 <td><p>An integer as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
                  <td><p>Atomic number as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -2161,6 +2263,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
                  <td>Function</td>
                  <td><p>Whether this build can run an SCF on the CPU</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/link_table_destroy.html'>link_table_destroy</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/load_existing.html'>load_existing</a></td>
@@ -2268,25 +2376,43 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
                  <td><a href='../module/mqc_method_mcscf.html'>mqc_method_mcscf</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate electronic energy using CASSCF</p><a href="../proc/mcscf_calc_energy.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>CASSCF, or CASCI, on one fragment</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
                  <td><a href='../module/mqc_method_mcscf.html'>mqc_method_mcscf</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate energy gradient using CASSCF</p><a href="../proc/mcscf_calc_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Not finite differences either, and that is a deliberate choice rather
+than an omission. A numerical CASSCF gradient is 6N converged orbital
+optimisations, each of which can land on a <em>different</em> active space &ndash;
+the orbitals that make up a CAS are identified by their character, and
+a displaced geometry can reorder them. The result is a gradient with
+discontinuities that look like noise, and nothing in the output would
+say which displacement had wandered. Better to refuse.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
                  <td><a href='../module/mqc_method_mcscf.html'>mqc_method_mcscf</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate energy Hessian using CASSCF</p><a href="../proc/mcscf_calc_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Refused, for the reason the gradient is: there is nothing to difference</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mcscf_keys.html'>mcscf_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>The active space, and how hard to work at it</p><a href="../proc/mcscf_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/merge_multi_molecule_json.html'>merge_multi_molecule_json</a></td>
                  <td><a href='../module/mqc_json.html'>mqc_json</a></td>
                  <td>Subroutine</td>
                  <td><p>Merge individual molecule JSON files into a single combined file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/method_is_casci.html'>method_is_casci</a></td>
+                 <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
+                 <td>Function</td>
+                 <td><p>Whether a method name asks for fixed orbitals</p><a href="../proc/method_is_casci.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/method_runs_on_cuest.html'>method_runs_on_cuest</a></td>
@@ -2669,6 +2795,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>The partition fragments are built from</p><a href="../proc/mqc_system_set_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/n_strings.html'>n_strings</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Function</td>
+                 <td><p>How many strings put <code>n_electrons</code> into <code>n_orbitals</code></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/needs_serial_execution.html'>needs_serial_execution</a></td>
                  <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td>Function</td>
@@ -3033,6 +3165,18 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><p>Turn mapping weights into spherical volume weights, 4<em>pi</em>r^2*dr</p><a href="../proc/radial_volume_weights.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/rdm_energy.html'>rdm_energy</a></td>
+                 <td><a href='../module/mqc_rdm.html'>mqc_rdm</a></td>
+                 <td>Function</td>
+                 <td><p>The active-space energy rebuilt from the density matrices</p><a href="../proc/rdm_energy.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_avas_orbitals.html'>read_avas_orbitals</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.mcscf.avas.orbitals</code>, a list of atomic orbital labels</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_channel.html'>read_channel</a></td>
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td>Subroutine</td>
@@ -3182,6 +3326,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
                  <td><p>Redistribute hydrogen cap Hessian to original atoms</p><a href="../proc/redistribute_cap_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/refuse_derivative.html'>refuse_derivative</a></td>
+                 <td><a href='../module/mqc_method_mcscf.html'>mqc_method_mcscf</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Say that a derivative is not available, once, for both of them</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/refuse_undeclared_cuts.html'>refuse_undeclared_cuts</a></td>
@@ -3410,6 +3560,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td><p>No-op stand-in: an effective fragment potential needs the CPU backend</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_libcint_mcscf.html'>run_libcint_mcscf</a></td>
+                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: CASSCF and CASCI need the CPU integral backend</p><a href="../proc/run_libcint_mcscf.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_libcint_sapt0.html'>run_libcint_sapt0</a></td>
                  <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
                  <td>Subroutine</td>
@@ -3592,6 +3748,12 @@ Example: &ldquo;water.mqc&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
                  <td><p>How many contracted functions one shell entry defines</p><a href="../proc/shell_contractions.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/sigma_vector.html'>sigma_vector</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>sigma = H c</code>, with <code>H</code> the folded tensor acting as <code>E_pq E_rs</code></p><a href="../proc/sigma_vector.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/size_adjustment.html'>size_adjustment</a></td>
                  <td><a href='../module/mqc_dft_partition.html'>mqc_dft_partition</a></td>
                  <td>Subroutine</td>
@@ -3665,6 +3827,18 @@ Trailing newlines do not create empty lines</p></td>
                  <td><a href='../module/mqc_dft_partition.html'>mqc_dft_partition</a></td>
                  <td>Function</td>
                  <td><p>d/dmu of <code>stratmann_cutoff</code>, zero where the cutoff is flat</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_address.html'>string_address</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td>Function</td>
+                 <td><p>Where a string sits in the list, 1-based</p><a href="../proc/string_address.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_terms.html'>string_terms</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/subscf_keys.html'>subscf_keys</a></td>
@@ -3940,7 +4114,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-18 08:15 +0000             </p>
+ on 2026-08-18 09:16 +0000             </p>
           </div>
         </div>
         <br>

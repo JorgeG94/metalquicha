@@ -1,0 +1,1071 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_davidson &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_davidson
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.9% of total for modules and submodules.">199 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_davidson.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_davidson.f90.html'>mqc_davidson.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_davidson</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_davidson.html#variable-default_max_iterations">DEFAULT_MAX_ITERATIONS</a>
+            <a class="list-group-item" href="../module/mqc_davidson.html#variable-default_tolerance">DEFAULT_TOLERANCE</a>
+            <a class="list-group-item" href="../module/mqc_davidson.html#variable-linear_dependence">LINEAR_DEPENDENCE</a>
+            <a class="list-group-item" href="../module/mqc_davidson.html#variable-precondition_floor">PRECONDITION_FLOOR</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_davidson.html#type-davidson_result_t">davidson_result_t</a>
+        </div>
+      </div>
+    </div>
+
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_davidson.html#proc-davidson_lowest">davidson_lowest</a>
+            <a class="list-group-item" href="../module/mqc_davidson.html#proc-initial_basis">initial_basis</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>Davidson&rsquo;s method: build a small subspace, diagonalise the Hamiltonian
+inside it, and grow it in the direction the residual points. The only
+thing it asks of the operator is a matrix-vector product, which is exactly
+what <code>sigma_vector</code> provides and all that is affordable &ndash; the matrix
+whose lowest eigenvalue is wanted is 32 GB at CAS(10,10) and unthinkable
+past that, while the subspace here is a few dozen vectors.</p>
+<p><strong>The preconditioner is the whole method.</strong> Without it this is Lanczos
+with extra steps and converges at the rate the spectrum dictates. Dividing
+the residual by <code>theta - H_DD</code> before adding it approximates the
+correction that would solve the problem exactly if the Hamiltonian were
+diagonal, and for a CI Hamiltonian &ndash; strongly diagonally dominant, since
+a determinant far from the reference is far in energy too &ndash; that is a
+good enough approximation to converge in tens of iterations rather than
+thousands.</p>
+<p>A wrong preconditioner does not give a wrong answer. It gives the right
+answer slowly, or no answer at all, and neither symptom points back here;
+that is why <code>ci_diagonal</code> is checked against the assembled matrix
+separately rather than trusted because the solver seems to work.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_davidson~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_davidsonUsesGraph" width="513pt" height="250pt"
+ viewBox="0.00 0.00 513.00 250.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_davidson~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 246)">
+<title>module~~mqc_davidson~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-246 509,-246 509,4 -4,4"/>
+<!-- module~mqc_davidson -->
+<g id="module~~mqc_davidson~~UsesGraph_node1" class="node">
+<title>module~mqc_davidson</title>
+<polygon fill="none" stroke="black" points="505,-94 416,-94 416,-70 505,-70 505,-94"/>
+<text text-anchor="middle" x="460.5" y="-79.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_davidson</text>
+</g>
+<!-- module~mqc_ci -->
+<g id="module~~mqc_davidson~~UsesGraph_node2" class="node">
+<title>module~mqc_ci</title>
+<g id="a_module~~mqc_davidson~~UsesGraph_node2"><a xlink:href="../module/mqc_ci.html" xlink:title="mqc_ci">
+<polygon fill="#337ab7" stroke="#337ab7" points="343.5,-124 289.5,-124 289.5,-100 343.5,-100 343.5,-124"/>
+<text text-anchor="middle" x="316.5" y="-109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ci</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_davidson&#45;&gt;module~mqc_ci -->
+<g id="module~~mqc_davidson~~UsesGraph_edge1" class="edge">
+<title>module~mqc_davidson&#45;&gt;module~mqc_ci</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M415.74,-91.25C395.8,-95.46 372.48,-100.38 353.57,-104.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="352.62,-101 343.56,-106.49 354.07,-107.85 352.62,-101"/>
+</g>
+<!-- module~mqc_determinants -->
+<g id="module~~mqc_davidson~~UsesGraph_node3" class="node">
+<title>module~mqc_determinants</title>
+<g id="a_module~~mqc_davidson~~UsesGraph_node3"><a xlink:href="../module/mqc_determinants.html" xlink:title="mqc_determinants">
+<polygon fill="#337ab7" stroke="#337ab7" points="216,-164 104,-164 104,-140 216,-140 216,-164"/>
+<text text-anchor="middle" x="160" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_determinants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_davidson&#45;&gt;module~mqc_determinants -->
+<g id="module~~mqc_davidson~~UsesGraph_edge2" class="edge">
+<title>module~mqc_davidson&#45;&gt;module~mqc_determinants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M453.44,-94.43C437.01,-126.32 388.05,-209.91 317.5,-230"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M315.5,-230C262.93,-244.97 207.07,-199.29 179.13,-171.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="181.51,-169.01 172.01,-164.31 176.51,-173.91 181.51,-169.01"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_davidson~~UsesGraph_node4" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_davidson~~UsesGraph_node4"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="67,-242 0,-242 0,-218 67,-218 67,-242"/>
+<text text-anchor="middle" x="33.5" y="-227.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_davidson&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_davidson~~UsesGraph_edge3" class="edge">
+<title>module~mqc_davidson&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-230C132.1,-225.95 101.55,-225.88 77.45,-226.86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="77.02,-223.37 67.2,-227.35 77.36,-230.37 77.02,-223.37"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="module~~mqc_davidson~~UsesGraph_node5" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="217,-84 103,-84 103,-60 217,-60 217,-84"/>
+<text text-anchor="middle" x="160" y="-69.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_davidson&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_davidson~~UsesGraph_edge4" class="edge">
+<title>module~mqc_davidson&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M315.5,-52C283.61,-48.71 248.13,-52.76 219.22,-58.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="218.45,-54.63 209.29,-59.96 219.77,-61.51 218.45,-54.63"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_davidson~~UsesGraph_node6" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="60.5,-164 6.5,-164 6.5,-140 60.5,-140 60.5,-164"/>
+<text text-anchor="middle" x="33.5" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_davidson&#45;&gt;pic_io -->
+<g id="module~~mqc_davidson~~UsesGraph_edge5" class="edge">
+<title>module~mqc_davidson&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M315.5,-230C249.46,-248.81 228.9,-240.23 161,-230"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-230C116.58,-223.61 76.17,-191.95 53.43,-170.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="55.81,-168.42 46.15,-164.07 50.99,-173.5 55.81,-168.42"/>
+</g>
+<!-- pic_lapack_interfaces -->
+<g id="module~~mqc_davidson~~UsesGraph_node7" class="node">
+<title>pic_lapack_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="380,-24 253,-24 253,0 380,0 380,-24"/>
+<text text-anchor="middle" x="316.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+</g>
+<!-- module~mqc_davidson&#45;&gt;pic_lapack_interfaces -->
+<g id="module~~mqc_davidson~~UsesGraph_edge6" class="edge">
+<title>module~mqc_davidson&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M439.24,-69.97C423.37,-60.74 400.6,-47.95 380,-38 372.86,-34.55 365.13,-31.11 357.64,-27.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="358.9,-24.65 348.32,-24.02 356.2,-31.11 358.9,-24.65"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_davidson~~UsesGraph_node8" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="64.5,-122 2.5,-122 2.5,-98 64.5,-98 64.5,-122"/>
+<text text-anchor="middle" x="33.5" y="-107.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_davidson&#45;&gt;pic_types -->
+<g id="module~~mqc_davidson~~UsesGraph_edge7" class="edge">
+<title>module~mqc_davidson&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M415.74,-70.26C387.86,-63.4 350.84,-55.44 317.5,-52"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M315.5,-52C221.55,-42.32 191.54,-18.13 103,-51 81.97,-58.81 63.07,-76.29 50.47,-90.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="47.72,-88.05 43.82,-97.9 53.01,-92.63 47.72,-88.05"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;module~mqc_determinants -->
+<g id="module~~mqc_davidson~~UsesGraph_edge8" class="edge">
+<title>module~mqc_ci&#45;&gt;module~mqc_determinants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M289.29,-118.79C269.62,-123.88 241.95,-131.04 217.34,-137.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.18,-134.1 207.37,-139.99 217.93,-140.88 216.18,-134.1"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_davidson~~UsesGraph_edge9" class="edge">
+<title>module~mqc_ci&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M298.8,-124.17C279.77,-137.59 247.37,-159.12 217,-173 170.91,-194.06 114.9,-210.27 77.18,-219.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="75.9,-216.64 67.05,-222.48 77.61,-223.43 75.9,-216.64"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_davidson~~UsesGraph_edge10" class="edge">
+<title>module~mqc_ci&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M289.29,-105.21C269.62,-100.12 241.95,-92.96 217.34,-86.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="217.93,-83.12 207.37,-84.01 216.18,-89.9 217.93,-83.12"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;pic_io -->
+<g id="module~~mqc_davidson~~UsesGraph_edge11" class="edge">
+<title>module~mqc_ci&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-112C127.62,-114.34 93.73,-125.87 69.24,-135.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="67.85,-132.74 60.01,-139.87 70.58,-139.19 67.85,-132.74"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;pic_types -->
+<g id="module~~mqc_davidson~~UsesGraph_edge12" class="edge">
+<title>module~mqc_ci&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M289.49,-110.82C258.74,-109.7 206.07,-108.63 161,-112"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-112C131.02,-114.09 99.41,-113.55 75.04,-112.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="74.89,-108.99 64.73,-112.01 74.56,-115.98 74.89,-108.99"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_davidson~~UsesGraph_edge13" class="edge">
+<title>module~mqc_determinants&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M129.9,-164.08C121.06,-168.12 111.45,-172.91 103,-178 86.63,-187.86 69.51,-200.85 56.48,-211.39"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="54.06,-208.84 48.56,-217.9 58.51,-214.25 54.06,-208.84"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;pic_io -->
+<g id="module~~mqc_davidson~~UsesGraph_edge14" class="edge">
+<title>module~mqc_determinants&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M103.67,-152C92.58,-152 81.2,-152 70.95,-152"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="70.74,-148.5 60.74,-152 70.74,-155.5 70.74,-148.5"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;pic_types -->
+<g id="module~~mqc_davidson~~UsesGraph_edge15" class="edge">
+<title>module~mqc_determinants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M123.32,-139.96C107.97,-134.79 89.96,-128.71 74.19,-123.39"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="75.3,-120.07 64.7,-120.19 73.06,-126.7 75.3,-120.07"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_max_iterations"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_MAX_ITERATIONS</strong></td>
+<td> =</td>
+                <td>200</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_tolerance"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_TOLERANCE</strong></td>
+<td> =</td>
+                <td>1.0e-10_dp</td>
+            <td>
+                <p>On the residual norm, not the energy. The energy error is second order
+in the vector error near an eigenvector, so an energy-based test stops
+about half way through the digits the vector has &ndash; and the vector is
+what the density matrices are built from.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-linear_dependence"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>LINEAR_DEPENDENCE</strong></td>
+<td> =</td>
+                <td>1.0e-8_dp</td>
+            <td>
+                <p>How much of a new direction has to survive projection out of the
+subspace for it to be worth adding, as a fraction of its own length.</p>
+<p><strong>The fraction is the point.</strong> Tested against the raw correction
+instead, this threshold scales with the residual, so it stops being a
+statement about linear dependence and becomes a floor on the residual:
+near convergence every correction looks tiny and gets dropped, the
+subspace stops growing, and the solve halts a long way short of the
+tolerance it was asked for. Normalising first makes the test scale-free
+and is the difference between converging to 1e-10 and stalling at 1e-6.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-precondition_floor"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>PRECONDITION_FLOOR</strong></td>
+<td> =</td>
+                <td>1.0e-8_dp</td>
+            <td>
+                <p>A determinant whose diagonal sits on the current eigenvalue estimate
+would divide by nothing. It happens: the reference determinant&rsquo;s own
+diagonal approaches the ground state energy as the expansion converges.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-davidson_result_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/davidson_result_t.html'>davidson_result_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-converged"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>converged</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iterations"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iterations</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-residuals"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>residuals</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>(n_roots), final norms</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sigma_products"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sigma_products</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+<p>What the cost is actually made of</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-values"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>values</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>(n_roots), ascending</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-vectors"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>vectors</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>(n_alpha, n_beta, n_roots), each normalised</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-davidson_lowest"></span> <h3>public  subroutine <a href='../proc/davidson_lowest.html'>davidson_lowest</a>(folded, diagonal, alpha, beta, n_roots, result, error, tolerance, max_iterations, max_subspace, guess)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The <code>n_roots</code> lowest eigenpairs of the CI Hamiltonian</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-folded"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>folded</strong>(:,:)</td>
+            <td>
+<p>From <code>absorb_one_electron</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-diagonal"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>diagonal</strong>(:,:)</td>
+            <td>
+<p>From <code>ci_diagonal</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>alpha</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>beta</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_roots"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_roots</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~6"></span>
+              type(<a href='../type/davidson_result_t.html'>davidson_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~7"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tolerance"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tolerance</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_iterations"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_iterations</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_subspace"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_subspace</strong></td>
+            <td>
+<p>Vectors kept before the subspace is collapsed onto the current Ritz
+vectors. Defaults to <code>max(2*n_roots + 8, 16)</code>, bounded by the size of
+the determinant space.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>guess</strong>(:,:,:)</td>
+            <td>
+<p>(n_alpha, n_beta, n_roots) starting vectors. Absent takes unit
+vectors on the lowest diagonal elements, which for a CI is the
+reference determinant and its nearest neighbours in energy.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-initial_basis"></span> <h3>private  subroutine <a href='../proc/initial_basis.html'>initial_basis</a>(diagonal, n_roots, na, nb, ndet, basis, guess)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Starting vectors: the supplied ones, or the lowest determinants</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-diagonal~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>diagonal</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_roots~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_roots</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-na~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>na</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nb~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nb</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ndet~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ndet</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basis</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>guess</strong>(:,:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-18 09:16 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,797 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>build_link_table &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>build_link_table
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">46 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_determinants.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_determinants.f90.html'>mqc_determinants.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_determinants.html'>mqc_determinants</a></li>
+            <li class="breadcrumb-item active" aria-current="page">build_link_table</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-count~13">count</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-excited">excited</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-istr">istr</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-n_virtual">n_virtual</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-occupied">occupied</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-row~4">row</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-string~4">string</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-strings~2">strings</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-virtual">virtual</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/build_link_table.html#src">build_link_table</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine build_link_table(n_orbitals, n_electrons, table, error)  
+</h2>
+    
+
+    <p>Tabulate every single excitation out of every string</p>
+<p>Row order follows PySCF: the diagonal entries first, then one block per
+occupied orbital in ascending order, each listing the virtual orbitals
+in ascending order. The order carries no meaning &ndash; a contraction sums
+over rows &ndash; but matching it makes the table directly comparable
+against the reference implementation, which is worth more than the
+freedom to choose.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_orbitals~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_orbitals</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_electrons~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_electrons</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-table~2"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>table</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~66"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~build_link_table~~CallsGraph Pages: 1 -->
+<svg id="procbuild_link_tableCallsGraph" width="541pt" height="179pt"
+ viewBox="0.00 0.00 541.00 179.22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_link_table~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 175.22)">
+<title>proc~~build_link_table~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-175.22 537,-175.22 537,4 -4,4"/>
+<!-- proc~build_link_table -->
+<g id="proc~~build_link_table~~CallsGraph_node1" class="node">
+<title>proc~build_link_table</title>
+<polygon fill="none" stroke="black" points="95,-102 0,-102 0,-78 95,-78 95,-102"/>
+<text text-anchor="middle" x="47.5" y="-87.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_link_table</text>
+</g>
+<!-- proc~check_space -->
+<g id="proc~~build_link_table~~CallsGraph_node2" class="node">
+<title>proc~check_space</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node2"><a xlink:href="../proc/check_space.html" xlink:title="check_space">
+<polygon fill="#d9534f" stroke="#d9534f" points="354,-85 273,-85 273,-61 354,-61 354,-85"/>
+<text text-anchor="middle" x="313.5" y="-70.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_space</text>
+</a>
+</g>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~check_space -->
+<g id="proc~~build_link_table~~CallsGraph_edge1" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~check_space</title>
+<path fill="none" stroke="#ff0000" d="M87.56,-77.93C101.17,-74.3 116.63,-70.8 131,-69 175.12,-63.47 225.73,-65.25 262.28,-67.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="262.43,-71.49 272.67,-68.79 262.98,-64.51 262.43,-71.49"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~build_link_table~~CallsGraph_node3" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node3"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="533,-150 394,-150 394,-126 533,-126 533,-150"/>
+<text text-anchor="middle" x="463.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_link_table~~CallsGraph_edge2" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M59.33,-102.16C73.86,-117.46 101.29,-142.96 131,-153 224.31,-184.55 340.85,-167.27 407.96,-152.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="408.94,-155.68 417.9,-150.03 407.37,-148.85 408.94,-155.68"/>
+</g>
+<!-- proc~excitation_phase -->
+<g id="proc~~build_link_table~~CallsGraph_node4" class="node">
+<title>proc~excitation_phase</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node4"><a xlink:href="../proc/excitation_phase.html" xlink:title="excitation_phase">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="233,-102 131,-102 131,-78 233,-78 233,-102"/>
+<text text-anchor="middle" x="182" y="-87.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">excitation_phase</text>
+</a>
+</g>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~excitation_phase -->
+<g id="proc~~build_link_table~~CallsGraph_edge3" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~excitation_phase</title>
+<path fill="none" stroke="#ff0000" d="M95.21,-90C103.37,-90 111.96,-90 120.43,-90"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="120.66,-93.5 130.66,-90 120.66,-86.5 120.66,-93.5"/>
+</g>
+<!-- proc~generate_strings -->
+<g id="proc~~build_link_table~~CallsGraph_node5" class="node">
+<title>proc~generate_strings</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node5"><a xlink:href="../proc/generate_strings.html" xlink:title="generate_strings">
+<polygon fill="#d9534f" stroke="#d9534f" points="233,-144 131,-144 131,-120 233,-120 233,-144"/>
+<text text-anchor="middle" x="182" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~generate_strings -->
+<g id="proc~~build_link_table~~CallsGraph_edge4" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~generate_strings</title>
+<path fill="none" stroke="#ff0000" d="M86.47,-102.04C101.02,-106.65 117.82,-111.97 133.18,-116.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="132.44,-120.28 143.03,-119.96 134.55,-113.6 132.44,-120.28"/>
+</g>
+<!-- proc~string_address -->
+<g id="proc~~build_link_table~~CallsGraph_node6" class="node">
+<title>proc~string_address</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node6"><a xlink:href="../proc/string_address.html" xlink:title="string_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="358,-24 269,-24 269,0 358,0 358,-24"/>
+<text text-anchor="middle" x="313.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">string_address</text>
+</a>
+</g>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~string_address -->
+<g id="proc~~build_link_table~~CallsGraph_edge5" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~string_address</title>
+<path fill="none" stroke="#ff0000" d="M81.23,-77.86C96.3,-72.44 114.47,-66.13 131,-61 173.74,-47.74 222.76,-34.63 259.08,-25.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="260.14,-28.65 268.97,-22.78 258.41,-21.87 260.14,-28.65"/>
+</g>
+<!-- proc~check_space&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_link_table~~CallsGraph_edge7" class="edge">
+<title>proc~check_space&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M333.53,-85.01C349.3,-94.6 372.51,-107.88 394,-117 398.67,-118.98 403.6,-120.87 408.58,-122.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="407.57,-125.99 418.16,-125.89 409.82,-119.36 407.57,-125.99"/>
+</g>
+<!-- proc~binomial~2 -->
+<g id="proc~~build_link_table~~CallsGraph_node7" class="node">
+<title>proc~binomial~2</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node7"><a xlink:href="../proc/binomial~2.html" xlink:title="binomial">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="493,-24 434,-24 434,0 493,0 493,-24"/>
+<text text-anchor="middle" x="463.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- proc~check_space&#45;&gt;proc~binomial~2 -->
+<g id="proc~~build_link_table~~CallsGraph_edge6" class="edge">
+<title>proc~check_space&#45;&gt;proc~binomial~2</title>
+<path fill="none" stroke="#ff0000" d="M335.98,-60.95C351.72,-52.43 373.78,-41.12 394,-33 403.61,-29.14 414.21,-25.57 424.15,-22.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="425.22,-25.84 433.8,-19.63 423.21,-19.14 425.22,-25.84"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~build_link_table~~CallsGraph_node8" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~build_link_table~~CallsGraph_node8"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="516,-66 411,-66 411,-42 516,-42 516,-66"/>
+<text text-anchor="middle" x="463.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~check_space&#45;&gt;proc~error_set -->
+<g id="proc~~build_link_table~~CallsGraph_edge8" class="edge">
+<title>proc~check_space&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M354.16,-67.91C368.42,-66.08 384.86,-63.97 400.56,-61.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="401.27,-65.39 410.74,-60.64 400.38,-58.45 401.27,-65.39"/>
+</g>
+<!-- to_char -->
+<g id="proc~~build_link_table~~CallsGraph_node9" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="490.5,-108 436.5,-108 436.5,-84 490.5,-84 490.5,-108"/>
+<text text-anchor="middle" x="463.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~check_space&#45;&gt;to_char -->
+<g id="proc~~build_link_table~~CallsGraph_edge9" class="edge">
+<title>proc~check_space&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M354.16,-79.16C376.63,-82.66 404.53,-86.99 426.39,-90.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="425.86,-93.85 436.27,-91.92 426.93,-86.93 425.86,-93.85"/>
+</g>
+<!-- proc~generate_strings&#45;&gt;proc~check_space -->
+<g id="proc~~build_link_table~~CallsGraph_edge10" class="edge">
+<title>proc~generate_strings&#45;&gt;proc~check_space</title>
+<path fill="none" stroke="#0066ff" d="M212.45,-119.91C219.23,-117.05 226.39,-113.97 233,-111 248.08,-104.23 264.6,-96.41 278.65,-89.62"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="280.46,-92.63 287.93,-85.12 277.41,-86.33 280.46,-92.63"/>
+</g>
+<!-- proc~generate_strings&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_link_table~~CallsGraph_edge11" class="edge">
+<title>proc~generate_strings&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0066ff" d="M233.29,-133.08C275.18,-133.98 335.58,-135.28 383.85,-136.31"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="383.89,-139.81 393.96,-136.53 384.04,-132.81 383.89,-139.81"/>
+</g>
+<!-- proc~string_address&#45;&gt;proc~binomial~2 -->
+<g id="proc~~build_link_table~~CallsGraph_edge12" class="edge">
+<title>proc~string_address&#45;&gt;proc~binomial~2</title>
+<path fill="none" stroke="#cc00ff" d="M358.1,-12C378.87,-12 403.5,-12 423.62,-12"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="423.69,-15.5 433.69,-12 423.69,-8.5 423.69,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-count~13"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>count</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-excited"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>excited</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-istr"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>istr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_virtual"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_virtual</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-occupied"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>occupied</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-row~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>row</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-string~4"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>string</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strings~2"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>strings</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-virtual"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>virtual</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_link_table</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Tabulate every single excitation out of every string</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Row order follows PySCF: the diagonal entries first, then one block per</span>
+<span class="w">      </span><span class="c">!! occupied orbital in ascending order, each listing the virtual orbitals</span>
+<span class="w">      </span><span class="c">!! in ascending order. The order carries no meaning -- a contraction sums</span>
+<span class="w">      </span><span class="c">!! over rows -- but matching it makes the table directly comparable</span>
+<span class="w">      </span><span class="c">!! against the reference implementation, which is worth more than the</span>
+<span class="w">      </span><span class="c">!! freedom to choose.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">table</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">strings</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">count</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">excited</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_virtual</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="p">,</span><span class="w"> </span><span class="n">virtual</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">check_space</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="nb">count</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">generate_strings</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">strings</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      </span><span class="n">n_virtual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_orbitals</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_electrons</span>
+<span class="w">      </span><span class="n">table</span><span class="p">%</span><span class="n">n_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_orbitals</span>
+<span class="w">      </span><span class="n">table</span><span class="p">%</span><span class="n">n_electrons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_electrons</span>
+<span class="w">      </span><span class="n">table</span><span class="p">%</span><span class="n">n_strings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nb">count</span><span class="p">)</span>
+<span class="w">      </span><span class="n">table</span><span class="p">%</span><span class="n">n_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_electrons</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_virtual</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">n_rows</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_strings</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">n_rows</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_strings</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">n_rows</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_strings</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">n_rows</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_strings</span><span class="p">))</span>
+
+<span class="w">      </span><span class="k">do </span><span class="n">istr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_strings</span>
+<span class="w">         </span><span class="n">string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">strings</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span>
+
+<span class="w">         </span><span class="c">! The number operators: every occupied orbital, mapping the string to</span>
+<span class="w">         </span><span class="c">! itself.</span>
+<span class="w">         </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="k">do </span><span class="n">occupied</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_orbitals</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">btest</span><span class="p">(</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">            </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">table</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span>
+<span class="w">            </span><span class="n">table</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span>
+<span class="w">            </span><span class="n">table</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">istr</span>
+<span class="w">            </span><span class="n">table</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">end do</span>
+
+<span class="w">         </span><span class="c">! Then every occupied-to-virtual single excitation.</span>
+<span class="w">         </span><span class="k">do </span><span class="n">occupied</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_orbitals</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">btest</span><span class="p">(</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">            do </span><span class="n">virtual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_orbitals</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">btest</span><span class="p">(</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">virtual</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">               </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">excited</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">ibset</span><span class="p">(</span><span class="nb">ibclr</span><span class="p">(</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">virtual</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">               </span><span class="n">table</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">virtual</span>
+<span class="w">               </span><span class="n">table</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span>
+<span class="w">               </span><span class="n">table</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">string_address</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">excited</span><span class="p">)</span>
+<span class="w">               </span><span class="n">table</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">excitation_phase</span><span class="p">(</span><span class="n">virtual</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">         end do</span>
+<span class="k">      end do</span>
+
+<span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">strings</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">build_link_table</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-18 09:16 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

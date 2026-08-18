@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for modules and submodules.">171 statements</a>
+                 title=" 0.8% of total for modules and submodules.">171 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -176,13 +176,13 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -601,7 +601,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-item_idx"></span>
+              <span class="anchor" id="variable-item_idx~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -616,7 +616,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~17"></span>
+              <span class="anchor" id="variable-result~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -625,91 +625,6 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>result</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-batch_count"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>batch_count</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-batch_ids"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>batch_ids</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-batch_results"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>batch_results</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-flush_group_results"></span> <h3>public  subroutine <a href='../proc/flush_group_results.html'>flush_group_results</a>(world_comm, batch_count, batch_ids, batch_results)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Send all currently batched results to rank 0 and reset the batch.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-world_comm~15"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>world_comm</strong></td>
             <td>
 
             </td>
@@ -767,6 +682,91 @@ large graphs.</div>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-flush_group_results"></span> <h3>public  subroutine <a href='../proc/flush_group_results.html'>flush_group_results</a>(world_comm, batch_count, batch_ids, batch_results)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Send all currently batched results to rank 0 and reset the batch.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~5"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_count~3"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_ids~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_ids</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_results~3"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-handle_group_results"></span> <h3>public  subroutine <a href='../proc/handle_group_results.html'>handle_group_results</a>(world_comm, results, results_received, total_items, coord_timer, group_done_count, label)  
 </h3></div>
     <div class="card-body">
@@ -786,7 +786,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~18"></span>
+              <span class="anchor" id="variable-world_comm~8"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -801,7 +801,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~3"></span>
+              <span class="anchor" id="variable-results~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -816,7 +816,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~3"></span>
+              <span class="anchor" id="variable-results_received~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -831,7 +831,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_items"></span>
+              <span class="anchor" id="variable-total_items~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -846,7 +846,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~2"></span>
+              <span class="anchor" id="variable-coord_timer~4"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -861,7 +861,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_done_count"></span>
+              <span class="anchor" id="variable-group_done_count~2"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -876,7 +876,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~3"></span>
+              <span class="anchor" id="variable-label"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -931,7 +931,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~16"></span>
+              <span class="anchor" id="variable-world_comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -955,106 +955,6 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>worker_map</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-batch_count~3"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>batch_count</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-batch_ids~3"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>batch_ids</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-batch_results~3"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>batch_results</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-results_received"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>results_received</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results_to_batch"></span> <h3>public  subroutine <a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a>(world_comm, batch_count, batch_ids, batch_results, results_received)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Drain pending node-level results and append them to the outbound batch.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-world_comm~17"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>world_comm</strong></td>
             <td>
 
             </td>
@@ -1106,7 +1006,107 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~2"></span>
+              <span class="anchor" id="variable-results_received~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results_received</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results_to_batch"></span> <h3>public  subroutine <a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a>(world_comm, batch_count, batch_ids, batch_results, results_received)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Drain pending node-level results and append them to the outbound batch.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~7"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_count~5"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_ids~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_ids</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_results~5"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results_received~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout),</td>
@@ -1149,7 +1149,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-18 08:15 +0000             </p>
+ on 2026-08-18 09:16 +0000             </p>
           </div>
         </div>
         <br>

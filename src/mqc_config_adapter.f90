@@ -264,6 +264,24 @@ contains
       if (mqc_config%cc_triples_set) then
          driver_config%method_config%cc%include_triples = mqc_config%cc_triples
       end if
+      if (allocated(mqc_config%mcscf_avas_orbitals)) then
+         driver_config%method_config%mcscf%avas_orbitals = mqc_config%mcscf_avas_orbitals
+      end if
+      driver_config%method_config%mcscf%avas_threshold = mqc_config%mcscf_avas_threshold
+      driver_config%method_config%mcscf%n_active_electrons = &
+         mqc_config%mcscf_n_active_electrons
+      driver_config%method_config%mcscf%n_active_orbitals = &
+         mqc_config%mcscf_n_active_orbitals
+      driver_config%method_config%mcscf%n_inactive_orbitals = &
+         mqc_config%mcscf_n_inactive_orbitals
+      ! Already settled against the method spelling by the reader, which is the
+      ! only place that spelling exists -- unlike the triples above, whose two
+      ! method types survive the parse and so are resolved here.
+      driver_config%method_config%mcscf%optimize_orbitals = &
+         mqc_config%mcscf_optimize_orbitals
+      driver_config%method_config%mcscf%max_macro_iter = mqc_config%mcscf_max_macro_iter
+      driver_config%method_config%mcscf%orbital_convergence = &
+         mqc_config%mcscf_orbital_convergence
       ! `guess_type` is the current spelling and `scf_guess` the superseded one.
       ! The schema has already refused a deck that sets both, so whichever is
       ! allocated is the one the user meant.

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">24 statements</a>
+                 title=" 0.2% of total for procedures.">36 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -181,7 +181,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~5"></span>
+              <span class="anchor" id="variable-m~4"></span>
               type(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -196,7 +196,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~38"></span>
+              <span class="anchor" id="variable-config~5"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -543,14 +543,20 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">method_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 
 <span class="w">      </span><span class="c">! Common settings</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">properties</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">basis_set</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">spherical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">use_spherical</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">verbose</span>
 
 <span class="w">      </span><span class="c">! Active space from config%mcscf</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">avas_orbitals</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">avas_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">avas_orbitals</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">avas_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">avas_threshold</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">n_active_electrons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">n_active_electrons</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">n_active_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">n_active_orbitals</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">n_inactive_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">n_inactive_orbitals</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">optimize_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">optimize_orbitals</span>
 
 <span class="w">      </span><span class="c">! State averaging</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">n_states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">n_states</span>
@@ -565,6 +571,16 @@ large graphs.</div>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">max_micro_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">max_micro_iter</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">orbital_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">orbital_convergence</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">ci_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">ci_convergence</span>
+
+<span class="w">      </span><span class="c">! The reference SCF, from the shared config%scf that every other</span>
+<span class="w">      </span><span class="c">! reference-based method reads. A CASSCF starts from a closed-shell SCF,</span>
+<span class="w">      </span><span class="c">! and a deck that tightened `keywords.scf` meant that one too.</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iter</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">conv_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">energy_convergence</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_convergence</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">use_diis</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">diis_size</span>
+<span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">pcm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">pcm</span>
 
 <span class="w">      </span><span class="c">! PT2 corrections</span>
 <span class="w">      </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">use_pt2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf</span><span class="p">%</span><span class="n">use_pt2</span>
@@ -595,7 +611,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-18 08:15 +0000             </p>
+ on 2026-08-18 09:16 +0000             </p>
           </div>
         </div>
         <br>

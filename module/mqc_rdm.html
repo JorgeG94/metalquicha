@@ -1,0 +1,698 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_rdm &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_rdm
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.4% of total for modules and submodules.">92 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_rdm.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_rdm.f90.html'>mqc_rdm.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_rdm</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_rdm.html#proc-rdm_energy">rdm_energy</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_rdm.html#proc-active_space_rdms">active_space_rdms</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>The one- and two-particle density matrices of a CI wave function,</p>
+<div class="codehilite"><pre><span></span><code>D_pq      = &lt;Psi| E_pq |Psi&gt;
+d_pqrs    = &lt;Psi| E_pq E_rs - delta_qr E_ps |Psi&gt;
+</code></pre></div>
+
+<p>with <code>E_pq</code> summed over both spins, so these are spin-traced. They are
+everything the rest of MCSCF needs from the CI: the orbital gradient, the
+generalised Fock matrix and the energy are all contractions of these two
+against integrals, and none of them ever sees a CI vector again.</p>
+<p>Both fall out of the same operation the sigma build uses. If
+<code>t_pq = E_pq |Psi&gt;</code> &ndash; which <code>apply_excitations</code> returns for every pair at
+once &ndash; then <code>D_pq</code> is the overlap of <code>t_pq</code> with the wave function, and
+since <code>E_pq</code> is the adjoint of <code>E_qp</code>,</p>
+<div class="codehilite"><pre><span></span><code>&lt;Psi| E_pq E_rs |Psi&gt; = &lt;t_qp | t_rs&gt;
+</code></pre></div>
+
+<p>so the whole two-particle matrix is one matrix multiply of that
+intermediate against itself. The <code>delta_qr E_ps</code> correction is then
+subtracted, which is what makes <code>d</code> the quantity that contracts with
+<code>(pq|rs)</code> to give the two-electron energy.</p>
+<p>The convention is PySCF&rsquo;s <code>make_rdm12</code>, which is also Helgaker&rsquo;s and
+GAMESS&rsquo;s. It is worth being explicit about because a factor of two and an
+index transposition are the two ways a two-particle density matrix is
+usually wrong, and both give a plausible energy.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_rdm~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_rdmUsesGraph" width="414pt" height="232pt"
+ viewBox="0.00 0.00 414.00 231.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_rdm~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 227.85)">
+<title>module~~mqc_rdm~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-227.85 410,-227.85 410,4 -4,4"/>
+<!-- module~mqc_rdm -->
+<g id="module~~mqc_rdm~~UsesGraph_node1" class="node">
+<title>module~mqc_rdm</title>
+<polygon fill="none" stroke="black" points="406,-125.85 343,-125.85 343,-101.85 406,-101.85 406,-125.85"/>
+<text text-anchor="middle" x="374.5" y="-111.45" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_rdm</text>
+</g>
+<!-- module~mqc_ci -->
+<g id="module~~mqc_rdm~~UsesGraph_node2" class="node">
+<title>module~mqc_ci</title>
+<g id="a_module~~mqc_rdm~~UsesGraph_node2"><a xlink:href="../module/mqc_ci.html" xlink:title="mqc_ci">
+<polygon fill="#337ab7" stroke="#337ab7" points="307,-125.85 253,-125.85 253,-101.85 307,-101.85 307,-125.85"/>
+<text text-anchor="middle" x="280" y="-111.45" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ci</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_rdm&#45;&gt;module~mqc_ci -->
+<g id="module~~mqc_rdm~~UsesGraph_edge1" class="edge">
+<title>module~mqc_rdm&#45;&gt;module~mqc_ci</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M342.96,-113.85C334.73,-113.85 325.74,-113.85 317.23,-113.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="317.17,-110.35 307.17,-113.85 317.17,-117.35 317.17,-110.35"/>
+</g>
+<!-- module~mqc_determinants -->
+<g id="module~~mqc_rdm~~UsesGraph_node3" class="node">
+<title>module~mqc_determinants</title>
+<g id="a_module~~mqc_rdm~~UsesGraph_node3"><a xlink:href="../module/mqc_determinants.html" xlink:title="mqc_determinants">
+<polygon fill="#337ab7" stroke="#337ab7" points="216,-145.85 104,-145.85 104,-121.85 216,-121.85 216,-145.85"/>
+<text text-anchor="middle" x="160" y="-131.45" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_determinants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_rdm&#45;&gt;module~mqc_determinants -->
+<g id="module~~mqc_rdm~~UsesGraph_edge2" class="edge">
+<title>module~mqc_rdm&#45;&gt;module~mqc_determinants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M367.79,-126.01C355.76,-149.72 325.26,-200.8 281,-211.85"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M279,-211.85C236.62,-222.43 196.16,-180.64 175.41,-154.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="177.98,-151.74 169.16,-145.86 172.39,-155.95 177.98,-151.74"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_rdm~~UsesGraph_node4" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_rdm~~UsesGraph_node4"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="67,-223.85 0,-223.85 0,-199.85 67,-199.85 67,-223.85"/>
+<text text-anchor="middle" x="33.5" y="-209.45" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_rdm&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_rdm~~UsesGraph_edge3" class="edge">
+<title>module~mqc_rdm&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-211.85C132.1,-207.8 101.55,-207.73 77.45,-208.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="77.02,-205.22 67.2,-209.2 77.36,-212.22 77.02,-205.22"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="module~~mqc_rdm~~UsesGraph_node5" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="217,-65.85 103,-65.85 103,-41.85 217,-41.85 217,-65.85"/>
+<text text-anchor="middle" x="160" y="-51.45" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_rdm&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_rdm~~UsesGraph_edge4" class="edge">
+<title>module~mqc_rdm&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M279,-13.85C271.22,-11.23 231.18,-25.78 199.87,-38.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="198.49,-34.84 190.48,-41.78 201.06,-41.35 198.49,-34.84"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_rdm~~UsesGraph_node6" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="60.5,-145.85 6.5,-145.85 6.5,-121.85 60.5,-121.85 60.5,-145.85"/>
+<text text-anchor="middle" x="33.5" y="-131.45" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_rdm&#45;&gt;pic_io -->
+<g id="module~~mqc_rdm~~UsesGraph_edge5" class="edge">
+<title>module~mqc_rdm&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M279,-211.85C228.12,-224.55 212.86,-219.66 161,-211.85"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-211.85C116.58,-205.46 76.17,-173.8 53.43,-152.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="55.81,-150.27 46.15,-145.92 50.99,-155.35 55.81,-150.27"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_rdm~~UsesGraph_node7" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="64.5,-103.85 2.5,-103.85 2.5,-79.85 64.5,-79.85 64.5,-103.85"/>
+<text text-anchor="middle" x="33.5" y="-89.45" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_rdm&#45;&gt;pic_types -->
+<g id="module~~mqc_rdm~~UsesGraph_edge6" class="edge">
+<title>module~mqc_rdm&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M367.5,-101.67C355.19,-78.36 324.49,-28.47 281,-13.85"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M279,-13.85C204.42,11.22 175.18,-1.54 103,-32.85 82.78,-41.62 64.13,-58.52 51.41,-72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="48.78,-69.69 44.64,-79.45 53.96,-74.4 48.78,-69.69"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;module~mqc_determinants -->
+<g id="module~~mqc_rdm~~UsesGraph_edge7" class="edge">
+<title>module~mqc_ci&#45;&gt;module~mqc_determinants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M252.81,-118.29C244.75,-119.65 235.49,-121.22 226.02,-122.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="225.39,-119.39 216.11,-124.51 226.56,-126.29 225.39,-119.39"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_rdm~~UsesGraph_edge8" class="edge">
+<title>module~mqc_ci&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M263.42,-125.95C251.3,-134.9 233.78,-146.88 217,-154.85 171.23,-176.59 115.16,-192.67 77.34,-202.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="76.06,-198.82 67.18,-204.6 77.73,-205.62 76.06,-198.82"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_rdm~~UsesGraph_edge9" class="edge">
+<title>module~mqc_ci&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M257.67,-101.69C245.8,-95.04 230.69,-86.77 217,-79.85 210.7,-76.66 203.94,-73.4 197.37,-70.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="198.49,-66.97 187.95,-65.92 195.54,-73.31 198.49,-66.97"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;pic_io -->
+<g id="module~~mqc_rdm~~UsesGraph_edge10" class="edge">
+<title>module~mqc_ci&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-93.85C126.33,-93.59 91.05,-106.26 66.42,-117.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="64.77,-114.31 57.2,-121.73 67.74,-120.65 64.77,-114.31"/>
+</g>
+<!-- module~mqc_ci&#45;&gt;pic_types -->
+<g id="module~~mqc_rdm~~UsesGraph_edge11" class="edge">
+<title>module~mqc_ci&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M252.97,-106.98C229.2,-101.29 193,-94.11 161,-93.85"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-93.85C130.94,-93.62 99.33,-93.11 74.98,-92.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="74.75,-89.16 64.69,-92.47 74.62,-96.16 74.75,-89.16"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_rdm~~UsesGraph_edge12" class="edge">
+<title>module~mqc_determinants&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M129.9,-145.93C121.06,-149.97 111.45,-154.76 103,-159.85 86.63,-169.71 69.51,-182.7 56.48,-193.24"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="54.06,-190.69 48.56,-199.74 58.51,-196.1 54.06,-190.69"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;pic_io -->
+<g id="module~~mqc_rdm~~UsesGraph_edge13" class="edge">
+<title>module~mqc_determinants&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M103.67,-133.85C92.58,-133.85 81.2,-133.85 70.95,-133.85"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="70.74,-130.35 60.74,-133.85 70.74,-137.35 70.74,-130.35"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;pic_types -->
+<g id="module~~mqc_rdm~~UsesGraph_edge14" class="edge">
+<title>module~mqc_determinants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M123.32,-121.81C107.97,-116.63 89.96,-110.56 74.19,-105.24"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="75.3,-101.92 64.7,-102.04 73.06,-108.55 75.3,-101.92"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-rdm_energy"></span> <h3>public pure function <a href='../proc/rdm_energy.html'>rdm_energy</a>(h1e, eri, dm1, dm2) result(energy)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The active-space energy rebuilt from the density matrices</p><a href="../proc/rdm_energy.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-h1e~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>h1e</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-eri~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>eri</strong>(:,:,:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dm1~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dm1</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dm2~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dm2</strong>(:,:,:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-active_space_rdms"></span> <h3>public  subroutine <a href='../proc/active_space_rdms.html'>active_space_rdms</a>(ci, alpha, beta, dm1, dm2, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Spin-traced one- and two-particle density matrices</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ci</strong>(:,:)</td>
+            <td>
+<p>(n_alpha_strings, n_beta_strings)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha~6"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>alpha</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta~6"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>beta</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dm1"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>dm1</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dm2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>dm2</strong>(:,:,:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~105"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-18 09:16 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

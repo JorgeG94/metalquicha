@@ -1,14 +1,33 @@
 !! Multi-Configurational Self-Consistent Field (MCSCF) method implementation
 module mqc_method_mcscf
-   !! Implements CASSCF/CASCI quantum chemistry methods
-   !! Provides energy and gradient calculations using complete active space
-   !! with optional perturbative corrections (CASPT2/NEVPT2).
+   !! CASSCF, and CASCI on the reference orbitals.
+   !!
+   !! A complete active space wavefunction: the orbitals are partitioned into
+   !! doubly occupied *inactive*, an *active* set the CI distributes electrons
+   !! over in every possible way, and empty *virtual* ones. CASSCF optimises the
+   !! orbitals alongside the CI coefficients; CASCI leaves them at whatever the
+   !! reference SCF produced. Both spellings, and "mcscf", parse to
+   !! `METHOD_TYPE_MCSCF` -- they are one method with a boolean, not two.
+   !!
+   !! Everything is computed by `mqc_libcint_mcscf` and `mqc_libcint_casci`
+   !! behind `mqc_libcint_bridge`, for the reason `mqc_method_hf` reaches the
+   !! CPU SCF the same way: those modules use libcint, fpm globs `src/` and has
+   !! no source for it, so `src/methods/` cannot name them. Without that backend
+   !! the stub bridge reports the missing build rather than returning a
+   !! placeholder -- a plausible wrong number inside a many-body expansion is
+   !! far worse than a failed fragment.
+   !!
+   !! There is no cuEST path and no `#ifdef` here, unlike Hartree-Fock: cuEST
+   !! has no CI at all, so there is nothing to choose between.
    use pic_types, only: dp
+   use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_method_base, only: qc_method_t
+   use mqc_method_config, only: pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
-   use pic_logger, only: logger => global_logger
-   use pic_io, only: to_char
+   use mqc_error, only: ERROR_VALIDATION
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_libcint_bridge, only: run_libcint_mcscf
    implicit none
    private
 
@@ -16,6 +35,10 @@ module mqc_method_mcscf
 
    type :: mcscf_options_t
       !! MCSCF/CASSCF calculation options
+      type(properties_config_t) :: properties
+      type(pcm_config_t) :: pcm
+         !! Continuum solvation. Carried so the refusal can be made where the
+         !! request arrives; the CPU path has no cavity.
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name
       logical :: spherical = .true.
@@ -24,6 +47,8 @@ module mqc_method_mcscf
          !! Print iteration details
 
       ! Active space definition
+      character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
+      real(dp) :: avas_threshold = 0.2_dp
       integer :: n_active_electrons = 0
          !! Number of active electrons (CAS)
       integer :: n_active_orbitals = 0
@@ -31,49 +56,67 @@ module mqc_method_mcscf
       integer :: n_inactive_orbitals = -1
          !! Number of inactive (doubly occupied) orbitals
          !! -1 means auto-determine from nelec and active electrons
+      logical :: optimize_orbitals = .true.
+         !! CASSCF when true, CASCI when false. See `mcscf_config_t`.
 
       ! State-averaging
       integer :: n_states = 1
          !! Number of states for state-averaged CASSCF
       real(dp), allocatable :: state_weights(:)
          !! Weights for state averaging (must sum to 1)
+         !!
+         !! Not reachable from a deck: the optimiser underneath solves for one
+         !! state, so `mqc_json_schema` allows no key that would set these. The
+         !! fields stay because the config type they are copied from has them.
 
       ! Convergence settings
       integer :: max_macro_iter = 100
          !! Maximum macro (orbital optimization) iterations
       integer :: max_micro_iter = 50
-         !! Maximum CI iterations per macro step
+         !! Maximum CI iterations per macro step. Not reachable from a deck:
+         !! the Davidson takes a residual threshold, not an iteration cap.
       real(dp) :: orbital_tol = 1.0e-6_dp
          !! Orbital gradient convergence threshold
       real(dp) :: energy_tol = 1.0e-8_dp
          !! Energy convergence threshold
       real(dp) :: ci_tol = 1.0e-8_dp
-         !! CI energy convergence threshold
+         !! CI energy convergence threshold. Not reachable from a deck; the
+         !! macro loop pins its inner CASCI tight on purpose.
 
       ! Orbital optimization algorithm
       character(len=16) :: orbital_optimizer = "super-ci"
-         !! Orbital optimizer: "super-ci", "newton-raphson", "ah" (augmented Hessian)
+         !! Nominal; the implementation is a trust-region first-order step with
+         !! DIIS, and there is nothing to select between.
 
       ! Perturbative corrections
       logical :: use_pt2 = .false.
-         !! Apply perturbative correction after CASSCF
+         !! Apply perturbative correction after CASSCF. No implementation
+         !! exists, so no keyword reaches it.
       character(len=16) :: pt2_type = "nevpt2"
          !! PT2 type: "caspt2", "nevpt2"
       real(dp) :: ipea_shift = 0.25_dp
          !! IPEA shift for CASPT2 (Hartree)
       real(dp) :: imaginary_shift = 0.0_dp
          !! Imaginary shift for intruder states
+
+      ! Reference SCF settings, shared with every other reference-based method
+      integer :: max_iter = 100
+         !! Maximum reference SCF iterations
+      real(dp) :: conv_tol = 1.0e-8_dp
+         !! Reference SCF energy convergence threshold
+      real(dp) :: density_tol = 1.0e-6_dp
+         !! Reference SCF density matrix convergence threshold
+      logical :: use_diis = .true.
+      integer :: diis_size = 8
    end type mcscf_options_t
 
    type, extends(qc_method_t) :: mcscf_method_t
       !! MCSCF/CASSCF method implementation
       !!
-      !! Complete Active Space SCF with optional state-averaging
-      !! and perturbative corrections. Suitable for:
+      !! Complete Active Space SCF. Suitable for:
       !! - Near-degenerate electronic states
       !! - Bond breaking/formation
       !! - Transition metal complexes
-      !! - Excited states
       type(mcscf_options_t) :: options
    contains
       procedure :: calc_energy => mcscf_calc_energy
@@ -84,126 +127,85 @@ module mqc_method_mcscf
 contains
 
    subroutine mcscf_calc_energy(this, fragment, result)
-      !! Calculate electronic energy using CASSCF
-      !!
-      !! TODO: Implementation requires:
-      !! 1. Build basis set and compute integrals
-      !! 2. Initial orbital guess (HF or read from file)
-      !! 3. Partition orbitals: inactive, active, virtual
-      !! 4. Macro iterations:
-      !!    a. Transform integrals to MO basis
-      !!    b. Solve CI in active space (Davidson or direct)
-      !!    c. Build 1- and 2-RDMs from CI vector
-      !!    d. Compute orbital gradient
-      !!    e. Update orbitals (super-CI, Newton-Raphson, etc.)
-      !!    f. Check convergence
-      !! 5. Optional: CASPT2/NEVPT2 correction
+      !! CASSCF, or CASCI, on one fragment
       class(mcscf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      integer :: n_inactive
+      type(cuest_scf_settings_t) :: settings
 
-      if (this%options%verbose) then
-         call logger%info("MCSCF: Calculating CASSCF energy")
-         call logger%info("MCSCF: Basis set: "//trim(this%options%basis_set))
-         call logger%info("MCSCF: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
-         call logger%info("MCSCF: nelec ="//" "//to_char(fragment%nelec))
-         call logger%info("MCSCF: charge ="//" "//to_char(fragment%charge))
-         call logger%info("MCSCF: Active space: ("//" "//to_char(this%options%n_active_electrons)//" "//"," &
-                          //" "//to_char(this%options%n_active_orbitals)//" "//")")
+      ! The reference SCF's settings, which is most of what this is: a CASSCF
+      ! begins with a closed-shell SCF and the backend takes the same settings
+      ! object for it that Hartree-Fock does.
+      settings%pcm = this%options%pcm
+      settings%bonding_analysis = this%options%properties%bonding_analysis
+      settings%bonding_threshold = this%options%properties%bonding_threshold
+      settings%basis_set = this%options%basis_set
+      settings%spherical = this%options%spherical
+      settings%verbose = this%options%verbose
+      settings%functional = ""        ! empty selects pure Hartree-Fock
+      settings%max_iter = this%options%max_iter
+      settings%energy_tol = this%options%conv_tol
+      settings%density_tol = this%options%density_tol
+      settings%use_diis = this%options%use_diis
+      settings%diis_size = this%options%diis_size
 
-         ! Calculate inactive orbitals
-         if (this%options%n_inactive_orbitals < 0) then
-            n_inactive = (fragment%nelec - this%options%n_active_electrons)/2
-         else
-            n_inactive = this%options%n_inactive_orbitals
-         end if
-         call logger%info("MCSCF: Inactive orbitals:"//" "//to_char(n_inactive))
-
-         if (this%options%n_states > 1) then
-            call logger%info("MCSCF: State-averaged over"//" "//to_char(this%options%n_states)//" "//"states")
-         end if
-         if (this%options%use_pt2) then
-            call logger%info("MCSCF: Will apply "//trim(this%options%pt2_type)//" correction")
-         end if
+      if (allocated(this%options%avas_orbitals)) then
+         settings%mcscf%avas_orbitals = this%options%avas_orbitals
       end if
+      settings%mcscf%avas_threshold = this%options%avas_threshold
+      settings%mcscf%n_active_electrons = this%options%n_active_electrons
+      settings%mcscf%n_active_orbitals = this%options%n_active_orbitals
+      settings%mcscf%n_inactive_orbitals = this%options%n_inactive_orbitals
+      settings%mcscf%optimize_orbitals = this%options%optimize_orbitals
+      settings%mcscf%max_macro_iter = this%options%max_macro_iter
+      settings%mcscf%orbital_convergence = this%options%orbital_tol
 
-      ! Validate active space
-      if (this%options%n_active_electrons <= 0 .or. this%options%n_active_orbitals <= 0) then
-         call logger%info("MCSCF: ERROR - Active space not defined!")
-         call logger%info("MCSCF: Set n_active_electrons and n_active_orbitals in config")
-         result%has_error = .true.
-         return
-      end if
-
-      ! Placeholder: Return dummy energy
-      ! TODO: Implement actual CASSCF calculation
-      result%energy%scf = -1.0_dp*fragment%n_atoms  ! Placeholder
-      result%has_energy = .true.
-
-      if (this%options%verbose) then
-         call logger%info("MCSCF: [STUB] CASSCF Energy ="//" "//to_char(result%energy%total()))
-      end if
-
+      call run_libcint_mcscf(settings, fragment, result)
    end subroutine mcscf_calc_energy
 
    subroutine mcscf_calc_gradient(this, fragment, result)
-      !! Calculate energy gradient using CASSCF
+      !! Refused: a CASSCF gradient needs the Lagrangian, which does not exist
       !!
-      !! TODO: Implementation requires:
-      !! 1. Converged CASSCF (orbitals and CI)
-      !! 2. Solve Z-vector (CPHF-like) equations for response
-      !! 3. Compute gradient contributions:
-      !!    a. One-electron derivative terms
-      !!    b. Two-electron derivative terms (with 2-RDM)
-      !!    c. Orbital response contribution
-      !!    d. CI response contribution (for state-specific)
-      !! For state-averaged: gradient of weighted energy
+      !! Not finite differences either, and that is a deliberate choice rather
+      !! than an omission. A numerical CASSCF gradient is 6N converged orbital
+      !! optimisations, each of which can land on a *different* active space --
+      !! the orbitals that make up a CAS are identified by their character, and
+      !! a displaced geometry can reorder them. The result is a gradient with
+      !! discontinuities that look like noise, and nothing in the output would
+      !! say which displacement had wandered. Better to refuse.
       class(mcscf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      if (this%options%verbose) then
-         call logger%info("MCSCF: Calculating CASSCF gradient")
-      end if
-
-      ! First get energy (and converged orbitals/CI)
-      call this%calc_energy(fragment, result)
-      if (result%has_error) return
-
-      ! Allocate and fill dummy gradient
-      allocate (result%gradient(3, fragment%n_atoms))
-      result%gradient = 0.0_dp  ! Placeholder
-      result%has_gradient = .true.
-
-      if (this%options%verbose) then
-         call logger%info("MCSCF: [STUB] Gradient computed")
-      end if
-
+      call refuse_derivative(fragment, result, "gradient")
+      if (this%options%n_active_orbitals < 0) return
    end subroutine mcscf_calc_gradient
 
    subroutine mcscf_calc_hessian(this, fragment, result)
-      !! Calculate energy Hessian using CASSCF
-      !!
-      !! TODO: Analytical CASSCF Hessian is very complex:
-      !! - Requires second derivatives of integrals
-      !! - Coupled-perturbed MCSCF equations
-      !! - CI second derivatives
-      !! Typically done via finite difference of gradients
+      !! Refused, for the reason the gradient is: there is nothing to difference
       class(mcscf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      if (this%options%verbose) then
-         call logger%info("MCSCF: Analytical Hessian not implemented")
-         call logger%info("MCSCF: Use finite difference of gradients instead")
-      end if
-
-      ! For now, just compute energy
-      call this%calc_energy(fragment, result)
-      result%has_hessian = .false.
-
+      call refuse_derivative(fragment, result, "Hessian")
+      if (this%options%n_active_orbitals < 0) return
    end subroutine mcscf_calc_hessian
+
+   subroutine refuse_derivative(fragment, result, what)
+      !! Say that a derivative is not available, once, for both of them
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+      character(len=*), intent(in) :: what
+
+      call result%error%set(ERROR_VALIDATION, "a CASSCF "//what//" is not implemented: "// &
+                            "the analytic form needs the orbital and CI Lagrangian, and "// &
+                            "differencing the energy numerically is unreliable here "// &
+                            "because the active space can reorder between displacements. "// &
+                            "Run driver 'Energy'.")
+      result%has_error = .true.
+      result%has_energy = .false.
+      if (fragment%n_atoms < 0) return
+   end subroutine refuse_derivative
 
 end module mqc_method_mcscf
