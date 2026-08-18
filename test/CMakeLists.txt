@@ -81,6 +81,9 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_casci)
   target_link_libraries(test_mqc_casci PRIVATE cint_fortran cint)
 
+  addtest(mqc_mcscf)
+  target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
+
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
 
