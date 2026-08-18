@@ -20,7 +20,8 @@ module mqc_cuest_grid
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, &
                                                                              c_double, c_loc, c_associated
    use pic_types, only: dp
-   use mqc_error, only: error_t
+   use mqc_error, only: error_t, ERROR_VALIDATION
+   use pic_io, only: to_char
    use mqc_cuest_runtime, only: cuest_status_check
    use cuest, only: cuestAtomGridCreate, cuestAtomGridDestroy, &
                     cuestParametersCreate, cuestParametersDestroy, &
@@ -107,24 +108,64 @@ contains
       end do
    end subroutine ahlrichs_radial_quadrature
 
-   subroutine build_atom_grids(handle, atomic_numbers, n_radial, n_angular, grid_set, error)
+   subroutine build_atom_grids(handle, atomic_numbers, n_radial, n_angular, grid_set, error, &
+                               shard_index, shard_count)
       !! Build one unpruned direct-product grid per atom
+      !!
+      !! With `shard_count` > 1 each atom keeps only every `shard_count`-th
+      !! radial shell, starting at `shard_index`. Every atom is still present
+      !! and every atom still gets a grid, so the molecular grid built from the
+      !! result covers the whole molecule at a lower radial density; the Becke
+      !! partition weight at a surviving point is unchanged, because it is a
+      !! function of that point and of all the nuclear positions and knows
+      !! nothing about which other points exist. Summing the slices therefore
+      !! reproduces the unsharded quadrature exactly, term for term -- this is
+      !! a partition of the sum, not an approximation to it.
+      !!
+      !! Striding rather than blocking on purpose: consecutive radial shells
+      !! carry wildly different weight (the mesh is dense near the nucleus and
+      !! sparse in the tail), so a contiguous block would hand one rank the
+      !! core and another the vacuum. Striding gives every rank the same mix.
       type(c_ptr), intent(in) :: handle          !! cuEST handle
       integer, intent(in) :: atomic_numbers(:)   !! Z per atom
-      integer, intent(in) :: n_radial            !! Radial points per atom
+      integer, intent(in) :: n_radial            !! Radial points per atom, before sharding
       integer, intent(in) :: n_angular           !! Lebedev order per radial shell
       type(atom_grid_set_t), intent(out) :: grid_set
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: shard_index  !! 0-based slice to keep
+      integer, intent(in), optional :: shard_count  !! Number of slices; 1 keeps everything
 
       real(dp), allocatable :: nodes(:), weights(:)
+      real(dp), allocatable :: my_nodes(:), my_weights(:)
       integer(c_int64_t), allocatable :: angular_points(:)
       type(c_ptr) :: grid_params
       integer(c_int) :: status
-      integer :: iatom, n_atoms
+      integer :: iatom, n_atoms, n_shards, my_shard, n_kept, i, k
+
+      n_shards = 1
+      my_shard = 0
+      if (present(shard_count)) n_shards = max(shard_count, 1)
+      if (present(shard_index)) my_shard = shard_index
+
+      ! A shard with no radial shells would leave this rank without an XC plan,
+      ! and the XC plan is what the DF plan asks for its exact-exchange
+      ! fraction -- so the rank would go on to build a *differently defined*
+      ! Fock operator rather than merely contribute nothing. Refused here,
+      ! where the cause is still visible.
+      if (n_shards > n_radial) then
+         call error%set(ERROR_VALIDATION, &
+                        "multi-GPU XC grid: "//to_char(n_shards)//" ranks share "// &
+                        to_char(n_radial)//" radial shells, so some rank would get none. "// &
+                        "Raise keywords.dft.radial_points to at least the rank count, "// &
+                        "or run on fewer ranks.")
+         return
+      end if
+
+      n_kept = (n_radial - my_shard - 1)/n_shards + 1
 
       n_atoms = size(atomic_numbers)
       grid_set%n_atoms = n_atoms
-      grid_set%n_radial = n_radial
+      grid_set%n_radial = n_kept
       grid_set%n_angular = n_angular
 
       allocate (grid_set%grids(n_atoms))
@@ -137,13 +178,20 @@ contains
 
       ! One angular order for every radial shell -- this is what makes the
       ! grid "unpruned".
-      allocate (nodes(n_radial), weights(n_radial), angular_points(n_radial))
+      allocate (nodes(n_radial), weights(n_radial))
+      allocate (my_nodes(n_kept), my_weights(n_kept), angular_points(n_kept))
       angular_points = int(n_angular, c_int64_t)
 
       do iatom = 1, n_atoms
          call ahlrichs_radial_quadrature(n_radial, ahlrichs_radius(atomic_numbers(iatom)), &
                                          nodes, weights)
-         call create_atom_grid(handle, int(n_radial, c_int64_t), nodes, weights, &
+         k = 0
+         do i = my_shard + 1, n_radial, n_shards
+            k = k + 1
+            my_nodes(k) = nodes(i)
+            my_weights(k) = weights(i)
+         end do
+         call create_atom_grid(handle, int(n_kept, c_int64_t), my_nodes, my_weights, &
                                angular_points, grid_params, grid_set%grids(iatom), error)
          if (error%has_error()) exit
       end do
@@ -151,7 +199,7 @@ contains
       status = cuestParametersDestroy(CUEST_ATOMGRID_PARAMETERS, grid_params)
       call cuest_status_check(status, "cuestParametersDestroy(atom grid)", error)
 
-      deallocate (nodes, weights, angular_points)
+      deallocate (nodes, weights, my_nodes, my_weights, angular_points)
       if (error%has_error()) then
          call error%add_context("mqc_cuest_grid:build_atom_grids")
          call grid_set%destroy()

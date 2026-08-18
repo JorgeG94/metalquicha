@@ -34,12 +34,16 @@ module mqc_cuest_integrals
    use mqc_cgto, only: molecular_basis_type
    use mqc_cuest_basis, only: cuest_shell_set_t, build_cuest_shells
    use mqc_cuest_grid, only: atom_grid_set_t, build_atom_grids
+   use mqc_gpu_team, only: gpu_team_active, gpu_team_rank, gpu_team_size, &
+                           gpu_team_reduce, gpu_team_reduce_scalar
    use mqc_cuest_context, only: cuest_context_t
    use mqc_cuest_runtime, only: cuest_status_check, cublas_status_check, &
                                 workspace_alloc, workspace_free, &
                                 copy_to_device, copy_to_host, device_sync, &
                                 device_offset, &
-                                device_alloc, device_free
+                                device_alloc, device_free, &
+                                device_memory_info, format_bytes, workspace_bytes
+   use pic_logger, only: logger => global_logger
    use cublas, only: cublasDaxpy, cublasDcopy, cublasDdot
    use cuest, only: cuestWorkspace_t, cuestWorkspaceDescriptor_t, &
                     cuestParametersCreate, cuestParametersDestroy, &
@@ -84,6 +88,8 @@ module mqc_cuest_integrals
                     CUEST_DFINTPLAN_PARAMETERS_EXCHANGE_FRACTION, &
                     CUEST_DFINTPLAN_PARAMETERS_LRC_EXCHANGE_FRACTION, &
                     CUEST_DFINTPLAN_PARAMETERS_LRC_EXCHANGE_OMEGA, &
+                    CUEST_DFINTPLAN_PARAMETERS_THREE_INDEX_INTEGRAL_DIRECT, &
+                    CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS_MEMORY_POLICY, &
                     cuestMolecularGridCreate, cuestMolecularGridCreateWorkspaceQuery, &
                     cuestMolecularGridDestroy, &
                     cuestXCIntPlanCreate, cuestXCIntPlanCreateWorkspaceQuery, &
@@ -109,7 +115,8 @@ module mqc_cuest_integrals
                     CUEST_XCINTPLAN, CUEST_XCINTPLAN_EXCHANGE_SCALE, &
                     CUEST_XCINTPLAN_LRC_EXCHANGE_SCALE, CUEST_XCINTPLAN_LRC_OMEGA
    use cuest_helpers, only: cuest_query_i64, cuest_query_f64, cuest_param_set_f64, &
-                            cuest_param_set_i64, cuest_results_query_f64, &
+                            cuest_param_set_i64, cuest_param_set_i32, &
+                            cuest_results_query_f64, &
                             cuest_results_query_i64
    implicit none
    private
@@ -198,6 +205,27 @@ module mqc_cuest_integrals
 
       logical :: has_xc = .false.
          !! Whether an XC plan exists, i.e. this is DFT rather than HF
+      logical :: xc_grid_sharded = .false.
+         !! Whether this system's XC quadrature is one slice of a grid shared
+         !! with the other ranks of a GPU team. When it is, every Exc, Vxc and
+         !! dExc/dR produced here is a partial sum and is reduced across the
+         !! team before it leaves this module -- so nothing downstream, in the
+         !! SCF or the gradient, has to know the mode exists.
+         !!
+         !! Never set for the free-atom systems the SAC guess builds: those are
+         !! solved redundantly on every rank over the full grid, because they
+         !! are cheap and because a guess that differed between ranks would
+         !! desynchronize the SCF that follows.
+      logical :: df_integral_direct = .false.
+         !! Whether the DF plan recomputes the three-index integrals instead of
+         !! caching them. Halves nothing and costs time; it is here because the
+         !! cache is the single largest device allocation a calculation makes,
+         !! and a run that does not fit is worth more slowly than not at all.
+      integer :: df_derivative_memory_policy = -1
+         !! cuEST's memory policy for the DF gradient, or -1 to leave cuEST's
+         !! own default in place. Separate from the flag above because it is a
+         !! separate allocation with a separate lifetime: the plan's cache
+         !! lives across the whole SCF, this one only across the gradient.
       logical :: needs_exchange = .true.
          !! False for a pure functional, where K would be computed and then
          !! scaled by zero. cuEST's own header advises skipping the call.
@@ -293,7 +321,8 @@ contains
 
    subroutine system_create(this, context, atomic_numbers, coordinates, mol_basis, &
                             aux_mol_basis, use_spherical, n_occ, functional_id, &
-                            n_radial, n_angular, error, n_occ_beta, n_guess_columns, pcm)
+                            n_radial, n_angular, error, n_occ_beta, n_guess_columns, pcm, &
+                            shard_xc_grid, df_integral_direct, df_derivative_memory_policy)
       !! Build every cuEST object needed for one molecule
       !!
       !! Coordinates are in Bohr, matching metalquicha's internal units and
@@ -324,6 +353,17 @@ contains
          !! guess carries the summed atomic occupations, which usually exceeds
          !! the molecule's own count. Sizing here matters: growing a pool later
          !! would reallocate it and invalidate the pointers already borrowed.
+      logical, intent(in), optional :: shard_xc_grid
+         !! Take only this rank's slice of the XC quadrature, and reduce every
+         !! XC quantity across the GPU team before returning it. Absent means
+         !! the whole grid, which is what a single-GPU run and every free-atom
+         !! guess system want. Opt-in rather than inferred from the team being
+         !! live, because the guess systems are built while it is.
+      logical, intent(in), optional :: df_integral_direct
+         !! Recompute the three-index DF integrals rather than caching them
+      integer, intent(in), optional :: df_derivative_memory_policy
+         !! One of CUEST_DFSYMMETRICDERIVATIVECOMPUTE_MEMORY_POLICY_*, or
+         !! absent/negative to leave cuEST's default alone
 
       integer :: iatom, n_atoms
       integer(c_int64_t) :: widest, n_spin
@@ -337,6 +377,11 @@ contains
       this%unrestricted = present(n_occ_beta)
       if (this%unrestricted) this%n_occ_beta = int(n_occ_beta, c_int64_t)
       this%has_xc = (functional_id >= 0)
+      if (present(shard_xc_grid)) this%xc_grid_sharded = shard_xc_grid
+      if (present(df_integral_direct)) this%df_integral_direct = df_integral_direct
+      if (present(df_derivative_memory_policy)) then
+         this%df_derivative_memory_policy = df_derivative_memory_policy
+      end if
 
       if (size(coordinates, 2) /= n_atoms) then
          call error%set(ERROR_VALIDATION, "cuEST system: coordinate/atom count mismatch")
@@ -683,13 +728,87 @@ contains
 
    subroutine build_df_plan(this, error)
       !! Create the density-fitted integral plan over both bases
+      !!
+      !! This is where a calculation runs out of device memory. The plan's
+      !! persistent workspace holds the cached three-index integrals, and it is
+      !! by a wide margin the largest allocation the run makes -- NVIDIA's own
+      !! reference SCF marks the same line as the likely point of failure. Two
+      !! things follow. The size is queried and logged before it is asked for,
+      !! so a failure names a number instead of just failing; and if the number
+      !! does not fit, the plan is rebuilt integral-direct, which recomputes
+      !! those integrals on every J and K build rather than storing them.
+      !!
+      !! Integral-direct is slower and is not chosen for its own sake. It is
+      !! chosen because a run that does not fit produces no answer at all,
+      !! which is worse than a slow one. A deck can pin it on with
+      !! `keywords.scf.df_integral_direct`, in which case no query decides
+      !! anything and the fallback below never runs.
       class(cuest_system_t), intent(inout) :: this
       type(error_t), intent(inout) :: error
 
       type(cuestWorkspaceDescriptor_t) :: persistent_desc, temporary_desc
       type(cuestWorkspace_t) :: temporary_ws
-      type(c_ptr) :: plan_params
-      integer(c_int) :: status
+      integer(c_int64_t) :: needed, free_bytes, total_bytes
+      logical :: direct, have_memory_reading, retried
+
+      direct = this%df_integral_direct
+      retried = .false.
+
+      do
+         call df_plan_attempt(this, direct, persistent_desc, temporary_desc, needed, error)
+         if (error%has_error()) return
+
+         call device_memory_info(free_bytes, total_bytes, have_memory_reading)
+
+         call logger%verbose("cuEST DF plan: "//trim(format_bytes(needed))// &
+                             " of device memory for the three-index integrals"// &
+                             merge(" (integral-direct)", "                  ", direct))
+         if (have_memory_reading) then
+            call logger%verbose("  device has "//trim(format_bytes(free_bytes))// &
+                                " free of "//trim(format_bytes(total_bytes)))
+         end if
+
+         ! Only the automatic case escalates. A deck that asked for the cache
+         ! and cannot have it should hear so from the allocator, not be quietly
+         ! given a different calculation -- but a deck that asked for nothing
+         ! in particular is better served by an answer.
+         if (direct .or. retried .or. .not. have_memory_reading) exit
+         if (needed <= free_bytes) exit
+
+         call logger%warning("cuEST DF plan needs "//trim(format_bytes(needed))// &
+                             " but only "//trim(format_bytes(free_bytes))// &
+                             " is free; rebuilding integral-direct. This recomputes the "// &
+                             "three-index integrals every Fock build, so it is slower. Set "// &
+                             "keywords.scf.df_integral_direct to make the choice explicit.")
+         call df_plan_discard(this)
+         direct = .true.
+         retried = .true.
+      end do
+
+      this%df_integral_direct = direct
+
+      call workspace_alloc(this%ws_df_plan, persistent_desc, error)
+      if (error%has_error()) then
+         call describe_df_plan_oom(needed, direct, error)
+         return
+      end if
+      call workspace_alloc(temporary_ws, temporary_desc, error)
+
+      if (.not. error%has_error()) then
+         call df_plan_create(this, direct, temporary_ws, error)
+      end if
+
+      call workspace_free(temporary_ws)
+   end subroutine build_df_plan
+
+   subroutine df_plan_parameters(this, direct, plan_params, error)
+      !! The DF plan parameter block, exchange operator and memory policy alike
+      class(cuest_system_t), intent(inout) :: this
+      logical, intent(in) :: direct
+      type(c_ptr), intent(out) :: plan_params
+      type(error_t), intent(inout) :: error
+
+      integer(c_int32_t), target :: direct_flag
 
       plan_params = c_null_ptr
       call cuest_status_check(cuestParametersCreate(CUEST_DFINTPLAN_PARAMETERS, plan_params), &
@@ -711,6 +830,31 @@ contains
                                                   CUEST_DFINTPLAN_PARAMETERS_LRC_EXCHANGE_OMEGA, &
                                                   this%lrc_omega), &
                               "configure DF plan range-separation parameter", error)
+
+      ! Set unconditionally, including the 0 case: leaving the attribute alone
+      ! and setting it to 0 both mean "cache", but only the first depends on
+      ! what cuEST's default happens to be, and the point of the retry above is
+      ! that the two builds differ in exactly this one respect.
+      direct_flag = merge(1_c_int32_t, 0_c_int32_t, direct)
+      call cuest_status_check(cuest_param_set_i32(CUEST_DFINTPLAN_PARAMETERS, plan_params, &
+                                                  CUEST_DFINTPLAN_PARAMETERS_THREE_INDEX_INTEGRAL_DIRECT, &
+                                                  direct_flag), &
+                              "configure DF plan three-index integral-direct", error)
+   end subroutine df_plan_parameters
+
+   subroutine df_plan_attempt(this, direct, persistent_desc, temporary_desc, needed, error)
+      !! Ask cuEST how much memory this plan would take, without taking it
+      class(cuest_system_t), intent(inout) :: this
+      logical, intent(in) :: direct
+      type(cuestWorkspaceDescriptor_t), intent(out) :: persistent_desc, temporary_desc
+      integer(c_int64_t), intent(out) :: needed
+      type(error_t), intent(inout) :: error
+
+      type(c_ptr) :: plan_params
+      integer(c_int) :: status
+
+      needed = 0_c_int64_t
+      call df_plan_parameters(this, direct, plan_params, error)
       if (error%has_error()) return
 
       call cuest_status_check(cuestDFIntPlanCreateWorkspaceQuery(this%handle, this%basis, &
@@ -719,21 +863,77 @@ contains
                                                                  temporary_desc, this%df_plan), &
                               "cuestDFIntPlanCreateWorkspaceQuery", error)
       if (.not. error%has_error()) then
-         call workspace_alloc(this%ws_df_plan, persistent_desc, error)
-         call workspace_alloc(temporary_ws, temporary_desc, error)
+         needed = workspace_bytes(persistent_desc) + workspace_bytes(temporary_desc)
       end if
 
-      if (.not. error%has_error()) then
-         call cuest_status_check(cuestDFIntPlanCreate(this%handle, this%basis, this%aux_basis, &
-                                                      this%pair_list, plan_params, this%ws_df_plan, &
-                                                      temporary_ws, this%df_plan), &
-                                 "cuestDFIntPlanCreate", error)
-      end if
+      status = cuestParametersDestroy(CUEST_DFINTPLAN_PARAMETERS, plan_params)
+      call cuest_status_check(status, "cuestParametersDestroy(DF plan query)", error)
+   end subroutine df_plan_attempt
 
-      call workspace_free(temporary_ws)
+   subroutine df_plan_create(this, direct, temporary_ws, error)
+      !! Build the plan the query above sized
+      class(cuest_system_t), intent(inout) :: this
+      logical, intent(in) :: direct
+      type(cuestWorkspace_t), intent(inout) :: temporary_ws
+      type(error_t), intent(inout) :: error
+
+      type(c_ptr) :: plan_params
+      integer(c_int) :: status
+
+      call df_plan_parameters(this, direct, plan_params, error)
+      if (error%has_error()) return
+
+      call cuest_status_check(cuestDFIntPlanCreate(this%handle, this%basis, this%aux_basis, &
+                                                   this%pair_list, plan_params, this%ws_df_plan, &
+                                                   temporary_ws, this%df_plan), &
+                              "cuestDFIntPlanCreate", error)
+
       status = cuestParametersDestroy(CUEST_DFINTPLAN_PARAMETERS, plan_params)
       call cuest_status_check(status, "cuestParametersDestroy(DF plan)", error)
-   end subroutine build_df_plan
+   end subroutine df_plan_create
+
+   subroutine df_plan_discard(this)
+      !! Drop a plan handle the workspace query left behind
+      !!
+      !! The query writes `outPlan` before anything is allocated, so a second
+      !! query would overwrite a live-looking pointer. Nulling it keeps
+      !! `destroy` from later handing cuEST a handle that was never created.
+      class(cuest_system_t), intent(inout) :: this
+
+      this%df_plan = c_null_ptr
+   end subroutine df_plan_discard
+
+   subroutine describe_df_plan_oom(needed, direct, error)
+      !! Turn a bare allocation failure into a diagnosis
+      integer(c_int64_t), intent(in) :: needed
+      logical, intent(in) :: direct
+      type(error_t), intent(inout) :: error
+
+      integer(c_int64_t) :: free_bytes, total_bytes
+      logical :: ok
+      character(len=:), allocatable :: advice
+
+      call device_memory_info(free_bytes, total_bytes, ok)
+
+      if (direct) then
+         advice = "The plan is already integral-direct, so the three-index cache is not "// &
+                  "what is missing. A smaller auxiliary basis, or splitting the system "// &
+                  "with a fragmentation method, is what is left."
+      else
+         advice = "Setting keywords.scf.df_integral_direct to true recomputes the "// &
+                  "three-index integrals instead of caching them, which is the single "// &
+                  "largest reduction available here."
+      end if
+
+      if (ok) then
+         call error%add_context("cuEST DF plan needs "//trim(format_bytes(needed))// &
+                                " of device memory; "//trim(format_bytes(free_bytes))// &
+                                " free of "//trim(format_bytes(total_bytes))//". "//advice)
+      else
+         call error%add_context("cuEST DF plan needs "//trim(format_bytes(needed))// &
+                                " of device memory. "//advice)
+      end if
+   end subroutine describe_df_plan_oom
 
    subroutine system_xc_uks_device(this, d_c_alpha, d_c_beta, n_occ_beta, &
                                    d_out_alpha, d_out_beta, xc_energy, error)
@@ -798,7 +998,13 @@ contains
       status = cuestParametersDestroy(CUEST_XCPOTENTIALUKSCOMPUTE_PARAMETERS, params)
       call cuest_status_check(status, "cuestParametersDestroy(UKS XC potential)", error)
 
-      if (.not. error%has_error()) xc_energy = energy
+      ! Both spin channels are slices of the same quadrature, so both reduce.
+      call reduce_xc_device(this, d_out_alpha, this%n_ao*this%n_ao, "Vxc alpha (team)", error)
+      call reduce_xc_device(this, d_out_beta, this%n_ao*this%n_ao, "Vxc beta (team)", error)
+      if (.not. error%has_error()) then
+         xc_energy = energy
+         call reduce_xc_scalar(this, xc_energy)
+      end if
    end subroutine system_xc_uks_device
 
    subroutine system_compute_xc_uks(this, c_occ_alpha, c_occ_beta, xc_energy, &
@@ -890,7 +1096,9 @@ contains
 
       ! ---- per-atom grids ---------------------------------------------------
       call build_atom_grids(this%handle, atomic_numbers, n_radial, n_angular, &
-                            grid_set, error)
+                            grid_set, error, &
+                            shard_index=grid_shard_index(this), &
+                            shard_count=grid_shard_count(this))
       if (error%has_error()) return
 
       ! ---- molecular grid (HOST coordinates and HOST atom-grid array) -------
@@ -1405,7 +1613,15 @@ contains
       status = cuestParametersDestroy(CUEST_XCPOTENTIALRKSCOMPUTE_PARAMETERS, params)
       call cuest_status_check(status, "cuestParametersDestroy(RKS XC potential)", error)
 
-      if (.not. error%has_error()) xc_energy = energy
+      ! On a sharded grid what cuEST just wrote is this rank's slice of the
+      ! quadrature, not the integral. Reduced here rather than in the SCF so
+      ! that `d_out` and `xc_energy` mean the same thing to every caller
+      ! whether or not the run is multi-GPU.
+      call reduce_xc_device(this, d_out, this%n_ao*this%n_ao, "Vxc (team)", error)
+      if (.not. error%has_error()) then
+         xc_energy = energy
+         call reduce_xc_scalar(this, xc_energy)
+      end if
    end subroutine system_xc_device
 
    subroutine system_compute_xc(this, c_occ, xc_energy, xc_potential, error)
@@ -2173,6 +2389,9 @@ contains
                               "cuestParametersCreate(DF derivative)", error)
       if (error%has_error()) return
 
+      call apply_df_derivative_memory_policy(this, params, error)
+      if (error%has_error()) return
+
       variable_buffer%hostBufferSizeInBytes = 0_c_size_t
       variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
 
@@ -2254,6 +2473,7 @@ contains
       call cuest_status_check(status, "cuestParametersDestroy(RKS XC derivative)", error)
 
       call fetch_gradient(this, gradient, "dExc/dR", error)
+      if (.not. error%has_error()) call reduce_xc_host(this, gradient)
    end subroutine system_gradient_xc
 
    subroutine system_gradient_two_electron_uks(this, total_density, c_occ_alpha, c_occ_beta, &
@@ -2321,6 +2541,9 @@ contains
       params = c_null_ptr
       call cuest_status_check(cuestParametersCreate(CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, params), &
                               "cuestParametersCreate(DF derivative, UKS)", error)
+      if (error%has_error()) return
+
+      call apply_df_derivative_memory_policy(this, params, error)
       if (error%has_error()) return
 
       variable_buffer%hostBufferSizeInBytes = 0_c_size_t
@@ -2411,6 +2634,7 @@ contains
       call cuest_status_check(status, "cuestParametersDestroy(UKS XC derivative)", error)
 
       call fetch_gradient(this, gradient, "dExc/dR (UKS)", error)
+      if (.not. error%has_error()) call reduce_xc_host(this, gradient)
    end subroutine system_gradient_xc_uks
 
    subroutine stage_matrix(this, device_ptr, matrix, label, error)
@@ -2543,5 +2767,100 @@ contains
       this%n_ao = 0
       this%n_occ = 0
    end subroutine system_destroy
+
+   pure function grid_shard_index(this) result(shard)
+      !! Which slice of the radial mesh this system keeps
+      class(cuest_system_t), intent(in) :: this
+      integer :: shard
+
+      shard = 0
+      if (this%xc_grid_sharded) shard = gpu_team_rank()
+   end function grid_shard_index
+
+   pure function grid_shard_count(this) result(n_shards)
+      !! How many slices the radial mesh is cut into; 1 means no cut
+      class(cuest_system_t), intent(in) :: this
+      integer :: n_shards
+
+      n_shards = 1
+      if (this%xc_grid_sharded) n_shards = gpu_team_size()
+   end function grid_shard_count
+
+   subroutine reduce_xc_scalar(this, value)
+      !! Sum one rank's share of an XC scalar over the team
+      class(cuest_system_t), intent(in) :: this
+      real(dp), intent(inout) :: value
+
+      if (.not. this%xc_grid_sharded) return
+      call gpu_team_reduce_scalar(value)
+   end subroutine reduce_xc_scalar
+
+   subroutine reduce_xc_host(this, array)
+      !! Sum one rank's share of an XC array over the team, in place
+      class(cuest_system_t), intent(in) :: this
+      real(dp), intent(inout) :: array(:, :)
+
+      real(dp), allocatable :: flat(:)
+
+      if (.not. this%xc_grid_sharded) return
+      if (size(array) == 0) return
+      flat = reshape(array, [size(array)])
+      call gpu_team_reduce(flat)
+      array = reshape(flat, shape(array))
+   end subroutine reduce_xc_host
+
+   subroutine reduce_xc_device(this, d_buffer, n_elements, label, error)
+      !! Sum one rank's share of a device-resident XC matrix over the team
+      !!
+      !! Staged through the host rather than reduced from device memory: the
+      !! MPI in use is not assumed to be CUDA-aware, and a non-aware MPI handed
+      !! a device pointer does not fail, it reads host garbage. n_ao^2 doubles
+      !! once per SCF iteration is a few megabytes against a Fock build, so the
+      !! round trip is not where the time goes.
+      class(cuest_system_t), intent(in) :: this
+      type(c_ptr), intent(in) :: d_buffer
+      integer(c_int64_t), intent(in) :: n_elements
+      character(len=*), intent(in) :: label
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: staging(:)
+
+      if (.not. this%xc_grid_sharded) return
+      if (error%has_error() .or. n_elements <= 0) return
+
+      allocate (staging(n_elements))
+      call copy_to_host(staging, d_buffer, label, error)
+      if (.not. error%has_error()) then
+         call gpu_team_reduce(staging)
+         call copy_to_device(d_buffer, staging, label, error)
+      end if
+      deallocate (staging)
+   end subroutine reduce_xc_device
+
+   subroutine apply_df_derivative_memory_policy(this, params, error)
+      !! Tell cuEST where the DF gradient may keep its intermediates
+      !!
+      !! Left alone unless a deck asked, because cuEST's own default is the
+      !! fast one and most calculations should keep it. It is worth asking for
+      !! on exactly the calculation that motivated this: the gradient's
+      !! intermediate is allocated on top of an SCF's worth of device memory
+      !! that is still live, so a gradient can run out where the energy did
+      !! not, and trading it for recomputation is the difference between an
+      !! answer and none.
+      class(cuest_system_t), intent(in) :: this
+      type(c_ptr), intent(in) :: params
+      type(error_t), intent(inout) :: error
+
+      integer(c_int32_t), target :: policy
+
+      if (this%df_derivative_memory_policy < 0) return
+
+      policy = int(this%df_derivative_memory_policy, c_int32_t)
+      call cuest_status_check(cuest_param_set_i32(CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, &
+                                                  params, &
+                                                  CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS_MEMORY_POLICY, &
+                                                  policy), &
+                              "configure DF derivative memory policy", error)
+   end subroutine apply_df_derivative_memory_policy
 
 end module mqc_cuest_integrals

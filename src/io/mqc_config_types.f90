@@ -159,6 +159,24 @@ module mqc_config_types
       logical :: scf_unrestricted = .false.
       logical :: allow_crap_scf = .false.
       logical :: scf_density_fitting = .false.
+      logical :: scf_df_integral_direct = .false.
+         !! Recompute the three-index DF integrals every Fock build instead of
+         !! caching them on the device. cuEST only. The cache is the largest
+         !! device allocation a GPU run makes, so this is the first thing to
+         !! reach for when one runs out of memory -- at the cost of rebuilding
+         !! those integrals every iteration.
+         !!
+         !! Off by default, but not the whole story: left off, the backend still
+         !! queries the size and switches to direct on its own if the cache will
+         !! not fit, saying so. Setting this to false does not veto that -- it
+         !! is "no preference", and a run that must not be silently changed
+         !! should be watching the log either way.
+      character(len=:), allocatable :: scf_df_derivative_memory
+         !! Where the density-fitted gradient keeps its intermediates:
+         !! 'auto' (cuEST's own default), 'devicecache', 'hostcache',
+         !! 'overwrite' or 'recompute'. cuEST only, and a separate allocation
+         !! from the plan cache above: a gradient can run out of memory where
+         !! the energy that produced it did not.
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements
@@ -244,6 +262,14 @@ module mqc_config_types
       ! one answer downstream however the deck spelled the question; naming both
       ! and disagreeing is refused rather than given a precedence rule.
       logical :: gpu = .false.
+      logical :: multi_gpu = .false.
+         !! system.multi_gpu -- give one system every rank's GPU instead of
+         !! giving every rank its own system.
+         !!
+         !! Refused alongside fragmentation, which already means "one rank per
+         !! subsystem"; the two want the same ranks for different things and
+         !! there is no sensible precedence between them. Refused on the CPU
+         !! backend, where there is no device to spread over.
       logical :: gpu_set = .false.
          !! Whether the deck named `system.gpu`. "Absent" and "false" have to be
          !! told apart: absent leaves `backend` alone, false pins it to the CPU.

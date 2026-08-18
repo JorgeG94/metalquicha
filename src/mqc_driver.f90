@@ -5,7 +5,7 @@ module mqc_driver
    use pic_types, only: int32, int64, dp, default_int
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use mqc_resources, only: resources_t
-   use pic_logger, only: logger => global_logger
+   use pic_logger, only: logger => global_logger, warning_level
    use pic_io, only: to_char
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_method_types, only: needs_serial_execution
@@ -31,6 +31,10 @@ module mqc_driver
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use mqc_error, only: error_t
+   use mqc_gpu_team, only: gpu_team_enable, gpu_team_disable, gpu_team_active, &
+                           gpu_team_size
+   use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
+                              BACKEND_LIBCINT
    use mqc_fingerprint, only: calculation_fingerprint
    use mqc_checkpoint, only: checkpoint_t
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
@@ -96,6 +100,12 @@ contains
 
       ! Set max_level from config
       max_level = config%nlevel
+
+      ! Multi-GPU has to be settled before anything dispatches: it decides
+      ! which ranks run the calculation at all, so the fragmented and
+      ! unfragmented paths below both read the answer rather than each
+      ! deciding it.
+      call setup_gpu_team(resources%mpi_comms%world_comm, config, max_level)
 
       ! Log method-specific settings (rank 0 only)
       if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -299,7 +309,19 @@ contains
       ! Check if this is multi-molecule mode or single-molecule mode
       ! In multi-molecule mode, each rank processes its own molecule
       ! In single-molecule mode, only rank 0 should work
-      if (world_comm%size() == 1 .or. world_comm%rank() == 0) then
+      ! Every rank of a GPU team runs the same SCF, each over its own slice of
+      ! the quadrature, so the usual "rank 0 only" gate would leave the other
+      ! ranks out of a collective the SCF makes every iteration and hang the
+      ! run. `gpu_team_active` is only true when the deck asked for the mode
+      ! and there is more than one rank.
+      if (gpu_team_active()) then
+         call logger%info(" ")
+         call logger%info("Running unfragmented calculation across "// &
+                          to_char(gpu_team_size())//" GPUs")
+         call logger%info("  Calculation type: "//calc_type_to_string(config%calc_type))
+         call logger%info(" ")
+         call unfragmented_calculation(sys_geom, config, result_out, json_data)
+      else if (world_comm%size() == 1 .or. world_comm%rank() == 0) then
          ! Either single-rank calculation, or rank 0 in multi-rank setup
          call logger%info(" ")
          call logger%info("Running unfragmented calculation")
@@ -759,7 +781,7 @@ contains
       !! Each molecule is independent, so assign one molecule per rank
       use mqc_config_types, only: mqc_config_t
       use mqc_config_adapter, only: config_to_system_geometry
-      use mqc_error, only: error_t
+      use mqc_error, only: error_t, ERROR_VALIDATION
       use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
       use mqc_json, only: merge_multi_molecule_json
 
@@ -1215,5 +1237,85 @@ contains
       end if
       call logger%info("Wrote "//trim(path))
    end subroutine run_makefp
+
+   subroutine setup_gpu_team(world_comm, config, max_level)
+      !! Decide whether this run spreads one system over every rank's GPU
+      !!
+      !! Refusals abort rather than fall back. A deck that asked for several
+      !! GPUs and silently got one would report a wall time and a memory
+      !! footprint for a calculation nobody asked for, and the reason people
+      !! reach for this mode is that the single-GPU version did not fit -- so
+      !! the fallback is not a degraded success, it is the failure they were
+      !! trying to avoid, arriving later and less clearly.
+      type(comm_t), intent(in) :: world_comm
+      type(driver_config_t), intent(in) :: config
+      integer, intent(in) :: max_level
+
+      type(error_t) :: backend_error
+      integer :: backend_kind
+
+      call gpu_team_disable()
+      if (.not. config%method_config%multi_gpu) return
+
+      if (max_level > 0) then
+         if (world_comm%rank() == 0) then
+            call logger%error("system.multi_gpu is not available with fragmentation.")
+            call logger%error("  Fragmentation already gives every rank its own GPU -- one")
+            call logger%error("  rank per subsystem -- so the two want the same ranks for")
+            call logger%error("  different things. Drop keywords.fragmentation, or drop")
+            call logger%error("  system.multi_gpu and let the expansion spread the work.")
+         end if
+         call abort_comm(world_comm, 1)
+      end if
+
+      if (.not. method_runs_on_cuest(config%method_config%method_type)) then
+         if (world_comm%rank() == 0) then
+            call logger%error("system.multi_gpu needs a method that runs on the GPU; "// &
+                              "only HF and DFT do.")
+         end if
+         call abort_comm(world_comm, 1)
+      end if
+
+      call parse_backend_name(config%method_config%backend, backend_kind, backend_error)
+      if (backend_error%has_error()) then
+         if (world_comm%rank() == 0) call logger%error(backend_error%get_message())
+         call abort_comm(world_comm, 1)
+      end if
+      if (backend_kind == BACKEND_LIBCINT) then
+         if (world_comm%rank() == 0) then
+            call logger%error("system.multi_gpu was asked for alongside the CPU backend. "// &
+                              "Set system.gpu, or drop system.multi_gpu.")
+         end if
+         call abort_comm(world_comm, 1)
+      end if
+
+      call gpu_team_enable(world_comm)
+
+      ! Every rank now runs the whole SCF, and every rank's copy of the code
+      ! logs. Without this a four-GPU run prints the iteration table, the
+      ! energy and the gradient four times over, interleaved -- which reads as
+      ! four calculations having happened rather than one. Warnings and errors
+      ! survive on every rank, because a rank that fails has to be able to say
+      ! so; only the running commentary is silenced.
+      if (gpu_team_active() .and. world_comm%rank() /= 0) then
+         call logger%configure(warning_level)
+      end if
+
+      if (world_comm%rank() == 0) then
+         if (gpu_team_active()) then
+            call logger%info(" ")
+            call logger%info("Multi-GPU: one system across "//to_char(gpu_team_size())// &
+                             " ranks, one GPU each")
+            call logger%info("  The exchange-correlation quadrature is divided; J and K are")
+            call logger%info("  not, so every rank still builds a full density-fitting plan.")
+            call logger%info("  For device memory see keywords.scf.df_integral_direct.")
+            call logger%info(" ")
+         else
+            call logger%warning("system.multi_gpu was asked for on a single rank, which "// &
+                                "leaves nothing to spread over; running as an ordinary "// &
+                                "single-GPU calculation.")
+         end if
+      end if
+   end subroutine setup_gpu_team
 
 end module mqc_driver

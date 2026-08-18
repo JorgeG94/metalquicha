@@ -220,6 +220,11 @@ contains
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
       driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
+      driver_config%method_config%scf%df_integral_direct = mqc_config%scf_df_integral_direct
+      if (allocated(mqc_config%scf_df_derivative_memory)) then
+         driver_config%method_config%scf%df_derivative_memory = mqc_config%scf_df_derivative_memory
+      end if
+      driver_config%method_config%multi_gpu = mqc_config%multi_gpu
       driver_config%method_config%corr%freeze_core = mqc_config%corr_freeze_core
       driver_config%method_config%corr%n_frozen_core = mqc_config%corr_n_frozen_core
       driver_config%method_config%corr%use_df = mqc_config%corr_density_fitting

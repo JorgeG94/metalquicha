@@ -211,6 +211,7 @@ contains
       call optional_logical(json, "system.unchecked_input", config%unchecked_input)
       call optional_string(json, "system.checkpoint", config%checkpoint_file)
       call optional_string(json, "system.fragment_breakdown", config%fragment_breakdown)
+      call optional_logical(json, "system.multi_gpu", config%multi_gpu)
 
       ! ---- keywords --------------------------------------------------------
       call optional_int(json, "keywords.scf.maxiter", config%scf_maxiter)
@@ -223,6 +224,10 @@ contains
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
+      call optional_logical(json, "keywords.scf.df_integral_direct", &
+                            config%scf_df_integral_direct)
+      call optional_string(json, "keywords.scf.df_derivative_memory", &
+                           config%scf_df_derivative_memory)
       call optional_logical(json, "keywords.correlation.freeze_core", &
                             config%corr_freeze_core)
       call optional_int(json, "keywords.correlation.n_frozen_core", &

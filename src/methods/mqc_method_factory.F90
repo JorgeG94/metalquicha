@@ -170,6 +170,9 @@ contains
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
       m%options%device_rank = config%device_rank
+      m%options%multi_gpu = config%multi_gpu
+      m%options%df_integral_direct = config%scf%df_integral_direct
+      m%options%df_derivative_memory = config%scf%df_derivative_memory
 
       m%options%backend = config%backend
       ! SCF settings from shared config%scf
@@ -224,6 +227,9 @@ contains
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
       m%options%device_rank = config%device_rank
+      m%options%multi_gpu = config%multi_gpu
+      m%options%df_integral_direct = config%scf%df_integral_direct
+      m%options%df_derivative_memory = config%scf%df_derivative_memory
 
       ! SCF settings from shared config%scf
       m%options%unrestricted = config%scf%unrestricted

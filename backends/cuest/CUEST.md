@@ -462,5 +462,107 @@ energy can absorb a constant error while leaving its geometry dependence wrong,
 and a gradient is exactly that geometry dependence. The 1.5% is upstream of
 everything here.
 
-Multi-rank GPU binding is implemented and logged, but has not yet been exercised
-beyond one rank.
+## Multi-GPU
+
+```json
+"system": { "gpu": true, "multi_gpu": true }
+```
+
+then `mpirun -np 4 ./build/mqc deck.json`, one rank per GPU. The rank-to-device
+binding is the one that was already here -- `cudaSetDevice(mod(local_rank,
+device_count))` in `mqc_cuest_context.f90`, which is what cuEST's own
+`basic_multigpu_usage` sample does with pthreads instead of ranks.
+
+**What divides, and what does not.** The exchange-correlation quadrature
+divides. Nothing else does. Every rank still builds a full density-fitting
+plan, so this mode does **not** reduce the memory that a large DF calculation
+runs out of -- for that see the next section, which is the actual fix.
+
+That is a property of cuEST 0.2's API, not a shortcut taken here:
+
+- `cuestAOPairListCreate` takes a screening *threshold*, not a list. There is no
+  way to hand one GPU a subset of shell pairs.
+- Splitting the auxiliary basis gives each GPU a different fitting metric
+  `(P|Q)^-1/2`. That is a different, worse fit, not a partition of one.
+- `cuestDFSymmetricExchangeCompute` is opaque from C to K. The `B^P C`
+  intermediate that a distributed K would have to reduce is never exposed.
+
+The grid is different because we build it ourselves. `mqc_cuest_grid.f90`
+computes the Treutler-Ahlrichs radial mesh and hands it to `cuestAtomGridCreate`,
+so rank *g* of *N* simply keeps radial shells `g, g+N, g+2N, ...` -- of every
+atom, with all nuclear coordinates still passed to `cuestMolecularGridCreate`.
+The Becke partition weight at a point is a function of that point and all the
+nuclei and knows nothing about which other points exist, so the slices partition
+the quadrature **exactly**. Summing them reproduces the single-GPU integral term
+for term, not to a tolerance. `Vxc` (an `n_ao^2` allreduce), `Exc` and `dExc/dR`
+are reduced inside `mqc_cuest_integrals.f90`, so the SCF and the gradient never
+learn the mode exists.
+
+Striding rather than blocking, because the mesh is dense near the nucleus and
+sparse in the tail: a contiguous split would give one rank the core and another
+the vacuum. `keywords.dft.radial_points` must be at least the rank count, or the
+run is refused -- a rank with no radial shells would have no XC plan, and the XC
+plan is what the DF plan asks for its exact-exchange fraction, so that rank would
+build a differently defined Fock operator rather than merely contribute nothing.
+
+**Refused with fragmentation.** A fragmented run already means one rank per
+subsystem; the two want the same ranks for different things and there is no
+sensible precedence between them. Also refused on the CPU backend, and for any
+method cuEST cannot run. All three abort rather than falling back, because the
+reason to reach for this mode is that the single-GPU version did not fit -- a
+silent fallback is not a degraded success, it is the same failure arriving later.
+
+On a single rank the mode is inert: `gpu_team_active` is false, the grid is not
+sliced, and every reduction is a no-op. That is what makes `-np 1` a valid
+reference for `-np N`:
+
+```bash
+./validation/run_multigpu_test.sh 4        # 1 rank vs 4, energy and |grad|
+```
+
+Non-root ranks are dropped to `warning` level for the duration, so four GPUs
+report one calculation rather than four interleaved copies of it.
+
+**Not yet run on hardware.** Everything above compiles against the real bindings
+and the partition arithmetic is unit-tested (`test_mqc_gpu_team`), but this
+repository's box has V100s, which cuEST refuses. Nothing here has executed on a
+GPU.
+
+## Running out of device memory
+
+The largest allocation a cuEST run makes is the DF plan's persistent workspace,
+which holds the cached three-index integrals. NVIDIA's own reference SCF marks
+that line as the likely point of failure, and a B3LYP/cc-pVTZ gradient on
+anything sizeable is where people meet it. Two keywords and one automatic
+behaviour:
+
+```json
+"keywords": { "scf": {
+    "df_integral_direct": true,
+    "df_derivative_memory": "recompute"
+} }
+```
+
+- **`df_integral_direct`** sets `CUEST_DFINTPLAN_PARAMETERS_THREE_INDEX_INTEGRAL_DIRECT`.
+  The three-index integrals are recomputed on every J and K build instead of
+  stored. This is the single largest reduction available. It is slower, and it
+  is the difference between an answer and none.
+- **`df_derivative_memory`** sets
+  `CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS_MEMORY_POLICY`: `auto`
+  (cuEST's default), `devicecache`, `hostcache`, `overwrite` or `recompute`. A
+  separate allocation with a separate lifetime -- the plan's cache lives across
+  the whole SCF, this one only across the gradient -- which is why a gradient
+  can run out of memory where the energy that produced it did not.
+
+Neither is needed to get a diagnosis. The plan's size is queried before it is
+allocated and logged at verbose level against the device's free memory, and if
+the cache will not fit the plan is rebuilt integral-direct automatically, with a
+warning naming both numbers. Setting `df_integral_direct` explicitly skips the
+query and makes the choice the deck's rather than the backend's. A failure that
+survives all of that reports what it needed, what was free, and which of the two
+knobs is still unused.
+
+The names in `df_derivative_memory` are repeated by hand in `mqc_cuest_iface`,
+which is compiled on the fpm path where the cuEST bindings do not exist.
+`test_mqc_cuest_memory_policy` pins them against the real enumerators wherever
+the bindings are present, so the copy cannot drift silently.

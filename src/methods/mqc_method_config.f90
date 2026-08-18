@@ -73,6 +73,11 @@ module mqc_method_config
          !! both, so which one runs has to be asked for rather than inferred
          !! from an auxiliary basis being present -- that name carries a
          !! default, so inferring would mean every calculation silently fitted.
+      logical :: df_integral_direct = .false.
+         !! cuEST only: recompute the three-index DF integrals rather than
+         !! caching them on the device. See mqc_config_types.
+      character(len=16) :: df_derivative_memory = "auto"
+         !! cuEST only: where the DF gradient keeps its intermediates.
    end type scf_config_t
 
    !============================================================================
@@ -345,6 +350,10 @@ module mqc_method_config
       character(len=16) :: backend = "auto"
          !! Integral backend request; see `parse_backend_name`.
       integer :: device_rank = 0
+      logical :: multi_gpu = .false.
+         !! Spread one system's GPU work over every rank rather than giving
+         !! each rank its own system. cuEST only, and refused with
+         !! fragmentation.
          !! Node-local MPI rank, used to spread ranks across the GPUs on a
          !! node. Zero is correct for a serial run; a fragmented run must set
          !! the real value or every rank binds to device 0.

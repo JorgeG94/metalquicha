@@ -20,6 +20,7 @@ module mqc_cuest_iface
    public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_LIBCINT
    public :: parse_backend_name
    public :: method_runs_on_cuest
+   public :: parse_df_derivative_memory
 
    !> Which integral backend a deck asked for.
    !>
@@ -136,6 +137,27 @@ module mqc_cuest_iface
 
       integer :: radial_points = 75    !! XC grid radial points per atom
       integer :: angular_points = 302  !! XC grid Lebedev order
+
+      ! ---- multi-GPU and device memory --------------------------------------
+      logical :: multi_gpu = .false.
+         !! Spread one system's GPU work over every rank in the run, each rank
+         !! on its own device, rather than giving each rank a whole system.
+         !!
+         !! Refused together with fragmentation: fragmentation already owns the
+         !! rank dimension -- a rank is a fragment there -- and the two would be
+         !! competing for the same ranks. Refused on the CPU backend too, where
+         !! it means nothing.
+         !!
+         !! Only the exchange-correlation quadrature is actually divided; see
+         !! `mqc_gpu_team` for why J and K cannot be, and what does reduce them.
+      logical :: df_integral_direct = .false.
+         !! Recompute the three-index density-fitting integrals on every Fock
+         !! build rather than caching them on the device. Slower, and the
+         !! largest single saving of device memory available.
+      character(len=16) :: df_derivative_memory = "auto"
+         !! Where the density-fitted gradient keeps its intermediates:
+         !! 'auto' (leave cuEST's default), 'devicecache', 'hostcache',
+         !! 'overwrite' or 'recompute'.
    end type cuest_scf_settings_t
 
 contains
@@ -195,5 +217,48 @@ contains
       offloadable = (method_type == METHOD_TYPE_HF .or. &
                      method_type == METHOD_TYPE_DFT)
    end function method_runs_on_cuest
+
+   subroutine parse_df_derivative_memory(name, policy, error)
+      !! A deck's DF-gradient memory policy name to cuEST's enumerator
+      !!
+      !! Returns -1 for 'auto', which means "set nothing and let cuEST keep its
+      !! own default". The numbers are cuEST's
+      !! CUEST_DFSYMMETRICDERIVATIVECOMPUTE_MEMORY_POLICY_* values, repeated
+      !! here rather than imported because this module is compiled on the fpm
+      !! path too, where the cuEST bindings do not exist. They are checked
+      !! against the bindings by test_mqc_cuest_memory_policy.
+      use mqc_error, only: error_t, ERROR_VALIDATION
+      character(len=*), intent(in) :: name
+      integer, intent(out) :: policy
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: lower
+      integer :: i
+
+      lower = trim(adjustl(name))
+      do i = 1, len(lower)
+         if (lower(i:i) >= "A" .and. lower(i:i) <= "Z") then
+            lower(i:i) = achar(iachar(lower(i:i)) + 32)
+         end if
+      end do
+
+      policy = -1
+      select case (lower)
+      case ("", "auto")
+         policy = -1
+      case ("devicecache")
+         policy = 0
+      case ("hostcache")
+         policy = 1
+      case ("overwrite")
+         policy = 2
+      case ("recompute")
+         policy = 3
+      case default
+         call error%set(ERROR_VALIDATION, "unknown df_derivative_memory '"//lower// &
+                        "'; expected 'auto', 'devicecache', 'hostcache', 'overwrite' "// &
+                        "or 'recompute'")
+      end select
+   end subroutine parse_df_derivative_memory
 
 end module mqc_cuest_iface
