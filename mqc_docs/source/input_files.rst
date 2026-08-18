@@ -644,6 +644,84 @@ Reference: Sayfutyarova, Sun, Chan and Knizia, *J. Chem. Theory Comput.* **13**,
 rather than the MINAO set of the paper; the two select the same spaces, which is
 what the width of that gap predicts.
 
+Restricting the Occupations
+"""""""""""""""""""""""""""
+
+A complete active space distributes its electrons over its orbitals in every
+way there is, and the determinant count grows factorially: CAS(14,14) is 11.8
+million and CAS(16,16) is 166 million. Most of that is excitations nobody
+believes in. ORMAS -- occupation restricted multiple active space -- cuts the
+active orbitals into consecutive subspaces and puts a window on how many
+electrons each may hold, which keeps the part of the expansion that matters and
+discards the rest.
+
+.. code-block:: json
+
+   "mcscf": {
+     "n_active_electrons": 6,
+     "n_active_orbitals": 6,
+     "optimize_orbitals": false,
+     "ormas": {
+       "subspaces": [1, 4],
+       "min_electrons": [4, 0],
+       "max_electrons": [6, 2]
+     }
+   }
+
+- ``subspaces``: The **active** orbital each subspace starts at, ascending. The
+  first entry is always 1, and the subspaces run to the end of the active space,
+  so ``[1, 4]`` on six active orbitals means 1--3 and 4--6. These are positions
+  within the active space, not molecular orbital numbers: an inactive orbital is
+  not part of the partition.
+- ``min_electrons`` / ``max_electrons``: The fewest and most electrons a
+  subspace may hold, counting **both spins together**. This is what lets the
+  restriction be independent of how the spins are arranged.
+
+All three lists have the same length, and a deck where they do not is refused
+with the key names rather than an error from further down.
+
+The example is singles and doubles: at least four of the six electrons stay in
+the lower three orbitals, so at most two are promoted. What that costs is worth
+seeing -- for N\ :sub:`2` in cc-pVDZ it is 118 determinants where the complete
+space is 400, and the energy rises accordingly, because a restricted space is
+variationally above the space that contains it.
+
+Some shapes worth knowing:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Wanted
+     - How to write it
+   * - Truncated CI (singles and doubles)
+     - Two subspaces, ``max_electrons`` of 2 on the upper one
+   * - RAS1/RAS2/RAS3
+     - Three subspaces; ``min_electrons[0] = 2*n1 - holes`` and
+       ``max_electrons[2] = particles``
+   * - Two non-communicating active spaces
+     - ``min_electrons`` equal to ``max_electrons`` everywhere, so no charge
+       moves between them
+   * - Fragments with limited charge transfer
+     - One subspace per fragment, windows one either side of neutral
+
+The windows are tightened before use. A subspace cannot hold more than the rest
+of the partition can spare, so a maximum that promises more is reduced, and the
+numbers reported back may not be the numbers written. This removes promises that
+could not have been kept and never changes which determinants exist.
+
+**Orbital optimisation is not implemented for a restricted space** and is
+refused rather than approximated -- set ``optimize_orbitals`` to false and the
+CI runs on the reference orbitals. The reason is not effort: rotating one active
+orbital into another stops being redundant the moment the space is not complete,
+so the orbital gradient acquires a block a CASSCF has no term for, and running
+one anyway converges quietly to something that is not the answer.
+
+Reference: Ivanic, *J. Chem. Phys.* **119**, 9364 (2003). The implementation
+here is checked against GAMESS, which has had ORMAS since that paper: for water
+in 3-21G with one frozen core and singles and doubles out of the valence, both
+give -75.7103507602.
+
 State averaging and CASPT2/NEVPT2 are not implemented, and no keyword accepts
 them -- a deck asking for either is refused rather than quietly given a
 ground-state energy. Derivatives are refused for the same reason: there is no
