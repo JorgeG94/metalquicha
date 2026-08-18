@@ -36,7 +36,7 @@ module test_mqc_ormas_ci
                               determinant_address, ormas_closure_t, build_ormas_closure
    use mqc_ci, only: ci_diagonal, absorb_one_electron
    use mqc_ormas_ci, only: ormas_diagonal, full_space_index, ormas_lowest, &
-                           ormas_sigma, ormas_sigma_direct
+                           ormas_sigma, ormas_sigma_direct, ormas_solve
    implicit none
    private
 
@@ -55,11 +55,12 @@ contains
                   new_unittest("agrees_with_the_cas_diagonal", test_against_cas), &
                   new_unittest("energies_match_the_python_reference", test_energies), &
                   new_unittest("direct_sigma_matches_the_projected_one", test_direct), &
+                  new_unittest("iterative_solver_finds_the_same_states", test_iterative), &
                   new_unittest("rejects_mismatched_integrals", test_refusals) &
                   ]
    end subroutine collect_mqc_ormas_ci_tests
 
-   subroutine model_integrals(norb, h1e, eri)
+   subroutine model_integrals(norb, h1e, eri, dominant)
       !! A Hamiltonian with the right symmetries and no physics
       !!
       !! `h_pq = -1/(p+q)` and a Cholesky-factorised two-electron tensor
@@ -70,6 +71,14 @@ contains
       integer, intent(in) :: norb
       real(dp), allocatable, intent(out) :: h1e(:, :)
       real(dp), allocatable, intent(out) :: eri(:, :, :, :)
+      logical, intent(in), optional :: dominant
+         !! Separate the orbitals in energy, so the determinants separate too.
+         !! The plain model puts the whole spectrum inside a few times 1e-4,
+         !! which is fine for checking a Hamiltonian and useless for checking a
+         !! solver that preconditions with the diagonal -- there the diagonal
+         !! says almost nothing about where a determinant's energy sits, and
+         !! Davidson stalls for reasons that have nothing to do with the code
+         !! under test.
 
       real(dp) :: b(norb, norb, NCHOL)
       integer :: p, q, r, s, l
@@ -80,6 +89,13 @@ contains
             h1e(p, q) = -1.0_dp/real((p - 1) + (q - 1) + 2, dp)
          end do
       end do
+      if (present(dominant)) then
+         if (dominant) then
+            do p = 1, norb
+               h1e(p, p) = -2.0_dp*real(norb - p + 1, dp)
+            end do
+         end if
+      end if
       do l = 1, NCHOL
          do q = 1, norb
             do p = 1, norb
@@ -443,6 +459,33 @@ contains
          end do
       end do
 
+      ! And symmetric, which is a different claim from matching the projected
+      ! build and fails differently: an asymmetric sigma gives a Davidson that
+      ! stalls at a residual it cannot reduce rather than one that reports
+      ! anything wrong.
+      block
+         real(dp), allocatable :: matrix(:, :)
+         real(dp) :: worst
+         integer :: r, c
+         allocate (matrix(ndet, ndet))
+         do d = 1, ndet
+            ci = 0.0_dp
+            ci(d) = 1.0_dp
+            call ormas_sigma_direct(space, closure, folded, alpha_table, beta_table, &
+                                    in_alpha, in_beta, from_alpha, from_beta, ci, direct, err)
+            matrix(:, d) = direct
+         end do
+         worst = 0.0_dp
+         do c = 1, ndet
+            do r = 1, ndet
+               worst = max(worst, abs(matrix(r, c) - matrix(c, r)))
+            end do
+         end do
+         call check(error, worst < 1.0e-11_dp, "the direct sigma is not symmetric")
+         deallocate (matrix)
+      end block
+      if (allocated(error)) return
+
       deallocate (ci, projected, direct)
       call space%destroy()
       call closure%destroy()
@@ -487,6 +530,86 @@ contains
       call direct_matches([1, 3], 4, 2, 2, [0, 0], [4, 4], error)
       if (allocated(error)) return
    end subroutine test_direct
+
+   subroutine iterative_of(first_orbital, norb, na, nb, min_e, max_e, expected, error)
+      !! Davidson over one partition, against the transcribed reference
+      integer, intent(in) :: first_orbital(:), min_e(:), max_e(:)
+      integer, intent(in) :: norb, na, nb
+      real(dp), intent(in) :: expected(:)
+      type(error_type), allocatable, intent(inout) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      real(dp), allocatable :: h1e(:, :), eri(:, :, :, :)
+      real(dp), allocatable :: energies(:), vectors(:, :)
+      integer :: root
+      real(dp) :: norm
+
+      call model_integrals(norb, h1e, eri, dominant=.true.)
+      call build_ormas_space(first_orbital, norb, na, nb, min_e, max_e, space, err)
+      call ormas_solve(space, h1e, eri, size(expected), energies, vectors, err)
+      call check(error,.not. err%has_error(), "the iterative solve failed")
+      if (allocated(error)) return
+
+      do root = 1, size(expected)
+         call check(error, energies(root), expected(root), thr=1.0e-9_dp, &
+                    message="an iterative root disagrees with the reference")
+         if (allocated(error)) return
+
+         norm = sqrt(sum(vectors(:, root)**2))
+         call check(error, norm, 1.0_dp, thr=1.0e-10_dp, &
+                    message="an eigenvector came back unnormalised")
+         if (allocated(error)) return
+      end do
+
+      call space%destroy()
+   end subroutine iterative_of
+
+   subroutine test_iterative(error)
+      !! Davidson finds what the dense solve found
+      !!
+      !! Same reference values as `energies_match_the_python_reference`, reached
+      !! without ever forming a matrix. Comparing against the same numbers on
+      !! purpose: the dense route and this one share the space, the addressing
+      !! and the integrals but not the sigma -- one goes through the complete
+      !! space and the other through the closure -- so agreement is a statement
+      !! about the two sigma builds, and about the solver finding the states
+      !! rather than merely something low.
+      !!
+      !! Three roots each, because a preconditioner that is subtly wrong still
+      !! finds a ground state and stalls or lands elsewhere above it.
+      !!
+      !! Against a separated one-electron diagonal, not the one the other tests
+      !! use. With the plain model every state of these spaces lies within a few
+      !! times 1e-4 of every other -- two of them nine digits apart -- and a
+      !! diagonal preconditioner has nothing to tell the determinants apart
+      !! with. Davidson then stalls at a residual it cannot reduce while the
+      !! energies are already right to eight digits, which is a statement about
+      !! the model and not about the solver. Separating the orbitals in energy
+      !! puts the problem in the regime any real CI is in, where the gaps here
+      !! run from 0.08 to 1.9.
+      type(error_type), allocatable, intent(out) :: error
+
+      call iterative_of([1, 3], 4, 2, 2, [2, 0], [4, 2], &
+                        [-27.420851433945_dp, -25.535119017717_dp, -25.422516051785_dp], error)
+      if (allocated(error)) return
+
+      call iterative_of([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], &
+                        [-59.024917557510_dp, -57.103222181291_dp, -57.026760563957_dp], error)
+      if (allocated(error)) return
+
+      call iterative_of([1, 4], 7, 3, 3, [4, 0], [6, 2], &
+                        [-71.029902648387_dp, -69.101862579285_dp, -69.026073765100_dp], error)
+      if (allocated(error)) return
+
+      call iterative_of([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], &
+                        [-41.547254882025_dp, -39.740658079124_dp, -39.547023100484_dp], error)
+      if (allocated(error)) return
+
+      call iterative_of([1, 4], 6, 2, 2, [0, 3], [6, 6], &
+                        [-27.880210126288_dp, -27.766902778851_dp, -25.947416001524_dp], error)
+      if (allocated(error)) return
+   end subroutine test_iterative
 
    subroutine test_refusals(error)
       !! Integrals that do not span the partition are refused

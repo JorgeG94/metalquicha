@@ -33,7 +33,7 @@ import numpy as np
 NCHOL = 3
 
 
-def model_integrals(norb: int) -> tuple[np.ndarray, np.ndarray]:
+def model_integrals(norb: int, dominant: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """A Hamiltonian with the right symmetries and no physics.
 
     ``h_pq = -1/(p+q)`` and ``(pq|rs) = sum_L B_pqL B_rsL`` with
@@ -47,6 +47,14 @@ def model_integrals(norb: int) -> tuple[np.ndarray, np.ndarray]:
     """
     p = np.arange(norb)
     h1e = -1.0 / (p[:, None] + p[None, :] + 2.0)
+    if dominant:
+        # The plain model puts every state within a whisker of every other, so
+        # a determinant's diagonal says almost nothing about where its energy
+        # sits. That is fine for checking a Hamiltonian and useless for
+        # checking a solver that preconditions with exactly that diagonal.
+        # Separating the orbitals in energy separates the determinants, which
+        # is the regime any real CI is in.
+        np.fill_diagonal(h1e, -2.0 * (norb - p))
 
     b = np.empty((norb, norb, NCHOL))
     for lcho in range(NCHOL):
@@ -215,6 +223,7 @@ def solve(
     min_e: list[int],
     max_e: list[int],
     n_roots: int = 3,
+    dominant: bool = False,
 ) -> tuple[int, np.ndarray, float]:
     """Determinant count, lowest eigenvalues, and the trace of H.
 
@@ -224,7 +233,7 @@ def solve(
     order the determinants were enumerated. That makes it the one number a
     diagonal-only implementation can already be held to.
     """
-    h1e, eri = model_integrals(norb)
+    h1e, eri = model_integrals(norb, dominant)
     dets = determinants(norb, nalpha, nbeta, first_orbital, min_e, max_e)
     if not dets:
         return 0, np.array([]), 0.0
@@ -297,7 +306,21 @@ def reference_table() -> None:
         print(f"    E = {roots}")
 
 
+def dominant_table() -> None:
+    print()
+    print("reference energies with a separated one-electron diagonal")
+    print("(the regime a preconditioned solver is meant for)")
+    for label, norb, na, nb, first, lo, hi in PARTITIONS:
+        count, values, _ = solve(norb, na, nb, first, lo, hi, n_roots=3, dominant=True)
+        roots = "  ".join(f"{v:.12f}" for v in values)
+        gaps = "  ".join(f"{values[i + 1] - values[i]:.2e}" for i in range(len(values) - 1))
+        print(f"  {label}")
+        print(f"    {count:6d} determinants   E = {roots}")
+        print(f"    gaps {gaps}")
+
+
 if __name__ == "__main__":
     check_against_pyscf()
     check_partition_spellings()
     reference_table()
+    dominant_table()

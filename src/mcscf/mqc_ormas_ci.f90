@@ -18,10 +18,12 @@ module mqc_ormas_ci
    use pic_io, only: to_char
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_determinants, only: link_table_t, string_address
-   use mqc_ci, only: sigma_vector
+   use mqc_determinants, only: link_table_t, string_address, build_link_table
+   use mqc_ci, only: sigma_vector, absorb_one_electron
+   use mqc_davidson, only: sigma_operator_t, davidson_flat
    use pic_blas_interfaces, only: pic_gemm
-   use mqc_ormas_space, only: ormas_space_t, ormas_closure_t, closure_address
+   use mqc_ormas_space, only: ormas_space_t, ormas_closure_t, closure_address, &
+                              build_ormas_closure, ormas_strings
    implicit none
    private
 
@@ -30,6 +32,22 @@ module mqc_ormas_ci
    public :: ormas_sigma
    public :: ormas_lowest
    public :: ormas_sigma_direct
+   public :: ormas_solve
+
+   type, extends(sigma_operator_t) :: ormas_operator_t
+      !! The restricted Hamiltonian, as something Davidson can multiply by
+      !!
+      !! Holds what `ormas_sigma_direct` needs and nothing else. The vector it
+      !! is handed is already flat, which is the reason the method had to be
+      !! written that way: a restricted space has no rectangle to reshape into.
+      type(ormas_space_t), pointer :: space => null()
+      type(ormas_closure_t), pointer :: closure => null()
+      real(dp), pointer :: folded(:, :) => null()
+      type(link_table_t), pointer :: alpha_table => null(), beta_table => null()
+      integer, allocatable :: in_alpha(:), in_beta(:), from_alpha(:), from_beta(:)
+   contains
+      procedure :: apply => ormas_apply
+   end type ormas_operator_t
 
 contains
 
@@ -482,5 +500,81 @@ contains
 
       deallocate (gathered, contracted)
    end subroutine ormas_sigma_direct
+
+   subroutine ormas_apply(this, vector, image, error)
+      !! One matrix-vector product over the restricted space
+      class(ormas_operator_t), intent(inout) :: this
+      real(dp), intent(in) :: vector(:)
+      real(dp), intent(out) :: image(:)
+      type(error_t), intent(inout) :: error
+
+      call ormas_sigma_direct(this%space, this%closure, this%folded, this%alpha_table, &
+                              this%beta_table, this%in_alpha, this%in_beta, &
+                              this%from_alpha, this%from_beta, vector, image, error)
+   end subroutine ormas_apply
+
+   subroutine ormas_solve(space, h1e, eri, n_roots, energies, vectors, error, &
+                          tolerance, max_iterations)
+      !! The lowest states of a restricted active space, iteratively
+      !!
+      !! Everything from the partition and the integrals: the strings, the
+      !! closure the sigma needs, the excitation tables, the folded Hamiltonian,
+      !! the diagonal to precondition with, and then Davidson.
+      !!
+      !! This is the route that scales. The dense solve alongside it costs a
+      !! sigma per determinant and exists to be compared against; this one costs
+      !! a sigma per expansion vector, which is tens rather than thousands, and
+      !! never forms a matrix.
+      type(ormas_space_t), intent(in), target :: space
+      real(dp), intent(in) :: h1e(:, :), eri(:, :, :, :)
+      integer, intent(in) :: n_roots
+      real(dp), allocatable, intent(out) :: energies(:)
+      real(dp), allocatable, intent(out) :: vectors(:, :)   !! (n_determinants, n_roots)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: tolerance
+      integer, intent(in), optional :: max_iterations
+
+      type(ormas_operator_t) :: operator
+      type(ormas_closure_t), target :: closure
+      type(link_table_t), target :: alpha_table, beta_table
+      real(dp), allocatable, target :: folded(:, :)
+      real(dp), allocatable :: diagonal(:), residuals(:)
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer :: iterations_taken, sigma_products
+      logical :: converged
+
+      if (error%has_error()) return
+
+      call ormas_strings(space, alpha, beta, error)
+      call full_space_index(space, alpha, beta, operator%in_alpha, operator%in_beta, &
+                            operator%from_alpha, operator%from_beta)
+      call build_ormas_closure(space, closure, error)
+      call ormas_diagonal(space, alpha, beta, h1e, eri, diagonal, error)
+      call absorb_one_electron(h1e, eri, space%n_alpha + space%n_beta, folded, error)
+      call build_link_table(space%n_active_orbitals, space%n_alpha, alpha_table, error)
+      call build_link_table(space%n_active_orbitals, space%n_beta, beta_table, error)
+      if (error%has_error()) return
+
+      operator%space => space
+      operator%closure => closure
+      operator%folded => folded
+      operator%alpha_table => alpha_table
+      operator%beta_table => beta_table
+
+      call davidson_flat(operator, diagonal, n_roots, energies, vectors, residuals, &
+                         iterations_taken, sigma_products, converged, error, &
+                         tolerance, max_iterations)
+      if (error%has_error()) return
+
+      if (.not. converged) then
+         call error%set(ERROR_VALIDATION, "the restricted CI did not converge in "// &
+                        to_char(iterations_taken)//" iterations; the largest residual "// &
+                        "was "//to_char(maxval(residuals))//".")
+      end if
+
+      call closure%destroy()
+      call alpha_table%destroy()
+      call beta_table%destroy()
+   end subroutine ormas_solve
 
 end module mqc_ormas_ci
