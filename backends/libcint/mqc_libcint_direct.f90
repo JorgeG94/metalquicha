@@ -238,7 +238,9 @@ contains
       !! Split out so the Fock builders can block the density to whatever shell
       !! table their quartet loop runs over -- the fused-sp view when the
       !! molecule carries one -- while `shell_density_max` keeps answering per
-      !! split shell for the gradient, whose quartets can never be fused.
+      !! split shell for any caller blocked that way. The SCF gradient, once
+      !! the reason this note said "never fused", now blocks against the view
+      !! it loops over, inline in `two_electron_deriv`.
       real(dp), intent(in) :: density(:, :)
       integer, intent(in) :: nbas
       integer, intent(in) :: offs(:)   !! First AO of each shell, 0-based
@@ -383,9 +385,11 @@ contains
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
       ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
-      ! bounds arrive per split shell either way -- the gradient indexes the
-      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! loop calls, so the view is safe here and nowhere looser -- and since
+      ! libfint learned to carry a derivative's tensor component through an L
+      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
+      ! Schwarz bounds arrive per split shell either way, straight from
+      ! `schwarz_bounds`, and are collapsed to match. Dimensions
       ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.
@@ -701,9 +705,11 @@ contains
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
       ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
-      ! bounds arrive per split shell either way -- the gradient indexes the
-      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! loop calls, so the view is safe here and nowhere looser -- and since
+      ! libfint learned to carry a derivative's tensor component through an L
+      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
+      ! Schwarz bounds arrive per split shell either way, straight from
+      ! `schwarz_bounds`, and are collapsed to match. Dimensions
       ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.
@@ -964,9 +970,11 @@ contains
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
       ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
-      ! bounds arrive per split shell either way -- the gradient indexes the
-      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! loop calls, so the view is safe here and nowhere looser -- and since
+      ! libfint learned to carry a derivative's tensor component through an L
+      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
+      ! Schwarz bounds arrive per split shell either way, straight from
+      ! `schwarz_bounds`, and are collapsed to match. Dimensions
       ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.
@@ -1204,9 +1212,11 @@ contains
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
       ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
-      ! bounds arrive per split shell either way -- the gradient indexes the
-      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! loop calls, so the view is safe here and nowhere looser -- and since
+      ! libfint learned to carry a derivative's tensor component through an L
+      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
+      ! Schwarz bounds arrive per split shell either way, straight from
+      ! `schwarz_bounds`, and are collapsed to match. Dimensions
       ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.

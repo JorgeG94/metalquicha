@@ -30,7 +30,8 @@ module mqc_libcint_gradient
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
                                     build_df_shell_table, three_centre, two_centre, &
-                                    metric_inverse_sqrt
+                                    metric_inverse_sqrt, eri_shell_table_t, &
+                                    eri_shell_table, eri_schwarz_collapse
    use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP
    use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities, &
                              xc_grid_gga_quantities, xc_grid_kernel_quantities
@@ -1356,18 +1357,29 @@ contains
       real(dp), allocatable :: buf(:), vj(:, :, :), vk(:, :, :)
       real(dp), allocatable :: vj_local(:, :, :), vk_local(:, :, :)
       real(dp), allocatable :: exchange_from(:, :)
-      real(dp), allocatable :: bounds(:, :), bra_bound(:, :), dsh(:, :), esh(:, :)
+      real(dp), allocatable :: bounds(:, :), bq(:, :), bra_bound(:, :), dsh(:, :), esh(:, :)
       integer, allocatable :: dims(:), offs(:)
       real(dp) :: g, k_scale, tol, bra, est, amax
       type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
       integer :: shls(4)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx, nao, nbas
       integer :: nprim, ptr
 
-      mx = largest_shell(mol)
+      ! The shells the quartet loop runs over: the fused-sp view when the
+      ! molecule carries one, its split shells otherwise -- the same table the
+      ! direct Fock build takes, for the same 6-31G-shaped reason. This was
+      ! split-only for a while: libfint's int2e_ip1 applied an L shell's s and
+      ! p coefficients on the wrong stride whenever an integral carries more
+      ! than one tensor component, so the view was correct for int2e and
+      ! garbage here. Fixed in libfint (l_shell_grad_check guards it), and the
+      ! AO order of a fused shell is its split shells' order, so the scatter
+      ! into vj/vk needs nothing beyond the view's own offsets.
+      call eri_shell_table(mol, tab)
+      mx = tab%block_max
       nao = mol%nao
-      nbas = mol%nbas
+      nbas = tab%nbas
       allocate (vj(nao, nao, 3), vk(nao, nao, 3))
       vj = 0.0_dp
       vk = 0.0_dp
@@ -1388,19 +1400,16 @@ contains
 
       opt = c_null_ptr
       if (mol%cartesian) then
-         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
+         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
       else
-         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
+         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
       end if
 
       ! Shell dimensions and offsets once, rather than a `shell_dim` call --
       ! which reaches into `bas` and recomputes an angular-momentum formula --
       ! at every level of a four-deep loop that runs millions of times.
-      allocate (dims(nbas), offs(nbas))
-      do ish = 1, nbas
-         dims(ish) = shell_dim(mol%cartesian, ish - 1, mol%bas)
-         offs(ish) = mol%shell_offset(ish)
-      end do
+      dims = tab%dims
+      offs = tab%offs(1:nbas)
 
       ! Screening. The undifferentiated loop in `build_fock_direct` has had this
       ! from the start; this one had none at all and evaluated every quartet the
@@ -1425,13 +1434,16 @@ contains
       !     integral, and near a converged density most of them are.
       call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
+      ! Per split shell from `schwarz_bounds`, re-blocked onto the view's
+      ! shells -- an identity copy when there is no view.
+      call eri_schwarz_collapse(mol, bounds, bq)
 
       allocate (bra_bound(nbas, nbas))
       do ish = 1, nbas
-         nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
-         ptr = mol%bas(LIBCINT_PTR_EXP, ish)
-         amax = maxval(mol%env(ptr + 1:ptr + nprim))
-         bra_bound(ish, :) = 2.0_dp*sqrt(amax)*bounds(ish, :)
+         nprim = tab%bas(LIBCINT_NPRIM_OF, ish)
+         ptr = tab%bas(LIBCINT_PTR_EXP, ish)
+         amax = maxval(tab%env(ptr + 1:ptr + nprim))
+         bra_bound(ish, :) = 2.0_dp*sqrt(amax)*bq(ish, :)
       end do
 
       allocate (dsh(nbas, nbas), esh(nbas, nbas))
@@ -1453,8 +1465,8 @@ contains
       ! schedule(dynamic) because the l <= k triangle makes the work per ish
       ! uneven, and a static split leaves threads idle on the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, density, exchange_from, opt, vj, vk, mx, nao, nbas, &
-      !$omp           dims, offs, bounds, bra_bound, dsh, esh, tol) &
+      !$omp    shared(mol, tab, density, exchange_from, opt, vj, vk, mx, nao, nbas, &
+      !$omp           dims, offs, bq, bra_bound, dsh, esh, tol) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
       !$omp            bra, est)
@@ -1483,7 +1495,7 @@ contains
                   ! two Coulomb, from the ket pair both ways round, and two
                   ! exchange, pairing the bra's second index with each of the
                   ! ket's.
-                  est = bra*bounds(ksh, lsh) &
+                  est = bra*bq(ksh, lsh) &
                         *max(dsh(lsh, ksh), dsh(ksh, lsh), esh(jsh, ksh), esh(jsh, lsh))
                   if (est < tol) cycle
 
@@ -1491,10 +1503,10 @@ contains
 
                   if (mol%cartesian) then
                      ret = libcint_2e_ip1_cart(buf, shls, mol%atm, mol%natm, &
-                                               mol%bas, nbas, mol%env, opt)
+                                               tab%bas, nbas, tab%env, opt)
                   else
                      ret = libcint_2e_ip1_sph(buf, shls, mol%atm, mol%natm, &
-                                              mol%bas, nbas, mol%env, opt)
+                                              tab%bas, nbas, tab%env, opt)
                   end if
                   if (ret == 0) cycle
 
@@ -1543,7 +1555,7 @@ contains
       allocate (vhf(nao, nao, 3))
       vhf = -(vj - k_scale*vk)
 
-      deallocate (bounds, bra_bound, dsh, esh, dims, offs)
+      deallocate (bounds, bq, bra_bound, dsh, esh, dims, offs)
    end subroutine two_electron_deriv
 
    subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &

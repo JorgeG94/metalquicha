@@ -588,14 +588,15 @@ contains
       !! evaluates both halves in one pass, measured at 2-3x on a Pople basis.
       !!
       !! A VIEW, not the representation: the split `bas` stays the molecule's
-      !! own, because libfint carries an L shell through `int2e_sph` and
-      !! `int2e_cart` only. Every other driver -- one-electron, three-centre,
-      !! every derivative -- deliberately behaves as if L shells did not
-      !! exist, and would read the fused entry as a plain p shell over the s
-      !! coefficients: not an error, a silently wrong overlap. So the fused
-      !! table is a companion that exactly one constructor
-      !! (`eri_shell_table`) ever hands out, and only the plain four-centre
-      !! loops consume it.
+      !! own, because libfint carries an L shell through the four-centre
+      !! drivers only -- `int2e_sph`/`int2e_cart` and, since it learned to
+      !! stride a derivative's tensor component, `int2e_ip1`. Every other
+      !! driver -- one-electron, three-centre, the higher derivatives --
+      !! deliberately behaves as if L shells did not exist, and would read
+      !! the fused entry as a plain p shell over the s coefficients: not an
+      !! error, a silently wrong overlap. So the fused table is a companion
+      !! that exactly one constructor (`eri_shell_table`) ever hands out, and
+      !! only the four-centre loops consume it.
       !!
       !! Fusing was first tried in the packer itself, making the fused form
       !! primary and teaching every reader of `bas` about it. That founders on
@@ -735,13 +736,14 @@ contains
 #endif
 
    subroutine eri_shell_table(mol, tab)
-      !! The shell set to hand libfint's `int2e`: fused where the view exists
+      !! The shell set to hand libfint's `int2e` or `int2e_ip1`: fused where
+      !! the view exists
       !!
       !! Everything else -- one-electron integrals, three-centre fitting
-      !! integrals, every derivative, AO evaluation on a grid -- keeps reading
-      !! `mol%bas`, because `int2e_sph`/`int2e_cart` are the only drivers that
-      !! understand an L shell. Routing the choice through one constructor is
-      !! what keeps that boundary in one place.
+      !! integrals, AO evaluation on a grid -- keeps reading `mol%bas`,
+      !! because the four-centre drivers are the only ones that understand an
+      !! L shell. Routing the choice through one constructor is what keeps
+      !! that boundary in one place.
       type(libcint_molecule_t), intent(in) :: mol
       type(eri_shell_table_t), intent(out) :: tab
 
@@ -772,10 +774,11 @@ contains
    subroutine eri_schwarz_collapse(mol, bounds, collapsed)
       !! Schwarz bounds re-blocked onto the eri view's shells
       !!
-      !! `schwarz_bounds` works per split shell and stays that way: the
-      !! gradient's quartet loop indexes its result directly and runs over
-      !! split shells, because its integrals are `int2e_ip1`, which the view
-      !! must never reach. A fused shell's bound is the largest of its
+      !! `schwarz_bounds` works per split shell and stays that way: loops
+      !! that take the view -- the direct Fock builds and the SCF gradient's
+      !! `int2e_ip1` loop -- collapse its result through here, and loops
+      !! still on split shells (the MP2 gradients) index it directly. A
+      !! fused shell's bound is the largest of its
       !! sub-shells': the Schwarz inequality only needs the diagonal elements
       !! (mn|mn), every one of which lives in some split sub-block, so the
       !! maximum over sub-blocks bounds the fused quartet at least as tightly
