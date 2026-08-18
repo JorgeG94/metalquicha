@@ -1,0 +1,711 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>acknowledged_backend &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>acknowledged_backend
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">28 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_acknowledgements.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_acknowledgements.f90.html'>mqc_acknowledgements.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_acknowledgements.html'>mqc_acknowledgements</a></li>
+            <li class="breadcrumb-item active" aria-current="page">acknowledged_backend</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/acknowledged_backend.html#variable-kind~2">kind</a>
+            <a class="list-group-item" href="../proc/acknowledged_backend.html#variable-parse_error">parse_error</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/acknowledged_backend.html#src">acknowledged_backend</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  function acknowledged_backend(method_type, backend) result(which)  
+</h2>
+    
+
+    <p>Which library will actually do the work, as one of ACK_*</p>
+<p>This mirrors the dispatch in <code>mqc_method_hf</code> and <code>mqc_method_dft</code>, and
+has to keep mirroring it: an explicit request is honoured, and <code>auto</code>
+resolves to cuEST exactly when this build has cuEST <em>and</em> the method is
+one cuEST implements. Anything else is the CPU path.</p>
+<p>One known divergence, on a cuEST build only. <code>hf_run</code>&rsquo;s <code>auto</code> branch
+is a bare <code>#ifdef MQC_WITH_CUEST</code> with no check that cuEST implements
+the method, so an <code>auto</code> MP2 or CCSD is handed to <code>run_cuest_scf</code> there
+&ndash; while the explicit <code>cuest</code> branch right above it refuses exactly
+that combination. This function follows the explicit branch, which is
+the behaviour the refusal describes. When <code>hf_run</code> grows the same guard
+on <code>auto</code>, the two agree and this note can go.</p>
+<p>The semi-empirical methods never reach either &ndash; they are tblite&rsquo;s own
+and take no <code>backend</code> &ndash; so they are answered before the request is
+even looked at.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method_type~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method_type</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-backend~7"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>backend</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-which"></span>
+          integer
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~acknowledged_backend~~CallsGraph Pages: 1 -->
+<svg id="procacknowledged_backendCallsGraph" width="472pt" height="158pt"
+ viewBox="0.00 0.00 472.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~acknowledged_backend~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<title>proc~~acknowledged_backend~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 468,-154 468,4 -4,4"/>
+<!-- proc~acknowledged_backend -->
+<g id="proc~~acknowledged_backend~~CallsGraph_node1" class="node">
+<title>proc~acknowledged_backend</title>
+<polygon fill="none" stroke="black" points="141,-87 0,-87 0,-63 141,-63 141,-87"/>
+<text text-anchor="middle" x="70.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">acknowledged_backend</text>
+</g>
+<!-- proc~cuest_backend_available -->
+<g id="proc~~acknowledged_backend~~CallsGraph_node2" class="node">
+<title>proc~cuest_backend_available</title>
+<g id="a_proc~~acknowledged_backend~~CallsGraph_node2"><a xlink:href="../proc/cuest_backend_available.html" xlink:title="cuest_backend_available">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="323,-150 177,-150 177,-126 323,-126 323,-150"/>
+<text text-anchor="middle" x="250" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cuest_backend_available</text>
+</a>
+</g>
+</g>
+<!-- proc~acknowledged_backend&#45;&gt;proc~cuest_backend_available -->
+<g id="proc~~acknowledged_backend~~CallsGraph_edge1" class="edge">
+<title>proc~acknowledged_backend&#45;&gt;proc~cuest_backend_available</title>
+<path fill="none" stroke="#ff0000" d="M99.88,-87.15C120.96,-95.97 150.53,-107.89 177,-117 182.9,-119.03 189.11,-121.03 195.31,-122.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.42,-126.34 205,-125.89 196.45,-119.64 194.42,-126.34"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~acknowledged_backend~~CallsGraph_node3" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~acknowledged_backend~~CallsGraph_node3"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="319.5,-108 180.5,-108 180.5,-84 319.5,-84 319.5,-108"/>
+<text text-anchor="middle" x="250" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~acknowledged_backend&#45;&gt;proc~error_has_error -->
+<g id="proc~~acknowledged_backend~~CallsGraph_edge2" class="edge">
+<title>proc~acknowledged_backend&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M141.14,-83.24C150.73,-84.37 160.63,-85.54 170.37,-86.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="170.09,-90.19 180.43,-87.89 170.91,-83.24 170.09,-90.19"/>
+</g>
+<!-- proc~method_runs_on_cuest -->
+<g id="proc~~acknowledged_backend~~CallsGraph_node4" class="node">
+<title>proc~method_runs_on_cuest</title>
+<g id="a_proc~~acknowledged_backend~~CallsGraph_node4"><a xlink:href="../proc/method_runs_on_cuest.html" xlink:title="method_runs_on_cuest">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="317.5,-66 182.5,-66 182.5,-42 317.5,-42 317.5,-66"/>
+<text text-anchor="middle" x="250" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_runs_on_cuest</text>
+</a>
+</g>
+</g>
+<!-- proc~acknowledged_backend&#45;&gt;proc~method_runs_on_cuest -->
+<g id="proc~~acknowledged_backend~~CallsGraph_edge3" class="edge">
+<title>proc~acknowledged_backend&#45;&gt;proc~method_runs_on_cuest</title>
+<path fill="none" stroke="#ff0000" d="M141.14,-66.76C151.34,-65.55 161.89,-64.31 172.22,-63.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.94,-66.52 182.46,-61.87 172.12,-59.57 172.94,-66.52"/>
+</g>
+<!-- proc~parse_backend_name -->
+<g id="proc~~acknowledged_backend~~CallsGraph_node5" class="node">
+<title>proc~parse_backend_name</title>
+<g id="a_proc~~acknowledged_backend~~CallsGraph_node5"><a xlink:href="../proc/parse_backend_name.html" xlink:title="parse_backend_name">
+<polygon fill="#d9534f" stroke="#d9534f" points="315,-24 185,-24 185,0 315,0 315,-24"/>
+<text text-anchor="middle" x="250" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_backend_name</text>
+</a>
+</g>
+</g>
+<!-- proc~acknowledged_backend&#45;&gt;proc~parse_backend_name -->
+<g id="proc~~acknowledged_backend~~CallsGraph_edge4" class="edge">
+<title>proc~acknowledged_backend&#45;&gt;proc~parse_backend_name</title>
+<path fill="none" stroke="#ff0000" d="M99.88,-62.85C120.96,-54.03 150.53,-42.11 177,-33 182.9,-30.97 189.11,-28.97 195.31,-27.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="196.45,-30.36 205,-24.11 194.42,-23.66 196.45,-30.36"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~acknowledged_backend~~CallsGraph_node6" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~acknowledged_backend~~CallsGraph_node6"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="464,-24 359,-24 359,0 464,0 464,-24"/>
+<text text-anchor="middle" x="411.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_backend_name&#45;&gt;proc~error_set -->
+<g id="proc~~acknowledged_backend~~CallsGraph_edge5" class="edge">
+<title>proc~parse_backend_name&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#7f00ff" d="M315.42,-12C326.29,-12 337.56,-12 348.38,-12"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="348.58,-15.5 358.58,-12 348.58,-8.5 348.58,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~acknowledged_backend~~CalledByGraph Pages: 1 -->
+<svg id="procacknowledged_backendCalledByGraph" width="416pt" height="32pt"
+ viewBox="0.00 0.00 416.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~acknowledged_backend~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~acknowledged_backend~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 412,-28 412,4 -4,4"/>
+<!-- proc~acknowledged_backend -->
+<g id="proc~~acknowledged_backend~~CalledByGraph_node1" class="node">
+<title>proc~acknowledged_backend</title>
+<polygon fill="none" stroke="black" points="408,-24 267,-24 267,0 408,0 408,-24"/>
+<text text-anchor="middle" x="337.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">acknowledged_backend</text>
+</g>
+<!-- proc~print_acknowledgement -->
+<g id="proc~~acknowledged_backend~~CalledByGraph_node2" class="node">
+<title>proc~print_acknowledgement</title>
+<g id="a_proc~~acknowledged_backend~~CalledByGraph_node2"><a xlink:href="../proc/print_acknowledgement.html" xlink:title="print_acknowledgement">
+<polygon fill="#d9534f" stroke="#d9534f" points="231,-24 90,-24 90,0 231,0 231,-24"/>
+<text text-anchor="middle" x="160.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_acknowledgement</text>
+</a>
+</g>
+</g>
+<!-- proc~print_acknowledgement&#45;&gt;proc~acknowledged_backend -->
+<g id="proc~~acknowledged_backend~~CalledByGraph_edge1" class="edge">
+<title>proc~print_acknowledgement&#45;&gt;proc~acknowledged_backend</title>
+<path fill="none" stroke="#ff0000" d="M231.17,-12C239.5,-12 248.06,-12 256.53,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="256.79,-15.5 266.79,-12 256.79,-8.5 256.79,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~acknowledged_backend~~CalledByGraph_node3" class="node">
+<title>program~main</title>
+<g id="a_proc~~acknowledged_backend~~CalledByGraph_node3"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~print_acknowledgement -->
+<g id="proc~~acknowledged_backend~~CalledByGraph_edge2" class="edge">
+<title>program~main&#45;&gt;proc~print_acknowledgement</title>
+<path fill="none" stroke="#ff0000" d="M54.29,-12C61.95,-12 70.73,-12 79.89,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.93,-15.5 89.93,-12 79.93,-8.5 79.93,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kind~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kind</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-parse_error"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>parse_error</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">acknowledged_backend</span><span class="p">(</span><span class="n">method_type</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">which</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Which library will actually do the work, as one of ACK_*</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! This mirrors the dispatch in `mqc_method_hf` and `mqc_method_dft`, and</span>
+<span class="w">      </span><span class="c">!! has to keep mirroring it: an explicit request is honoured, and `auto`</span>
+<span class="w">      </span><span class="c">!! resolves to cuEST exactly when this build has cuEST *and* the method is</span>
+<span class="w">      </span><span class="c">!! one cuEST implements. Anything else is the CPU path.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! One known divergence, on a cuEST build only. `hf_run`'s `auto` branch</span>
+<span class="w">      </span><span class="c">!! is a bare `#ifdef MQC_WITH_CUEST` with no check that cuEST implements</span>
+<span class="w">      </span><span class="c">!! the method, so an `auto` MP2 or CCSD is handed to `run_cuest_scf` there</span>
+<span class="w">      </span><span class="c">!! -- while the explicit `cuest` branch right above it refuses exactly</span>
+<span class="w">      </span><span class="c">!! that combination. This function follows the explicit branch, which is</span>
+<span class="w">      </span><span class="c">!! the behaviour the refusal describes. When `hf_run` grows the same guard</span>
+<span class="w">      </span><span class="c">!! on `auto`, the two agree and this note can go.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The semi-empirical methods never reach either -- they are tblite's own</span>
+<span class="w">      </span><span class="c">!! and take no `backend` -- so they are answered before the request is</span>
+<span class="w">      </span><span class="c">!! even looked at.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_type</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">which</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">kind</span>
+<span class="nb">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">parse_error</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ACK_TBLITE</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">parse_backend_name</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="p">,</span><span class="w"> </span><span class="n">parse_error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">parse_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! Unreachable through a deck -- the reader refuses an unknown backend</span>
+<span class="w">         </span><span class="c">! long before this -- so say nothing rather than credit a guess.</span>
+<span class="w">         </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ACK_NONE</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      select case</span><span class="w"> </span><span class="p">(</span><span class="nb">kind</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">BACKEND_CUEST</span><span class="p">)</span>
+<span class="w">         </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ACK_CUEST</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">BACKEND_LIBCINT</span><span class="p">)</span>
+<span class="w">         </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ACK_LIBCINT</span>
+<span class="w">      </span><span class="k">case </span><span class="n">default</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cuest_backend_available</span><span class="p">()</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">method_runs_on_cuest</span><span class="p">(</span><span class="n">method_type</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ACK_CUEST</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            </span><span class="n">which</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ACK_LIBCINT</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end select</span>
+<span class="k">   end function </span><span class="n">acknowledged_backend</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-18 01:27 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -13,8 +13,20 @@ module mqc_cuest_bridge
    private
 
    public :: run_cuest_scf
+   public :: cuest_backend_available
 
 contains
+
+   pure function cuest_backend_available() result(available)
+      !! .false. -- this build has no cuEST
+      !!
+      !! Asked before a calculation starts, so a deck that asks for the GPU on a
+      !! CPU-only build is refused while it is still a deck rather than after a
+      !! fragment has been set up and handed to a bridge that computes nothing.
+      logical :: available
+
+      available = .false.
+   end function cuest_backend_available
 
    subroutine run_cuest_scf(settings, fragment, result, want_gradient)
       !! No-op stand-in: report the missing backend, compute nothing

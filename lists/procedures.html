@@ -102,6 +102,12 @@
                  <td><p>Accumulation path for systems without bond connectivity</p><a href="../proc/accumulate_uncapped.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/acknowledged_backend.html'>acknowledged_backend</a></td>
+                 <td><a href='../module/mqc_acknowledgements.html'>mqc_acknowledgements</a></td>
+                 <td>Function</td>
+                 <td><p>Which library will actually do the work, as one of ACK_*</p><a href="../proc/acknowledged_backend.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_bond_order_post_processing.html'>add_bond_order_post_processing</a></td>
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td>Subroutine</td>
@@ -276,6 +282,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_version.html'>mqc_version</a></td>
                  <td>Function</td>
                  <td><p>&ldquo;yes&rdquo; or &ldquo;no&rdquo;, in the shape a script can split on</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/banner.html'>banner</a></td>
+                 <td><a href='../module/mqc_acknowledgements.html'>mqc_acknowledgements</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One line in a box sized to it</p><a href="../proc/banner.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/basis_search_path.html'>basis_search_path</a></td>
@@ -999,6 +1011,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>Generate a list of monomer indices from 1 to N</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/cuest_backend_available.html'>cuest_backend_available</a></td>
+                 <td><a href='../module/mqc_cuest_bridge.html'>mqc_cuest_bridge</a></td>
+                 <td>Function</td>
+                 <td><p>.false. &ndash; this build has no cuEST</p><a href="../proc/cuest_backend_available.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/current_session.html'>current_session</a></td>
                  <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
                  <td>Function</td>
@@ -1189,15 +1207,15 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
-                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
-                 <td>Function</td>
-                 <td><p>Check if string ends with suffix</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
                  <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
                  <td>Function</td>
                  <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
+                 <td>Function</td>
+                 <td><p>Check if string ends with suffix</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/energy_reset.html'>energy_reset</a></td>
@@ -1730,6 +1748,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Run serial GMBE calculation</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/gpu_asked_by.html'>gpu_asked_by</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Which key asked for the GPU, so the refusal names what the deck wrote</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/grid_level_angular.html'>grid_level_angular</a></td>
                  <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
                  <td>Function</td>
@@ -1990,13 +2014,13 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -2235,6 +2259,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Merge individual molecule JSON files into a single combined file</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/method_runs_on_cuest.html'>method_runs_on_cuest</a></td>
+                 <td><a href='../module/mqc_cuest_iface.html'>mqc_cuest_iface</a></td>
+                 <td>Function</td>
+                 <td><p>Whether cuEST has an implementation of this method</p><a href="../proc/method_runs_on_cuest.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/method_spin_scaling.html'>method_spin_scaling</a></td>
                  <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td>Subroutine</td>
@@ -2333,15 +2363,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
-                 <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
                  <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2814,6 +2844,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Populate json_data with vibrational analysis results</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/print_acknowledgement.html'>print_acknowledgement</a></td>
+                 <td><a href='../module/mqc_acknowledgements.html'>mqc_acknowledgements</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Name the backend this run will use, and thank the people behind it</p><a href="../proc/print_acknowledgement.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/print_combos.html'>print_combos</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Subroutine</td>
@@ -3206,6 +3242,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Fetch a string, or record a missing-key error</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/resolve_gpu_request.html'>resolve_gpu_request</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Settle <code>system.gpu</code> against <code>backend</code>, then refuse a request nothing can honour</p><a href="../proc/resolve_gpu_request.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/resources_finalize.html'>resources_finalize</a></td>
@@ -3862,7 +3904,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 22:22 +0000             </p>
+ on 2026-08-18 01:27 +0000             </p>
           </div>
         </div>
         <br>

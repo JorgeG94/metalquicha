@@ -177,6 +177,14 @@ module mqc_config_types
       ! "libcint"/"cpu". A request that the build or the method cannot honour is
       ! refused, not substituted.
       character(len=16) :: backend = "auto"
+      ! system.gpu -- the same choice said the way people ask for it. It resolves
+      ! into `backend` above rather than being carried alongside it, so there is
+      ! one answer downstream however the deck spelled the question; naming both
+      ! and disagreeing is refused rather than given a precedence rule.
+      logical :: gpu = .false.
+      logical :: gpu_set = .false.
+         !! Whether the deck named `system.gpu`. "Absent" and "false" have to be
+         !! told apart: absent leaves `backend` alone, false pins it to the CPU.
 
       logical :: pcm_enabled = .false.
       real(dp) :: pcm_dielectric = -1.0_dp

@@ -197,22 +197,22 @@ GMBE energy with optional gradient and hessian</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1479,7 +1479,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~15"></span>
+              <span class="anchor" id="variable-fragment~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1524,7 +1524,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~2"></span>
+              <span class="anchor" id="variable-delta_energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1539,7 +1539,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~19"></span>
+              <span class="anchor" id="variable-n"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1554,7 +1554,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1621,7 +1621,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~5"></span>
+              <span class="anchor" id="variable-monomers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1636,7 +1636,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~9"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1666,7 +1666,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~5"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1681,7 +1681,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~2"></span>
+              <span class="anchor" id="variable-intersection_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1696,7 +1696,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~5"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1711,7 +1711,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~5"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1726,7 +1726,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~5"></span>
+              <span class="anchor" id="variable-total_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1741,7 +1741,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~31"></span>
+              <span class="anchor" id="variable-sys_geom~5"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1756,7 +1756,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~3"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1786,7 +1786,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1801,7 +1801,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~10"></span>
+              <span class="anchor" id="variable-world_comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1841,7 +1841,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~7"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1856,7 +1856,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~5"></span>
+              <span class="anchor" id="variable-fragment_count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1871,7 +1871,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~7"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1886,7 +1886,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~3"></span>
+              <span class="anchor" id="variable-results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1916,7 +1916,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~30"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1931,7 +1931,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~9"></span>
+              <span class="anchor" id="variable-world_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1946,7 +1946,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~2"></span>
+              <span class="anchor" id="variable-json_data"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2001,7 +2001,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~3"></span>
+              <span class="anchor" id="variable-monomers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2016,7 +2016,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~27"></span>
+              <span class="anchor" id="variable-sys_geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2106,7 +2106,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2161,7 +2161,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~4"></span>
+              <span class="anchor" id="variable-monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2176,7 +2176,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~2"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2291,7 +2291,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2306,7 +2306,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2321,7 +2321,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2351,7 +2351,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~43"></span>
+              <span class="anchor" id="variable-error~2"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2391,7 +2391,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2406,7 +2406,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2421,7 +2421,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~4"></span>
+              <span class="anchor" id="variable-max_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2508,7 +2508,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~17"></span>
+              <span class="anchor" id="variable-fragment~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2538,7 +2538,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~2"></span>
+              <span class="anchor" id="variable-results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2568,7 +2568,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~20"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2583,7 +2583,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~8"></span>
+              <span class="anchor" id="variable-world_comm~3"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2623,7 +2623,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~33"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2653,7 +2653,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_list~2"></span>
+              <span class="anchor" id="variable-atom_list"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2668,7 +2668,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~24"></span>
+              <span class="anchor" id="variable-n_atoms"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2708,7 +2708,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~2"></span>
+              <span class="anchor" id="variable-sum_by_level"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2723,7 +2723,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2738,7 +2738,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~4"></span>
+              <span class="anchor" id="variable-total_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2778,7 +2778,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~2"></span>
+              <span class="anchor" id="variable-total_gradient"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2793,7 +2793,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~29"></span>
+              <span class="anchor" id="variable-sys_geom~3"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2808,7 +2808,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~2"></span>
+              <span class="anchor" id="variable-current_log_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2863,7 +2863,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~13"></span>
+              <span class="anchor" id="variable-k~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2878,7 +2878,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sign_factor~4"></span>
+              <span class="anchor" id="variable-sign_factor~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2893,7 +2893,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~3"></span>
+              <span class="anchor" id="variable-intersection_results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2908,7 +2908,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~6"></span>
+              <span class="anchor" id="variable-intersection_sets~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2923,7 +2923,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~32"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2938,7 +2938,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~4"></span>
+              <span class="anchor" id="variable-total_gradient~3"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -2968,7 +2968,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~13"></span>
+              <span class="anchor" id="variable-bonds~2"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3028,7 +3028,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~11"></span>
+              <span class="anchor" id="variable-world_comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -3083,7 +3083,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3126,7 +3126,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-17 22:22 +0000             </p>
+ on 2026-08-18 01:27 +0000             </p>
           </div>
         </div>
         <br>
