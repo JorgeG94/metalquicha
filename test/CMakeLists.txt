@@ -84,6 +84,10 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_mcscf)
   target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
 
+  # Choosing an active space from atomic orbital labels.
+  addtest(mqc_avas)
+  target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)
+
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
 

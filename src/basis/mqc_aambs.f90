@@ -32,6 +32,7 @@ module mqc_aambs
    public :: aambs_element_counts  !! Chemical core and valence orbital counts for one Z
    public :: aambs_dimensions      !! The minimal-basis dimensions of a whole molecule
    public :: aambs_dimensions_t
+   public :: aambs_shell_labels  !! Principal and angular numbers, per minimal-basis function
 
    integer, parameter :: MAX_Z = 54
       !! The non-relativistic table covers hydrogen to xenon. Beyond that GAMESS
@@ -49,6 +50,121 @@ module mqc_aambs
    end type aambs_dimensions_t
 
 contains
+
+   subroutine aambs_shell_labels(atomic_numbers, atom_of, principal, angular, error)
+      !! Which atom, shell and angular momentum each minimal-basis function is
+      !!
+      !! In the order `build_aambs_molecule` lays them out -- atoms outermost,
+      !! then the element's shells in the order `aambs.json` lists them, then
+      !! `2l+1` functions per shell. That ordering is an invariant of the basis
+      !! file rather than of this routine, and the same one `aambs_atom_ranges`
+      !! relies on.
+      !!
+      !! The principal quantum number is the reason this exists. It is in the
+      !! file and in nothing else: libcint knows an angular momentum and an atom
+      !! but has no notion of a `2p` as opposed to a `3p`, and telling those
+      !! apart is exactly what selecting an active space by orbital label needs.
+      integer, intent(in) :: atomic_numbers(:)
+      integer, allocatable, intent(out) :: atom_of(:)     !! 1-based atom index
+      integer, allocatable, intent(out) :: principal(:)   !! n
+      integer, allocatable, intent(out) :: angular(:)     !! l
+      type(error_t), intent(inout) :: error
+
+      type(json_file) :: json
+      character(len=:), allocatable :: path, key
+      integer, allocatable :: shell_n(:), shell_l(:)
+      integer :: iatom, ishell, icomp, total, cursor, n_shells
+      logical :: found
+
+      if (error%has_error()) return
+      call aambs_file(path, error)
+      if (error%has_error()) return
+      call json%initialize()
+      call json%load_file(filename=path)
+      if (json%failed()) then
+         call error%set(ERROR_IO, "could not read the atomic minimal basis at "//path)
+         call json%destroy()
+         return
+      end if
+
+      ! Two passes: the first counts so the arrays can be sized exactly, the
+      ! second fills them. Cheaper than growing them and much easier to read
+      ! than predicting the size from the orbital counts, which would duplicate
+      ! the relationship between shells and functions that this is establishing.
+      total = 0
+      do iatom = 1, size(atomic_numbers)
+         call element_shells(json, atomic_numbers(iatom), shell_n, shell_l, error)
+         if (error%has_error()) then
+            call json%destroy()
+            return
+         end if
+         do ishell = 1, size(shell_l)
+            total = total + 2*shell_l(ishell) + 1
+         end do
+      end do
+
+      allocate (atom_of(total), principal(total), angular(total))
+      cursor = 0
+      do iatom = 1, size(atomic_numbers)
+         call element_shells(json, atomic_numbers(iatom), shell_n, shell_l, error)
+         if (error%has_error()) then
+            call json%destroy()
+            return
+         end if
+         do ishell = 1, size(shell_l)
+            do icomp = 1, 2*shell_l(ishell) + 1
+               cursor = cursor + 1
+               atom_of(cursor) = iatom
+               principal(cursor) = shell_n(ishell)
+               angular(cursor) = shell_l(ishell)
+            end do
+         end do
+      end do
+
+      call json%destroy()
+   end subroutine aambs_shell_labels
+
+   subroutine element_shells(json, atomic_number, shell_n, shell_l, error)
+      !! The principal and angular numbers of one element's shells, in file order
+      type(json_file), intent(inout) :: json
+      integer, intent(in) :: atomic_number
+      integer, allocatable, intent(out) :: shell_n(:), shell_l(:)
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: key
+      integer, allocatable :: momenta(:)
+      integer :: ishell, value
+      logical :: found
+
+      if (error%has_error()) return
+      if (allocated(shell_n)) deallocate (shell_n)
+      if (allocated(shell_l)) deallocate (shell_l)
+      allocate (shell_n(0), shell_l(0))
+
+      ishell = 0
+      do
+         ishell = ishell + 1
+         key = "elements."//to_char(atomic_number)//".electron_shells("// &
+               to_char(ishell)//")"
+         call json%get(key//".n", value, found)
+         if (.not. found) exit
+         shell_n = [shell_n, value]
+         call json%get(key//".angular_momentum", momenta, found)
+         if (.not. found .or. size(momenta) /= 1) then
+            call error%set(ERROR_VALIDATION, "shell "//to_char(ishell)//" of Z = "// &
+                           to_char(atomic_number)//" in the atomic minimal basis "// &
+                           "does not carry exactly one angular momentum. Every "// &
+                           "free-atom shell should.")
+            return
+         end if
+         shell_l = [shell_l, momenta(1)]
+      end do
+
+      if (size(shell_l) == 0) then
+         call error%set(ERROR_VALIDATION, "Z = "//to_char(atomic_number)// &
+                        " has no shells in the atomic minimal basis.")
+      end if
+   end subroutine element_shells
 
    subroutine aambs_file(filename, error)
       !! Locate `aambs/aambs.json` on the basis search path
