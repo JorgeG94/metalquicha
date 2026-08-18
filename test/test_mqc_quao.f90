@@ -1102,10 +1102,12 @@ contains
                              [1.2204192_dp, 0.9274214_dp, 0.7886128_dp, 0.7845094_dp, &
                               1.9930519_dp, 1.8309190_dp, 1.2889523_dp, 1.2306118_dp, &
                               1.9949292_dp, 1.9821198_dp, 1.9224348_dp, 1.2010201_dp, 0.8349982_dp]
-      character(len=7), parameter :: TYPE_NAME(13) = &
-                                     ["SIGMA  ", "SIGMA  ", "PI     ", "SIGMA  ", &
-                                      "SLP    ", "PLP    ", "PI     ", "SIGMA  ", &
-                                      "SLP    ", "PLP    ", "PLP    ", "SIGMA  ", "SIGMA  "]
+      character(len=10), parameter :: TYPE_NAME(13) = &
+                                      ["sigma     ", "sigma     ", "pi        ", &
+                                       "sigma     ", "s-lone    ", "p-lone    ", &
+                                       "pi        ", "sigma     ", "s-lone    ", &
+                                       "p-lone    ", "p-lone    ", "sigma     ", &
+                                       "sigma     "]
       integer, parameter :: PARTNER(13) = [4, 3, 2, 2, 0, 0, 1, 1, 0, 0, 0, 1, 1]
 
       call formyl_chloride_quaos(mol, aambs, mixed, s_mbs, dims, quao, err, ok)

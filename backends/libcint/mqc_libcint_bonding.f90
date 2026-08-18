@@ -100,6 +100,7 @@ contains
       real(dp), allocatable :: kbo(:, :), interference(:, :), populations(:)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
+      character(len=8) :: label
       integer :: natm, iatom, i, core, valence
       logical :: loud
 
@@ -166,14 +167,17 @@ contains
                           "================================")
          call logger%info("")
          call logger%info("  atoms")
-         call logger%info("     atom     population      charge")
+         call logger%info("     atom      population      charge")
          do iatom = 1, natm
-            write (line, "(4x,a3,i0,f14.6,f12.6)") &
-               trim(adjustl(element_symbols(iatom)))//" ", iatom, populations(iatom), &
+            ! Into a fixed-width buffer rather than straight through an `i0`:
+            ! the atom number is variable width, so writing it inline shifts
+            ! every column right the moment a molecule has ten atoms.
+            write (label, "(a,i0)") trim(adjustl(element_symbols(iatom)))//" ", iatom
+            write (line, "(4x,a8,f13.6,f12.6)") label, populations(iatom), &
                real(atomic_numbers(iatom), dp) - populations(iatom)
             call logger%info(trim(line))
          end do
-         write (line, "(a,f14.6)") "     total        ", sum(populations)
+         write (line, "(4x,a8,f13.6)") "total   ", sum(populations)
          call logger%info(trim(line))
 
          call print_quao_report(.true., quao, labels, interference, element_symbols, &

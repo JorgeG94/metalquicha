@@ -541,8 +541,15 @@ contains
    pure function quao_type_name(orbital_type, dominant_l) result(name)
       !! The label the report prints
       !!
+      !! Lower case and spelled out rather than GAMESS's `SIGMA`, `PLP`,
+      !! `NVMOD`. The originals are its internal codes and read as shouting in a
+      !! table; `p-lone` says what `PLP` means without a legend, which matters
+      !! because the legend is in a paper rather than in the output.
+      !!
       !! `dominant_l` only matters for the lone-pair types, where it is the
-      !! difference between SLP and PLP.
+      !! difference between an s lone pair and a p one -- chemically the whole
+      !! content of the label, since a p lone pair points somewhere and can
+      !! conjugate and an s one does not and cannot.
       !!
       !! GAMESS prints nothing at all for the types past PI, and prints its
       !! no-partner marker `NWB   0` for the unclassified ones. Both are given
@@ -550,29 +557,29 @@ contains
       !! is no way to tell that from an orbital that genuinely has no type.
       integer, intent(in) :: orbital_type
       integer, intent(in) :: dominant_l
-      character(len=7) :: name
+      character(len=10) :: name
 
       select case (orbital_type)
       case (QUAO_TYPE_LPMOD)
-         name = shell_letter(dominant_l)//"LPMOD"
+         name = shell_letter(dominant_l)//"-lone/bnd"
       case (QUAO_TYPE_LONE_PAIR)
-         name = shell_letter(dominant_l)//"LP"
+         name = shell_letter(dominant_l)//"-lone"
       case (QUAO_TYPE_RADICAL)
-         name = "RADICAL"
+         name = "radical"
       case (QUAO_TYPE_SIGMA)
-         name = "SIGMA"
+         name = "sigma"
       case (QUAO_TYPE_PI)
-         name = "PI"
+         name = "pi"
       case (QUAO_TYPE_RDLP)
-         name = "RDLP"
+         name = "part-lone"
       case (QUAO_TYPE_RDNV)
-         name = "RDNV"
+         name = "part-empty"
       case (QUAO_TYPE_NVMOD)
-         name = "NVMOD"
+         name = "empty/bnd"
       case (QUAO_TYPE_NV)
-         name = "NV"
+         name = "empty"
       case default
-         name = "NOTYPE"
+         name = "unclassed"
       end select
    end function quao_type_name
 
@@ -582,13 +589,13 @@ contains
 
       select case (l)
       case (0)
-         letter = "S"
+         letter = "s"
       case (1)
-         letter = "P"
+         letter = "p"
       case (2)
-         letter = "D"
+         letter = "d"
       case (3)
-         letter = "F"
+         letter = "f"
       case default
          letter = "?"
       end select
@@ -652,6 +659,7 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:), order(:)
       character(len=160) :: line
       character(len=24) :: left, right
+      character(len=18) :: field_a, field_b
       real(dp) :: total, energy, cutoff
       integer :: n, i, j, k, np, printed, printed_i, printed_j, suppressed
       logical :: bonded
@@ -680,7 +688,7 @@ contains
       ! ---- the covalent skeleton --------------------------------------------
       call logger%info("")
       call logger%info("  bonds")
-      call logger%info("     bond            type        order    kcal/mol    orbitals")
+      call logger%info("     bond              type        order    kcal/mol   orbitals")
       printed = 0
       do k = 1, np
          i = pair_i(order(k))
@@ -691,9 +699,13 @@ contains
          call atom_text(quao, element_symbols, j, right)
          energy = interference(i, j)
          if (present(kinetic_bond_order)) energy = kinetic_bond_order(i, j)
-         write (line, "(4x,a16,a8,f10.4,f11.2,i8,a,i0)") &
-            trim(left)//" - "//trim(right), &
-            adjustl(quao_type_name(labels%orbital_type(i), labels%dominant_l(i))), &
+         ! Assigned to fixed-length buffers rather than written with an `a16`
+         ! edit descriptor: that pads a short string on the *left*, so every
+         ! label right-justifies and a column of "C 1 - O 2" and "C 1 - Cl 3"
+         ! comes out ragged. Assignment pads on the right.
+         field_a = trim(left)//" - "//trim(right)
+         field_b = quao_type_name(labels%orbital_type(i), labels%dominant_l(i))
+         write (line, "(4x,a18,a11,f10.4,f11.2,i7,a,i0)") field_a, field_b, &
             abs(quao%population_bond_order(i, j)), energy, n_core + i, " / ", n_core + j
          call logger%info(trim(line))
       end do
@@ -702,8 +714,8 @@ contains
       ! ---- everything else that couples ------------------------------------
       call logger%info("")
       call logger%info("  delocalization")
-      call logger%info("     donor             into                "// &
-                       "order    kcal/mol    orbitals")
+      call logger%info("     donor             into              "// &
+                       "  order    kcal/mol   orbitals")
       printed = 0
       suppressed = 0
       do k = 1, np
@@ -733,8 +745,10 @@ contains
          end if
          energy = interference(i, j)
          if (present(kinetic_bond_order)) energy = kinetic_bond_order(i, j)
-         write (line, "(4x,a18,a18,f10.4,f11.2,i8,a,i0)") &
-            trim(left), trim(right), quao%population_bond_order(i, j), energy, &
+         field_a = left
+         field_b = right
+         write (line, "(4x,a18,a18,f10.4,f11.2,i7,a,i0)") field_a, field_b, &
+            quao%population_bond_order(i, j), energy, &
             n_core + printed_i, " / ", n_core + printed_j
          call logger%info(trim(line))
       end do
@@ -761,8 +775,8 @@ contains
       ! ---- one row per orbital ----------------------------------------------
       call logger%info("")
       call logger%info("  orbitals")
-      call logger%info("      orb   atom    type      bonded to   "// &
-                       "occupation     %s     %p     %d")
+      call logger%info("      orb  atom   type        bonded to  "// &
+                       " occupation     %s     %p     %d")
       allocate (occupation(n))
       do i = 1, n
          occupation(i) = quao%population_bond_order(i, i)
@@ -773,10 +787,10 @@ contains
          i = order(k)
          call atom_text(quao, element_symbols, i, left)
          call partner_text(quao, labels, element_symbols, i, right)
-         write (line, "(4x,i5,3x,a6,a9,a12,f11.4,3f7.1)") &
-            n_core + i, trim(left), &
-            adjustl(quao_type_name(labels%orbital_type(i), labels%dominant_l(i))), &
-            trim(right), occupation(i), &
+         field_a = left
+         field_b = quao_type_name(labels%orbital_type(i), labels%dominant_l(i))
+         write (line, "(4x,i5,2x,a7,a12,a10,f11.4,3f7.1)") &
+            n_core + i, field_a(1:7), field_b(1:12), right(1:10), occupation(i), &
             100.0_dp*labels%angular_character(0, i), &
             100.0_dp*labels%angular_character(1, i), &
             100.0_dp*labels%angular_character(2, i)
