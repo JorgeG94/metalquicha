@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for modules and submodules.">206 statements</a>
+                 title=" 1.0% of total for modules and submodules.">207 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -204,11 +204,11 @@ One rung of a basis-set-projection ladder</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1340,18 +1340,18 @@ large graphs.</div>
 <path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1676.39,-663.92C1652.93,-665.28 1619.35,-669.97 1594,-684.65 1572.73,-696.97 1579.35,-714.46 1558,-726.65 1536.05,-739.18 1508.38,-744.56 1485.3,-746.74"/>
 <polygon fill="#aaff00" stroke="#aaff00" points="1484.76,-743.28 1475.06,-747.54 1485.3,-750.25 1484.76,-743.28"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_config_types~~UsedByGraph_node36" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_config_types~~UsedByGraph_node36"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_config_types~~UsedByGraph_node36"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1744.5,-801.65 1666.5,-801.65 1666.5,-777.65 1744.5,-777.65 1744.5,-801.65"/>
 <text text-anchor="middle" x="1705.5" y="-787.25" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_config_types~~UsedByGraph_edge41" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1666.25,-783.59C1618.38,-776 1536.47,-763.02 1485.31,-754.91"/>
 <polygon fill="#aaff00" stroke="#aaff00" points="1485.62,-751.41 1475.19,-753.31 1484.52,-758.33 1485.62,-751.41"/>
 </g>
@@ -1949,7 +1949,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~4"></span>
+              <span class="anchor" id="variable-basis~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1983,7 +1983,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~8"></span>
+              <span class="anchor" id="variable-tolerance~11"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2033,7 +2033,7 @@ This is the parsed representation from the input file, not the computational fra
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~2"></span>
+              <span class="anchor" id="variable-charge~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2050,7 +2050,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~8"></span>
+              <span class="anchor" id="variable-indices~7"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2067,7 +2067,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity"></span>
+              <span class="anchor" id="variable-multiplicity~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2146,7 +2146,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~8"></span>
+              <span class="anchor" id="variable-bonds~11"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2163,7 +2163,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2180,7 +2180,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~2"></span>
+              <span class="anchor" id="variable-fragments~4"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -2197,7 +2197,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry"></span>
+              <span class="anchor" id="variable-geometry~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -2214,7 +2214,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~2"></span>
+              <span class="anchor" id="variable-multiplicity~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2231,7 +2231,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~24"></span>
+              <span class="anchor" id="variable-name~26"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2282,7 +2282,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag"></span>
+              <span class="anchor" id="variable-nfrag~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2431,7 +2431,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2448,7 +2448,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2465,7 +2465,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis"></span>
+              <span class="anchor" id="variable-aux_basis~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2499,7 +2499,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~5"></span>
+              <span class="anchor" id="variable-basis~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2555,7 +2555,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~12"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2572,7 +2572,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~9"></span>
+              <span class="anchor" id="variable-calc_type~11"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2640,6 +2640,24 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-cc_spin_adapted~3"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cc_spin_adapted</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+<p>Which coupled-cluster formulation runs: spin-adapted (spatial
+orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.html#variable-cc_spin_adapted~3" class="pull-right"><emph>Read more&hellip;</emph></a>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-cc_tolerance~3"></span>
               real(kind=dp),
             </td>
@@ -2694,7 +2712,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -2711,7 +2729,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint_file"></span>
+              <span class="anchor" id="variable-checkpoint_file~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2832,7 +2850,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-counterpoise~3"></span>
+              <span class="anchor" id="variable-counterpoise~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2845,12 +2863,12 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
                 <td></td>
             <td>
 <p>How basis-set superposition error is handled: &ldquo;none&rdquo; (default) or
-&ldquo;vmfc&rdquo;.</p><a href="../type/mqc_config_t.html#variable-counterpoise~3" class="pull-right"><emph>Read more&hellip;</emph></a>
+&ldquo;vmfc&rdquo;.</p><a href="../type/mqc_config_t.html#variable-counterpoise~4" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~5"></span>
+              <span class="anchor" id="variable-cpcm_nang~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2867,7 +2885,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~5"></span>
+              <span class="anchor" id="variable-cpcm_rscale~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2959,7 +2977,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~6"></span>
+              <span class="anchor" id="variable-dielectric~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3010,7 +3028,7 @@ XC functional name, only meaningful when method = dft</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion_kind"></span>
+              <span class="anchor" id="variable-expansion_kind~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3029,7 +3047,7 @@ predates this and stays as it was.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_far_field"></span>
+              <span class="anchor" id="variable-fmo_far_field~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3046,7 +3064,7 @@ predates this and stays as it was.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_max_outer"></span>
+              <span class="anchor" id="variable-fmo_max_outer~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3063,7 +3081,7 @@ predates this and stays as it was.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_resppc"></span>
+              <span class="anchor" id="variable-fmo_resppc~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3081,7 +3099,7 @@ turns the approximation off and makes every neighbour exact</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_scf_density_tol"></span>
+              <span class="anchor" id="variable-fmo_scf_density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3101,7 +3119,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_scf_energy_tol"></span>
+              <span class="anchor" id="variable-fmo_scf_energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3118,7 +3136,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_scf_max_iter"></span>
+              <span class="anchor" id="variable-fmo_scf_max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3135,7 +3153,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fmo_tolerance"></span>
+              <span class="anchor" id="variable-fmo_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3152,7 +3170,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_level~2"></span>
+              <span class="anchor" id="variable-frag_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -3186,7 +3204,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown~2"></span>
+              <span class="anchor" id="variable-fragment_breakdown~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3203,7 +3221,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_cutoffs"></span>
+              <span class="anchor" id="variable-fragment_cutoffs~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3220,7 +3238,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~3"></span>
+              <span class="anchor" id="variable-fragments~5"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -3254,7 +3272,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~2"></span>
+              <span class="anchor" id="variable-geometry~3"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -3271,7 +3289,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
+              <span class="anchor" id="variable-global_groups~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -3600,7 +3618,7 @@ distinction survives; the reader defaults this from it and lets
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~5"></span>
+              <span class="anchor" id="variable-method"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3634,7 +3652,7 @@ distinction survives; the reader defaults this from it and lets
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~3"></span>
+              <span class="anchor" id="variable-multiplicity~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -3685,7 +3703,7 @@ distinction survives; the reader defaults this from it and lets
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~2"></span>
+              <span class="anchor" id="variable-nfrag~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -3702,7 +3720,7 @@ distinction survives; the reader defaults this from it and lets
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nmol"></span>
+              <span class="anchor" id="variable-nmol~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3719,7 +3737,7 @@ distinction survives; the reader defaults this from it and lets
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -4146,7 +4164,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-skip_json_output"></span>
+              <span class="anchor" id="variable-skip_json_output~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4163,7 +4181,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~5"></span>
+              <span class="anchor" id="variable-solvation_model~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -4180,7 +4198,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~5"></span>
+              <span class="anchor" id="variable-solvent~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -4197,7 +4215,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unchecked_input"></span>
+              <span class="anchor" id="variable-unchecked_input~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4209,7 +4227,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Downgrade semantic validation to warnings.</p><a href="../type/mqc_config_t.html#variable-unchecked_input" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Downgrade semantic validation to warnings.</p><a href="../type/mqc_config_t.html#variable-unchecked_input~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -4249,7 +4267,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~5"></span>
+              <span class="anchor" id="variable-use_cds~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4266,7 +4284,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~5"></span>
+              <span class="anchor" id="variable-use_shift~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4326,7 +4344,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~90"></span>
+              <span class="anchor" id="variable-this~96"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4366,7 +4384,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~91"></span>
+              <span class="anchor" id="variable-this~97"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4406,7 +4424,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~89"></span>
+              <span class="anchor" id="variable-this~95"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4449,7 +4467,7 @@ tblite&rsquo;s would make the same deck mean two things.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-18 09:16 +0000             </p>
+ on 2026-08-18 22:38 +0000             </p>
           </div>
         </div>
         <br>

@@ -277,6 +277,9 @@ module mqc_method_config
          !! Use DIIS for amplitude equations
       integer :: diis_size = 8
          !! DIIS subspace size
+      logical :: spin_adapted = .true.
+         !! Spatial-orbital (spin-adapted) formulation rather than spin orbitals.
+         !! See mqc_config_types for why this is the default.
 
       ! EOM-CC for excited states
       integer :: n_roots = 0

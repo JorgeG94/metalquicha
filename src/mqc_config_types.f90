@@ -166,6 +166,16 @@ module mqc_config_types
       logical :: cc_triples = .false.
       logical :: cc_diis = .true.
       integer :: cc_diis_size = 8
+      logical :: cc_spin_adapted = .true.
+         !! Which coupled-cluster formulation runs: spin-adapted (spatial
+         !! orbitals) when true, spin orbitals when false.
+         !!
+         !! Defaults to spin-adapted because for the closed-shell reference
+         !! that is the only one either formulation supports, it is strictly
+         !! better on both axes -- about sixteen times less memory and several
+         !! times faster. The spin-orbital path stays reachable, and is what the
+         !! two are cross-checked against: they must agree to machine precision,
+         !! so a deck can settle any doubt about a number by running it twice.
       ! keywords.mcscf -- the active space, for CASSCF and CASCI
       character(len=:), allocatable :: mcscf_avas_orbitals(:)
          !! Atomic orbital labels from `keywords.mcscf.avas.orbitals`, e.g.

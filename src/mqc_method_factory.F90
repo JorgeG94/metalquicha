@@ -180,6 +180,7 @@ contains
       m%options%cc_tolerance = config%cc%amplitude_convergence
       ! Zero turns DIIS off, which is how the SCF spells the same thing.
       m%options%cc_diis_size = config%cc%diis_size
+      m%options%cc_spin_adapted = config%cc%spin_adapted
       if (.not. config%cc%use_diis) m%options%cc_diis_size = 0
       ! From config%corr, not config%scf: the reference and the correlation
       ! treatment are configured separately and may disagree.

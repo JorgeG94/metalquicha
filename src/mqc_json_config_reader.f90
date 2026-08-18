@@ -244,6 +244,7 @@ contains
       call optional_real(json, "keywords.cc.tolerance", config%cc_tolerance)
       call optional_logical(json, "keywords.cc.diis", config%cc_diis)
       call optional_int(json, "keywords.cc.diis_size", config%cc_diis_size)
+      call optional_logical(json, "keywords.cc.spin_adapted", config%cc_spin_adapted)
       ! Recorded as "was it named" as well as "what was it", because the method
       ! name is the usual source of this and only an explicit keyword may
       ! override it. `optional_logical` leaves its target alone when the key is

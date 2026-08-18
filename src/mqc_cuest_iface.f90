@@ -59,6 +59,9 @@ module mqc_cuest_iface
       integer :: cc_max_iter = 100
       real(dp) :: cc_tolerance = 1.0e-8_dp
       integer :: cc_diis_size = 8
+      logical :: cc_spin_adapted = .true.
+         !! Run coupled cluster in spatial orbitals rather than spin orbitals.
+         !! CPU backend only; cuEST has no coupled cluster at all.
       ! Kohn-Sham grid. `grid_level` picks per-element radial and angular counts
       ! from the standard tables; radial_points/angular_points override it for
       ! every atom, which is what a convergence study wants.

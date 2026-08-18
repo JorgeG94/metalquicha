@@ -60,6 +60,8 @@ module mqc_method_hf
       integer :: cc_max_iter = 100
       real(dp) :: cc_tolerance = 1.0e-8_dp
       integer :: cc_diis_size = 8
+      logical :: cc_spin_adapted = .true.
+         !! Spatial-orbital coupled cluster rather than spin orbitals
          !! Fit J and K rather than computing exact integrals (CPU backend)
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
@@ -143,6 +145,7 @@ contains
       settings%cc_max_iter = this%options%cc_max_iter
       settings%cc_tolerance = this%options%cc_tolerance
       settings%cc_diis_size = this%options%cc_diis_size
+      settings%cc_spin_adapted = this%options%cc_spin_adapted
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock
