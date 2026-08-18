@@ -28,6 +28,7 @@ module mqc_method_types
    public :: parse_method_string  !! Input-file spelling -> method type
    public :: method_spin_scaling  !! Spin-component scaling a spelling implies
    public :: method_wants_density_fitting  !! Whether a spelling asks for RI
+   public :: method_is_casci  !! Whether a spelling asks for fixed orbitals
 
    ! Method type constants
    integer(int32), parameter :: METHOD_TYPE_UNKNOWN = 0
@@ -279,6 +280,31 @@ contains
 
       wants_df = (index(lower_str, "ri-") == 1) .or. (index(lower_str, "df-") == 1)
    end function method_wants_density_fitting
+
+   function method_is_casci(method_str) result(is_casci)
+      !! Whether a method name asks for fixed orbitals
+      !!
+      !! "casci" and "casscf" are the same wavefunction ansatz -- a full CI in a
+      !! chosen active space -- and differ only in whether the orbitals are
+      !! optimised alongside the CI coefficients. That is one boolean, not two
+      !! method types, so both spellings parse to METHOD_TYPE_MCSCF and the
+      !! distinction is recovered here while the spelling still exists. Exactly
+      !! the same job `method_wants_density_fitting` does for the RI prefix.
+      character(len=*), intent(in) :: method_str
+      logical :: is_casci
+
+      character(len=:), allocatable :: lower_str
+      integer :: i
+
+      lower_str = trim(adjustl(method_str))
+      do i = 1, len(lower_str)
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
+            lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
+         end if
+      end do
+
+      is_casci = (lower_str == "casci")
+   end function method_is_casci
 
    function parse_method_string(method_str) result(method_type)
       !! Parse method string from input file (e.g., "XTB-GFN1" -> gfn1)

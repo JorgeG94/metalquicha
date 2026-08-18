@@ -221,6 +221,8 @@ Ab initio, on the CPU through libcint:
 - ``CCSD`` and ``CCSD(T)``
 - ``RI-`` or ``DF-`` on any correlated method asks for the density-fitted route:
   ``RI-MP2``, ``RI-CCSD``, ``RI-CCSD(T)``
+- ``CASSCF`` (also ``MCSCF``) and ``CASCI`` -- one method with the orbitals free
+  or frozen; both need ``keywords.mcscf`` to say what the active space is
 
 **Basis sets.** ``basis`` is required by every ab initio method and ignored by the
 semi-empirical ones, which carry their own parameters.
@@ -553,6 +555,99 @@ What only an iterative correlation method needs.
 - ``triples``: Override whether (T) runs. Ordinarily the method name settles it,
   since ``ccsd`` and ``ccsd(t)`` are separate methods rather than one method with
   a flag; set this only to contradict the name.
+
+Active Space Options
+^^^^^^^^^^^^^^^^^^^^
+
+For ``casscf``, ``casci`` and ``mcscf``. A complete active space calculation
+starts from a closed-shell SCF, partitions its orbitals into doubly occupied
+*inactive*, an *active* set the CI distributes electrons over in every possible
+way, and empty *virtual* ones, and then -- for CASSCF -- optimises the orbitals
+alongside the CI coefficients.
+
+.. code-block:: json
+
+   "mcscf": {
+     "n_active_electrons": 6,
+     "n_active_orbitals": 6,
+     "n_inactive_orbitals": -1,
+     "optimize_orbitals": true,
+     "max_macro_iter": 100,
+     "orbital_convergence": 1e-6
+   }
+
+- ``n_active_electrons`` / ``n_active_orbitals``: The active space, written
+  CAS(e,o). **Required unless** ``avas`` chooses it -- there is no default,
+  because the right active space is a property of the chemistry rather than of
+  the molecule, and a guess would produce a converged energy for a calculation
+  nobody asked for.
+- ``n_inactive_orbitals``: Doubly occupied orbitals below the active space
+  (default: -1, derived as ``(nelec - n_active_electrons) / 2``). Set it only to
+  ask for a partition other than the obvious one; the electrons still have to
+  add up.
+- ``optimize_orbitals``: Move the orbitals as well as the CI coefficients
+  (default: true, or false if the method is spelled ``casci``). All three
+  spellings are one method type, so this is the only thing that distinguishes
+  CASSCF from CASCI; set it only to contradict the name.
+- ``max_macro_iter``: Orbital optimisation iterations (default: 100)
+- ``orbital_convergence``: Largest orbital gradient element accepted as
+  converged (default: 1e-6)
+
+The spin split is not a keyword. ``molecular_multiplicity`` settles it: every
+inactive orbital is doubly occupied and contributes nothing to Ms, so the whole
+of the excess alpha population sits in the active space and
+``n_alpha - n_beta = multiplicity - 1`` exactly. An open-shell *state* on an
+even-electron molecule is reachable this way; an odd electron count is not,
+since the reference SCF is restricted.
+
+Choosing the Active Space Automatically
+"""""""""""""""""""""""""""""""""""""""
+
+Deciding which orbitals belong in the active space is the hardest part of using
+CASSCF, and getting it wrong gives a converged, plausible, wrong answer. AVAS
+does it from a description of the chemistry instead: name the *atomic* orbitals
+the interesting physics lives in, and the projection works out which molecular
+orbitals carry that character.
+
+.. code-block:: json
+
+   "mcscf": {
+     "avas": {"orbitals": ["N 2s", "N 2p"], "threshold": 0.2},
+     "max_macro_iter": 300
+   }
+
+- ``orbitals``: Atomic orbital labels, each an element symbol, a space, a
+  principal quantum number and a subshell letter -- ``"N 2p"``, ``"Cr 3d"``.
+  Required inside the block. Only shells a *free atom* occupies exist to be
+  asked for, so there is no ``"N 3d"``.
+- ``threshold``: How much of the requested atomic character a molecular orbital
+  needs to join the active space, between 0 and 1 (default: 0.2).
+
+Every molecular orbital is scored by how much of it is the atomic orbitals
+named, and everything above the threshold becomes active. For N\ :sub:`2`
+asking for ``"N 2p"``, the occupied orbitals score 0.000, 0.000, 0.000, 0.779,
+0.959, 0.991, 0.991 -- three with no nitrogen 2p character at all and four made
+almost entirely of it, with nothing in between. Four occupied plus the matching
+antibonding orbitals gives CAS(8,7): the triple bond and its antibonds, which is
+what a careful person would have chosen by hand.
+
+That gap is why ``threshold`` rarely needs touching. Anywhere in it gives the
+same answer. A request that produces a *continuum* of scores instead is telling
+you the question was badly posed, not that the threshold needs tuning.
+
+Naming an active space twice -- an ``avas`` block *and* ``n_active_electrons``
+-- is refused rather than resolved by precedence, since the counts would be
+silently discarded in favour of whatever the projection decided.
+
+Reference: Sayfutyarova, Sun, Chan and Knizia, *J. Chem. Theory Comput.* **13**,
+4063 (2017). The projection here uses this code's own free-atom minimal basis
+rather than the MINAO set of the paper; the two select the same spaces, which is
+what the width of that gap predicts.
+
+State averaging and CASPT2/NEVPT2 are not implemented, and no keyword accepts
+them -- a deck asking for either is refused rather than quietly given a
+ground-state energy. Derivatives are refused for the same reason: there is no
+CASSCF gradient here, analytic or numerical.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^

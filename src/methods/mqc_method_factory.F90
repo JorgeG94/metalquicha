@@ -281,14 +281,20 @@ contains
       type(method_config_t), intent(in) :: config
 
       ! Common settings
+      m%options%properties = config%properties
       m%options%basis_set = config%basis_set
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
 
       ! Active space from config%mcscf
+      if (allocated(config%mcscf%avas_orbitals)) then
+         m%options%avas_orbitals = config%mcscf%avas_orbitals
+      end if
+      m%options%avas_threshold = config%mcscf%avas_threshold
       m%options%n_active_electrons = config%mcscf%n_active_electrons
       m%options%n_active_orbitals = config%mcscf%n_active_orbitals
       m%options%n_inactive_orbitals = config%mcscf%n_inactive_orbitals
+      m%options%optimize_orbitals = config%mcscf%optimize_orbitals
 
       ! State averaging
       m%options%n_states = config%mcscf%n_states
@@ -303,6 +309,16 @@ contains
       m%options%max_micro_iter = config%mcscf%max_micro_iter
       m%options%orbital_tol = config%mcscf%orbital_convergence
       m%options%ci_tol = config%mcscf%ci_convergence
+
+      ! The reference SCF, from the shared config%scf that every other
+      ! reference-based method reads. A CASSCF starts from a closed-shell SCF,
+      ! and a deck that tightened `keywords.scf` meant that one too.
+      m%options%max_iter = config%scf%max_iter
+      m%options%conv_tol = config%scf%energy_convergence
+      m%options%density_tol = config%scf%density_convergence
+      m%options%use_diis = config%scf%use_diis
+      m%options%diis_size = config%scf%diis_size
+      m%options%pcm = config%pcm
 
       ! PT2 corrections
       m%options%use_pt2 = config%mcscf%use_pt2

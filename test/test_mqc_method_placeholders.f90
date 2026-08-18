@@ -1,9 +1,9 @@
 !! What the method objects promise, now that most of them are not placeholders
 !!
-!! Hartree-Fock and Kohn-Sham are real calculations on this path: analytic
-!! gradients and finite-difference Hessians both exist for them. Only MCSCF is
-!! still a stub, and its tests below are the only ones that assert stub
-!! behaviour. The file keeps its name because the target does.
+!! Hartree-Fock, Kohn-Sham and CASSCF are all real calculations on this path.
+!! Nothing here is a placeholder any more; the file keeps its name because the
+!! target does. What MCSCF still lacks is derivatives, and it refuses them
+!! rather than returning zeros -- which is what the gradient case below asserts.
 !!
 !! **The contract every test here shares** is not that a particular number comes
 !! back. It is that exactly one of "produced a result" and "reported an error"
@@ -308,6 +308,10 @@ contains
    end subroutine test_mcscf_no_active
 
    subroutine test_mcscf_with_active(error)
+      !! CASSCF is no longer a placeholder, so this is the same contract the
+      !! Hartree-Fock and Kohn-Sham cases assert rather than "a number came
+      !! back". It used to check that an energy always arrived, which held only
+      !! because the energy was `-1.0 * n_atoms`.
       type(error_type), allocatable, intent(out) :: error
       type(mcscf_method_t) :: method
       type(physical_fragment_t) :: fragment
@@ -318,21 +322,28 @@ contains
       method%options%verbose = .true.
       method%options%n_active_electrons = 4
       method%options%n_active_orbitals = 4
-      method%options%n_states = 2
-      method%options%use_pt2 = .true.
 
       call method%calc_energy(fragment, result)
 
-      call check(error,.not. result%has_error, &
-                 "MCSCF with active space should not have error")
+      call check(error, result%has_error .neqv. result%has_energy, &
+                 "MCSCF must either produce an energy or report an error, not both "// &
+                 "or neither")
       if (allocated(error)) return
 
-      call check(error, result%has_energy, "MCSCF energy should set has_energy")
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed MCSCF calculation must carry a diagnostic message")
+      end if
 
       call fragment%destroy()
    end subroutine test_mcscf_with_active
 
    subroutine test_mcscf_gradient(error)
+      !! A CASSCF gradient is refused rather than faked
+      !!
+      !! This used to assert that a gradient came back and was allocated, which
+      !! it was: a fully allocated array of zeros. That is the one thing a
+      !! derivative must never do, so the assertion is now the opposite one.
       type(error_type), allocatable, intent(out) :: error
       type(mcscf_method_t) :: method
       type(physical_fragment_t) :: fragment
@@ -346,14 +357,16 @@ contains
 
       call method%calc_gradient(fragment, result)
 
-      call check(error,.not. result%has_error, &
-                 "MCSCF gradient should not have error")
+      call check(error, result%has_error, &
+                 "an MCSCF gradient must be refused, not returned as zeros")
       if (allocated(error)) return
 
-      call check(error, result%has_gradient, "MCSCF gradient should set has_gradient")
+      call check(error,.not. result%has_gradient, &
+                 "a refused MCSCF gradient must not claim to have one")
       if (allocated(error)) return
 
-      call check(error, allocated(result%gradient), "MCSCF gradient should be allocated")
+      call check(error, len_trim(result%error%get_message()) > 0, &
+                 "a refused MCSCF gradient must say why")
 
       call fragment%destroy()
    end subroutine test_mcscf_gradient
