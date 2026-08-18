@@ -222,6 +222,10 @@ addtest(mqc_vibrational_analysis)
 addtest(mqc_thermochemistry)
 addtest(mqc_method_types)
 addtest(mqc_method_placeholders)
+# Which backend a run credits. Resolved from the method, the request and what
+# linked, so this runs on any build -- with and without cuEST it just expects a
+# different answer for `auto`.
+addtest(mqc_acknowledgements)
 # The optimizer's vocabulary, not the DL-FIND bridge: mqc_optimizer_types is
 # compiled whether or not MQC_ENABLE_DLFIND is on, so this runs in CI, where the
 # optimizer backend is off.

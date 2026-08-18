@@ -19,6 +19,7 @@ program main
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
    use mqc_io_helpers, only: set_output_json_filename, ends_with
    use mqc_logo, only: print_logo
+   use mqc_acknowledgements, only: print_acknowledgement
    use mqc_version, only: print_version
    use pic_timer, only: timer_type
    use mqc_error, only: error_t
@@ -109,6 +110,13 @@ program main
       if (resources%mpi_comms%world_comm%rank() == 0) then
          call logger%info("Logger verbosity set to: "//trim(mqc_config%log_level))
       end if
+   end if
+
+   ! Name the library that is about to do the work, before it does any of it.
+   ! Here rather than beside the calculation because a fragmented run makes
+   ! thousands of them and the credit is owed once, to one rank's output.
+   if (resources%mpi_comms%world_comm%rank() == 0) then
+      call print_acknowledgement(mqc_config%method, mqc_config%backend)
    end if
 
    ! Handle single vs multiple molecules

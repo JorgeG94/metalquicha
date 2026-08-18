@@ -13,8 +13,20 @@ module mqc_cuest_bridge
    private
 
    public :: run_cuest_scf
+   public :: cuest_backend_available
 
 contains
+
+   pure function cuest_backend_available() result(available)
+      !! .true. -- this build has cuEST
+      !!
+      !! The stub next door answers .false., so the question is a property of
+      !! the binary that linked rather than of the flags somebody believes they
+      !! configured with.
+      logical :: available
+
+      available = .true.
+   end function cuest_backend_available
 
    subroutine run_cuest_scf(settings, fragment, result, want_gradient)
       !! Hand the calculation to the cuEST driver

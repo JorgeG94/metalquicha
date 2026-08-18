@@ -40,7 +40,9 @@ module mqc_json_config_reader
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
-                               method_wants_density_fitting
+                               method_wants_density_fitting, method_type_to_string
+   use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, BACKEND_CUEST
+   use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
@@ -145,6 +147,7 @@ contains
       character(len=:), allocatable :: text
       integer :: n_mol, imol
       logical :: found, settings
+      logical :: backend_named
 
       ! The two defaults that are not declared on the type itself.
       config%log_level = "info"
@@ -185,6 +188,7 @@ contains
       ! carry the previous key's value forward whenever one is absent, since
       ! `optional_string` leaves its target alone rather than clearing it.
       call optional_string(json, "system.logger.level", config%log_level)
+      call optional_logical_seen(json, "system.gpu", config%gpu, config%gpu_set)
       call optional_logical(json, "system.skip_json_output", config%skip_json_output)
       call optional_logical(json, "system.unchecked_input", config%unchecked_input)
       call optional_string(json, "system.checkpoint", config%checkpoint_file)
@@ -240,10 +244,13 @@ contains
          ! Read into a deferred-length local, since the config field is fixed
          ! width and `optional_string` takes an allocatable.
          character(len=:), allocatable :: backend_text
-         logical :: backend_found
-         call json%get("backend", backend_text, backend_found)
-         if (backend_found .and. allocated(backend_text)) config%backend = backend_text
+         call json%get("backend", backend_text, backend_named)
+         if (backend_named .and. allocated(backend_text)) config%backend = backend_text
       end block
+      ! Both spellings are now in hand, so the GPU request can be settled and
+      ! checked against what this build and this method can actually do.
+      call resolve_gpu_request(config, backend_named, error)
+      if (error%has_error()) return
       call json%info("keywords.pcm", found=found)
       config%pcm_enabled = found
       call optional_real(json, "keywords.pcm.dielectric", config%pcm_dielectric)
@@ -903,6 +910,83 @@ contains
       call json%get(path, found_value, found)
       if (found) value = found_value
    end subroutine optional_real
+
+   subroutine resolve_gpu_request(config, backend_named, error)
+      !! Settle `system.gpu` against `backend`, then refuse a request nothing can honour
+      !!
+      !! Three things happen here, and all three happen before a calculation is
+      !! set up rather than inside one. A deck that asks for a GPU it cannot have
+      !! should be told so while it is still a deck: the alternative is finding
+      !! out after fragmentation, once per fragment, from a bridge that computes
+      !! nothing.
+      !!
+      !!   * `system.gpu` resolves into `backend`, so everything downstream reads
+      !!     one field however the deck spelled the question. Naming both and
+      !!     disagreeing -- `"gpu": true` beside `"backend": "cpu"` -- is refused
+      !!     rather than resolved by precedence.
+      !!   * asking for cuEST on a build without it is refused. This is asked of
+      !!     the bridge that linked, not of a preprocessor symbol, so the answer
+      !!     describes the binary rather than somebody's configure line.
+      !!   * asking for cuEST for a method it has no implementation of is refused.
+      !!     Substituting the CPU silently would report a provenance and a set of
+      !!     timings that were not true.
+      type(mqc_config_t), intent(inout) :: config
+      logical, intent(in) :: backend_named  !! Whether the deck had a root `backend` key
+      type(error_t), intent(out) :: error
+
+      integer :: backend_kind
+
+      if (config%gpu_set) then
+         if (backend_named) then
+            call parse_backend_name(config%backend, backend_kind, error)
+            if (error%has_error()) return
+            if ((backend_kind == BACKEND_CUEST) .neqv. config%gpu) then
+               call error%set(ERROR_VALIDATION, "system.gpu and backend disagree: "// &
+                              "system.gpu is "//trim(merge("true ", "false", config%gpu))// &
+                              " but backend is '"//trim(config%backend)// &
+                              "'. Name one of them, not both.")
+               return
+            end if
+         end if
+         if (config%gpu) then
+            config%backend = "cuest"
+         else
+            config%backend = "libcint"
+         end if
+      end if
+
+      call parse_backend_name(config%backend, backend_kind, error)
+      if (error%has_error()) return
+      if (backend_kind /= BACKEND_CUEST) return
+
+      if (.not. cuest_backend_available()) then
+         call error%set(ERROR_VALIDATION, gpu_asked_by(config)//" but this build has "// &
+                        "no cuEST backend. Rebuild with CMake and "// &
+                        "-DMQC_ENABLE_CUEST=ON -DCUEST_ROOT=<cuest archive>, or drop "// &
+                        "the request to run on the CPU.")
+         return
+      end if
+
+      if (.not. method_runs_on_cuest(config%method)) then
+         call error%set(ERROR_VALIDATION, gpu_asked_by(config)//" but '"// &
+                        trim(method_type_to_string(config%method))//"' has no cuEST "// &
+                        "implementation; only Hartree-Fock and DFT are offloaded. "// &
+                        "Run it on the CPU, or pick a method the GPU has.")
+         return
+      end if
+   end subroutine resolve_gpu_request
+
+   pure function gpu_asked_by(config) result(text)
+      !! Which key asked for the GPU, so the refusal names what the deck wrote
+      type(mqc_config_t), intent(in) :: config
+      character(len=:), allocatable :: text
+
+      if (config%gpu_set) then
+         text = "system.gpu is true"
+      else
+         text = "backend '"//trim(config%backend)//"' was asked for"
+      end if
+   end function gpu_asked_by
 
    subroutine optional_logical_seen(json, path, value, seen)
       !! Fetch a boolean, and say whether the deck named it
