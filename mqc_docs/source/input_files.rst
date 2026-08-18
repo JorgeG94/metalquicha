@@ -589,6 +589,28 @@ Fragmentation Options
 - ``distance_metric``: For distance cutoffs: ``"min"``, ``"max"``, ``"com"`` (center of mass)
 - ``cutoffs``: Distance thresholds (in Angstroms) for including dimers, trimers, etc.
 
+Properties Section
+------------------
+
+Analyses to run once the wave function exists, beside ``keywords`` rather than
+inside it. The distinction is worth keeping: ``keywords`` say how to compute the
+wave function and change the number that comes out, while ``properties`` ask for
+something further to be done with one already determined and change no energy.
+The driver stays ``"energy"``.
+
+.. code-block:: json
+
+   "properties": {
+     "bonding_analysis": {
+       "type": "gms_quao",
+       "energy_threshold": 1.0
+     }
+   }
+
+- ``bonding_analysis``: The quasi-atomic bonding picture -- which atoms are
+  bonded, by sigma or pi, how strongly, and where the lone pairs are. See
+  :doc:`bonding_analysis`.
+
 System Section
 --------------
 
