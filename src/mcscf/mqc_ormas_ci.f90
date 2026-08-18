@@ -16,12 +16,18 @@ module mqc_ormas_ci
    !! exactly, before anything harder is built on top of it.
    use pic_types, only: dp, int64
    use pic_io, only: to_char
+   use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_determinants, only: link_table_t, string_address
+   use mqc_ci, only: sigma_vector
    use mqc_ormas_space, only: ormas_space_t
    implicit none
    private
 
    public :: ormas_diagonal
+   public :: full_space_index
+   public :: ormas_sigma
+   public :: ormas_lowest
 
 contains
 
@@ -178,5 +184,162 @@ contains
       deallocate (coulomb, exchange, one_a, same_a, screen_a, one_b, same_b, screen_b)
       deallocate (occ_a, occ_b)
    end subroutine ormas_diagonal
+
+   subroutine full_space_index(space, alpha, beta, in_alpha, in_beta)
+      !! Where each of the space's strings sits in the unrestricted list
+      !!
+      !! The restricted space groups its strings by occupation class; the
+      !! complete space orders them by bit pattern. Both index the same objects,
+      !! so one permutation relates them, and it is wanted because the machinery
+      !! being borrowed below -- excitation tables, the sigma build -- is
+      !! written against the complete space.
+      type(ormas_space_t), intent(in) :: space
+      integer(int64), intent(in) :: alpha(:), beta(:)
+      integer, allocatable, intent(out) :: in_alpha(:), in_beta(:)
+
+      integer :: i
+
+      allocate (in_alpha(size(alpha)), in_beta(size(beta)))
+      do i = 1, size(alpha)
+         in_alpha(i) = string_address(space%n_active_orbitals, space%n_alpha, alpha(i))
+      end do
+      do i = 1, size(beta)
+         in_beta(i) = string_address(space%n_active_orbitals, space%n_beta, beta(i))
+      end do
+   end subroutine full_space_index
+
+   subroutine ormas_sigma(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
+                          ci, sigma, error)
+      !! `sigma = P H P c`, with `P` the projection onto the restricted space
+      !!
+      !! Spread the vector over the complete space, putting zero everywhere the
+      !! restriction excludes; apply the complete-space Hamiltonian; keep only
+      !! what lands back inside. Because the vector vanishes outside, the sum
+      !! that reaches an in-space determinant runs only over in-space
+      !! determinants, so this *is* the restricted Hamiltonian -- not an
+      !! approximation to it.
+      !!
+      !! Which makes it correct by construction and, for the moment, the whole
+      !! implementation: it inherits a sigma already checked against PySCF
+      !! rather than introducing a second one to get wrong.
+      !!
+      !! What it does not inherit is the saving. The work is that of the
+      !! complete space, so this is the route while a space is small enough to
+      !! check, and not the route that makes a restricted space worth having.
+      !! The intermediate a direct build needs is subtler than it looks: an
+      !! excitation may leave the space and a second bring it back, so the
+      !! basis it lives on is the space plus one excitation, and truncating it
+      !! to the space itself silently drops terms. That is the next piece, and
+      !! it has to reproduce this one.
+      type(ormas_space_t), intent(in) :: space
+      real(dp), intent(in) :: folded(:, :)
+      type(link_table_t), intent(in) :: alpha_table, beta_table
+      integer, intent(in) :: in_alpha(:), in_beta(:)
+      real(dp), intent(in) :: ci(:)                  !! (n_determinants)
+      real(dp), intent(out) :: sigma(:)              !! (n_determinants)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: embedded(:, :), acted(:, :)
+      integer :: ia, ib, ga, gb
+      integer(int64) :: at
+
+      if (error%has_error()) return
+
+      allocate (embedded(alpha_table%n_strings, beta_table%n_strings))
+      allocate (acted(alpha_table%n_strings, beta_table%n_strings))
+      embedded = 0.0_dp
+
+      do ia = 1, size(in_alpha)
+         ga = space%alpha_string_class(ia)
+         do ib = 1, size(in_beta)
+            gb = space%beta_string_class(ib)
+            if (.not. space%compatible(gb, ga)) cycle
+            at = determinant_address_local(space, ia, ib)
+            embedded(in_alpha(ia), in_beta(ib)) = ci(at)
+         end do
+      end do
+
+      call sigma_vector(folded, embedded, alpha_table, beta_table, acted, error)
+      if (error%has_error()) return
+
+      do ia = 1, size(in_alpha)
+         ga = space%alpha_string_class(ia)
+         do ib = 1, size(in_beta)
+            gb = space%beta_string_class(ib)
+            if (.not. space%compatible(gb, ga)) cycle
+            at = determinant_address_local(space, ia, ib)
+            sigma(at) = acted(in_alpha(ia), in_beta(ib))
+         end do
+      end do
+
+      deallocate (embedded, acted)
+   end subroutine ormas_sigma
+
+   pure function determinant_address_local(space, ia, ib) result(at)
+      !! `determinant_address`, spelled out here so this module needs no
+      !! circular use of the one it is built on
+      type(ormas_space_t), intent(in) :: space
+      integer, intent(in) :: ia, ib
+      integer(int64) :: at
+
+      integer :: ga, gb
+
+      ga = space%alpha_string_class(ia)
+      gb = space%beta_string_class(ib)
+      at = space%alpha_base(ia) + space%block_offset(gb, ga) &
+           + (int(ib, int64) - space%beta_offset(gb))
+   end function determinant_address_local
+
+   subroutine ormas_lowest(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
+                           n_roots, energies, error)
+      !! The lowest eigenvalues of the restricted Hamiltonian, densely
+      !!
+      !! Builds the matrix a column at a time by applying `ormas_sigma` to each
+      !! unit vector, then diagonalises it. That costs a determinant's worth of
+      !! sigma per determinant and is only sane while the space is small -- but
+      !! it introduces no matrix elements of its own, so the energies it
+      !! returns are exactly what the sigma says they are and nothing has been
+      !! written twice.
+      type(ormas_space_t), intent(in) :: space
+      real(dp), intent(in) :: folded(:, :)
+      type(link_table_t), intent(in) :: alpha_table, beta_table
+      integer, intent(in) :: in_alpha(:), in_beta(:)
+      integer, intent(in) :: n_roots
+      real(dp), allocatable, intent(out) :: energies(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: matrix(:, :), unit(:), column(:), values(:)
+      integer :: ndet, d, info
+
+      if (error%has_error()) return
+
+      ndet = int(space%n_determinants)
+      if (n_roots < 1 .or. n_roots > ndet) then
+         call error%set(ERROR_VALIDATION, "asked for "//to_char(n_roots)// &
+                        " roots of a space holding "//to_char(ndet)//" determinants.")
+         return
+      end if
+
+      allocate (matrix(ndet, ndet), unit(ndet), column(ndet), values(ndet))
+      do d = 1, ndet
+         unit = 0.0_dp
+         unit(d) = 1.0_dp
+         call ormas_sigma(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
+                          unit, column, error)
+         if (error%has_error()) return
+         matrix(:, d) = column
+      end do
+
+      call pic_syev(matrix, values, jobz="N", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "diagonalising the restricted Hamiltonian "// &
+                        "failed with LAPACK info "//to_char(info)//".")
+         return
+      end if
+
+      allocate (energies(n_roots))
+      energies = values(1:n_roots)
+      deallocate (matrix, unit, column, values)
+   end subroutine ormas_lowest
 
 end module mqc_ormas_ci

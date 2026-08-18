@@ -32,10 +32,10 @@ module test_mqc_ormas_ci
    use pic_types, only: dp, int64
    use mqc_error, only: error_t
    use mqc_determinants, only: link_table_t, build_link_table
-   use mqc_ci, only: ci_diagonal
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space, ormas_strings, &
                               determinant_address
-   use mqc_ormas_ci, only: ormas_diagonal
+   use mqc_ci, only: ci_diagonal, absorb_one_electron
+   use mqc_ormas_ci, only: ormas_diagonal, full_space_index, ormas_lowest
    implicit none
    private
 
@@ -52,6 +52,7 @@ contains
       testsuite = [ &
                   new_unittest("matches_slater_rules", test_slater), &
                   new_unittest("agrees_with_the_cas_diagonal", test_against_cas), &
+                  new_unittest("energies_match_the_python_reference", test_energies), &
                   new_unittest("rejects_mismatched_integrals", test_refusals) &
                   ]
    end subroutine collect_mqc_ormas_ci_tests
@@ -301,6 +302,82 @@ contains
       call alpha_table%destroy()
       call beta_table%destroy()
    end subroutine test_against_cas
+
+   subroutine energies_of(first_orbital, norb, na, nb, min_e, max_e, expected, error)
+      !! The three lowest roots of one partition, against transcribed values
+      integer, intent(in) :: first_orbital(:), min_e(:), max_e(:)
+      integer, intent(in) :: norb, na, nb
+      real(dp), intent(in) :: expected(:)
+      type(error_type), allocatable, intent(inout) :: error
+
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      type(link_table_t) :: alpha_table, beta_table
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer, allocatable :: in_alpha(:), in_beta(:)
+      real(dp), allocatable :: h1e(:, :), eri(:, :, :, :), folded(:, :), energies(:)
+      integer :: root
+
+      call model_integrals(norb, h1e, eri)
+      call absorb_one_electron(h1e, eri, na + nb, folded, err)
+      call build_link_table(norb, na, alpha_table, err)
+      call build_link_table(norb, nb, beta_table, err)
+
+      call build_ormas_space(first_orbital, norb, na, nb, min_e, max_e, space, err)
+      call ormas_strings(space, alpha, beta, err)
+      call full_space_index(space, alpha, beta, in_alpha, in_beta)
+      call ormas_lowest(space, folded, alpha_table, beta_table, in_alpha, in_beta, &
+                        size(expected), energies, err)
+      call check(error,.not. err%has_error(), "solving the restricted space failed")
+      if (allocated(error)) return
+
+      do root = 1, size(expected)
+         call check(error, energies(root), expected(root), thr=1.0e-10_dp, &
+                    message="a root disagrees with the python reference")
+         if (allocated(error)) return
+      end do
+
+      call space%destroy()
+      call alpha_table%destroy()
+      call beta_table%destroy()
+   end subroutine energies_of
+
+   subroutine test_energies(error)
+      !! Every partition, against energies computed outside this language
+      !!
+      !! The numbers come from `tools/ormas_reference/ormas_reference.py`, which
+      !! enumerates the determinants its own way, builds the Hamiltonian by the
+      !! Slater-Condon rules and diagonalises it, and which reproduces
+      !! `pyscf.fci` exactly when the windows exclude nothing. Nothing about the
+      !! occupation classes, the compatibility grid or the addressing exists on
+      !! that side, so agreement here is a statement about the space and the
+      !! physics rather than about a shared convention.
+      !!
+      !! Three roots rather than one on purpose. A ground state can come out
+      !! right from a Hamiltonian that is wrong on everything above it -- the
+      !! lowest eigenvalue is the least sensitive thing the matrix has to say.
+      type(error_type), allocatable, intent(out) :: error
+
+      call energies_of([1, 3], 4, 2, 2, [2, 0], [4, 2], &
+                       [-1.058450665249_dp, -1.049170312395_dp, -1.046492881715_dp], error)
+      if (allocated(error)) return
+
+      call energies_of([1, 3, 5], 6, 3, 3, [2, 0, 0], [4, 4, 2], &
+                       [-1.186905707931_dp, -1.186602623927_dp, -1.186573312464_dp], error)
+      if (allocated(error)) return
+
+      call energies_of([1, 4], 7, 3, 3, [4, 0], [6, 2], &
+                       [-1.229988119132_dp, -1.214487093893_dp, -1.212223692704_dp], error)
+      if (allocated(error)) return
+
+      call energies_of([1, 3, 5], 6, 3, 1, [1, 0, 0], [4, 4, 2], &
+                       [-1.185387147112_dp, -1.184328705476_dp, -1.175651771473_dp], error)
+      if (allocated(error)) return
+
+      call energies_of([1, 4], 6, 2, 2, [0, 3], [6, 6], &
+                       [-1.121243956258_dp, -1.121240844637_dp, -1.121137600250_dp], error)
+      if (allocated(error)) return
+   end subroutine test_energies
 
    subroutine test_refusals(error)
       !! Integrals that do not span the partition are refused
