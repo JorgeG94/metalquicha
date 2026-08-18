@@ -2086,6 +2086,20 @@
             "input": "inputs/cpu/mqc/fmo/eembe3_water3.json",
             "expected_energy": -227.970497639,
             "type": "fragmented"
+        },
+        {
+            "name": "ORMAS CI-SD H2O 3-21G against GAMESS (CPU)",
+            "input": "inputs/cpu/mqc/mcscf/cpu_h2o_3-21g_ormas_cisd.json",
+            "expected_energy": -75.7103507602,
+            "energy_tolerance": 1e-08,
+            "type": "unfragmented"
+        },
+        {
+            "name": "ORMAS(6,6) N2 cc-pvdz singles and doubles (CPU)",
+            "input": "inputs/cpu/mqc/mcscf/cpu_n2_cc-pvdz_ormas_6e6o_sd.json",
+            "expected_energy": -109.019592219941,
+            "energy_tolerance": 1e-08,
+            "type": "unfragmented"
         }
     ]
 }

@@ -1,0 +1,5 @@
+3
+water at the geometry of GAMESS tests/numdiff/parallel/water-ci-numgrd.inp (bohr converted to angstrom)
+O 0.0000000000 0.0000000000 -0.0047625949
+H 0.8018426482 0.0000000000 -0.5603446903
+H -0.8018426482 0.0000000000 -0.5603446903
