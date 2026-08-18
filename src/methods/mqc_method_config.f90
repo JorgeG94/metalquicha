@@ -219,6 +219,12 @@ module mqc_method_config
          !! IPEA shift for CASPT2
       real(dp) :: imaginary_shift = 0.0_dp
          !! Imaginary shift for intruder states
+      integer, allocatable :: ormas_subspaces(:)
+         !! Active orbital each subspace starts at, from
+         !! `keywords.mcscf.ormas`. Unallocated is a complete active space.
+      integer, allocatable :: ormas_min_electrons(:)
+      integer, allocatable :: ormas_max_electrons(:)
+         !! Electrons allowed in each subspace, both spins together
    end type mcscf_config_t
 
    !============================================================================
@@ -479,6 +485,13 @@ contains
       this%dft%dispersion_type = "d3bj"
 
       ! MCSCF defaults
+      if (allocated(this%mcscf%ormas_subspaces)) deallocate (this%mcscf%ormas_subspaces)
+      if (allocated(this%mcscf%ormas_min_electrons)) then
+         deallocate (this%mcscf%ormas_min_electrons)
+      end if
+      if (allocated(this%mcscf%ormas_max_electrons)) then
+         deallocate (this%mcscf%ormas_max_electrons)
+      end if
       this%mcscf%n_active_electrons = 0
       this%mcscf%n_active_orbitals = 0
       this%mcscf%n_inactive_orbitals = -1

@@ -37,7 +37,8 @@ module mqc_libcint_bridge
    use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd
    use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
-   use mqc_libcint_casci, only: casci_result_t, run_libcint_casci
+   use mqc_libcint_casci, only: casci_result_t, run_libcint_casci, &
+                                run_libcint_ormas_ci
    use mqc_libcint_avas, only: avas_select, avas_result_t
    use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf, &
                                 natural_orbitals
@@ -1596,6 +1597,23 @@ contains
          end if
       end if
 
+      ! Optimising orbitals for a restricted space is not the problem a CASSCF
+      ! solves. Rotating one active orbital into another stops being redundant
+      ! the moment the space is not complete, so the orbital gradient grows a
+      ! block the macro loop below has no term for. Running it anyway would
+      ! converge, quietly, to something that is not the answer.
+      if (allocated(settings%mcscf%ormas_subspaces) .and. &
+          settings%mcscf%optimize_orbitals) then
+         call result%error%set(ERROR_VALIDATION, "keywords.mcscf.ormas asks for an "// &
+                               "occupation-restricted space and the orbitals are "// &
+                               "being optimised. Only the CI is implemented for a "// &
+                               "restricted space; set keywords.mcscf.optimize_orbitals "// &
+                               "to false to run it on the reference orbitals.")
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
       if (settings%mcscf%optimize_orbitals) then
          call run_libcint_casscf(mol, reference, space(1), space(2), space(3), space(4), &
                                  casscf, error, &
@@ -1650,9 +1668,17 @@ contains
          ! nothing to a Davidson, and not a keyword either: the CI is the whole
          ! answer on this path, so there is no reason to solve it loosely. The
          ! same threshold the CASSCF macro loop pins its own CASCI at.
-         call run_libcint_casci(mol, reference, space(1), space(2), space(3), space(4), &
-                                casci, error, verbose=settings%verbose, &
-                                tolerance=CI_TOLERANCE)
+         if (allocated(settings%mcscf%ormas_subspaces)) then
+            call run_libcint_ormas_ci(mol, reference, space(1), space(2), space(3), &
+                                      space(4), settings%mcscf%ormas_subspaces, &
+                                      settings%mcscf%ormas_min_electrons, &
+                                      settings%mcscf%ormas_max_electrons, casci, error, &
+                                      verbose=settings%verbose, tolerance=CI_TOLERANCE)
+         else
+            call run_libcint_casci(mol, reference, space(1), space(2), space(3), space(4), &
+                                   casci, error, verbose=settings%verbose, &
+                                   tolerance=CI_TOLERANCE)
+         end if
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, error%get_message())
             result%has_error = .true.
@@ -1661,7 +1687,11 @@ contains
          end if
          result%energy%scf = casci%energy
          if (settings%verbose) then
-            write (line, "(a,f20.12)") "  E(CASCI)       ", casci%energy
+            if (allocated(settings%mcscf%ormas_subspaces)) then
+               write (line, "(a,f20.12)") "  E(ORMAS-CI)    ", casci%energy
+            else
+               write (line, "(a,f20.12)") "  E(CASCI)       ", casci%energy
+            end if
             call logger%info(trim(line))
          end if
       end if

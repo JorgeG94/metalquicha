@@ -40,12 +40,15 @@ module mqc_libcint_casci
    use mqc_determinants, only: link_table_t, build_link_table, n_strings
    use mqc_ci, only: absorb_one_electron, ci_diagonal
    use mqc_rdm, only: active_space_rdms
+   use mqc_ormas_space, only: ormas_space_t, build_ormas_space
+   use mqc_ormas_ci, only: ormas_solve, ormas_density_matrices
    use mqc_davidson, only: davidson_lowest, davidson_result_t
    implicit none
    private
 
    public :: active_space_integrals
    public :: run_libcint_casci
+   public :: run_libcint_ormas_ci
    public :: casci_result_t
 
    type :: casci_result_t
@@ -55,7 +58,11 @@ module mqc_libcint_casci
       real(dp) :: active_energy = 0.0_dp   !! The CI eigenvalue alone
       real(dp), allocatable :: energies(:)     !! (n_roots) totals, ascending
       real(dp), allocatable :: ci_vector(:, :)
-         !! (n_alpha_strings, n_beta_strings), the ground root
+         !! (n_alpha_strings, n_beta_strings), the ground root. Left unallocated
+         !! by a restricted space, whose determinants are not a rectangle --
+         !! `ci_flat` carries it there instead.
+      real(dp), allocatable :: ci_flat(:)
+         !! (n_determinants), the ground root of a restricted space
       real(dp), allocatable :: vectors(:, :, :)   !! All roots
       real(dp), allocatable :: dm1(:, :)
          !! (n_active, n_active) one-particle density of the ground root, in the
@@ -274,5 +281,111 @@ contains
       call beta%destroy()
       deallocate (h_eff, eri_act, folded, diagonal)
    end subroutine run_libcint_casci
+
+   subroutine run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                                   subspaces, min_electrons, max_electrons, result, &
+                                   error, n_roots, verbose, tolerance)
+      !! A CI over an occupation-restricted active space, on converged orbitals
+      !!
+      !! The same integrals as a CASCI -- a restricted space changes which
+      !! determinants are kept, not what the Hamiltonian over them is -- and
+      !! then `ormas_solve` instead of a Davidson over the rectangle.
+      !!
+      !! Fixed orbitals only. Optimising them for a restricted space is not the
+      !! same problem as for a complete one: rotating one active orbital into
+      !! another stops being redundant the moment the space is not complete, so
+      !! the orbital gradient acquires a block a CASSCF is entitled to ignore.
+      !! Pretending otherwise would converge to the wrong answer quietly, so the
+      !! caller is refused instead.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: n_inactive, n_active
+      integer, intent(in) :: n_alpha, n_beta
+      integer, intent(in) :: subspaces(:), min_electrons(:), max_electrons(:)
+      type(casci_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_roots
+      logical, intent(in), optional :: verbose
+      real(dp), intent(in), optional :: tolerance
+
+      real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
+      real(dp), allocatable :: energies(:), vectors(:, :), dm2(:, :, :, :)
+      type(ormas_space_t) :: space
+      character(len=128) :: line
+      integer :: roots, i
+      logical :: loud
+
+      if (error%has_error()) return
+      roots = 1
+      if (present(n_roots)) roots = n_roots
+      loud = .false.
+      if (present(verbose)) loud = verbose
+
+      call build_ormas_space(subspaces, n_active, n_alpha, n_beta, min_electrons, &
+                             max_electrons, space, error)
+      if (error%has_error()) return
+
+      call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
+                                  eri_act, result%core_energy, error)
+      if (error%has_error()) return
+
+      result%n_determinants = int(space%n_determinants)
+      if (n_alpha + n_beta == 0) then
+         result%active_energy = 0.0_dp
+         result%energy = result%core_energy
+         result%converged = .true.
+         allocate (result%energies(1))
+         result%energies(1) = result%energy
+         call space%destroy()
+         return
+      end if
+
+      call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
+                       tolerance=tolerance)
+      if (error%has_error()) return
+
+      result%converged = .true.
+      result%active_energy = energies(1)
+      result%energy = result%core_energy + energies(1)
+      allocate (result%energies(roots))
+      do i = 1, roots
+         result%energies(i) = result%core_energy + energies(i)
+      end do
+      result%ci_flat = vectors(:, 1)
+
+      call ormas_density_matrices(space, result%ci_flat, result%dm1, dm2, error)
+      if (error%has_error()) return
+      deallocate (dm2)
+
+      if (loud) then
+         call logger%info("")
+         call logger%info("  occupation-restricted active space CI")
+         write (line, "(a,i0,a,i0,a)") "    active space                ORMAS(", &
+            n_alpha + n_beta, ",", n_active, ")"
+         call logger%info(trim(line))
+         write (line, "(a,i0)") "    inactive orbitals           ", n_inactive
+         call logger%info(trim(line))
+         write (line, "(a,i0)") "    subspaces                   ", size(subspaces)
+         call logger%info(trim(line))
+         do i = 1, size(subspaces)
+            write (line, "(a,i0,a,i0,a,i0,a,i0)") "      space ", i, ": orbitals from ", &
+               subspaces(i), ", electrons ", space%min_electrons(i), " to ", &
+               space%max_electrons(i)
+            call logger%info(trim(line))
+         end do
+         write (line, "(a,i0)") "    determinants                ", result%n_determinants
+         call logger%info(trim(line))
+         write (line, "(a,f22.10)") "    inactive plus nuclear       ", result%core_energy
+         call logger%info(trim(line))
+         write (line, "(a,f22.10)") "    active                      ", &
+            result%active_energy
+         call logger%info(trim(line))
+         write (line, "(a,f22.10)") "    total                       ", result%energy
+         call logger%info(trim(line))
+      end if
+
+      call space%destroy()
+      deallocate (h_eff, eri_act)
+   end subroutine run_libcint_ormas_ci
 
 end module mqc_libcint_casci

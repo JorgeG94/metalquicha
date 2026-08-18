@@ -44,6 +44,7 @@ contains
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
                   new_unittest("dft_settings_reach_the_method", test_dft_roundtrip), &
                   new_unittest("mcscf_active_space_reaches_the_method", test_mcscf_roundtrip), &
+                  new_unittest("ormas_partition_reaches_the_method", test_ormas_roundtrip), &
                   new_unittest("pcm_reaches_every_reference", test_pcm_reaches_every_reference) &
                   ]
    end subroutine collect_mqc_config_roundtrip_tests
@@ -410,6 +411,77 @@ contains
       write (unit, "(A)") "}"
       close (unit)
    end subroutine write_mcscf_input
+
+   subroutine test_ormas_roundtrip(error)
+      !! The subspace partition survives all four hops to `mcscf_method_t`
+      !!
+      !! Four, not three: parser to `mqc_config_t`, adapter to
+      !! `method_config_t`, factory to the method's options, and the method to
+      !! the backend settings. Every one is a hand-written copy of a field, and
+      !! a partition dropped at any of them does not fail -- it runs a complete
+      !! active space and reports a lower energy than the deck asked for, which
+      !! is the kind of wrong that looks like a working calculation.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+      class(qc_method_t), allocatable :: method
+      type(error_t) :: parse_error
+
+      call write_mcscf_input("casci", '"n_active_electrons": 6, '// &
+                             '"n_active_orbitals": 6, '// &
+                             '"ormas": {"subspaces": [1, 4], '// &
+                             '"min_electrons": [4, 0], "max_electrons": [6, 2]}')
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call check(error,.not. parse_error%has_error(), "an ORMAS deck should parse")
+      if (allocated(error)) return
+
+      ! Hop 1: parser -> mqc_config_t
+      call check(error, allocated(config%mcscf_ormas_subspaces), &
+                 "the partition must survive parsing")
+      if (allocated(error)) return
+      call check(error, all(config%mcscf_ormas_subspaces == [1, 4]), &
+                 "and arrive intact")
+      if (allocated(error)) return
+
+      ! Hop 2: mqc_config_t -> method_config_t
+      call config_to_driver(config, driver)
+      call check(error, allocated(driver%method_config%mcscf%ormas_subspaces), &
+                 "the partition must survive the config adapter")
+      if (allocated(error)) return
+      call check(error, all(driver%method_config%mcscf%ormas_max_electrons == [6, 2]), &
+                 "with its windows")
+      if (allocated(error)) return
+
+      ! Hop 3: method_config_t -> the method's options
+      allocate (method, source=create_method(driver%method_config))
+      select type (m => method)
+      type is (mcscf_method_t)
+         call check(error, allocated(m%options%ormas_subspaces), &
+                    "the partition must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, all(m%options%ormas_subspaces == [1, 4]), &
+                    "where each subspace starts")
+         if (allocated(error)) return
+         call check(error, all(m%options%ormas_min_electrons == [4, 0]), "the minima")
+         if (allocated(error)) return
+         call check(error, all(m%options%ormas_max_electrons == [6, 2]), "the maxima")
+      class default
+         call check(error, .false., "an ORMAS deck should build an mcscf_method_t")
+      end select
+      deallocate (method)
+
+      ! No partition leaves every hop unallocated, which is what a complete
+      ! active space looks like all the way down.
+      call write_mcscf_input("casci", '"n_active_electrons": 6, '// &
+                             '"n_active_orbitals": 6')
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call config_to_driver(config, driver)
+      call check(error,.not. allocated(driver%method_config%mcscf%ormas_subspaces), &
+                 "no ormas block should leave the partition unset")
+      if (allocated(error)) return
+   end subroutine test_ormas_roundtrip
 
    subroutine test_mcscf_roundtrip(error)
       !! The active space survives all three hops to `mcscf_method_t`
