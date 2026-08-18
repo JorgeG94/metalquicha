@@ -419,6 +419,14 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
     GIT_TAG main)
   FetchContent_MakeAvailable(libfint)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
+  # libfint carries L (sp) shells; libcint cannot represent one at all.
+  #
+  # This is the first place the two backends are not interchangeable, so it is
+  # the first thing here that has to be compiled differently rather than merely
+  # linked differently. `build_sp_view` marks a fused sp shell with KAPPA_OF,
+  # which libcint would read as a relativistic kappa and act on -- so the fused
+  # view can only be built when libfint is what will read it.
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_SP_SHELLS)
   # One target, not two: libfint has no C library beside it.
   set(MQC_INTEGRALS_LIBS fint)
   # Answer to libcint's target names as well as our own.
@@ -432,8 +440,8 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   #
   # Aliases end that. With libfint selected libcint is never fetched, so the
   # names are free, and pointing both at `fint` makes a target that asks for
-  # libcint by name get libfint without knowing. Nothing on main has to be
-  # aware of this branch, and a rebase stops carrying link fixes.
+  # libcint by name get libfint without knowing. Nothing on main has to be aware
+  # of this branch, and a rebase stops carrying link fixes.
   if(NOT TARGET cint)
     add_library(cint ALIAS fint)
   endif()

@@ -37,7 +37,9 @@ module mqc_libcint_direct
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, &
-                                    two_electron_block, two_electron_optimizer
+                                    two_electron_block, two_electron_optimizer, &
+                                    eri_shell_table_t, eri_shell_table, &
+                                    eri_schwarz_collapse
    use libcint_fortran, only: libcint_del_optimizer, LIBCINT_PTR_RANGE_OMEGA
    implicit none
    private
@@ -219,21 +221,45 @@ contains
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: dsh(:, :)
 
+      integer, allocatable :: offs(:), dims(:)
+      integer :: ish
+
+      allocate (offs(mol%nbas), dims(mol%nbas))
+      do ish = 1, mol%nbas
+         offs(ish) = mol%shell_offset(ish)
+         dims(ish) = shell_dim(mol%cartesian, ish - 1, mol%bas)
+      end do
+      call block_density_max(density, mol%nbas, offs, dims, dsh)
+   end subroutine shell_density_max
+
+   subroutine block_density_max(density, nbas, offs, dims, dsh)
+      !! `shell_density_max` over an explicit shell blocking
+      !!
+      !! Split out so the Fock builders can block the density to whatever shell
+      !! table their quartet loop runs over -- the fused-sp view when the
+      !! molecule carries one -- while `shell_density_max` keeps answering per
+      !! split shell for the gradient, whose quartets can never be fused.
+      real(dp), intent(in) :: density(:, :)
+      integer, intent(in) :: nbas
+      integer, intent(in) :: offs(:)   !! First AO of each shell, 0-based
+      integer, intent(in) :: dims(:)   !! Functions per shell
+      real(dp), allocatable, intent(out) :: dsh(:, :)
+
       integer :: ish, jsh, oi, oj, di, dj
 
-      allocate (dsh(mol%nbas, mol%nbas))
+      allocate (dsh(nbas, nbas))
       dsh = 0.0_dp
-      do ish = 1, mol%nbas
-         oi = mol%shell_offset(ish)
-         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+      do ish = 1, nbas
+         oi = offs(ish)
+         di = dims(ish)
          do jsh = 1, ish
-            oj = mol%shell_offset(jsh)
-            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            oj = offs(jsh)
+            dj = dims(jsh)
             dsh(ish, jsh) = maxval(abs(density(oi + 1:oi + di, oj + 1:oj + dj)))
             dsh(jsh, ish) = dsh(ish, jsh)
          end do
       end do
-   end subroutine shell_density_max
+   end subroutine block_density_max
 
    pure function density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) result(denmax)
       !! Largest density contribution this quartet can make, per unit integral
@@ -323,6 +349,8 @@ contains
       real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
       real(dp), allocatable :: dsh(:, :)
       real(dp), allocatable :: env_local(:)
+      real(dp), allocatable :: bq(:, :)
+      type(eri_shell_table_t) :: tab
       real(dp) :: jf
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
@@ -352,16 +380,20 @@ contains
       weight_density = .true.
       if (present(density_screen)) weight_density = density_screen
 
-      ! Shell dimensions and offsets up front. Both are needed inside the
+      ! The shells the quartet loop runs over: the fused-sp view when the
+      ! molecule carries one, its split shells otherwise. libfint's `int2e` is
+      ! the one driver that reads a fused L shell, and it is exactly what this
+      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
+      ! bounds arrive per split shell either way -- the gradient indexes the
+      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.
-      allocate (dims(mol%nbas), offs(mol%nbas))
-      block_max = 1
-      do s1 = 1, mol%nbas
-         dims(s1) = shell_dim(mol%cartesian, s1 - 1, mol%bas)
-         offs(s1) = mol%shell_offset(s1)
-         block_max = max(block_max, dims(s1))
-      end do
+      call eri_shell_table(mol, tab)
+      call eri_schwarz_collapse(mol, bounds, bq)
+      dims = tab%dims
+      offs = tab%offs(1:tab%nbas)
+      block_max = tab%block_max
 
       ! The quartet loop, flattened onto one index so it can be handed out.
       !
@@ -370,10 +402,10 @@ contains
       ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
       ! the same quartets once each. Flattening is what makes the outer loop
       ! divisible; the triangular nest is not.
-      npair = mol%nbas*(mol%nbas + 1)/2
+      npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
-      do s1 = 1, mol%nbas
+      do s1 = 1, tab%nbas
          do s2 = 1, s1
             ipair = ipair + 1
             pair_i(ipair) = s1
@@ -397,7 +429,7 @@ contains
       ! opted out: `dsh` is then never read, so a zero-size placeholder keeps the
       ! `shared` clause legal without paying for the pass over the density.
       if (weight_density) then
-         call shell_density_max(mol, d_half, dsh)
+         call block_density_max(d_half, tab%nbas, offs, dims, dsh)
       else
          allocate (dsh(0, 0))
       end if
@@ -419,13 +451,13 @@ contains
       ! slot 8 is `PTR_RINV_ZETA`, which a plain two-electron integral ignores,
       ! so the attenuated build returns full-range exchange, the two passes sum
       ! back to unscaled K, and the SCF converges several Hartree out.
-      env_local = mol%env
+      env_local = tab%env
       if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
-      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
-                                  mol%nbas, env_local)
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
+                                  tab%nbas, env_local)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -456,7 +488,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, dsh, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
+      !$omp    shared(mol, tab, bq, dsh, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, kq, jf, env_local, weight_density) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
@@ -495,7 +527,7 @@ contains
             ! that matter most. The two counters only attribute the decision:
             ! whether the Schwarz bound alone would have been enough to reach it.
             deg = pair_degeneracy(s1, s2, s3, s4)
-            schwarz = bounds(s1, s2)*bounds(s3, s4)
+            schwarz = bq(s1, s2)*bq(s3, s4)
             if (weight_density) then
                if (schwarz*density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) < tol) then
                   n_screened = n_screened + 1_int64
@@ -516,7 +548,7 @@ contains
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     mol%bas, mol%nbas, env_local, opt)
+                                     tab%bas, tab%nbas, env_local, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -638,6 +670,8 @@ contains
       real(dp), intent(in), optional :: screen_tol
 
       real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :), d_half(:, :, :)
+      real(dp), allocatable :: bq(:, :)
+      type(eri_shell_table_t) :: tab
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
@@ -664,16 +698,20 @@ contains
       tol = DEFAULT_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
 
-      ! Shell dimensions and offsets up front. Both are needed inside the
+      ! The shells the quartet loop runs over: the fused-sp view when the
+      ! molecule carries one, its split shells otherwise. libfint's `int2e` is
+      ! the one driver that reads a fused L shell, and it is exactly what this
+      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
+      ! bounds arrive per split shell either way -- the gradient indexes the
+      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.
-      allocate (dims(mol%nbas), offs(mol%nbas))
-      block_max = 1
-      do s1 = 1, mol%nbas
-         dims(s1) = shell_dim(mol%cartesian, s1 - 1, mol%bas)
-         offs(s1) = mol%shell_offset(s1)
-         block_max = max(block_max, dims(s1))
-      end do
+      call eri_shell_table(mol, tab)
+      call eri_schwarz_collapse(mol, bounds, bq)
+      dims = tab%dims
+      offs = tab%offs(1:tab%nbas)
+      block_max = tab%block_max
 
       ! The quartet loop, flattened onto one index so it can be handed out.
       !
@@ -682,10 +720,10 @@ contains
       ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
       ! the same quartets once each. Flattening is what makes the outer loop
       ! divisible; the triangular nest is not.
-      npair = mol%nbas*(mol%nbas + 1)/2
+      npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
-      do s1 = 1, mol%nbas
+      do s1 = 1, tab%nbas
          do s2 = 1, s1
             ipair = ipair + 1
             pair_i(ipair) = s1
@@ -705,8 +743,8 @@ contains
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
-      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
-                                  mol%nbas, mol%env)
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
+                                  tab%nbas, tab%env)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -733,7 +771,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
+      !$omp    shared(mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, n_set) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
@@ -763,14 +801,14 @@ contains
 
             n_total = n_total + 1_int64
 
-            if (bounds(s1, s2)*bounds(s3, s4) < tol) then
+            if (bq(s1, s2)*bq(s3, s4) < tol) then
                n_screened = n_screened + 1_int64
                cycle
             end if
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     mol%bas, mol%nbas, mol%env, opt)
+                                     tab%bas, tab%nbas, tab%env, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -894,6 +932,8 @@ contains
       real(dp), intent(in), optional :: screen_tol
 
       real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :)
+      real(dp), allocatable :: bq(:, :)
+      type(eri_shell_table_t) :: tab
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
@@ -921,18 +961,25 @@ contains
       tol = DEFAULT_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
 
-      allocate (dims(mol%nbas), offs(mol%nbas))
-      block_max = 1
-      do s1 = 1, mol%nbas
-         dims(s1) = shell_dim(mol%cartesian, s1 - 1, mol%bas)
-         offs(s1) = mol%shell_offset(s1)
-         block_max = max(block_max, dims(s1))
-      end do
+      ! The shells the quartet loop runs over: the fused-sp view when the
+      ! molecule carries one, its split shells otherwise. libfint's `int2e` is
+      ! the one driver that reads a fused L shell, and it is exactly what this
+      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
+      ! bounds arrive per split shell either way -- the gradient indexes the
+      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! and offsets are copied out up front: both are needed inside the
+      ! parallel region, and looking them up there would mean every thread
+      ! reaching into `bas` for something that does not change.
+      call eri_shell_table(mol, tab)
+      call eri_schwarz_collapse(mol, bounds, bq)
+      dims = tab%dims
+      offs = tab%offs(1:tab%nbas)
+      block_max = tab%block_max
 
-      npair = mol%nbas*(mol%nbas + 1)/2
+      npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
-      do s1 = 1, mol%nbas
+      do s1 = 1, tab%nbas
          do s2 = 1, s1
             ipair = ipair + 1
             pair_i(ipair) = s1
@@ -945,15 +992,15 @@ contains
       g = 0.0_dp
 
       opt = c_null_ptr
-      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
-                                  mol%nbas, mol%env)
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
+                                  tab%nbas, tab%env)
 
       n_total = 0_int64
       n_computed = 0_int64
       n_screened = 0_int64
 
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, densities, g, dims, offs, pair_i, pair_j, order, npair, tol, &
+      !$omp    shared(mol, tab, bq, densities, g, dims, offs, pair_i, pair_j, order, npair, tol, &
       !$omp           opt, n, block_max, n_set) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, value, &
@@ -984,14 +1031,14 @@ contains
 
             n_total = n_total + 1_int64
 
-            if (bounds(s1, s2)*bounds(s3, s4) < tol) then
+            if (bq(s1, s2)*bq(s3, s4) < tol) then
                n_screened = n_screened + 1_int64
                cycle
             end if
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     mol%bas, mol%nbas, mol%env, opt)
+                                     tab%bas, tab%nbas, tab%env, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -1129,6 +1176,8 @@ contains
       real(dp), allocatable :: d_coul(:, :)
       real(dp), allocatable :: dsh(:, :)
       real(dp), allocatable :: env_local(:)
+      real(dp), allocatable :: bq(:, :)
+      type(eri_shell_table_t) :: tab
       real(dp) :: kq, jf
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
@@ -1152,16 +1201,20 @@ contains
       tol = DEFAULT_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
 
-      ! Shell dimensions and offsets up front. Both are needed inside the
+      ! The shells the quartet loop runs over: the fused-sp view when the
+      ! molecule carries one, its split shells otherwise. libfint's `int2e` is
+      ! the one driver that reads a fused L shell, and it is exactly what this
+      ! loop calls, so the view is safe here and nowhere looser. The Schwarz
+      ! bounds arrive per split shell either way -- the gradient indexes the
+      ! same array over split shells -- and are collapsed to match. Dimensions
+      ! and offsets are copied out up front: both are needed inside the
       ! parallel region, and looking them up there would mean every thread
       ! reaching into `bas` for something that does not change.
-      allocate (dims(mol%nbas), offs(mol%nbas))
-      block_max = 1
-      do s1 = 1, mol%nbas
-         dims(s1) = shell_dim(mol%cartesian, s1 - 1, mol%bas)
-         offs(s1) = mol%shell_offset(s1)
-         block_max = max(block_max, dims(s1))
-      end do
+      call eri_shell_table(mol, tab)
+      call eri_schwarz_collapse(mol, bounds, bq)
+      dims = tab%dims
+      offs = tab%offs(1:tab%nbas)
+      block_max = tab%block_max
 
       ! The quartet loop, flattened onto one index so it can be handed out.
       !
@@ -1170,10 +1223,10 @@ contains
       ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
       ! the same quartets once each. Flattening is what makes the outer loop
       ! divisible; the triangular nest is not.
-      npair = mol%nbas*(mol%nbas + 1)/2
+      npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
-      do s1 = 1, mol%nbas
+      do s1 = 1, tab%nbas
          do s2 = 1, s1
             ipair = ipair + 1
             pair_i(ipair) = s1
@@ -1207,18 +1260,18 @@ contains
       ! maximum rather than one of them keeps the bound a bound for every term:
       ! the Coulomb updates read `d_coul` and the exchange updates read the two
       ! spin densities, and any of the three can be the big one.
-      call shell_density_max(mol, max(abs(d_coul), abs(d_alpha), abs(d_beta)), dsh)
+      call block_density_max(max(abs(d_coul), abs(d_alpha), abs(d_beta)), tab%nbas, offs, dims, dsh)
 
       ! A copy, because the range-separation parameter lives in `env` and the
       ! molecule is read-only here. See the closed-shell build for why the slot
       ! index carries a `+ 1`.
-      env_local = mol%env
+      env_local = tab%env
       if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
-      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
-                                  mol%nbas, env_local)
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
+                                  tab%nbas, env_local)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -1247,7 +1300,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, dsh, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
+      !$omp    shared(mol, tab, bq, dsh, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
       !$omp            order, &
       !$omp            npair, tol, opt, n, block_max, kq, env_local) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
@@ -1289,7 +1342,7 @@ contains
             ! that matter most. The two counters only attribute the decision:
             ! whether the Schwarz bound alone would have been enough to reach it.
             deg = pair_degeneracy(s1, s2, s3, s4)
-            schwarz = bounds(s1, s2)*bounds(s3, s4)
+            schwarz = bq(s1, s2)*bq(s3, s4)
             if (schwarz*density_weight(dsh, s1, s2, s3, s4, 1.0_dp, kq, deg) < tol) then
                n_screened = n_screened + 1_int64
                if (schwarz < tol) then
@@ -1302,7 +1355,7 @@ contains
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     mol%bas, mol%nbas, env_local, opt)
+                                     tab%bas, tab%nbas, env_local, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
