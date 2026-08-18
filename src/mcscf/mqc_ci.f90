@@ -38,6 +38,7 @@ module mqc_ci
    public :: absorb_one_electron
    public :: sigma_vector
    public :: ci_hamiltonian
+   public :: ci_diagonal
 
 contains
 
@@ -290,5 +291,121 @@ contains
 
       deallocate (unit_vector, column)
    end subroutine ci_hamiltonian
+
+   subroutine ci_diagonal(h1e, eri, alpha, beta, diagonal, error)
+      !! The diagonal of the CI Hamiltonian, without touching the rest of it
+      !!
+      !! `<D|H|D>` for every determinant, which is `n_det` numbers rather than
+      !! `n_det^2` and so is affordable where the matrix is not. A Davidson
+      !! preconditioner is the reason it is wanted: dividing a residual by
+      !! `theta - H_DD` is what turns an expansion that crawls into one that
+      !! converges, and it needs nothing but this.
+      !!
+      !! For a determinant with alpha orbitals `A` and beta orbitals `B`,
+      !!
+      !!     sum_{p in A} h_pp + sum_{p in B} h_pp
+      !!       + (1/2) sum_{p,q in A} [(pp|qq) - (pq|qp)]
+      !!       + (1/2) sum_{p,q in B} [(pp|qq) - (pq|qp)]
+      !!       + sum_{p in A} sum_{q in B} (pp|qq)
+      !!
+      !! -- Coulomb and exchange within each spin, Coulomb only between them,
+      !! because two electrons of opposite spin do not exchange.
+      !!
+      !! Takes the raw integrals, not the folded tensor: the folding rearranges
+      !! the Hamiltonian into a form convenient for `E_pq E_rs` and its diagonal
+      !! is not the diagonal of anything physical.
+      real(dp), intent(in) :: h1e(:, :)
+      real(dp), intent(in) :: eri(:, :, :, :)
+      type(link_table_t), intent(in) :: alpha, beta
+      real(dp), allocatable, intent(out) :: diagonal(:, :)   !! (n_alpha, n_beta)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: coulomb(:, :), exchange(:, :)
+      real(dp), allocatable :: one_body(:), same_spin(:)
+      integer, allocatable :: occupied(:, :)
+      real(dp) :: cross
+      integer :: norb, na, nb, p, q, ia, ib, ip, iq
+
+      if (error%has_error()) return
+      norb = size(h1e, 1)
+      na = alpha%n_strings
+      nb = beta%n_strings
+      if (beta%n_orbitals /= norb .or. alpha%n_orbitals /= norb) then
+         call error%set(ERROR_VALIDATION, "the excitation tables and the integrals "// &
+                        "disagree about the number of active orbitals.")
+         return
+      end if
+
+      ! (pp|qq) and (pq|qp), the only integrals a diagonal element sees.
+      allocate (coulomb(norb, norb), exchange(norb, norb))
+      do q = 1, norb
+         do p = 1, norb
+            coulomb(p, q) = eri(p, p, q, q)
+            exchange(p, q) = eri(p, q, q, p)
+         end do
+      end do
+
+      ! The occupied orbitals of each string, read back off the diagonal rows of
+      ! its excitation table -- there is exactly one per electron and they are
+      ! in ascending order, which `link_table_identities` asserts.
+      allocate (one_body(max(na, nb)), same_spin(max(na, nb)))
+
+      call string_terms(alpha, coulomb, exchange, h1e, na, one_body, same_spin, occupied)
+      allocate (diagonal(na, nb))
+      block
+         real(dp), allocatable :: one_b(:), same_b(:)
+         integer, allocatable :: occupied_b(:, :)
+         allocate (one_b(nb), same_b(nb))
+         call string_terms(beta, coulomb, exchange, h1e, nb, one_b, same_b, occupied_b)
+         do ib = 1, nb
+            do ia = 1, na
+               cross = 0.0_dp
+               do ip = 1, alpha%n_electrons
+                  p = occupied(ip, ia)
+                  do iq = 1, beta%n_electrons
+                     q = occupied_b(iq, ib)
+                     cross = cross + coulomb(p, q)
+                  end do
+               end do
+               diagonal(ia, ib) = one_body(ia) + one_b(ib) + same_spin(ia) &
+                                  + same_b(ib) + cross
+            end do
+         end do
+         deallocate (one_b, same_b, occupied_b)
+      end block
+
+      deallocate (coulomb, exchange, one_body, same_spin, occupied)
+   end subroutine ci_diagonal
+
+   subroutine string_terms(table, coulomb, exchange, h1e, n_str, one_body, same_spin, &
+                           occupied)
+      !! The part of a diagonal element that depends on one spin alone
+      type(link_table_t), intent(in) :: table
+      real(dp), intent(in) :: coulomb(:, :), exchange(:, :), h1e(:, :)
+      integer, intent(in) :: n_str
+      real(dp), intent(out) :: one_body(:), same_spin(:)
+      integer, allocatable, intent(out) :: occupied(:, :)
+
+      integer :: istr, ip, iq, p, q
+
+      allocate (occupied(max(table%n_electrons, 1), n_str))
+      do istr = 1, n_str
+         do ip = 1, table%n_electrons
+            occupied(ip, istr) = table%des(ip, istr)
+         end do
+
+         one_body(istr) = 0.0_dp
+         same_spin(istr) = 0.0_dp
+         do ip = 1, table%n_electrons
+            p = occupied(ip, istr)
+            one_body(istr) = one_body(istr) + h1e(p, p)
+            do iq = 1, table%n_electrons
+               q = occupied(iq, istr)
+               same_spin(istr) = same_spin(istr) &
+                                 + 0.5_dp*(coulomb(p, q) - exchange(p, q))
+            end do
+         end do
+      end do
+   end subroutine string_terms
 
 end module mqc_ci

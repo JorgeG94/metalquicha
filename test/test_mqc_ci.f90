@@ -23,7 +23,7 @@ module test_mqc_ci
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t
    use mqc_determinants, only: link_table_t, build_link_table
-   use mqc_ci, only: absorb_one_electron, sigma_vector, ci_hamiltonian
+   use mqc_ci, only: absorb_one_electron, sigma_vector, ci_hamiltonian, ci_diagonal
    implicit none
    private
 
@@ -42,6 +42,7 @@ contains
                   new_unittest("spectrum_against_pyscf", test_spectrum), &
                   new_unittest("open_shell_against_pyscf", test_open_shell), &
                   new_unittest("sigma_matches_dense_product", test_sigma_consistency), &
+                  new_unittest("diagonal_matches_the_matrix", test_diagonal), &
                   new_unittest("refusals", test_refusals) &
                   ]
    end subroutine collect_mqc_ci_tests
@@ -312,6 +313,65 @@ contains
       call alpha%destroy()
       call beta%destroy()
    end subroutine test_sigma_consistency
+
+   subroutine test_diagonal(error)
+      !! `ci_diagonal` against the diagonal of the assembled matrix
+      !!
+      !! The two share no code: one reads Coulomb and exchange integrals off the
+      !! raw tensor and sums over occupied orbitals, the other applies the
+      !! folded Hamiltonian to unit vectors. They agree only if the folding, the
+      !! excitation phases and the Slater rule for a diagonal element all say
+      !! the same thing, which makes this a check on the folding as much as on
+      !! the diagonal.
+      !!
+      !! Worth its own test because the diagonal is about to become a
+      !! preconditioner, and a wrong preconditioner does not give a wrong
+      !! answer -- it gives a correct answer slowly, or no convergence at all,
+      !! neither of which points anywhere near here.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp), allocatable :: h1e(:, :), eri(:, :, :, :), folded(:, :)
+      real(dp), allocatable :: matrix(:, :), diagonal(:, :)
+      type(link_table_t) :: alpha, beta
+      integer :: na, nb, ia, ib, idet, case_index
+      integer, parameter :: ALPHA_COUNT(3) = [2, 2, 3]
+      integer, parameter :: BETA_COUNT(3) = [2, 1, 2]
+
+      do case_index = 1, 3
+         call model_integrals(h1e, eri)
+         call absorb_one_electron(h1e, eri, ALPHA_COUNT(case_index) &
+                                  + BETA_COUNT(case_index), folded, err)
+         call build_link_table(NORB, ALPHA_COUNT(case_index), alpha, err)
+         call build_link_table(NORB, BETA_COUNT(case_index), beta, err)
+         call check(error,.not. err%has_error(), "the setup should succeed")
+         if (allocated(error)) return
+
+         call ci_hamiltonian(folded, alpha, beta, matrix, err)
+         call ci_diagonal(h1e, eri, alpha, beta, diagonal, err)
+         call check(error,.not. err%has_error(), "both routes should succeed")
+         if (allocated(error)) return
+
+         na = alpha%n_strings
+         nb = beta%n_strings
+         call check(error, size(diagonal, 1), na, "one row per alpha string")
+         if (allocated(error)) return
+         call check(error, size(diagonal, 2), nb, "one column per beta string")
+         if (allocated(error)) return
+
+         do idet = 1, na*nb
+            ia = mod(idet - 1, na) + 1
+            ib = (idet - 1)/na + 1
+            call check(error, abs(diagonal(ia, ib) - matrix(idet, idet)) < 1.0e-12_dp, &
+                       "the diagonal element of every determinant should agree "// &
+                       "with the assembled matrix")
+            if (allocated(error)) return
+         end do
+
+         call alpha%destroy()
+         call beta%destroy()
+         deallocate (h1e, eri, folded, matrix, diagonal)
+      end do
+   end subroutine test_diagonal
 
    subroutine test_refusals(error)
       !! Shapes that do not describe one active space
