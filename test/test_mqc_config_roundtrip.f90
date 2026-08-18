@@ -23,6 +23,7 @@ module test_mqc_config_roundtrip
    use mqc_method_factory, only: create_method
    use mqc_method_hf, only: hf_method_t
    use mqc_method_dft, only: dft_method_t
+   use mqc_method_mcscf, only: mcscf_method_t
    use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
@@ -42,6 +43,7 @@ contains
                                test_counterpoise_refusals), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
                   new_unittest("dft_settings_reach_the_method", test_dft_roundtrip), &
+                  new_unittest("mcscf_active_space_reaches_the_method", test_mcscf_roundtrip), &
                   new_unittest("pcm_reaches_every_reference", test_pcm_reaches_every_reference) &
                   ]
    end subroutine collect_mqc_config_roundtrip_tests
@@ -388,6 +390,120 @@ contains
          call check(error, .false., "method = dft should build a dft_method_t")
       end select
    end subroutine test_dft_roundtrip
+
+   subroutine write_mcscf_input(method, mcscf_keywords)
+      !! A deck asking for a complete active space
+      character(len=*), intent(in) :: method
+      character(len=*), intent(in) :: mcscf_keywords  !! Body of keywords.mcscf
+      integer :: unit
+
+      open (newunit=unit, file=SCRATCH_FILE, status="replace", action="write")
+      write (unit, "(A)") "{"
+      write (unit, "(A)") '  "schema": {"name": "roundtrip", "version": "1.0"},'
+      write (unit, "(A)") '  "model": {"method": "'//method//'", "basis": "cc-pvdz"},'
+      write (unit, "(A)") '  "driver": "Energy",'
+      write (unit, "(A)") '  "keywords": {"mcscf": {'//mcscf_keywords//'}},'
+      write (unit, "(A)") '  "molecules": [{'
+      write (unit, "(A)") '    "symbols": ["He"], "geometry": [0.0, 0.0, 0.0],'
+      write (unit, "(A)") '    "molecular_charge": 0, "molecular_multiplicity": 1'
+      write (unit, "(A)") "  }]"
+      write (unit, "(A)") "}"
+      close (unit)
+   end subroutine write_mcscf_input
+
+   subroutine test_mcscf_roundtrip(error)
+      !! The active space survives all three hops to `mcscf_method_t`
+      !!
+      !! Worth a case of its own because the active space is the one setting a
+      !! CASSCF cannot be run without and cannot be defaulted: a dropped copy
+      !! anywhere on the way does not produce a slightly different energy, it
+      !! produces a refusal that reads as though the deck were wrong.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+      class(qc_method_t), allocatable :: method
+      type(error_t) :: parse_error
+
+      call write_mcscf_input("casscf", '"n_active_electrons": 6, '// &
+                             '"n_active_orbitals": 6, "n_inactive_orbitals": 4, '// &
+                             '"max_macro_iter": 120, "orbital_convergence": 1.0e-7')
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call check(error,.not. parse_error%has_error(), "a CASSCF deck should parse")
+      if (allocated(error)) return
+
+      ! Hop 1: parser -> mqc_config_t
+      call check(error, config%mcscf_n_active_electrons, 6, &
+                 "n_active_electrons must survive parsing")
+      if (allocated(error)) return
+
+      ! Hop 2: mqc_config_t -> method_config_t
+      call config_to_driver(config, driver)
+      call check(error, driver%method_config%mcscf%n_active_electrons, 6, &
+                 "n_active_electrons must survive the config adapter")
+      if (allocated(error)) return
+      call check(error, driver%method_config%mcscf%n_active_orbitals, 6, &
+                 "n_active_orbitals must survive the config adapter")
+      if (allocated(error)) return
+      call check(error, driver%method_config%mcscf%n_inactive_orbitals, 4, &
+                 "n_inactive_orbitals must survive the config adapter")
+      if (allocated(error)) return
+
+      ! Hop 3: method_config_t -> concrete method options
+      allocate (method, source=create_method(driver%method_config))
+      select type (m => method)
+      type is (mcscf_method_t)
+         call check(error, m%options%n_active_electrons, 6, &
+                    "n_active_electrons must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, m%options%n_active_orbitals, 6, &
+                    "n_active_orbitals must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, m%options%n_inactive_orbitals, 4, &
+                    "n_inactive_orbitals must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, m%options%max_macro_iter, 120, &
+                    "max_macro_iter must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, close_enough(m%options%orbital_tol, 1.0e-7_dp), &
+                    "orbital_convergence must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, trim(m%options%basis_set), "cc-pvdz", &
+                    "basis must reach the MCSCF method")
+         if (allocated(error)) return
+         call check(error, m%options%optimize_orbitals, .true., &
+                    "casscf must reach the method as orbital optimisation on")
+      class default
+         call check(error, .false., "method = casscf should build an mcscf_method_t")
+      end select
+      deallocate (method)
+
+      ! And the other spelling, which is the same method type and must arrive
+      ! with the boolean flipped -- the only thing that distinguishes them.
+      call write_mcscf_input("casci", '"n_active_electrons": 4, '// &
+                             '"n_active_orbitals": 4')
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call check(error,.not. parse_error%has_error(), "a CASCI deck should parse")
+      if (allocated(error)) return
+
+      call config_to_driver(config, driver)
+      allocate (method, source=create_method(driver%method_config))
+      select type (m => method)
+      type is (mcscf_method_t)
+         call check(error, m%options%optimize_orbitals, .false., &
+                    "casci must reach the method as orbital optimisation off")
+      class default
+         call check(error, .false., "method = casci should build an mcscf_method_t")
+      end select
+   end subroutine test_mcscf_roundtrip
+
+   pure function close_enough(a, b) result(same)
+      !! Equal to within what a decimal literal survives a JSON round trip at
+      real(dp), intent(in) :: a, b
+      logical :: same
+      same = abs(a - b) <= 1.0e-14_dp + 1.0e-9_dp*abs(b)
+   end function close_enough
 
 end module test_mqc_config_roundtrip
 

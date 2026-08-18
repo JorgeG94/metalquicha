@@ -33,6 +33,13 @@ module test_mqc_mcscf
    use mqc_libcint_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
                                 rotation_matrix, is_redundant, run_libcint_casscf, &
                                 casscf_result_t
+   use mqc_config_types, only: mqc_config_t
+   use mqc_json_config_reader, only: read_json_config_file
+   use mqc_config_adapter, only: driver_config_t, config_to_driver
+   use mqc_method_base, only: qc_method_t
+   use mqc_method_factory, only: create_method
+   use mqc_physical_fragment, only: physical_fragment_t
+   use mqc_result_types, only: calculation_result_t
    implicit none
    private
 
@@ -51,6 +58,9 @@ module test_mqc_mcscf
    integer, parameter :: NITROGEN_Z(2) = [7, 7]
    character(len=2), parameter :: NITROGEN_SYM(2) = ["N ", "N "]
 
+   character(len=*), parameter :: DECK = "test_mcscf_deck_scratch.json"
+      !! Where the end-to-end cases write the input they then read back
+
 contains
 
    subroutine collect_mqc_mcscf_tests(testsuite)
@@ -62,7 +72,9 @@ contains
                   new_unittest("gradient_against_finite_differences", test_gradient), &
                   new_unittest("nitrogen_casscf_against_pyscf", test_nitrogen), &
                   new_unittest("water_casscf_against_pyscf", test_water), &
-                  new_unittest("casscf_improves_on_casci", test_variational) &
+                  new_unittest("casscf_improves_on_casci", test_variational), &
+                  new_unittest("a_deck_asking_for_casscf_gets_one", test_deck_casscf), &
+                  new_unittest("a_deck_asking_for_casci_gets_one", test_deck_casci) &
                   ]
    end subroutine collect_mqc_mcscf_tests
 
@@ -361,6 +373,176 @@ contains
       call check(error, trace, 6.0_dp, "and they should sum to the active electrons", &
                  thr=1.0e-9_dp)
    end subroutine test_variational
+
+   ! ==========================================================================
+   !  End to end: a JSON deck, through every hop, to an energy
+   ! ==========================================================================
+   !
+   ! The cases above drive `run_libcint_casscf` directly, which is the right way
+   ! to test the physics and says nothing whatever about whether a user can
+   ! reach it. These two close that gap. Everything between the deck and the
+   ! number is real -- the schema validator, the reader, the config adapter, the
+   ! method factory and the bridge -- and the only thing done by hand is
+   ! building the `physical_fragment_t`, exactly as `unfragmented_calculation`
+   ! builds it for a driver run.
+   !
+   ! The energies are the same PySCF references the direct cases use, so a
+   ! discrepancy here is a plumbing fault by construction: the physics has
+   ! already been checked against the same numbers earlier in this file.
+
+   subroutine write_deck(method, n_active_electrons, n_active_orbitals, molecule)
+      !! A minimal single-molecule deck asking for a complete active space
+      character(len=*), intent(in) :: method
+      integer, intent(in) :: n_active_electrons, n_active_orbitals
+      character(len=*), intent(in) :: molecule   !! Body of molecules[0]
+
+      integer :: unit
+      character(len=32) :: electrons, orbitals
+
+      write (electrons, "(i0)") n_active_electrons
+      write (orbitals, "(i0)") n_active_orbitals
+
+      open (newunit=unit, file=DECK, status="replace", action="write")
+      write (unit, "(A)") "{"
+      write (unit, "(A)") '  "schema": {"name": "mcscf-e2e", "version": "1.0"},'
+      write (unit, "(A)") '  "model": {"method": "'//method//'", "basis": "cc-pvdz"},'
+      write (unit, "(A)") '  "driver": "Energy",'
+      write (unit, "(A)") '  "keywords": {'
+      ! The same 1e-12 the direct cases ask their reference SCFs for, and no
+      ! tighter: the threaded Fock builds do not reproduce the last bit.
+      write (unit, "(A)") '    "scf": {"tolerance": 1.0e-12, "maxiter": 300},'
+      write (unit, "(A)") '    "mcscf": {"n_active_electrons": '//trim(electrons)//','
+      write (unit, "(A)") '              "n_active_orbitals": '//trim(orbitals)//','
+      write (unit, "(A)") '              "max_macro_iter": 200}'
+      write (unit, "(A)") "  },"
+      write (unit, "(A)") '  "molecules": [{'//molecule//"}]"
+      write (unit, "(A)") "}"
+      close (unit)
+   end subroutine write_deck
+
+   subroutine remove_deck()
+      integer :: unit
+      logical :: exists
+
+      inquire (file=DECK, exist=exists)
+      if (.not. exists) return
+      open (newunit=unit, file=DECK, status="old")
+      close (unit, status="delete")
+   end subroutine remove_deck
+
+   subroutine run_deck(atomic_numbers, coordinates, energy, ok, message)
+      !! Read the scratch deck, build the method it names, and run it
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      real(dp), intent(out) :: energy
+      logical, intent(out) :: ok
+      character(len=:), allocatable, intent(out) :: message
+
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+      class(qc_method_t), allocatable :: method
+      type(physical_fragment_t) :: fragment
+      type(calculation_result_t) :: result
+      type(error_t) :: parse_error
+
+      energy = 0.0_dp
+      ok = .false.
+      message = ""
+
+      call read_json_config_file(DECK, config, parse_error)
+      if (parse_error%has_error()) then
+         message = "the deck did not parse: "//parse_error%get_message()
+         return
+      end if
+      call config_to_driver(config, driver)
+
+      ! What `unfragmented_calculation` does with the whole system, minus the
+      ! parts that need a driver. The geometry comes from the parameters above
+      ! rather than being read back out of the config, so a change in how the
+      ! reader stores coordinates cannot make this test agree with itself.
+      fragment%n_atoms = size(atomic_numbers)
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(fragment%n_atoms))
+      allocate (fragment%coordinates(3, fragment%n_atoms))
+      fragment%element_numbers = atomic_numbers
+      fragment%coordinates = coordinates
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      call fragment%compute_nelec()
+
+      allocate (method, source=create_method(driver%method_config))
+      call method%calc_energy(fragment, result)
+      if (result%has_error) then
+         message = result%error%get_message()
+         call fragment%destroy()
+         return
+      end if
+
+      energy = result%energy%total()
+      ok = result%has_energy
+      call fragment%destroy()
+   end subroutine run_deck
+
+   subroutine test_deck_casscf(error)
+      !! `"method": "casscf"` in a deck reaches the orbital optimiser
+      type(error_type), allocatable, intent(out) :: error
+      real(dp) :: energy
+      logical :: ok
+      character(len=:), allocatable :: message
+
+      real(dp), parameter :: NITROGEN_REFERENCE = -109.090018071393_dp
+      real(dp), parameter :: WATER_REFERENCE = -76.077846973211_dp
+
+      call write_deck("casscf", 6, 6, '"symbols": ["N", "N"], '// &
+                      '"geometry": [0.0, 0.0, -1.0371, 0.0, 0.0, 1.0371], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1')
+      call run_deck(NITROGEN_Z, NITROGEN, energy, ok, message)
+      call remove_deck()
+      call check(error, ok, "a CASSCF deck should produce an energy: "//message)
+      if (allocated(error)) return
+      call check(error, energy, NITROGEN_REFERENCE, &
+                 "N2 CAS(6,6) from a deck, against PySCF", thr=1.0e-9_dp)
+      if (allocated(error)) return
+
+      ! The second reference, and a different active space, so a CAS(6,6)
+      ! hard-coded anywhere in the plumbing could not pass both.
+      call write_deck("casscf", 4, 4, '"symbols": ["O", "H", "H"], '// &
+                      '"geometry": [0.0, 0.0, 0.0, 0.0, -1.4308, 1.1078, '// &
+                      '0.0, 1.4308, 1.1078], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1')
+      call run_deck(WATER_Z, WATER, energy, ok, message)
+      call remove_deck()
+      call check(error, ok, "a CASSCF deck on water should produce an energy: "//message)
+      if (allocated(error)) return
+      call check(error, energy, WATER_REFERENCE, &
+                 "water CAS(4,4) from a deck, against PySCF", thr=1.0e-9_dp)
+   end subroutine test_deck_casscf
+
+   subroutine test_deck_casci(error)
+      !! `"method": "casci"` reaches the same active space with fixed orbitals
+      !!
+      !! The spelling is the whole test. Both names parse to METHOD_TYPE_MCSCF,
+      !! so if the reader stopped recovering the distinction this deck would
+      !! silently run a CASSCF -- a *lower* energy, converged, and correct for a
+      !! calculation nobody asked for. Which is why this asserts an equality
+      !! against the CASCI reference and not merely a bound.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp) :: energy
+      logical :: ok
+      character(len=:), allocatable :: message
+
+      real(dp), parameter :: REFERENCE = -109.021781262623_dp
+
+      call write_deck("casci", 6, 6, '"symbols": ["N", "N"], '// &
+                      '"geometry": [0.0, 0.0, -1.0371, 0.0, 0.0, 1.0371], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1')
+      call run_deck(NITROGEN_Z, NITROGEN, energy, ok, message)
+      call remove_deck()
+      call check(error, ok, "a CASCI deck should produce an energy: "//message)
+      if (allocated(error)) return
+      call check(error, energy, REFERENCE, &
+                 "N2 CAS(6,6) CASCI from a deck, against PySCF", thr=1.0e-9_dp)
+   end subroutine test_deck_casci
 
 end module test_mqc_mcscf
 
