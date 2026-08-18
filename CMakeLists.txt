@@ -421,6 +421,25 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
   # One target, not two: libfint has no C library beside it.
   set(MQC_INTEGRALS_LIBS fint)
+  # Answer to libcint's target names as well as our own.
+  #
+  # Most targets link ${MQC_INTEGRALS_LIBS} and so follow whichever backend is
+  # selected. A few name `cint_fortran cint` directly, and every rebase onto
+  # main brings more of them, because a contributor adding a test has no reason
+  # to know this branch exists. Routing them one at a time is what three of the
+  # four commits on this branch have been, and it will be due again after the
+  # next merge.
+  #
+  # Aliases end that. With libfint selected libcint is never fetched, so the
+  # names are free, and pointing both at `fint` makes a target that asks for
+  # libcint by name get libfint without knowing. Nothing on main has to be
+  # aware of this branch, and a rebase stops carrying link fixes.
+  if(NOT TARGET cint)
+    add_library(cint ALIAS fint)
+  endif()
+  if(NOT TARGET cint_fortran)
+    add_library(cint_fortran ALIAS fint)
+  endif()
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
   add_subdirectory(backends/libcint)
   message(
