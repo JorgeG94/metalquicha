@@ -347,6 +347,7 @@ contains
       call allow(keys, "triples")
       call allow(keys, "diis")
       call allow(keys, "diis_size")
+      call allow(keys, "spin_adapted")
    end function cc_keys
 
    function mcscf_keys() result(keys)
