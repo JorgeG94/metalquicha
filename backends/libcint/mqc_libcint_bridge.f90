@@ -1548,12 +1548,30 @@ contains
                                  gradient_tol=settings%mcscf%orbital_convergence, &
                                  verbose=settings%verbose)
          if (.not. error%has_error() .and. .not. casscf%converged) then
-            call error%set(ERROR_VALIDATION, "the orbital optimisation did not reach an "// &
-                           "orbital gradient of "// &
-                           to_real_text(settings%mcscf%orbital_convergence)//" in "// &
-                           to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
-                           "(it stopped at "//to_real_text(casscf%gradient_norm)// &
-                           "). Raise keywords.mcscf.max_macro_iter.")
+            if (casscf%stalled) then
+               ! Distinguished from running out of iterations, because the
+               ! advice is the opposite. A stall means no step downhill could be
+               ! found at all: the approximate Hessian has run out of
+               ! resolution, and more iterations will do nothing. It happens on
+               ! flat surfaces, where the energy is converged long before the
+               ! gradient is small.
+               call error%set(ERROR_VALIDATION, "the orbital optimisation stopped "// &
+                              "improving at a gradient of "// &
+                              to_real_text(casscf%gradient_norm)//", short of the "// &
+                              to_real_text(settings%mcscf%orbital_convergence)// &
+                              " asked for, after "//to_text(casscf%iterations)// &
+                              " macro-iterations. More iterations will not help -- "// &
+                              "no step downhill could be found. Ask for a looser "// &
+                              "keywords.mcscf.orbital_convergence; on a flat surface "// &
+                              "the energy is converged well before the gradient is.")
+            else
+               call error%set(ERROR_VALIDATION, "the orbital optimisation did not reach an "// &
+                              "orbital gradient of "// &
+                              to_real_text(settings%mcscf%orbital_convergence)//" in "// &
+                              to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
+                              "(it stopped at "//to_real_text(casscf%gradient_norm)// &
+                              "). Raise keywords.mcscf.max_macro_iter.")
+            end if
          end if
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, error%get_message())

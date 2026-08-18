@@ -451,6 +451,33 @@ FRAGMENTED_CASES = [
 # Molecules the quasi-atomic analysis is exercised on end to end. Small, closed
 # shell, and spanning two rows: the minimal basis tables and the core/valence
 # split are per element, so a second-row atom is worth having.
+# Molecules the multireference cases need and the sweeps do not. Kept out of
+# MOLECULES on purpose: the sweeps walk that dictionary one element at a time,
+# so anything added there is emitted as an RHF case for every basis in the
+# sweep whether or not it belongs to one. N2 went in there first and produced
+# seven unwanted decks.
+MULTIREF_MOLECULES = {
+    "n2": _mol("N2", "N", diatomic("N", "N", 1.0977)),
+}
+
+
+def multiref_molecule(name):
+    """A molecule for the multireference cases, from either dictionary."""
+    if name in MULTIREF_MOLECULES:
+        return MULTIREF_MOLECULES[name]
+    return MOLECULES[name]
+
+
+# Multireference cases. `avas` gives the orbital labels instead of counts, and
+# the two are mutually exclusive in a deck exactly as they are here.
+MCSCF_CASES = [
+    # molecule  basis      nelecas  ncas  optimize  avas labels
+    ("n2",      "cc-pvdz", 6,       6,    True,     None),
+    ("n2",      "cc-pvdz", 6,       6,    False,    None),
+    ("water",   "cc-pvdz", 4,       4,    True,     None),
+    ("n2",      "cc-pvdz", 0,       0,    True,     ["N 2p"]),
+]
+
 QUAO_CASES = [
     ("water", "6-31g"),
     ("h2s", "6-31g"),
@@ -1509,6 +1536,43 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     return float(energy), grad.kernel().tolist(), mol.nao
 
 
+def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
+    """CASSCF or CASCI, and the active space AVAS picked when labels are given.
+
+    Returns the energy and the active space actually used, because with AVAS the
+    deck does not state one and the manifest should still record what ran.
+    """
+    from pyscf import gto, scf, mcscf
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    mol.basis = {sym: bse_to_pyscf(basis, sym) for sym in {a[0] for a in atoms}}
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF RHF did not converge for {basis}")
+
+    mo = None
+    if avas_labels:
+        from pyscf.mcscf import avas as avas_mod
+        ncas, nelecas, mo = avas_mod.avas(mf, avas_labels, threshold=0.2)
+
+    if optimize:
+        mc = mcscf.CASSCF(mf, ncas, nelecas)
+        mc.conv_tol = 1e-11
+        mc.conv_tol_grad = 1e-7
+    else:
+        mc = mcscf.CASCI(mf, ncas, nelecas)
+    mc.fcisolver.conv_tol = 1e-12
+    mc.kernel(mo)
+    if not mc.converged:
+        raise SystemExit(f"PySCF MCSCF did not converge for {basis}")
+    return float(mc.e_tot), int(nelecas if isinstance(nelecas, int) else sum(nelecas)), int(ncas)
+
+
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
     from pyscf import df, gto, scf
 
@@ -1609,6 +1673,50 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} df={aux:22s} E={energy:.12f}", flush=True)
+
+    # Complete active space, through the real driver. The energy is the whole
+    # check: a CASSCF total is not a correction to anything, so agreeing with
+    # PySCF is agreeing about the wave function.
+    for name, basis, nelecas, ncas, optimize, avas_labels in MCSCF_CASES:
+        mol = multiref_molecule(name)
+        energy, nelecas_used, ncas_used = pyscf_mcscf(
+            mol.atoms, basis, nelecas, ncas, optimize=optimize,
+            avas_labels=avas_labels)
+        tag = normalize_basis_name(basis)
+        if avas_labels:
+            tag += "_avas"
+        elif not optimize:
+            tag += "_casci"
+        tag += f"_{nelecas_used}e{ncas_used}o"
+        deck = deck_for(f"{CPU_MQC}/mcscf", f"cpu_{name}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis,
+                          method="casscf" if optimize else "casci")
+            if avas_labels:
+                d["keywords"]["mcscf"] = {
+                    "avas": {"orbitals": avas_labels, "threshold": 0.2},
+                    "max_macro_iter": 300,
+                }
+            else:
+                d["keywords"]["mcscf"] = {
+                    "n_active_electrons": nelecas,
+                    "n_active_orbitals": ncas,
+                    "max_macro_iter": 300,
+                }
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        theory = "CASSCF" if optimize else "CASCI"
+        if avas_labels:
+            theory += " (AVAS " + ", ".join(avas_labels) + ")"
+        tests.append({
+            "name": f"{theory} CAS({nelecas_used},{ncas_used}) {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "energy_tolerance": 1e-08,
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {theory:24s} "
+              f"CAS({nelecas_used},{ncas_used}) E={energy:.12f}", flush=True)
 
     # The quasi-atomic bonding analysis, through the real driver. The energy is
     # the ordinary RHF one and is what the harness checks; what the case is

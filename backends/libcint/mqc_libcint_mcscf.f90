@@ -113,6 +113,14 @@ module mqc_libcint_mcscf
       integer :: iterations = 0
       integer :: n_determinants = 0
       logical :: converged = .false.
+      logical :: stalled = .false.
+         !! The optimisation stopped because no step downhill could be found,
+         !! rather than because it ran out of iterations. The distinction
+         !! matters to whoever reads the failure: a stall is the approximate
+         !! Hessian having run out of resolution, and more iterations do not
+         !! help. It happens on flat surfaces -- water in cc-pVDZ with a
+         !! CAS(4,4) stalls around a gradient of 1e-5 -- and the energy at that
+         !! point is typically converged far past the gradient.
    end type casscf_result_t
 
    type :: mcscf_fock_t
@@ -598,6 +606,7 @@ contains
          end do
 
          if (.not. accepted) then
+            result%stalled = .true.
             if (loud) call logger%warning("    no step downhill was found; stopping")
             exit
          end if
