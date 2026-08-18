@@ -479,23 +479,55 @@ contains
          end do
       end do
 
-      do d = 1, nv
-         do l = 1, no
-            do c = 1, nv
-               do i = 1, no
+      ! The four amplitude terms, as two gemms over the contracted (l,d).
+      !
+      ! They group by which of the two integral orderings they carry, and the
+      ! grouping is the point: written as the reference writes them this is
+      ! four passes of O(n_occ^3 n_vir^3) with a strided read of `ovov` in the
+      ! innermost position. Grouped, it is two matrix products over compound
+      ! indices, and the packing that makes them possible is
+      ! O(n_occ^2 n_vir^2).
+      block
+         real(dp), allocatable :: a1(:, :), a2(:, :), b1(:, :), b2(:, :), r(:, :)
+         integer :: nov, kc, ld, ia
+
+         nov = no*nv
+         allocate (a1(nov, nov), a2(nov, nov), b1(nov, nov), b2(nov, nov), r(nov, nov))
+
+         do d = 1, nv
+            do l = 1, no
+               ld = (d - 1)*no + l
+               do c = 1, nv
                   do k = 1, no
-                     do a = 1, nv
-                        w(a, k, i, c) = w(a, k, i, c) &
-                                        - 0.5_dp*eris%ovov(l, d, k, c)*t2(i, l, d, a) &
-                                        - 0.5_dp*eris%ovov(l, c, k, d)*t2(i, l, a, d) &
-                                        - eris%ovov(l, d, k, c)*t1(i, d)*t1(l, a) &
-                                        + eris%ovov(l, d, k, c)*t2(i, l, a, d)
-                     end do
+                     kc = (c - 1)*no + k
+                     a1(kc, ld) = eris%ovov(l, d, k, c)
+                     a2(kc, ld) = eris%ovov(l, c, k, d)
                   end do
                end do
             end do
          end do
-      end do
+
+         do a = 1, nv
+            do i = 1, no
+               ia = (a - 1)*no + i
+               do d = 1, nv
+                  do l = 1, no
+                     ld = (d - 1)*no + l
+                     b1(ld, ia) = -0.5_dp*t2(i, l, d, a) - t1(i, d)*t1(l, a) &
+                                  + t2(i, l, a, d)
+                     b2(ld, ia) = -0.5_dp*t2(i, l, a, d)
+                  end do
+               end do
+            end do
+         end do
+
+         call pic_gemm(a1, b1, r)
+         call accumulate_wvoov(r, no, nv, w)
+         call pic_gemm(a2, b2, r)
+         call accumulate_wvoov(r, no, nv, w)
+
+         deallocate (a1, a2, b1, b2, r)
+      end block
    end subroutine cc_wvoov
 
    subroutine cc_wvovo(eris, t1, t2, no, nv, w)
@@ -547,21 +579,44 @@ contains
          end do
       end do
 
-      do d = 1, nv
-         do l = 1, no
-            do i = 1, no
+      ! Both amplitude terms carry the same integral ordering, so they are one
+      ! gemm over (l,d) rather than two passes.
+      block
+         real(dp), allocatable :: a2(:, :), b3(:, :), r(:, :)
+         integer :: nov, kc, ld, ia
+
+         nov = no*nv
+         allocate (a2(nov, nov), b3(nov, nov), r(nov, nov))
+
+         do d = 1, nv
+            do l = 1, no
+               ld = (d - 1)*no + l
                do c = 1, nv
                   do k = 1, no
-                     do a = 1, nv
-                        w(a, k, c, i) = w(a, k, c, i) &
-                                        - 0.5_dp*eris%ovov(l, c, k, d)*t2(i, l, d, a) &
-                                        - eris%ovov(l, c, k, d)*t1(i, d)*t1(l, a)
-                     end do
+                     kc = (c - 1)*no + k
+                     a2(kc, ld) = eris%ovov(l, c, k, d)
                   end do
                end do
             end do
          end do
-      end do
+
+         do a = 1, nv
+            do i = 1, no
+               ia = (a - 1)*no + i
+               do d = 1, nv
+                  do l = 1, no
+                     ld = (d - 1)*no + l
+                     b3(ld, ia) = -0.5_dp*t2(i, l, d, a) - t1(i, d)*t1(l, a)
+                  end do
+               end do
+            end do
+         end do
+
+         call pic_gemm(a2, b3, r)
+         call accumulate_wvovo(r, no, nv, w)
+
+         deallocate (a2, b3, r)
+      end block
    end subroutine cc_wvovo
 
    !===========================================================================
@@ -905,63 +960,85 @@ contains
       end do
       call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
 
-      ! The three ring terms
+      ! The three ring terms, together
+      !
+      ! Each contracts over (k,c) and each is O(n_occ^3 n_vir^3), which makes
+      ! them jointly the largest thing in this routine after the ladder. Written
+      ! as loops they read straight off the reference; written as gemms they
+      ! need the operands laid out with the contracted pair as one compound
+      ! index, which is what the packing below does. The packs are all
+      ! O(n_occ^2 n_vir^2) -- a factor of n_occ n_vir cheaper than the products
+      ! they feed -- so the rearrangement is free in the only sense that
+      ! matters.
+      !
+      ! Three of the five operands are shared, which is why they are done as a
+      ! group rather than one at a time:
+      !
+      !     X1 = 2 X2 - X3        so only X2 and X3 are built
+      !     term C reuses Y2       with its free virtual named a instead of b
       allocate (wvoov(nv, no, no, nv), wvovo(nv, no, nv, no))
       call cc_wvoov(eris, t1, t2, no, nv, wvoov)
       call cc_wvovo(eris, t1, t2, no, nv, wvovo)
 
-      ! '2 akic,kjcb->ijab' - 'akci,kjcb->ijab'
-      tmp = 0.0_dp
-      do c = 1, nv
-         do k = 1, no
-            do b = 1, nv
-               do a = 1, nv
-                  do j = 1, no
-                     do i = 1, no
-                        tmp(i, j, a, b) = tmp(i, j, a, b) &
-                                          + (2.0_dp*wvoov(a, k, i, c) - wvovo(a, k, c, i)) &
-                                          *t2(k, j, c, b)
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-      call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
+      block
+         real(dp), allocatable :: x1(:, :), x2(:, :), x3(:, :)
+         real(dp), allocatable :: y1(:, :), y2(:, :), r(:, :)
+         integer :: nov, ai, kc, jb
 
-      ! '-akic,kjbc->ijab'
-      tmp = 0.0_dp
-      do c = 1, nv
-         do k = 1, no
-            do b = 1, nv
-               do a = 1, nv
-                  do j = 1, no
-                     do i = 1, no
-                        tmp(i, j, a, b) = tmp(i, j, a, b) + wvoov(a, k, i, c)*t2(k, j, b, c)
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-      call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
+         nov = no*nv
+         allocate (x1(nov, nov), x2(nov, nov), x3(nov, nov))
+         allocate (y1(nov, nov), y2(nov, nov), r(nov, nov))
 
-      ! '-bkci,kjac->ijab'
-      tmp = 0.0_dp
-      do c = 1, nv
-         do k = 1, no
-            do b = 1, nv
-               do a = 1, nv
-                  do j = 1, no
-                     do i = 1, no
-                        tmp(i, j, a, b) = tmp(i, j, a, b) + wvovo(b, k, c, i)*t2(k, j, a, c)
-                     end do
+         ! X2(ai,kc) = Wvoov(a,k,i,c);  X3(ai,kc) = Wvovo(a,k,c,i)
+         do c = 1, nv
+            do k = 1, no
+               kc = (c - 1)*no + k
+               do i = 1, no
+                  do a = 1, nv
+                     ai = (i - 1)*nv + a
+                     x2(ai, kc) = wvoov(a, k, i, c)
+                     x3(ai, kc) = wvovo(a, k, c, i)
                   end do
                end do
             end do
          end do
-      end do
-      call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
+         x1 = 2.0_dp*x2 - x3
+
+         ! Y1(kc,jb) = t2(k,j,c,b);  Y2(kc,jb) = t2(k,j,b,c)
+         do b = 1, nv
+            do j = 1, no
+               jb = (b - 1)*no + j
+               do c = 1, nv
+                  do k = 1, no
+                     kc = (c - 1)*no + k
+                     y1(kc, jb) = t2(k, j, c, b)
+                     y2(kc, jb) = t2(k, j, b, c)
+                  end do
+               end do
+            end do
+         end do
+
+         ! '2 akic,kjcb->ijab' - 'akci,kjcb->ijab'
+         call pic_gemm(x1, y1, r)
+         tmp = 0.0_dp
+         call scatter_ring(r, no, nv, .false., tmp)
+         call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
+
+         ! '-akic,kjbc->ijab'
+         call pic_gemm(x2, y2, r)
+         tmp = 0.0_dp
+         call scatter_ring(r, no, nv, .false., tmp)
+         call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
+
+         ! '-bkci,kjac->ijab'. The only one whose free indices come out paired
+         ! the other way round, (b,i) with (j,a), which `swapped` says.
+         call pic_gemm(x3, y2, r)
+         tmp = 0.0_dp
+         call scatter_ring(r, no, nv, .true., tmp)
+         call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
+
+         deallocate (x1, x2, x3, y1, y2, r)
+      end block
       deallocate (wvoov, wvovo)
 
       do b = 1, nv
@@ -976,11 +1053,196 @@ contains
       end do
    end subroutine rccsd_iteration
 
+   subroutine accumulate_wvoov(r, no, nv, w)
+      !! w(a,k,i,c) += R((k,c),(i,a))
+      real(dp), intent(in) :: r(:, :)
+      integer, intent(in) :: no, nv
+      real(dp), intent(inout) :: w(:, :, :, :)
+
+      integer :: a, k, i, c
+
+      do c = 1, nv
+         do i = 1, no
+            do k = 1, no
+               do a = 1, nv
+                  w(a, k, i, c) = w(a, k, i, c) + r((c - 1)*no + k, (a - 1)*no + i)
+               end do
+            end do
+         end do
+      end do
+   end subroutine accumulate_wvoov
+
+   subroutine accumulate_wvovo(r, no, nv, w)
+      !! w(a,k,c,i) += R((k,c),(i,a))
+      !!
+      !! Same product, different destination ordering -- the two W intermediates
+      !! differ in exactly the placement of their occupied and virtual pair,
+      !! which is what their names say and the only thing separating them.
+      real(dp), intent(in) :: r(:, :)
+      integer, intent(in) :: no, nv
+      real(dp), intent(inout) :: w(:, :, :, :)
+
+      integer :: a, k, c, i
+
+      do i = 1, no
+         do c = 1, nv
+            do k = 1, no
+               do a = 1, nv
+                  w(a, k, c, i) = w(a, k, c, i) + r((c - 1)*no + k, (a - 1)*no + i)
+               end do
+            end do
+         end do
+      end do
+   end subroutine accumulate_wvovo
+
+   subroutine scatter_ring(r, no, nv, swapped, tmp)
+      !! Add a ring term's gemm result back into (i,j,a,b) order
+      !!
+      !! The product comes out indexed by the two compound indices the
+      !! contraction left free. Two of the three terms leave (a,i) against
+      !! (j,b); the third leaves (b,i) against (j,a), which `swapped` selects.
+      !! Getting that one wrong gives a result that is still symmetric under the
+      !! i<->j, a<->b permutation applied afterwards, and still the right
+      !! magnitude.
+      real(dp), intent(in) :: r(:, :)
+      integer, intent(in) :: no, nv
+      logical, intent(in) :: swapped
+      real(dp), intent(inout) :: tmp(:, :, :, :)
+
+      integer :: i, j, a, b, row, col
+
+      do b = 1, nv
+         do a = 1, nv
+            do j = 1, no
+               do i = 1, no
+                  if (swapped) then
+                     row = (i - 1)*nv + b
+                     col = (a - 1)*no + j
+                  else
+                     row = (i - 1)*nv + a
+                     col = (b - 1)*no + j
+                  end if
+                  tmp(i, j, a, b) = tmp(i, j, a, b) + r(row, col)
+               end do
+            end do
+         end do
+      end do
+   end subroutine scatter_ring
+
+   subroutine ladder_accumulate(no2, nv2, nb, tau_cols, wblk, t2n)
+      !! t2n(ij, ab) += sum_cd tau(ij, cd) W(ab, cd), over one batch of (cd)
+      !!
+      !! Explicit-shape dummies so the caller's rank-four arrays arrive as the
+      !! matrices their memory already is, by sequence association -- the same
+      !! device `ladder_t1_block` uses next door, and for the same reason: an
+      !! assumed-shape dummy cannot take a block that way, and reshaping a
+      !! n_occ^2 by n_vir^2 array every batch would cost more than the gemm.
+      integer, intent(in) :: no2, nv2, nb
+      real(dp), intent(in) :: tau_cols(no2, nb)   !! this batch's columns of tau
+      real(dp), intent(in) :: wblk(nv2, nb)       !! Wvvvv for the same columns
+      real(dp), intent(inout) :: t2n(no2, nv2)
+
+      call pic_gemm(tau_cols, wblk, t2n, transb="T", beta=1.0_dp)
+   end subroutine ladder_accumulate
+
+   subroutine ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+      !! The t1 half of the particle-particle ladder, without forming it
+      !!
+      !! Wvvvv carries two singles terms beside `(ac|bd)`, and contracting them
+      !! with tau in the order they are written costs O(n_occ n_vir^4) -- the
+      !! same order as the ladder itself, and measured at 54% of an iteration
+      !! once everything around it had been turned into matrix products.
+      !!
+      !! Reassociating fixes it. Summing over (c,d) first,
+      !!
+      !!     -sum_cd [sum_k ovvv(k,d,a,c) t1(k,b)] tau(i,j,c,d)
+      !!         = -sum_k t1(k,b) Z1(k,a,i,j),  Z1 = sum_cd ovvv(k,d,a,c) tau(i,j,c,d)
+      !!
+      !! and likewise for the second term with `ovvv(k,c,b,d)`. Z is
+      !! O(n_occ^3 n_vir^3) to build and the t1 contraction that follows is
+      !! smaller again, so the n_vir^4 disappears entirely.
+      !!
+      !! Held one virtual at a time, so nothing here is larger than
+      !! `n_occ n_vir^2` -- the alternative, packing both permuted copies of
+      !! `ovvv` whole, would have tripled the largest block this module holds
+      !! and undone the reason it exists.
+      type(rcc_eris_t), intent(in) :: eris
+      integer, intent(in) :: no, nv
+      real(dp), intent(in) :: t1(no, nv)
+      real(dp), intent(in) :: tau(no, no, nv, nv)
+      real(dp), intent(inout) :: t2n(no, no, nv, nv)
+
+      real(dp), allocatable :: taut(:, :), p(:, :), z(:, :), cmat(:, :)
+      integer :: i, j, a, b, c, d, k, v, cd, ij
+
+      allocate (taut(nv*nv, no*no), p(no, nv*nv), z(no, no*no), cmat(no*no, nv))
+
+      ! tau with the virtual pair leading, once per iteration.
+      do d = 1, nv
+         do c = 1, nv
+            cd = (d - 1)*nv + c
+            do j = 1, no
+               do i = 1, no
+                  taut(cd, (j - 1)*no + i) = tau(i, j, c, d)
+               end do
+            end do
+         end do
+      end do
+
+      do v = 1, nv
+         ! ---- Z1: the free virtual is the first of the pair ----------------
+         do c = 1, nv
+            do d = 1, nv
+               cd = (d - 1)*nv + c
+               do k = 1, no
+                  p(k, cd) = eris%ovvv(k, d, v, c)
+               end do
+            end do
+         end do
+         call pic_gemm(p, taut, z)
+         call pic_gemm(z, t1, cmat, transa="T")
+         do b = 1, nv
+            do j = 1, no
+               do i = 1, no
+                  t2n(i, j, v, b) = t2n(i, j, v, b) - cmat((j - 1)*no + i, b)
+               end do
+            end do
+         end do
+
+         ! ---- Z2: the free virtual is the second ---------------------------
+         do c = 1, nv
+            do d = 1, nv
+               cd = (d - 1)*nv + c
+               do k = 1, no
+                  p(k, cd) = eris%ovvv(k, c, v, d)
+               end do
+            end do
+         end do
+         call pic_gemm(p, taut, z)
+         call pic_gemm(z, t1, cmat, transa="T")
+         do a = 1, nv
+            do j = 1, no
+               do i = 1, no
+                  t2n(i, j, a, v) = t2n(i, j, a, v) - cmat((j - 1)*no + i, a)
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (taut, p, z, cmat)
+   end subroutine ladder_t1_dressing
+
    subroutine particle_ladder(eris, t1, tau, no, nv, t2n)
       !! t2new(i,j,a,b) += sum_cd Wvvvv(a,b,c,d) tau(i,j,c,d), never holding Wvvvv
       !!
       !!     Wvvvv(a,b,c,d) = (ac|bd) - sum_k ovvv(k,d,a,c) t1(k,b)
       !!                              - sum_k ovvv(k,c,b,d) t1(k,a)
+      !!
+      !! Only the `(ac|bd)` part is batched here. The two t1 terms are handled
+      !! by `ladder_t1_dressing`, which never forms them: contracted against tau
+      !! first they cost O(n_occ^3 n_vir^3) instead of the O(n_occ n_vir^4) they
+      !! cost inside this loop, and that difference was measured at just over
+      !! half of one iteration.
       !!
       !! `n_vir^4` is the largest thing coupled cluster asks for and it is read
       !! exactly once, here, which is what makes batching it possible rather
@@ -997,9 +1259,14 @@ contains
       !! the fitted path never allocates anything of fourth order in the
       !! virtuals at all.
       type(rcc_eris_t), intent(in) :: eris
-      real(dp), intent(in) :: t1(:, :), tau(:, :, :, :)
       integer, intent(in) :: no, nv
-      real(dp), intent(inout) :: t2n(:, :, :, :)
+      real(dp), intent(in) :: t1(no, nv)
+      ! Explicit shape, not assumed: the accumulation below hands a column range
+      ! of `tau` and the whole of `t2n` to a rank-two dummy by sequence
+      ! association, and only an explicit-shape or allocatable actual may be
+      ! sliced that way.
+      real(dp), intent(in) :: tau(no, no, nv, nv)
+      real(dp), intent(inout) :: t2n(no, no, nv, nv)
 
       real(dp), allocatable :: wblk(:, :, :), gvv(:, :)
       integer :: nv2, cd0, cd1, nb, col, cd, a, b, c, d, i, j, k, naux
@@ -1040,40 +1307,23 @@ contains
                end do
             end if
 
-            ! The t1 dressing. n_occ n_vir^4 an iteration, the same order as the
-            ! contraction it feeds.
-            do b = 1, nv
-               do a = 1, nv
-                  acc = 0.0_dp
-                  do k = 1, no
-                     acc = acc - eris%ovvv(k, d, a, c)*t1(k, b) &
-                           - eris%ovvv(k, c, b, d)*t1(k, a)
-                  end do
-                  wblk(a, b, col) = wblk(a, b, col) + acc
-               end do
-            end do
          end do
 
-         do col = 1, nb
-            cd = cd0 + col - 1
-            c = mod(cd - 1, nv) + 1
-            d = (cd - 1)/nv + 1
-            do b = 1, nv
-               do a = 1, nv
-                  acc = wblk(a, b, col)
-                  if (acc == 0.0_dp) cycle
-                  do j = 1, no
-                     do i = 1, no
-                        t2n(i, j, a, b) = t2n(i, j, a, b) + acc*tau(i, j, c, d)
-                     end do
-                  end do
-               end do
-            end do
-         end do
+         ! One gemm for the whole batch. `tau` is (no^2, nv^2) as it lies in
+         ! memory and this batch is a contiguous column range of it, starting at
+         ! the (c,d) that opens the batch; `wblk` is (nv^2, nb) likewise. So the
+         ! accumulation is C += A B^T with nothing copied and nothing reshaped,
+         ! which is the whole reason the batch runs over the compound (cd)
+         ! rather than over c and d separately.
+         c = mod(cd0 - 1, nv) + 1
+         d = (cd0 - 1)/nv + 1
+         call ladder_accumulate(no*no, nv*nv, nb, tau(1, 1, c, d), wblk, t2n(1, 1, 1, 1))
       end do
 
       deallocate (wblk)
       if (allocated(gvv)) deallocate (gvv)
+
+      call ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
    end subroutine particle_ladder
 
    !===========================================================================
