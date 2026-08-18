@@ -22,6 +22,7 @@ target_sources(
           mqc_libcint_bonding.f90
           mqc_libcint_quao.f90
           mqc_libcint_quao_report.f90
+          mqc_libcint_casci.f90
           mqc_libcint_localize.f90
           mqc_libcint_cphf.F90
           mqc_libcint_dma.f90

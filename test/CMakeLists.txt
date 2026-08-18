@@ -77,6 +77,9 @@ if(MQC_ENABLE_LIBCINT)
   # The quasi-atomic orbitals themselves, and the density in their basis.
   addtest(mqc_quao)
   target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
+  # CASCI on real molecules: the seam between the CI machinery and a basis set.
+  addtest(mqc_casci)
+  target_link_libraries(test_mqc_casci PRIVATE cint_fortran cint)
 
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
