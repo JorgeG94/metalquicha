@@ -215,9 +215,9 @@ the method files carry no preprocessor conditionals at all.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1233,18 +1233,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1328.14,-137.89C1282.48,-137.72 1192.25,-137.38 1137.36,-137.17"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1137.22,-133.67 1127.2,-137.13 1137.19,-140.67 1137.22,-133.67"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_node36" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node36"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node36"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1396.5,-108 1318.5,-108 1318.5,-84 1396.5,-84 1396.5,-108"/>
 <text text-anchor="middle" x="1357.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_edge45" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1318.25,-101.92C1270.38,-109.32 1188.47,-122 1137.31,-129.91"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.54,-126.49 1127.19,-131.48 1137.61,-133.41 1136.54,-126.49"/>
 </g>
@@ -1453,7 +1453,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~4"></span>
+              <span class="anchor" id="variable-allow_crap_scf~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -1472,7 +1472,7 @@ must not have two behaviours depending on which backend ran it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~2"></span>
+              <span class="anchor" id="variable-angular_points~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1507,7 +1507,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~3"></span>
+              <span class="anchor" id="variable-aux_basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1524,7 +1524,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1643,7 +1643,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~2"></span>
+              <span class="anchor" id="variable-density_fitting~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1660,7 +1660,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1694,7 +1694,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~3"></span>
+              <span class="anchor" id="variable-diis_size~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1711,7 +1711,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1816,7 +1816,7 @@ repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -1919,7 +1919,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os~2"></span>
+              <span class="anchor" id="variable-scs_os~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1936,7 +1936,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss~2"></span>
+              <span class="anchor" id="variable-scs_ss~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1953,7 +1953,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~4"></span>
+              <span class="anchor" id="variable-spherical~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1987,7 +1987,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2004,7 +2004,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~7"></span>
+              <span class="anchor" id="variable-verbose~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -2053,7 +2053,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type"></span>
+              <span class="anchor" id="variable-method_type~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2103,7 +2103,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~13"></span>
+              <span class="anchor" id="variable-name~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2118,7 +2118,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind"></span>
+              <span class="anchor" id="variable-kind~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2133,7 +2133,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~45"></span>
+              <span class="anchor" id="variable-error~80"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2176,7 +2176,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-18 01:27 +0000             </p>
+ on 2026-08-18 04:25 +0000             </p>
           </div>
         </div>
         <br>
