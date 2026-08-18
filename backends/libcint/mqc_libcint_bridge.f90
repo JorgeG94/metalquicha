@@ -65,34 +65,96 @@ module mqc_libcint_bridge
       !! a hundred-hartree total is inside what a threaded Fock build
       !! reproduces.
 
-   real(dp), parameter :: ERI_CORE_BUDGET_BYTES = 2.0e9_dp
-      !! How much the stored two-electron tensor may take before the SCF goes
-      !! back to rebuilding it every iteration.
+   real(dp), parameter :: ERI_CORE_BUDGET_CAP = 2.0e9_dp
+      !! Ceiling on what one rank may spend on stored two-electron integrals.
       !!
       !! The tensor is the full n^4, not the eightfold-unique set, so this is
       !! reached at 128 functions. Packing it would push that to 215, which is
       !! worth doing when something needs it -- `eris_packed` already exists for
       !! the correlated methods -- but the contraction in `build_fock` addresses
       !! the tensor as four indices and would have to be rewritten with it.
+
+   real(dp), parameter :: ERI_CORE_BUDGET_SHARE = 0.25_dp
+      !! Fraction of *currently available* memory a rank will claim.
       !!
-      !! Deliberately a fixed budget rather than a fraction of the machine.
-      !! Fragmented runs put one MPI rank per fragment on a node, and sizing
-      !! this from total memory would have every rank on a node each conclude it
-      !! could have all of it.
+      !! This used to be a flat two gigabytes, on the reasoning that a
+      !! fragmented run puts one MPI rank per fragment on a node and sizing
+      !! from total memory would have every rank conclude it could have all of
+      !! it. That is right for a cluster node and wrong for the machine this
+      !! project also aims at: four ranks on a sixteen-gigabyte laptop, each
+      !! helping itself to two gigabytes of integrals, is most of the machine
+      !! before anything else is counted -- and the laptop is running a browser.
+      !!
+      !! Reading what is *available* rather than what is installed handles the
+      !! several-ranks-per-node case without needing to know how many there
+      !! are, which is not discoverable here: there is no node-local
+      !! communicator to ask. Ranks that decide earlier have already allocated,
+      !! so the ones deciding later see less and claim less. That degrades
+      !! rather than resolving -- ranks deciding at the same instant see the
+      !! same number -- which is why the share is a quarter and not a half.
+      !!
+      !! The asymmetry is what sets the direction. Claiming too much is fatal;
+      !! claiming too little falls back to a direct build, which is slower and
+      !! correct. So this errs low on purpose.
+
+   real(dp), parameter :: ERI_CORE_BUDGET_BLIND = 5.0e8_dp
+      !! What to allow when available memory cannot be read at all.
+      !!
+      !! /proc/meminfo is Linux; macOS and anything else land here. Half a
+      !! gigabyte is 94 functions, which keeps the small fragments a
+      !! fragmented run is made of while refusing to guess on a machine this
+      !! cannot measure.
 
 contains
 
-   pure function eri_fits_in_core(nao) result(fits)
-      !! Whether n^4 stored integrals stay inside `ERI_CORE_BUDGET_BYTES`
+   function eri_fits_in_core(nao) result(fits)
+      !! Whether n^4 stored integrals fit in this rank's share of memory
       !!
       !! Computed in `real` rather than integer arithmetic: n^4 at four hundred
       !! functions overflows a 32-bit integer, and the symptom of that would be
       !! a large basis quietly deciding it fitted.
+      !!
+      !! Not `pure` any more: it reads the machine.
       integer, intent(in) :: nao
       logical :: fits
+      real(dp) :: available, budget
 
-      fits = 8.0_dp*real(nao, dp)**4 <= ERI_CORE_BUDGET_BYTES
+      available = available_memory_bytes()
+      if (available > 0.0_dp) then
+         budget = min(ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE*available)
+      else
+         budget = ERI_CORE_BUDGET_BLIND
+      end if
+
+      fits = 8.0_dp*real(nao, dp)**4 <= budget
    end function eri_fits_in_core
+
+   function available_memory_bytes() result(bytes)
+      !! MemAvailable from /proc/meminfo, or zero where that does not exist
+      !!
+      !! MemAvailable rather than MemFree: free memory on a warm machine is
+      !! almost nothing, because the kernel has spent it on page cache it will
+      !! hand back on demand. MemFree would refuse to store integrals on a
+      !! machine with plenty to spare.
+      real(dp) :: bytes
+      integer :: unit, stat
+      character(len=MAX_LINE_LENGTH) :: line
+      real(dp) :: kb
+
+      bytes = 0.0_dp
+      open (newunit=unit, file="/proc/meminfo", status="old", action="read", iostat=stat)
+      if (stat /= 0) return
+      do
+         read (unit, "(a)", iostat=stat) line
+         if (stat /= 0) exit
+         if (line(1:13) == "MemAvailable:") then
+            read (line(14:), *, iostat=stat) kb
+            if (stat == 0) bytes = kb*1024.0_dp
+            exit
+         end if
+      end do
+      close (unit)
+   end function available_memory_bytes
 
    pure function libcint_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU
