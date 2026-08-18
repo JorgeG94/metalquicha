@@ -183,7 +183,12 @@ Ab initio on the CPU, via libcint (`backends/libcint/`):
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
 - `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
-- `CCSD`, `CCSD(T)`, `RI-CCSD`, `RI-CCSD(T)` - spin orbital, RHF reference
+- `CCSD`, `CCSD(T)`, `RI-CCSD`, `RI-CCSD(T)` - RHF reference, spin-adapted
+  (spatial orbitals) by default. `keywords.cc.spin_adapted: false` selects the
+  spin-orbital formulation instead; the two are exact for a closed shell and
+  agree to machine precision, so that flag chooses how a number is computed and
+  not which number. Spatial is the default because it is roughly sixteen times
+  smaller and several times faster.
 
 An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
 intent is recovered in the reader by `method_wants_density_fitting` while the

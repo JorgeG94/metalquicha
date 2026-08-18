@@ -34,6 +34,7 @@ module mqc_libcint_bridge
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
+   use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd
    use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
    use mqc_libcint_casci, only: casci_result_t, run_libcint_casci
@@ -1038,7 +1039,10 @@ contains
       if (settings%run_cc) then
          block
             type(cc_result_t) :: cc
-            integer :: frozen
+            type(rcc_result_t) :: rcc
+            integer :: frozen, cc_iterations
+            logical :: cc_converged, spin_adapted
+            real(dp) :: cc_mp2, cc_singles, cc_doubles, cc_triples
 
             ! The same frozen-core rule the MP2 block applies, deliberately
             ! duplicated rather than hoisted: the two blocks are independent, and
@@ -1048,6 +1052,14 @@ contains
             if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
             if (.not. settings%freeze_core) frozen = 0
 
+            ! Which formulation. Both are exact for a closed shell and agree to
+            ! machine precision -- that identity is asserted by
+            ! test_mqc_libcint_rcc -- so this chooses how the same number is
+            ! computed, not which number. Spatial by default because it is
+            ! smaller and faster; the spin-orbital path is what a doubtful
+            ! result gets checked against.
+            spin_adapted = settings%cc_spin_adapted
+
             if (settings%corr_density_fitting) then
                call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                if (error%has_error()) then
@@ -1056,18 +1068,34 @@ contains
                   call mol%destroy()
                   return
                end if
-               call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                     fragment%nelec/2, frozen, settings%cc_max_iter, &
-                                     settings%cc_tolerance, settings%cc_triples, &
-                                     settings%verbose, cc, error, &
-                                     diis_vectors=settings%cc_diis_size, aux=corr_aux)
+               if (spin_adapted) then
+                  call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                         fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                         settings%cc_tolerance, settings%cc_triples, &
+                                         settings%verbose, rcc, error, &
+                                         diis_vectors=settings%cc_diis_size, aux=corr_aux)
+               else
+                  call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                        fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                        settings%cc_tolerance, settings%cc_triples, &
+                                        settings%verbose, cc, error, &
+                                        diis_vectors=settings%cc_diis_size, aux=corr_aux)
+               end if
                call corr_aux%destroy()
             else
-               call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                     fragment%nelec/2, frozen, settings%cc_max_iter, &
-                                     settings%cc_tolerance, settings%cc_triples, &
-                                     settings%verbose, cc, error, &
-                                     diis_vectors=settings%cc_diis_size)
+               if (spin_adapted) then
+                  call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                         fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                         settings%cc_tolerance, settings%cc_triples, &
+                                         settings%verbose, rcc, error, &
+                                         diis_vectors=settings%cc_diis_size)
+               else
+                  call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                        fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                        settings%cc_tolerance, settings%cc_triples, &
+                                        settings%verbose, cc, error, &
+                                        diis_vectors=settings%cc_diis_size)
+               end if
             end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "CCSD: "//error%get_message())
@@ -1076,24 +1104,51 @@ contains
                return
             end if
 
+            ! The two result types carry the same components under the same
+            ! names, so everything below this line is written once.
+            if (spin_adapted) then
+               cc_mp2 = rcc%e_mp2
+               cc_singles = rcc%e_singles
+               cc_doubles = rcc%e_doubles
+               cc_triples = rcc%e_triples
+               cc_iterations = rcc%iterations
+               cc_converged = rcc%converged
+            else
+               cc_mp2 = cc%e_mp2
+               cc_singles = cc%e_singles
+               cc_doubles = cc%e_doubles
+               cc_triples = cc%e_triples
+               cc_iterations = cc%iterations
+               cc_converged = cc%converged
+            end if
+
             ! energy_t sums scf + mp2%total() + cc%total(), so only the components
             ! go in. All three are filled rather than a lumped correlation energy:
             ! a total cannot be taken apart afterwards, and the singles/doubles
             ! split is what says whether the T1 amplitudes are doing anything.
-            result%energy%cc%singles = cc%e_singles
-            result%energy%cc%doubles = cc%e_doubles
-            result%energy%cc%triples = cc%e_triples
+            result%energy%cc%singles = cc_singles
+            result%energy%cc%doubles = cc_doubles
+            result%energy%cc%triples = cc_triples
             if (settings%verbose) then
-               write (line, "(a,i0,a,l1)") "  CCSD: iterations ", cc%iterations, "  converged ", cc%converged
+               ! Which formulation ran is said out loud. The two agree to
+               ! machine precision, so nothing in the numbers below would
+               ! otherwise reveal it -- and it is exactly what someone
+               ! comparing a timing or a memory figure needs to know.
+               if (spin_adapted) then
+                  call logger%info("  CCSD: spin-adapted (spatial orbitals)")
+               else
+                  call logger%info("  CCSD: spin orbitals")
+               end if
+               write (line, "(a,i0,a,l1)") "  CCSD: iterations ", cc_iterations, "  converged ", cc_converged
                call logger%info(trim(line))
-               write (line, "(a,f20.12)") "  E(MP2)         ", cc%e_mp2
+               write (line, "(a,f20.12)") "  E(MP2)         ", cc_mp2
                call logger%info(trim(line))
-               write (line, "(a,f20.12)") "  E(singles)     ", cc%e_singles
+               write (line, "(a,f20.12)") "  E(singles)     ", cc_singles
                call logger%info(trim(line))
-               write (line, "(a,f20.12)") "  E(doubles)     ", cc%e_doubles
+               write (line, "(a,f20.12)") "  E(doubles)     ", cc_doubles
                call logger%info(trim(line))
                if (settings%cc_triples) then
-                  write (line, "(a,f20.12)") "  E(T)           ", cc%e_triples
+                  write (line, "(a,f20.12)") "  E(T)           ", cc_triples
                   call logger%info(trim(line))
                end if
                write (line, "(a,f20.12)") "  E(corr)        ", result%energy%cc%total()

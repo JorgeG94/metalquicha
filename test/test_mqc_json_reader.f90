@@ -59,6 +59,7 @@ contains
                   new_unittest("error_missing_schema", test_missing_schema), &
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
+                  new_unittest("cc_spin_adapted_keyword", test_cc_spin_adapted), &
                   new_unittest("mcscf_keywords", test_mcscf_keywords), &
                   new_unittest("casci_spelling_fixes_the_orbitals", test_casci_spelling), &
                   new_unittest("backend_keyword", test_backend_keyword), &
@@ -785,6 +786,46 @@ contains
       if (allocated(error)) return
       call check(error, config%dft_angular_points, 590)
    end subroutine test_dft_keywords
+
+   subroutine test_cc_spin_adapted(error)
+      !! `keywords.cc.spin_adapted`, and that its default is on
+      !!
+      !! The default is the whole point of the case. Both formulations are exact
+      !! for the closed-shell reference coupled cluster supports and agree to
+      !! machine precision, so nothing in a deck's output would reveal which one
+      !! ran -- only the time and the memory would move. A default flipped by
+      !! accident is therefore a silent change of what every CCSD deck does.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Absent: spin-adapted, which is the faster and smaller of the two.
+      call write_deck('"method": "ccsd", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%cc_spin_adapted, &
+                 "coupled cluster must default to the spin-adapted formulation")
+      if (allocated(error)) return
+
+      ! Named false: the spin-orbital path, which is what a doubtful number is
+      ! checked against.
+      call write_deck('"method": "ccsd", "basis": "sto-3g"', "Energy", &
+                      '"cc": {"spin_adapted": false}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%cc_spin_adapted, &
+                 "keywords.cc.spin_adapted false was not read")
+      if (allocated(error)) return
+
+      ! And the allow-list is what let it through, not a validator that is off.
+      call write_deck('"method": "ccsd", "basis": "sto-3g"', "Energy", &
+                      '"cc": {"spin_adapated": false}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled cc key was accepted")
+   end subroutine test_cc_spin_adapted
 
    subroutine test_cc_keywords(error)
       !! keywords.cc, and that "triples" records whether it was named

@@ -255,6 +255,7 @@ contains
       driver_config%method_config%cc%amplitude_convergence = mqc_config%cc_tolerance
       driver_config%method_config%cc%use_diis = mqc_config%cc_diis
       driver_config%method_config%cc%diis_size = mqc_config%cc_diis_size
+      driver_config%method_config%cc%spin_adapted = mqc_config%cc_spin_adapted
       ! The method name settles the triples unless a deck said otherwise:
       ! "ccsd(t)" and "ccsd" are separate method types, so the distinction
       ! survives the parse and does not have to be recovered from the spelling
