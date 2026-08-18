@@ -84,6 +84,15 @@ module mqc_libcint_rcc
    !> set is enumerated.
    integer, parameter :: N_TRIPLE_PERMS = 6
 
+   !> How many of a triple's innermost virtuals one pass of the triples holds.
+   !>
+   !> The batching that made the particle half of W into a decent matrix product
+   !> wants this large; the fact that each thread keeps its own copy of the
+   !> result -- n_occ^3 by six by this -- wants it small. At 32 the products are
+   !> still several hundred thousand flops apiece, and a forty-electron case
+   !> costs 98 MB a thread instead of the 614 MB an unbounded batch would.
+   integer, parameter :: TRIPLES_C_BATCH = 32
+
    type :: rcc_eris_t
       !! Spatial MO integrals in chemists' notation, by block
       !!
@@ -1794,27 +1803,28 @@ contains
       end do
    end subroutine triples_pack_t2
 
-   subroutine triples_pack_ovvv(eris, no, nv, nc, fixed, fixed_first, mmt)
+   subroutine triples_pack_ovvv(eris, no, nv, c0, nc, fixed, fixed_first, mmt)
       !! mmt(f, (c,i)) = (iu|fv) for the four permutations whose pair carries c
       !!
       !! `fixed_first` says which side of the pair the loop's fixed virtual sits
       !! on: true gives (i,fixed|f,c), false gives (i,c|f,fixed). Transposed --
-      !! `f` leading rather than `i` -- so that the column range for c = 1..nc is
-      !! contiguous and the product can take it without a copy.
+      !! `f` leading rather than `i` -- so that the column range for this batch
+      !! is contiguous and the product can take it without a copy.
       type(rcc_eris_t), intent(in) :: eris
-      integer, intent(in) :: no, nv, nc, fixed
+      integer, intent(in) :: no, nv, c0, nc, fixed
       logical, intent(in) :: fixed_first
       real(dp), intent(out) :: mmt(:, :)
 
-      integer :: c, i, f
+      integer :: cl, c, i, f
 
-      do c = 1, nc
+      do cl = 1, nc
+         c = c0 + cl - 1
          do f = 1, nv
             do i = 1, no
                if (fixed_first) then
-                  mmt(f, (c - 1)*no + i) = eris%ovvv(i, fixed, f, c)
+                  mmt(f, (cl - 1)*no + i) = eris%ovvv(i, fixed, f, c)
                else
-                  mmt(f, (c - 1)*no + i) = eris%ovvv(i, c, f, fixed)
+                  mmt(f, (cl - 1)*no + i) = eris%ovvv(i, c, f, fixed)
                end if
             end do
          end do
@@ -1868,17 +1878,21 @@ contains
 
       real(dp), allocatable :: w(:, :, :, :, :), z(:, :, :, :), x(:, :, :), d3(:, :, :)
       real(dp), allocatable :: tt(:, :), mfix(:, :), mmt(:, :), r1(:, :), r2(:, :)
-      integer, allocatable :: pidx(:, :)
-      integer :: a, b, c, i, j, k, p, q, pi, pj, pk, nc, no2
+      integer, allocatable :: pidx(:, :), alist(:), blist(:)
+      real(dp), allocatable :: e_pair(:)
+      integer :: a, b, c, cl, c0, c1, i, j, k, p, q, pi, pj, pk, nc, no2
+      integer :: idx, npair
       integer :: trip(3), perm(3, N_TRIPLE_PERMS)
-      real(dp) :: scale, acc
+      real(dp) :: scale
 
       no2 = no*no
 
-      allocate (w(no, no, no, N_TRIPLE_PERMS, nv), z(no, no, no, N_TRIPLE_PERMS))
-      allocate (x(no, no, no), d3(no, no, no))
-      allocate (tt(nv, no2*nv), mfix(no, nv), mmt(nv, nv*no))
-      allocate (r1(no, no2*nv), r2(nv*no, no2))
+      ! Only the shared arrays are allocated here. W and the scratch that feeds
+      ! it are allocated per thread inside the parallel region below, which is
+      ! also where they are sized -- an allocatable named in a `private` clause
+      ! arrives unallocated, and allocating it out here would be both wrong and
+      ! a per-thread copy of the wrong size.
+      allocate (tt(nv, no2*nv))
 
       ! Where each occupied permutation sends each (i,j,k), once.
       !
@@ -1900,49 +1914,88 @@ contains
 
       call triples_pack_t2(t2, no, nv, tt)
 
-      e_triples = 0.0_dp
-
+      ! The (a,b) loop is triangular, so it is flattened before being handed to
+      ! OpenMP. Two reasons, and the second is the one that matters: a triangular
+      ! nest cannot be collapsed, and the work per outer index runs from nothing
+      ! at a = 1 to the whole inner range at a = n_vir, so splitting on `a` alone
+      ! would leave the first threads idle. One flat index over the pairs, taken
+      ! dynamically, balances itself.
+      npair = nv*(nv + 1)/2
+      allocate (alist(npair), blist(npair), e_pair(npair))
+      idx = 0
       do a = 1, nv
          do b = 1, a
-            nc = b
+            idx = idx + 1
+            alist(idx) = a
+            blist(idx) = b
+         end do
+      end do
+
+      e_pair = 0.0_dp
+
+      ! Everything above this line is shared and read-only for the duration:
+      ! the packed amplitudes, the permutation table and the pair list. Each
+      ! thread keeps its own W and its own scratch, which is what TRIPLES_C_BATCH
+      ! is sized against.
+      !$omp parallel default(none) &
+      !$omp    shared(eris, t1, t2, eps_o, eps_v, no, nv, no2, tt, pidx, &
+      !$omp           alist, blist, npair) &
+      !$omp    shared(e_pair) &
+      !$omp    private(w, z, x, d3, mfix, mmt, r1, r2, &
+      !$omp            a, b, c, cl, c0, c1, nc, i, j, k, p, q, trip, perm, scale)
+      allocate (w(no, no, no, N_TRIPLE_PERMS, TRIPLES_C_BATCH))
+      allocate (z(no, no, no, N_TRIPLE_PERMS))
+      allocate (x(no, no, no), d3(no, no, no))
+      allocate (mfix(no, nv), mmt(nv, TRIPLES_C_BATCH*no))
+      allocate (r1(no, no2*TRIPLES_C_BATCH), r2(TRIPLES_C_BATCH*no, no2))
+
+      !$omp do schedule(dynamic)
+      do idx = 1, npair
+         a = alist(idx)
+         b = blist(idx)
+
+         do c0 = 1, b, TRIPLES_C_BATCH
+            c1 = min(c0 + TRIPLES_C_BATCH - 1, b)
+            nc = c1 - c0 + 1
 
             ! ---- p = 1 and 3: the pair is fixed, the amplitudes stack -------
             do concurrent(i=1:no, k=1:nv)
                mfix(i, k) = eris%ovvv(i, a, k, b)
             end do
-            call pic_gemm(mfix, tt(:, 1:no2*nc), r1(:, 1:no2*nc))
+            call pic_gemm(mfix, tt(:, (c0 - 1)*no2 + 1:c1*no2), r1(:, 1:no2*nc))
             call scatter_w_third(r1, no, nc, 1, w)
 
             do concurrent(i=1:no, k=1:nv)
                mfix(i, k) = eris%ovvv(i, b, k, a)
             end do
-            call pic_gemm(mfix, tt(:, 1:no2*nc), r1(:, 1:no2*nc))
+            call pic_gemm(mfix, tt(:, (c0 - 1)*no2 + 1:c1*no2), r1(:, 1:no2*nc))
             call scatter_w_third(r1, no, nc, 3, w)
 
             ! ---- p = 2, 4, 5, 6: the amplitudes are fixed, the pair stacks --
             ! The third index is b for p = 2 and 5, a for p = 4 and 6, so each
             ! takes the matching contiguous block of `tt`.
-            call triples_pack_ovvv(eris, no, nv, nc, a, .true., mmt)
+            call triples_pack_ovvv(eris, no, nv, c0, nc, a, .true., mmt)
             call pic_gemm(mmt(:, 1:nc*no), tt(:, (b - 1)*no2 + 1:b*no2), &
                           r2(1:nc*no, :), transa="T")
             call scatter_w_pair(r2, no, nc, 2, w)
 
-            call triples_pack_ovvv(eris, no, nv, nc, b, .true., mmt)
+            call triples_pack_ovvv(eris, no, nv, c0, nc, b, .true., mmt)
             call pic_gemm(mmt(:, 1:nc*no), tt(:, (a - 1)*no2 + 1:a*no2), &
                           r2(1:nc*no, :), transa="T")
             call scatter_w_pair(r2, no, nc, 4, w)
 
-            call triples_pack_ovvv(eris, no, nv, nc, a, .false., mmt)
+            call triples_pack_ovvv(eris, no, nv, c0, nc, a, .false., mmt)
             call pic_gemm(mmt(:, 1:nc*no), tt(:, (b - 1)*no2 + 1:b*no2), &
                           r2(1:nc*no, :), transa="T")
             call scatter_w_pair(r2, no, nc, 5, w)
 
-            call triples_pack_ovvv(eris, no, nv, nc, b, .false., mmt)
+            call triples_pack_ovvv(eris, no, nv, c0, nc, b, .false., mmt)
             call pic_gemm(mmt(:, 1:nc*no), tt(:, (a - 1)*no2 + 1:a*no2), &
                           r2(1:nc*no, :), transa="T")
             call scatter_w_pair(r2, no, nc, 6, w)
 
-            do c = 1, nc
+            do cl = 1, nc
+               c = c0 + cl - 1
                perm(:, 1) = [a, b, c]
                perm(:, 2) = [a, c, b]
                perm(:, 3) = [b, a, c]
@@ -1954,7 +2007,7 @@ contains
                do p = 1, N_TRIPLE_PERMS
                   trip = perm(:, p)
                   call triples_term2(eris, t2, no, trip(1), trip(2), trip(3), &
-                                     w(:, :, :, p, c))
+                                     w(:, :, :, p, cl))
                end do
 
                scale = 1.0_dp
@@ -1976,7 +2029,7 @@ contains
                do p = 1, N_TRIPLE_PERMS
                   trip = perm(:, p)
                   call triples_v(eris, t1, no, trip(1), trip(2), trip(3), x)
-                  x = w(:, :, :, p, c) + 0.5_dp*x
+                  x = w(:, :, :, p, cl) + 0.5_dp*x
                   call triples_r3(x, d3, no, z(:, :, :, p))
                end do
 
@@ -1984,18 +2037,31 @@ contains
                ! permutation of the W the table pairs it with.
                do p = 1, N_TRIPLE_PERMS
                   do q = 1, N_TRIPLE_PERMS
-                     e_triples = e_triples &
-                                 + triples_dot(no*no*no, pidx(1, q), &
-                                               w(1, 1, 1, WMAP(p, q), c), z(1, 1, 1, p))
+                     e_pair(idx) = e_pair(idx) &
+                                   + triples_dot(no*no*no, pidx(1, q), &
+                                                 w(1, 1, 1, WMAP(p, q), cl), z(1, 1, 1, p))
                   end do
                end do
             end do
          end do
       end do
+      !$omp end do
 
-      e_triples = 2.0_dp*e_triples
+      deallocate (w, z, x, d3, mfix, mmt, r1, r2)
+      !$omp end parallel
 
-      deallocate (w, z, x, d3, tt, mfix, mmt, r1, r2, pidx)
+      ! Summed here, in pair order, rather than by an OpenMP reduction. Each
+      ! pair's contribution is written by whichever thread took it and read by
+      ! nobody else, so there is no race either way -- but a reduction combines
+      ! the per-thread partials in whatever order the threads happen to finish,
+      ! and dynamic scheduling means that order changes between runs. Summing a
+      ! fixed array in a fixed order makes the correction independent of the
+      ! thread count and of the scheduling, which is worth a n_vir^2/2 array:
+      ! this energy is differenced against others in a many-body expansion, and
+      ! there a wandering last digit is not noise but a term.
+      e_triples = 2.0_dp*sum(e_pair)
+
+      deallocate (tt, pidx, alist, blist, e_pair)
    end subroutine triples_correction
 
    pure function triples_dot(no3, permuted, wblk, zblk) result(acc)
