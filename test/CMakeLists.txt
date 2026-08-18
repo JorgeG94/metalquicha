@@ -63,6 +63,21 @@ target_compile_definitions(test_mqc_basis_cartesian PRIVATE MQC_HAVE_BASIS_SETS)
 # That the angular form reaches the integrals, counted in basis functions. Needs
 # libcint, since libcint_molecule_t is the thing it inspects.
 if(MQC_ENABLE_LIBCINT)
+  # The overlap between two different bases on the same atoms, which is the one
+  # new integral the quasi-atomic construction needs. Gated because
+  # libcint_molecule_t is what it builds.
+  addtest(mqc_mixed_overlap)
+  target_link_libraries(test_mqc_mixed_overlap PRIVATE cint_fortran cint)
+
+  # The valence-virtual space: that the projection separates cleanly, and that
+  # the count does not move with the orbital basis.
+  addtest(mqc_quao_vvo)
+  target_link_libraries(test_mqc_quao_vvo PRIVATE cint_fortran cint)
+
+  # The quasi-atomic orbitals themselves, and the density in their basis.
+  addtest(mqc_quao)
+  target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
+
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
 
@@ -213,6 +228,7 @@ addtest(mqc_split_lines)
 addtest(mqc_result_types)
 addtest(mqc_finite_differences)
 addtest(mqc_diis)
+addtest(mqc_aambs)
 addtest(mqc_lebedev)
 addtest(mqc_dft_radial)
 addtest(mqc_dft_partition)

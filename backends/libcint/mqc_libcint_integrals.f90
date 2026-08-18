@@ -74,6 +74,7 @@ module mqc_libcint_integrals
    ! beside it rather than being re-derived by whatever needs them.
    public :: atom_ao_blocks
    public :: build_df_shell_table
+   public :: mixed_basis_overlap
    ! The undifferentiated three- and two-centre integrals, and the metric's
    ! inverse square root. Public because the gradient needs the same three
    ! quantities the fitted Fock build does -- and, for the metric, needs them
@@ -903,6 +904,91 @@ contains
          end do
       end do
    end subroutine two_centre
+
+   subroutine mixed_basis_overlap(orb, aux, overlap, error)
+      !! The overlap between two different bases on the same atoms
+      !!
+      !!     S_mixed(mu, k) = < chi_mu | phi_k >
+      !!
+      !! with `chi` the orbital basis the SCF ran in and `phi` a second basis --
+      !! for the quasi-atomic construction, the free-atom minimal basis the
+      !! molecular orbitals are projected onto. Nothing in the quasi-atomic
+      !! papers is computable without it: every space in the construction is
+      !! defined by an SVD of exactly this matrix.
+      !!
+      !! It reuses `build_df_shell_table` rather than concatenating the two
+      !! bases again. That routine exists because libcint addresses every centre
+      !! by index into one shell table, and a second construction of the same
+      !! table would agree with the first until one of them was edited.
+      !!
+      !! The dummy shell that table appends for three-centre calls is simply not
+      !! referenced here; a one-electron call names two centres and stops.
+      type(libcint_molecule_t), intent(in) :: orb   !! Orbital basis
+      type(libcint_molecule_t), intent(in) :: aux   !! Second basis, same atoms
+      real(dp), allocatable, intent(out) :: overlap(:, :)  !! (orb%nao, aux%nao)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: bas(:, :)
+      real(dp), allocatable :: env(:), buf(:)
+      integer :: shls(2)
+      integer :: nbas_orb, dummy, ish, jsh, di, dj, i, j, io, jo, ret
+
+      if (error%has_error()) return
+
+      ! One angular convention runs the whole call, exactly as it does for the
+      ! three-centre fit. Mixing them is not a thing libcint can be asked for:
+      ! the entry point is chosen once, so a spherical orbital basis and a
+      ! Cartesian auxiliary would silently be integrated as though both were
+      ! whichever the branch below picked.
+      if (orb%cartesian .neqv. aux%cartesian) then
+         call error%set(ERROR_VALIDATION, "mixed-basis overlap: the two bases must "// &
+                        "use the same angular form. libcint takes one convention "// &
+                        "for the whole call, so a mismatch would integrate one of "// &
+                        "them in a form it was not built in.")
+         return
+      end if
+
+      if (orb%natm /= aux%natm) then
+         call error%set(ERROR_VALIDATION, "mixed-basis overlap: the two bases are "// &
+                        "on different numbers of atoms, so they do not describe "// &
+                        "the same molecule.")
+         return
+      end if
+
+      call build_df_shell_table(orb, aux, bas, env, dummy)
+      nbas_orb = orb%nbas
+
+      allocate (overlap(orb%nao, aux%nao))
+      overlap = 0.0_dp
+      allocate (buf(max(max_block(orb), max_block(aux))**2))
+
+      do ish = 1, nbas_orb
+         di = shell_dim(orb%cartesian, ish - 1, bas)
+         io = orb%shell_offset(ish)
+         do jsh = 1, aux%nbas
+            dj = shell_dim(orb%cartesian, nbas_orb + jsh - 1, bas)
+            jo = aux%shell_offset(jsh)
+            shls = [ish - 1, nbas_orb + jsh - 1]
+
+            if (orb%cartesian) then
+               ret = libcint_1e_ovlp_cart(buf, shls, orb%atm, orb%natm, bas, &
+                                          nbas_orb + aux%nbas, env)
+            else
+               ret = libcint_1e_ovlp_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                         nbas_orb + aux%nbas, env)
+            end if
+            if (ret == 0) cycle   ! screened away, leave the block zero
+
+            do j = 1, dj
+               do i = 1, di
+                  overlap(io + i, jo + j) = buf(i + (j - 1)*di)
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (bas, env, buf)
+   end subroutine mixed_basis_overlap
 
    subroutine build_df_shell_table(orb, aux, bas, env, dummy)
       !! Orbital and auxiliary shells in one table, as libcint needs them

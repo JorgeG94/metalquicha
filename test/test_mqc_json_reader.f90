@@ -67,6 +67,7 @@ contains
                   new_unittest("fragment_potentials", test_fragment_potentials), &
                   new_unittest("uniform_system_broadcast", test_uniform_system), &
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
+                  new_unittest("bonding_analysis_property", test_bonding_analysis), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1026,6 +1027,101 @@ contains
       call check(error, parse_error%has_error(), &
                  "fragments of different sizes cannot be a uniform system")
    end subroutine test_uniform_rejected
+
+   subroutine test_bonding_analysis(error)
+      !! `properties.bonding_analysis`, and that an unknown one is refused
+      !!
+      !! `properties` sits beside `keywords` rather than inside it, and the
+      !! distinction is the reason this test exists at all: `keywords` change
+      !! the number that comes out, `properties` ask for something further to be
+      !! done with a wave function that is already determined. So a bonding
+      !! analysis leaves `driver` as "energy" and changes no energy.
+      !!
+      !! The refusal is the more important half. A deck naming an analysis
+      !! nobody implements would otherwise run a perfectly good energy and print
+      !! nothing, which reads as the analysis having found nothing to say rather
+      !! than as never having run.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "energy_threshold": 2.5}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%bonding_analysis), &
+                 "the analysis name should have been read")
+      if (allocated(error)) return
+      call check(error, trim(config%bonding_analysis), "gms_quao", &
+                 "and should be what the deck asked for")
+      if (allocated(error)) return
+      call check(error, abs(config%bonding_threshold - 2.5_dp) < 1.0e-12_dp, &
+                 "the reporting threshold should have been read")
+      if (allocated(error)) return
+
+      ! Naming the analysis and nothing else keeps the default threshold.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(config%bonding_threshold - 1.0_dp) < 1.0e-12_dp, &
+                 "an unmentioned threshold should keep its default")
+      if (allocated(error)) return
+
+      ! Absent leaves it unset, which is what "no analysis" looks like.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      if (allocated(config%bonding_analysis)) then
+         call check(error, trim(config%bonding_analysis), "none", &
+                    "an absent properties block must not request an analysis")
+         if (allocated(error)) return
+      end if
+
+      ! An analysis nobody implements is refused, by name, with the list.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "nbo"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown bonding analysis should be refused rather than "// &
+                 "silently producing no output")
+      if (allocated(error)) return
+
+      ! And so is a key inside the block that nothing reads.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_analysis": '// &
+                      '{"type": "gms_quao"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled key inside properties should be refused")
+      if (allocated(error)) return
+
+      ! A misspelling one level deeper too. This is the case the subgroup was
+      ! made for: with a bare string there was nowhere to put a setting, and
+      ! nowhere for the validator to catch one that was put wrongly.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "threshold": 2.0}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled setting inside the analysis block should be refused")
+      if (allocated(error)) return
+
+      ! Naming the block without saying which analysis is a deck that means
+      ! nothing, rather than one that means "the default analysis".
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"energy_threshold": 2.0}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a settings-only analysis block should be refused")
+   end subroutine test_bonding_analysis
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config

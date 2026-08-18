@@ -250,6 +250,69 @@ contains
       call convergence_footer(verbose, converged, iterations, "iterations", 84)
    end subroutine scf_table_footer
 
+   subroutine energy_components(verbose, mol, density, electronic, nuclear)
+      !! The energy split into the pieces the virial theorem constrains
+      !!
+      !! Every term here is already available at convergence -- these are traces
+      !! against the density, not new integrals -- and printing them costs one
+      !! kinetic and one nuclear-attraction build. What they buy is a check the
+      !! total energy cannot give: the virial ratio.
+      !!
+      !! For a variational wave function at a stationary geometry `-V/T` is
+      !! exactly 2. It is not constrained to be, so a value that drifts from 2
+      !! is evidence about the calculation rather than a restatement of it --
+      !! a basis too small to describe the cusp, or a geometry that is not a
+      !! stationary point. GAMESS prints the same block for the same reason.
+      logical, intent(in) :: verbose
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: electronic   !! Total electronic energy
+      real(dp), intent(in) :: nuclear      !! Nuclear repulsion
+
+      real(dp), allocatable :: kinetic(:, :), core(:, :)
+      real(dp) :: t_energy, one_e, two_e, v_ne, v_ee, v_total
+      character(len=128) :: line
+
+      if (.not. verbose) return
+
+      call mol%kinetic(kinetic)
+      call mol%core_hamiltonian(core)
+      t_energy = sum(density*kinetic)
+      one_e = sum(density*core)
+      ! The core Hamiltonian is kinetic plus nuclear attraction, so the
+      ! attraction alone is the difference -- no third integral build.
+      v_ne = one_e - t_energy
+      two_e = electronic - one_e
+      v_ee = two_e
+      v_total = v_ee + v_ne + nuclear
+
+      call logger%info("")
+      call logger%info("  energy components")
+      write (line, "(a,f22.10)") "    one electron                ", one_e
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    two electron                ", two_e
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    nuclear repulsion           ", nuclear
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    total                       ", electronic + nuclear
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    electron-electron potential ", v_ee
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    nucleus-electron potential  ", v_ne
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    nucleus-nucleus potential   ", nuclear
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    total potential             ", v_total
+      call logger%info(trim(line))
+      write (line, "(a,f22.10)") "    total kinetic               ", t_energy
+      call logger%info(trim(line))
+      if (abs(t_energy) > 0.0_dp) then
+         write (line, "(a,f22.10)") "    virial ratio (-V/T)         ", -v_total/t_energy
+         call logger%info(trim(line))
+      end if
+      deallocate (kinetic, core)
+   end subroutine energy_components
+
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra)
@@ -536,6 +599,8 @@ contains
       call clk%lap(STAGE_FOCK)
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
+      call energy_components(verbose, mol, result%density, result%electronic, &
+                             result%nuclear_repulsion)
       call screening_summary(verbose, screening)
       call clk%report("RHF", verbose)
    end subroutine run_libcint_rhf

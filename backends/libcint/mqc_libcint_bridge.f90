@@ -34,6 +34,8 @@ module mqc_libcint_bridge
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
+   use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
+                                  BONDING_GMS_QUAO
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
@@ -389,6 +391,7 @@ contains
       ! argument, so the SCF calls below need no branching on which guess ran.
       real(dp), allocatable :: guess_a(:, :), guess_b(:, :), guess_total(:, :)
       type(error_t) :: guess_error
+      type(error_t) :: analysis_error
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
@@ -748,6 +751,28 @@ contains
 
       result%energy%scf = scf%energy
       result%has_energy = .true.
+
+      ! ---- analyses asked for alongside the energy ---------------------------
+      !
+      ! Run here, on the converged orbitals, because this is where they exist.
+      ! A failure is reported and then dropped rather than propagated: the
+      ! energy above is correct and already stored, and an analysis that cannot
+      ! run -- an element the minimal basis does not cover, an open shell the
+      ! construction is not written for -- is not a reason to throw it away.
+      if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
+         call analysis_error%clear()
+         ! Printed whatever the verbosity. Asking for a property *is* the
+         ! request for its output -- a deck that names an analysis and gets a
+         ! silent run has been given nothing, and the natural reading is that
+         ! the analysis found nothing to say.
+         call run_quao_analysis(mol, fragment%element_numbers, symbols, &
+                                fragment%coordinates, scf%orbitals, fragment%nelec, &
+                                analysis_error, threshold=settings%bonding_threshold)
+         if (analysis_error%has_error()) then
+            call logger%warning("  the bonding analysis could not run: "// &
+                                analysis_error%get_message())
+         end if
+      end if
 
       ! ---- dE/dR, analytically ----------------------------------------------
       !

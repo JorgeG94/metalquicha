@@ -448,6 +448,14 @@ FRAGMENTED_CASES = [
 # gradients are refused rather than approximated -- tau and the screened
 # exchange derivative are not written -- so a case here would be pinning a
 # refusal.
+# Molecules the quasi-atomic analysis is exercised on end to end. Small, closed
+# shell, and spanning two rows: the minimal basis tables and the core/valence
+# split are per element, so a second-row atom is worth having.
+QUAO_CASES = [
+    ("water", "6-31g"),
+    ("h2s", "6-31g"),
+]
+
 GRADIENT_CASES = [
     ("water", "sto-3g", "", "", 1),
     ("ch4", "6-31g**", "", "", 1),       # Cartesian d functions
@@ -793,7 +801,7 @@ def write_xyz(path, mol):
 
 
 def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None,
-              cc=None, aux_only=False):
+              cc=None, aux_only=False, properties=None):
     model = {"method": method, "basis": basis}
     if aux:
         model["aux_basis"] = aux
@@ -818,6 +826,8 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
         deck["keywords"]["correlation"] = correlation
     if cc:
         deck["keywords"]["cc"] = cc
+    if properties:
+        deck["properties"] = properties
     return deck
 
 
@@ -1599,6 +1609,32 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} df={aux:22s} E={energy:.12f}", flush=True)
+
+    # The quasi-atomic bonding analysis, through the real driver. The energy is
+    # the ordinary RHF one and is what the harness checks; what the case is
+    # actually for is that asking for the analysis does not break the run. The
+    # analysis prints rather than landing in the JSON output, so its numbers are
+    # checked in test/test_mqc_quao.f90 against GAMESS instead -- this is the
+    # end-to-end path that no unit test covers.
+    for name, basis in QUAO_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rhf(mol.atoms, basis)
+        tag = normalize_basis_name(basis)
+        deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis,
+                          properties={"bonding_analysis":
+                                      {"type": "gms_quao"}})
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"RHF with quasi-atomic bonding analysis {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "energy_tolerance": 1e-08,
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} quao E={energy:.12f}", flush=True)
 
     for name, basis, aux, functional, mult in GRADIENT_CASES:
         mol = MOLECULES[name]

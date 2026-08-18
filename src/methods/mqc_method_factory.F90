@@ -210,6 +210,7 @@ contains
       ! to any reference. `configure_dft` copied it and this did not, which made
       ! `keywords.pcm` a no-op for Hartree-Fock, MP2 and coupled cluster.
       m%options%pcm = config%pcm
+      m%options%properties = config%properties
    end subroutine configure_hf
 
    subroutine configure_dft(m, config)
@@ -238,6 +239,7 @@ contains
       m%options%grid_type = config%dft%grid_type
       m%options%grid_level = config%dft%grid_level
       m%options%pcm = config%pcm
+      m%options%properties = config%properties
       m%options%backend = config%backend
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points

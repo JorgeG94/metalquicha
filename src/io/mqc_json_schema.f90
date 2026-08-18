@@ -88,6 +88,11 @@ contains
       call check_child_object(core, root, "model", model_keys(), error)
       if (error%has_error()) return
       call check_child_object(core, root, "system", system_keys(), error)
+
+      call check_child_object(core, root, "properties", properties_keys(), error)
+      call check_grandchild_object(core, root, "properties", "bonding_analysis", &
+                                   bonding_analysis_keys(), error)
+      call check_bonding_analysis(core, root, error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "system", "logger", logger_keys(), error)
       if (error%has_error()) return
@@ -144,6 +149,7 @@ contains
       call allow(keys, "backend")
       call allow(keys, "molecules")
       call allow(keys, "keywords")
+      call allow(keys, "properties")
       call allow(keys, "system")
       call allow(keys, "title")
       call require(keys, "schema")
@@ -203,6 +209,33 @@ contains
       call allow(keys, "pcm")
       call allow(keys, "guess")
    end function keywords_keys
+
+   function properties_keys() result(keys)
+      !! Things to report once the wave function exists
+      !!
+      !! Beside `keywords` rather than inside it, and the distinction is worth
+      !! keeping: `keywords` say how to compute the wave function and change the
+      !! number that comes out, while `properties` ask for something further to
+      !! be done with it and change nothing about the energy. A bonding analysis
+      !! belongs in the second group, which is why `driver` stays "energy".
+      type(key_set_t) :: keys
+      call allow(keys, "bonding_analysis")
+   end function properties_keys
+
+   function bonding_analysis_keys() result(keys)
+      !! Settings for the quasi-atomic bonding analysis
+      !!
+      !! An object rather than a bare string, and that is worth getting right
+      !! before anything depends on it: `"bonding_analysis": "gms_quao"` reads
+      !! well until the first setting has to go somewhere, and then the choice
+      !! is between a second key that has to stay in step with it and a breaking
+      !! change to decks already written. `type` follows `keywords.guess.type`,
+      !! which is the same shape -- a named choice with settings beside it.
+      type(key_set_t) :: keys
+      call allow(keys, "type")
+      call allow(keys, "energy_threshold")
+      call require(keys, "type")
+   end function bonding_analysis_keys
 
    function guess_keys() result(keys)
       type(key_set_t) :: keys
@@ -470,6 +503,40 @@ contains
       if (.not. found .or. .not. associated(child)) return
       call check_object(core, child, parent_name//"."//name, keys, error)
    end subroutine check_grandchild_object
+
+   subroutine check_bonding_analysis(core, root, error)
+      !! The value of `properties.bonding_analysis` names an analysis we have
+      !!
+      !! Checked here rather than left to the reader because an unknown name is
+      !! the failure this schema exists to catch: a deck that asks for an
+      !! analysis nobody implements would otherwise run a perfectly good energy
+      !! and report nothing, which looks like the analysis found nothing to say.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: properties, analysis, entry
+      character(len=:), allocatable :: name
+      logical :: found
+
+      if (error%has_error()) return
+      call core%get(root, "properties", properties, found)
+      if (.not. found .or. .not. associated(properties)) return
+      call core%get(properties, "bonding_analysis", analysis, found)
+      if (.not. found .or. .not. associated(analysis)) return
+      call core%get(analysis, "type", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+
+      call core%get(analysis, "type", name)
+      select case (trim(adjustl(name)))
+      case ("none", "gms_quao", "quao")
+      case default
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.type is '"// &
+                        trim(name)//"'. Known analyses: none, gms_quao (the "// &
+                        "Ruedenberg quasi-atomic bonding picture, spelled as "// &
+                        "GAMESS implements it; 'quao' is accepted for it too).")
+      end select
+   end subroutine check_bonding_analysis
 
    subroutine validate_guess_group(core, root, error)
       !! The three rules that make `keywords.guess` unambiguous
