@@ -1624,7 +1624,8 @@ def main():
         written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
             d = deck_json(xyz_for(mol), basis,
-                          properties={"bonding_analysis": "gms_quao"})
+                          properties={"bonding_analysis":
+                                      {"type": "gms_quao"}})
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
             "name": f"RHF with quasi-atomic bonding analysis {mol.label} {basis} (CPU)",

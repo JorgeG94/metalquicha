@@ -182,6 +182,7 @@ contains
       settings%grid_level = this%options%grid_level
       settings%pcm = this%options%pcm
       settings%bonding_analysis = this%options%properties%bonding_analysis
+      settings%bonding_threshold = this%options%properties%bonding_threshold
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST
       ! has no four-index path so it fits regardless and ignores this, per the
       ! note at the top of this module; on the libcint side it is a real choice.

@@ -599,57 +599,70 @@ contains
    ! ---------------------------------------------------------------------------
 
    subroutine print_quao_report(verbose, quao, labels, interference, &
-                                element_symbols, n_core)
-      !! Every orbital pair worth looking at, strongest kinetic bond first
+                                element_symbols, n_core, kinetic_bond_order, threshold)
+      !! The bonding picture, grouped by what each number means
       !!
-      !! Three blocks, the same three GAMESS prints and in the same order: pairs
-      !! sorted by kinetic bond order, orbitals sorted by occupation, and the
-      !! s/p/d/f composition of each orbital. The columns carry the same
-      !! quantities under the same headings; the spacing is this code's, so the
-      !! two tables are read side by side rather than diffed.
+      !! **Not GAMESS's layout.** That one is faithful to its own internals: one
+      !! row per orbital *pair*, with every column duplicated under an `I` and a
+      !! `J` heading, 120 characters wide. It presents a pair as two independent
+      !! orbital descriptions when the pair is the unit of meaning, and it puts
+      !! a covalent bond and a lone pair leaking into an antibond in the same
+      !! list, distinguishable only by reading four columns and knowing what
+      !! `NWB   0` means.
       !!
-      !! The sort is on the kinetic bond order and not on the bond order,
-      !! deliberately. A bond order is a population and says how much density
-      !! two orbitals share; the kinetic bond order is an energy and says what
-      !! that sharing is worth. They disagree about ordering more often than one
-      !! would expect -- in formyl chloride the C-Cl bond order beats the C-H one
-      !! and its kinetic bond order beats it by more than twice as much, because
-      !! the C-H kinetic integral is smaller.
+      !! So the same information is regrouped into three blocks that answer
+      !! three different questions. **Bonds** are pairs where both ends are
+      !! bonding orbitals pointing at each other -- the covalent skeleton, one
+      !! row per bond rather than per orbital. **Delocalization** is everything
+      !! else above threshold, which is where a lone pair donates into a bond;
+      !! chemically it is a different phenomenon and it reads as one here.
+      !! **Orbitals** is the per-orbital table, with the hybridisation folded in
+      !! rather than printed separately.
+      !!
+      !! Sorted on the kinetic bond order rather than the bond order, in both
+      !! interaction blocks. A bond order is a population and says how much
+      !! density two orbitals share; the kinetic bond order is an energy and
+      !! says what that sharing is worth. They disagree about ordering more
+      !! often than one would expect -- in formyl chloride the C-Cl bond order
+      !! beats the C-H one and its kinetic bond order beats it by more than
+      !! twice as much, because the C-H kinetic integral is smaller.
       logical, intent(in) :: verbose
       type(quao_result_t), intent(in) :: quao
       type(quao_labels_t), intent(in) :: labels
       real(dp), intent(in) :: interference(:, :)
-         !! `p * T` in hartree, Paper II eq (1) -- the second output of
-         !! `kinetic_bond_orders`, not the kcal/mol one. This is the column
-         !! GAMESS heads KEI-BO, so the report quotes the same quantity.
+         !! `p * T` in hartree, Paper II eq (1). What GAMESS prints as KEI-BO,
+         !! kept so its table and this one can still be compared.
       character(len=*), intent(in) :: element_symbols(:)
       integer, intent(in) :: n_core
          !! Chemical-core orbitals, which the construction never sees. Added to
          !! every printed orbital index so the numbering matches the molecular
          !! orbitals it came from -- and matches GAMESS, which does the same.
+      real(dp), intent(in), optional :: kinetic_bond_order(:, :)
+         !! Paper II eq (2), in kcal/mol. Shown as the headline energy when
+         !! present because that is the scale the empirical factor of a tenth
+         !! exists to reach: numbers comparable with tabulated bond energies,
+         !! rather than hartree.
+      real(dp), intent(in), optional :: threshold
+         !! kcal/mol. Pairs weaker than this are counted and not printed.
+         !! Requires `kinetic_bond_order` to be present, since that is the
+         !! quantity it is a threshold on; without it the hartree cutoff below
+         !! is all there is.
 
       real(dp), allocatable :: magnitude(:), occupation(:)
       integer, allocatable :: pair_i(:), pair_j(:), order(:)
-      character(len=512) :: line
-      ! Field by field, so a width here and a width in `append_orbital` cannot
-      ! be changed independently without the mismatch being obvious.
-      character(len=*), parameter :: HEADER_I = &
-                                     " ORB I"//"       OCC I"//"  ATM I"// &
-                                     "   BONDED TO "//" ORBTYP "
-      character(len=*), parameter :: HEADER_J = &
-                                     " ORB J"//"       OCC J"//"  ATM J"// &
-                                     "   BONDED TO "//" ORBTYP "
-      real(dp) :: total
-      integer :: n, i, j, k, np, l, pos
+      character(len=160) :: line
+      character(len=24) :: left, right
+      real(dp) :: total, energy, cutoff
+      integer :: n, i, j, k, np, printed, printed_i, printed_j, suppressed
+      logical :: bonded
 
       if (.not. verbose) return
       n = quao%n_quao
-
-      ! ---- by kinetic bond order --------------------------------------------
-      call logger%info("")
-      call logger%info("  quasi-atomic orbital pairs, by kinetic bond order")
-      call logger%info("")
-      call logger%info("    BOND ORDER      KEI-BO"//HEADER_I//HEADER_J)
+      ! A threshold on the kcal/mol quantity needs that quantity; asked for
+      ! without it, there is nothing to compare against and the hartree floor
+      ! is what filters.
+      cutoff = 0.0_dp
+      if (present(threshold) .and. present(kinetic_bond_order)) cutoff = threshold
 
       allocate (pair_i(n*(n - 1)/2), pair_j(n*(n - 1)/2), magnitude(n*(n - 1)/2))
       np = 0
@@ -664,37 +677,73 @@ contains
       end do
       call sort_by_magnitude(magnitude(1:np), order)
 
+      ! ---- the covalent skeleton --------------------------------------------
+      call logger%info("")
+      call logger%info("  bonds")
+      call logger%info("     bond            type        order    kcal/mol    orbitals")
+      printed = 0
       do k = 1, np
          i = pair_i(order(k))
          j = pair_j(order(k))
-         call start_row(line, pos, quao%population_bond_order(i, j), interference(i, j))
-         call append_orbital(line, pos, quao, labels, element_symbols, n_core, i)
-         call append_orbital(line, pos, quao, labels, element_symbols, n_core, j)
+         if (.not. is_bond(quao, labels, i, j)) cycle
+         printed = printed + 1
+         call atom_text(quao, element_symbols, i, left)
+         call atom_text(quao, element_symbols, j, right)
+         energy = interference(i, j)
+         if (present(kinetic_bond_order)) energy = kinetic_bond_order(i, j)
+         write (line, "(4x,a16,a8,f10.4,f11.2,i8,a,i0)") &
+            trim(left)//" - "//trim(right), &
+            adjustl(quao_type_name(labels%orbital_type(i), labels%dominant_l(i))), &
+            abs(quao%population_bond_order(i, j)), energy, n_core + i, " / ", n_core + j
          call logger%info(trim(line))
       end do
-      if (np == 0) call logger%info("    (no pair above the print threshold)")
+      if (printed == 0) call logger%info("    (none above threshold)")
 
-      ! ---- by occupation -----------------------------------------------------
+      ! ---- everything else that couples ------------------------------------
       call logger%info("")
-      call logger%info("  quasi-atomic orbitals, by occupation")
-      call logger%info("")
-      call logger%info("    OCCUPATION   KEI-OCC I"//" ORB I"//"  ATM I"// &
-                       "   BONDED TO "//" ORBTYP ")
-
-      allocate (occupation(n))
-      do i = 1, n
-         occupation(i) = quao%population_bond_order(i, i)
-      end do
-      deallocate (order)
-      call sort_by_magnitude(occupation, order)
-      do k = 1, n
-         i = order(k)
-         if (abs(occupation(i)) < TOL_PRINT) cycle
-         call start_row(line, pos, quao%population_bond_order(i, i), interference(i, i))
-         call append_orbital(line, pos, quao, labels, element_symbols, n_core, i, &
-                             with_occupation=.false.)
+      call logger%info("  delocalization")
+      call logger%info("     donor             into                "// &
+                       "order    kcal/mol    orbitals")
+      printed = 0
+      suppressed = 0
+      do k = 1, np
+         i = pair_i(order(k))
+         j = pair_j(order(k))
+         if (is_bond(quao, labels, i, j)) cycle
+         if (present(kinetic_bond_order)) then
+            if (abs(kinetic_bond_order(i, j)) < cutoff) then
+               suppressed = suppressed + 1
+               cycle
+            end if
+         end if
+         printed = printed + 1
+         ! Donor first, decided by occupation rather than by index: the arrow
+         ! only means something if the fuller orbital is the one giving. Taking
+         ! the pair in storage order would point half of them backwards.
+         if (quao%population_bond_order(i, i) >= quao%population_bond_order(j, j)) then
+            call interaction_text(quao, labels, element_symbols, i, left)
+            call interaction_text(quao, labels, element_symbols, j, right)
+            printed_i = i
+            printed_j = j
+         else
+            call interaction_text(quao, labels, element_symbols, j, left)
+            call interaction_text(quao, labels, element_symbols, i, right)
+            printed_i = j
+            printed_j = i
+         end if
+         energy = interference(i, j)
+         if (present(kinetic_bond_order)) energy = kinetic_bond_order(i, j)
+         write (line, "(4x,a18,a18,f10.4,f11.2,i8,a,i0)") &
+            trim(left), trim(right), quao%population_bond_order(i, j), energy, &
+            n_core + printed_i, " / ", n_core + printed_j
          call logger%info(trim(line))
       end do
+      if (printed == 0) call logger%info("    (none above threshold)")
+      if (suppressed > 0) then
+         write (line, "(a,i0,a,f0.2,a)") "    (", suppressed, " weaker than ", &
+            cutoff, " kcal/mol not shown)"
+         call logger%info(trim(line))
+      end if
 
       ! The kinetic interference between orbitals on *different* atoms, which is
       ! the part of the kinetic energy that exists only because the atoms are
@@ -706,28 +755,135 @@ contains
             total = total + interference(i, j)
          end do
       end do
-      write (line, "(a,f20.10)") "  interatomic KEI-BO sum ", total
-      call logger%info("")
+      write (line, "(a,f12.6,a)") "     interatomic total ", total, " hartree"
       call logger%info(trim(line))
 
-      ! ---- composition -------------------------------------------------------
+      ! ---- one row per orbital ----------------------------------------------
       call logger%info("")
-      call logger%info("  quasi-atomic orbital composition")
-      call logger%info("")
-      call logger%info("     ORB I    PERCENT S    PERCENT P    PERCENT D    PERCENT F")
+      call logger%info("  orbitals")
+      call logger%info("      orb   atom    type      bonded to   "// &
+                       "occupation     %s     %p     %d")
+      allocate (occupation(n))
       do i = 1, n
-         line = ""
-         write (line(1:10), "(i10)") n_core + i
-         pos = 11
-         do l = 0, QUAO_MAX_L
-            write (line(pos:pos + 12), "(f13.7)") labels%angular_character(l, i)
-            pos = pos + 13
-         end do
+         occupation(i) = quao%population_bond_order(i, i)
+      end do
+      deallocate (order)
+      call sort_by_magnitude(occupation, order)
+      do k = 1, n
+         i = order(k)
+         call atom_text(quao, element_symbols, i, left)
+         call partner_text(quao, labels, element_symbols, i, right)
+         write (line, "(4x,i5,3x,a6,a9,a12,f11.4,3f7.1)") &
+            n_core + i, trim(left), &
+            adjustl(quao_type_name(labels%orbital_type(i), labels%dominant_l(i))), &
+            trim(right), occupation(i), &
+            100.0_dp*labels%angular_character(0, i), &
+            100.0_dp*labels%angular_character(1, i), &
+            100.0_dp*labels%angular_character(2, i)
          call logger%info(trim(line))
       end do
 
       deallocate (pair_i, pair_j, magnitude, occupation, order)
    end subroutine print_quao_report
+
+   pure function is_bond(quao, labels, i, j) result(bond)
+      !! Whether a pair is a covalent bond rather than a delocalization
+      !!
+      !! Both ends must be bonding orbitals, and each must name the other's atom
+      !! as what it is bonded to. A lone pair overlapping a bond fails the first
+      !! test; two bonding orbitals on the same atom, or on atoms that are not
+      !! bonded to each other, fail the second.
+      type(quao_result_t), intent(in) :: quao
+      type(quao_labels_t), intent(in) :: labels
+      integer, intent(in) :: i, j
+      logical :: bond
+
+      integer :: k
+
+      bond = .false.
+      if (quao%atom_of(i) == quao%atom_of(j)) return
+      select case (labels%orbital_type(i))
+      case (QUAO_TYPE_SIGMA, QUAO_TYPE_PI)
+      case default
+         return
+      end select
+      select case (labels%orbital_type(j))
+      case (QUAO_TYPE_SIGMA, QUAO_TYPE_PI)
+      case default
+         return
+      end select
+
+      do k = 1, labels%partner_count(i)
+         if (quao%atom_of(labels%partner(i, k)) == quao%atom_of(j)) bond = .true.
+      end do
+      if (.not. bond) return
+      bond = .false.
+      do k = 1, labels%partner_count(j)
+         if (quao%atom_of(labels%partner(j, k)) == quao%atom_of(i)) bond = .true.
+      end do
+   end function is_bond
+
+   subroutine atom_text(quao, element_symbols, iorb, text)
+      !! "C 1" -- the atom an orbital belongs to
+      type(quao_result_t), intent(in) :: quao
+      character(len=*), intent(in) :: element_symbols(:)
+      integer, intent(in) :: iorb
+      character(len=*), intent(out) :: text
+
+      write (text, "(a,i0)") trim(adjustl(element_symbols(quao%atom_of(iorb))))//" ", &
+         quao%atom_of(iorb)
+   end subroutine atom_text
+
+   subroutine partner_text(quao, labels, element_symbols, iorb, text)
+      !! "(O 2)" -- what an orbital is bonded to, or blank
+      type(quao_result_t), intent(in) :: quao
+      type(quao_labels_t), intent(in) :: labels
+      character(len=*), intent(in) :: element_symbols(:)
+      integer, intent(in) :: iorb
+      character(len=*), intent(out) :: text
+
+      character(len=24) :: atom
+      integer :: k
+
+      text = ""
+      if (labels%partner_count(iorb) == 0) return
+      do k = 1, labels%partner_count(iorb)
+         call atom_text(quao, element_symbols, labels%partner(iorb, k), atom)
+         if (k == 1) then
+            text = "("//trim(atom)
+         else
+            text = trim(text)//","//trim(atom)
+         end if
+      end do
+      text = trim(text)//")"
+   end subroutine partner_text
+
+   subroutine interaction_text(quao, labels, element_symbols, iorb, text)
+      !! "O 2 PLP" or "C 1-Cl 3" -- one end of a delocalization, said in words
+      !!
+      !! A lone pair is named by its atom and kind; a bonding orbital by the
+      !! bond it belongs to, because that is what is accepting the density and
+      !! naming only the atom would lose which of its bonds.
+      type(quao_result_t), intent(in) :: quao
+      type(quao_labels_t), intent(in) :: labels
+      character(len=*), intent(in) :: element_symbols(:)
+      integer, intent(in) :: iorb
+      character(len=*), intent(out) :: text
+
+      character(len=24) :: atom, partner
+      integer :: kind
+
+      call atom_text(quao, element_symbols, iorb, atom)
+      kind = labels%orbital_type(iorb)
+      if ((kind == QUAO_TYPE_SIGMA .or. kind == QUAO_TYPE_PI) .and. &
+          labels%partner_count(iorb) > 0) then
+         call atom_text(quao, element_symbols, labels%partner(iorb, 1), partner)
+         text = trim(atom)//"-"//trim(partner)//" "// &
+                trim(quao_type_name(kind, labels%dominant_l(iorb)))
+      else
+         text = trim(atom)//" "//trim(quao_type_name(kind, labels%dominant_l(iorb)))
+      end if
+   end subroutine interaction_text
 
    subroutine start_row(line, pos, first, second)
       !! Blank the line and lay down the two leading numbers

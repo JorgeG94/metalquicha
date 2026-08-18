@@ -232,6 +232,8 @@ contains
          driver_config%method_config%properties%bonding_analysis = &
             mqc_config%bonding_analysis
       end if
+      driver_config%method_config%properties%bonding_threshold = &
+         mqc_config%bonding_threshold
 
       driver_config%method_config%pcm%enabled = mqc_config%pcm_enabled
       driver_config%method_config%pcm%dielectric = mqc_config%pcm_dielectric

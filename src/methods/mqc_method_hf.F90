@@ -129,6 +129,7 @@ contains
 
       settings%pcm = this%options%pcm
       settings%bonding_analysis = this%options%properties%bonding_analysis
+      settings%bonding_threshold = this%options%properties%bonding_threshold
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named

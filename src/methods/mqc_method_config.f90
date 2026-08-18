@@ -166,6 +166,7 @@ module mqc_method_config
    type :: properties_config_t
       !! Analyses to run once the wave function exists
       character(len=32) :: bonding_analysis = "none"
+      real(dp) :: bonding_threshold = 1.0_dp
    end type properties_config_t
 
    type :: mcscf_config_t

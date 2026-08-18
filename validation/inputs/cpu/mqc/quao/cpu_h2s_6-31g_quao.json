@@ -27,6 +27,8 @@
     },
     "driver": "Energy",
     "properties": {
-        "bonding_analysis": "gms_quao"
+        "bonding_analysis": {
+            "type": "gms_quao"
+        }
     }
 }

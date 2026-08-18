@@ -76,7 +76,7 @@ contains
    end function bonding_analysis_name
 
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
-                                orbitals, n_electrons, error, verbose)
+                                orbitals, n_electrons, error, verbose, threshold)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -86,6 +86,9 @@ contains
       integer, intent(in) :: n_electrons
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: verbose
+      real(dp), intent(in), optional :: threshold
+         !! kcal/mol. Pairs whose kinetic bond order is weaker are counted and
+         !! not printed.
 
       type(libcint_molecule_t) :: aambs
       type(aambs_dimensions_t) :: dims
@@ -159,28 +162,40 @@ contains
          end do
 
          call logger%info("")
-         call logger%info("  quasi-atomic bonding analysis")
+         call logger%info("  ==== quasi-atomic bonding analysis "// &
+                          "================================")
          call logger%info("")
-         call logger%info("    atom      population        charge")
+         call logger%info("  atoms")
+         call logger%info("     atom     population      charge")
          do iatom = 1, natm
-            write (line, "(a,i4,1x,a2,2f16.7)") "    ", iatom, &
-               adjustl(element_symbols(iatom)), populations(iatom), &
+            write (line, "(4x,a3,i0,f14.6,f12.6)") &
+               trim(adjustl(element_symbols(iatom)))//" ", iatom, populations(iatom), &
                real(atomic_numbers(iatom), dp) - populations(iatom)
             call logger%info(trim(line))
          end do
-         write (line, "(a,f16.7)") "    total                 ", sum(populations)
-         call logger%info(trim(line))
-
-         write (line, "(a,f10.6,a,i0,a)") "    atomic character  ", &
-            quao%atomic_character, " after ", quao%sweeps, " refinement sweeps"
-         call logger%info("")
-         call logger%info(trim(line))
-         write (line, "(a,f10.6,a,f10.6)") "    valence-virtual gap: retained ", &
-            vvo%smallest_retained, " against rejected ", vvo%largest_rejected
+         write (line, "(a,f14.6)") "     total        ", sum(populations)
          call logger%info(trim(line))
 
          call print_quao_report(.true., quao, labels, interference, element_symbols, &
-                                dims%n_core)
+                                dims%n_core, kinetic_bond_order=kbo, &
+                                threshold=threshold)
+
+         ! Two diagnostics, at the end rather than the top: they say whether to
+         ! believe the tables above, which is not a question worth asking until
+         ! the tables have been read. The atomic character is how much of each
+         ! orbital stayed on its own atom -- Paper II's functional, one when the
+         ! orbitals are exactly free-atom ones. The gap is the separation the
+         ! valence-virtual selection cut through; Paper I reports 0.99999
+         ! against 0.105-0.272, and anything narrower means the valence space
+         ! was not cleanly separable and the whole analysis is on sand.
+         call logger%info("")
+         write (line, "(a,f8.4,a,i0,a)") "    atomic character   ", &
+            quao%atomic_character, "   (", quao%sweeps, " refinement sweeps)"
+         call logger%info(trim(line))
+         write (line, "(a,f8.4,a,f8.4)") "    valence gap        ", &
+            vvo%smallest_retained, "   against rejected ", vvo%largest_rejected
+         call logger%info(trim(line))
+         call logger%info("")
          deallocate (populations)
       end if
 

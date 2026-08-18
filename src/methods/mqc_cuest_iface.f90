@@ -70,6 +70,8 @@ module mqc_cuest_iface
       ! than field by field: the cavity, the solvent and the charge solve travel
       ! together, and a backend either builds a continuum or does not.
       character(len=32) :: bonding_analysis = "none"
+      real(dp) :: bonding_threshold = 1.0_dp
+         !! kcal/mol; pairs weaker than this are counted rather than printed.
          !! A post-SCF analysis to run once the orbitals are converged, from
          !! `properties.bonding_analysis`. Travels with the SCF settings because
          !! it needs what only the backend has -- the molecule and the converged

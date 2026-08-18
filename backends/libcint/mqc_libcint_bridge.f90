@@ -767,7 +767,7 @@ contains
          ! the analysis found nothing to say.
          call run_quao_analysis(mol, fragment%element_numbers, symbols, &
                                 fragment%coordinates, scf%orbitals, fragment%nelec, &
-                                analysis_error)
+                                analysis_error, threshold=settings%bonding_threshold)
          if (analysis_error%has_error()) then
             call logger%warning("  the bonding analysis could not run: "// &
                                 analysis_error%get_message())

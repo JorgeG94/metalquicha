@@ -90,6 +90,8 @@ contains
       call check_child_object(core, root, "system", system_keys(), error)
 
       call check_child_object(core, root, "properties", properties_keys(), error)
+      call check_grandchild_object(core, root, "properties", "bonding_analysis", &
+                                   bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "system", "logger", logger_keys(), error)
@@ -219,6 +221,21 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "bonding_analysis")
    end function properties_keys
+
+   function bonding_analysis_keys() result(keys)
+      !! Settings for the quasi-atomic bonding analysis
+      !!
+      !! An object rather than a bare string, and that is worth getting right
+      !! before anything depends on it: `"bonding_analysis": "gms_quao"` reads
+      !! well until the first setting has to go somewhere, and then the choice
+      !! is between a second key that has to stay in step with it and a breaking
+      !! change to decks already written. `type` follows `keywords.guess.type`,
+      !! which is the same shape -- a named choice with settings beside it.
+      type(key_set_t) :: keys
+      call allow(keys, "type")
+      call allow(keys, "energy_threshold")
+      call require(keys, "type")
+   end function bonding_analysis_keys
 
    function guess_keys() result(keys)
       type(key_set_t) :: keys
@@ -498,21 +515,23 @@ contains
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
 
-      type(json_value), pointer :: properties, entry
+      type(json_value), pointer :: properties, analysis, entry
       character(len=:), allocatable :: name
       logical :: found
 
       if (error%has_error()) return
       call core%get(root, "properties", properties, found)
       if (.not. found .or. .not. associated(properties)) return
-      call core%get(properties, "bonding_analysis", entry, found)
+      call core%get(properties, "bonding_analysis", analysis, found)
+      if (.not. found .or. .not. associated(analysis)) return
+      call core%get(analysis, "type", entry, found)
       if (.not. found .or. .not. associated(entry)) return
 
-      call core%get(properties, "bonding_analysis", name)
+      call core%get(analysis, "type", name)
       select case (trim(adjustl(name)))
       case ("none", "gms_quao", "quao")
       case default
-         call error%set(ERROR_VALIDATION, "properties.bonding_analysis is '"// &
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.type is '"// &
                         trim(name)//"'. Known analyses: none, gms_quao (the "// &
                         "Ruedenberg quasi-atomic bonding picture, spelled as "// &
                         "GAMESS implements it; 'quao' is accepted for it too).")

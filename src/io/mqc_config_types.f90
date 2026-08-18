@@ -116,8 +116,14 @@ module mqc_config_types
       ! compute -- those are `keywords` -- but requests for something extra to
       ! be reported once the wave function exists.
       character(len=:), allocatable :: bonding_analysis
-         !! From `properties.bonding_analysis`. Absent or "none" means no
+         !! From `properties.bonding_analysis.type`. Absent or "none" means no
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
+      real(dp) :: bonding_threshold = 1.0_dp
+         !! From `properties.bonding_analysis.energy_threshold`, in kcal/mol.
+         !! Orbital pairs whose kinetic bond order is weaker than this are
+         !! counted and then not printed. Formyl chloride has 27 pairs above
+         !! GAMESS's own cutoff and eight above one kcal/mol, and the other
+         !! nineteen are tenths of a kcal/mol that bury the four bonds.
 
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2

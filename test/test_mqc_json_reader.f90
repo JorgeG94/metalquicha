@@ -1046,7 +1046,8 @@ contains
       type(error_t) :: parse_error
 
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
-                      two_atoms(), '"properties": {"bonding_analysis": "gms_quao"}')
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "energy_threshold": 2.5}}')
       call read_deck(config, parse_error)
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
@@ -1055,6 +1056,20 @@ contains
       if (allocated(error)) return
       call check(error, trim(config%bonding_analysis), "gms_quao", &
                  "and should be what the deck asked for")
+      if (allocated(error)) return
+      call check(error, abs(config%bonding_threshold - 2.5_dp) < 1.0e-12_dp, &
+                 "the reporting threshold should have been read")
+      if (allocated(error)) return
+
+      ! Naming the analysis and nothing else keeps the default threshold.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(config%bonding_threshold - 1.0_dp) < 1.0e-12_dp, &
+                 "an unmentioned threshold should keep its default")
       if (allocated(error)) return
 
       ! Absent leaves it unset, which is what "no analysis" looks like.
@@ -1070,7 +1085,8 @@ contains
 
       ! An analysis nobody implements is refused, by name, with the list.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
-                      two_atoms(), '"properties": {"bonding_analysis": "nbo"}')
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "nbo"}}')
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
                  "an unknown bonding analysis should be refused rather than "// &
@@ -1079,10 +1095,32 @@ contains
 
       ! And so is a key inside the block that nothing reads.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
-                      two_atoms(), '"properties": {"bond_analysis": "gms_quao"}')
+                      two_atoms(), '"properties": {"bond_analysis": '// &
+                      '{"type": "gms_quao"}}')
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
                  "a misspelled key inside properties should be refused")
+      if (allocated(error)) return
+
+      ! A misspelling one level deeper too. This is the case the subgroup was
+      ! made for: with a bare string there was nowhere to put a setting, and
+      ! nowhere for the validator to catch one that was put wrongly.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "threshold": 2.0}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled setting inside the analysis block should be refused")
+      if (allocated(error)) return
+
+      ! Naming the block without saying which analysis is a deck that means
+      ! nothing, rather than one that means "the default analysis".
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"energy_threshold": 2.0}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a settings-only analysis block should be refused")
    end subroutine test_bonding_analysis
 
    subroutine test_malformed(error)
