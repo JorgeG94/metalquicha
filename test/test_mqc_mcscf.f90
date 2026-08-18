@@ -13,6 +13,14 @@ module test_mqc_mcscf
    !! error; it looks like a convergence problem, and gets diagnosed as one for
    !! a long time. That sign was in fact wrong when this was first written, and
    !! this is what caught it.
+   !!
+   !! The reference SCFs run to 1e-12 in the energy and 1e-10 in the density,
+   !! matching the rest of the suite. An earlier version asked for 1e-13, which
+   !! on a -75 hartree energy is 1.3e-15 relative -- the last bit of a double --
+   !! and the threaded Fock builds are not bit-reproducible, so it reached it
+   !! only sometimes. The result was a test that passed four, five or six of its
+   !! six cases depending on the run. Nothing downstream needs those digits:
+   !! the energies here are compared at 1e-9.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
@@ -138,7 +146,7 @@ contains
       real(dp), parameter :: STEP = 1.0e-4_dp
 
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
       n_ao = size(scf%orbitals, 1)
@@ -232,7 +240,7 @@ contains
       ok = .false.
       casci_energy = 0.0_dp
       call build_libcint_molecule(atomic_numbers, symbols, coordinates, basis, mol, err)
-      call run_libcint_rhf(mol, n_electrons, 300, 1.0e-13_dp, 1.0e-11_dp, .false., &
+      call run_libcint_rhf(mol, n_electrons, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
                            scf, err)
       if (err%has_error() .or. .not. scf%converged) return
       call run_libcint_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
