@@ -91,7 +91,7 @@ jobs:
                   -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
                   -B build
           fi
-          cmake --build build
+          cmake --build build --parallel 2
 
       - name: Run unit tests
         shell: bash -el {0}
@@ -112,7 +112,7 @@ jobs:
         shell: bash -el {0}
         run: |
           conda activate mqc
-          cmake --build build --target mqc_shared
+          cmake --build build --target mqc_shared --parallel 2
           MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
             python3 python/examples/backends.py
           # Separate script, separate failure: backends.py breaking means the
