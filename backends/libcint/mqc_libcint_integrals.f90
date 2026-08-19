@@ -1175,6 +1175,12 @@ contains
 
       real(dp), allocatable :: buf(:)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, lsh_max
+      ! `ksh_local` was a BLOCK-scoped declaration inside the parallel region.
+      ! nvfortran cannot compile a BLOCK construct in the scope of a parallel
+      ! directive (NVFORTRAN-S-1219), and the construct existed only to
+      ! declare this one integer, so it is declared here and privatised with
+      ! the rest instead.
+      integer :: ksh_local
       integer :: shls(4)
       integer :: i, j, k, l, io, jo, ko, lo, ret, idx
       integer :: p, q, r, t
@@ -1208,7 +1214,7 @@ contains
       !$omp parallel default(none) &
       !$omp    shared(this, eri, opt, npair, pair_i, pair_j) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
-      !$omp            i, j, k, l, p, q, r, t, shls, ret, idx, value, buf)
+      !$omp            i, j, k, l, p, q, r, t, shls, ret, idx, value, buf, ksh_local)
       allocate (buf(max_block(this)**4))
       !$omp do schedule(dynamic)
       do ipair = 1, npair
@@ -1218,47 +1224,44 @@ contains
          io = this%shell_offset(ish)
          dj = shell_dim(this%cartesian, jsh - 1, this%bas)
          jo = this%shell_offset(jsh)
-         block
-            integer :: ksh_local
-            do ksh_local = 1, ish
-               ksh = ksh_local
-               dk = shell_dim(this%cartesian, ksh - 1, this%bas)
-               ko = this%shell_offset(ksh)
-               lsh_max = ksh
-               if (ksh == ish) lsh_max = jsh
-               do lsh = 1, lsh_max
-                  dl = shell_dim(this%cartesian, lsh - 1, this%bas)
-                  lo = this%shell_offset(lsh)
-                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
-                  ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
-                                           this%natm, this%bas, this%nbas, this%env, opt)
-                  if (ret == 0) cycle
+         do ksh_local = 1, ish
+            ksh = ksh_local
+            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
+            ko = this%shell_offset(ksh)
+            lsh_max = ksh
+            if (ksh == ish) lsh_max = jsh
+            do lsh = 1, lsh_max
+               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
+               lo = this%shell_offset(lsh)
+               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+               ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
+                                        this%natm, this%bas, this%nbas, this%env, opt)
+               if (ret == 0) cycle
 
-                  do l = 1, dl
-                     t = lo + l
-                     do k = 1, dk
-                        r = ko + k
-                        do j = 1, dj
-                           q = jo + j
-                           do i = 1, di
-                              p = io + i
-                              idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
-                              value = buf(idx)
-                              eri(p, q, r, t) = value
-                              eri(q, p, r, t) = value
-                              eri(p, q, t, r) = value
-                              eri(q, p, t, r) = value
-                              eri(r, t, p, q) = value
-                              eri(t, r, p, q) = value
-                              eri(r, t, q, p) = value
-                              eri(t, r, q, p) = value
-                           end do
+               do l = 1, dl
+                  t = lo + l
+                  do k = 1, dk
+                     r = ko + k
+                     do j = 1, dj
+                        q = jo + j
+                        do i = 1, di
+                           p = io + i
+                           idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
+                           value = buf(idx)
+                           eri(p, q, r, t) = value
+                           eri(q, p, r, t) = value
+                           eri(p, q, t, r) = value
+                           eri(q, p, t, r) = value
+                           eri(r, t, p, q) = value
+                           eri(t, r, p, q) = value
+                           eri(r, t, q, p) = value
+                           eri(t, r, q, p) = value
                         end do
                      end do
                   end do
                end do
             end do
-         end block
+         end do
       end do
       !$omp end do
       deallocate (buf)

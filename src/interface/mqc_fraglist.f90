@@ -224,6 +224,7 @@ contains
 
       integer(default_int), allocatable :: closed(:, :)
       integer(default_int) :: subset(MAX_TERM_LEVEL), term(MAX_TERM_LEVEL)
+      integer(default_int) :: pick(MAX_TERM_LEVEL)
       integer(int64) :: iterm, n_closed, capacity
       integer(default_int) :: level, size_wanted, i
       logical :: has_next
@@ -249,8 +250,31 @@ contains
          do size_wanted = 1, level
             call first_combination(subset, size_wanted)
             do
+               !
+               ! Gathered into a local rather than passed as
+               ! `[(term(subset(i)), i=1, size_wanted)]`.
+               !
+               ! An array constructor as an actual argument builds a temporary,
+               ! and nvfortran sizes that temporary WRONG under `-Mvect=simd`
+               ! -- which `-fast` implies, so every optimised NVHPC build was
+               ! affected. The symptom is a runtime abort asking for a garbage
+               ! allocation, e.g.
+               !
+               !     0: ALLOCATE: 562935672259264 bytes requested
+               !
+               ! the size varying run to run because the value comes from
+               ! uninitialised stack. `-O2` alone is fine, `-fast -Mnovect` is
+               ! fine, and adding a print anywhere nearby makes it vanish.
+               !
+               ! Gathering explicitly removes the temporary, so there is
+               ! nothing to size wrongly. It also stops allocating one per
+               ! iteration of the innermost loop, which this did not need.
+               !
+               do i = 1, size_wanted
+                  pick(i) = term(subset(i))
+               end do
                call add_unique(closed, n_closed, this%max_level, &
-                               [(term(subset(i)), i=1, size_wanted)], size_wanted)
+                               pick(1:size_wanted), size_wanted)
                call next_index_set(subset, size_wanted, level, has_next)
                if (.not. has_next) exit
             end do

@@ -41,7 +41,9 @@ jobs:
         shell: bash -el {0}
         run: |
           conda activate mqc
-          cmake --build build
+          # A runner has two cores, and `cmake --build` is serial by
+          # default -- so without this it uses one of them.
+          cmake --build build --parallel 2
 
       - name: Run coverage
         shell: bash -el {0}

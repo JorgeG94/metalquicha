@@ -462,6 +462,20 @@ if(MQC_ENABLE_LIBCINT)
   # internal, which it is.
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:cint_fortran>
                                             $<BUILD_INTERFACE:cint>)
+
+  # The module directory has to propagate even though the library does not.
+  #
+  # nvfortran needs the `.mod` of every module that a used module itself uses,
+  # transitively. So `use mqc_resources` in app/main.f90 makes it reach for
+  # `libcint_fortran.mod`, which is two levels down and behind a PRIVATE link.
+  # gfortran answers that from its own `.mod` and never asks, which is why this
+  # was not needed until the first NVHPC build.
+  #
+  # BUILD_INTERFACE for the same reason the link above is: a fetched third-party
+  # library is never going to join this project's export set.
+  target_include_directories(
+    ${main_lib} PUBLIC $<BUILD_INTERFACE:${libcint_BINARY_DIR}/include>)
+
   add_subdirectory(backends/libcint)
   message(
     STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
