@@ -103,7 +103,8 @@ contains
                   new_unittest("cumulant_survives_an_isometry", cumulant_survives_an_isometry), &
                   new_unittest("projection_measures_what_it_misses", projection_measures_what_it_misses), &
                   new_unittest("cumulant_reaches_the_energy", cumulant_reaches_the_energy), &
-                  new_unittest("free_atoms_are_equivalent_and_bound", free_atoms_are_equivalent_and_bound) &
+                  new_unittest("free_atoms_are_equivalent_and_bound", free_atoms_are_equivalent_and_bound), &
+                  new_unittest("classical_share_is_separated_out", classical_share_is_separated_out) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -472,6 +473,7 @@ contains
       type(quao_result_t) :: quao
       type(error_t) :: err
       real(dp) :: d(2, 2), eri(2, 2, 2, 2), energy
+      real(dp) :: ones(N_ORB, N_ORB, N_ORB, N_ORB)
       real(dp), allocatable :: intra(:), inter(:, :)
 
       d = 0.0_dp
@@ -851,6 +853,117 @@ contains
       end if
       call mol%destroy()
    end subroutine free_atoms_are_equivalent_and_bound
+
+   subroutine classical_share_is_separated_out(error)
+      !! Which part of a pair interaction an electrostatic model could produce
+      !!
+      !! Both decompositions carry the same numbers as before; what is new is
+      !! that the classical part is reported separately. So the thing to pin is
+      !! that the split is a partition -- the classical share plus what is left
+      !! must be the pair energy that was already being reported, exactly -- and
+      !! that each term lands on the correct side of it.
+      !!
+      !! For the nuclear fixture the classical share is one atom's density in
+      !! the other's field: atom 1's four units in nucleus 2's field at strength
+      !! two, and atom 2's four in nucleus 1's at strength one, giving twelve of
+      !! the thirty-six. For the two-electron fixture it is the pure Coulomb
+      !! terms `(1,1,2,2)` and `(2,2,1,1)`, two each, giving four of the two --
+      !! the interference part is negative there, which is the exchange.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp), allocatable :: v(:, :, :), intra(:), inter(:, :), coulomb(:, :)
+      real(dp) :: d(2, 2), eri(2, 2, 2, 2), energy, expected
+      real(dp) :: ones(N_ORB, N_ORB, N_ORB, N_ORB)
+
+      ones = 1.0_dp
+      call two_atom_case(quao)
+      call flat_field(v)
+      call nuclear_decomposition(quao, FLAT, v, 2, intra, inter, err, coulomb=coulomb)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+
+      call check(error, coulomb(1, 2), 12.0_dp, thr=TOL, &
+                 more="the nuclear classical share is wrong")
+      if (allocated(error)) return
+      call check(error, coulomb(1, 2), coulomb(2, 1), thr=TOL, &
+                 more="the classical share is not symmetric")
+      if (allocated(error)) return
+      call check(error, abs(coulomb(1, 2)) < abs(inter(1, 2)), &
+                 "the classical share is not a part of the pair energy")
+      if (allocated(error)) return
+      deallocate (intra, inter, coulomb)
+
+      d = 0.0_dp
+      d(1, 1) = 2.0_dp
+      d(2, 2) = 2.0_dp
+      eri = 1.0_dp
+      call two_orbital_case(quao)
+      call two_electron_decomposition(quao, d, eri, 2, intra, inter, energy, err, &
+                                      coulomb=coulomb)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+      call check(error, coulomb(1, 2), 4.0_dp, thr=TOL, &
+                 more="the two-electron classical share is wrong")
+      if (allocated(error)) return
+      ! The remainder is exchange and is negative, so a split that quietly
+      ! clamped it to zero would still look plausible.
+      call check(error, inter(1, 2) - coulomb(1, 2), -2.0_dp, thr=TOL, &
+                 more="the interference remainder is wrong")
+      if (allocated(error)) return
+      deallocate (intra, inter, coulomb)
+
+      ! **A diagonal density never reaches the branch where the bra is spread
+      ! and the ket is not**, so the fixture above cannot tell whether that
+      ! branch is charged classically or as interference -- and getting it wrong
+      ! there passed every check until this was added. An off-diagonal density
+      ! reaches all four branches.
+      !
+      ! The reference is built here from the definition rather than from the
+      ! routine: a term is classical when each of its two charge distributions
+      ! sits wholly on one atom and the two atoms differ. Summing exactly those
+      ! terms is an independent statement of the selection rule, using the same
+      ! weight the closed-form test already pinned.
+      call two_atom_case(quao)
+      call classical_by_definition(DENS, expected)
+      call two_electron_decomposition(quao, DENS, ones, 2, intra, inter, energy, err, &
+                                      coulomb=coulomb)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+      call check(error, coulomb(1, 2), expected, thr=1.0e-10_dp, &
+                 more="a term was put on the wrong side of the classical split")
+      if (allocated(error)) return
+      call check(error, abs(inter(1, 2) - coulomb(1, 2)) > 1.0e-6_dp, &
+                 "this density produced no interference, so it proves nothing")
+   end subroutine classical_share_is_separated_out
+
+   subroutine classical_by_definition(d, expected)
+      !! The classical share of the pair, summed straight from the selection rule
+      !!
+      !! Both distributions wholly on one atom, on different atoms. Written from
+      !! the definition rather than lifted from the routine under test, so that
+      !! the two agreeing means something.
+      real(dp), intent(in) :: d(N_ORB, N_ORB)
+      real(dp), intent(out) :: expected
+
+      integer :: p, q, r, sx
+
+      expected = 0.0_dp
+      do p = 1, N_ORB
+         do q = 1, N_ORB
+            if (ATOM_OF(p) /= ATOM_OF(q)) cycle
+            do r = 1, N_ORB
+               do sx = 1, N_ORB
+                  if (ATOM_OF(r) /= ATOM_OF(sx)) cycle
+                  if (ATOM_OF(p) == ATOM_OF(r)) cycle
+                  expected = expected + 0.5_dp*(d(p, q)*d(r, sx) &
+                                                - 0.5_dp*d(p, sx)*d(r, q))
+               end do
+            end do
+         end do
+      end do
+   end subroutine classical_by_definition
 
 end module test_mqc_ieda
 

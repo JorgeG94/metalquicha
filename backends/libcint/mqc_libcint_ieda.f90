@@ -57,6 +57,7 @@ module mqc_libcint_ieda
    public :: print_two_electron_decomposition
    public :: nuclear_repulsion_pairs
    public :: print_total_decomposition
+   public :: print_interatomic_split
    public :: print_kinetic_decomposition
    public :: print_nuclear_decomposition
 
@@ -377,7 +378,8 @@ contains
       deallocate (work)
    end subroutine quao_nuclear_attraction
 
-   subroutine nuclear_decomposition(quao, density, v_atom_quao, n_atoms, intra, inter, error)
+   subroutine nuclear_decomposition(quao, density, v_atom_quao, n_atoms, intra, inter, &
+                                    error, coulomb)
       !! Group `gamma_pq V_pq^C` by the atoms of its two orbitals and its nucleus
       !!
       !! Unlike the kinetic term this one carries three atomic labels: the
@@ -408,6 +410,13 @@ contains
       real(dp), allocatable, intent(out) :: inter(:, :)
          !! Symmetric, zero diagonal, each element the whole pair energy
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: coulomb(:, :)
+         !! The **classical** share of `inter`: one atom's own density sitting in
+         !! another's nuclear field. What is left over is interference -- density
+         !! shared between the two atoms, which has no classical description and
+         !! exists only because they are bonded. Splitting them is the whole
+         !! point of the analysis, since the papers' claim is that binding comes
+         !! from interference and not from electrostatics.
 
       real(dp) :: term, residual, reference
       character(len=400) :: message
@@ -436,6 +445,10 @@ contains
       intra = 0.0_dp
       inter = 0.0_dp
       reference = 0.0_dp
+      if (present(coulomb)) then
+         allocate (coulomb(n_atoms, n_atoms))
+         coulomb = 0.0_dp
+      end if
 
       do c = 1, n_atoms
          do i = 1, n
@@ -452,8 +465,14 @@ contains
                else if (a == c) then
                   intra(a) = intra(a) + term
                else
+                  ! One atom's density in another's nuclear field: an ordinary
+                  ! electrostatic attraction between the two.
                   inter(a, c) = inter(a, c) + term
                   inter(c, a) = inter(c, a) + term
+                  if (present(coulomb)) then
+                     coulomb(a, c) = coulomb(a, c) + term
+                     coulomb(c, a) = coulomb(c, a) + term
+                  end if
                end if
             end do
          end do
@@ -678,7 +697,7 @@ contains
    end subroutine transform_cumulant
 
    subroutine two_electron_decomposition(quao, density, eri_quao, n_atoms, &
-                                         intra, inter, energy, error, cumulant)
+                                         intra, inter, energy, error, cumulant, coulomb)
       !! Group the two-electron energy by the atoms of its four orbitals
       !!
       !! For a single determinant the two-particle density is
@@ -717,6 +736,11 @@ contains
          !! (n_quao^4). What correlation adds to the two-particle density,
          !! already carried into this basis. Absent means a single determinant,
          !! for which it is identically zero.
+      real(dp), allocatable, intent(out), optional :: coulomb(:, :)
+         !! The classical share of `inter`: both charge distributions sitting
+         !! wholly on one atom each, so the term is the repulsion between two
+         !! atomic charge clouds. Everything else involves a distribution spread
+         !! across two atoms and is interference.
 
       real(dp) :: w, residual, extra
       character(len=400) :: message
@@ -740,6 +764,10 @@ contains
       allocate (intra(n_atoms), inter(n_atoms, n_atoms))
       intra = 0.0_dp
       inter = 0.0_dp
+      if (present(coulomb)) then
+         allocate (coulomb(n_atoms, n_atoms))
+         coulomb = 0.0_dp
+      end if
 
       do p = 1, n
          a = quao%atom_of(p)
@@ -765,7 +793,10 @@ contains
                   else if (a == c) then
                      intra(a) = intra(a) + w
                   else
+                     ! Two atomic charge clouds repelling each other, which is
+                     ! as classical as this decomposition gets.
                      call deposit(inter, a, c, w)
+                     if (present(coulomb)) call deposit(coulomb, a, c, w)
                   end if
                end do
             end do
@@ -874,6 +905,53 @@ contains
 
       call print_decomposition("energy decomposition", intra, inter, element_symbols)
    end subroutine print_total_decomposition
+
+   subroutine print_interatomic_split(inter, classical, element_symbols)
+      !! Each pair interaction split into what is classical and what is not
+      !!
+      !! **This is the claim the analysis exists to make.** The classical part is
+      !! everything an electrostatic model could produce: one atom's density in
+      !! the other's nuclear field, the repulsion between two atomic charge
+      !! clouds, and the repulsion of the two nuclei. It is a sum of large terms
+      !! of both signs that very nearly cancel, because a neutral atom is a
+      !! nearly neutral thing to be near.
+      !!
+      !! What is left is interference -- density shared between the two atoms,
+      !! which no classical model has any account of, and which the papers argue
+      !! is where covalent binding actually comes from. If that is right, the
+      !! second column here is small and the third carries the bond.
+      real(dp), intent(in) :: inter(:, :)
+      real(dp), intent(in) :: classical(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+
+      character(len=160) :: line
+      character(len=16) :: label_a, label_b
+      integer :: natm, a, b
+      real(dp) :: total_c, total_i
+
+      natm = size(inter, 1)
+      call logger%info("")
+      call logger%info("  interatomic interactions")
+      call logger%info("     pair                  total     classical  interference")
+      total_c = 0.0_dp
+      total_i = 0.0_dp
+      do a = 1, natm
+         do b = a + 1, natm
+            total_c = total_c + classical(a, b)
+            total_i = total_i + (inter(a, b) - classical(a, b))
+            if (abs(inter(a, b)) < TOL_PRINT_PAIR) cycle
+            write (label_a, "(a,i0)") trim(adjustl(element_symbols(a)))//" ", a
+            write (label_b, "(a,i0)") trim(adjustl(element_symbols(b)))//" ", b
+            write (line, "(4x,a8,a4,a8,3f14.3)") label_a(1:8), " -- ", label_b(1:8), &
+               inter(a, b)*TO_MILLIHARTREE, classical(a, b)*TO_MILLIHARTREE, &
+               (inter(a, b) - classical(a, b))*TO_MILLIHARTREE
+            call logger%info(trim(line))
+         end do
+      end do
+      call logger%info("     millihartree")
+      write (line, "(4x,a24,2f16.6)") "totals, hartree", total_c, total_i
+      call logger%info(trim(line))
+   end subroutine print_interatomic_split
 
    subroutine print_kinetic_decomposition(intra, inter, element_symbols)
       !! The atom and atom-pair table for the kinetic energy

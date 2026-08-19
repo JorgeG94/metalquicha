@@ -38,6 +38,7 @@ module mqc_libcint_bonding
                                quao_eris, two_electron_decomposition, &
                                print_two_electron_decomposition, &
                                nuclear_repulsion_pairs, print_total_decomposition, &
+                               print_interatomic_split, &
                                active_cumulant, quao_projection, transform_cumulant
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
@@ -153,6 +154,7 @@ contains
       logical :: correlated
       real(dp) :: span_deficit, formation
       real(dp), allocatable :: free_energy(:), adaptation(:)
+      real(dp), allocatable :: nuc_coulomb(:, :), two_coulomb(:, :), classical(:, :)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -320,7 +322,8 @@ contains
          call quao_nuclear_attraction(full_quao, v_atom_ao, v_atom_quao, error)
          if (error%has_error()) return
          call nuclear_decomposition(full_quao, full_quao%population_bond_order, &
-                                    v_atom_quao, natm, nuc_intra, nuc_inter, error)
+                                    v_atom_quao, natm, nuc_intra, nuc_inter, error, &
+                                    coulomb=nuc_coulomb)
          if (error%has_error()) return
          call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
 
@@ -371,11 +374,12 @@ contains
             if (error%has_error()) return
             call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
                                             eri_quao, natm, two_intra, two_inter, &
-                                            two_electron, error, cumulant=cumulant_quao)
+                                            two_electron, error, cumulant=cumulant_quao, &
+                                            coulomb=two_coulomb)
          else
             call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
                                             eri_quao, natm, two_intra, two_inter, &
-                                            two_electron, error)
+                                            two_electron, error, coulomb=two_coulomb)
          end if
          if (error%has_error()) return
          call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
@@ -402,6 +406,16 @@ contains
          tot_intra = kin_intra + nuc_intra + two_intra
          tot_inter = kin_inter + nuc_inter + two_inter + rep_inter
          call print_total_decomposition(tot_intra, tot_inter, element_symbols)
+
+         ! Everything an electrostatic model could account for: each atom's
+         ! density in the other's nuclear field, the repulsion of their two
+         ! charge clouds, and the repulsion of their nuclei. The rest is
+         ! interference, and the kinetic contribution is entirely interference
+         ! by construction -- two orbitals on different atoms is what the word
+         ! means.
+         allocate (classical(natm, natm))
+         classical = nuc_coulomb + two_coulomb + rep_inter
+         call print_interatomic_split(tot_inter, classical, element_symbols)
 
          ! The atoms as they would be on their own. Subtracting them turns a
          ! table of large numbers into the energy of formation, which is the

@@ -196,6 +196,39 @@ energy the calculation reported, since the reference built from the orbitals
 assumes a determinant and would be short by the whole correlation energy.
 
 
+
+What is classical and what is not
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each pair interaction is split into the part an electrostatic model could
+produce and the part it could not::
+
+    interatomic interactions
+       pair                  total     classical  interference
+      O 1      -- H 2          -1186.141      -329.244      -856.897
+      O 1      -- H 3          -1186.141      -329.244      -856.897
+      H 2      -- H 3             56.511        57.617        -1.106
+       millihartree
+
+**Classical** is one atom's density sitting in the other's nuclear field, the
+repulsion between the two atomic charge clouds, and the repulsion of the two
+nuclei. Each is large and they very nearly cancel, because a neutral atom is a
+nearly neutral thing to be near.
+
+**Interference** is what is left: density shared between the two atoms, which no
+electrostatic model has any account of. The kinetic contribution is entirely
+interference by construction -- two orbitals on different atoms is what the word
+means.
+
+The claim the papers make is that covalent binding comes from interference
+rather than from electrostatics, and water says so plainly. Interference carries
+857 of the 1186 millihartree of the O--H interaction. And the H--H pair, where
+there is no bond at all, comes out at +57.6 millihartree classical against -1.1
+of interference -- two like charges repelling, with essentially nothing shared.
+That the analysis finds no interference where chemistry says there is no bond is
+worth more than the O--H number, since nothing in the construction was told
+where the bonds are.
+
 Energy of formation
 ~~~~~~~~~~~~~~~~~~~
 
