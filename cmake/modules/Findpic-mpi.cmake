@@ -23,7 +23,7 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
 # Use the main branch
-set(_rev "v0.5.2")
+set(_rev "v0.6.0")
 
 # The first pic-mpi release carrying the single-rank backend, i.e. the first
 # one that understands PIC_ENABLE_MPI.
