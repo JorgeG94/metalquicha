@@ -925,7 +925,7 @@
         {
             "name": "CASSCF CAS(6,5) H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/mcscf/cpu_water_sto-3g_6e5o.json",
-            "expected_energy": -75.00851941188,
+            "expected_energy": -75.010187220994,
             "energy_tolerance": 1e-08,
             "type": "unfragmented"
         },

@@ -1,4 +1,4 @@
-!! The generalised Fock matrix and the orbital gradient
+!! The generalised Fock matrix, the orbital gradient and the orbital Hessian
 module mqc_libcint_mcscf
    !! What CASSCF adds to CASCI is that the orbitals move. CASCI minimises the
    !! energy over the CI coefficients at fixed orbitals; the derivative with
@@ -39,6 +39,16 @@ module mqc_libcint_mcscf
    !! along them, so a Newton step is undefined and even a gradient step wanders
    !! along directions the energy does not depend on. The three non-redundant
    !! blocks are inactive-active, inactive-virtual and active-virtual.
+   !!
+   !! **The Hessian is the same expression again, not a second one.** Expanding
+   !! `C exp(kappa)` shows the term of the energy quadratic in `kappa` to be the
+   !! term linear in it, evaluated on integrals differentiated once, so
+   !! `one_index_fock` is `generalized_fock` with each orbital in turn replaced
+   !! by `C kappa` and the Hessian is read out of it through the gradient
+   !! formula above. Nothing here can have a Hessian that disagrees with its
+   !! gradient, which is worth more than the lines it saves: the two are checked
+   !! against finite differences separately, and a discrepancy between them is
+   !! the failure that a converging optimiser hides best.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
@@ -54,7 +64,6 @@ module mqc_libcint_mcscf
    use mqc_ormas_ci, only: ormas_density_matrices
    use pic_logger, only: logger => global_logger
    use pic_lapack_interfaces, only: pic_syev
-   use mqc_diis, only: diis_state_t
    implicit none
    private
 
@@ -64,27 +73,35 @@ module mqc_libcint_mcscf
    public :: rotation_matrix
    public :: is_redundant
    public :: subspace_of
-   public :: approximate_hessian
+   public :: rotation_parameters
+   public :: orbital_hessian
    public :: run_libcint_casscf
    public :: casscf_result_t
    public :: natural_orbitals
 
-   real(dp), parameter :: HESSIAN_FLOOR = 0.05_dp
-      !! Smallest denominator a step is allowed to divide by. Without it a pair
-      !! of orbitals that happen to be close in energy takes an enormous step on
-      !! a small gradient, which is how a first-order optimiser diverges on its
-      !! first iteration rather than its fiftieth.
+   real(dp), parameter :: MIN_CURVATURE = 1.0e-3_dp
+      !! Smallest curvature the Newton equations are allowed to divide by, in
+      !! hartree per radian squared.
       !!
-      !! **It is a genuine optimum, not a safety margin, and the direction is
-      !! counter-intuitive.** The obvious reading of a slow case is that the
-      !! floor is too high and the steps too short -- water crawls through a
-      !! flat valley taking steps well inside the trust radius, which looks
-      !! exactly like that. It is wrong. Lowering the floor makes it
-      !! monotonically worse: 0.05, 0.02, 0.01, 0.005 and 0.002 cost 58, 87, 95,
-      !! 145 and 192 iterations, because the longer steps overshoot, get
-      !! rejected, and shrink the trust radius. Raising it is worse too -- 0.1,
-      !! 0.2 and 0.4 cost 80, 115 and 206. Both directions were measured before
-      !! this number was settled on.
+      !! Every eigenvalue is raised until the smallest reaches this, so a mode
+      !! that is genuinely stiff keeps its own curvature and only the soft and
+      !! the inverted ones are regularised. The number wants to sit below the
+      !! softest real mode and above zero: water in STO-3G has its smallest
+      !! positive eigenvalue at 1.6e-3, so anything much larger would damp a
+      !! direction that did not need it and cost the quadratic convergence that
+      !! is the reason for building the Hessian at all.
+   real(dp), parameter :: SADDLE_CURVATURE = -1.0e-5_dp
+      !! How negative an eigenvalue has to be before the point is called a
+      !! saddle rather than a minimum.
+      !!
+      !! The Hessian is analytic, so its noise floor is rounding rather than
+      !! anything to do with step sizes, and this could be a good deal tighter.
+      !! It is not, because a nearly redundant rotation -- an active orbital
+      !! whose occupation has gone to two, say -- has a nearly zero eigenvalue
+      !! whose sign is decided by how well the CI converged, and chasing those
+      !! costs iterations and buys nothing. A real symmetry-breaking mode is
+      !! orders of magnitude below this: the water case that motivated it sits
+      !! at -1.0e-2.
    real(dp), parameter :: MAX_ROTATION = 0.2_dp
       !! Largest rotation angle the trust radius is allowed to grow back to, in
       !! radians. Roughly 11 degrees.
@@ -92,14 +109,19 @@ module mqc_libcint_mcscf
       !! If backtracking has shrunk the trust radius this far and the energy
       !! still rises, the step direction is not a descent direction and halving
       !! it again will not help. Better to stop and say so.
-   integer, parameter :: DIIS_VECTORS = 12
-      !! Orbital sets kept for extrapolation.
+   real(dp), parameter :: ENERGY_RESOLUTION = 1.0e-12_dp
+      !! An energy change this small is not a change, in hartree.
       !!
-      !! Measured across 6, 10, 16 and 24 on water and nitrogen: nitrogen sits
-      !! at 21 iterations regardless, and water moves between 56 and 75 with no
-      !! trend -- which is the same spread it shows run to run at fixed
-      !! settings, from the threaded Fock builds. So this is not a lever, and
-      !! the value is a middle one rather than a tuned one.
+      !! About fifteen units in the last place of a molecular energy, so it is
+      !! the resolution of the arithmetic rather than a convergence criterion.
+      !! It is needed because the step is tested by whether the energy went
+      !! down, and near the solution a Newton step is worth `g^2/H` -- at a
+      !! gradient of 1e-7 that is 1e-13, below what the energy can report. The
+      !! test then measures the noise of the CI solve, rejects a perfectly good
+      !! step, halves the trust radius and stalls, at a gradient a decade or
+      !! two above the one asked for. So a step whose *predicted* gain is below
+      !! this is taken without being tested: there is nothing left to test it
+      !! with, and the gradient goes on shrinking.
    real(dp), parameter :: TRUST_GROWTH = 1.3_dp
       !! How fast the trust radius recovers after a successful step. Slower than
       !! it shrinks, which is the usual asymmetry: an over-long step costs a
@@ -132,11 +154,12 @@ module mqc_libcint_mcscf
       logical :: stalled = .false.
          !! The optimisation stopped because no step downhill could be found,
          !! rather than because it ran out of iterations. The distinction
-         !! matters to whoever reads the failure: a stall is the approximate
-         !! Hessian having run out of resolution, and more iterations do not
-         !! help. It happens on flat surfaces -- water in cc-pVDZ with a
-         !! CAS(4,4) stalls around a gradient of 1e-5 -- and the energy at that
-         !! point is typically converged far past the gradient.
+         !! matters to whoever reads the failure: more iterations do not help.
+         !! A step that the model expects to be worth less than the resolution
+         !! of the energy is taken without being tested, so this no longer
+         !! fires merely because the gradient has outrun what the energy can
+         !! resolve; reaching it now means the surface itself defeated the
+         !! quadratic model.
    end type casscf_result_t
 
    type :: mcscf_fock_t
@@ -145,9 +168,9 @@ module mqc_libcint_mcscf
       real(dp), allocatable :: inactive(:, :)   !! (n_mo, n_mo), `FI` in the MO basis
       real(dp), allocatable :: active(:, :)     !! (n_mo, n_mo), `FA` in the MO basis
       real(dp), allocatable :: occupation(:)
-         !! (n_mo). Two for inactive, `D_tt` for active, zero for virtual. Used
-         !! for the approximate Hessian, and worth having explicitly because it
-         !! is what makes a rotation redundant when two orbitals share it.
+         !! (n_mo). Two for inactive, `D_tt` for active, zero for virtual. Worth
+         !! having explicitly because it is what makes a rotation redundant when
+         !! two orbitals share it.
    end type mcscf_fock_t
 
 contains
@@ -417,50 +440,389 @@ contains
       deallocate (scaled, term, next_term)
    end subroutine rotation_matrix
 
-   subroutine approximate_hessian(fock, n_inactive, n_active, hessian, subspaces)
-      !! A diagonal approximation to the orbital Hessian
+   subroutine rotation_parameters(n_mo, n_inactive, n_active, rows, cols, subspaces)
+      !! The rotations that are real parameters, as a flat list
       !!
-      !! For a rotation between orbitals `p` and `q`,
-      !!
-      !!     H_pq ~ 2 |eps_p - eps_q| |n_p - n_q|
-      !!
-      !! with `eps` the diagonal of the combined inactive and active Fock and
-      !! `n` the occupation. The two factors are the two ways a rotation can
-      !! cost nothing: orbitals degenerate in energy, or equally occupied. Both
-      !! are exactly the cases where the true Hessian is small or zero, so the
-      !! approximation is crude in magnitude but right about where it vanishes,
-      !! which is what a step needs it to be right about.
-      !!
-      !! Not the true Hessian and not intended to be. It scales the gradient
-      !! into something the right order of magnitude; convergence is still
-      !! first order and still needs acceleration. A second-order method would
-      !! build the real thing, including the coupling between orbital rotations
-      !! and the CI coefficients, and is a separate project.
-      type(mcscf_fock_t), intent(in) :: fock
-      integer, intent(in) :: n_inactive, n_active
-      real(dp), allocatable, intent(out) :: hessian(:, :)
+      !! Everything second order works in this list rather than in the `n_mo` by
+      !! `n_mo` matrix the gradient arrives in, because a Hessian is a matrix
+      !! over *parameters*: carry the redundant rotations along and it is
+      !! singular by construction, which is the one thing a Newton step cannot
+      !! survive. Only `p > q` appears, since `kappa` is antisymmetric and the
+      !! two triangles are the same variable seen twice.
+      integer, intent(in) :: n_mo, n_inactive, n_active
+      integer, allocatable, intent(out) :: rows(:), cols(:)
+         !! `(rows(k), cols(k))` is the orbital pair parameter `k` rotates
       integer, intent(in), optional :: subspaces(:)   !! As `orbital_gradient`
 
-      real(dp), allocatable :: energies(:)
-      integer :: n_mo, p, q
+      integer :: p, q, n_param
 
-      n_mo = size(fock%general, 1)
-      allocate (hessian(n_mo, n_mo), energies(n_mo))
-      do p = 1, n_mo
-         energies(p) = fock%inactive(p, p) + fock%active(p, p)
-      end do
-
-      hessian = HESSIAN_FLOOR
+      n_param = 0
       do q = 1, n_mo
-         do p = 1, n_mo
-            if (is_redundant(p, q, n_inactive, n_active, subspaces)) cycle
-            hessian(p, q) = max(HESSIAN_FLOOR, &
-                                2.0_dp*abs(energies(p) - energies(q)) &
-                                *abs(fock%occupation(p) - fock%occupation(q)))
+         do p = q + 1, n_mo
+            if (.not. is_redundant(p, q, n_inactive, n_active, subspaces)) then
+               n_param = n_param + 1
+            end if
          end do
       end do
-      deallocate (energies)
-   end subroutine approximate_hessian
+
+      allocate (rows(n_param), cols(n_param))
+      n_param = 0
+      do q = 1, n_mo
+         do p = q + 1, n_mo
+            if (is_redundant(p, q, n_inactive, n_active, subspaces)) cycle
+            n_param = n_param + 1
+            rows(n_param) = p
+            cols(n_param) = q
+         end do
+      end do
+   end subroutine rotation_parameters
+
+   subroutine transformed_potential(a_block, b_block, n_occ, density, potential)
+      !! `J - K/2` of a differentiated density, in the MO basis
+      !!
+      !! Only the occupied columns are produced, because those are the only ones
+      !! the generalised Fock reads: its virtual rows are zero, so nothing ever
+      !! asks what the potential does between two empty orbitals.
+      !!
+      !! **The density must vanish on the virtual-virtual block.** Both densities
+      !! this is used for are one-index transforms of a density that was carried
+      !! by occupied orbitals, so one index is always occupied and the block is
+      !! zero identically -- which is what makes the two integral blocks above
+      !! sufficient. A density without that structure would need
+      !! `(virtual virtual|virtual virtual)` integrals, which are not here.
+      real(dp), intent(in) :: a_block(:, :, :, :)   !! `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in) :: b_block(:, :, :, :)   !! `(p q|r s)`, `r` and `s` occupied
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: density(:, :)         !! (n_mo, n_mo), symmetric
+      real(dp), intent(out) :: potential(:, :)      !! (n_mo, n_occ)
+
+      real(dp), allocatable :: weight(:, :), exchange(:, :)
+      integer :: n_mo, q, r, s
+
+      n_mo = size(density, 1)
+      allocate (weight(n_mo, n_occ), exchange(n_mo, n_occ))
+
+      ! The Coulomb sum runs over every pair of density indices, but the block
+      ! on hand only has the second one occupied. A pair with the *first* index
+      ! occupied is the same integral read the other way round, so folding it
+      ! onto its partner -- doubling the rows that are not occupied -- covers
+      ! both without a second block.
+      weight = density(:, 1:n_occ)
+      weight(n_occ + 1:n_mo, :) = 2.0_dp*weight(n_occ + 1:n_mo, :)
+
+      potential = 0.0_dp
+      do s = 1, n_occ
+         do r = 1, n_mo
+            potential = potential + weight(r, s)*a_block(:, :, r, s)
+         end do
+      end do
+
+      exchange = 0.0_dp
+      do q = 1, n_occ
+         do s = 1, n_occ
+            do r = 1, n_mo
+               exchange(:, q) = exchange(:, q) + density(r, s)*b_block(:, r, s, q)
+            end do
+         end do
+         ! The exchange cannot be folded the same way: swapping the density
+         ! indices moves them to different slots of the integral, so the half
+         ! with a virtual second index is read out of the other block instead.
+         do s = n_occ + 1, n_mo
+            do r = 1, n_occ
+               exchange(:, q) = exchange(:, q) + density(r, s)*a_block(s, q, :, r)
+            end do
+         end do
+      end do
+
+      potential = potential - 0.5_dp*exchange
+      deallocate (weight, exchange)
+   end subroutine transformed_potential
+
+   subroutine one_index_fock(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
+                             kappa, transformed)
+      !! The generalised Fock matrix differentiated along one orbital rotation
+      !!
+      !! This is the whole of the second-order method. Expanding `C exp(kappa)`
+      !! shows that the term of the energy quadratic in `kappa` is the term
+      !! *linear* in it, evaluated on integrals that have themselves been
+      !! differentiated once -- so
+      !!
+      !!     (H kappa)_pq = 2 (Ft_qp - Ft_pq)
+      !!
+      !! with `Ft` built exactly as `generalized_fock` builds `F`, but with each
+      !! orbital in turn replaced by `C kappa`. Differentiating an integral is
+      !! the product rule over its coefficient matrices, so every term below is
+      !! one of `generalized_fock`'s with one coefficient swapped, and the
+      !! Hessian needs no formula of its own. Getting the *same* expression to
+      !! serve as gradient and Hessian is what makes the two impossible to
+      !! disagree.
+      !!
+      !! The density matrices are the ones the CI produced and are held fixed:
+      !! this is the orbital-orbital block at fixed CI, not the full second
+      !! derivative of the two-step energy. The difference is a Schur
+      !! complement that only makes eigenvalues smaller, so a negative direction
+      !! found here is a genuine one.
+      real(dp), intent(in) :: a_block(:, :, :, :)   !! `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in) :: b_block(:, :, :, :)   !! `(p q|r s)`, `r` and `s` occupied
+      type(mcscf_fock_t), intent(in) :: fock
+      real(dp), intent(in) :: dm1(:, :), dm2(:, :, :, :)
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in) :: kappa(:, :)           !! (n_mo, n_mo), antisymmetric
+      real(dp), intent(out) :: transformed(:, :)    !! (n_mo, n_mo)
+
+      real(dp), allocatable :: d_inactive(:, :), d_active(:, :), occupations(:, :)
+      real(dp), allocatable :: left(:, :), right(:, :)
+      real(dp), allocatable :: v_inactive(:, :), v_active(:, :)
+      real(dp), allocatable :: f_inactive(:, :), f_active(:, :), eri_gaaa(:, :, :, :)
+      real(dp) :: accumulated
+      integer :: n_mo, n_occ, i, t, u, v, w, n, ua, va, wa
+
+      n_mo = size(kappa, 1)
+      n_occ = n_inactive + n_active
+
+      ! The inactive density is C_i C_i^T, so its derivative replaces one factor
+      ! at a time; the result is non-zero only where exactly one index is
+      ! inactive, which is also why a rotation between two inactive orbitals
+      ! moves nothing.
+      allocate (d_inactive(n_mo, n_mo), d_active(n_mo, n_mo), occupations(n_mo, n_mo))
+      d_inactive = 0.0_dp
+      d_inactive(:, 1:n_inactive) = 2.0_dp*kappa(:, 1:n_inactive)
+      d_inactive(1:n_inactive, :) = d_inactive(1:n_inactive, :) &
+                                    - 2.0_dp*kappa(1:n_inactive, :)
+
+      occupations = 0.0_dp
+      occupations(n_inactive + 1:n_occ, n_inactive + 1:n_occ) = dm1
+      allocate (left(n_mo, n_mo), right(n_mo, n_mo))
+      call pic_gemm(kappa, occupations, left)
+      call pic_gemm(occupations, kappa, right)
+      d_active = left - right
+
+      allocate (v_inactive(n_mo, n_occ), v_active(n_mo, n_occ))
+      call transformed_potential(a_block, b_block, n_occ, d_inactive, v_inactive)
+      call transformed_potential(a_block, b_block, n_occ, d_active, v_active)
+
+      ! Two contributions to each Fock matrix: the orbitals it is expressed in,
+      ! which give a commutator, and the orbitals its density was built from,
+      ! which give the potential above.
+      allocate (f_inactive(n_mo, n_occ), f_active(n_mo, n_occ))
+      call pic_gemm(fock%inactive, kappa, left)
+      call pic_gemm(kappa, fock%inactive, right)
+      f_inactive = left(:, 1:n_occ) - right(:, 1:n_occ) + v_inactive
+      call pic_gemm(fock%active, kappa, left)
+      call pic_gemm(kappa, fock%active, right)
+      f_active = left(:, 1:n_occ) - right(:, 1:n_occ) + v_active
+
+      ! (nu|vw) has four orbitals in it and so four terms, one per index.
+      allocate (eri_gaaa(n_mo, n_active, n_active, n_active))
+      do w = 1, n_active
+         wa = n_inactive + w
+         do v = 1, n_active
+            va = n_inactive + v
+            do u = 1, n_active
+               ua = n_inactive + u
+               do n = 1, n_mo
+                  eri_gaaa(n, u, v, w) = &
+                     dot_product(kappa(:, n), a_block(:, ua, va, wa)) &
+                     + dot_product(kappa(:, ua), b_block(n, :, va, wa)) &
+                     + dot_product(kappa(:, va), a_block(n, ua, :, wa)) &
+                     + dot_product(kappa(:, wa), a_block(n, ua, :, va))
+               end do
+            end do
+         end do
+      end do
+
+      ! The rows, assembled exactly as `generalized_fock` assembles them. The
+      ! virtual rows stay zero: they are zero because the density is, and the
+      ! density is not what is being differentiated.
+      transformed = 0.0_dp
+      do i = 1, n_inactive
+         do n = 1, n_mo
+            transformed(i, n) = 2.0_dp*(f_inactive(n, i) + f_active(n, i))
+         end do
+      end do
+
+      do t = 1, n_active
+         do n = 1, n_mo
+            accumulated = 0.0_dp
+            do u = 1, n_active
+               accumulated = accumulated + dm1(t, u)*f_inactive(n, n_inactive + u)
+            end do
+            do w = 1, n_active
+               do v = 1, n_active
+                  do u = 1, n_active
+                     accumulated = accumulated + dm2(t, u, v, w)*eri_gaaa(n, u, v, w)
+                  end do
+               end do
+            end do
+            transformed(n_inactive + t, n) = accumulated
+         end do
+      end do
+
+      deallocate (d_inactive, d_active, occupations, left, right)
+      deallocate (v_inactive, v_active, f_inactive, f_active, eri_gaaa)
+   end subroutine one_index_fock
+
+   subroutine orbital_hessian(mol, orbitals, n_inactive, n_active, dm1, dm2, fock, &
+                              rows, cols, hessian, error)
+      !! The exact orbital Hessian at fixed CI, over the non-redundant rotations
+      !!
+      !! One column per parameter, each the differentiated Fock matrix of
+      !! `one_index_fock` read through the gradient expression. Dense, because
+      !! the point of building it is to *diagonalise* it -- a Newton step alone
+      !! would not need the eigenvalues, but escaping a saddle does, and at
+      !! these sizes the eigendecomposition is far cheaper than the CI solve it
+      !! saves.
+      !!
+      !! The two integral blocks are the whole memory cost, `n_mo^2 n_occ^2`
+      !! each. Everything an MCSCF Hessian needs has at most two general indices
+      !! because the density matrices supply the rest, so no `n_mo^4` tensor is
+      !! ever formed.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in) :: dm1(:, :), dm2(:, :, :, :)
+      type(mcscf_fock_t), intent(in) :: fock
+      integer, intent(in) :: rows(:), cols(:)     !! From `rotation_parameters`
+      real(dp), allocatable, intent(out) :: hessian(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: eri_packed(:, :)
+      real(dp), allocatable :: a_block(:, :, :, :), b_block(:, :, :, :)
+      real(dp), allocatable :: kappa(:, :), transformed(:, :)
+      integer :: n_mo, n_occ, n_param, k, l
+
+      if (error%has_error()) return
+      n_mo = size(orbitals, 2)
+      n_occ = n_inactive + n_active
+      n_param = size(rows)
+
+      allocate (hessian(n_param, n_param))
+      if (n_param == 0) return
+
+      call mol%eris_packed(eri_packed)
+      call transform_block(eri_packed, orbitals, orbitals(:, 1:n_occ), orbitals, &
+                           orbitals(:, 1:n_occ), a_block)
+      call transform_block(eri_packed, orbitals, orbitals, orbitals(:, 1:n_occ), &
+                           orbitals(:, 1:n_occ), b_block)
+      deallocate (eri_packed)
+
+      allocate (kappa(n_mo, n_mo), transformed(n_mo, n_mo))
+      do k = 1, n_param
+         kappa = 0.0_dp
+         kappa(rows(k), cols(k)) = 1.0_dp
+         kappa(cols(k), rows(k)) = -1.0_dp
+         call one_index_fock(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
+                             kappa, transformed)
+         do l = 1, n_param
+            hessian(l, k) = 2.0_dp*(transformed(cols(l), rows(l)) &
+                                    - transformed(rows(l), cols(l)))
+         end do
+      end do
+
+      ! Symmetric in exact arithmetic. Away from a stationary point the two
+      ! triangles differ by rounding, and by the term that distinguishes
+      ! differentiating the gradient from differentiating the energy twice --
+      ! which is antisymmetric, and so is removed by exactly this average.
+      hessian = 0.5_dp*(hessian + transpose(hessian))
+
+      deallocate (a_block, b_block, kappa, transformed)
+   end subroutine orbital_hessian
+
+   subroutine newton_step(hessian, gradient, rows, cols, escape, kappa, lowest, &
+                          predicted, error)
+      !! The Newton step, level shifted, and pushed off a saddle when it is on one
+      !!
+      !! In the eigenbasis of the Hessian the step is one division per mode. Two
+      !! things go wrong there and both are handled by looking at the eigenvalue.
+      !!
+      !! A mode with small or negative curvature would divide by nearly nothing
+      !! and take an absurd step, so every eigenvalue is raised by a single
+      !! shift until the smallest is positive. One shift for all modes rather
+      !! than a floor applied mode by mode, because that is the exact solution
+      !! of the trust-region subproblem and leaves the well-conditioned modes
+      !! essentially untouched.
+      !!
+      !! **A mode with negative curvature and no gradient on it is the case that
+      !! matters.** That is a saddle, and it is where a first-order optimiser
+      !! stops and reports success: the gradient really is zero, so no step
+      !! rule built from the gradient alone can move. It happens whenever the
+      !! starting orbitals carry a symmetry the solution does not -- the
+      !! symmetry-breaking rotations have exactly zero gradient and keep it --
+      !! and the energy left on the table can be tens of millihartree. The
+      !! division gives nothing to work with there, so such a mode is instead
+      !! displaced by hand. Either sign descends, since the curvature is
+      !! negative and the slope is zero, so no choice has to be made; the caller
+      !! backtracks if the step was too long for the cubic term.
+      real(dp), intent(in) :: hessian(:, :)
+      real(dp), intent(in) :: gradient(:, :)   !! (n_mo, n_mo), as `orbital_gradient`
+      integer, intent(in) :: rows(:), cols(:)  !! From `rotation_parameters`
+      real(dp), intent(in) :: escape
+         !! How far to displace a mode that has negative curvature and no
+         !! gradient, in radians
+      real(dp), allocatable, intent(out) :: kappa(:, :)
+      real(dp), intent(out) :: lowest
+         !! Smallest Hessian eigenvalue. Negative means the point the step was
+         !! taken from is not a minimum, whatever the gradient says.
+      real(dp), intent(out) :: predicted
+         !! What the quadratic model says the step is worth, as a positive
+         !! energy decrease. The caller uses it to tell a step that is too small
+         !! to measure from one that is too long to take.
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: vectors(:, :), values(:), projected(:), amplitude(:)
+      real(dp) :: shift, displacement
+      integer :: n_mo, n_param, k, l, info
+
+      lowest = 0.0_dp
+      predicted = 0.0_dp
+      if (error%has_error()) return
+      n_mo = size(gradient, 1)
+      n_param = size(rows)
+      allocate (kappa(n_mo, n_mo))
+      kappa = 0.0_dp
+      if (n_param == 0) return
+
+      allocate (vectors(n_param, n_param), values(n_param))
+      allocate (projected(n_param), amplitude(n_param))
+      vectors = hessian
+      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "the orbital Hessian could not be "// &
+                        "diagonalized (info = "//to_char(info)//")")
+         return
+      end if
+      lowest = values(1)
+
+      shift = 0.0_dp
+      if (values(1) < MIN_CURVATURE) shift = MIN_CURVATURE - values(1)
+
+      do k = 1, n_param
+         projected(k) = 0.0_dp
+         do l = 1, n_param
+            projected(k) = projected(k) + vectors(l, k)*gradient(rows(l), cols(l))
+         end do
+      end do
+
+      do k = 1, n_param
+         amplitude(k) = -projected(k)/(values(k) + shift)
+         if (values(k) < SADDLE_CURVATURE .and. abs(amplitude(k)) < escape) then
+            amplitude(k) = sign(escape, amplitude(k))
+         end if
+      end do
+
+      do k = 1, n_param
+         predicted = predicted - projected(k)*amplitude(k) &
+                     - 0.5_dp*values(k)*amplitude(k)**2
+      end do
+
+      do l = 1, n_param
+         displacement = dot_product(vectors(l, :), amplitude)
+         kappa(rows(l), cols(l)) = displacement
+         kappa(cols(l), rows(l)) = -displacement
+      end do
+
+      deallocate (vectors, values, projected, amplitude)
+   end subroutine newton_step
 
    subroutine run_libcint_casscf(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                                  result, error, max_iterations, gradient_tol, verbose, &
@@ -468,18 +830,36 @@ contains
       !! Two-step CASSCF: solve the CI, move the orbitals, repeat
       !!
       !! Each macro-iteration solves the CI problem exactly at the current
-      !! orbitals, builds the density matrices from it, and takes one orbital
-      !! step from the gradient. The CI is re-solved from the previous vector,
+      !! orbitals, builds the density matrices from it, and takes one Newton
+      !! step on the orbitals. The CI is re-solved from the previous vector,
       !! which after the first few iterations is nearly the answer already.
       !!
-      !! **Two-step, so convergence is first order.** The orbital step ignores
-      !! the coupling between orbital rotations and the CI coefficients -- it
-      !! assumes the CI is re-optimised afterwards, which it is, but not that
-      !! the two respond to each other. A second-order method treats them
-      !! together and converges quadratically. This is perhaps a fifth of the
-      !! work and gets to a validated energy, after which a better optimiser is
-      !! a change of step rule against a known answer rather than a new method
-      !! with two places to be wrong.
+      !! Two-step, so the orbital step ignores the coupling between orbital
+      !! rotations and the CI coefficients: it assumes the CI is re-optimised
+      !! afterwards, which it is, but not that the two respond to each other.
+      !! That costs iterations near the solution and nothing else, because the
+      !! neglected block only makes the true curvature smaller than the one
+      !! used here -- so a direction this sees as downhill really is one.
+      !!
+      !! **What the second-order step buys is not speed.** A first-order
+      !! optimiser stops wherever the gradient vanishes, and on a symmetric
+      !! starting guess that can be a saddle rather than a minimum: the
+      !! rotations that would break the symmetry have exactly zero gradient and
+      !! keep it, so the run converges cleanly, reports a stationary point, and
+      !! is tens of millihartree above the answer. Nothing about the gradient
+      !! says so. The Hessian does, and it is therefore built and diagonalised
+      !! even on the iteration that looks converged -- convergence here means a
+      !! small gradient *and* no negative curvature.
+      !!
+      !! **There is no extrapolation here and that is a measurement, not an
+      !! oversight.** An earlier first-order version needed DIIS badly -- it
+      !! took water in cc-pVDZ from about 102 macro-iterations to about 60.
+      !! Against a Newton step it earns nothing: measured across five cases it
+      !! was worth one iteration either way (N2 10 and 10, water cc-pVDZ 21 and
+      !! 19, water STO-3G 17 and 16), while costing an extra CI solve on every
+      !! iteration to find that out. So it was removed, and with it the
+      !! reorthonormalisation that extrapolating orbitals directly made
+      !! necessary.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       integer, intent(in) :: n_inactive, n_active, n_alpha, n_beta
@@ -500,16 +880,14 @@ contains
       real(dp), allocatable :: current(:, :), updated(:, :)
       real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
       real(dp), allocatable :: gradient(:, :), hessian(:, :), kappa(:, :), rotation(:, :)
-      real(dp), allocatable :: step_matrix(:, :), overlap(:, :), flat(:)
-      real(dp), allocatable :: candidate(:, :)
+      real(dp), allocatable :: step_matrix(:, :)
       real(dp), allocatable :: guess(:, :, :)
       real(dp), allocatable :: flat_guess(:, :)
-      type(diis_state_t) :: diis
-      logical :: extrapolated
+      integer, allocatable :: rows(:), cols(:)
       character(len=160) :: line
-      real(dp) :: tol, largest, previous, trust, scaling
-      integer :: cycles, iteration, n_ao, n_mo, trial, diis_failures
-      logical :: loud, have_guess, accepted
+      real(dp) :: tol, largest, previous, trust, scaling, lowest, predicted
+      integer :: cycles, iteration, n_ao, n_mo, trial
+      logical :: loud, have_guess, accepted, saddle
 
       integer, parameter :: MAX_BACKTRACKS = 12
 
@@ -524,8 +902,6 @@ contains
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
       allocate (current(n_ao, n_mo), updated(n_ao, n_mo), step_matrix(n_mo, n_mo))
-      allocate (candidate(n_ao, n_mo))
-      diis_failures = 0
       current = orbitals
 
       restricted = present(subspaces)
@@ -539,9 +915,13 @@ contains
       call build_link_table(n_active, n_beta, beta, error)
       if (error%has_error()) return
 
-      call mol%overlap(overlap)
-      call diis%init(DIIS_VECTORS, n_ao*n_mo, n_mo*n_mo)
-      allocate (flat(n_ao*n_mo))
+      ! Which rotations are real parameters does not change as the orbitals
+      ! move, so the list is built once and the Hessian is indexed by it.
+      if (restricted) then
+         call rotation_parameters(n_mo, n_inactive, n_active, rows, cols, subspaces)
+      else
+         call rotation_parameters(n_mo, n_inactive, n_active, rows, cols)
+      end if
 
       if (loud) then
          call logger%info("")
@@ -551,7 +931,7 @@ contains
             call logger%info("  complete active space SCF")
          end if
          call logger%info("    iter            energy          change      max gradient"// &
-                          "       trust")
+                          "       trust    curvature")
       end if
 
       have_guess = .false.
@@ -591,93 +971,52 @@ contains
          end if
          largest = maxval(abs(gradient))
 
+         ! Built before the convergence test rather than after it, because the
+         ! test needs the smallest eigenvalue: a zero gradient at a saddle is
+         ! still a zero gradient.
+         if (allocated(hessian)) deallocate (hessian)
+         if (allocated(kappa)) deallocate (kappa)
+         call orbital_hessian(mol, current, n_inactive, n_active, dm1, dm2, fock, &
+                              rows, cols, hessian, error)
+         if (error%has_error()) return
+         call newton_step(hessian, gradient, rows, cols, MAX_ROTATION, kappa, &
+                          lowest, predicted, error)
+         if (error%has_error()) return
+
          if (loud) then
-            write (line, "(a,i4,f20.12,2es16.4,es12.2)") "    ", iteration, ci%energy, &
-               ci%energy - previous, largest, trust
+            write (line, "(a,i4,f20.12,2es16.4,2es12.2)") "    ", iteration, &
+               ci%energy, ci%energy - previous, largest, trust, lowest
             call logger%info(trim(line))
          end if
          previous = ci%energy
 
+         saddle = lowest < SADDLE_CURVATURE
          if (largest < tol) then
-            result%converged = .true.
-            exit
+            if (.not. saddle) then
+               result%converged = .true.
+               exit
+            end if
+            ! Leaving a saddle is a fresh direction, so it gets a fresh trust
+            ! radius: the old one records how the *previous* direction behaved
+            ! and is usually small by the time a run has settled, which would
+            ! make the escape too short to show above the noise.
+            trust = MAX_ROTATION
+            if (loud) call logger%info("    the gradient has vanished at a saddle "// &
+                                       "point; following the negative curvature out")
          end if
-
-         if (allocated(hessian)) deallocate (hessian)
-         if (restricted) then
-            call approximate_hessian(fock, n_inactive, n_active, hessian, subspaces)
-         else
-            call approximate_hessian(fock, n_inactive, n_active, hessian)
-         end if
-         if (allocated(kappa)) deallocate (kappa)
-         allocate (kappa(n_mo, n_mo))
-         kappa = -gradient/hessian
 
          ! **The trust region is what makes this converge rather than
-         ! oscillate.** The approximate Hessian is crude enough that the step it
-         ! suggests is regularly too long near the solution, and a first-order
-         ! method with a fixed step length does not settle -- it bounces across
-         ! the minimum indefinitely, which is exactly what this did before the
-         ! backtracking was added. Rejecting any step that raises the energy and
-         ! halving the radius costs a CI solve when it happens and removes the
-         ! failure mode entirely.
+         ! oscillate.** Even an exact Hessian describes the surface only near
+         ! the point it was built at, and early steps are not near it: the
+         ! quadratic model happily proposes a rotation that raises the energy.
+         ! Rejecting any such step and halving the radius costs a CI solve when
+         ! it happens and removes the failure mode entirely. It is also what
+         ! picks the sign of a saddle escape, where the model is indifferent --
+         ! both directions descend to second order, and only the cubic term,
+         ! which is not modelled, distinguishes them.
          accepted = .false.
 
-         ! ---- extrapolate, once, at full step length -----------------------
-         !
-         ! **A failed extrapolation must not shrink the trust radius.** The
-         ! trust radius governs the *gradient* step, and DIIS failing says
-         ! nothing about whether that step was too long -- it says the subspace
-         ! has gone stale. Conflating the two was measured: the trust radius
-         ! collapsed to 3e-3 against a gradient of 2e-2, every step became
-         ! useless, and water stalled indefinitely at -76.042 having converged
-         ! cleanly without DIIS at all. So the extrapolation gets one attempt of
-         ! its own, and only the gradient step below can shrink the radius.
-         scaling = maxval(abs(kappa))
-         if (scaling > trust) then
-            step_matrix = kappa*(trust/scaling)
-         else
-            step_matrix = kappa
-         end if
-         if (allocated(rotation)) deallocate (rotation)
-         call rotation_matrix(step_matrix, rotation)
-         call pic_gemm(current, rotation, updated)
-
-         call diis%push(reshape(updated, [n_ao*n_mo]), reshape(gradient, [n_mo*n_mo]))
-         if (iteration > 1) then
-            flat = reshape(updated, [n_ao*n_mo])
-            call diis%extrapolate(flat, extrapolated)
-            if (extrapolated) then
-               candidate = reshape(flat, [n_ao, n_mo])
-               call symmetric_orthonormalize(overlap, candidate, error)
-               if (error%has_error()) return
-               if (restricted) then
-                  call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
-                                alpha, beta, guess, have_guess, trial_ci, error, &
-                                subspaces, min_electrons, max_electrons, flat_guess)
-               else
-                  call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
-                                alpha, beta, guess, have_guess, trial_ci, error)
-               end if
-               if (error%has_error()) return
-               if (trial_ci%energy < ci%energy) then
-                  current = candidate
-                  ci = trial_ci
-                  accepted = .true.
-                  diis_failures = 0
-               else
-                  ! A stale subspace keeps producing the same bad direction, so
-                  ! it is cleared rather than left to fail every iteration.
-                  diis_failures = diis_failures + 1
-                  if (diis_failures >= 2) then
-                     call diis%init(DIIS_VECTORS, n_ao*n_mo, n_mo*n_mo)
-                     diis_failures = 0
-                  end if
-               end if
-            end if
-         end if
-
-         ! ---- otherwise the gradient step, backtracking until it descends ---
+         ! ---- take it, backtracking until it descends ----------------------
          do trial = 1, MAX_BACKTRACKS
             if (accepted) exit
             scaling = maxval(abs(kappa))
@@ -701,7 +1040,7 @@ contains
             end if
             if (error%has_error()) return
 
-            if (trial_ci%energy < ci%energy) then
+            if (trial_ci%energy < ci%energy .or. predicted < ENERGY_RESOLUTION) then
                current = updated
                ci = trial_ci
                trust = min(MAX_ROTATION, trust*TRUST_GROWTH)
@@ -745,56 +1084,6 @@ contains
       call alpha%destroy()
       call beta%destroy()
    end subroutine run_libcint_casscf
-
-   subroutine symmetric_orthonormalize(overlap, orbitals, error)
-      !! Restore orthonormality to orbitals that a linear combination broke
-      !!
-      !! `C <- C (C^T S C)^{-1/2}`, which is the change that moves every orbital
-      !! as little as possible -- the right choice here because the input is
-      !! already nearly orthonormal and the aim is to repair it, not to impose
-      !! some other structure on it.
-      !!
-      !! Needed because DIIS extrapolates a *linear* combination of orbital sets
-      !! and orthonormality is not linear. This is the price of extrapolating
-      !! the orbitals directly instead of the rotation parameters that produced
-      !! them; the alternative needs a matrix logarithm to recover those
-      !! parameters from a product of exponentials, which is more machinery for
-      !! the same answer.
-      real(dp), intent(in) :: overlap(:, :)      !! AO overlap
-      real(dp), intent(inout) :: orbitals(:, :)  !! (n_ao, n_mo)
-      type(error_t), intent(inout) :: error
-
-      real(dp), allocatable :: metric(:, :), vectors(:, :), values(:)
-      real(dp), allocatable :: scaled(:, :), inverse_root(:, :), work(:, :)
-      integer :: n_ao, n_mo, i, info
-
-      if (error%has_error()) return
-      n_ao = size(orbitals, 1)
-      n_mo = size(orbitals, 2)
-
-      allocate (work(n_ao, n_mo), metric(n_mo, n_mo))
-      call pic_gemm(overlap, orbitals, work)
-      call pic_gemm(orbitals, work, metric, transa="T")
-
-      allocate (vectors(n_mo, n_mo), values(n_mo), scaled(n_mo, n_mo))
-      allocate (inverse_root(n_mo, n_mo))
-      vectors = metric
-      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
-      if (info /= 0 .or. values(1) <= 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "the extrapolated orbitals are linearly "// &
-                        "dependent and cannot be orthonormalized. The DIIS subspace "// &
-                        "has produced a combination that is not a set of orbitals.")
-         return
-      end if
-      do i = 1, n_mo
-         scaled(:, i) = vectors(:, i)/sqrt(values(i))
-      end do
-      call pic_gemm(scaled, vectors, inverse_root, transb="T")
-      call pic_gemm(orbitals, inverse_root, work)
-      orbitals = work
-
-      deallocate (work, metric, vectors, values, scaled, inverse_root)
-   end subroutine symmetric_orthonormalize
 
    subroutine natural_orbitals(orbitals, n_inactive, n_active, dm1, natural, &
                                occupations, error)

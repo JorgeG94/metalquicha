@@ -1649,9 +1649,8 @@ contains
             if (casscf%stalled) then
                ! Distinguished from running out of iterations, because the
                ! advice is the opposite. A stall means no step downhill could be
-               ! found at all: the approximate Hessian has run out of
-               ! resolution, and more iterations will do nothing. It happens on
-               ! flat surfaces, where the energy is converged long before the
+               ! found at all, and more iterations will do nothing. It happens
+               ! on flat surfaces, where the energy is converged long before the
                ! gradient is small.
                call error%set(ERROR_VALIDATION, "the orbital optimisation stopped "// &
                               "improving at a gradient of "// &
