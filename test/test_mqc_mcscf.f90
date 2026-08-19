@@ -27,7 +27,8 @@ module test_mqc_mcscf
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t
+   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t, &
+                                run_libcint_ormas_ci
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_rdm, only: active_space_rdms
    use mqc_libcint_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
@@ -71,6 +72,7 @@ contains
                   new_unittest("redundant_blocks_are_excluded", test_redundant), &
                   new_unittest("gradient_against_finite_differences", test_gradient), &
                   new_unittest("nitrogen_casscf_against_pyscf", test_nitrogen), &
+                  new_unittest("restricted_space_optimisation", test_ormas_scf), &
                   new_unittest("water_casscf_against_pyscf", test_water), &
                   new_unittest("casscf_improves_on_casci", test_variational), &
                   new_unittest("a_deck_asking_for_casscf_gets_one", test_deck_casscf), &
@@ -271,7 +273,8 @@ contains
 
    subroutine run_casscf(atomic_numbers, symbols, coordinates, basis, n_electrons, &
                          n_inactive, n_active, n_alpha, n_beta, cycles, &
-                         casci_energy, result, err, ok, gradient_tol)
+                         casci_energy, result, err, ok, gradient_tol, &
+                         subspaces, min_electrons, max_electrons)
       !! An SCF, a CASCI on its orbitals, then a CASSCF from the same start
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -279,6 +282,10 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: n_electrons, n_inactive, n_active, n_alpha, n_beta, cycles
       real(dp), intent(in), optional :: gradient_tol
+      integer, intent(in), optional :: subspaces(:), min_electrons(:), max_electrons(:)
+         !! A restricted space. `casci_energy` then comes back as the restricted
+         !! CI on the reference orbitals, which is what the optimisation has to
+         !! beat.
       real(dp), intent(out) :: casci_energy
       type(casscf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: err
@@ -295,19 +302,82 @@ contains
       call run_libcint_rhf(mol, n_electrons, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
                            scf, err)
       if (err%has_error() .or. .not. scf%converged) return
-      call run_libcint_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                             ci, err, tolerance=1.0e-12_dp)
+      if (present(subspaces)) then
+         call run_libcint_ormas_ci(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
+                                   n_beta, subspaces, min_electrons, max_electrons, &
+                                   ci, err, tolerance=1.0e-12_dp)
+      else
+         call run_libcint_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                                ci, err, tolerance=1.0e-12_dp)
+      end if
       if (err%has_error()) return
       casci_energy = ci%energy
 
       threshold = 1.0e-6_dp
       if (present(gradient_tol)) threshold = gradient_tol
-      call run_libcint_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                              result, err, max_iterations=cycles, &
-                              gradient_tol=threshold)
+      if (present(subspaces)) then
+         call run_libcint_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
+                                 n_beta, result, err, max_iterations=cycles, &
+                                 gradient_tol=threshold, subspaces=subspaces, &
+                                 min_electrons=min_electrons, &
+                                 max_electrons=max_electrons)
+      else
+         call run_libcint_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
+                                 n_beta, result, err, max_iterations=cycles, &
+                                 gradient_tol=threshold)
+      end if
       ok = .not. err%has_error()
       call mol%destroy()
    end subroutine run_casscf
+
+   subroutine test_ormas_scf(error)
+      !! Optimising orbitals for a restricted space, bracketed from both sides
+      !!
+      !! There is no external number for this one, and it does not need one:
+      !! two inequalities pin it, and each catches a different way of getting
+      !! the active-active rotations wrong.
+      !!
+      !! It has to come out **below** the same restricted space solved on the
+      !! reference orbitals, because that is what optimising them buys. Treat
+      !! the new rotations as redundant and the optimiser has nothing to move
+      !! that the CI has not already used, so it stops at that number instead.
+      !!
+      !! And **above** the complete active space over the same orbitals,
+      !! because the restricted space is a subset of it and cannot reach a lower
+      !! energy however well its orbitals are chosen. Let a rotation through
+      !! that should have stayed redundant, or double-count a term, and this is
+      !! the side that breaks.
+      type(error_type), allocatable, intent(out) :: error
+      type(casscf_result_t) :: restricted, complete
+      real(dp) :: fixed_orbitals
+      type(error_t) :: err
+      logical :: ok
+
+      ! Six electrons in six orbitals, cut so that at most two are promoted out
+      ! of the lower three -- singles and doubles.
+      call run_casscf(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", 14, 4, 6, 3, 3, &
+                      300, fixed_orbitals, restricted, err, ok, &
+                      subspaces=[1, 4], min_electrons=[4, 0], max_electrons=[6, 2])
+      call check(error, ok, "the restricted optimisation should run")
+      if (allocated(error)) return
+
+      call check(error, restricted%gradient_norm < 1.0e-5_dp, &
+                 "and reach a stationary point")
+      if (allocated(error)) return
+
+      call check(error, restricted%energy < fixed_orbitals - 1.0e-6_dp, &
+                 "optimising the orbitals must beat the same space on the "// &
+                 "reference orbitals")
+      if (allocated(error)) return
+
+      call run_casscf(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", 14, 4, 6, 3, 3, &
+                      300, fixed_orbitals, complete, err, ok)
+      call check(error, ok, "the complete-space optimisation should run")
+      if (allocated(error)) return
+
+      call check(error, restricted%energy > complete%energy + 1.0e-6_dp, &
+                 "and must not beat the complete space that contains it")
+   end subroutine test_ormas_scf
 
    subroutine test_nitrogen(error)
       !! N2, cc-pVDZ, CAS(6,6)

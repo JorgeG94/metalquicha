@@ -1597,24 +1597,16 @@ contains
          end if
       end if
 
-      ! Optimising orbitals for a restricted space is not the problem a CASSCF
-      ! solves. Rotating one active orbital into another stops being redundant
-      ! the moment the space is not complete, so the orbital gradient grows a
-      ! block the macro loop below has no term for. Running it anyway would
-      ! converge, quietly, to something that is not the answer.
-      if (allocated(settings%mcscf%ormas_subspaces) .and. &
-          settings%mcscf%optimize_orbitals) then
-         call result%error%set(ERROR_VALIDATION, "keywords.mcscf.ormas asks for an "// &
-                               "occupation-restricted space and the orbitals are "// &
-                               "being optimised. Only the CI is implemented for a "// &
-                               "restricted space; set keywords.mcscf.optimize_orbitals "// &
-                               "to false to run it on the reference orbitals.")
-         result%has_error = .true.
-         call mol%destroy()
-         return
-      end if
-
-      if (settings%mcscf%optimize_orbitals) then
+      if (settings%mcscf%optimize_orbitals .and. allocated(settings%mcscf%ormas_subspaces)) then
+         call run_libcint_casscf(mol, reference, space(1), space(2), space(3), space(4), &
+                                 casscf, error, &
+                                 max_iterations=settings%mcscf%max_macro_iter, &
+                                 gradient_tol=settings%mcscf%orbital_convergence, &
+                                 verbose=settings%verbose, &
+                                 subspaces=settings%mcscf%ormas_subspaces, &
+                                 min_electrons=settings%mcscf%ormas_min_electrons, &
+                                 max_electrons=settings%mcscf%ormas_max_electrons)
+      else if (settings%mcscf%optimize_orbitals) then
          call run_libcint_casscf(mol, reference, space(1), space(2), space(3), space(4), &
                                  casscf, error, &
                                  max_iterations=settings%mcscf%max_macro_iter, &
