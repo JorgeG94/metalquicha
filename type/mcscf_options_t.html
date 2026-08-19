@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.8% of total for derived types.</p>Including implementation: 30 statements,  0.9% of total for derived types.">30 statements</a>
+                 title="<p> 3.0% of total for derived types.</p>Including implementation: 34 statements,  1.0% of total for derived types.">34 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -144,18 +144,22 @@
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-density_tol">density_tol</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-diis_size">diis_size</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-energy_tol">energy_tol</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-full_valence">full_valence</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-imaginary_shift">imaginary_shift</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-ipea_shift">ipea_shift</a>
-            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-max_iter~2">max_iter</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-max_iter">max_iter</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-max_macro_iter">max_macro_iter</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-max_micro_iter">max_micro_iter</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-n_active_electrons">n_active_electrons</a>
-            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-n_active_orbitals">n_active_orbitals</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-n_active_orbitals~3">n_active_orbitals</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-n_inactive_orbitals">n_inactive_orbitals</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-n_states">n_states</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-optimize_orbitals">optimize_orbitals</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-orbital_optimizer">orbital_optimizer</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-orbital_tol">orbital_tol</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-ormas_max_electrons">ormas_max_electrons</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-ormas_min_electrons">ormas_min_electrons</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-ormas_subspaces">ormas_subspaces</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-pcm">pcm</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-properties">properties</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-pt2_type">pt2_type</a>
@@ -163,7 +167,7 @@
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-state_weights">state_weights</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-use_diis">use_diis</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-use_pt2">use_pt2</a>
-            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-verbose~2">verbose</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-verbose">verbose</a>
         </div>
       </div>
     </div>
@@ -553,6 +557,23 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-full_valence"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>full_valence</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-imaginary_shift"></span>
               real(kind=dp),
             </td>
@@ -587,7 +608,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -656,7 +677,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals"></span>
+              <span class="anchor" id="variable-n_active_orbitals~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -756,6 +777,58 @@ DIIS, and there is nothing to select between.</p>
                 <td>1.0e-6_dp</td>
             <td>
                 <p>Orbital gradient convergence threshold</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ormas_max_electrons"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ormas_max_electrons</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ormas_min_electrons"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ormas_min_electrons</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ormas_subspaces"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ormas_subspaces</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Active orbital each subspace starts at. Unallocated is a complete
+active space.</p>
             </td>
         </tr>
         <tr>
@@ -884,7 +957,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~2"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -926,6 +999,7 @@ exists, so no keyword reaches it.</p>
 <span class="w">      </span><span class="c">! Active space definition</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_ORBITAL_LABEL_LEN</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">avas_orbitals</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">avas_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.2_dp</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">full_valence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_active_electrons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="c">!! Number of active electrons (CAS)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_active_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
@@ -935,6 +1009,11 @@ exists, so no keyword reaches it.</p>
 <span class="w">         </span><span class="c">!! -1 means auto-determine from nelec and active electrons</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">optimize_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! CASSCF when true, CASCI when false. See `mcscf_config_t`.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ormas_subspaces</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Active orbital each subspace starts at. Unallocated is a complete</span>
+<span class="w">         </span><span class="c">!! active space.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ormas_min_electrons</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ormas_max_electrons</span><span class="p">(:)</span>
 
 <span class="w">      </span><span class="c">! State-averaging</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
@@ -1008,7 +1087,7 @@ exists, so no keyword reaches it.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 02:13 +0000             </p>
+ on 2026-08-19 03:06 +0000             </p>
           </div>
         </div>
         <br>

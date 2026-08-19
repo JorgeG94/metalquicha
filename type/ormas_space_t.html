@@ -1,0 +1,909 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>ormas_space_t &ndash; metalquicha </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>ormas_space_t
+      <small>Derived Type</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title="<p> 1.8% of total for derived types.</p>Including implementation: 45 statements,  1.3% of total for derived types.">21 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ormas_space.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ormas_space.f90.html'>mqc_ormas_space.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></li>
+            <li class="breadcrumb-item active" aria-current="page">ormas_space_t</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-alpha_base">alpha_base</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-alpha_class">alpha_class</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-alpha_class_size">alpha_class_size</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-alpha_offset">alpha_offset</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-alpha_string_class">alpha_string_class</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-beta_class">beta_class</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-beta_class_size">beta_class_size</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-beta_offset">beta_offset</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-beta_string_class">beta_string_class</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-block_offset">block_offset</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-class_base">class_base</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-compatible">compatible</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-first_orbital">first_orbital</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-max_electrons">max_electrons</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-min_electrons">min_electrons</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_active_orbitals">n_active_orbitals</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_alpha">n_alpha</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_alpha_classes">n_alpha_classes</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_beta">n_beta</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_beta_classes">n_beta_classes</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_determinants">n_determinants</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_orbitals">n_orbitals</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_subspaces">n_subspaces</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-row_length">row_length</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#boundprocs-0"
+         aria-expanded="false" aria-controls="boundprocs-0">
+         <h4 class="card-header bg-primary text-white">Type-Bound Procedures</h4>
+      </a>
+      <div id="boundprocs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/ormas_space_t.html#boundprocedure-destroy~2">destroy</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../type/ormas_space_t.html#src">ormas_space_t</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2 id="type-def-statement">
+        type, public :: ormas_space_t</h2>
+    <p>A partition of the active orbitals, and the addressing it implies</p>
+<p>Built once by <code>build_ormas_space</code> and read-only afterwards. Every
+index is 1-based; <code>alpha_base</code> and <code>block_offset</code> are offsets and so
+count from zero, which is the one place the two conventions meet and
+the one place to look first when an address comes out wrong.</p>
+<br>      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherited by</h3>
+        </div>
+        <div class="card-body">
+          <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~ormas_space_t~~InheritedByGraph Pages: 1 -->
+<svg id="typeormas_space_tInheritedByGraph" width="272pt" height="32pt"
+ viewBox="0.00 0.00 272.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~ormas_space_t~~InheritedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>type~~ormas_space_t~~InheritedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 268,-28 268,4 -4,4"/>
+<!-- type~ormas_space_t -->
+<g id="type~~ormas_space_t~~InheritedByGraph_node1" class="node">
+<title>type~ormas_space_t</title>
+<polygon fill="none" stroke="black" points="92,-24 0,-24 0,0 92,0 92,-24"/>
+<text text-anchor="middle" x="46" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">ormas_space_t</text>
+</g>
+<!-- type~ormas_operator_t -->
+<g id="type~~ormas_space_t~~InheritedByGraph_node2" class="node">
+<title>type~ormas_operator_t</title>
+<g id="a_type~~ormas_space_t~~InheritedByGraph_node2"><a xlink:href="../type/ormas_operator_t.html" xlink:title="ormas_operator_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="264,-24 157,-24 157,0 264,0 264,-24"/>
+<text text-anchor="middle" x="210.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_operator_t</text>
+</a>
+</g>
+</g>
+<!-- type~ormas_operator_t&#45;&gt;type~ormas_space_t -->
+<g id="type~~ormas_space_t~~InheritedByGraph_edge1" class="edge">
+<title>type~ormas_operator_t&#45;&gt;type~ormas_space_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M156.74,-12C139.31,-12 119.88,-12 102.26,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="102.13,-8.5 92.13,-12 102.13,-15.5 102.13,-8.5"/>
+<text text-anchor="middle" x="124.5" y="-14.4" font-family="Helvetica,sans-Serif" font-size="9.50">space</text>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#InheritedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="InheritedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    <br>
+
+    <section>
+    <h2>Components</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha_base"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>alpha_base</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Determinants preceding every determinant of each alpha <em>string</em></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha_class"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>alpha_class</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p><code>(subspace, class)</code> &ndash; every way that spin&rsquo;s electrons can be spread
+over the subspaces, in enumeration order, whether or not the windows
+leave any use for it. Classes that pair with nothing cost a row of
+<code>compatible</code> and are worth that: the alternative is a per-spin bound
+that is necessary but not sufficient, which means a second, wider
+list of strings the moment anything needs to step outside the space
+&ndash; and stepping outside is what an excitation does.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha_class_size"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>alpha_class_size</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Strings in each class: the product over subspaces of <code>C(orbitals,
+electrons)</code>, since within a class the subspaces are independent</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha_offset"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>alpha_offset</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Running string totals, size <code>n_classes + 1</code>. Class <code>g</code> owns global
+string indices <code>offset(g) + 1 .. offset(g + 1)</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha_string_class"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>alpha_string_class</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Which class each string belongs to. Stored rather than searched:
+it is read in the innermost loop of everything downstream.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta_class"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>beta_class</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p><code>(subspace, class)</code> &ndash; every way that spin&rsquo;s electrons can be spread
+over the subspaces, in enumeration order, whether or not the windows
+leave any use for it. Classes that pair with nothing cost a row of
+<code>compatible</code> and are worth that: the alternative is a per-spin bound
+that is necessary but not sufficient, which means a second, wider
+list of strings the moment anything needs to step outside the space
+&ndash; and stepping outside is what an excitation does.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta_class_size"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>beta_class_size</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Strings in each class: the product over subspaces of <code>C(orbitals,
+electrons)</code>, since within a class the subspaces are independent</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta_offset"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>beta_offset</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Running string totals, size <code>n_classes + 1</code>. Class <code>g</code> owns global
+string indices <code>offset(g) + 1 .. offset(g + 1)</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta_string_class"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>beta_string_class</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Which class each string belongs to. Stored rather than searched:
+it is read in the innermost loop of everything downstream.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-block_offset"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>block_offset</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p><code>(beta class, alpha class)</code> &ndash; where that beta class starts inside
+an alpha string&rsquo;s row. Meaningless where <code>compatible</code> is false, and
+left at zero there.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-class_base"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>class_base</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Determinants preceding all of an alpha class</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compatible"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>compatible</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p><code>(beta class, alpha class)</code> &ndash; the entire ORMAS restriction. Beta
+first because that is the order it is consumed in.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-first_orbital"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>first_orbital</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Active orbital each subspace starts at, ascending</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_electrons"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>max_electrons</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>The windows, <strong>after tightening</strong> &ndash; see <code>tighten_windows</code>. These
+are the numbers the compatibility test uses, and they can differ
+from what the user wrote.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min_electrons"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>min_electrons</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>The windows, <strong>after tightening</strong> &ndash; see <code>tighten_windows</code>. These
+are the numbers the compatibility test uses, and they can differ
+from what the user wrote.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_active_orbitals"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_active_orbitals</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_alpha"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_alpha</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_alpha_classes"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_alpha_classes</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_beta"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_beta</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_beta_classes"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_beta_classes</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_determinants"></span>
+              integer(kind=int64),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_determinants</strong></td>
+<td> =</td>
+                <td>0_int64</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_orbitals"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>n_orbitals</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Orbitals per subspace, derived from <code>first_orbital</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_subspaces"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_subspaces</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-row_length"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>row_length</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Determinants carried by one alpha string of each class</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+
+
+      <section>
+        <h2>Type-Bound Procedures</h2>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-destroy~2"></span>
+      <h3>
+          procedure, public ::
+  <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_space_destroy.html'>ormas_space_destroy</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private pure subroutine <a href='../proc/ormas_space_destroy.html'>ormas_space_destroy</a>(this)  
+</h3>
+    
+
+  <p>Give back everything the partition holds</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='ormas_space_t.html'>ormas_space_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+      </section>
+
+    <section>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ormas_space_t</span>
+<span class="w">      </span><span class="c">!! A partition of the active orbitals, and the addressing it implies</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Built once by `build_ormas_space` and read-only afterwards. Every</span>
+<span class="w">      </span><span class="c">!! index is 1-based; `alpha_base` and `block_offset` are offsets and so</span>
+<span class="w">      </span><span class="c">!! count from zero, which is the one place the two conventions meet and</span>
+<span class="w">      </span><span class="c">!! the one place to look first when an address comes out wrong.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_subspaces</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n_beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_active_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">first_orbital</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Active orbital each subspace starts at, ascending</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_orbitals</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Orbitals per subspace, derived from `first_orbital`</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">min_electrons</span><span class="p">(:),</span><span class="w"> </span><span class="n">max_electrons</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! The windows, **after tightening** -- see `tighten_windows`. These</span>
+<span class="w">         </span><span class="c">!! are the numbers the compatibility test uses, and they can differ</span>
+<span class="w">         </span><span class="c">!! from what the user wrote.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_alpha_classes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n_beta_classes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_class</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">beta_class</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! `(subspace, class)` -- every way that spin's electrons can be spread</span>
+<span class="w">         </span><span class="c">!! over the subspaces, in enumeration order, whether or not the windows</span>
+<span class="w">         </span><span class="c">!! leave any use for it. Classes that pair with nothing cost a row of</span>
+<span class="w">         </span><span class="c">!! `compatible` and are worth that: the alternative is a per-spin bound</span>
+<span class="w">         </span><span class="c">!! that is necessary but not sufficient, which means a second, wider</span>
+<span class="w">         </span><span class="c">!! list of strings the moment anything needs to step outside the space</span>
+<span class="w">         </span><span class="c">!! -- and stepping outside is what an excitation does.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_class_size</span><span class="p">(:),</span><span class="w"> </span><span class="n">beta_class_size</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Strings in each class: the product over subspaces of `C(orbitals,</span>
+<span class="w">         </span><span class="c">!! electrons)`, since within a class the subspaces are independent</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_offset</span><span class="p">(:),</span><span class="w"> </span><span class="n">beta_offset</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Running string totals, size `n_classes + 1`. Class `g` owns global</span>
+<span class="w">         </span><span class="c">!! string indices `offset(g) + 1 .. offset(g + 1)`.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_string_class</span><span class="p">(:),</span><span class="w"> </span><span class="n">beta_string_class</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Which class each string belongs to. Stored rather than searched:</span>
+<span class="w">         </span><span class="c">!! it is read in the innermost loop of everything downstream.</span>
+
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">compatible</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! `(beta class, alpha class)` -- the entire ORMAS restriction. Beta</span>
+<span class="w">         </span><span class="c">!! first because that is the order it is consumed in.</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">row_length</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Determinants carried by one alpha string of each class</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">class_base</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Determinants preceding all of an alpha class</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">block_offset</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! `(beta class, alpha class)` -- where that beta class starts inside</span>
+<span class="w">         </span><span class="c">!! an alpha string's row. Meaningless where `compatible` is false, and</span>
+<span class="w">         </span><span class="c">!! left at zero there.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_base</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Determinants preceding every determinant of each alpha *string*</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_determinants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
+<span class="w">   </span><span class="k">contains</span>
+<span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ormas_space_destroy</span>
+<span class="w">   </span><span class="k">end type </span><span class="n">ormas_space_t</span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-19 03:06 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -117,6 +117,8 @@ contains
       call check_grandchild_object(core, root, "keywords", "mcscf", mcscf_keys(), error)
       if (error%has_error()) return
       call check_avas_group(core, root, error)
+      call check_ormas_group(core, root, error)
+      call check_valence_choice(core, root, error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
       if (error%has_error()) return
@@ -350,6 +352,21 @@ contains
       call allow(keys, "spin_adapted")
    end function cc_keys
 
+   function ormas_keys() result(keys)
+      !! Cutting the active space into subspaces with occupation windows
+      !!
+      !! All three are required and all three are lists of the same length:
+      !! where each subspace starts, and the fewest and most electrons it may
+      !! hold. A partition given by halves is not a partition.
+      type(key_set_t) :: keys
+      call allow(keys, "subspaces")
+      call allow(keys, "min_electrons")
+      call allow(keys, "max_electrons")
+      call require(keys, "subspaces")
+      call require(keys, "min_electrons")
+      call require(keys, "max_electrons")
+   end function ormas_keys
+
    function mcscf_keys() result(keys)
       !! The active space, and how hard to work at it
       !!
@@ -368,6 +385,8 @@ contains
       !! a loose CI, and that is not a knob worth exposing.
       type(key_set_t) :: keys
       call allow(keys, "avas")
+      call allow(keys, "ormas")
+      call allow(keys, "full_valence")
       call allow(keys, "n_active_electrons")
       call allow(keys, "n_active_orbitals")
       call allow(keys, "n_inactive_orbitals")
@@ -588,12 +607,100 @@ contains
          return
       end if
 
+      call core%get(mcscf, "full_valence", entry, found)
+      if (found .and. associated(entry)) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf gives both an AVAS block "// &
+                        "and full_valence. Each picks the whole active space, so one "// &
+                        "of them would be thrown away. Give one or the other.")
+         return
+      end if
+
       if (child_count(core, avas, "orbitals") <= 0) then
          call error%set(ERROR_VALIDATION, "keywords.mcscf.avas.orbitals is empty. It "// &
                         "lists the atomic orbitals the active space should be built "// &
                         'from, like ["N 2s", "N 2p"].')
       end if
    end subroutine check_avas_group
+
+   subroutine check_valence_choice(core, root, error)
+      !! `keywords.mcscf.full_valence`, and that it is the only space named
+      !!
+      !! The valence shell is a complete description of an active space, so
+      !! counts written beside it would be silently discarded. Refused rather
+      !! than resolved, for the reason the AVAS check gives.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: keywords, mcscf, entry
+      logical :: found, has_counts
+
+      if (error%has_error()) return
+      call core%get(root, "keywords", keywords, found)
+      if (.not. found .or. .not. associated(keywords)) return
+      call core%get(keywords, "mcscf", mcscf, found)
+      if (.not. found .or. .not. associated(mcscf)) return
+      call core%get(mcscf, "full_valence", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+
+      has_counts = .false.
+      call core%get(mcscf, "n_active_electrons", entry, found)
+      if (found .and. associated(entry)) has_counts = .true.
+      call core%get(mcscf, "n_active_orbitals", entry, found)
+      if (found .and. associated(entry)) has_counts = .true.
+      if (has_counts) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf gives both full_valence "// &
+                        "and an explicit active space. The valence shell already "// &
+                        "says how many orbitals and electrons there are, so the "// &
+                        "counts would be discarded. Give one or the other.")
+      end if
+   end subroutine check_valence_choice
+
+   subroutine check_ormas_group(core, root, error)
+      !! `keywords.mcscf.ormas`, and that it describes a partition
+      !!
+      !! The lengths are checked here rather than left to the builder because
+      !! the deck is where the mistake is: three lists of different lengths is
+      !! a typo, and saying so with the key names beats an error about class
+      !! enumeration from four layers down.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: keywords, mcscf, ormas
+      logical :: found
+      integer :: n_spaces, n_min, n_max
+
+      if (error%has_error()) return
+      call core%get(root, "keywords", keywords, found)
+      if (.not. found .or. .not. associated(keywords)) return
+      call core%get(keywords, "mcscf", mcscf, found)
+      if (.not. found .or. .not. associated(mcscf)) return
+      call core%get(mcscf, "ormas", ormas, found)
+      if (.not. found .or. .not. associated(ormas)) return
+
+      call check_object(core, ormas, "keywords.mcscf.ormas", ormas_keys(), error)
+      if (error%has_error()) return
+
+      n_spaces = child_count(core, ormas, "subspaces")
+      n_min = child_count(core, ormas, "min_electrons")
+      n_max = child_count(core, ormas, "max_electrons")
+
+      if (n_spaces <= 0) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.ormas.subspaces is empty. "// &
+                        "It lists the active orbital each subspace starts at, so the "// &
+                        "first entry is 1.")
+         return
+      end if
+      if (n_min /= n_spaces .or. n_max /= n_spaces) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.ormas names "// &
+                        int_text(n_spaces)//" subspaces but gives "// &
+                        int_text(n_min)//" minima and "//int_text(n_max)// &
+                        " maxima. All three lists describe the same subspaces and "// &
+                        "have to be the same length.")
+         return
+      end if
+   end subroutine check_ormas_group
 
    subroutine check_bonding_analysis(core, root, error)
       !! The value of `properties.bonding_analysis` names an analysis we have

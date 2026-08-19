@@ -1,0 +1,546 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>ormas_apply &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>ormas_apply
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for procedures.">7 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ormas_ci.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ormas_ci.f90.html'>mqc_ormas_ci.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></li>
+            <li class="breadcrumb-item active" aria-current="page">ormas_apply</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/ormas_apply.html#src">ormas_apply</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine ormas_apply(this, vector, image, error)  
+</h2>
+    
+
+    <p>One matrix-vector product over the restricted space</p>
+
+    <h3>Type Bound</h3>
+    <p><a href='../type/ormas_operator_t.html'>ormas_operator_t</a></p>
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~12"></span>
+              class(<a href='../type/ormas_operator_t.html'>ormas_operator_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-vector"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>vector</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-image"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>image</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~27"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~ormas_apply~~CallsGraph Pages: 1 -->
+<svg id="procormas_applyCallsGraph" width="641pt" height="235pt"
+ viewBox="0.00 0.00 641.00 235.48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~ormas_apply~~CallsGraph" class="graph" transform="scale(0.9 0.9) rotate(0) translate(4 258.66)">
+<title>proc~~ormas_apply~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-258.66 711,-258.66 711,4 -4,4"/>
+<!-- proc~ormas_apply -->
+<g id="proc~~ormas_apply~~CallsGraph_node1" class="node">
+<title>proc~ormas_apply</title>
+<polygon fill="none" stroke="black" points="185,-132.66 0,-132.66 0,-108.66 185,-108.66 185,-132.66"/>
+<text text-anchor="middle" x="92.5" y="-118.26" font-family="Helvetica,sans-Serif" font-size="10.50">ormas_operator_t%ormas_apply</text>
+</g>
+<!-- proc~ormas_sigma_direct -->
+<g id="proc~~ormas_apply~~CallsGraph_node2" class="node">
+<title>proc~ormas_sigma_direct</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node2"><a xlink:href="../proc/ormas_sigma_direct.html" xlink:title="ormas_sigma_direct">
+<polygon fill="#d9534f" stroke="#d9534f" points="340,-132.66 221,-132.66 221,-108.66 340,-108.66 340,-132.66"/>
+<text text-anchor="middle" x="280.5" y="-118.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_sigma_direct</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_apply&#45;&gt;proc~ormas_sigma_direct -->
+<g id="proc~~ormas_apply~~CallsGraph_edge1" class="edge">
+<title>proc~ormas_apply&#45;&gt;proc~ormas_sigma_direct</title>
+<path fill="none" stroke="#ff0000" d="M185.14,-120.66C193.81,-120.66 202.49,-120.66 210.9,-120.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="210.98,-124.16 220.98,-120.66 210.98,-117.16 210.98,-124.16"/>
+</g>
+<!-- pic_gemm -->
+<g id="proc~~ormas_apply~~CallsGraph_node3" class="node">
+<title>pic_gemm</title>
+<polygon fill="#777777" stroke="#777777" points="479.5,-254.66 411.5,-254.66 411.5,-230.66 479.5,-230.66 479.5,-254.66"/>
+<text text-anchor="middle" x="445.5" y="-240.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;pic_gemm -->
+<g id="proc~~ormas_apply~~CallsGraph_edge2" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;pic_gemm</title>
+<path fill="none" stroke="#ff0000" d="M290.66,-132.94C306.19,-152.99 339.57,-192.9 376,-216.66 383.9,-221.82 392.98,-226.17 401.88,-229.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="400.82,-233.09 411.41,-233.33 403.28,-226.54 400.82,-233.09"/>
+</g>
+<!-- proc~closure_address -->
+<g id="proc~~ormas_apply~~CallsGraph_node4" class="node">
+<title>proc~closure_address</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node4"><a xlink:href="../proc/closure_address.html" xlink:title="closure_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="677.5,-194.66 580.5,-194.66 580.5,-170.66 677.5,-170.66 677.5,-194.66"/>
+<text text-anchor="middle" x="629" y="-180.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">closure_address</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;proc~closure_address -->
+<g id="proc~~ormas_apply~~CallsGraph_edge3" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;proc~closure_address</title>
+<path fill="none" stroke="#ff0000" d="M294.27,-132.85C311.31,-148.19 343.16,-173.72 376,-183.66 440.38,-203.16 518.33,-198.87 570.32,-192.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="570.91,-195.8 580.36,-191.01 569.99,-188.86 570.91,-195.8"/>
+</g>
+<!-- proc~determinant_address_local -->
+<g id="proc~~ormas_apply~~CallsGraph_node5" class="node">
+<title>proc~determinant_address_local</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node5"><a xlink:href="../proc/determinant_address_local.html" xlink:title="determinant_address_local">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="707,-132.66 551,-132.66 551,-108.66 707,-108.66 707,-132.66"/>
+<text text-anchor="middle" x="629" y="-118.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">determinant_address_local</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;proc~determinant_address_local -->
+<g id="proc~~ormas_apply~~CallsGraph_edge4" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;proc~determinant_address_local</title>
+<path fill="none" stroke="#ff0000" d="M326.35,-108.59C341.94,-104.96 359.63,-101.46 376,-99.66 437.41,-92.92 453.48,-94 515,-99.66 531.21,-101.16 548.56,-103.83 564.68,-106.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="564.06,-110.23 574.54,-108.65 565.36,-103.35 564.06,-110.23"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~ormas_apply~~CallsGraph_node6" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="515,-132.66 376,-132.66 376,-108.66 515,-108.66 515,-132.66"/>
+<text text-anchor="middle" x="445.5" y="-118.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;proc~error_has_error -->
+<g id="proc~~ormas_apply~~CallsGraph_edge5" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M340.35,-120.66C348.61,-120.66 357.2,-120.66 365.76,-120.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="365.76,-124.16 375.76,-120.66 365.76,-117.16 365.76,-124.16"/>
+</g>
+<!-- proc~ormas_gather -->
+<g id="proc~~ormas_apply~~CallsGraph_node7" class="node">
+<title>proc~ormas_gather</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node7"><a xlink:href="../proc/ormas_gather.html" xlink:title="ormas_gather">
+<polygon fill="#d9534f" stroke="#d9534f" points="489,-174.66 402,-174.66 402,-150.66 489,-150.66 489,-174.66"/>
+<text text-anchor="middle" x="445.5" y="-160.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_gather</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;proc~ormas_gather -->
+<g id="proc~~ormas_apply~~CallsGraph_edge6" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;proc~ormas_gather</title>
+<path fill="none" stroke="#ff0000" d="M328.21,-132.7C348.18,-137.84 371.58,-143.87 392.13,-149.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="391.41,-152.6 401.96,-151.7 393.15,-145.82 391.41,-152.6"/>
+</g>
+<!-- proc~tile_columns -->
+<g id="proc~~ormas_apply~~CallsGraph_node8" class="node">
+<title>proc~tile_columns</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node8"><a xlink:href="../proc/tile_columns.html" xlink:title="tile_columns">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="668.5,-32.66 589.5,-32.66 589.5,-8.66 668.5,-8.66 668.5,-32.66"/>
+<text text-anchor="middle" x="629" y="-18.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tile_columns</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;proc~tile_columns -->
+<g id="proc~~ormas_apply~~CallsGraph_edge7" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;proc~tile_columns</title>
+<path fill="none" stroke="#ff0000" d="M288.34,-108.32C301.7,-85.65 333.7,-38.01 376,-19.66 441.85,8.9 526.8,0.44 579.32,-9.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="578.89,-12.8 589.37,-11.28 580.23,-5.93 578.89,-12.8"/>
+</g>
+<!-- proc~tile_end -->
+<g id="proc~~ormas_apply~~CallsGraph_node9" class="node">
+<title>proc~tile_end</title>
+<g id="a_proc~~ormas_apply~~CallsGraph_node9"><a xlink:href="../proc/tile_end.html" xlink:title="tile_end">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="473,-52.66 418,-52.66 418,-28.66 473,-28.66 473,-52.66"/>
+<text text-anchor="middle" x="445.5" y="-38.26" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tile_end</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma_direct&#45;&gt;proc~tile_end -->
+<g id="proc~~ormas_apply~~CallsGraph_edge8" class="edge">
+<title>proc~ormas_sigma_direct&#45;&gt;proc~tile_end</title>
+<path fill="none" stroke="#ff0000" d="M300.57,-108.58C319.33,-96.99 349,-79.41 376,-66.66 386.3,-61.8 397.78,-57.16 408.36,-53.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="409.57,-56.46 417.75,-49.72 407.16,-49.89 409.57,-56.46"/>
+</g>
+<!-- proc~ormas_gather&#45;&gt;proc~closure_address -->
+<g id="proc~~ormas_apply~~CallsGraph_edge9" class="edge">
+<title>proc~ormas_gather&#45;&gt;proc~closure_address</title>
+<path fill="none" stroke="#0091ff" d="M489.05,-167.35C513.2,-170.01 543.75,-173.38 570.05,-176.28"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="569.96,-179.79 580.28,-177.41 570.72,-172.83 569.96,-179.79"/>
+</g>
+<!-- proc~ormas_gather&#45;&gt;proc~determinant_address_local -->
+<g id="proc~~ormas_apply~~CallsGraph_edge10" class="edge">
+<title>proc~ormas_gather&#45;&gt;proc~determinant_address_local</title>
+<path fill="none" stroke="#0091ff" d="M489.05,-152.82C511.99,-147.51 540.72,-140.86 566.09,-134.99"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="567.04,-138.36 576,-132.7 565.47,-131.54 567.04,-138.36"/>
+</g>
+<!-- proc~tile_end&#45;&gt;proc~tile_columns -->
+<g id="proc~~ormas_apply~~CallsGraph_edge11" class="edge">
+<title>proc~tile_end&#45;&gt;proc~tile_columns</title>
+<path fill="none" stroke="#ff00da" d="M473.28,-37.71C501.07,-34.65 545.15,-29.79 579.16,-26.05"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="579.81,-29.5 589.37,-24.92 579.04,-22.54 579.81,-29.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocormas_applyCallsGraph = svgPanZoom('#procormas_applyCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">ormas_apply</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">vector</span><span class="p">,</span><span class="w"> </span><span class="n">image</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! One matrix-vector product over the restricted space</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">ormas_operator_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">vector</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">image</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">ormas_sigma_direct</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">space</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">closure</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">alpha_table</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">this</span><span class="p">%</span><span class="n">beta_table</span><span class="p">,</span><span class="w"> </span><span class="n">vector</span><span class="p">,</span><span class="w"> </span><span class="n">image</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">ormas_apply</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-19 03:06 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

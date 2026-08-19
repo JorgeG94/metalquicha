@@ -441,15 +441,21 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                </tr>
 			   <tr>
                  <td><a href='../proc/binomial.html'>binomial</a></td>
-                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Function</td>
-                 <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/binomial~2.html'>binomial</a></td>
+                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td>Function</td>
+                 <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/binomial~3.html'>binomial</a></td>
                  <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
                  <td>Function</td>
-                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~3.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/bond_is_broken.html'>bond_is_broken</a></td>
@@ -474,6 +480,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_dft_radial.html'>mqc_dft_radial</a></td>
                  <td>Function</td>
                  <td><p>Bragg-Slater atomic radius in Bohr</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_addressing.html'>build_addressing</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The space&rsquo;s own addressing, from its compatibility grid</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_dft_grid.html'>build_dft_grid</a></td>
@@ -506,6 +518,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Expand the PIE term list into the flat list of independent evaluations</p><a href="../proc/build_gmbe_task_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/build_grid.html'>build_grid</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Which pairs of occupation classes the windows allow</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/build_hessian_task_table.html'>build_hessian_task_table</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
@@ -534,6 +552,24 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Build a per-atom ECP set for a list of atoms</p><a href="../proc/build_molecular_ecp_json.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_ormas_closure.html'>build_ormas_closure</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The space widened by one excitation of either spin</p><a href="../proc/build_ormas_closure.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_ormas_links.html'>build_ormas_links</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every single excitation out of every string the space keeps</p><a href="../proc/build_ormas_links.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_ormas_space.html'>build_ormas_space</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Assemble a partition from what a deck can state</p><a href="../proc/build_ormas_space.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_residues.html'>build_residues</a></td>
@@ -589,6 +625,12 @@ Result is in Angstrom</p></td>
                  <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
                  <td>Function</td>
                  <td><p>The identity of a calculation: what it computes, and on what</p><a href="../proc/calculation_fingerprint.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/cas_apply.html'>cas_apply</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>sigma = H c</code> for a complete active space, shaping and unshaping</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/cavity_radius.html'>cavity_radius</a></td>
@@ -727,6 +769,12 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><p>Every key of <code>object</code> must be in <code>keys</code>, and every required one present</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_ormas_group.html'>check_ormas_group</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.mcscf.ormas</code>, and that it describes a partition</p><a href="../proc/check_ormas_group.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_space.html'>check_space</a></td>
                  <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
                  <td>Subroutine</td>
@@ -743,6 +791,12 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
                  <td><p>Run a supplied term list past the validator without committing to it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_valence_choice.html'>check_valence_choice</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.mcscf.full_valence</code>, and that it is the only space named</p><a href="../proc/check_valence_choice.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/checkpoint_close.html'>checkpoint_close</a></td>
@@ -793,10 +847,34 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/class_holding.html'>class_holding</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Which class an occupation vector is, or zero if the bounds exclude it</p><a href="../proc/class_holding.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/class_size.html'>class_size</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Strings realising one occupation vector</p><a href="../proc/class_size.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/class_string_tables.html'>class_string_tables</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Per-class string counts, their running totals, and the inverse map</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/cli_args_destroy.html'>cli_args_destroy</a></td>
                  <td><a href='../module/mqc_cli_parser.html'>mqc_cli_parser</a></td>
                  <td>Subroutine</td>
                  <td><p>Clean up CLI args</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/closure_address.html'>closure_address</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Where a determinant sits in the widened space</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/combine.html'>combine</a></td>
@@ -1125,10 +1203,35 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>The live session, for Fortran code that needs its communicators</p><a href="../proc/current_session.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/davidson_flat.html'>davidson_flat</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The <code>n_roots</code> lowest eigenpairs of anything that can multiply a vector</p><a href="../proc/davidson_flat.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/davidson_lowest.html'>davidson_lowest</a></td>
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td>Subroutine</td>
-                 <td><p>The <code>n_roots</code> lowest eigenpairs of the CI Hamiltonian</p></td>
+                 <td><p>The <code>n_roots</code> lowest eigenpairs of the CI Hamiltonian</p><a href="../proc/davidson_lowest.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/describes_a_cas.html'>describes_a_cas</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this partition restricts anything at all</p><a href="../proc/describes_a_cas.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/determinant_address.html'>determinant_address</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Where the determinant made of these two strings sits</p><a href="../proc/determinant_address.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/determinant_address_local.html'>determinant_address_local</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Function</td>
+                 <td><p><code>determinant_address</code>, spelled out here so this module needs no
+circular use of the one it is built on</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/dfs_pie_accumulate.html'>dfs_pie_accumulate</a></td>
@@ -1251,6 +1354,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/drop_unreachable_classes.html'>drop_unreachable_classes</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Keep the classes the space uses and the ones an excitation can reach</p><a href="../proc/drop_unreachable_classes.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/ecp_shell_allocate.html'>ecp_shell_allocate</a></td>
                  <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
                  <td>Subroutine</td>
@@ -1348,6 +1457,12 @@ Covers the complete periodic table (elements 1-118)</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
                  <td><p>Validate a loaded deck, setting <code>error</code> on the first problem found</p><a href="../proc/ensure_valid_json.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/enumerate_classes.html'>enumerate_classes</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every occupation vector allowed by the per-spin bounds</p><a href="../proc/enumerate_classes.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/error_add_context.html'>error_add_context</a></td>
@@ -1478,6 +1593,12 @@ Resets the stack trace</p></td>
                  <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
                  <td>Subroutine</td>
                  <td><p>The lexicographically first choice of k positions</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/first_composition.html'>first_composition</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The first way to spread <code>total</code> particles over the boxes</p><a href="../proc/first_composition.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/first_missing_subset.html'>first_missing_subset</a></td>
@@ -1672,6 +1793,12 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Pick HOMO and LUMO out of an ascending orbital spectrum</p><a href="../proc/frontier_orbitals.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/full_space_index.html'>full_space_index</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Where each of the space&rsquo;s strings sits in the unrestricted list</p><a href="../proc/full_space_index.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/generate_fragment_list.html'>generate_fragment_list</a></td>
@@ -2146,13 +2273,13 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -2223,10 +2350,22 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Reset all flags and scalar values to defaults</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/keep_classes.html'>keep_classes</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compact a class list down to the kept entries, in the same order</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/keywords_keys.html'>keywords_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/layout_addressing.html'>layout_addressing</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Turn a grid of allowed class pairs into an address for every pair</p><a href="../proc/layout_addressing.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/lebedev_available_orders.html'>lebedev_available_orders</a></td>
@@ -2519,15 +2658,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
-                 <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
                  <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2820,6 +2959,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Initialize combination to [1, 2, &hellip;, k]</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/next_composition.html'>next_composition</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The next way, or a flag saying there is none</p><a href="../proc/next_composition.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/next_index_set.html'>next_index_set</a></td>
                  <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
                  <td>Subroutine</td>
@@ -2886,6 +3031,24 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Normalized contraction coefficients for a single shell</p><a href="../proc/normalized_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/occupation_of.html'>occupation_of</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>How many electrons a string puts in each subspace</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/occupied_orbitals.html'>occupied_orbitals</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The orbitals a string occupies, ascending</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/one_move_apart.html'>one_move_apart</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Whether two occupation vectors differ by moving one electron</p><a href="../proc/one_move_apart.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/optimization_keys.html'>optimization_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -2944,6 +3107,85 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
                  <td>Function</td>
                  <td><p>Position of an order in the prunable sequence, or 0 if absent</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_apply.html'>ormas_apply</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One matrix-vector product over the restricted space</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_closure_destroy.html'>ormas_closure_destroy</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Give back everything the closure holds</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_density_matrices.html'>ormas_density_matrices</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Spin-traced one- and two-particle density matrices</p><a href="../proc/ormas_density_matrices.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_diagonal.html'>ormas_diagonal</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>&lt;D|H|D&gt;</code> for every determinant of the space</p><a href="../proc/ormas_diagonal.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_gather.html'>ormas_gather</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>E_pq |c&gt;</code> for every orbital pair, over one run of alpha strings</p><a href="../proc/ormas_gather.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_keys.html'>ormas_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Cutting the active space into subspaces with occupation windows</p><a href="../proc/ormas_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_lowest.html'>ormas_lowest</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The lowest eigenvalues of the restricted Hamiltonian, densely</p><a href="../proc/ormas_lowest.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_sigma.html'>ormas_sigma</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>sigma = P H P c</code>, with <code>P</code> the projection onto the restricted space</p><a href="../proc/ormas_sigma.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_sigma_direct.html'>ormas_sigma_direct</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>sigma = H c</code> without ever visiting the complete space</p><a href="../proc/ormas_sigma_direct.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_solve.html'>ormas_solve</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The lowest states of a restricted active space, iteratively</p><a href="../proc/ormas_solve.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_space_destroy.html'>ormas_space_destroy</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Give back everything the partition holds</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_string_address.html'>ormas_string_address</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Where a string sits in its spin&rsquo;s list, 1-based, or zero if it is not
+in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ormas_strings.html'>ormas_strings</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every alpha and beta string of the space, in global index order</p><a href="../proc/ormas_strings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/pad_name.html'>pad_name</a></td>
@@ -3254,6 +3496,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Either an xyz file reference or inline symbols plus a flat coordinate list</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_ormas_partition.html'>read_ormas_partition</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.mcscf.ormas</code>, the subspaces and their occupation windows</p><a href="../proc/read_ormas_partition.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_xyz_file.html'>read_xyz_file</a></td>
@@ -3836,9 +4084,21 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
                  <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
                  <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every string of one spin, in global index order</p><a href="../proc/strings_of_one_spin.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/subscf_keys.html'>subscf_keys</a></td>
@@ -3847,6 +4107,12 @@ Trailing newlines do not create empty lines</p></td>
                  <td><p>Only meaningful under <code>type: basis_set_projection</code>, which
 <code>validate_guess_group</code> enforces &ndash; a <code>subscf</code> block beside any other
 guess would be read, validated and then silently ignored.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/subspace_string.html'>subspace_string</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>The bits of a string belonging to one subspace, shifted down to zero</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/sum_integer_array.html'>sum_integer_array</a></td>
@@ -3892,6 +4158,24 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/tighten_windows.html'>tighten_windows</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Shrink the windows to what the other subspaces actually leave available</p><a href="../proc/tighten_windows.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/tile_columns.html'>tile_columns</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Function</td>
+                 <td><p>How many closure determinants a run of alpha strings owns</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/tile_end.html'>tile_end</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Function</td>
+                 <td><p>The longest run of alpha strings from here that stays inside the budget</p><a href="../proc/tile_end.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/to_angstrom.html'>to_angstrom</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Function</td>
@@ -3928,6 +4212,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>The three rules that make <code>keywords.guess</code> unambiguous</p><a href="../proc/validate_guess_group.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/validate_partition.html'>validate_partition</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The ways a partition can fail to describe anything</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/validate_system.html'>validate_system</a></td>
                  <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
                  <td>Subroutine</td>
@@ -3950,6 +4240,18 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Subroutine</td>
                  <td><p>The subset key a counterpoise-corrected expansion looks up</p><a href="../proc/vmfc_subset_key.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/widen_by_one_move.html'>widen_by_one_move</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Add every class one excitation away from one already kept</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/within_class_rank.html'>within_class_rank</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td>Function</td>
+                 <td><p>Where a string sits among those of its own class, 1-based</p><a href="../proc/within_class_rank.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
@@ -4114,7 +4416,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 02:13 +0000             </p>
+ on 2026-08-19 03:06 +0000             </p>
           </div>
         </div>
         <br>

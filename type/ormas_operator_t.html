@@ -1,0 +1,588 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>ormas_operator_t &ndash; metalquicha </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>ormas_operator_t
+      <small>Derived Type</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title="<p> 0.7% of total for derived types.</p>Including implementation: 15 statements,  0.4% of total for derived types.">8 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ormas_ci.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ormas_ci.f90.html'>mqc_ormas_ci.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></li>
+            <li class="breadcrumb-item active" aria-current="page">ormas_operator_t</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-alpha_table">alpha_table</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-beta_table">beta_table</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-closure~3">closure</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-folded">folded</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-space~17">space</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#boundprocs-0"
+         aria-expanded="false" aria-controls="boundprocs-0">
+         <h4 class="card-header bg-primary text-white">Type-Bound Procedures</h4>
+      </a>
+      <div id="boundprocs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/ormas_operator_t.html#boundprocedure-apply">apply</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../type/ormas_operator_t.html#src">ormas_operator_t</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2 id="type-def-statement">
+        type, private, extends(<a href='sigma_operator_t.html'>sigma_operator_t</a>) :: ormas_operator_t</h2>
+    <p>The restricted Hamiltonian, as something Davidson can multiply by</p>
+<p>Holds what <code>ormas_sigma_direct</code> needs and nothing else. The vector it
+is handed is already flat, which is the reason the method had to be
+written that way: a restricted space has no rectangle to reshape into.</p>
+<br>      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherits</h3>
+        </div>
+        <div class="card-body">
+          <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~ormas_operator_t~~InheritsGraph Pages: 1 -->
+<svg id="typeormas_operator_tInheritsGraph" width="371pt" height="158pt"
+ viewBox="0.00 0.00 371.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~ormas_operator_t~~InheritsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<title>type~~ormas_operator_t~~InheritsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 367,-154 367,4 -4,4"/>
+<!-- type~ormas_operator_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_node1" class="node">
+<title>type~ormas_operator_t</title>
+<polygon fill="none" stroke="black" points="363,-87 256,-87 256,-63 363,-63 363,-87"/>
+<text text-anchor="middle" x="309.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">ormas_operator_t</text>
+</g>
+<!-- type~link_table_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_node2" class="node">
+<title>type~link_table_t</title>
+<g id="a_type~~ormas_operator_t~~InheritsGraph_node2"><a xlink:href="../type/link_table_t.html" xlink:title="link_table_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="89.5,-150 16.5,-150 16.5,-126 89.5,-126 89.5,-150"/>
+<text text-anchor="middle" x="53" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">link_table_t</text>
+</a>
+</g>
+</g>
+<!-- type~ormas_operator_t&#45;&gt;type~link_table_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_edge3" class="edge">
+<title>type~ormas_operator_t&#45;&gt;type~link_table_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M281.47,-87.14C268.52,-92.58 252.67,-98.73 238,-103 191.76,-116.45 137.45,-126.05 99.88,-131.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="99.12,-128.33 89.75,-133.26 100.15,-135.25 99.12,-128.33"/>
+<text text-anchor="middle" x="181" y="-129.4" font-family="Helvetica,sans-Serif" font-size="9.50">alpha_table, beta_table</text>
+</g>
+<!-- type~ormas_closure_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_node3" class="node">
+<title>type~ormas_closure_t</title>
+<g id="a_type~~ormas_operator_t~~InheritsGraph_node3"><a xlink:href="../type/ormas_closure_t.html" xlink:title="ormas_closure_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="102.5,-108 3.5,-108 3.5,-84 102.5,-84 102.5,-108"/>
+<text text-anchor="middle" x="53" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_closure_t</text>
+</a>
+</g>
+</g>
+<!-- type~ormas_operator_t&#45;&gt;type~ormas_closure_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_edge2" class="edge">
+<title>type~ormas_operator_t&#45;&gt;type~ormas_closure_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M255.77,-79.35C214.12,-82.79 156.02,-87.58 112.86,-91.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="112.46,-87.66 102.79,-91.97 113.04,-94.64 112.46,-87.66"/>
+<text text-anchor="middle" x="181" y="-91.4" font-family="Helvetica,sans-Serif" font-size="9.50">closure</text>
+</g>
+<!-- type~ormas_space_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_node4" class="node">
+<title>type~ormas_space_t</title>
+<g id="a_type~~ormas_operator_t~~InheritsGraph_node4"><a xlink:href="../type/ormas_space_t.html" xlink:title="ormas_space_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="99,-66 7,-66 7,-42 99,-42 99,-66"/>
+<text text-anchor="middle" x="53" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_space_t</text>
+</a>
+</g>
+</g>
+<!-- type~ormas_operator_t&#45;&gt;type~ormas_space_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_edge1" class="edge">
+<title>type~ormas_operator_t&#45;&gt;type~ormas_space_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M255.83,-66.19C249.83,-65.36 243.79,-64.61 238,-64 195,-59.49 146.11,-56.95 109.54,-55.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="109.21,-52.05 99.09,-55.19 108.96,-59.05 109.21,-52.05"/>
+<text text-anchor="middle" x="181" y="-66.4" font-family="Helvetica,sans-Serif" font-size="9.50">space</text>
+</g>
+<!-- type~sigma_operator_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_node5" class="node">
+<title>type~sigma_operator_t</title>
+<g id="a_type~~ormas_operator_t~~InheritsGraph_node5"><a xlink:href="../type/sigma_operator_t.html" xlink:title="sigma_operator_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="106,-24 0,-24 0,0 106,0 106,-24"/>
+<text text-anchor="middle" x="53" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sigma_operator_t</text>
+</a>
+</g>
+</g>
+<!-- type~ormas_operator_t&#45;&gt;type~sigma_operator_t -->
+<g id="type~~ormas_operator_t~~InheritsGraph_edge4" class="edge">
+<title>type~ormas_operator_t&#45;&gt;type~sigma_operator_t</title>
+<path fill="none" stroke="#ff0000" d="M273.93,-62.95C262.56,-59.19 249.8,-55.2 238,-52 197.77,-41.09 151.96,-31.13 116.12,-23.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="116.78,-20.44 106.29,-21.9 115.4,-27.3 116.78,-20.44"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#InheritsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="InheritsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    <br>
+
+    <section>
+    <h2>Components</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha_table"></span>
+              type(<a href='link_table_t.html'>link_table_t</a>),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>alpha_table</strong></td>
+<td>=&gt; </td>
+                <td>null()</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta_table"></span>
+              type(<a href='link_table_t.html'>link_table_t</a>),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>beta_table</strong></td>
+<td>=&gt; </td>
+                <td>null()</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-closure~3"></span>
+              type(<a href='ormas_closure_t.html'>ormas_closure_t</a>),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>closure</strong></td>
+<td>=&gt; </td>
+                <td>null()</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-folded"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>folded</strong>(:,:)</td>
+<td>=&gt; </td>
+                <td>null()</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-space~17"></span>
+              type(<a href='ormas_space_t.html'>ormas_space_t</a>),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>space</strong></td>
+<td>=&gt; </td>
+                <td>null()</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+
+
+      <section>
+        <h2>Type-Bound Procedures</h2>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-apply"></span>
+      <h3>
+          procedure, public ::
+  <strong>apply</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_apply.html'>ormas_apply</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/ormas_apply.html'>ormas_apply</a>(this, vector, image, error)  
+</h3>
+    
+
+  <p>One matrix-vector product over the restricted space</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='ormas_operator_t.html'>ormas_operator_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>vector</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>image</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              type(<a href='error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+      </section>
+
+    <section>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="p">,</span><span class="w"> </span><span class="k">extends</span><span class="p">(</span><span class="n">sigma_operator_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ormas_operator_t</span>
+<span class="w">      </span><span class="c">!! The restricted Hamiltonian, as something Davidson can multiply by</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Holds what `ormas_sigma_direct` needs and nothing else. The vector it</span>
+<span class="w">      </span><span class="c">!! is handed is already flat, which is the reason the method had to be</span>
+<span class="w">      </span><span class="c">!! written that way: a restricted space has no rectangle to reshape into.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_closure_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">closure</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_table</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">(),</span><span class="w"> </span><span class="n">beta_table</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
+<span class="w">   </span><span class="k">contains</span>
+<span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">apply</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ormas_apply</span>
+<span class="w">   </span><span class="k">end type </span><span class="n">ormas_operator_t</span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-19 03:06 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

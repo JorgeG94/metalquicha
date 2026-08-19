@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.7% of total for procedures.">133 statements</a>
+                 title=" 0.2% of total for procedures.">38 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,34 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-added">added</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-basis~7">basis</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-correction~2">correction</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-denominator">denominator</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-hritz">hritz</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-i~103">i</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-info~3">info</a>
+            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-flat_guess">flat_guess</a>
             <a class="list-group-item" href="../proc/davidson_lowest.html#variable-iroot">iroot</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-iteration">iteration</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-iterations~3">iterations</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-j~29">j</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-na~8">na</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-nb~6">nb</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-ndet~5">ndet</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-nmax">nmax</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-norm~3">norm</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-nsub">nsub</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-overlap~4">overlap</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-pass">pass</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-residual">residual</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-ritz">ritz</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-root_converged">root_converged</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-sigma~4">sigma</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-sigma_work">sigma_work</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-small">small</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-small_values">small_values</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-tol~4">tol</a>
-            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-work">work</a>
+            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-na~9">na</a>
+            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-nb~9">nb</a>
+            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-ndet~6">ndet</a>
+            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-operator~2">operator</a>
+            <a class="list-group-item" href="../proc/davidson_lowest.html#variable-vectors~3">vectors</a>
         </div>
       </div>
     </div>
@@ -204,6 +183,9 @@
     
 
     <p>The <code>n_roots</code> lowest eigenpairs of the CI Hamiltonian</p>
+<p>The complete-space spelling of <code>davidson_flat</code>: the same method, with
+the vector shaped back into the alpha-by-beta rectangle its
+determinants form.</p>
 
 
     <h3>Arguments</h3>
@@ -219,12 +201,12 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~4"></span>
+              <span class="anchor" id="variable-folded~10"></span>
               real(kind=dp),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
             <td><strong>folded</strong>(:,:)</td>
@@ -234,7 +216,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~2"></span>
+              <span class="anchor" id="variable-diagonal~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -249,12 +231,12 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~6"></span>
+              <span class="anchor" id="variable-alpha~12"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
             <td><strong>alpha</strong></td>
@@ -264,12 +246,12 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~6"></span>
+              <span class="anchor" id="variable-beta~12"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
             <td><strong>beta</strong></td>
@@ -279,7 +261,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~2"></span>
+              <span class="anchor" id="variable-n_roots~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -294,7 +276,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~41"></span>
+              <span class="anchor" id="variable-result~45"></span>
               type(<a href='../type/davidson_result_t.html'>davidson_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -309,7 +291,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~93"></span>
+              <span class="anchor" id="variable-error~148"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -324,7 +306,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~7"></span>
+              <span class="anchor" id="variable-tolerance~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -339,7 +321,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations"></span>
+              <span class="anchor" id="variable-max_iterations~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -364,14 +346,12 @@
             <td>::</td>
             <td><strong>max_subspace</strong></td>
             <td>
-                <p>Vectors kept before the subspace is collapsed onto the current Ritz
-vectors. Defaults to <code>max(2*n_roots + 8, 16)</code>, bounded by the size of
-the determinant space.</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~6"></span>
+              <span class="anchor" id="variable-guess~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -381,9 +361,7 @@ the determinant space.</p>
             <td>::</td>
             <td><strong>guess</strong>(:,:,:)</td>
             <td>
-                <p>(n_alpha, n_beta, n_roots) starting vectors. Absent takes unit
-vectors on the lowest diagonal elements, which for a CI is the
-reference determinant and its nearest neighbours in energy.</p>
+                <p>(n_alpha, n_beta, n_roots) starting vectors</p>
             </td>
         </tr>
     </tbody>
@@ -401,151 +379,130 @@ reference determinant and its nearest neighbours in energy.</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~davidson_lowest~~CallsGraph Pages: 1 -->
-<svg id="procdavidson_lowestCallsGraph" width="403pt" height="276pt"
- viewBox="0.00 0.00 403.00 276.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~davidson_lowest~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 272)">
+<svg id="procdavidson_lowestCallsGraph" width="402pt" height="284pt"
+ viewBox="0.00 0.00 402.00 284.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~davidson_lowest~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 280)">
 <title>proc~~davidson_lowest~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-272 399,-272 399,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-280 398,-280 398,4 -4,4"/>
 <!-- proc~davidson_lowest -->
 <g id="proc~~davidson_lowest~~CallsGraph_node1" class="node">
 <title>proc~davidson_lowest</title>
-<polygon fill="none" stroke="black" points="100,-144 0,-144 0,-120 100,-120 100,-144"/>
-<text text-anchor="middle" x="50" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50">davidson_lowest</text>
+<polygon fill="none" stroke="black" points="100,-212 0,-212 0,-188 100,-188 100,-212"/>
+<text text-anchor="middle" x="50" y="-197.6" font-family="Helvetica,sans-Serif" font-size="10.50">davidson_lowest</text>
 </g>
-<!-- pic_gemm -->
+<!-- proc~davidson_flat -->
 <g id="proc~~davidson_lowest~~CallsGraph_node2" class="node">
-<title>pic_gemm</title>
-<polygon fill="#777777" stroke="#777777" points="359.5,-268 291.5,-268 291.5,-244 359.5,-244 359.5,-268"/>
-<text text-anchor="middle" x="325.5" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
+<title>proc~davidson_flat</title>
+<g id="a_proc~~davidson_lowest~~CallsGraph_node2"><a xlink:href="../proc/davidson_flat.html" xlink:title="davidson_flat">
+<polygon fill="#d9534f" stroke="#d9534f" points="219,-171 136,-171 136,-147 219,-147 219,-171"/>
+<text text-anchor="middle" x="177.5" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">davidson_flat</text>
+</a>
 </g>
-<!-- proc~davidson_lowest&#45;&gt;pic_gemm -->
+</g>
+<!-- proc~davidson_lowest&#45;&gt;proc~davidson_flat -->
 <g id="proc~~davidson_lowest~~CallsGraph_edge1" class="edge">
-<title>proc~davidson_lowest&#45;&gt;pic_gemm</title>
-<path fill="none" stroke="#ff0000" d="M59.64,-144.2C73.5,-162.8 102.58,-197.99 136,-216 181.69,-240.62 241.23,-250.09 281.05,-253.73"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="280.98,-257.24 291.23,-254.57 281.55,-250.26 280.98,-257.24"/>
-</g>
-<!-- pic_syev -->
-<g id="proc~~davidson_lowest~~CallsGraph_node3" class="node">
-<title>pic_syev</title>
-<polygon fill="#777777" stroke="#777777" points="207,-66 149,-66 149,-42 207,-42 207,-66"/>
-<text text-anchor="middle" x="178" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
-</g>
-<!-- proc~davidson_lowest&#45;&gt;pic_syev -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge2" class="edge">
-<title>proc~davidson_lowest&#45;&gt;pic_syev</title>
-<path fill="none" stroke="#ff0000" d="M70.41,-119.98C91.35,-107.02 124.87,-86.27 148.73,-71.5"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="150.7,-74.4 157.36,-66.16 147.01,-68.45 150.7,-74.4"/>
+<title>proc~davidson_lowest&#45;&gt;proc~davidson_flat</title>
+<path fill="none" stroke="#ff0000" d="M87.98,-187.92C101.01,-183.66 115.84,-178.82 129.58,-174.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="130.94,-177.57 139.36,-171.13 128.76,-170.91 130.94,-177.57"/>
 </g>
 <!-- proc~error_has_error -->
-<g id="proc~~davidson_lowest~~CallsGraph_node4" class="node">
+<g id="proc~~davidson_lowest~~CallsGraph_node3" class="node">
 <title>proc~error_has_error</title>
-<g id="a_proc~~davidson_lowest~~CallsGraph_node4"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="395,-226 256,-226 256,-202 395,-202 395,-226"/>
-<text text-anchor="middle" x="325.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<g id="a_proc~~davidson_lowest~~CallsGraph_node3"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="394,-276 255,-276 255,-252 394,-252 394,-276"/>
+<text text-anchor="middle" x="324.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~davidson_lowest&#45;&gt;proc~error_has_error -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge3" class="edge">
+<g id="proc~~davidson_lowest~~CallsGraph_edge2" class="edge">
 <title>proc~davidson_lowest&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff0000" d="M63.3,-144.03C78.82,-158.39 107.01,-181.86 136,-193 170.55,-206.27 211.1,-211.94 245.72,-214.12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="245.62,-217.62 255.79,-214.66 246,-210.63 245.62,-217.62"/>
+<path fill="none" stroke="#ff0000" d="M100.03,-211.52C145.48,-222.19 213.25,-238.11 262.24,-249.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="261.55,-253.05 272.08,-251.92 263.15,-246.23 261.55,-253.05"/>
+</g>
+<!-- proc~davidson_flat&#45;&gt;proc~error_has_error -->
+<g id="proc~~davidson_lowest~~CallsGraph_edge6" class="edge">
+<title>proc~davidson_flat&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M186.38,-171.18C198.8,-189.44 224.68,-223.79 255,-243 257.78,-244.76 260.73,-246.39 263.76,-247.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="262.53,-251.17 273.1,-251.98 265.35,-244.76 262.53,-251.17"/>
+</g>
+<!-- apply -->
+<g id="proc~~davidson_lowest~~CallsGraph_node4" class="node">
+<title>apply</title>
+<polygon fill="#777777" stroke="#777777" points="351.5,-234 297.5,-234 297.5,-210 351.5,-210 351.5,-234"/>
+<text text-anchor="middle" x="324.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply</text>
+</g>
+<!-- proc~davidson_flat&#45;&gt;apply -->
+<g id="proc~~davidson_lowest~~CallsGraph_edge3" class="edge">
+<title>proc~davidson_flat&#45;&gt;apply</title>
+<path fill="none" stroke="#ff0000" d="M197.76,-171.02C212.91,-180.11 234.76,-192.45 255,-201 265.33,-205.37 276.89,-209.26 287.52,-212.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="286.78,-215.91 297.36,-215.34 288.74,-209.19 286.78,-215.91"/>
+</g>
+<!-- pic_gemm -->
+<g id="proc~~davidson_lowest~~CallsGraph_node5" class="node">
+<title>pic_gemm</title>
+<polygon fill="#777777" stroke="#777777" points="358.5,-192 290.5,-192 290.5,-168 358.5,-168 358.5,-192"/>
+<text text-anchor="middle" x="324.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
+</g>
+<!-- proc~davidson_flat&#45;&gt;pic_gemm -->
+<g id="proc~~davidson_lowest~~CallsGraph_edge4" class="edge">
+<title>proc~davidson_flat&#45;&gt;pic_gemm</title>
+<path fill="none" stroke="#ff0000" d="M219.28,-164.91C238.31,-167.66 260.97,-170.94 280.29,-173.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="279.95,-177.23 290.34,-175.2 280.95,-170.3 279.95,-177.23"/>
+</g>
+<!-- pic_syev -->
+<g id="proc~~davidson_lowest~~CallsGraph_node6" class="node">
+<title>pic_syev</title>
+<polygon fill="#777777" stroke="#777777" points="353.5,-150 295.5,-150 295.5,-126 353.5,-126 353.5,-150"/>
+<text text-anchor="middle" x="324.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
+</g>
+<!-- proc~davidson_flat&#45;&gt;pic_syev -->
+<g id="proc~~davidson_lowest~~CallsGraph_edge5" class="edge">
+<title>proc~davidson_flat&#45;&gt;pic_syev</title>
+<path fill="none" stroke="#ff0000" d="M219.28,-153.09C239.96,-150.1 264.94,-146.48 285.26,-143.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="286.01,-146.97 295.41,-142.07 285.01,-140.04 286.01,-146.97"/>
 </g>
 <!-- proc~error_set -->
-<g id="proc~~davidson_lowest~~CallsGraph_node5" class="node">
+<g id="proc~~davidson_lowest~~CallsGraph_node7" class="node">
 <title>proc~error_set</title>
-<g id="a_proc~~davidson_lowest~~CallsGraph_node5"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="378,-142 273,-142 273,-118 378,-118 378,-142"/>
-<text text-anchor="middle" x="325.5" y="-127.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<g id="a_proc~~davidson_lowest~~CallsGraph_node7"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="377,-108 272,-108 272,-84 377,-84 377,-108"/>
+<text text-anchor="middle" x="324.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
-<!-- proc~davidson_lowest&#45;&gt;proc~error_set -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge4" class="edge">
-<title>proc~davidson_lowest&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#ff0000" d="M100.21,-131.64C145.73,-131.31 213.56,-130.81 262.71,-130.45"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="262.92,-133.95 272.9,-130.38 262.87,-126.95 262.92,-133.95"/>
+<!-- proc~davidson_flat&#45;&gt;proc~error_set -->
+<g id="proc~~davidson_lowest~~CallsGraph_edge7" class="edge">
+<title>proc~davidson_flat&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M197.76,-146.98C212.91,-137.89 234.76,-125.55 255,-117 259.75,-114.99 264.75,-113.09 269.81,-111.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="271.18,-114.53 279.54,-108.02 268.94,-107.9 271.18,-114.53"/>
 </g>
 <!-- proc~initial_basis -->
-<g id="proc~~davidson_lowest~~CallsGraph_node6" class="node">
+<g id="proc~~davidson_lowest~~CallsGraph_node8" class="node">
 <title>proc~initial_basis</title>
-<g id="a_proc~~davidson_lowest~~CallsGraph_node6"><a xlink:href="../proc/initial_basis.html" xlink:title="initial_basis">
-<polygon fill="#d9534f" stroke="#d9534f" points="215,-24 141,-24 141,0 215,0 215,-24"/>
-<text text-anchor="middle" x="178" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initial_basis</text>
+<g id="a_proc~~davidson_lowest~~CallsGraph_node8"><a xlink:href="../proc/initial_basis.html" xlink:title="initial_basis">
+<polygon fill="#d9534f" stroke="#d9534f" points="361.5,-66 287.5,-66 287.5,-42 361.5,-42 361.5,-66"/>
+<text text-anchor="middle" x="324.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initial_basis</text>
 </a>
 </g>
 </g>
-<!-- proc~davidson_lowest&#45;&gt;proc~initial_basis -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge5" class="edge">
-<title>proc~davidson_lowest&#45;&gt;proc~initial_basis</title>
-<path fill="none" stroke="#ff0000" d="M59.17,-119.69C73.03,-99.52 102.9,-59.08 136,-33 137.55,-31.77 139.19,-30.59 140.88,-29.45"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="142.9,-32.32 149.62,-24.13 139.26,-26.34 142.9,-32.32"/>
-</g>
-<!-- proc~sigma_vector -->
-<g id="proc~~davidson_lowest~~CallsGraph_node7" class="node">
-<title>proc~sigma_vector</title>
-<g id="a_proc~~davidson_lowest~~CallsGraph_node7"><a xlink:href="../proc/sigma_vector.html" xlink:title="sigma_vector">
-<polygon fill="#d9534f" stroke="#d9534f" points="220,-184 136,-184 136,-160 220,-160 220,-184"/>
-<text text-anchor="middle" x="178" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sigma_vector</text>
-</a>
-</g>
-</g>
-<!-- proc~davidson_lowest&#45;&gt;proc~sigma_vector -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge6" class="edge">
-<title>proc~davidson_lowest&#45;&gt;proc~sigma_vector</title>
-<path fill="none" stroke="#ff0000" d="M88.8,-144C101.52,-148.04 115.88,-152.6 129.26,-156.84"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="128.2,-160.18 138.79,-159.87 130.31,-153.51 128.2,-160.18"/>
+<!-- proc~davidson_flat&#45;&gt;proc~initial_basis -->
+<g id="proc~~davidson_lowest~~CallsGraph_edge8" class="edge">
+<title>proc~davidson_flat&#45;&gt;proc~initial_basis</title>
+<path fill="none" stroke="#ff0000" d="M186.38,-146.82C198.8,-128.56 224.68,-94.21 255,-75 261.95,-70.6 269.87,-67.07 277.81,-64.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="278.98,-67.56 287.44,-61.17 276.85,-60.89 278.98,-67.56"/>
 </g>
 <!-- to_char -->
-<g id="proc~~davidson_lowest~~CallsGraph_node8" class="node">
-<title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="352.5,-100 298.5,-100 298.5,-76 352.5,-76 352.5,-100"/>
-<text text-anchor="middle" x="325.5" y="-85.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
-</g>
-<!-- proc~davidson_lowest&#45;&gt;to_char -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge7" class="edge">
-<title>proc~davidson_lowest&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M100.21,-124.08C154.37,-115.37 240.14,-101.57 288.41,-93.81"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="289.08,-97.24 298.4,-92.2 287.97,-90.33 289.08,-97.24"/>
-</g>
-<!-- proc~sigma_vector&#45;&gt;pic_gemm -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge8" class="edge">
-<title>proc~sigma_vector&#45;&gt;pic_gemm</title>
-<path fill="none" stroke="#4800ff" d="M190.97,-184.36C205.25,-198.45 230.42,-221.3 256,-235 263.97,-239.27 272.93,-242.8 281.68,-245.68"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="280.82,-249.08 291.41,-248.65 282.87,-242.38 280.82,-249.08"/>
-</g>
-<!-- proc~sigma_vector&#45;&gt;proc~error_has_error -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge10" class="edge">
-<title>proc~sigma_vector&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#4800ff" d="M220.31,-183.92C236.67,-188.65 255.66,-194.13 272.91,-199.11"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="272.26,-202.56 282.84,-201.97 274.2,-195.84 272.26,-202.56"/>
-</g>
-<!-- proc~sigma_vector&#45;&gt;proc~error_set -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge11" class="edge">
-<title>proc~sigma_vector&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#4800ff" d="M220.31,-160.08C236.67,-155.35 255.66,-149.87 272.91,-144.89"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="274.2,-148.16 282.84,-142.03 272.26,-141.44 274.2,-148.16"/>
-</g>
-<!-- proc~sigma_vector&#45;&gt;to_char -->
-<g id="proc~~davidson_lowest~~CallsGraph_edge12" class="edge">
-<title>proc~sigma_vector&#45;&gt;to_char</title>
-<path fill="none" stroke="#4800ff" d="M190.97,-159.64C205.25,-145.55 230.42,-122.7 256,-109 265.97,-103.66 277.5,-99.46 288.23,-96.27"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="289.48,-99.56 298.18,-93.52 287.61,-92.81 289.48,-99.56"/>
-</g>
-<!-- proc~apply_excitations -->
 <g id="proc~~davidson_lowest~~CallsGraph_node9" class="node">
-<title>proc~apply_excitations</title>
-<g id="a_proc~~davidson_lowest~~CallsGraph_node9"><a xlink:href="../proc/apply_excitations.html" xlink:title="apply_excitations">
-<polygon fill="#d9534f" stroke="#d9534f" points="377.5,-184 273.5,-184 273.5,-160 377.5,-160 377.5,-184"/>
-<text text-anchor="middle" x="325.5" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply_excitations</text>
-</a>
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="351.5,-24 297.5,-24 297.5,0 351.5,0 351.5,-24"/>
+<text text-anchor="middle" x="324.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
-</g>
-<!-- proc~sigma_vector&#45;&gt;proc~apply_excitations -->
+<!-- proc~davidson_flat&#45;&gt;to_char -->
 <g id="proc~~davidson_lowest~~CallsGraph_edge9" class="edge">
-<title>proc~sigma_vector&#45;&gt;proc~apply_excitations</title>
-<path fill="none" stroke="#4800ff" d="M220.31,-172C233.56,-172 248.53,-172 262.91,-172"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="263.24,-175.5 273.24,-172 263.24,-168.5 263.24,-175.5"/>
+<title>proc~davidson_flat&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M182.48,-146.94C191.36,-121.89 215.21,-63.96 255,-33 264.32,-25.75 276.15,-20.99 287.34,-17.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="288.46,-21.2 297.35,-15.44 286.81,-14.39 288.46,-21.2"/>
 </g>
 </g>
 </svg>
@@ -647,24 +604,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-added"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>added</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-basis~7"></span>
+              <span class="anchor" id="variable-flat_guess"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -672,92 +612,7 @@ large graphs.</div>
               allocatable
             </td>
             <td>::</td>
-            <td><strong>basis</strong>(:,:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-correction~2"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>correction</strong>(:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-denominator"></span>
-              real(kind=dp),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>denominator</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-hritz"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>hritz</strong>(:,:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-i~103"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>i</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-info~3"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>info</strong></td>
+            <td><strong>flat_guess</strong>(:,:)</td>
                 <td></td>
                 <td></td>
             <td>
@@ -783,58 +638,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iteration"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>iteration</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-iterations~3"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>iterations</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-j~29"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>j</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-na~8"></span>
+              <span class="anchor" id="variable-na~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -851,7 +655,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~6"></span>
+              <span class="anchor" id="variable-nb~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -868,7 +672,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~5"></span>
+              <span class="anchor" id="variable-ndet~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -885,15 +689,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nmax"></span>
-              integer,
+              <span class="anchor" id="variable-operator~2"></span>
+              type(<a href='../type/cas_operator_t.html'>cas_operator_t</a>),
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>nmax</strong></td>
+            <td><strong>operator</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -902,75 +706,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norm~3"></span>
-              real(kind=dp),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>norm</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-nsub"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>nsub</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-overlap~4"></span>
-              real(kind=dp),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>overlap</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-pass"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>pass</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-residual"></span>
+              <span class="anchor" id="variable-vectors~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -978,143 +714,7 @@ large graphs.</div>
               allocatable
             </td>
             <td>::</td>
-            <td><strong>residual</strong>(:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ritz"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>ritz</strong>(:,:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-root_converged"></span>
-              logical,
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>root_converged</strong>(:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sigma~4"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>sigma</strong>(:,:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sigma_work"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>sigma_work</strong>(:,:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-small"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>small</strong>(:,:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-small_values"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>small_values</strong>(:)</td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-tol~4"></span>
-              real(kind=dp),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>tol</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-work"></span>
-              real(kind=dp),
-            </td>
-              <td>private,</td>
-            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>work</strong>(:,:)</td>
+            <td><strong>vectors</strong>(:,:)</td>
                 <td></td>
                 <td></td>
             <td>
@@ -1140,188 +740,61 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">davidson_lowest</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">tolerance</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="p">,</span><span class="w"> </span><span class="n">max_subspace</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The `n_roots` lowest eigenpairs of the CI Hamiltonian</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">      </span><span class="c">!! From `absorb_one_electron`</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">    </span><span class="c">!! From `ci_diagonal`</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The complete-space spelling of `davidson_flat`: the same method, with</span>
+<span class="w">      </span><span class="c">!! the vector shaped back into the alpha-by-beta rectangle its</span>
+<span class="w">      </span><span class="c">!! determinants form.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">      </span><span class="c">!! From `absorb_one_electron`</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">            </span><span class="c">!! From `ci_diagonal`</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_roots</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">davidson_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_iterations</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_subspace</span>
-<span class="w">         </span><span class="c">!! Vectors kept before the subspace is collapsed onto the current Ritz</span>
-<span class="w">         </span><span class="c">!! vectors. Defaults to `max(2*n_roots + 8, 16)`, bounded by the size of</span>
-<span class="w">         </span><span class="c">!! the determinant space.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">         </span><span class="c">!! (n_alpha, n_beta, n_roots) starting vectors. Absent takes unit</span>
-<span class="w">         </span><span class="c">!! vectors on the lowest diagonal elements, which for a CI is the</span>
-<span class="w">         </span><span class="c">!! reference determinant and its nearest neighbours in energy.</span>
+<span class="w">         </span><span class="c">!! (n_alpha, n_beta, n_roots) starting vectors</span>
 
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">small</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">small_values</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">hritz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">residual</span><span class="p">(:),</span><span class="w"> </span><span class="n">correction</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">work</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">sigma_work</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">norm</span><span class="p">,</span><span class="w"> </span><span class="n">denominator</span><span class="p">,</span><span class="w"> </span><span class="n">overlap</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">nsub</span><span class="p">,</span><span class="w"> </span><span class="n">nmax</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="p">,</span><span class="w"> </span><span class="n">added</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iteration</span><span class="p">,</span><span class="w"> </span><span class="k">pass</span>
-<span class="k">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root_converged</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cas_operator_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">operator</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">vectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">flat_guess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      </span><span class="n">na</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">n_strings</span>
 <span class="w">      </span><span class="n">nb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">n_strings</span>
 <span class="w">      </span><span class="n">ndet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">na</span><span class="o">*</span><span class="n">nb</span>
 
-<span class="w">      </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_TOLERANCE</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">tolerance</span><span class="p">))</span><span class="w"> </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tolerance</span>
-<span class="w">      </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_MAX_ITERATIONS</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">))</span><span class="w"> </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max_iterations</span>
-<span class="w">      </span><span class="n">nmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">n_roots</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">max_subspace</span><span class="p">))</span><span class="w"> </span><span class="n">nmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max_subspace</span>
-<span class="w">      </span><span class="n">nmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">nmax</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">)</span>
+<span class="w">      </span><span class="n">operator</span><span class="p">%</span><span class="n">folded</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">folded</span>
+<span class="w">      </span><span class="n">operator</span><span class="p">%</span><span class="n">alpha</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">alpha</span>
+<span class="w">      </span><span class="n">operator</span><span class="p">%</span><span class="n">beta</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">beta</span>
+<span class="w">      </span><span class="n">operator</span><span class="p">%</span><span class="n">na</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">na</span>
+<span class="w">      </span><span class="n">operator</span><span class="p">%</span><span class="n">nb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nb</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_roots</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">n_roots</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ndet</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"asked for "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_roots</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">" roots of a Hamiltonian with "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">ndet</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">" determinants."</span><span class="p">)</span>
-<span class="w">         </span><span class="k">return</span>
-<span class="k">      end if</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">nmax</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n_roots</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the subspace is capped at "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="n">to_char</span><span class="p">(</span><span class="n">nmax</span><span class="p">)</span><span class="o">//</span><span class="s2">" vectors, which cannot hold "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="n">to_char</span><span class="p">(</span><span class="n">n_roots</span><span class="p">)</span><span class="o">//</span><span class="s2">" roots."</span><span class="p">)</span>
-<span class="w">         </span><span class="k">return</span>
-<span class="k">      end if</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">flat_guess</span><span class="p">(</span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">guess</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)))</span>
+<span class="w">         </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">guess</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w">            </span><span class="n">flat_guess</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">ndet</span><span class="p">])</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">         call </span><span class="n">davidson_flat</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">ndet</span><span class="p">]),</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="k">result</span><span class="p">%</span><span class="n">values</span><span class="p">,</span><span class="w"> </span><span class="n">vectors</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="k">result</span><span class="p">%</span><span class="n">iterations</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">sigma_products</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="k">result</span><span class="p">%</span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">max_subspace</span><span class="p">,</span><span class="w"> </span><span class="n">flat_guess</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         call </span><span class="n">davidson_flat</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">ndet</span><span class="p">]),</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="k">result</span><span class="p">%</span><span class="n">values</span><span class="p">,</span><span class="w"> </span><span class="n">vectors</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="k">result</span><span class="p">%</span><span class="n">iterations</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">sigma_products</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="k">result</span><span class="p">%</span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">max_subspace</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 
-<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">basis</span><span class="p">(</span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">nmax</span><span class="p">),</span><span class="w"> </span><span class="n">sigma</span><span class="p">(</span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">nmax</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">ritz</span><span class="p">(</span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">),</span><span class="w"> </span><span class="n">hritz</span><span class="p">(</span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">residual</span><span class="p">(</span><span class="n">ndet</span><span class="p">),</span><span class="w"> </span><span class="n">correction</span><span class="p">(</span><span class="n">ndet</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">work</span><span class="p">(</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">),</span><span class="w"> </span><span class="n">sigma_work</span><span class="p">(</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">root_converged</span><span class="p">(</span><span class="n">n_roots</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">values</span><span class="p">(</span><span class="n">n_roots</span><span class="p">),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">residuals</span><span class="p">(</span><span class="n">n_roots</span><span class="p">))</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">vectors</span><span class="p">(</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">))</span>
-
-<span class="w">      </span><span class="k">call </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
-<span class="w">      </span><span class="n">nsub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_roots</span>
-
-<span class="w">      </span><span class="c">! Sigma for the starting vectors.</span>
-<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nsub</span>
-<span class="w">         </span><span class="n">work</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">])</span>
-<span class="w">         </span><span class="k">call </span><span class="n">sigma_vector</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_work</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
-<span class="k">         </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">sigma_work</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">ndet</span><span class="p">])</span>
-<span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">sigma_products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">sigma_products</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">vectors</span><span class="p">(</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
+<span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">vectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">vectors</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">])</span>
 <span class="w">      </span><span class="k">end do</span>
-
-<span class="k">      do </span><span class="n">iteration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span>
-<span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iteration</span>
-
-<span class="w">         </span><span class="c">! The Hamiltonian projected into the subspace, and its eigenpairs.</span>
-<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">small</span><span class="p">(</span><span class="n">nsub</span><span class="p">,</span><span class="w"> </span><span class="n">nsub</span><span class="p">),</span><span class="w"> </span><span class="n">small_values</span><span class="p">(</span><span class="n">nsub</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nsub</span><span class="p">),</span><span class="w"> </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nsub</span><span class="p">),</span><span class="w"> </span><span class="n">small</span><span class="p">,</span><span class="w"> </span><span class="n">transa</span><span class="o">=</span><span class="s2">"T"</span><span class="p">)</span>
-<span class="w">         </span><span class="c">! Symmetric to rounding; the average is what a symmetric solver would</span>
-<span class="w">         </span><span class="c">! read anyway and keeps a drifting subspace from biasing a root.</span>
-<span class="w">         </span><span class="n">small</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="o">*</span><span class="p">(</span><span class="n">small</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">transpose</span><span class="p">(</span><span class="n">small</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">pic_syev</span><span class="p">(</span><span class="n">small</span><span class="p">,</span><span class="w"> </span><span class="n">small_values</span><span class="p">,</span><span class="w"> </span><span class="n">jobz</span><span class="o">=</span><span class="s2">"V"</span><span class="p">,</span><span class="w"> </span><span class="n">uplo</span><span class="o">=</span><span class="s2">"U"</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the Davidson subspace matrix could "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">"not be diagonalized (info = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">)</span>
-<span class="w">            </span><span class="k">return</span>
-<span class="k">         end if</span>
-
-<span class="w">         </span><span class="c">! Ritz vectors and their images, both from the subspace, so no new</span>
-<span class="w">         </span><span class="c">! sigma products are needed.</span>
-<span class="w">         </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nsub</span><span class="p">),</span><span class="w"> </span><span class="n">small</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">),</span><span class="w"> </span><span class="n">ritz</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nsub</span><span class="p">),</span><span class="w"> </span><span class="n">small</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">),</span><span class="w"> </span><span class="n">hritz</span><span class="p">)</span>
-<span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">small_values</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">)</span>
-
-<span class="w">         </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">            </span><span class="n">residual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">small_values</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="o">*</span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
-<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">residuals</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">))</span>
-<span class="w">            </span><span class="n">root_converged</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">residuals</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tol</span>
-<span class="w">         </span><span class="k">end do</span>
-
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="k">all</span><span class="p">(</span><span class="n">root_converged</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            result</span><span class="p">%</span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
-<span class="w">            </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">               </span><span class="k">result</span><span class="p">%</span><span class="n">vectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">])</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">            deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">small</span><span class="p">,</span><span class="w"> </span><span class="n">small_values</span><span class="p">)</span>
-<span class="w">            </span><span class="k">exit</span>
-<span class="k">         end if</span>
-
-<span class="w">         </span><span class="c">! Collapse before growing, so the expansion vectors below are added to</span>
-<span class="w">         </span><span class="c">! a fresh subspace rather than discarded by it.</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">count</span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">root_converged</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">nmax</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ritz</span>
-<span class="w">            </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hritz</span>
-<span class="w">            </span><span class="n">nsub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">         </span><span class="k">end if</span>
-
-<span class="k">         </span><span class="n">added</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">root_converged</span><span class="p">(</span><span class="n">iroot</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
-<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">nmax</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
-
-<span class="k">            </span><span class="n">residual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">small_values</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="o">*</span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span>
-<span class="w">               </span><span class="n">denominator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">small_values</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                                            </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">na</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">denominator</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PRECONDITION_FLOOR</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                  </span><span class="n">denominator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sign</span><span class="p">(</span><span class="n">PRECONDITION_FLOOR</span><span class="p">,</span><span class="w"> </span><span class="n">denominator</span><span class="p">)</span>
-<span class="w">               </span><span class="k">end if</span>
-<span class="k">               </span><span class="n">correction</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">residual</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="n">denominator</span>
-<span class="w">            </span><span class="k">end do</span>
-
-<span class="w">            </span><span class="c">! Normalise before projecting, so the linear-dependence test below</span>
-<span class="w">            </span><span class="c">! measures direction rather than magnitude.</span>
-<span class="w">            </span><span class="n">norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">correction</span><span class="p">,</span><span class="w"> </span><span class="n">correction</span><span class="p">))</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">norm</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nb">tiny</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
-<span class="k">            </span><span class="n">correction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">correction</span><span class="o">/</span><span class="n">norm</span>
-
-<span class="w">            </span><span class="c">! Twice, because one pass of Gram-Schmidt loses orthogonality when</span>
-<span class="w">            </span><span class="c">! the new direction is nearly in the subspace already -- which near</span>
-<span class="w">            </span><span class="c">! convergence it always is.</span>
-<span class="w">            </span><span class="k">do pass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
-<span class="w">               </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span>
-<span class="w">                  </span><span class="n">overlap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">dot_product</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">correction</span><span class="p">)</span>
-<span class="w">                  </span><span class="n">correction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">correction</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">overlap</span><span class="o">*</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
-<span class="w">               </span><span class="k">end do</span>
-<span class="k">            end do</span>
-<span class="k">            </span><span class="n">norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">correction</span><span class="p">,</span><span class="w"> </span><span class="n">correction</span><span class="p">))</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">norm</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">LINEAR_DEPENDENCE</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-
-<span class="k">            </span><span class="n">added</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">correction</span><span class="o">/</span><span class="n">norm</span>
-<span class="w">            </span><span class="n">work</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">])</span>
-<span class="w">            </span><span class="k">call </span><span class="n">sigma_vector</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_work</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
-<span class="k">            </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">sigma_work</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">ndet</span><span class="p">])</span>
-<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">sigma_products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">sigma_products</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="k">end do</span>
-
-<span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">small</span><span class="p">,</span><span class="w"> </span><span class="n">small_values</span><span class="p">)</span>
-
-<span class="w">         </span><span class="c">! Nothing left to expand with: every direction the residuals point in</span>
-<span class="w">         </span><span class="c">! is already spanned. The answer is as converged as this subspace can</span>
-<span class="w">         </span><span class="c">! make it, which for a full space is exactly converged.</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">added</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">               </span><span class="k">result</span><span class="p">%</span><span class="n">vectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">])</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">            result</span><span class="p">%</span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">all</span><span class="p">(</span><span class="n">root_converged</span><span class="p">)</span>
-<span class="w">            </span><span class="k">exit</span>
-<span class="k">         end if</span>
-<span class="k">         </span><span class="n">nsub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span>
-<span class="w">      </span><span class="k">end do</span>
-
-<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">converged</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">vectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">])</span>
-<span class="w">         </span><span class="k">end do</span>
-<span class="k">      end if</span>
-
-<span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">sigma</span><span class="p">,</span><span class="w"> </span><span class="n">ritz</span><span class="p">,</span><span class="w"> </span><span class="n">hritz</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="n">correction</span><span class="p">,</span><span class="w"> </span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_work</span><span class="p">)</span>
-<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">root_converged</span><span class="p">)</span>
-<span class="w">   </span><span class="k">end subroutine </span><span class="n">davidson_lowest</span>
+<span class="k">   end subroutine </span><span class="n">davidson_lowest</span>
 </pre></div>
 
     </section>
@@ -1345,7 +818,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 02:13 +0000             </p>
+ on 2026-08-19 03:06 +0000             </p>
           </div>
         </div>
         <br>
