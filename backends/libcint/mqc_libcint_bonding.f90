@@ -29,7 +29,9 @@ module mqc_libcint_bonding
                                aambs_atom_ranges, quasi_atomic_orbitals, &
                                quao_result_t, orient_quasi_atomic_orbitals, &
                                kinetic_bond_orders
-   use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition
+   use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition, &
+                               nuclear_attraction_per_atom, quao_nuclear_attraction, &
+                               nuclear_decomposition, print_nuclear_decomposition
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -112,6 +114,8 @@ contains
       real(dp), allocatable :: kbo(:, :), interference(:, :), populations(:)
       real(dp), allocatable :: valence_density(:, :)
       real(dp), allocatable :: kin_intra(:), kin_inter(:, :)
+      real(dp), allocatable :: v_atom_ao(:, :, :), v_atom_quao(:, :, :)
+      real(dp), allocatable :: nuc_intra(:), nuc_inter(:, :)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -249,6 +253,19 @@ contains
          call kinetic_decomposition(quao, interference, natm, kin_intra, kin_inter, error)
          if (error%has_error()) return
          call print_kinetic_decomposition(kin_intra, kin_inter, element_symbols)
+
+         ! The other half of the one-electron energy. Split by which nucleus is
+         ! attracting, so a term carries three atomic labels rather than two and
+         ! an atom's density sitting in a foreign nuclear field becomes an
+         ! interaction between that pair rather than a property of one atom.
+         call nuclear_attraction_per_atom(mol, atomic_numbers, coordinates, v_atom_ao, error)
+         if (error%has_error()) return
+         call quao_nuclear_attraction(quao, v_atom_ao, v_atom_quao, error)
+         if (error%has_error()) return
+         call nuclear_decomposition(quao, quao%population_bond_order, v_atom_quao, &
+                                    natm, nuc_intra, nuc_inter, error)
+         if (error%has_error()) return
+         call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
 
          ! Two diagnostics, at the end rather than the top: they say whether to
          ! believe the tables above, which is not a question worth asking until

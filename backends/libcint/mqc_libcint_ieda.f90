@@ -33,7 +33,10 @@ module mqc_libcint_ieda
    !! is scaled. Where the bond order is a gauge, this is an energy.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_libcint_esp, only: esp_matrices
+   use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_quao, only: quao_result_t
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
@@ -41,7 +44,11 @@ module mqc_libcint_ieda
 
    public :: kinetic_decomposition
    public :: kinetic_total
+   public :: nuclear_attraction_per_atom
+   public :: quao_nuclear_attraction
+   public :: nuclear_decomposition
    public :: print_kinetic_decomposition
+   public :: print_nuclear_decomposition
 
    real(dp), parameter :: TO_MILLIHARTREE = 1000.0_dp
    real(dp), parameter :: TOL_SUM_RULE = 1.0e-8_dp
@@ -49,6 +56,11 @@ module mqc_libcint_ieda
       !! the decomposition is refused. The regrouping is exact arithmetic, so
       !! the only thing this tolerates is accumulated rounding; GAMESS applies
       !! the same figure to the equivalent check and aborts on it.
+   real(dp), parameter :: TOL_SPLIT = 1.0e-8_dp
+      !! Hartree, per matrix element. How far the per-nucleus attraction
+      !! integrals may drift from the one-shot ones before the split is
+      !! refused. The two are the same operator summed in a different order, so
+      !! this tolerates quadrature and nothing else.
    real(dp), parameter :: TOL_PRINT_PAIR = 1.0e-6_dp
       !! Hartree. Atom pairs contributing less than this are not printed. They
       !! are still counted in the totals, so the printed rows need not add up to
@@ -152,13 +164,236 @@ contains
       total = sum(intra) + 0.5_dp*sum(inter)
    end function kinetic_total
 
+   subroutine nuclear_attraction_per_atom(mol, atomic_numbers, coordinates, v_atom, error)
+      !! Split the nuclear attraction by which nucleus is doing the attracting
+      !!
+      !!     V_pq^A = -Z_A < p | 1/|r - R_A| | q >
+      !!
+      !! GAMESS calls the equivalent array `VBYATM`. No new integral is needed:
+      !! `esp_matrices` already evaluates `1/|r - R|` at arbitrary points, so
+      !! putting those points on the nuclei and scaling by the nuclear charge
+      !! is the whole construction.
+      !!
+      !! **Summing the pieces must give back the ordinary nuclear attraction**,
+      !! since the operator is a sum over nuclei and nothing else. That is
+      !! checked here rather than left to a caller, because every plausible way
+      !! of getting this wrong -- a dropped minus sign, the charge left off, the
+      !! points in Angstrom -- produces an array that is smooth, symmetric and
+      !! entirely wrong. The check costs two one-electron integral builds
+      !! against an `esp_matrices` call that is already more expensive than
+      !! both, so it is close to free in context.
+      type(libcint_molecule_t), intent(in), target :: mol
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: coordinates(:, :)   !! (3, n_atoms), Bohr
+      real(dp), allocatable, intent(out) :: v_atom(:, :, :)
+         !! (n_ao, n_ao, n_atoms), hartree
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rinv(:, :, :), h(:, :), t(:, :), total(:, :)
+      character(len=400) :: message
+      real(dp) :: worst
+      integer :: natm, a
+
+      if (error%has_error()) return
+
+      natm = size(atomic_numbers)
+      if (size(coordinates, 1) /= 3 .or. size(coordinates, 2) /= natm) then
+         call error%set(ERROR_VALIDATION, "the coordinates and the atomic numbers "// &
+                        "describe different numbers of atoms.")
+         return
+      end if
+
+      call esp_matrices(mol, coordinates, rinv, error)
+      if (error%has_error()) return
+
+      allocate (v_atom(mol%nao, mol%nao, natm))
+      do a = 1, natm
+         v_atom(:, :, a) = -real(atomic_numbers(a), dp)*rinv(:, :, a)
+      end do
+      deallocate (rinv)
+
+      ! The reference: the one-shot nuclear attraction, which is the core
+      ! Hamiltonian less the kinetic energy.
+      call mol%core_hamiltonian(h)
+      call mol%kinetic(t)
+      allocate (total(mol%nao, mol%nao))
+      total = 0.0_dp
+      do a = 1, natm
+         total = total + v_atom(:, :, a)
+      end do
+      worst = maxval(abs(total - (h - t)))
+      deallocate (h, t, total)
+
+      if (worst > TOL_SPLIT) then
+         write (message, "(a,es12.4,a)") "the per-nucleus attraction integrals do "// &
+            "not sum to the ordinary nuclear attraction; the largest element "// &
+            "disagrees by ", worst, " hartree. The two are the same operator "// &
+            "summed in a different order, so this is a sign, a nuclear charge "// &
+            "or a coordinate, not an accuracy question."
+         call error%set(ERROR_VALIDATION, trim(message))
+         deallocate (v_atom)
+         return
+      end if
+   end subroutine nuclear_attraction_per_atom
+
+   subroutine quao_nuclear_attraction(quao, v_atom_ao, v_atom_quao, error)
+      !! Carry the per-nucleus attraction into the quasi-atomic basis
+      !!
+      !! One `C^T V^A C` per nucleus. The quasi-atomic orbitals are orthonormal,
+      !! so this is a similarity transformation and the trace against a density
+      !! is preserved exactly -- which is what lets the decomposition below be a
+      !! regrouping rather than a model.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: v_atom_ao(:, :, :)      !! (n_ao, n_ao, n_atoms)
+      real(dp), allocatable, intent(out) :: v_atom_quao(:, :, :)
+         !! (n_quao, n_quao, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: work(:, :)
+      integer :: n_ao, n, natm, a
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      n_ao = size(quao%orbitals, 1)
+      natm = size(v_atom_ao, 3)
+      if (size(v_atom_ao, 1) /= n_ao .or. size(v_atom_ao, 2) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "the per-nucleus attraction integrals are "// &
+                        "not in the same atomic-orbital basis as the quasi-atomic "// &
+                        "orbitals.")
+         return
+      end if
+
+      allocate (v_atom_quao(n, n, natm), work(n_ao, n))
+      do a = 1, natm
+         call pic_gemm(v_atom_ao(:, :, a), quao%orbitals, work)
+         call pic_gemm(quao%orbitals, work, v_atom_quao(:, :, a), transa="T")
+      end do
+      deallocate (work)
+   end subroutine quao_nuclear_attraction
+
+   subroutine nuclear_decomposition(quao, density, v_atom_quao, n_atoms, intra, inter, error)
+      !! Group `gamma_pq V_pq^C` by the atoms of its two orbitals and its nucleus
+      !!
+      !! Unlike the kinetic term this one carries three atomic labels: the
+      !! orbital `p` sits on some atom, `q` on another, and the nucleus doing
+      !! the attracting is a third. The assignment is
+      !!
+      !!   * `p, q` on `A` and nucleus `A` -- atom `A`'s own electrons in its
+      !!     own field, so `intra(A)`;
+      !!   * `p, q` on `A` and nucleus `C` -- atom `A`'s density attracted to a
+      !!     foreign nucleus, which is a Coulombic interaction between the two
+      !!     and belongs to the pair `{A,C}`;
+      !!   * `p` on `A`, `q` on `B` -- an interference term, which exists only
+      !!     because those two atoms share density, so it goes to `{A,B}`
+      !!     **whichever nucleus** is attracting.
+      !!
+      !! **The last one is a choice and it should be read as one.** A term with
+      !! `p` on `A`, `q` on `B` and the nucleus on a third atom `C` is genuinely
+      !! three-body, and charging it to `{A,B}` says the interference is the
+      !! feature and the field it sits in is context. That keeps the pair table
+      !! interpretable and it loses nothing, since the sum rule below still
+      !! holds; a finer grouping would redistribute these terms without changing
+      !! any total.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: density(:, :)           !! (n_quao, n_quao)
+      real(dp), intent(in) :: v_atom_quao(:, :, :)    !! (n_quao, n_quao, n_atoms)
+      integer, intent(in) :: n_atoms
+      real(dp), allocatable, intent(out) :: intra(:)
+      real(dp), allocatable, intent(out) :: inter(:, :)
+         !! Symmetric, zero diagonal, each element the whole pair energy
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: term, residual, reference
+      character(len=400) :: message
+      integer :: n, i, j, c, a, b
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      if (size(density, 1) /= n .or. size(v_atom_quao, 1) /= n) then
+         call error%set(ERROR_VALIDATION, "the density and the per-nucleus attraction "// &
+                        "are not both in the quasi-atomic basis.")
+         return
+      end if
+      if (size(v_atom_quao, 3) /= n_atoms) then
+         call error%set(ERROR_VALIDATION, "the per-nucleus attraction does not cover "// &
+                        "every atom, so part of the nuclear field would be dropped.")
+         return
+      end if
+      if (n_atoms < 1 .or. maxval(quao%atom_of(1:n)) > n_atoms) then
+         call error%set(ERROR_VALIDATION, "a quasi-atomic orbital is assigned to an "// &
+                        "atom outside the molecule.")
+         return
+      end if
+
+      allocate (intra(n_atoms), inter(n_atoms, n_atoms))
+      intra = 0.0_dp
+      inter = 0.0_dp
+      reference = 0.0_dp
+
+      do c = 1, n_atoms
+         do i = 1, n
+            a = quao%atom_of(i)
+            do j = 1, n
+               b = quao%atom_of(j)
+               term = density(i, j)*v_atom_quao(i, j, c)
+               reference = reference + term
+               if (a /= b) then
+                  ! Interference: charged to the pair that shares the density,
+                  ! deposited in both elements so each holds the whole pair.
+                  inter(a, b) = inter(a, b) + term
+                  inter(b, a) = inter(b, a) + term
+               else if (a == c) then
+                  intra(a) = intra(a) + term
+               else
+                  inter(a, c) = inter(a, c) + term
+                  inter(c, a) = inter(c, a) + term
+               end if
+            end do
+         end do
+      end do
+
+      residual = kinetic_total(intra, inter) - reference
+      if (abs(residual) > TOL_SUM_RULE) then
+         write (message, "(a,es12.4,a)") "the nuclear attraction decomposition does "// &
+            "not sum back to the energy it was built from; it is short by ", &
+            residual, " hartree. Every term carries three atomic labels and each "// &
+            "must land in exactly one bin."
+         call error%set(ERROR_VALIDATION, trim(message))
+         deallocate (intra, inter)
+         return
+      end if
+   end subroutine nuclear_decomposition
+
+   subroutine print_nuclear_decomposition(intra, inter, element_symbols)
+      !! The atom and atom-pair table for the nuclear attraction
+      real(dp), intent(in) :: intra(:)
+      real(dp), intent(in) :: inter(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+
+      call print_decomposition("nuclear attraction decomposition", intra, inter, &
+                               element_symbols)
+   end subroutine print_nuclear_decomposition
+
    subroutine print_kinetic_decomposition(intra, inter, element_symbols)
+      !! The atom and atom-pair table for the kinetic energy
+      real(dp), intent(in) :: intra(:)
+      real(dp), intent(in) :: inter(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+
+      call print_decomposition("kinetic energy decomposition", intra, inter, &
+                               element_symbols)
+   end subroutine print_kinetic_decomposition
+
+   subroutine print_decomposition(title, intra, inter, element_symbols)
       !! The atom and atom-pair table
       !!
       !! Millihartree rather than kcal/mol as the leading column: these are the
       !! quantities the paper tabulates, and its tables are in millihartree.
       !! kcal/mol follows for comparison with the bond-order table above, which
       !! is on that scale because of the empirical tenth.
+      character(len=*), intent(in) :: title
       real(dp), intent(in) :: intra(:)
       real(dp), intent(in) :: inter(:, :)
       character(len=*), intent(in) :: element_symbols(:)
@@ -173,7 +408,7 @@ contains
       natm = size(intra)
 
       call logger%info("")
-      call logger%info("  kinetic energy decomposition")
+      call logger%info("  "//trim(title))
       call logger%info("     intra-atomic                    mhartree    kcal/mol")
       do a = 1, natm
          write (label_a, "(a,i0)") trim(adjustl(element_symbols(a)))//" ", a
@@ -227,11 +462,11 @@ contains
       write (line, "(4x,a24,f16.6,a)") "interatomic total", 0.5_dp*sum(inter), " hartree"
       call logger%info(trim(line))
       total = kinetic_total(intra, inter)
-      write (line, "(4x,a24,f16.6,a)") "kinetic energy", total, " hartree"
+      write (line, "(4x,a24,f16.6,a)") "total", total, " hartree"
       call logger%info(trim(line))
 
       deallocate (pair_a, pair_b, magnitude, order)
-   end subroutine print_kinetic_decomposition
+   end subroutine print_decomposition
 
    subroutine sort_descending(values, order)
       !! Indices that put `values` in descending order of magnitude
