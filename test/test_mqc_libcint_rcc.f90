@@ -207,48 +207,119 @@ contains
                  < 1.0e-9_dp, "the two formulations must agree in cc-pVDZ too")
    end subroutine test_pyscf_reference
 
+   subroutine fitted_both_paths(basis, frozen, triples, spin, spatial, ok)
+      !! Run both formulations density-fitted, over one set of exact orbitals
+      !!
+      !! The reference this is checked against is pyscf.cc.dfccsd on a
+      !! *conventional* mean field, so the SCF here is exact too -- fitting it
+      !! as well would mix a second approximation into a comparison meant to
+      !! isolate the first.
+      character(len=*), intent(in) :: basis
+      integer, intent(in) :: frozen
+      logical, intent(in) :: triples
+      type(cc_result_t), intent(out) :: spin
+      type(rcc_result_t), intent(out) :: spatial
+      logical, intent(out) :: ok
+
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+
+      ok = .false.
+      call converged_water(mol, scf, err, basis)
+      if (err%has_error() .or. .not. scf%converged) return
+
+      call water(aux, err, "cc-pvdz-rifit")
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+
+      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
+                            60, 1.0e-10_dp, triples, .false., spin, err, aux=aux)
+      if (.not. err%has_error()) then
+         call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
+                                60, 1.0e-10_dp, triples, .false., spatial, err, aux=aux)
+      end if
+
+      call mol%destroy()
+      call aux%destroy()
+      if (err%has_error()) return
+      ok = spin%converged .and. spatial%converged
+   end subroutine fitted_both_paths
+
    subroutine test_fitted_identity(error)
-      !! The density-fitted spatial path against the fitted spin-orbital one
+      !! The density-fitted spatial path, CCSD and (T), against every reference
       !!
       !! Its own case because the fitted route reaches `(ac|bd)` a completely
       !! different way -- a gemm over the auxiliary index inside the ladder,
       !! against a permuted read of a stored tensor -- and that is the one part
       !! of this module the conventional tests never exercise.
       !!
-      !! Compared against the fitted spin-orbital path rather than against the
-      !! conventional spatial one: the fitting error is 1.4e-4, three orders
-      !! above the agreement being asserted, so conventional CCSD is not the
-      !! yardstick here and cannot be.
+      !! The triples needed no fitted route of their own, which is what the
+      !! second half of this asserts rather than assumes: the particle half
+      !! wants (ia|bc) and the ring half (ij|ka), and `build_rcc_eris_fitted`
+      !! already produces both. Nothing in `triples_correction` reads a block
+      !! that only the conventional path builds.
+      !!
+      !! Compared against the fitted spin-orbital path, and against
+      !! pyscf.cc.dfccsd -- never against conventional CCSD. The fitting error
+      !! is 1.4e-4, three orders above the agreement asserted here, so the
+      !! conventional answer is not the yardstick and cannot be.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol, aux
-      type(rhf_result_t) :: scf
-      type(error_t) :: err
       type(cc_result_t) :: spin
       type(rcc_result_t) :: spatial
+      logical :: ok
 
-      call converged_water(mol, scf, err, "sto-3g")
-      call check(error,.not. err%has_error() .and. scf%converged, "water SCF must converge")
+      ! validation/check_cc.f90's ri_case references, pyscf.cc.dfccsd.RCCSD
+      real(dp), parameter :: E_CC_STO3G = -0.049173482895_dp
+      real(dp), parameter :: E_T_STO3G = -0.000072751429_dp
+      real(dp), parameter :: E_CC_PVDZ = -0.213326680500_dp
+      real(dp), parameter :: E_T_PVDZ = -0.003041992009_dp
+      real(dp), parameter :: E_CC_PVDZ_F1 = -0.211233849569_dp
+      real(dp), parameter :: E_T_PVDZ_F1 = -0.003019775484_dp
+
+      call fitted_both_paths("sto-3g", 0, .true., spin, spatial, ok)
+      call check(error, ok, "both fitted paths must converge in STO-3G")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_correlation - spatial%e_triples - E_CC_STO3G) &
+                 < 1.0e-9_dp, "fitted spatial CCSD must reproduce dfccsd, STO-3G")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_triples - E_T_STO3G) < 1.0e-9_dp, &
+                 "fitted spatial (T) must reproduce dfccsd, STO-3G")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_triples - spin%e_triples) < 1.0e-10_dp, &
+                 "the two fitted (T) corrections must agree, STO-3G")
       if (allocated(error)) return
 
-      call water(aux, err, "cc-pvdz-rifit")
-      call check(error,.not. err%has_error(), "the auxiliary basis must load")
+      ! cc-pVDZ, where the ladder's auxiliary-index gemm does real work and a
+      ! d shell is present.
+      call fitted_both_paths("cc-pvdz", 0, .true., spin, spatial, ok)
+      call check(error, ok, "both fitted paths must converge in cc-pVDZ")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_correlation - spatial%e_triples - E_CC_PVDZ) &
+                 < 1.0e-8_dp, "fitted spatial CCSD must reproduce dfccsd, cc-pVDZ")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_triples - E_T_PVDZ) < 1.0e-8_dp, &
+                 "fitted spatial (T) must reproduce dfccsd, cc-pVDZ")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_correlation - spin%e_singles - spin%e_doubles &
+                            - spin%e_triples) < 1.0e-9_dp, &
+                 "the two fitted formulations must agree, cc-pVDZ")
       if (allocated(error)) return
 
-      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, 0, &
-                            60, 1.0e-10_dp, .false., .false., spin, err, aux=aux)
-      call check(error,.not. err%has_error(), "fitted spin-orbital CCSD must converge")
+      ! And with a core frozen, which the triples index three times over.
+      call fitted_both_paths("cc-pvdz", 1, .true., spin, spatial, ok)
+      call check(error, ok, "both fitted paths must converge, frozen core")
       if (allocated(error)) return
-
-      call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, 0, &
-                             60, 1.0e-10_dp, .false., .false., spatial, err, aux=aux)
-      call check(error,.not. err%has_error(), "fitted spatial CCSD must converge")
+      call check(error, abs(spatial%e_correlation - spatial%e_triples - E_CC_PVDZ_F1) &
+                 < 1.0e-8_dp, "fitted spatial CCSD must reproduce dfccsd, frozen core")
       if (allocated(error)) return
-
-      call check(error, abs(spatial%e_correlation - spin%e_singles - spin%e_doubles) &
-                 < 1.0e-9_dp, "the two fitted formulations must agree")
-
-      call mol%destroy()
-      call aux%destroy()
+      call check(error, abs(spatial%e_triples - E_T_PVDZ_F1) < 1.0e-8_dp, &
+                 "fitted spatial (T) must reproduce dfccsd, frozen core")
+      if (allocated(error)) return
+      call check(error, abs(spatial%e_triples - spin%e_triples) < 1.0e-9_dp, &
+                 "the two fitted (T) corrections must agree, frozen core")
    end subroutine test_fitted_identity
 
    subroutine test_frozen_identity(error)
