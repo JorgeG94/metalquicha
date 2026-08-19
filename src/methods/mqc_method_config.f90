@@ -177,6 +177,8 @@ module mqc_method_config
       character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
          !! Atomic orbital labels the active space should be built from, e.g.
          !! "N 2p". Unallocated means the space was given by counts instead.
+      logical :: full_valence = .false.
+         !! Take the whole valence shell as the active space
       real(dp) :: avas_threshold = 0.2_dp
       integer :: n_active_electrons = 0
          !! Number of active electrons
@@ -492,6 +494,7 @@ contains
       if (allocated(this%mcscf%ormas_max_electrons)) then
          deallocate (this%mcscf%ormas_max_electrons)
       end if
+      this%mcscf%full_valence = .false.
       this%mcscf%n_active_electrons = 0
       this%mcscf%n_active_orbitals = 0
       this%mcscf%n_inactive_orbitals = -1

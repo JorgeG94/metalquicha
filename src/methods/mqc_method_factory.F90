@@ -292,6 +292,7 @@ contains
          m%options%avas_orbitals = config%mcscf%avas_orbitals
       end if
       m%options%avas_threshold = config%mcscf%avas_threshold
+      m%options%full_valence = config%mcscf%full_valence
       if (allocated(config%mcscf%ormas_subspaces)) then
          m%options%ormas_subspaces = config%mcscf%ormas_subspaces
          m%options%ormas_min_electrons = config%mcscf%ormas_min_electrons

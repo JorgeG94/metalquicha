@@ -49,6 +49,7 @@ module mqc_method_mcscf
       ! Active space definition
       character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
       real(dp) :: avas_threshold = 0.2_dp
+      logical :: full_valence = .false.
       integer :: n_active_electrons = 0
          !! Number of active electrons (CAS)
       integer :: n_active_orbitals = 0
@@ -159,6 +160,7 @@ contains
          settings%mcscf%avas_orbitals = this%options%avas_orbitals
       end if
       settings%mcscf%avas_threshold = this%options%avas_threshold
+      settings%mcscf%full_valence = this%options%full_valence
       settings%mcscf%n_active_electrons = this%options%n_active_electrons
       settings%mcscf%n_active_orbitals = this%options%n_active_orbitals
       settings%mcscf%n_inactive_orbitals = this%options%n_inactive_orbitals

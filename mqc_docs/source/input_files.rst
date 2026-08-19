@@ -644,8 +644,39 @@ Reference: Sayfutyarova, Sun, Chan and Knizia, *J. Chem. Theory Comput.* **13**,
 rather than the MINAO set of the paper; the two select the same spaces, which is
 what the width of that gap predicts.
 
+Taking the Whole Valence Shell
+""""""""""""""""""""""""""""""
+
+The third way of naming an active space, and the one that asks nothing of the
+reader:
+
+.. code-block:: json
+
+   "mcscf": {"full_valence": true}
+
+Every occupied orbital that is not core, plus the valence-virtual orbitals that
+complete the free-atom minimal basis. There is no threshold and no list of
+labels -- the size is ``n_mbs - n_occupied`` from counting the elements, so the
+same molecule gives the same space in any basis set. N\ :sub:`2` comes out
+CAS(10,8): two 1s cores inactive, five valence occupied, three valence virtual.
+
+The valence-virtual orbitals are the same ones :doc:`bonding_analysis` extracts;
+there they are a basis to analyse in, here they are the empty half of an active
+space. The run prints the diagnostic that says whether the split is clean --
+for N\ :sub:`2`, a smallest-kept singular value of 0.999 against a
+largest-rejected 0.201. A narrow gap there means the minimal basis is not
+finding a valence space and only the counting is holding the answer together.
+
+It grows with the molecule rather than with what is interesting in it, so a
+complete expansion over the valence shell is out of reach past small systems.
+That is what ``ormas`` above is for, and the two are meant to be used together.
+
+Naming the space twice -- ``full_valence`` with counts, or with an ``avas``
+block -- is refused rather than resolved by precedence, for the reason given
+there.
+
 Restricting the Occupations
-"""""""""""""""""""""""""""
+""""""""""""""""""""""""""""
 
 A complete active space distributes its electrons over its orbitals in every
 way there is, and the determinant count grows factorially: CAS(14,14) is 11.8

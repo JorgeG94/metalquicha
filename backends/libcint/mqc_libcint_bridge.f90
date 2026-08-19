@@ -39,7 +39,7 @@ module mqc_libcint_bridge
                                   BONDING_GMS_QUAO
    use mqc_libcint_casci, only: casci_result_t, run_libcint_casci, &
                                 run_libcint_ormas_ci
-   use mqc_libcint_avas, only: avas_select, avas_result_t
+   use mqc_libcint_avas, only: avas_select, avas_result_t, valence_select
    use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf, &
                                 natural_orbitals
    use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -1478,7 +1478,7 @@ contains
       type(error_t) :: error
       type(error_t) :: analysis_error
       type(avas_result_t) :: avas
-      logical :: use_avas
+      logical :: use_avas, use_valence
       real(dp), allocatable :: natural(:, :), occupations(:), reference(:, :)
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       character(len=MAX_LINE_LENGTH) :: line
@@ -1524,7 +1524,8 @@ contains
       ! Skipped when AVAS is choosing: the counts do not exist yet and cannot,
       ! since the selection needs converged orbitals to project.
       use_avas = allocated(settings%mcscf%avas_orbitals)
-      if (.not. use_avas) then
+      use_valence = settings%mcscf%full_valence
+      if (.not. use_avas .and. .not. use_valence) then
          call resolve_active_space(settings, fragment, mol%nao, space, error)
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -1534,7 +1535,7 @@ contains
          end if
       end if
 
-      if (settings%verbose .and. .not. use_avas) then
+      if (settings%verbose .and. .not. use_avas .and. .not. use_valence) then
          write (line, "(a,i0,a,i0,a,i0,a,i0,a,i0,a)") "  active space: CAS(", &
             settings%mcscf%n_active_electrons, ",", space(2), "), ", space(1), &
             " inactive, ", space(3), " alpha and ", space(4), " beta active electrons"
@@ -1573,6 +1574,25 @@ contains
       ! requested, and there are none to ask about until the SCF has run.
       allocate (reference(size(scf%orbitals, 1), size(scf%orbitals, 2)))
       reference = scf%orbitals
+      if (use_valence) then
+         ! The whole valence shell, sized by counting the free-atom minimal
+         ! basis. Here rather than earlier for the same reason as AVAS: the
+         ! valence-virtual orbitals are combinations of converged virtuals, and
+         ! there are none to combine until the SCF has run.
+         call valence_select(mol, fragment%element_numbers, symbols, &
+                             fragment%coordinates, scf%orbitals, fragment%nelec, &
+                             avas, error, verbose=settings%verbose)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         reference = avas%orbitals
+         space = [avas%n_inactive, avas%n_active, avas%n_active_electrons/2, &
+                  avas%n_active_electrons/2]
+      end if
+
       if (use_avas) then
          call avas_select(mol, fragment%element_numbers, symbols, fragment%coordinates, &
                           scf%orbitals, scf%n_occupied, settings%mcscf%avas_orbitals, &

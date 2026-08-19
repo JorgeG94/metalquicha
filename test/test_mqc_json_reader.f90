@@ -74,6 +74,7 @@ contains
                   new_unittest("bonding_analysis_property", test_bonding_analysis), &
                   new_unittest("avas_orbital_labels", test_avas_keywords), &
                   new_unittest("ormas_partition", test_ormas_keywords), &
+                  new_unittest("full_valence_space", test_full_valence), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1251,6 +1252,56 @@ contains
       call check(error, parse_error%has_error(), &
                  "a settings-only analysis block should be refused")
    end subroutine test_bonding_analysis
+
+   subroutine test_full_valence(error)
+      !! `keywords.mcscf.full_valence`, and that it is the only space named
+      !!
+      !! The third way of saying which orbitals are active, beside counts and an
+      !! AVAS block. Each of the three describes the whole space, so any two of
+      !! them together leave the deck's meaning depending on which the reader
+      !! reached first -- refused rather than resolved, as AVAS already is
+      !! against counts.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "casci", "basis": "cc-pvdz"', "Energy", &
+                      '"mcscf": {"full_valence": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%mcscf_full_valence, "the valence request should be read")
+      if (allocated(error)) return
+
+      ! Absent leaves it off, and the space has to be named some other way.
+      call write_deck('"method": "casci", "basis": "cc-pvdz"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 6, "n_active_orbitals": 6}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%mcscf_full_valence, &
+                 "no mention should leave it off")
+      if (allocated(error)) return
+
+      ! With counts as well.
+      call write_deck('"method": "casci", "basis": "cc-pvdz"', "Energy", &
+                      '"mcscf": {"full_valence": true, "n_active_electrons": 6, '// &
+                      '"n_active_orbitals": 6}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "naming the space twice should be refused")
+      if (allocated(error)) return
+
+      ! With AVAS as well.
+      call write_deck('"method": "casci", "basis": "cc-pvdz"', "Energy", &
+                      '"mcscf": {"full_valence": true, '// &
+                      '"avas": {"orbitals": ["N 2p"]}}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "two automatic selections at once should be refused")
+      if (allocated(error)) return
+   end subroutine test_full_valence
 
    subroutine test_ormas_keywords(error)
       !! `keywords.mcscf.ormas`, the subspaces and their occupation windows

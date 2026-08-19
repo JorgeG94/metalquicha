@@ -256,6 +256,7 @@ contains
       if (error%has_error()) return
       call optional_real(json, "keywords.mcscf.avas.threshold", &
                          config%mcscf_avas_threshold)
+      call optional_logical(json, "keywords.mcscf.full_valence", config%mcscf_full_valence)
       call optional_int(json, "keywords.mcscf.n_active_electrons", &
                         config%mcscf_n_active_electrons)
       call optional_int(json, "keywords.mcscf.n_active_orbitals", &
