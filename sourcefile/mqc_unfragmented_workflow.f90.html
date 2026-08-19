@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for source files.">199 statements</a>
+                 title=" 0.9% of total for source files.">213 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1870,13 +1870,32 @@ large graphs.</div>
 <a id="ln-292" name="ln-292" href="#ln-292"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">gradient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span>
 <a id="ln-293" name="ln-293" href="#ln-293"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <a id="ln-294" name="ln-294" href="#ln-294"></a><span class="w">            </span><span class="k">end if</span>
-<a id="ln-295" name="ln-295" href="#ln-295"></a><span class="k">         end if</span>
-<a id="ln-296" name="ln-296" href="#ln-296"></a><span class="k">      end block</span>
-<a id="ln-297" name="ln-297" href="#ln-297"></a><span class="k">      call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
-<a id="ln-298" name="ln-298" href="#ln-298"></a>
-<a id="ln-299" name="ln-299" href="#ln-299"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">unfragmented_calculation</span>
-<a id="ln-300" name="ln-300" href="#ln-300"></a>
-<a id="ln-301" name="ln-301" href="#ln-301"></a><span class="k">end submodule </span><span class="n">mqc_unfragmented_workflow</span>
+<a id="ln-295" name="ln-295" href="#ln-295"></a>
+<a id="ln-296" name="ln-296" href="#ln-296"></a><span class="w">            </span><span class="c">! The energy decomposition, when `properties.bonding_analysis`</span>
+<a id="ln-297" name="ln-297" href="#ln-297"></a><span class="w">            </span><span class="c">! asked for one. Carried whole rather than summarised: a caller</span>
+<a id="ln-298" name="ln-298" href="#ln-298"></a><span class="w">            </span><span class="c">! screening atoms or pairs by contribution needs the terms, and</span>
+<a id="ln-299" name="ln-299" href="#ln-299"></a><span class="w">            </span><span class="c">! there is no norm of this the way there is of a gradient.</span>
+<a id="ln-300" name="ln-300" href="#ln-300"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_ieda</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-301" name="ln-301" href="#ln-301"></a><span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">ieda_atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">ieda_atom</span>
+<a id="ln-302" name="ln-302" href="#ln-302"></a><span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">ieda_free_atom</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-303" name="ln-303" href="#ln-303"></a><span class="k">                  </span><span class="n">json_data</span><span class="p">%</span><span class="n">ieda_free_atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">ieda_free_atom</span>
+<a id="ln-304" name="ln-304" href="#ln-304"></a><span class="w">               </span><span class="k">end if</span>
+<a id="ln-305" name="ln-305" href="#ln-305"></a><span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">ieda_pair</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-306" name="ln-306" href="#ln-306"></a><span class="k">                  </span><span class="n">json_data</span><span class="p">%</span><span class="n">ieda_pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">ieda_pair</span>
+<a id="ln-307" name="ln-307" href="#ln-307"></a><span class="w">               </span><span class="k">end if</span>
+<a id="ln-308" name="ln-308" href="#ln-308"></a><span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">ieda_classical</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-309" name="ln-309" href="#ln-309"></a><span class="k">                  </span><span class="n">json_data</span><span class="p">%</span><span class="n">ieda_classical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">ieda_classical</span>
+<a id="ln-310" name="ln-310" href="#ln-310"></a><span class="w">               </span><span class="k">end if</span>
+<a id="ln-311" name="ln-311" href="#ln-311"></a><span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">ieda_formation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">ieda_formation</span>
+<a id="ln-312" name="ln-312" href="#ln-312"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_ieda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<a id="ln-313" name="ln-313" href="#ln-313"></a><span class="w">            </span><span class="k">end if</span>
+<a id="ln-314" name="ln-314" href="#ln-314"></a><span class="k">         end if</span>
+<a id="ln-315" name="ln-315" href="#ln-315"></a><span class="k">      end block</span>
+<a id="ln-316" name="ln-316" href="#ln-316"></a><span class="k">      call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<a id="ln-317" name="ln-317" href="#ln-317"></a>
+<a id="ln-318" name="ln-318" href="#ln-318"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">unfragmented_calculation</span>
+<a id="ln-319" name="ln-319" href="#ln-319"></a>
+<a id="ln-320" name="ln-320" href="#ln-320"></a><span class="k">end submodule </span><span class="n">mqc_unfragmented_workflow</span>
 </pre></div>
 
       </section>
@@ -1898,7 +1917,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 06:30 +0000             </p>
+ on 2026-08-19 07:28 +0000             </p>
           </div>
         </div>
         <br>

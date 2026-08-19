@@ -40,6 +40,7 @@ module mqc_capi_system
 
    public :: mqc_system_new, mqc_system_free
    public :: mqc_system_set_geometry, mqc_system_set_monomers, mqc_system_set_bonds
+   public :: mqc_system_set_fragment_potentials
    public :: mqc_system_n_atoms, mqc_system_n_monomers, mqc_system_n_bonds
    public :: mqc_system_bonds_declared
    public :: mqc_system_perceive_bonds, mqc_system_count_missing_bonds
@@ -253,6 +254,85 @@ contains
 
       status = MQC_OK
    end function mqc_system_set_monomers
+
+   function mqc_system_set_fragment_potentials(handle, n_potentials, stride, paths) &
+      result(status) bind(C, name="mqc_system_set_fragment_potentials")
+      !! The effective fragment potential each monomer carries
+      !!
+      !! One path per monomer, in monomer order, and every monomer needs one:
+      !! EFP2 evaluates the interaction between potentials, so a fragment
+      !! without one is not a quantum fragment here, it is a fragment the sum
+      !! cannot include. A mixed quantum/EFP system is a deck-only feature and
+      !! is refused rather than half-supported.
+      !!
+      !! `paths` is one buffer of `stride`-character slots, blank-padded, the
+      !! same shape `set_monomers` uses for its atom columns -- a char** would
+      !! mean trusting a caller's pointer arithmetic for a list that is read
+      !! once.
+      !!
+      !! The potentials themselves are read when the calculation runs, not
+      !! here: a missing file is the backend's error to report, with the
+      !! parse failure that comes with it, rather than a stat() in the setter.
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n_potentials
+      integer(c_int), value :: stride
+      character(kind=c_char), intent(in) :: paths(stride*n_potentials)
+      integer(c_int) :: status
+
+      type(system_handle_t), pointer :: h
+      integer :: ipot, ichar, base
+      character(len=:), allocatable :: path
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, h)
+
+      if (h%geom%n_monomers <= 0) then
+         last_message = "mqc_system_set_fragment_potentials: set the monomers first; "// &
+                        "a potential is placed on a fragment's atoms"
+         status = MQC_FAIL
+         return
+      end if
+      if (n_potentials /= h%geom%n_monomers) then
+         write (last_message, "(A,I0,A,I0,A)") &
+            "mqc_system_set_fragment_potentials: this system has ", h%geom%n_monomers, &
+            " monomers but ", n_potentials, " potentials were given; EFP2 needs one "// &
+            "per monomer, since a fragment without one is a fragment the sum cannot include"
+         status = MQC_FAIL
+         return
+      end if
+      if (stride <= 0 .or. stride > 256) then
+         last_message = "mqc_system_set_fragment_potentials: path slots must be "// &
+                        "1..256 characters"
+         status = MQC_FAIL
+         return
+      end if
+
+      if (allocated(h%geom%fragment_potentials)) deallocate (h%geom%fragment_potentials)
+      allocate (h%geom%fragment_potentials(n_potentials))
+      h%geom%fragment_potentials = ""
+
+      allocate (character(len=stride) :: path)
+      do ipot = 1, n_potentials
+         base = (ipot - 1)*stride
+         do ichar = 1, stride
+            path(ichar:ichar) = paths(base + ichar)
+         end do
+         if (len_trim(path) == 0) then
+            last_message = "mqc_system_set_fragment_potentials: potential "// &
+                           "for a monomer is empty; every monomer needs one"
+            deallocate (h%geom%fragment_potentials)
+            status = MQC_FAIL
+            return
+         end if
+         h%geom%fragment_potentials(ipot) = trim(path)
+      end do
+
+      status = MQC_OK
+   end function mqc_system_set_fragment_potentials
 
    function mqc_system_set_bonds(handle, n_bonds, atom_i, atom_j, order, is_broken) &
       result(status) bind(C, name="mqc_system_set_bonds")

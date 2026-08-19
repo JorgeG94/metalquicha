@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">31 statements</a>
+                 title=" 0.2% of total for procedures.">32 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,10 +137,10 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_makefp.html#variable-err~3">err</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-i~153">i</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-name~28">name</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-path~20">path</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-symbols~2">symbols</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-i~146">i</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-name~23">name</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-path~23">path</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-symbols~4">symbols</a>
         </div>
       </div>
     </div>
@@ -176,7 +176,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine run_makefp(config, sys_geom, rank)  
+    <h2>private  subroutine run_makefp(config, sys_geom, rank, result_out)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -184,9 +184,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></li>
               </ul>
             </li>
@@ -744,7 +744,7 @@ potential to overwrite the same path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~37"></span>
+              <span class="anchor" id="variable-config~41"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -759,7 +759,7 @@ potential to overwrite the same path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~57"></span>
+              <span class="anchor" id="variable-sys_geom~67"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -774,7 +774,7 @@ potential to overwrite the same path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rank~6"></span>
+              <span class="anchor" id="variable-rank~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -785,6 +785,24 @@ potential to overwrite the same path.</p>
             <td><strong>rank</strong></td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result_out~9"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result_out</strong></td>
+            <td>
+                <p>Carries the failure, if there is one. There is no energy to put on
+it &ndash; MAKEFP produces a file &ndash; but a caller that gets neither an
+energy nor an error has no way to tell a written potential from a
+backend that declined.</p>
             </td>
         </tr>
     </tbody>
@@ -813,89 +831,92 @@ potential to overwrite the same path.</p>
 <polygon fill="none" stroke="black" points="76,-150 0,-150 0,-126 76,-126 76,-150"/>
 <text text-anchor="middle" x="38" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50">run_makefp</text>
 </g>
-<!-- error -->
+<!-- info -->
 <g id="proc~~run_makefp~~CallsGraph_node2" class="node">
-<title>error</title>
+<title>info</title>
 <polygon fill="#777777" stroke="#777777" points="220.5,-276 166.5,-276 166.5,-252 220.5,-252 220.5,-276"/>
-<text text-anchor="middle" x="193.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<text text-anchor="middle" x="193.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
-<!-- proc~run_makefp&#45;&gt;error -->
+<!-- proc~run_makefp&#45;&gt;info -->
 <g id="proc~~run_makefp~~CallsGraph_edge1" class="edge">
-<title>proc~run_makefp&#45;&gt;error</title>
+<title>proc~run_makefp&#45;&gt;info</title>
 <path fill="none" stroke="#ff0000" d="M44,-150.18C53.7,-172.23 77.22,-218.73 112,-243 124.99,-252.07 141.63,-257.22 156.4,-260.15"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="155.82,-263.6 166.27,-261.84 157,-256.7 155.82,-263.6"/>
 </g>
-<!-- info -->
-<g id="proc~~run_makefp~~CallsGraph_node3" class="node">
-<title>info</title>
-<polygon fill="#777777" stroke="#777777" points="220.5,-234 166.5,-234 166.5,-210 220.5,-210 220.5,-234"/>
-<text text-anchor="middle" x="193.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
-</g>
-<!-- proc~run_makefp&#45;&gt;info -->
-<g id="proc~~run_makefp~~CallsGraph_edge2" class="edge">
-<title>proc~run_makefp&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M49.65,-150.07C62.88,-164.33 86.8,-187.77 112,-201 125.69,-208.19 142,-213.04 156.35,-216.24"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="155.89,-219.72 166.39,-218.3 157.29,-212.86 155.89,-219.72"/>
-</g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~run_makefp~~CallsGraph_node4" class="node">
+<g id="proc~~run_makefp~~CallsGraph_node3" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~run_makefp~~CallsGraph_node4"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="275,-192 112,-192 112,-168 275,-168 275,-192"/>
-<text text-anchor="middle" x="193.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~run_makefp~~CallsGraph_node3"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="275,-234 112,-234 112,-210 275,-210 275,-234"/>
+<text text-anchor="middle" x="193.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~run_makefp&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~run_makefp~~CallsGraph_edge3" class="edge">
+<g id="proc~~run_makefp~~CallsGraph_edge2" class="edge">
 <title>proc~run_makefp&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#ff0000" d="M76.09,-148.86C87.58,-152.18 100.3,-155.79 112,-159 119.72,-161.12 127.88,-163.3 135.92,-165.43"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="135.06,-168.82 145.62,-167.98 136.84,-162.05 135.06,-168.82"/>
+<path fill="none" stroke="#ff0000" d="M49.65,-150.07C62.88,-164.33 86.8,-187.77 112,-201 115.74,-202.96 119.68,-204.75 123.72,-206.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="122.69,-209.73 133.28,-209.9 125.1,-203.16 122.69,-209.73"/>
 </g>
 <!-- proc~error_get_message -->
-<g id="proc~~run_makefp~~CallsGraph_node5" class="node">
+<g id="proc~~run_makefp~~CallsGraph_node4" class="node">
 <title>proc~error_get_message</title>
-<g id="a_proc~~run_makefp~~CallsGraph_node5"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="273.5,-150 113.5,-150 113.5,-126 273.5,-126 273.5,-150"/>
-<text text-anchor="middle" x="193.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+<g id="a_proc~~run_makefp~~CallsGraph_node4"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="273.5,-192 113.5,-192 113.5,-168 273.5,-168 273.5,-192"/>
+<text text-anchor="middle" x="193.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
 </a>
 </g>
 </g>
 <!-- proc~run_makefp&#45;&gt;proc~error_get_message -->
-<g id="proc~~run_makefp~~CallsGraph_edge4" class="edge">
+<g id="proc~~run_makefp~~CallsGraph_edge3" class="edge">
 <title>proc~run_makefp&#45;&gt;proc~error_get_message</title>
-<path fill="none" stroke="#ff0000" d="M76.16,-138C84.43,-138 93.55,-138 102.94,-138"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="103.2,-141.5 113.2,-138 103.2,-134.5 103.2,-141.5"/>
+<path fill="none" stroke="#ff0000" d="M76.09,-148.86C87.58,-152.18 100.3,-155.79 112,-159 119.72,-161.12 127.88,-163.3 135.92,-165.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="135.06,-168.82 145.62,-167.98 136.84,-162.05 135.06,-168.82"/>
 </g>
 <!-- proc~error_has_error -->
-<g id="proc~~run_makefp~~CallsGraph_node6" class="node">
+<g id="proc~~run_makefp~~CallsGraph_node5" class="node">
 <title>proc~error_has_error</title>
-<g id="a_proc~~run_makefp~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="263,-108 124,-108 124,-84 263,-84 263,-108"/>
-<text text-anchor="middle" x="193.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<g id="a_proc~~run_makefp~~CallsGraph_node5"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="263,-150 124,-150 124,-126 263,-126 263,-150"/>
+<text text-anchor="middle" x="193.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~run_makefp&#45;&gt;proc~error_has_error -->
-<g id="proc~~run_makefp~~CallsGraph_edge5" class="edge">
+<g id="proc~~run_makefp~~CallsGraph_edge4" class="edge">
 <title>proc~run_makefp&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff0000" d="M76.09,-127.14C87.58,-123.82 100.3,-120.21 112,-117 119.72,-114.88 127.88,-112.7 135.92,-110.57"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="136.84,-113.95 145.62,-108.02 135.06,-107.18 136.84,-113.95"/>
+<path fill="none" stroke="#ff0000" d="M76.16,-138C87.61,-138 100.69,-138 113.84,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="113.88,-141.5 123.88,-138 113.88,-134.5 113.88,-141.5"/>
 </g>
 <!-- proc~get_basename -->
-<g id="proc~~run_makefp~~CallsGraph_node7" class="node">
+<g id="proc~~run_makefp~~CallsGraph_node6" class="node">
 <title>proc~get_basename</title>
-<g id="a_proc~~run_makefp~~CallsGraph_node7"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="239,-66 148,-66 148,-42 239,-42 239,-66"/>
-<text text-anchor="middle" x="193.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+<g id="a_proc~~run_makefp~~CallsGraph_node6"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="239,-108 148,-108 148,-84 239,-84 239,-108"/>
+<text text-anchor="middle" x="193.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
 </a>
 </g>
 </g>
 <!-- proc~run_makefp&#45;&gt;proc~get_basename -->
-<g id="proc~~run_makefp~~CallsGraph_edge6" class="edge">
+<g id="proc~~run_makefp~~CallsGraph_edge5" class="edge">
 <title>proc~run_makefp&#45;&gt;proc~get_basename</title>
-<path fill="none" stroke="#ff0000" d="M49.65,-125.93C62.88,-111.67 86.8,-88.23 112,-75 120.08,-70.76 129.07,-67.33 138.03,-64.58"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="139.03,-67.93 147.7,-61.84 137.12,-61.19 139.03,-67.93"/>
+<path fill="none" stroke="#ff0000" d="M76.09,-127.14C87.58,-123.82 100.3,-120.21 112,-117 120.4,-114.7 129.31,-112.31 138.02,-110.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="138.95,-113.39 147.74,-107.47 137.18,-106.62 138.95,-113.39"/>
+</g>
+<!-- proc~refuse -->
+<g id="proc~~run_makefp~~CallsGraph_node7" class="node">
+<title>proc~refuse</title>
+<g id="a_proc~~run_makefp~~CallsGraph_node7"><a xlink:href="../proc/refuse.html" xlink:title="refuse">
+<polygon fill="#d9534f" stroke="#d9534f" points="220.5,-66 166.5,-66 166.5,-42 220.5,-42 220.5,-66"/>
+<text text-anchor="middle" x="193.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">refuse</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~refuse -->
+<g id="proc~~run_makefp~~CallsGraph_edge6" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~refuse</title>
+<path fill="none" stroke="#ff0000" d="M49.65,-125.93C62.88,-111.67 86.8,-88.23 112,-75 125.69,-67.81 142,-62.96 156.35,-59.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="157.29,-63.14 166.39,-57.7 155.89,-56.28 157.29,-63.14"/>
 </g>
 <!-- proc~run_libcint_makefp -->
 <g id="proc~~run_makefp~~CallsGraph_node8" class="node">
@@ -912,17 +933,35 @@ potential to overwrite the same path.</p>
 <path fill="none" stroke="#ff0000" d="M44,-125.82C53.7,-103.77 77.22,-57.27 112,-33 116.52,-29.85 121.47,-27.17 126.64,-24.89"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="128.06,-28.1 136.11,-21.22 125.52,-21.57 128.06,-28.1"/>
 </g>
-<!-- proc~error_set -->
+<!-- error -->
 <g id="proc~~run_makefp~~CallsGraph_node9" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="390.5,-66 336.5,-66 336.5,-42 390.5,-42 390.5,-66"/>
+<text text-anchor="middle" x="363.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~refuse&#45;&gt;error -->
+<g id="proc~~run_makefp~~CallsGraph_edge8" class="edge">
+<title>proc~refuse&#45;&gt;error</title>
+<path fill="none" stroke="#4800ff" d="M220.75,-54C249.11,-54 294.48,-54 326.23,-54"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="326.43,-57.5 336.43,-54 326.43,-50.5 326.43,-57.5"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~run_makefp~~CallsGraph_node10" class="node">
 <title>proc~error_set</title>
-<g id="a_proc~~run_makefp~~CallsGraph_node9"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<g id="a_proc~~run_makefp~~CallsGraph_node10"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
 <polygon fill="#d9534f" stroke="#d9534f" points="416,-24 311,-24 311,0 416,0 416,-24"/>
 <text text-anchor="middle" x="363.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
+<!-- proc~refuse&#45;&gt;proc~error_set -->
+<g id="proc~~run_makefp~~CallsGraph_edge9" class="edge">
+<title>proc~refuse&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#4800ff" d="M220.75,-47.44C243.12,-41.84 276.09,-33.6 304.6,-26.48"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="305.62,-29.83 314.47,-24.01 303.92,-23.04 305.62,-29.83"/>
+</g>
 <!-- proc~run_libcint_makefp&#45;&gt;proc~error_set -->
-<g id="proc~~run_makefp~~CallsGraph_edge8" class="edge">
+<g id="proc~~run_makefp~~CallsGraph_edge10" class="edge">
 <title>proc~run_libcint_makefp&#45;&gt;proc~error_set</title>
 <path fill="none" stroke="#ff00da" d="M250.91,-12C266.78,-12 284.13,-12 300.33,-12"/>
 <polygon fill="#ff00da" stroke="#ff00da" points="300.77,-15.5 310.77,-12 300.77,-8.5 300.77,-15.5"/>
@@ -1192,31 +1231,31 @@ large graphs.</div>
 <g id="proc~~run_makefp~~CalledByGraph_node11" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~run_makefp~~CalledByGraph_node11"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
-<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~run_makefp~~CalledByGraph_edge13" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M637.13,-17.93C668.49,-22.8 713.03,-29.72 746.29,-34.9"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="745.81,-38.36 756.23,-36.44 746.89,-31.45 745.81,-38.36"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~run_makefp~~CalledByGraph_node12" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~run_makefp~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="637,-188 559,-188 559,-164 637,-164 637,-188"/>
 <text text-anchor="middle" x="598" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~run_makefp~~CalledByGraph_edge10" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M637.13,-172.05C670.98,-168.54 720.18,-163.44 753.99,-159.94"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="754.37,-163.42 763.96,-158.91 753.65,-156.46 754.37,-163.42"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~run_makefp~~CalledByGraph_node12" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_makefp~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
+<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~run_makefp~~CalledByGraph_edge13" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M637.13,-17.93C668.49,-22.8 713.03,-29.72 746.29,-34.9"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="745.81,-38.36 756.23,-36.44 746.89,-31.45 745.81,-38.36"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~run_makefp~~CalledByGraph_node13" class="node">
@@ -1248,11 +1287,11 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M446.57,-95.23C465.95,-95.33 489.14,-95.45 511.45,-95.56"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="511.6,-99.07 521.62,-95.62 511.64,-92.07 511.6,-99.07"/>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~run_makefp~~CalledByGraph_edge16" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0066ff" d="M263.06,-159C347.22,-163.28 478.13,-169.95 548.44,-173.53"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="548.61,-177.04 558.77,-174.05 548.97,-170.05 548.61,-177.04"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~run_makefp~~CalledByGraph_edge15" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ff66" d="M263.06,-159C347.22,-163.28 478.13,-169.95 548.44,-173.53"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="548.61,-177.04 558.77,-174.05 548.97,-170.05 548.61,-177.04"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~run_makefp~~CalledByGraph_edge17" class="edge">
@@ -1275,11 +1314,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~run_makefp~~CalledByGraph_edge15" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ff66" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~run_makefp~~CalledByGraph_edge16" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0066ff" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
 </g>
 <!-- proc~mqc_session_begin -->
 <g id="proc~~run_makefp~~CalledByGraph_node17" class="node">
@@ -1417,7 +1456,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~153"></span>
+              <span class="anchor" id="variable-i~146"></span>
               integer,
             </td>
               <td>private</td>
@@ -1434,7 +1473,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~28"></span>
+              <span class="anchor" id="variable-name~23"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -1451,7 +1490,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~20"></span>
+              <span class="anchor" id="variable-path~23"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -1468,7 +1507,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-symbols~2"></span>
+              <span class="anchor" id="variable-symbols~4"></span>
               character(len=8),
             </td>
               <td>private,</td>
@@ -1499,7 +1538,7 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_makefp</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_makefp</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Build an effective fragment potential for the whole system and write it</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Only rank zero does anything: the work is one SCF and a set of response</span>
@@ -1513,6 +1552,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_out</span>
+<span class="w">         </span><span class="c">!! Carries the failure, if there is one. There is no energy to put on</span>
+<span class="w">         </span><span class="c">!! it -- MAKEFP produces a file -- but a caller that gets neither an</span>
+<span class="w">         </span><span class="c">!! energy nor an error has no way to tell a written potential from a</span>
+<span class="w">         </span><span class="c">!! backend that declined.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">err</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">8</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symbols</span><span class="p">(:)</span>
@@ -1549,7 +1593,7 @@ large graphs.</div>
 <span class="w">                                 </span><span class="n">guess</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">guess</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"MAKEFP failed: "</span><span class="o">//</span><span class="n">err</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="k">         call </span><span class="n">refuse</span><span class="p">(</span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"MAKEFP failed: "</span><span class="o">//</span><span class="n">err</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Wrote "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
@@ -1577,7 +1621,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 06:30 +0000             </p>
+ on 2026-08-19 07:28 +0000             </p>
           </div>
         </div>
         <br>

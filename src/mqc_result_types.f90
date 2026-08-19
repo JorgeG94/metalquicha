@@ -113,6 +113,29 @@ module mqc_result_types
          !! Atom indices are the fragment's own, so a fragment's matrix is
          !! fragment-local and includes its caps.
 
+      ! Intrinsic energy decomposition, when `properties.bonding_analysis`
+      ! asked for one. Hartree throughout, as everything here is; the printed
+      ! tables convert.
+      real(dp), allocatable :: ieda_atom(:)
+         !! (natoms) everything that happens inside one atom -- its own kinetic
+         !! energy, its electrons in its own nuclear field, its own repulsion.
+         !! An atom deformed by the molecule, not a free one.
+      real(dp), allocatable :: ieda_free_atom(:)
+         !! (natoms) the same atom on its own. `ieda_atom - ieda_free_atom` is
+         !! what it cost to prepare it in the shape the molecule needs.
+      real(dp), allocatable :: ieda_pair(:, :)
+         !! (natoms, natoms) everything that exists only because two atoms are
+         !! both present. **The full pair energy sits in both (A,B) and (B,A)**,
+         !! which is the convention the decomposition itself uses, so the total
+         !! is `sum(ieda_atom) + 0.5*sum(ieda_pair)` and not a triangle sum.
+      real(dp), allocatable :: ieda_classical(:, :)
+         !! (natoms, natoms) the part of the pair energy an electrostatic model
+         !! could produce. What is left is interference, which is where the
+         !! analysis argues covalent binding lives.
+      real(dp) :: ieda_formation = 0.0_dp
+         !! The energy of formation: the molecule against its free atoms.
+      logical :: has_ieda = .false.
+
       ! Fragment metadata
       real(dp) :: distance = 0.0_dp      !! Minimal atomic distance between monomers (Angstrom, 0 for monomers)
 
@@ -294,6 +317,10 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
+      if (allocated(this%ieda_free_atom)) deallocate (this%ieda_free_atom)
+      if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)
+      if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
       call this%reset()
    end subroutine result_destroy
 
@@ -314,6 +341,8 @@ contains
       this%homo = 0.0_dp
       this%lumo = 0.0_dp
       this%has_orbitals = .false.
+      this%has_ieda = .false.
+      this%ieda_formation = 0.0_dp
    end subroutine result_reset
 
    !---------------------------------------------------------------------------

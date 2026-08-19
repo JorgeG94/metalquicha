@@ -117,6 +117,7 @@ contains
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
 
       call write_sapt_section(json, main_obj, data)
+      call write_ieda_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
@@ -603,6 +604,76 @@ contains
       call logger%info("Vibrational/thermochemistry JSON written successfully to "//trim(output_file))
 
    end subroutine write_vibrational_json_impl
+
+   subroutine write_ieda_section(json, parent, data)
+      !! The energy resolved onto atoms and atom pairs, under `bonding_energy`
+      !!
+      !! Written whenever `properties.bonding_analysis.energy_decomposition`
+      !! ran. The tables are printed too -- that is what the deck asked for --
+      !! but a printed table is not a number a script can act on, and the whole
+      !! point of the decomposition is deciding which atoms and which pairs are
+      !! worth attention.
+      !!
+      !! **Atom indices are 0-based**, as everywhere else in the interfaces,
+      !! and the pairs are written once each with `i < j` carrying the full
+      !! pair energy -- the (A,B)/(B,A) doubling of the internal matrices is an
+      !! internal convention and there is no reason to export it. So the total
+      !! is `sum(atoms) + sum(pairs)` here, with no factor of a half.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: ieda_obj, atoms_arr, atom_obj, pairs_arr, pair_obj
+      type(json_value), pointer :: indices_arr
+      integer :: i, j, natm
+
+      if (.not. data%has_ieda) return
+      if (.not. allocated(data%ieda_atom)) return
+      natm = size(data%ieda_atom)
+
+      call json%create_object(ieda_obj, "bonding_energy")
+      call json%add(parent, ieda_obj)
+      call json%add(ieda_obj, "energy_of_formation", data%ieda_formation)
+
+      call json%create_array(atoms_arr, "atoms")
+      call json%add(ieda_obj, atoms_arr)
+      do i = 1, natm
+         call json%create_object(atom_obj, "")
+         call json%add(atoms_arr, atom_obj)
+         call json%add(atom_obj, "index", i - 1)
+         call json%add(atom_obj, "energy", data%ieda_atom(i))
+         if (allocated(data%ieda_free_atom)) then
+            call json%add(atom_obj, "free_atom", data%ieda_free_atom(i))
+            ! What it cost to prepare this atom in the shape the molecule
+            ! needs. Written out rather than left as a subtraction the reader
+            ! has to know to make.
+            call json%add(atom_obj, "adaptation", &
+                          data%ieda_atom(i) - data%ieda_free_atom(i))
+         end if
+      end do
+
+      if (.not. allocated(data%ieda_pair)) return
+      call json%create_array(pairs_arr, "pairs")
+      call json%add(ieda_obj, pairs_arr)
+      do i = 1, natm
+         do j = i + 1, natm
+            call json%create_object(pair_obj, "")
+            call json%add(pairs_arr, pair_obj)
+            call json%create_array(indices_arr, "atoms")
+            call json%add(pair_obj, indices_arr)
+            call json%add(indices_arr, "", i - 1)
+            call json%add(indices_arr, "", j - 1)
+            call json%add(pair_obj, "energy", data%ieda_pair(i, j))
+            if (allocated(data%ieda_classical)) then
+               call json%add(pair_obj, "classical", data%ieda_classical(i, j))
+               ! The part no electrostatic model can produce, which is the
+               ! claim the analysis exists to make.
+               call json%add(pair_obj, "interference", &
+                             data%ieda_pair(i, j) - data%ieda_classical(i, j))
+            end if
+         end do
+      end do
+   end subroutine write_ieda_section
 
    subroutine write_sapt_section(json, parent, data)
       !! The decomposition, under `sapt`, when there is one
