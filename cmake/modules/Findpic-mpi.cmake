@@ -25,18 +25,18 @@ include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 # Use the main branch
 set(_rev "v0.6.0")
 
-# The first pic-mpi release carrying the single-rank backend, i.e. the first
-# one that understands PIC_ENABLE_MPI.
+# The first pic-mpi release carrying the single-rank backend, i.e. the first one
+# that understands PIC_ENABLE_MPI.
 set(_serial_min "0.6.0")
 
 # Checked BEFORE the fetch, on purpose. FetchContent configures pic-mpi as soon
 # as it is made available, so a pic-mpi that predates the option fails inside
 # its own find_package(MPI) -- with an error naming FindMPI and nothing about
 # why MPI was wanted. Anything checked afterwards runs too late to help.
-# `FETCHCONTENT_SOURCE_DIR_PIC-MPI` means a developer has pointed the build at
-# a local checkout, where the pinned tag says nothing about what is in it. That
-# is how the serial backend gets tested before it is released, so the version
-# check does not apply.
+# `FETCHCONTENT_SOURCE_DIR_PIC-MPI` means a developer has pointed the build at a
+# local checkout, where the pinned tag says nothing about what is in it. That is
+# how the serial backend gets tested before it is released, so the version check
+# does not apply.
 if(DEFINED MQC_ENABLE_MPI
    AND NOT MQC_ENABLE_MPI
    AND NOT FETCHCONTENT_SOURCE_DIR_PIC-MPI)

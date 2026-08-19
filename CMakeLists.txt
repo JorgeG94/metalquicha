@@ -104,15 +104,15 @@ option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
 # Build without MPI.
 #
 # mqc parallelises over fragments with MPI and that is how it is meant to run.
-# The point of turning it off is not to run serially where MPI would do -- it
-# is that a build should be possible where MPI is not: a CI runner without one,
-# a laptop, or a compiler whose vendor MPI is awkward to obtain. Today each of
+# The point of turning it off is not to run serially where MPI would do -- it is
+# that a build should be possible where MPI is not: a CI runner without one, a
+# laptop, or a compiler whose vendor MPI is awkward to obtain. Today each of
 # those means no build at all, since `find_package(pic-mpi)` fails before
 # anything else is tried.
 #
 # OFF selects pic-mpi's single-rank backend, which presents the same interface
-# with one rank underneath. No mqc source changes: everything still goes
-# through `pic_mpi_lib`.
+# with one rank underneath. No mqc source changes: everything still goes through
+# `pic_mpi_lib`.
 #
 # The flag propagated to pic-mpi is PIC_ENABLE_MPI, not this one -- pic-mpi has
 # other consumers and none of them should have to know what MQC_ is. See
