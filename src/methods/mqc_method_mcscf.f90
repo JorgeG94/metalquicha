@@ -49,6 +49,7 @@ module mqc_method_mcscf
       ! Active space definition
       character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
       real(dp) :: avas_threshold = 0.2_dp
+      logical :: full_valence = .false.
       integer :: n_active_electrons = 0
          !! Number of active electrons (CAS)
       integer :: n_active_orbitals = 0
@@ -58,6 +59,11 @@ module mqc_method_mcscf
          !! -1 means auto-determine from nelec and active electrons
       logical :: optimize_orbitals = .true.
          !! CASSCF when true, CASCI when false. See `mcscf_config_t`.
+      integer, allocatable :: ormas_subspaces(:)
+         !! Active orbital each subspace starts at. Unallocated is a complete
+         !! active space.
+      integer, allocatable :: ormas_min_electrons(:)
+      integer, allocatable :: ormas_max_electrons(:)
 
       ! State-averaging
       integer :: n_states = 1
@@ -154,10 +160,16 @@ contains
          settings%mcscf%avas_orbitals = this%options%avas_orbitals
       end if
       settings%mcscf%avas_threshold = this%options%avas_threshold
+      settings%mcscf%full_valence = this%options%full_valence
       settings%mcscf%n_active_electrons = this%options%n_active_electrons
       settings%mcscf%n_active_orbitals = this%options%n_active_orbitals
       settings%mcscf%n_inactive_orbitals = this%options%n_inactive_orbitals
       settings%mcscf%optimize_orbitals = this%options%optimize_orbitals
+      if (allocated(this%options%ormas_subspaces)) then
+         settings%mcscf%ormas_subspaces = this%options%ormas_subspaces
+         settings%mcscf%ormas_min_electrons = this%options%ormas_min_electrons
+         settings%mcscf%ormas_max_electrons = this%options%ormas_max_electrons
+      end if
       settings%mcscf%max_macro_iter = this%options%max_macro_iter
       settings%mcscf%orbital_convergence = this%options%orbital_tol
 

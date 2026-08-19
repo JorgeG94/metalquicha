@@ -177,6 +177,8 @@ module mqc_method_config
       character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
          !! Atomic orbital labels the active space should be built from, e.g.
          !! "N 2p". Unallocated means the space was given by counts instead.
+      logical :: full_valence = .false.
+         !! Take the whole valence shell as the active space
       real(dp) :: avas_threshold = 0.2_dp
       integer :: n_active_electrons = 0
          !! Number of active electrons
@@ -219,6 +221,12 @@ module mqc_method_config
          !! IPEA shift for CASPT2
       real(dp) :: imaginary_shift = 0.0_dp
          !! Imaginary shift for intruder states
+      integer, allocatable :: ormas_subspaces(:)
+         !! Active orbital each subspace starts at, from
+         !! `keywords.mcscf.ormas`. Unallocated is a complete active space.
+      integer, allocatable :: ormas_min_electrons(:)
+      integer, allocatable :: ormas_max_electrons(:)
+         !! Electrons allowed in each subspace, both spins together
    end type mcscf_config_t
 
    !============================================================================
@@ -479,6 +487,14 @@ contains
       this%dft%dispersion_type = "d3bj"
 
       ! MCSCF defaults
+      if (allocated(this%mcscf%ormas_subspaces)) deallocate (this%mcscf%ormas_subspaces)
+      if (allocated(this%mcscf%ormas_min_electrons)) then
+         deallocate (this%mcscf%ormas_min_electrons)
+      end if
+      if (allocated(this%mcscf%ormas_max_electrons)) then
+         deallocate (this%mcscf%ormas_max_electrons)
+      end if
+      this%mcscf%full_valence = .false.
       this%mcscf%n_active_electrons = 0
       this%mcscf%n_active_orbitals = 0
       this%mcscf%n_inactive_orbitals = -1

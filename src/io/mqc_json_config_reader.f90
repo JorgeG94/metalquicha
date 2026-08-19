@@ -252,9 +252,11 @@ contains
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
       call read_avas_orbitals(json, config, error)
+      call read_ormas_partition(json, config, error)
       if (error%has_error()) return
       call optional_real(json, "keywords.mcscf.avas.threshold", &
                          config%mcscf_avas_threshold)
+      call optional_logical(json, "keywords.mcscf.full_valence", config%mcscf_full_valence)
       call optional_int(json, "keywords.mcscf.n_active_electrons", &
                         config%mcscf_n_active_electrons)
       call optional_int(json, "keywords.mcscf.n_active_orbitals", &
@@ -602,6 +604,38 @@ contains
       call read_connectivity(json, prefix, geom%natoms, nfrag, fragments, &
                              nbonds, nbroken, bonds, error)
    end subroutine read_molecule
+
+   subroutine read_ormas_partition(json, config, error)
+      !! `keywords.mcscf.ormas`, the subspaces and their occupation windows
+      !!
+      !! Absent leaves the arrays unallocated, which is what a complete active
+      !! space looks like from here. The schema has already established that
+      !! all three lists are present and the same length, so this only reads.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      integer :: n_spaces, i
+      logical :: found
+
+      if (error%has_error()) return
+      call json%info("keywords.mcscf.ormas.subspaces", found=found, n_children=n_spaces)
+      if (.not. found .or. n_spaces <= 0) return
+
+      allocate (config%mcscf_ormas_subspaces(n_spaces))
+      allocate (config%mcscf_ormas_min_electrons(n_spaces))
+      allocate (config%mcscf_ormas_max_electrons(n_spaces))
+
+      do i = 1, n_spaces
+         call require_int(json, "keywords.mcscf.ormas.subspaces("// &
+                          int_to_key(i)//")", config%mcscf_ormas_subspaces(i), error)
+         call require_int(json, "keywords.mcscf.ormas.min_electrons("// &
+                          int_to_key(i)//")", config%mcscf_ormas_min_electrons(i), error)
+         call require_int(json, "keywords.mcscf.ormas.max_electrons("// &
+                          int_to_key(i)//")", config%mcscf_ormas_max_electrons(i), error)
+         if (error%has_error()) return
+      end do
+   end subroutine read_ormas_partition
 
    subroutine read_avas_orbitals(json, config, error)
       !! `keywords.mcscf.avas.orbitals`, a list of atomic orbital labels

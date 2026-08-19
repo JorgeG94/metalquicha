@@ -180,7 +180,18 @@ module mqc_config_types
       character(len=:), allocatable :: mcscf_avas_orbitals(:)
          !! Atomic orbital labels from `keywords.mcscf.avas.orbitals`, e.g.
          !! "N 2p". Unallocated means the active space was given by counts.
+      logical :: mcscf_full_valence = .false.
+         !! `keywords.mcscf.full_valence` -- take the whole valence shell as the
+         !! active space, sized by counting the free-atom minimal basis rather
+         !! than by any threshold.
       real(dp) :: mcscf_avas_threshold = 0.2_dp
+      integer, allocatable :: mcscf_ormas_subspaces(:)
+         !! Active orbital each subspace starts at, from
+         !! `keywords.mcscf.ormas.subspaces`. Absent leaves a complete active
+         !! space, which is the one subspace covering everything.
+      integer, allocatable :: mcscf_ormas_min_electrons(:)
+      integer, allocatable :: mcscf_ormas_max_electrons(:)
+         !! Electrons allowed in each subspace, both spins together
       integer :: mcscf_n_active_electrons = 0
       integer :: mcscf_n_active_orbitals = 0
       integer :: mcscf_n_inactive_orbitals = -1

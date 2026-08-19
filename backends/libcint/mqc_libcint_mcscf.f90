@@ -46,9 +46,12 @@ module mqc_libcint_mcscf
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
    use mqc_libcint_mp2, only: transform_block
-   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t
+   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t, &
+                                run_libcint_ormas_ci
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_rdm, only: active_space_rdms
+   use mqc_ormas_space, only: ormas_space_t, build_ormas_space
+   use mqc_ormas_ci, only: ormas_density_matrices
    use pic_logger, only: logger => global_logger
    use pic_lapack_interfaces, only: pic_syev
    use mqc_diis, only: diis_state_t
@@ -60,6 +63,7 @@ module mqc_libcint_mcscf
    public :: orbital_gradient
    public :: rotation_matrix
    public :: is_redundant
+   public :: subspace_of
    public :: approximate_hessian
    public :: run_libcint_casscf
    public :: casscf_result_t
@@ -109,6 +113,11 @@ module mqc_libcint_mcscf
       real(dp) :: gradient_norm = 0.0_dp     !! Largest element, at exit
       real(dp), allocatable :: orbitals(:, :)
       real(dp), allocatable :: ci_vector(:, :)
+         !! (n_alpha_strings, n_beta_strings). Left unallocated by a restricted
+         !! space, whose determinants are not a rectangle -- `ci_flat` carries
+         !! it there instead, exactly as in `casci_result_t`.
+      real(dp), allocatable :: ci_flat(:)
+         !! (n_determinants), the vector of a restricted space
       real(dp), allocatable :: dm1(:, :)     !! Active one-particle density
       integer :: iterations = 0
       integer :: n_determinants = 0
@@ -136,15 +145,32 @@ module mqc_libcint_mcscf
 
 contains
 
-   pure function is_redundant(p, q, n_inactive, n_active) result(redundant)
+   pure function is_redundant(p, q, n_inactive, n_active, subspaces) result(redundant)
       !! Whether rotating `p` into `q` changes the wave function at all
       !!
-      !! It does not if both are inactive, both active, or both virtual. For the
-      !! active-active case this is specific to a *complete* active space: a
-      !! restricted one does distinguish its orbitals and those rotations become
-      !! real parameters, which is one of several reasons RASSCF is not a small
-      !! change to this code.
+      !! It does not if both are inactive or both virtual: the wave function is
+      !! built from those sets, not from the orbitals inside them.
+      !!
+      !! **The active-active case depends on the space.** A complete active
+      !! space distributes its electrons over its orbitals in every way there
+      !! is, so mixing two of them reaches nothing new and the rotation is
+      !! redundant. Restrict the occupations and that stops being true the
+      !! moment the two orbitals fall in different subspaces -- the wave
+      !! function then does distinguish them, and the rotation is a real
+      !! parameter with a real gradient. Two orbitals *within* one subspace are
+      !! redundant again, because a subspace is complete in itself.
+      !!
+      !! Getting this wrong is not loud. Treat a real parameter as redundant and
+      !! the optimiser converges, reports a small gradient, and stops somewhere
+      !! that is not a stationary point; treat a redundant one as real and the
+      !! Hessian acquires a null direction. `subspaces` absent means a complete
+      !! active space, which is the case the rest of this module was written
+      !! for.
       integer, intent(in) :: p, q, n_inactive, n_active
+      integer, intent(in), optional :: subspaces(:)
+         !! Active orbital each subspace starts at, ascending, as
+         !! `keywords.mcscf.ormas.subspaces` gives it. Absent is one subspace
+         !! covering everything.
       logical :: redundant
 
       integer :: class_p, class_q
@@ -152,7 +178,29 @@ contains
       class_p = orbital_class(p, n_inactive, n_active)
       class_q = orbital_class(q, n_inactive, n_active)
       redundant = (class_p == class_q)
+
+      if (redundant .and. class_p == 2 .and. present(subspaces)) then
+         redundant = subspace_of(p - n_inactive, subspaces) == &
+            subspace_of(q - n_inactive, subspaces)
+      end if
    end function is_redundant
+
+   pure function subspace_of(active_orbital, subspaces) result(which)
+      !! Which subspace an active orbital belongs to, counting from 1
+      !!
+      !! `subspaces` is ascending and its first entry is 1, so the answer is the
+      !! last entry not past the orbital.
+      integer, intent(in) :: active_orbital
+      integer, intent(in) :: subspaces(:)
+      integer :: which
+
+      integer :: k
+
+      which = 1
+      do k = 1, size(subspaces)
+         if (subspaces(k) <= active_orbital) which = k
+      end do
+   end function subspace_of
 
    pure function orbital_class(p, n_inactive, n_active) result(class_index)
       !! 1 inactive, 2 active, 3 virtual
@@ -281,7 +329,7 @@ contains
       deallocate (zero_h, c_active, eri_gaaa, eri_packed)
    end subroutine generalized_fock
 
-   subroutine orbital_gradient(fock, n_inactive, n_active, gradient)
+   subroutine orbital_gradient(fock, n_inactive, n_active, gradient, subspaces)
       !! `g_pq = 2 (F_qp - F_pq)`, zero on the redundant blocks
       !!
       !! The derivative of the energy with respect to `kappa_pq` under
@@ -293,6 +341,9 @@ contains
       type(mcscf_fock_t), intent(in) :: fock
       integer, intent(in) :: n_inactive, n_active
       real(dp), allocatable, intent(out) :: gradient(:, :)
+      integer, intent(in), optional :: subspaces(:)
+         !! Restricted-space partition; absent means every active-active
+         !! rotation is redundant, which is the complete-space case
 
       integer :: n_mo, p, q
 
@@ -301,7 +352,7 @@ contains
       gradient = 0.0_dp
       do q = 1, n_mo
          do p = 1, n_mo
-            if (is_redundant(p, q, n_inactive, n_active)) cycle
+            if (is_redundant(p, q, n_inactive, n_active, subspaces)) cycle
             gradient(p, q) = 2.0_dp*(fock%general(q, p) - fock%general(p, q))
          end do
       end do
@@ -359,7 +410,7 @@ contains
       deallocate (scaled, term, next_term)
    end subroutine rotation_matrix
 
-   subroutine approximate_hessian(fock, n_inactive, n_active, hessian)
+   subroutine approximate_hessian(fock, n_inactive, n_active, hessian, subspaces)
       !! A diagonal approximation to the orbital Hessian
       !!
       !! For a rotation between orbitals `p` and `q`,
@@ -381,6 +432,7 @@ contains
       type(mcscf_fock_t), intent(in) :: fock
       integer, intent(in) :: n_inactive, n_active
       real(dp), allocatable, intent(out) :: hessian(:, :)
+      integer, intent(in), optional :: subspaces(:)   !! As `orbital_gradient`
 
       real(dp), allocatable :: energies(:)
       integer :: n_mo, p, q
@@ -394,7 +446,7 @@ contains
       hessian = HESSIAN_FLOOR
       do q = 1, n_mo
          do p = 1, n_mo
-            if (is_redundant(p, q, n_inactive, n_active)) cycle
+            if (is_redundant(p, q, n_inactive, n_active, subspaces)) cycle
             hessian(p, q) = max(HESSIAN_FLOOR, &
                                 2.0_dp*abs(energies(p) - energies(q)) &
                                 *abs(fock%occupation(p) - fock%occupation(q)))
@@ -404,7 +456,8 @@ contains
    end subroutine approximate_hessian
 
    subroutine run_libcint_casscf(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                                 result, error, max_iterations, gradient_tol, verbose)
+                                 result, error, max_iterations, gradient_tol, verbose, &
+                                 subspaces, min_electrons, max_electrons)
       !! Two-step CASSCF: solve the CI, move the orbitals, repeat
       !!
       !! Each macro-iteration solves the CI problem exactly at the current
@@ -428,7 +481,12 @@ contains
       integer, intent(in), optional :: max_iterations
       real(dp), intent(in), optional :: gradient_tol
       logical, intent(in), optional :: verbose
+      integer, intent(in), optional :: subspaces(:), min_electrons(:), max_electrons(:)
+         !! An occupation-restricted space, as `keywords.mcscf.ormas` gives it.
+         !! Absent is a complete active space. All three or none.
 
+      type(ormas_space_t) :: space
+      logical :: restricted
       type(casci_result_t) :: ci, trial_ci
       type(mcscf_fock_t) :: fock
       type(link_table_t) :: alpha, beta
@@ -438,6 +496,7 @@ contains
       real(dp), allocatable :: step_matrix(:, :), overlap(:, :), flat(:)
       real(dp), allocatable :: candidate(:, :)
       real(dp), allocatable :: guess(:, :, :)
+      real(dp), allocatable :: flat_guess(:, :)
       type(diis_state_t) :: diis
       logical :: extrapolated
       character(len=160) :: line
@@ -462,6 +521,13 @@ contains
       diis_failures = 0
       current = orbitals
 
+      restricted = present(subspaces)
+      if (restricted) then
+         call build_ormas_space(subspaces, n_active, n_alpha, n_beta, min_electrons, &
+                                max_electrons, space, error)
+         if (error%has_error()) return
+      end if
+
       call build_link_table(n_active, n_alpha, alpha, error)
       call build_link_table(n_active, n_beta, beta, error)
       if (error%has_error()) return
@@ -472,7 +538,11 @@ contains
 
       if (loud) then
          call logger%info("")
-         call logger%info("  complete active space SCF")
+         if (restricted) then
+            call logger%info("  occupation-restricted active space SCF")
+         else
+            call logger%info("  complete active space SCF")
+         end if
          call logger%info("    iter            energy          change      max gradient"// &
                           "       trust")
       end if
@@ -481,8 +551,14 @@ contains
       trust = MAX_ROTATION
 
       ! The starting point, so the first step has something to improve on.
-      call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
-                    guess, have_guess, ci, error)
+      if (restricted) then
+         call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
+                       guess, have_guess, ci, error, subspaces, min_electrons, &
+                       max_electrons, flat_guess)
+      else
+         call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
+                       guess, have_guess, ci, error)
+      end if
       if (error%has_error()) return
       previous = ci%energy
 
@@ -491,13 +567,21 @@ contains
 
          if (allocated(dm1)) deallocate (dm1)
          if (allocated(dm2)) deallocate (dm2)
-         call active_space_rdms(ci%ci_vector, alpha, beta, dm1, dm2, error)
+         if (restricted) then
+            call ormas_density_matrices(space, ci%ci_flat, dm1, dm2, error)
+         else
+            call active_space_rdms(ci%ci_vector, alpha, beta, dm1, dm2, error)
+         end if
          if (error%has_error()) return
 
          call generalized_fock(mol, current, n_inactive, n_active, dm1, dm2, fock, error)
          if (error%has_error()) return
          if (allocated(gradient)) deallocate (gradient)
-         call orbital_gradient(fock, n_inactive, n_active, gradient)
+         if (restricted) then
+            call orbital_gradient(fock, n_inactive, n_active, gradient, subspaces)
+         else
+            call orbital_gradient(fock, n_inactive, n_active, gradient)
+         end if
          largest = maxval(abs(gradient))
 
          if (loud) then
@@ -513,7 +597,11 @@ contains
          end if
 
          if (allocated(hessian)) deallocate (hessian)
-         call approximate_hessian(fock, n_inactive, n_active, hessian)
+         if (restricted) then
+            call approximate_hessian(fock, n_inactive, n_active, hessian, subspaces)
+         else
+            call approximate_hessian(fock, n_inactive, n_active, hessian)
+         end if
          if (allocated(kappa)) deallocate (kappa)
          allocate (kappa(n_mo, n_mo))
          kappa = -gradient/hessian
@@ -556,8 +644,14 @@ contains
                candidate = reshape(flat, [n_ao, n_mo])
                call symmetric_orthonormalize(overlap, candidate, error)
                if (error%has_error()) return
-               call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
-                             alpha, beta, guess, have_guess, trial_ci, error)
+               if (restricted) then
+                  call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
+                                alpha, beta, guess, have_guess, trial_ci, error, &
+                                subspaces, min_electrons, max_electrons, flat_guess)
+               else
+                  call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
+                                alpha, beta, guess, have_guess, trial_ci, error)
+               end if
                if (error%has_error()) return
                if (trial_ci%energy < ci%energy) then
                   current = candidate
@@ -590,8 +684,14 @@ contains
             call rotation_matrix(step_matrix, rotation)
             call pic_gemm(current, rotation, updated)
 
-            call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
-                          alpha, beta, guess, have_guess, trial_ci, error)
+            if (restricted) then
+               call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
+                             alpha, beta, guess, have_guess, trial_ci, error, &
+                             subspaces, min_electrons, max_electrons, flat_guess)
+            else
+               call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
+                             alpha, beta, guess, have_guess, trial_ci, error)
+            end if
             if (error%has_error()) return
 
             if (trial_ci%energy < ci%energy) then
@@ -618,7 +718,12 @@ contains
       result%gradient_norm = largest
       result%n_determinants = ci%n_determinants
       result%orbitals = current
-      result%ci_vector = ci%ci_vector
+      ! Whichever of the two the CI actually produced. A restricted space fills
+      ! the flat one and leaves the rectangle unallocated, and copying an
+      ! unallocated allocatable is undefined rather than empty -- it survived
+      ! one set of compiler flags and segfaulted under another.
+      if (allocated(ci%ci_vector)) result%ci_vector = ci%ci_vector
+      if (allocated(ci%ci_flat)) result%ci_flat = ci%ci_flat
       result%dm1 = dm1
 
       if (loud) then
@@ -742,7 +847,8 @@ contains
    end subroutine natural_orbitals
 
    subroutine solve_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                       alpha, beta, guess, have_guess, ci, error)
+                       alpha, beta, guess, have_guess, ci, error, &
+                       subspaces, min_electrons, max_electrons, flat_guess)
       !! One CASCI, started from the previous vector when there is one
       !!
       !! After the first couple of macro-iterations the orbitals barely move, so
@@ -759,6 +865,32 @@ contains
       logical, intent(inout) :: have_guess
       type(casci_result_t), intent(out) :: ci
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: subspaces(:), min_electrons(:), max_electrons(:)
+      real(dp), allocatable, intent(inout), optional :: flat_guess(:, :)
+
+      ! A restricted space has no alpha-by-beta rectangle to keep a guess in, so
+      ! it carries the flat vector instead. Same idea and the same payoff: after
+      ! the first few macro-iterations the previous answer is nearly this one,
+      ! and a trust-region backtrack re-solves the CI at a rejected geometry.
+      if (present(subspaces)) then
+         if (have_guess .and. present(flat_guess)) then
+            call run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
+                                      n_beta, subspaces, min_electrons, max_electrons, &
+                                      ci, error, tolerance=1.0e-11_dp, guess=flat_guess)
+         else
+            call run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
+                                      n_beta, subspaces, min_electrons, max_electrons, &
+                                      ci, error, tolerance=1.0e-11_dp)
+         end if
+         if (error%has_error()) return
+         if (present(flat_guess)) then
+            if (allocated(flat_guess)) deallocate (flat_guess)
+            allocate (flat_guess(size(ci%ci_flat), 1))
+            flat_guess(:, 1) = ci%ci_flat
+            have_guess = .true.
+         end if
+         return
+      end if
 
       if (have_guess) then
          call run_libcint_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &

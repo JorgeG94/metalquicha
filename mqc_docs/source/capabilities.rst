@@ -126,6 +126,14 @@ against PySCF on the same geometries and the same basis data.
   meta-GGAs are refused rather than approximated. Grids are Treutler-Ahlrichs
   radial times Lebedev angular with a Becke partition, from the same level tables
   PySCF uses.
+- **Multiconfigurational**: CASSCF and CASCI over a complete active space, with
+  the space named directly or chosen from atomic orbital character by AVAS. The
+  active space can also be cut into subspaces with occupation windows (ORMAS),
+  which expresses a truncated CI, a RAS, several non-communicating active spaces
+  or a fragment model with limited charge transfer -- and keeps the determinant
+  count down where a complete space would be hopeless. Orbital optimisation is
+  complete-space only; a restricted space runs its CI on the reference orbitals.
+  See :doc:`input_files`.
 - **SAPT0**: the interaction energy of two monomers, decomposed into
   electrostatics, exchange, induction, dispersion and their exchange
   counterparts, in the dimer-centred basis. Two fragments exactly -- see
@@ -443,36 +451,38 @@ Input/Output
 Input Formats
 -------------
 
-**JSON configuration:**
+A single JSON deck describes the whole calculation:
 
 .. code-block:: json
 
    {
-     "molecules": {[
-     "geometry": {
-       "file": "system.xyz"
-     }]},
+     "molecules": [{
+       "xyz": "system.xyz",
+       "molecular_charge": 0,
+       "molecular_multiplicity": 1
+     }],
      "model": {
-       "method": "XTB-GFN2"
+       "method": "gfn2"
      },
-     "driver": {
-       "type": "gradient"
-     },
-     "fragmentation": {
-       "method": "MBE",
-       "level": 3,
-       "cutoffs": {
-         "2": 5.0,
-         "3": 4.0
+     "keywords": {
+       "fragmentation": {
+         "method": "MBE",
+         "level": 3,
+         "cutoffs": {
+           "dimer": 5.0,
+           "trimer": 4.0
+         }
        }
-     }
+     },
+     "driver": "Gradient"
    }
 
-**JSON input format:**
+``driver`` is a string, not an object, and everything that configures a method
+lives under ``keywords``. Cutoffs are named by n-mer -- ``dimer``, ``trimer`` --
+rather than numbered. See :doc:`input_files` for the complete reference.
 
-- Human-readable keyword-value format
-- Generated automatically from JSON
-- Direct parsing for portability
+The ``.mqc`` keyword format and its ``mqc_prep.py`` generator were removed in
+0.2.0; ``mqc_docs/source/input_files.rst`` carries the migration table.
 
 Output Formats
 --------------

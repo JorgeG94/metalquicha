@@ -269,6 +269,15 @@ contains
          driver_config%method_config%mcscf%avas_orbitals = mqc_config%mcscf_avas_orbitals
       end if
       driver_config%method_config%mcscf%avas_threshold = mqc_config%mcscf_avas_threshold
+      driver_config%method_config%mcscf%full_valence = mqc_config%mcscf_full_valence
+      if (allocated(mqc_config%mcscf_ormas_subspaces)) then
+         driver_config%method_config%mcscf%ormas_subspaces = &
+            mqc_config%mcscf_ormas_subspaces
+         driver_config%method_config%mcscf%ormas_min_electrons = &
+            mqc_config%mcscf_ormas_min_electrons
+         driver_config%method_config%mcscf%ormas_max_electrons = &
+            mqc_config%mcscf_ormas_max_electrons
+      end if
       driver_config%method_config%mcscf%n_active_electrons = &
          mqc_config%mcscf_n_active_electrons
       driver_config%method_config%mcscf%n_active_orbitals = &
