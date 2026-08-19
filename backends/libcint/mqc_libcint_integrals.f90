@@ -1224,44 +1224,44 @@ contains
          io = this%shell_offset(ish)
          dj = shell_dim(this%cartesian, jsh - 1, this%bas)
          jo = this%shell_offset(jsh)
-            do ksh_local = 1, ish
-               ksh = ksh_local
-               dk = shell_dim(this%cartesian, ksh - 1, this%bas)
-               ko = this%shell_offset(ksh)
-               lsh_max = ksh
-               if (ksh == ish) lsh_max = jsh
-               do lsh = 1, lsh_max
-                  dl = shell_dim(this%cartesian, lsh - 1, this%bas)
-                  lo = this%shell_offset(lsh)
-                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
-                  ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
-                                           this%natm, this%bas, this%nbas, this%env, opt)
-                  if (ret == 0) cycle
+         do ksh_local = 1, ish
+            ksh = ksh_local
+            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
+            ko = this%shell_offset(ksh)
+            lsh_max = ksh
+            if (ksh == ish) lsh_max = jsh
+            do lsh = 1, lsh_max
+               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
+               lo = this%shell_offset(lsh)
+               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+               ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
+                                        this%natm, this%bas, this%nbas, this%env, opt)
+               if (ret == 0) cycle
 
-                  do l = 1, dl
-                     t = lo + l
-                     do k = 1, dk
-                        r = ko + k
-                        do j = 1, dj
-                           q = jo + j
-                           do i = 1, di
-                              p = io + i
-                              idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
-                              value = buf(idx)
-                              eri(p, q, r, t) = value
-                              eri(q, p, r, t) = value
-                              eri(p, q, t, r) = value
-                              eri(q, p, t, r) = value
-                              eri(r, t, p, q) = value
-                              eri(t, r, p, q) = value
-                              eri(r, t, q, p) = value
-                              eri(t, r, q, p) = value
-                           end do
+               do l = 1, dl
+                  t = lo + l
+                  do k = 1, dk
+                     r = ko + k
+                     do j = 1, dj
+                        q = jo + j
+                        do i = 1, di
+                           p = io + i
+                           idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
+                           value = buf(idx)
+                           eri(p, q, r, t) = value
+                           eri(q, p, r, t) = value
+                           eri(p, q, t, r) = value
+                           eri(q, p, t, r) = value
+                           eri(r, t, p, q) = value
+                           eri(t, r, p, q) = value
+                           eri(r, t, q, p) = value
+                           eri(t, r, q, p) = value
                         end do
                      end do
                   end do
                end do
             end do
+         end do
       end do
       !$omp end do
       deallocate (buf)

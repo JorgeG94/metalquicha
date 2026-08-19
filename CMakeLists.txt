@@ -471,8 +471,8 @@ if(MQC_ENABLE_LIBCINT)
   # gfortran answers that from its own `.mod` and never asks, which is why this
   # was not needed until the first NVHPC build.
   #
-  # BUILD_INTERFACE for the same reason the link above is: a fetched
-  # third-party library is never going to join this project's export set.
+  # BUILD_INTERFACE for the same reason the link above is: a fetched third-party
+  # library is never going to join this project's export set.
   target_include_directories(
     ${main_lib} PUBLIC $<BUILD_INTERFACE:${libcint_BINARY_DIR}/include>)
 
