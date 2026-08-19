@@ -76,6 +76,85 @@ interference energy scaled by an empirical tenth, which brings it onto the
 scale of tabulated bond energies. That factor is admitted to be empirical in
 the paper and should be read as such.
 
+Where the energy goes
+---------------------
+
+The tables above say which atoms are bonded and rank the interactions. They do
+not say what the molecule's energy is made of, and the two questions have
+different answers: the kinetic bond order carries an empirical factor of a tenth
+to reach a familiar scale, so it is a gauge rather than an energy.
+
+Four further tables resolve the actual energy. Every term in
+
+.. math::
+
+   E = \sum_{pq} \gamma_{pq} T_{pq}
+     + \sum_{pqA} \gamma_{pq} V^{A}_{pq}
+     + \tfrac{1}{2}\sum_{pqrs} \Gamma_{pqrs} (pq|rs)
+     + \sum_{A<B} \frac{Z_A Z_B}{R_{AB}}
+
+has orbitals belonging to particular atoms, so each term belongs either to one
+atom or to one pair of atoms. Nothing is modelled and nothing is discarded; the
+tables are a regrouping of a sum, and they add back up.
+
+The last of the four is the one to read::
+
+    energy decomposition
+       intra-atomic                    mhartree    kcal/mol
+      O 1                             -73655.015  -46219.220
+      H 2                                 -6.997      -4.391
+      H 3                                 -6.997      -4.391
+
+       interatomic                     mhartree    kcal/mol
+      O 1      -- H 2              -1186.141    -744.314
+      O 1      -- H 3              -1186.141    -744.314
+      H 2      -- H 3                 56.511      35.461
+
+            intra-atomic total      -73.669009 hartree
+             interatomic total       -2.315771 hartree
+                         total      -75.984780 hartree
+
+**These are not bond energies.** ``intra-atomic`` is an atom as it exists in the
+molecule -- deformed, and in water's case with the hydrogens stripped to about
+0.64 electrons each -- not a free atom. The difference between the two is the
+adaptation energy, which is a separate calculation and is not computed here. So
+an O--H figure of -744 kcal/mol is the whole interaction between an oxygen and a
+hydrogen sitting where they sit, nuclear repulsion included, and not the energy
+of breaking the bond.
+
+The signs are worth reading. H--H comes out positive: the two hydrogens carry
+like charges and repel, which the bond-order table cannot show because there is
+no bond there to rank.
+
+The three tables the total is built from separate the physics. **Kinetic** is
+where covalent binding comes from in this analysis -- the interatomic entries are
+the interference energy of eq (1) unscaled, so the same quantity the kinetic bond
+order is a tenth of. **Nuclear attraction** carries three atomic labels rather
+than two, since the nucleus doing the attracting need not sit on either orbital;
+an atom's own density in a foreign nuclear field is charged to the pair, not to
+the atom. **Two-electron** carries four.
+
+Checking it
+~~~~~~~~~~~
+
+Three lines follow the tables::
+
+                          one-electron     -122.949561 hartree
+                          two-electron       37.795213 hartree
+                     nuclear repulsion        9.169569 hartree
+                                 total      -75.984780 hartree
+            from the orbitals directly      -75.984780 hartree
+
+The last line is computed from the converged orbitals in the atomic-orbital
+basis, with nothing quasi-atomic in it. For a single determinant the two agree
+to rounding, and that agreement is the check worth having: every internal
+consistency test the decomposition applies to itself would still pass if the
+quasi-atomic basis failed to hold the whole density.
+
+When it does not, a further line reports the difference, under ``outside the
+quasi-atomic span``. That is the same shortfall the population sum reports for a
+correlated density, and it arises for the same reason.
+
 Reading the diagnostics
 -----------------------
 
@@ -121,6 +200,11 @@ Limits
 ------
 
 - Closed-shell restricted references only.
+- The energy decomposition assumes a single determinant, since it builds the
+  two-particle density from the one-particle one. The bonding tables above take
+  a correlated density; the energy tables do not yet.
+- The two-electron transformation goes through the dense ``n_ao**4`` integral
+  array, which is the practical ceiling on molecule size for the energy tables.
 - Hydrogen through xenon. Past that the free-atom minimal basis this projects
   onto would need a relativistic treatment that does not exist here, and the
   analysis refuses rather than using a basis that does not describe the atom.
@@ -134,6 +218,9 @@ the quasi-atomic orbitals and the valence-virtual space.
 
 West, Schmidt, Gordon and Ruedenberg, *J. Phys. Chem. A* **119**, 10368 (2015)
 -- the kinetic bond order and the orientation of the orbitals.
+
+Del Angel Cruz, Gordon and Ruedenberg, *J. Am. Chem. Soc.* **147**, 42262
+(2025) -- the intrinsic energy decomposition the energy tables implement.
 
 The orbital labels and the thresholds that assign them follow GAMESS's
 implementation rather than the papers, which define neither; the quantities

@@ -34,7 +34,8 @@ module mqc_libcint_bonding
                                nuclear_decomposition, print_nuclear_decomposition, &
                                combine_quao_sets, quao_interference, kinetic_total, &
                                quao_eris, two_electron_decomposition, &
-                               print_two_electron_decomposition
+                               print_two_electron_decomposition, &
+                               nuclear_repulsion_pairs, print_total_decomposition
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -124,6 +125,7 @@ contains
       real(dp) :: one_electron, reference, two_electron, total_energy
       real(dp), allocatable :: eri_ao(:, :, :, :), eri_quao(:, :, :, :)
       real(dp), allocatable :: two_intra(:), two_inter(:, :)
+      real(dp), allocatable :: rep_inter(:, :), tot_intra(:), tot_inter(:, :)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -334,6 +336,16 @@ contains
          ! occupation living outside the valence-virtual span the population sum
          ! reports above -- a statement about the analysis rather than an error,
          ! so it is printed rather than raised.
+         ! The nuclear repulsion needs no decomposing -- it is a sum over pairs
+         ! already -- so adding it in the same convention resolves the whole
+         ! energy into atoms and pairs with nothing left outside.
+         call nuclear_repulsion_pairs(atomic_numbers, coordinates, rep_inter, error)
+         if (error%has_error()) return
+         allocate (tot_intra(natm), tot_inter(natm, natm))
+         tot_intra = kin_intra + nuc_intra + two_intra
+         tot_inter = kin_inter + nuc_inter + two_inter + rep_inter
+         call print_total_decomposition(tot_intra, tot_inter, element_symbols)
+
          one_electron = kinetic_total(kin_intra, kin_inter) + &
                         kinetic_total(nuc_intra, nuc_inter)
          call mol%core_hamiltonian(h_core)
@@ -356,6 +368,12 @@ contains
          write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
             " hartree"
          call logger%info(trim(line))
+         if (abs(kinetic_total(tot_intra, tot_inter) - total_energy) > 1.0e-8_dp) then
+            call error%set(ERROR_VALIDATION, "the atom and atom-pair table does not "// &
+                           "sum to the total energy, so the four contributions were "// &
+                           "not accumulated consistently.")
+            return
+         end if
          if (abs(total_energy - reference) > 1.0e-8_dp) then
             write (line, "(4x,a30,f16.6,a)") "outside the quasi-atomic span", &
                reference - total_energy, " hartree"

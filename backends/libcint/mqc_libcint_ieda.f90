@@ -52,6 +52,8 @@ module mqc_libcint_ieda
    public :: quao_eris
    public :: two_electron_decomposition
    public :: print_two_electron_decomposition
+   public :: nuclear_repulsion_pairs
+   public :: print_total_decomposition
    public :: print_kinetic_decomposition
    public :: print_nuclear_decomposition
 
@@ -655,6 +657,72 @@ contains
                                element_symbols)
    end subroutine print_two_electron_decomposition
 
+   subroutine nuclear_repulsion_pairs(atomic_numbers, coordinates, inter, error)
+      !! The nuclear repulsion, which is already a sum over atom pairs
+      !!
+      !!     inter(A,B) = Z_A Z_B / R_AB
+      !!
+      !! The one term in the whole energy that needs no decomposing: it is
+      !! written as a sum over pairs before anyone asks. Carrying it in the same
+      !! convention as everything else -- the whole pair energy in both
+      !! elements, halved by `kinetic_total` -- is what lets the total be
+      !! accumulated by adding matrices, and it is why the energy ends up
+      !! resolved into atoms and pairs with no remainder sitting outside.
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: coordinates(:, :)   !! (3, n_atoms), Bohr
+      real(dp), allocatable, intent(out) :: inter(:, :)
+      type(error_t), intent(inout) :: error
+
+      integer :: natm, a, b
+      real(dp) :: r
+
+      if (error%has_error()) return
+
+      natm = size(atomic_numbers)
+      if (size(coordinates, 2) /= natm) then
+         call error%set(ERROR_VALIDATION, "the coordinates and the atomic numbers "// &
+                        "describe different numbers of atoms.")
+         return
+      end if
+
+      allocate (inter(natm, natm))
+      inter = 0.0_dp
+      do a = 1, natm
+         do b = a + 1, natm
+            r = norm2(coordinates(:, a) - coordinates(:, b))
+            if (r < 1.0e-10_dp) then
+               call error%set(ERROR_VALIDATION, "two atoms are on top of each other, "// &
+                              "so the nuclear repulsion is not finite.")
+               deallocate (inter)
+               return
+            end if
+            inter(a, b) = real(atomic_numbers(a), dp)*real(atomic_numbers(b), dp)/r
+            inter(b, a) = inter(a, b)
+         end do
+      end do
+   end subroutine nuclear_repulsion_pairs
+
+   subroutine print_total_decomposition(intra, inter, element_symbols)
+      !! The energy resolved into atoms and atom pairs
+      !!
+      !! What the analysis is for. `intra(A)` is everything that happens inside
+      !! atom `A` -- its own kinetic energy, its electrons in its own nuclear
+      !! field, its own electron repulsion -- and `inter(A,B)` is everything
+      !! that exists only because `A` and `B` are both present, Coulombic and
+      !! interference and nuclear repulsion together.
+      !!
+      !! These sum to the total energy exactly, so an interatomic term is not a
+      !! model of a bond but a piece of the number the calculation produced.
+      !! They are not bond energies: `intra(A)` is an atom deformed by the
+      !! molecule, not a free atom, and the difference between the two is the
+      !! adaptation energy that this does not yet compute.
+      real(dp), intent(in) :: intra(:)
+      real(dp), intent(in) :: inter(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+
+      call print_decomposition("energy decomposition", intra, inter, element_symbols)
+   end subroutine print_total_decomposition
+
    subroutine print_kinetic_decomposition(intra, inter, element_symbols)
       !! The atom and atom-pair table for the kinetic energy
       real(dp), intent(in) :: intra(:)
@@ -710,7 +778,7 @@ contains
       call sort_descending(magnitude(1:np), order)
 
       call logger%info("")
-      call logger%info("     interatomic interference        mhartree    kcal/mol")
+      call logger%info("     interatomic                     mhartree    kcal/mol")
       printed = 0
       suppressed = 0
       do k = 1, np

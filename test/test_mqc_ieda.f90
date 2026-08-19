@@ -23,7 +23,8 @@ module test_mqc_ieda
    use mqc_libcint_quao, only: quao_result_t
    use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
                                nuclear_attraction_per_atom, nuclear_decomposition, &
-                               combine_quao_sets, quao_eris, two_electron_decomposition
+                               combine_quao_sets, quao_eris, two_electron_decomposition, &
+                               nuclear_repulsion_pairs
    implicit none
    private
 
@@ -94,7 +95,8 @@ contains
                   new_unittest("core_joins_with_a_density_of_two", core_joins_with_a_density_of_two), &
                   new_unittest("two_electron_bins_by_hand", two_electron_bins_by_hand), &
                   new_unittest("two_electron_energy_has_a_closed_form", two_electron_energy_has_a_closed_form), &
-                  new_unittest("eris_keep_their_index_order", eris_keep_their_index_order) &
+                  new_unittest("eris_keep_their_index_order", eris_keep_their_index_order), &
+                  new_unittest("nuclear_repulsion_is_already_pairwise", nuclear_repulsion_is_already_pairwise) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -569,6 +571,39 @@ contains
          end do
       end do
    end subroutine eris_keep_their_index_order
+
+   subroutine nuclear_repulsion_is_already_pairwise(error)
+      !! The one term that arrives decomposed
+      !!
+      !! Two unit charges 1.4 Bohr apart repel by `1/1.4` hartree, and that has
+      !! to survive the pair convention intact: the matrix holds the whole pair
+      !! energy in both elements, so it is `1/1.4` in each and `kinetic_total`
+      !! halves the matrix back to `1/1.4` for the molecule. Written the other
+      !! way round it would be half the nuclear repulsion, which is large enough
+      !! to notice and small enough to argue about.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: inter(:, :)
+      real(dp), allocatable :: intra(:)
+
+      call nuclear_repulsion_pairs(H2_Z, H2, inter, err)
+      call check(error,.not. err%has_error(), "the nuclear repulsion was refused")
+      if (allocated(error)) return
+
+      call check(error, inter(1, 2), 1.0_dp/1.4_dp, thr=1.0e-12_dp, &
+                 more="the pair holds the wrong repulsion")
+      if (allocated(error)) return
+      call check(error, inter(2, 1), inter(1, 2), thr=1.0e-12_dp, more="not symmetric")
+      if (allocated(error)) return
+      call check(error, inter(1, 1), 0.0_dp, thr=1.0e-12_dp, more="an atom repels itself")
+      if (allocated(error)) return
+
+      allocate (intra(2))
+      intra = 0.0_dp
+      call check(error, kinetic_total(intra, inter), 1.0_dp/1.4_dp, thr=1.0e-12_dp, &
+                 more="the molecule's nuclear repulsion came out wrong")
+   end subroutine nuclear_repulsion_is_already_pairwise
 
 end module test_mqc_ieda
 
