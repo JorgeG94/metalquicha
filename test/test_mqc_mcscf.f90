@@ -35,7 +35,7 @@ module test_mqc_mcscf
    use mqc_rdm, only: active_space_rdms
    use mqc_libcint_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
                                 rotation_matrix, is_redundant, run_libcint_casscf, &
-                                casscf_result_t
+                                casscf_result_t, rotation_parameters, orbital_hessian
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver
@@ -75,6 +75,11 @@ contains
                   new_unittest("gradient_against_finite_differences", test_gradient), &
                   new_unittest("restricted_gradient_against_finite_differences", &
                                test_restricted_gradient), &
+                  new_unittest("hessian_against_finite_differences", test_hessian), &
+                  new_unittest("restricted_hessian_against_finite_differences", &
+                               test_restricted_hessian), &
+                  new_unittest("a_symmetric_guess_does_not_trap_the_optimiser", &
+                               test_saddle), &
                   new_unittest("nitrogen_casscf_against_pyscf", test_nitrogen), &
                   new_unittest("restricted_space_optimisation", test_ormas_scf), &
                   new_unittest("water_casscf_against_pyscf", test_water), &
@@ -400,7 +405,7 @@ contains
    subroutine run_casscf(atomic_numbers, symbols, coordinates, basis, n_electrons, &
                          n_inactive, n_active, n_alpha, n_beta, cycles, &
                          casci_energy, result, err, ok, gradient_tol, &
-                         subspaces, min_electrons, max_electrons)
+                         subspaces, min_electrons, max_electrons, kick)
       !! An SCF, a CASCI on its orbitals, then a CASSCF from the same start
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -412,6 +417,11 @@ contains
          !! A restricted space. `casci_energy` then comes back as the restricted
          !! CI on the reference orbitals, which is what the optimisation has to
          !! beat.
+      real(dp), intent(in), optional :: kick
+         !! Rotate the reference orbitals by this angle before optimising, which
+         !! is how a case is asked whether its answer depended on the symmetry
+         !! of the guess. `casci_energy` still refers to the unrotated
+         !! orbitals.
       real(dp), intent(out) :: casci_energy
       type(casscf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: err
@@ -420,7 +430,9 @@ contains
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casci_result_t) :: ci
+      real(dp), allocatable :: start(:, :), rotation(:, :), kappa(:, :)
       real(dp) :: threshold
+      integer :: i, j, n_mo
 
       ok = .false.
       casci_energy = 0.0_dp
@@ -439,16 +451,32 @@ contains
       if (err%has_error()) return
       casci_energy = ci%energy
 
+      n_mo = size(scf%orbitals, 2)
+      allocate (start(size(scf%orbitals, 1), n_mo))
+      start = scf%orbitals
+      if (present(kick)) then
+         allocate (kappa(n_mo, n_mo))
+         kappa = 0.0_dp
+         do j = 1, n_mo
+            do i = j + 1, n_mo
+               kappa(i, j) = kick/real(i + j, dp)
+               kappa(j, i) = -kappa(i, j)
+            end do
+         end do
+         call rotation_matrix(kappa, rotation)
+         call pic_gemm(scf%orbitals, rotation, start)
+      end if
+
       threshold = 1.0e-6_dp
       if (present(gradient_tol)) threshold = gradient_tol
       if (present(subspaces)) then
-         call run_libcint_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
+         call run_libcint_casscf(mol, start, n_inactive, n_active, n_alpha, &
                                  n_beta, result, err, max_iterations=cycles, &
                                  gradient_tol=threshold, subspaces=subspaces, &
                                  min_electrons=min_electrons, &
                                  max_electrons=max_electrons)
       else
-         call run_libcint_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
+         call run_libcint_casscf(mol, start, n_inactive, n_active, n_alpha, &
                                  n_beta, result, err, max_iterations=cycles, &
                                  gradient_tol=threshold)
       end if
@@ -509,9 +537,10 @@ contains
       !! N2, cc-pVDZ, CAS(6,6)
       !!
       !! The textbook active space: six electrons in the three bonding and three
-      !! antibonding orbitals of the triple bond. Twenty-one macro-iterations
-      !! with DIIS, thirty-three without, which is what a well-conditioned case
-      !! looks like for a first-order method.
+      !! antibonding orbitals of the triple bond. Ten macro-iterations, which is
+      !! what a well-conditioned case looks like once the step is a Newton one;
+      !! the first-order version this replaced took twenty-one with DIIS and
+      !! thirty-three without.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(casscf_result_t) :: result
@@ -527,10 +556,8 @@ contains
       call check(error, result%energy, REFERENCE, "the CASSCF energy against PySCF", &
                  thr=1.0e-9_dp)
       if (allocated(error)) return
-      ! Stationarity rather than the optimiser's verdict, for the reason spelled
-      ! out at the water case below: these runs stall within a factor of two of
-      ! the threshold they were given, so `converged` records which side of it
-      ! the last step landed on and moves with the BLAS. The energy does not.
+      call check(error, result%converged, "and it should reach the threshold")
+      if (allocated(error)) return
       call check(error, result%gradient_norm < 1.0e-5_dp, &
                  "and the gradient it stopped on should really be small")
    end subroutine test_nitrogen
@@ -538,19 +565,16 @@ contains
    subroutine test_water(error)
       !! Water, cc-pVDZ, CAS(4,4)
       !!
-      !! Slower than nitrogen by a factor of three, and the reason is worth
-      !! recording rather than hiding behind a larger iteration cap: the energy
-      !! surface here has a long flat valley, and a first-order optimiser crawls
-      !! along it -- iterations eleven to twenty-five gain a few tens of
-      !! microhartree between them, taking steps well inside the trust radius.
-      !! DIIS brings it from about 102 macro-iterations to about 60; a
-      !! second-order method would not care at all. This is the case that says
-      !! what the two-step algorithm costs.
-      !!
-      !! The count varies by ten or so between runs at identical settings,
-      !! because the threaded Fock builds are not bit-reproducible and the
-      !! valley is flat enough to amplify that. The iteration cap is set well
-      !! above it for that reason; it is not a convergence criterion.
+      !! The hard surface of the two, and worth keeping for what it used to
+      !! cost. It has a long flat valley, and a first-order optimiser crawls
+      !! along it: about 102 macro-iterations, or about 60 with DIIS, and then
+      !! it would stall around a gradient of 2.5e-7 without ever reaching the
+      !! threshold it was given, non-reproducibly, because the threaded Fock
+      !! builds make the trajectory non-reproducible and the valley is flat
+      !! enough to amplify that. The Newton step does not notice the valley --
+      !! about twenty macro-iterations, the same as nitrogen to within a factor
+      !! of two -- which is the clearest measurement of what the curvature is
+      !! worth here.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(casscf_result_t) :: result
@@ -559,24 +583,6 @@ contains
 
       real(dp), parameter :: REFERENCE = -76.077846973211_dp
 
-      ! **This case does not assert that the optimiser converged, and that is
-      ! deliberate.** On this surface it reaches the right energy and then
-      ! stalls: the trust region collapses, no step downhill exists, and the
-      ! run stops without the gradient having crossed the threshold. Measured
-      ! across thresholds, the achievable gradient floor here is about 2.5e-7 --
-      ! asked for 1e-8 it stops at 2.5e-7 and stops improving -- and whether any
-      ! particular run crosses 1e-6 or 1e-5 before stalling depends on the
-      ! trajectory, which the threaded Fock builds make non-reproducible. It
-      ! failed about one run in six, and on CI.
-      !
-      ! What is *not* in doubt is the energy. It is within 3e-10 of PySCF
-      ! whether the run stalls or converges, because on a flat valley the energy
-      ! is stationary long before the gradient is small. So this asserts the
-      ! energy, which is the claim, and that the gradient got small enough to be
-      ! at a stationary point at all. Nitrogen still asserts convergence
-      ! strictly, because there it converges in twenty-odd iterations with room
-      ! to spare -- a test suite that never checks convergence would not notice
-      ! an optimiser that stopped optimising.
       call run_casscf(WATER_Z, WATER_SYM, WATER, "cc-pvdz", 10, 3, 4, 2, 2, &
                       250, casci_energy, result, err, ok, gradient_tol=1.0e-5_dp)
       call check(error, ok, "the calculation should succeed")
@@ -584,9 +590,9 @@ contains
       call check(error, result%energy, REFERENCE, "the CASSCF energy against PySCF", &
                  thr=1.0e-8_dp)
       if (allocated(error)) return
-      call check(error, result%gradient_norm < 1.0e-4_dp, &
-                 "and it should have reached a stationary point, whether or not it "// &
-                 "crossed the requested threshold before stalling")
+      call check(error, result%converged, &
+                 "and it should reach the threshold rather than stalling short of "// &
+                 "it, which is what this surface used to do")
    end subroutine test_water
 
    subroutine test_variational(error)
@@ -614,8 +620,11 @@ contains
                  "out above it")
       if (allocated(error)) return
 
-      ! -75.009717745820 from pyscf.mcscf.CASSCF on the same active space.
-      call check(error, result%energy, -75.009717745820_dp, &
+      ! -75.011410782031 from pyscf.mcscf.CASSCF on the same active space,
+      ! started from randomly rotated orbitals. Started from its own Hartree-Fock
+      ! orbitals PySCF stops at -75.009717745820 instead, which is a saddle;
+      ! `a_symmetric_guess_does_not_trap_the_optimiser` is about that.
+      call check(error, result%energy, -75.011410782031_dp, &
                  "water STO-3G CAS(6,5) against PySCF", thr=1.0e-9_dp)
       if (allocated(error)) return
 
@@ -632,6 +641,316 @@ contains
       call check(error, trace, 6.0_dp, "and they should sum to the active electrons", &
                  thr=1.0e-9_dp)
    end subroutine test_variational
+
+   subroutine test_hessian(error)
+      !! The analytic orbital Hessian against central differences of the gradient
+      !!
+      !! Same discipline as `test_gradient`, one derivative further along, and
+      !! for the same reason: an optimiser will converge happily on a wrong
+      !! Hessian -- it takes worse steps and gets there anyway, because the
+      !! gradient is what decides where "there" is. What a wrong Hessian *does*
+      !! break is the eigenvalues, and those are now load-bearing: a saddle is
+      !! recognised by a negative one, and a Hessian that is only approximately
+      !! right is not approximately right about the sign of a curvature near
+      !! zero.
+      !!
+      !! Every element of the whole matrix is checked, not a sample. It is
+      !! twelve parameters here, so the numerical Hessian costs twenty-four
+      !! Fock builds on a seven-function basis, and there is no reason to check
+      !! less than all of it.
+      !!
+      !! **The numerical matrix is symmetrised before comparison, and that is
+      !! not cosmetic.** Differencing the *gradient* is not quite
+      !! differentiating the energy twice: the gradient at `C exp(kappa)` is a
+      !! derivative taken in the chart that starts there, and composing two
+      !! exponentials is not adding their exponents. The mismatch is a
+      !! commutator contracted with the gradient, which is antisymmetric in the
+      !! two parameters and therefore vanishes at a stationary point and under
+      !! this average everywhere else. Testing away from a stationary point is
+      !! the whole point -- at one, half the matrix is unexercised.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(casci_result_t) :: ci
+      type(mcscf_fock_t) :: fock
+      type(link_table_t) :: alpha, beta
+      type(error_t) :: err
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :), gradient(:, :)
+      real(dp), allocatable :: hessian(:, :), numerical(:, :), forward(:)
+      real(dp), allocatable :: start(:, :), moved(:, :), kappa(:, :), rotation(:, :)
+      integer, allocatable :: rows(:), cols(:)
+      real(dp) :: off_diagonal
+      integer :: n_ao, n_mo, i, j, k, l, n_param
+      integer, parameter :: N_INACTIVE = 3, N_ACTIVE = 4
+      real(dp), parameter :: STEP = 1.0e-4_dp
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error, scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+      n_ao = size(scf%orbitals, 1)
+      n_mo = size(scf%orbitals, 2)
+
+      allocate (start(n_ao, n_mo), moved(n_ao, n_mo), kappa(n_mo, n_mo))
+      kappa = 0.0_dp
+      do j = 1, n_mo
+         do i = j + 1, n_mo
+            kappa(i, j) = 0.03_dp/real(i + j, dp)
+            kappa(j, i) = -kappa(i, j)
+         end do
+      end do
+      call rotation_matrix(kappa, rotation)
+      call pic_gemm(scf%orbitals, rotation, start)
+      deallocate (rotation)
+
+      call run_libcint_casci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
+                             tolerance=1.0e-12_dp)
+      call build_link_table(N_ACTIVE, 2, alpha, err)
+      call build_link_table(N_ACTIVE, 2, beta, err)
+      call active_space_rdms(ci%ci_vector, alpha, beta, dm1, dm2, err)
+      call generalized_fock(mol, start, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
+      call rotation_parameters(n_mo, N_INACTIVE, N_ACTIVE, rows, cols)
+      call orbital_hessian(mol, start, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, &
+                           rows, cols, hessian, err)
+      call check(error,.not. err%has_error(), "the Hessian should build")
+      if (allocated(error)) return
+
+      n_param = size(rows)
+      call check(error, n_param, 12, "STO-3G water with three inactive and four "// &
+                 "active orbitals has twelve non-redundant rotations")
+      if (allocated(error)) return
+
+      ! The density matrices stay fixed: this is the orbital block at fixed CI,
+      ! so the numerical derivative has to hold the CI fixed too.
+      allocate (numerical(n_param, n_param), forward(n_param))
+      do k = 1, n_param
+         kappa = 0.0_dp
+         kappa(rows(k), cols(k)) = STEP
+         kappa(cols(k), rows(k)) = -STEP
+         call rotation_matrix(kappa, rotation)
+         call pic_gemm(start, rotation, moved)
+         call generalized_fock(mol, moved, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
+         call orbital_gradient(fock, N_INACTIVE, N_ACTIVE, gradient)
+         do l = 1, n_param
+            forward(l) = gradient(rows(l), cols(l))
+         end do
+         deallocate (rotation, gradient)
+
+         kappa = -kappa
+         call rotation_matrix(kappa, rotation)
+         call pic_gemm(start, rotation, moved)
+         call generalized_fock(mol, moved, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
+         call orbital_gradient(fock, N_INACTIVE, N_ACTIVE, gradient)
+         do l = 1, n_param
+            numerical(l, k) = (forward(l) - gradient(rows(l), cols(l)))/(2.0_dp*STEP)
+         end do
+         deallocate (rotation, gradient)
+      end do
+      call check(error,.not. err%has_error(), "the differenced gradients should build")
+      if (allocated(error)) return
+      numerical = 0.5_dp*(numerical + transpose(numerical))
+
+      ! Non-vacuous twice over. The matrix has to be large somewhere, or the
+      ! comparison is against zero; and it has to be large *off* the diagonal,
+      ! or a diagonal approximation would pass a test that exists because a
+      ! diagonal approximation is not good enough.
+      call check(error, maxval(abs(hessian)) > 1.0_dp, &
+                 "the Hessian should have something in it worth differencing")
+      if (allocated(error)) return
+      off_diagonal = 0.0_dp
+      do k = 1, n_param
+         do l = 1, n_param
+            if (l /= k) off_diagonal = max(off_diagonal, abs(hessian(l, k)))
+         end do
+      end do
+      call check(error, off_diagonal > 0.1_dp, &
+                 "and the couplings between rotations should not be negligible")
+      if (allocated(error)) return
+
+      ! Elements run from 1e-3 to 40 and the central difference truncates at
+      ! order STEP squared, so this is about as tight as the differencing goes.
+      call check(error, maxval(abs(numerical - hessian)) < 1.0e-5_dp, &
+                 "the analytic Hessian should equal the numerical derivative of "// &
+                 "the orbital gradient")
+      if (allocated(error)) return
+      call check(error, maxval(abs(hessian - transpose(hessian))) < 1.0e-12_dp, &
+                 "and it should be symmetric")
+
+      call alpha%destroy()
+      call beta%destroy()
+      call mol%destroy()
+   end subroutine test_hessian
+
+   subroutine test_restricted_hessian(error)
+      !! The same, for the active-active block a restricted space brings to life
+      !!
+      !! `is_redundant` is threaded through `rotation_parameters` as well as
+      !! through the gradient, so a restricted space has rotations here that a
+      !! complete one does not, and every expression in the Hessian meets a pair
+      !! with both indices inside the active space for the first time. That is
+      !! where a term gets counted from both ends, exactly as
+      !! `test_restricted_gradient` describes for the gradient.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(casci_result_t) :: ci
+      type(mcscf_fock_t) :: fock
+      type(ormas_space_t) :: space
+      type(error_t) :: err
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :), gradient(:, :)
+      real(dp), allocatable :: hessian(:, :), numerical(:, :), forward(:)
+      real(dp), allocatable :: start(:, :), moved(:, :), kappa(:, :), rotation(:, :)
+      integer, allocatable :: rows(:), cols(:), plain_rows(:), plain_cols(:)
+      integer :: n_ao, n_mo, i, j, k, l, n_param
+      integer, parameter :: N_INACTIVE = 3, N_ACTIVE = 4
+      integer, parameter :: SUBSPACES(2) = [1, 3]
+      integer, parameter :: MIN_E(2) = [3, 0], MAX_E(2) = [4, 1]
+      real(dp), parameter :: STEP = 1.0e-4_dp
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error, scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+      n_ao = size(scf%orbitals, 1)
+      n_mo = size(scf%orbitals, 2)
+
+      allocate (start(n_ao, n_mo), moved(n_ao, n_mo), kappa(n_mo, n_mo))
+      kappa = 0.0_dp
+      do j = 1, n_mo
+         do i = j + 1, n_mo
+            kappa(i, j) = 0.12_dp/real(i + j, dp)
+            kappa(j, i) = -kappa(i, j)
+         end do
+      end do
+      call rotation_matrix(kappa, rotation)
+      call pic_gemm(scf%orbitals, rotation, start)
+      deallocate (rotation)
+
+      call build_ormas_space(SUBSPACES, N_ACTIVE, 2, 2, MIN_E, MAX_E, space, err)
+      call run_libcint_ormas_ci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
+                                MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
+      call ormas_density_matrices(space, ci%ci_flat, dm1, dm2, err)
+      call generalized_fock(mol, start, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
+      call rotation_parameters(n_mo, N_INACTIVE, N_ACTIVE, rows, cols, SUBSPACES)
+      call orbital_hessian(mol, start, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, &
+                           rows, cols, hessian, err)
+      call check(error,.not. err%has_error(), "the restricted Hessian should build")
+      if (allocated(error)) return
+
+      ! The restriction has to have bought rotations, or this is the previous
+      ! test again under another name: four across the subspace boundary.
+      call rotation_parameters(n_mo, N_INACTIVE, N_ACTIVE, plain_rows, plain_cols)
+      n_param = size(rows)
+      call check(error, n_param, size(plain_rows) + 4, &
+                 "splitting the active space in two should add the four rotations "// &
+                 "that cross the boundary")
+      if (allocated(error)) return
+
+      allocate (numerical(n_param, n_param), forward(n_param))
+      do k = 1, n_param
+         kappa = 0.0_dp
+         kappa(rows(k), cols(k)) = STEP
+         kappa(cols(k), rows(k)) = -STEP
+         call rotation_matrix(kappa, rotation)
+         call pic_gemm(start, rotation, moved)
+         call generalized_fock(mol, moved, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
+         call orbital_gradient(fock, N_INACTIVE, N_ACTIVE, gradient, SUBSPACES)
+         do l = 1, n_param
+            forward(l) = gradient(rows(l), cols(l))
+         end do
+         deallocate (rotation, gradient)
+
+         kappa = -kappa
+         call rotation_matrix(kappa, rotation)
+         call pic_gemm(start, rotation, moved)
+         call generalized_fock(mol, moved, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
+         call orbital_gradient(fock, N_INACTIVE, N_ACTIVE, gradient, SUBSPACES)
+         do l = 1, n_param
+            numerical(l, k) = (forward(l) - gradient(rows(l), cols(l)))/(2.0_dp*STEP)
+         end do
+         deallocate (rotation, gradient)
+      end do
+      call check(error,.not. err%has_error(), "the differenced gradients should build")
+      if (allocated(error)) return
+      numerical = 0.5_dp*(numerical + transpose(numerical))
+
+      call check(error, maxval(abs(numerical - hessian)) < 1.0e-5_dp, &
+                 "the analytic Hessian should equal the numerical derivative of "// &
+                 "the restricted orbital gradient")
+
+      call space%destroy()
+      call mol%destroy()
+   end subroutine test_restricted_hessian
+
+   subroutine test_saddle(error)
+      !! A symmetric starting guess must not decide where the optimisation stops
+      !!
+      !! Water is C2v and its Hartree-Fock orbitals come out symmetry adapted.
+      !! Reaching the CAS(6,5) minimum in STO-3G means exchanging orbitals of
+      !! different irreducible representations, and that rotation is
+      !! symmetry-forbidden: its gradient is *exactly* zero at a symmetric point
+      !! and stays exactly zero. So a first-order optimiser converges -- cleanly,
+      !! monotonically, to a max gradient of 1e-9 -- at a saddle 1.7 millihartree
+      !! above the answer, and reports success. Nobody asked for symmetry; it
+      !! was inherited from the guess.
+      !!
+      !! **The assertion that matters needs no reference energy.** Nudging the
+      !! starting orbitals off the symmetric point cannot change where the
+      !! optimisation belongs, so the two runs have to agree. They differ by 1.7
+      !! millihartree the moment the negative curvature is not looked for, which
+      !! is a thousand times the threshold below and not a tuning question.
+      !!
+      !! PySCF's own CASSCF, started from its own Hartree-Fock orbitals, stops
+      !! at the saddle too; the reference below is what it reaches from
+      !! randomly rotated starting orbitals instead, which it does from about
+      !! one start in ten.
+      !!
+      !! The gradient is asked for at 1e-8 rather than the 1e-6 the other cases
+      !! use, which is a second thing this checks. A Newton step near the
+      !! solution is worth `g^2/H`, so at 1e-7 it buys about 1e-13 -- less than
+      !! the energy can report. A line search that insists on seeing the energy
+      !! fall is measuring its own noise by then, and stalls a decade or two
+      !! above whatever was asked for. Every other case here asks for so little
+      !! that it would never find out.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(casscf_result_t) :: plain, nudged
+      real(dp) :: casci_energy
+      logical :: ok
+
+      real(dp), parameter :: REFERENCE = -75.011410782031_dp
+      real(dp), parameter :: SADDLE = -75.009717745820_dp
+
+      call run_casscf(WATER_Z, WATER_SYM, WATER, "sto-3g", 10, 2, 5, 3, 3, &
+                      200, casci_energy, plain, err, ok, gradient_tol=1.0e-8_dp)
+      call check(error, ok, "the calculation from the symmetric guess should run")
+      if (allocated(error)) return
+
+      call run_casscf(WATER_Z, WATER_SYM, WATER, "sto-3g", 10, 2, 5, 3, 3, &
+                      200, casci_energy, nudged, err, ok, kick=0.05_dp, &
+                      gradient_tol=1.0e-8_dp)
+      call check(error, ok, "the calculation from the nudged guess should run")
+      if (allocated(error)) return
+
+      call check(error, plain%converged, "and it should reach a gradient of 1e-8 "// &
+                 "rather than stalling once the steps are worth less than the "// &
+                 "energy can resolve")
+      if (allocated(error)) return
+
+      call check(error, plain%energy, nudged%energy, &
+                 "where the optimisation stops must not depend on a symmetry the "// &
+                 "starting orbitals happened to have", thr=1.0e-9_dp)
+      if (allocated(error)) return
+
+      call check(error, plain%energy < SADDLE - 1.0e-4_dp, &
+                 "and it must be below the stationary point the symmetric guess "// &
+                 "traps a first-order optimiser at")
+      if (allocated(error)) return
+
+      call check(error, plain%energy, REFERENCE, &
+                 "water STO-3G CAS(6,5) against PySCF from rotated starting "// &
+                 "orbitals", thr=1.0e-9_dp)
+   end subroutine test_saddle
 
    ! ==========================================================================
    !  End to end: a JSON deck, through every hop, to an energy
@@ -757,7 +1076,7 @@ contains
       character(len=:), allocatable :: message
 
       real(dp), parameter :: NITROGEN_REFERENCE = -109.090018071393_dp
-      real(dp), parameter :: WATER_VALENCE_REFERENCE = -75.009717745820_dp
+      real(dp), parameter :: WATER_VALENCE_REFERENCE = -75.011410782031_dp
 
       call write_deck("casscf", 6, 6, '"symbols": ["N", "N"], '// &
                       '"geometry": [0.0, 0.0, -1.0371, 0.0, 0.0, 1.0371], '// &
@@ -774,15 +1093,11 @@ contains
       ! CAS(6,6) or a cc-pVDZ hard-coded anywhere in the plumbing could not pass
       ! both cases.
       !
-      ! **Water's full valence space rather than its CAS(4,4) in cc-pVDZ, and
-      ! the reason is worth recording.** That case was here first and made this
-      ! test fail about one run in ten. Not for any reason to do with the
-      ! plumbing this checks: the optimiser stalls on that surface -- the trust
-      ! region collapses and no step downhill exists -- somewhere around a
-      ! gradient of 1e-5, non-reproducibly, because the threaded Fock builds
-      ! make the trajectory non-reproducible. A deck test is the wrong place to
-      ! discover that. `water_casscf_against_pyscf` above keeps that case and
-      ! says what it costs; this one wants a molecule whose convergence is not
+      ! Water's full valence space rather than its CAS(4,4) in cc-pVDZ, because
+      ! that case used to stall non-reproducibly and made this test fail about
+      ! one run in ten for reasons having nothing to do with the plumbing it
+      ! checks. `water_casscf_against_pyscf` above keeps it and says what it
+      ! used to cost; a deck test wants a molecule whose convergence is not
       ! itself the experiment.
       call write_deck("casscf", 6, 5, '"symbols": ["O", "H", "H"], '// &
                       '"geometry": [0.0, 0.0, 0.0, 0.0, -1.4308, 1.1078, '// &

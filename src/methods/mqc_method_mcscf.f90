@@ -91,8 +91,8 @@ module mqc_method_mcscf
 
       ! Orbital optimization algorithm
       character(len=16) :: orbital_optimizer = "super-ci"
-         !! Nominal; the implementation is a trust-region first-order step with
-         !! DIIS, and there is nothing to select between.
+         !! Nominal; the implementation is a trust-region Newton step on the
+         !! exact orbital Hessian, and there is nothing to select between.
 
       ! Perturbative corrections
       logical :: use_pt2 = .false.
