@@ -21,6 +21,7 @@ target_sources(
           mqc_libcint_multipole.f90
           mqc_libcint_avas.f90
           mqc_libcint_bonding.f90
+          mqc_libcint_ieda.f90
           mqc_libcint_quao.f90
           mqc_libcint_quao_report.f90
           mqc_libcint_casci.f90
