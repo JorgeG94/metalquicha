@@ -29,6 +29,7 @@ module mqc_libcint_bonding
                                aambs_atom_ranges, quasi_atomic_orbitals, &
                                quao_result_t, orient_quasi_atomic_orbitals, &
                                kinetic_bond_orders
+   use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -110,6 +111,7 @@ contains
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
       real(dp), allocatable :: kbo(:, :), interference(:, :), populations(:)
       real(dp), allocatable :: valence_density(:, :)
+      real(dp), allocatable :: kin_intra(:), kin_inter(:, :)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -239,6 +241,14 @@ contains
          call print_quao_report(.true., quao, labels, interference, element_symbols, &
                                 dims%n_core, kinetic_bond_order=kbo, &
                                 threshold=threshold)
+
+         ! The same interference matrix regrouped by atom rather than by orbital
+         ! pair. Unscaled, so unlike the kinetic bond orders above these are
+         ! energies and they add up to one -- the valence kinetic energy, since
+         ! the core is not in this basis.
+         call kinetic_decomposition(quao, interference, natm, kin_intra, kin_inter, error)
+         if (error%has_error()) return
+         call print_kinetic_decomposition(kin_intra, kin_inter, element_symbols)
 
          ! Two diagnostics, at the end rather than the top: they say whether to
          ! believe the tables above, which is not a question worth asking until
