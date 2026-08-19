@@ -113,6 +113,11 @@ module mqc_libcint_mcscf
       real(dp) :: gradient_norm = 0.0_dp     !! Largest element, at exit
       real(dp), allocatable :: orbitals(:, :)
       real(dp), allocatable :: ci_vector(:, :)
+         !! (n_alpha_strings, n_beta_strings). Left unallocated by a restricted
+         !! space, whose determinants are not a rectangle -- `ci_flat` carries
+         !! it there instead, exactly as in `casci_result_t`.
+      real(dp), allocatable :: ci_flat(:)
+         !! (n_determinants), the vector of a restricted space
       real(dp), allocatable :: dm1(:, :)     !! Active one-particle density
       integer :: iterations = 0
       integer :: n_determinants = 0
@@ -713,7 +718,12 @@ contains
       result%gradient_norm = largest
       result%n_determinants = ci%n_determinants
       result%orbitals = current
-      result%ci_vector = ci%ci_vector
+      ! Whichever of the two the CI actually produced. A restricted space fills
+      ! the flat one and leaves the rectangle unallocated, and copying an
+      ! unallocated allocatable is undefined rather than empty -- it survived
+      ! one set of compiler flags and segfaulted under another.
+      if (allocated(ci%ci_vector)) result%ci_vector = ci%ci_vector
+      if (allocated(ci%ci_flat)) result%ci_flat = ci%ci_flat
       result%dm1 = dm1
 
       if (loud) then
