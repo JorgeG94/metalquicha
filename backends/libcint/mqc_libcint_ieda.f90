@@ -38,6 +38,7 @@ module mqc_libcint_ieda
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_esp, only: esp_matrices
    use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_aambs, only: aambs_element_counts
    use mqc_determinants, only: generate_strings
    use mqc_libcint_quao, only: quao_result_t
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
@@ -52,6 +53,7 @@ module mqc_libcint_ieda
    public :: nuclear_attraction_per_atom
    public :: quao_nuclear_attraction
    public :: nuclear_decomposition
+   public :: screened_nucleus_split
    public :: quao_eris
    public :: active_cumulant
    public :: quao_projection
@@ -1089,6 +1091,102 @@ contains
       write (line, "(4x,a24,2f16.6)") "totals, hartree", total_c, total_i
       call logger%info(trim(line))
    end subroutine print_interatomic_split
+
+   subroutine screened_nucleus_split(quao, density, v_atom_quao, n_core_quao, &
+                                     atomic_numbers, n_atoms, intra_core, intra_valence, &
+                                     error)
+      !! Divide an atom's own-nucleus attraction between its core and its valence
+      !!
+      !! A valence electron does not see the bare nucleus; it sees a nucleus
+      !! screened by the core. The papers divide the valence density's attraction
+      !! to its own nucleus in the ratio of the charges,
+      !!
+      !!     V1(Av,Av'/A_core) = (Z_core/Z_A) <Av|-Z_A/r_A|Av'>
+      !!     V1(Av,Av'/A_val ) = (Z_val /Z_A) <Av|-Z_A/r_A|Av'>
+      !!
+      !! and the core density keeps the whole nuclear charge, so the split is
+      !! deliberately asymmetric. `Z_core` is twice the chemical-core orbital
+      !! count -- 0, 2, 10, 18, ... -- taken from the same minimal-basis tables
+      !! the rest of this analysis uses rather than from a ladder written out
+      !! again here.
+      !!
+      !! **This is relabelling and cannot move any energy.** The two shares sum
+      !! to the undivided term because the two charge fractions sum to one, and
+      !! that is asserted rather than trusted. It is a rescaling applied after
+      !! the contraction, so it is not orbital-resolved and does not pretend to
+      !! be: no screening model is being solved, a number is being attributed.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: v_atom_quao(:, :, :)
+      integer, intent(in) :: n_core_quao
+         !! How many leading quasi-atomic orbitals are core. `combine_quao_sets`
+         !! puts them first, which is the only reason a count suffices.
+      integer, intent(in) :: atomic_numbers(:)
+      integer, intent(in) :: n_atoms
+      real(dp), allocatable, intent(out) :: intra_core(:), intra_valence(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: z_core(:)
+      real(dp) :: term, cross, share
+      character(len=400) :: message
+      integer :: n, i, j, a, core_orbitals, valence_orbitals
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      if (n_core_quao < 0 .or. n_core_quao > n) then
+         call error%set(ERROR_VALIDATION, "the core orbital count is not a prefix of "// &
+                        "the quasi-atomic set.")
+         return
+      end if
+
+      allocate (z_core(n_atoms))
+      do a = 1, n_atoms
+         call aambs_element_counts(atomic_numbers(a), core_orbitals, valence_orbitals, &
+                                   error)
+         if (error%has_error()) return
+         z_core(a) = 2.0_dp*real(core_orbitals, dp)
+      end do
+
+      allocate (intra_core(n_atoms), intra_valence(n_atoms))
+      intra_core = 0.0_dp
+      intra_valence = 0.0_dp
+      cross = 0.0_dp
+
+      do i = 1, n
+         a = quao%atom_of(i)
+         do j = 1, n
+            if (quao%atom_of(j) /= a) cycle
+            term = density(i, j)*v_atom_quao(i, j, a)
+            if (i <= n_core_quao .and. j <= n_core_quao) then
+               intra_core(a) = intra_core(a) + term
+            else if (i > n_core_quao .and. j > n_core_quao) then
+               share = z_core(a)/real(atomic_numbers(a), dp)
+               intra_core(a) = intra_core(a) + share*term
+               intra_valence(a) = intra_valence(a) + (1.0_dp - share)*term
+            else
+               ! Core-valence: zero for any wave function with a frozen core,
+               ! since the two spaces are orthogonal and the density does not
+               ! connect them. Accumulated rather than assumed away, and checked
+               ! below -- a correlated core would break it silently otherwise.
+               cross = cross + abs(term)
+               intra_core(a) = intra_core(a) + term
+            end if
+         end do
+      end do
+
+      if (cross > TOL_SUM_RULE) then
+         write (message, "(a,es12.4,a)") "the density connects core and valence "// &
+            "quasi-atomic orbitals, by ", cross, " hartree. The screened-nucleus "// &
+            "split assumes it does not, which holds for a frozen core and fails "// &
+            "for a correlated one."
+         call error%set(ERROR_VALIDATION, trim(message))
+         deallocate (intra_core, intra_valence, z_core)
+         return
+      end if
+
+      deallocate (z_core)
+   end subroutine screened_nucleus_split
 
    subroutine print_kinetic_decomposition(intra, inter, element_symbols)
       !! The atom and atom-pair table for the kinetic energy

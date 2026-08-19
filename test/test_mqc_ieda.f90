@@ -26,7 +26,8 @@ module test_mqc_ieda
                                nuclear_attraction_per_atom, nuclear_decomposition, &
                                combine_quao_sets, quao_eris, two_electron_decomposition, &
                                nuclear_repulsion_pairs, active_cumulant, &
-                               quao_projection, transform_cumulant, project_no_sharing
+                               quao_projection, transform_cumulant, project_no_sharing, &
+                               screened_nucleus_split
    implicit none
    private
 
@@ -106,7 +107,9 @@ contains
                   new_unittest("free_atoms_are_equivalent_and_bound", free_atoms_are_equivalent_and_bound), &
                   new_unittest("classical_share_is_separated_out", classical_share_is_separated_out), &
                   new_unittest("no_sharing_keeps_the_neutral_determinants", no_sharing_keeps_the_neutral_determinants), &
-                  new_unittest("no_sharing_is_a_projection_not_a_solve", no_sharing_is_a_projection_not_a_solve) &
+                  new_unittest("no_sharing_is_a_projection_not_a_solve", no_sharing_is_a_projection_not_a_solve), &
+                  new_unittest("screened_nucleus_only_relabels", screened_nucleus_only_relabels), &
+                  new_unittest("screened_nucleus_refuses_a_soft_core", screened_nucleus_refuses_a_soft_core) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -1068,6 +1071,92 @@ contains
       call check(error, abs(scale - 1.0_dp) > 1.0e-6_dp, &
                  "nothing was struck out, so this proves nothing")
    end subroutine no_sharing_is_a_projection_not_a_solve
+
+   subroutine oxygen_and_hydrogen(quao, density)
+      !! One core and one valence orbital on an oxygen, one valence on a hydrogen
+      !!
+      !! Core first across the whole set, which is what `combine_quao_sets`
+      !! produces and what lets a count identify them.
+      type(quao_result_t), intent(out) :: quao
+      real(dp), intent(out) :: density(3, 3)
+
+      quao%n_quao = 3
+      allocate (quao%atom_of(3), quao%orbitals(3, 3), quao%population_bond_order(3, 3))
+      quao%atom_of = [1, 1, 2]
+      quao%orbitals = 0.0_dp
+      quao%population_bond_order = 0.0_dp
+      density = 0.0_dp
+      density(1, 1) = 2.0_dp     ! the oxygen core
+      density(2, 2) = 1.5_dp     ! the oxygen valence
+      density(3, 3) = 0.8_dp     ! the hydrogen
+   end subroutine oxygen_and_hydrogen
+
+   subroutine screened_nucleus_only_relabels(error)
+      !! The two shares add back to the term they divide
+      !!
+      !! Oxygen has `Z = 8` and a two-electron core, so its valence density's
+      !! attraction to its own nucleus is divided one part in four to the core
+      !! and three to the valence, while the core density keeps the whole charge.
+      !! Hydrogen has no core, so nothing is taken from it -- which is the case
+      !! that catches a division that forgot the element and used a fixed
+      !! fraction.
+      !!
+      !! With every integral one the arithmetic is visible: the oxygen core term
+      !! is 2, its valence term 1.5, so the columns are `2 + 0.25*1.5 = 2.375`
+      !! and `0.75*1.5 = 1.125`, summing to 3.5.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: density(3, 3), v(3, 3, 2)
+      real(dp), allocatable :: core_share(:), valence_share(:)
+
+      call oxygen_and_hydrogen(quao, density)
+      v = 1.0_dp
+      call screened_nucleus_split(quao, density, v, 1, [8, 1], 2, &
+                                  core_share, valence_share, err)
+      call check(error,.not. err%has_error(), "the split was refused")
+      if (allocated(error)) return
+
+      call check(error, core_share(1), 2.375_dp, thr=1.0e-12_dp, &
+                 more="the oxygen core share is wrong")
+      if (allocated(error)) return
+      call check(error, valence_share(1), 1.125_dp, thr=1.0e-12_dp, &
+                 more="the oxygen valence share is wrong")
+      if (allocated(error)) return
+      call check(error, core_share(1) + valence_share(1), 3.5_dp, thr=1.0e-12_dp, &
+                 more="the split did not conserve the oxygen term")
+      if (allocated(error)) return
+
+      call check(error, core_share(2), 0.0_dp, thr=1.0e-12_dp, &
+                 more="hydrogen was given a core to screen with")
+      if (allocated(error)) return
+      call check(error, valence_share(2), 0.8_dp, thr=1.0e-12_dp, &
+                 more="the hydrogen term did not survive intact")
+   end subroutine screened_nucleus_only_relabels
+
+   subroutine screened_nucleus_refuses_a_soft_core(error)
+      !! A density connecting core and valence is refused rather than absorbed
+      !!
+      !! The split assumes the core is frozen, which makes the core-valence
+      !! block of the density exactly zero. A correlated core breaks that, and
+      !! the terms would otherwise be quietly swept into the core column where
+      !! nothing would look wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: density(3, 3), v(3, 3, 2)
+      real(dp), allocatable :: core_share(:), valence_share(:)
+
+      call oxygen_and_hydrogen(quao, density)
+      density(1, 2) = 0.05_dp
+      density(2, 1) = 0.05_dp
+      v = 1.0_dp
+      call screened_nucleus_split(quao, density, v, 1, [8, 1], 2, &
+                                  core_share, valence_share, err)
+      call check(error, err%has_error(), "a core-valence density was accepted")
+   end subroutine screened_nucleus_refuses_a_soft_core
 
 end module test_mqc_ieda
 

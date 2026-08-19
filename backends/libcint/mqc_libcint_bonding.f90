@@ -38,7 +38,7 @@ module mqc_libcint_bonding
                                quao_eris, two_electron_decomposition, &
                                print_two_electron_decomposition, &
                                nuclear_repulsion_pairs, print_total_decomposition, &
-                               print_interatomic_split, &
+                               print_interatomic_split, screened_nucleus_split, &
                                active_cumulant, quao_projection, transform_cumulant
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
@@ -155,6 +155,7 @@ contains
       real(dp) :: span_deficit, formation
       real(dp), allocatable :: free_energy(:), adaptation(:)
       real(dp), allocatable :: nuc_coulomb(:, :), two_coulomb(:, :), classical(:, :)
+      real(dp), allocatable :: nuc_core(:), nuc_val(:)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -326,6 +327,29 @@ contains
                                     coulomb=nuc_coulomb)
          if (error%has_error()) return
          call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
+
+         ! A valence electron does not see the bare nucleus but one screened by
+         ! the core, so its attraction to its own nucleus is divided in the
+         ! ratio of the two charges. Pure relabelling: the shares must add back
+         ! to the term they came from, which is asserted here because a split
+         ! that quietly lost part of it would still print two plausible columns.
+         call screened_nucleus_split(full_quao, full_quao%population_bond_order, &
+                                     v_atom_quao, dims%n_core, atomic_numbers, natm, &
+                                     nuc_core, nuc_val, error)
+         if (error%has_error()) return
+         if (maxval(abs(nuc_core + nuc_val - nuc_intra)) > 1.0e-8_dp) then
+            call error%set(ERROR_VALIDATION, "the screened-nucleus split does not sum "// &
+                           "back to the own-nucleus attraction it divides, so the two "// &
+                           "charge fractions do not add to one.")
+            return
+         end if
+         call logger%info("     own nucleus, by charge      to core     to valence")
+         do iatom = 1, natm
+            write (label, "(a,i0)") trim(adjustl(element_symbols(iatom)))//" ", iatom
+            write (line, "(4x,a8,18x,2f14.3)") label, &
+               nuc_core(iatom)*1000.0_dp, nuc_val(iatom)*1000.0_dp
+            call logger%info(trim(line))
+         end do
 
          ! **The check the decomposition exists to pass.** Everything above is
          ! internally consistent by construction -- each routine verifies its own
