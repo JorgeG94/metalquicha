@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 0.4% of total for derived types.</p>Including implementation: 4 statements,  0.1% of total for derived types.">4 statements</a>
+                 title="<p> 0.5% of total for derived types.</p>Including implementation: 6 statements,  0.2% of total for derived types.">6 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,6 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/properties_config_t.html#variable-bonding_analysis~3">bonding_analysis</a>
+            <a class="list-group-item" href="../type/properties_config_t.html#variable-bonding_energy~3">bonding_energy</a>
+            <a class="list-group-item" href="../type/properties_config_t.html#variable-bonding_no_sharing~3">bonding_no_sharing</a>
             <a class="list-group-item" href="../type/properties_config_t.html#variable-bonding_threshold~3">bonding_threshold</a>
         </div>
       </div>
@@ -208,7 +210,7 @@
 </g>
 </g>
 <!-- type~dft_options_t&#45;&gt;type~properties_config_t -->
-<g id="type~~properties_config_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~properties_config_t~~InheritedByGraph_edge4" class="edge">
 <title>type~dft_options_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M210.46,-191.19C187.52,-184.13 158.02,-174.84 132,-166 121.39,-162.4 110,-158.33 99.4,-154.48"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="100.54,-151.16 89.94,-151.01 98.13,-157.74 100.54,-151.16"/>
@@ -224,7 +226,7 @@
 </g>
 </g>
 <!-- type~hf_options_t&#45;&gt;type~properties_config_t -->
-<g id="type~~properties_config_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~properties_config_t~~InheritedByGraph_edge1" class="edge">
 <title>type~hf_options_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M212.12,-156.71C187.2,-153.84 153.74,-150 124.36,-146.62"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="124.5,-143.12 114.16,-145.45 123.7,-150.07 124.5,-143.12"/>
@@ -240,7 +242,7 @@
 </g>
 </g>
 <!-- type~mcscf_options_t&#45;&gt;type~properties_config_t -->
-<g id="type~~properties_config_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~properties_config_t~~InheritedByGraph_edge3" class="edge">
 <title>type~mcscf_options_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M201.94,-120.6C180.52,-121.63 154.94,-123.31 132,-126 129.45,-126.3 126.85,-126.63 124.23,-126.98"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="123.46,-123.56 114.06,-128.46 124.46,-130.49 123.46,-123.56"/>
@@ -256,7 +258,7 @@
 </g>
 </g>
 <!-- type~method_config_t&#45;&gt;type~properties_config_t -->
-<g id="type~~properties_config_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~properties_config_t~~InheritedByGraph_edge2" class="edge">
 <title>type~method_config_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M199.82,-87.84C178.69,-92.92 153.92,-99.52 132,-107 118.94,-111.46 104.95,-117.24 92.7,-122.65"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="90.98,-119.58 83.29,-126.88 93.85,-125.97 90.98,-119.58"/>
@@ -359,7 +361,7 @@
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~properties_config_t~~InheritedByGraph_edge11" class="edge">
+<g id="type~~properties_config_t~~InheritedByGraph_edge12" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M799.74,-83.84C794.59,-81.29 789.49,-78.33 785,-75 775.13,-67.67 779.29,-54 767,-54"/>
 </g>
@@ -387,7 +389,7 @@
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~properties_config_t~~InheritedByGraph_edge12" class="edge">
+<g id="type~~properties_config_t~~InheritedByGraph_edge11" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M799.74,-24.16C794.59,-26.71 789.49,-29.67 785,-33 775.13,-40.33 779.29,-54 767,-54"/>
 <path fill="none" stroke="#0066ff" d="M766,-54C763.46,-54 760.88,-54 758.27,-54"/>
@@ -483,6 +485,40 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-bonding_energy~3"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonding_energy</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonding_no_sharing~3"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonding_no_sharing</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-bonding_threshold~3"></span>
               real(kind=dp),
             </td>
@@ -512,6 +548,8 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">properties_config_t</span>
 <span class="w">      </span><span class="c">!! Analyses to run once the wave function exists</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonding_analysis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonding_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonding_no_sharing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonding_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">properties_config_t</span>
 </pre></div>
@@ -536,7 +574,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 06:26 +0000             </p>
+ on 2026-08-19 06:30 +0000             </p>
           </div>
         </div>
         <br>
