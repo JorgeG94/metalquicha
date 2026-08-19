@@ -30,7 +30,7 @@ module mqc_driver
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
-   use mqc_error, only: error_t
+   use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_fingerprint, only: calculation_fingerprint
    use mqc_checkpoint, only: checkpoint_t
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
@@ -137,11 +137,19 @@ contains
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
 
+      ! Resolved before the branches below rather than beside the JSON write at
+      ! the end, because those branches write their own summary and return
+      ! without ever reaching it. Left where it was, a SAPT run asked for no
+      ! files wrote one anyway.
+      wants_output = .true.
+      if (present(write_output)) wants_output = write_output
+
       ! MAKEFP writes a file and returns no energy, so it takes neither the
       ! fragmented nor the unfragmented path: a fragment potential is built from
       ! the whole system by definition, and there is no result_t to fill.
       if (config%calc_type == CALC_TYPE_MAKEFP) then
-         call run_makefp(config, sys_geom, resources%mpi_comms%world_comm%rank())
+         call run_makefp(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
+                         result_out)
          return
       end if
 
@@ -151,7 +159,7 @@ contains
       ! interaction between potentials that already exist.
       if (config%method_config%method_type == METHOD_TYPE_EFP2) then
          call run_efp(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
-                      result_out)
+                      wants_output, result_out)
          return
       end if
 
@@ -160,7 +168,7 @@ contains
       ! many-body expansion to expand and no single wavefunction to fragment.
       if (config%method_config%method_type == METHOD_TYPE_SAPT0) then
          call run_sapt(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
-                       result_out)
+                       wants_output, result_out)
          return
       end if
 
@@ -220,8 +228,6 @@ contains
                                                       config%calc_type)
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
-      wants_output = .true.
-      if (present(write_output)) wants_output = write_output
       if (wants_output) then
          ! Check if JSON output should be skipped
          if (config%skip_json_output) then
@@ -967,7 +973,7 @@ contains
 
    end subroutine run_multi_molecule_calculations
 
-   subroutine run_sapt(config, sys_geom, rank, result_out)
+   subroutine run_sapt(config, sys_geom, rank, write_output, result_out)
       !! SAPT0 between the deck's two fragments
       !!
       !! The monomers are the deck's own `fragments`, so no new keyword is needed
@@ -992,6 +998,7 @@ contains
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: rank
+      logical, intent(in) :: write_output
       type(calculation_result_t), intent(out), optional :: result_out
 
       type(error_t) :: err
@@ -1005,10 +1012,10 @@ contains
       if (rank /= 0) return
 
       if (sys_geom%n_monomers /= 2) then
-         call logger%error("SAPT: the deck must define exactly two fragments; "// &
-                           "this one has "//to_char(sys_geom%n_monomers)// &
-                           ". SAPT is a two-body theory, so a cluster is one "// &
-                           "calculation per pair.")
+         call refuse(result_out, "SAPT: the system must have exactly two "// &
+                     "fragments; this one has "//to_char(sys_geom%n_monomers)// &
+                     ". SAPT is a two-body theory, so a cluster is one "// &
+                     "calculation per pair.")
          return
       end if
 
@@ -1032,7 +1039,7 @@ contains
       call run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
                              config%method_config%basis_set, terms, err)
       if (err%has_error()) then
-         call logger%error("SAPT: "//err%get_message())
+         call refuse(result_out, "SAPT: "//err%get_message())
          return
       end if
 
@@ -1064,7 +1071,7 @@ contains
          result_out%has_energy = .true.
       end if
 
-      if (.not. config%skip_json_output) then
+      if (write_output .and. .not. config%skip_json_output) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
          json_data%total_energy = terms(N_SAPT_TERMS)
          json_data%has_energy = .true.
@@ -1078,7 +1085,7 @@ contains
       deallocate (z_a, xyz_a, sym_a, z_b, xyz_b, sym_b)
    end subroutine run_sapt
 
-   subroutine run_efp(config, sys_geom, rank, result_out)
+   subroutine run_efp(config, sys_geom, rank, write_output, result_out)
       !! The interaction energy of a set of effective fragments
       !!
       !! Each fragment of the deck names a potential; the backend loads them, places
@@ -1099,6 +1106,7 @@ contains
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: rank
+      logical, intent(in) :: write_output
       type(calculation_result_t), intent(out), optional :: result_out
 
       type(error_t) :: err
@@ -1110,20 +1118,22 @@ contains
 
       n = sys_geom%n_monomers
       if (.not. allocated(config%fragment_potentials)) then
-         call logger%error("EFP: no fragment carries a potential -- give "// &
-                           "'fragment_potentials' in the deck")
+         call refuse(result_out, "EFP: no fragment carries a potential -- name "// &
+                     "one per fragment in 'fragment_potentials' in the deck, or "// &
+                     "through mqc_system_set_fragment_potentials from the C and "// &
+                     "Python interfaces")
          return
       end if
       if (size(config%fragment_potentials) /= n) then
-         call logger%error("EFP: the deck has "//to_char(n)//" fragments but "// &
-                           to_char(size(config%fragment_potentials))//" potentials")
+         call refuse(result_out, "EFP: the system has "//to_char(n)//" fragments "// &
+                     "but "//to_char(size(config%fragment_potentials))//" potentials")
          return
       end if
 
       call run_libcint_efp(config%fragment_potentials, sys_geom%fragment_sizes, &
                            sys_geom%fragment_atoms, sys_geom%coordinates, terms, err)
       if (err%has_error()) then
-         call logger%error("EFP: "//err%get_message())
+         call refuse(result_out, "EFP: "//err%get_message())
          return
       end if
 
@@ -1150,7 +1160,7 @@ contains
       ! validation harness can read the number back rather than scrape the log.
       ! `UNFRAGMENTED` because that is the shape of what is written -- one energy for
       ! one system -- not a claim that the system has no fragments.
-      if (.not. config%skip_json_output) then
+      if (write_output .and. .not. config%skip_json_output) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
          json_data%total_energy = terms(6)
          json_data%has_energy = .true.
@@ -1160,7 +1170,26 @@ contains
       end if
    end subroutine run_efp
 
-   subroutine run_makefp(config, sys_geom, rank)
+   subroutine refuse(result_out, message)
+      !! Log a refusal and, when there is a caller, put it on the result
+      !!
+      !! The two interaction-energy paths used to log and return. From `main`
+      !! that is a red line on the terminal and an exit; from a session it was
+      !! a clean zero handed back as a success, because `mqc_run` reads the
+      !! energy off a result nothing had marked as failed. A zero interaction
+      !! energy is a physically plausible number, which is what makes it the
+      !! worst shape a failure can take here.
+      type(calculation_result_t), intent(inout), optional :: result_out
+      character(len=*), intent(in) :: message
+
+      call logger%error(message)
+      if (present(result_out)) then
+         call result_out%error%set(ERROR_VALIDATION, message)
+         result_out%has_error = .true.
+      end if
+   end subroutine refuse
+
+   subroutine run_makefp(config, sys_geom, rank, result_out)
       !! Build an effective fragment potential for the whole system and write it
       !!
       !! Only rank zero does anything: the work is one SCF and a set of response
@@ -1174,6 +1203,11 @@ contains
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: rank
+      type(calculation_result_t), intent(out), optional :: result_out
+         !! Carries the failure, if there is one. There is no energy to put on
+         !! it -- MAKEFP produces a file -- but a caller that gets neither an
+         !! energy nor an error has no way to tell a written potential from a
+         !! backend that declined.
 
       type(error_t) :: err
       character(len=8), allocatable :: symbols(:)
@@ -1210,7 +1244,7 @@ contains
                                  guess=trim(config%method_config%scf%guess))
       end if
       if (err%has_error()) then
-         call logger%error("MAKEFP failed: "//err%get_message())
+         call refuse(result_out, "MAKEFP failed: "//err%get_message())
          return
       end if
       call logger%info("Wrote "//trim(path))

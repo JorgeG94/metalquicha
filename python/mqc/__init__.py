@@ -245,6 +245,45 @@ class System:
         _check(_ffi.system_perceive_bonds(self._handle, float(tolerance)), _ffi.system_last_error)
         return self
 
+    def set_fragment_potentials(self, paths):
+        """Name an effective fragment potential for each monomer, in order.
+
+        This is what makes ``method="efp2"`` mean anything: EFP2 solves no
+        wavefunction, it evaluates the interaction between potentials that were
+        solved when they were made. One per monomer, all of them -- a fragment
+        with no potential is not a quantum fragment here, it is a fragment the
+        sum cannot include, and that mixed calculation is a deck-only feature.
+
+        Make the potentials with ``driver="makefp"``, which writes
+        ``<label>.efp`` for the system it is given:
+
+            water = mqc.System.from_xyz("water.xyz")
+            water.set_monomers([[0, 1, 2]])
+            mqc.MBE(water, level=0, method="hf", basis="6-31g",
+                    driver="makefp").run(label="water")
+
+            dimer.set_fragment_potentials(["water.efp", "water.efp"])
+            mqc.MBE(dimer, level=0, method="efp2").run()
+
+        The files are read when the calculation runs, so a bad path fails
+        there, with the parse error that comes with it, rather than here.
+        """
+        paths = [str(p) for p in paths]
+        if not paths:
+            raise ValueError("give one potential per monomer")
+        encoded = [p.encode("utf-8") for p in paths]
+        stride = max(len(p) for p in encoded)
+        if stride > 256:
+            raise ValueError("a potential path is longer than 256 characters")
+        packed = b"".join(p.ljust(stride) for p in encoded)
+        _check(
+            _ffi.system_set_fragment_potentials(
+                self._handle, len(paths), stride, packed
+            ),
+            _ffi.system_last_error,
+        )
+        return self
+
     def missing_bonds(self, tolerance=1.2):
         """Bonds the geometry implies across monomers that you did not declare.
 
@@ -471,6 +510,24 @@ class Result:
         return document.get("homo_lumo_gap_ev")
 
     @property
+    def sapt(self):
+        """The SAPT0 decomposition, term by term, or None.
+
+        Only a ``method="sapt0"`` run has one, and only one that wrote its
+        output: the terms travel in ``output_<label>.json`` rather than through
+        the energy, which is a single number and here is the total interaction.
+        The keys are the ones the deck path prints -- ``elst10``, ``exch10``,
+        ``ind20_r``, ``disp20`` and the rest -- so a number can be compared
+        against another program's term of the same name rather than against a
+        sum that happens to match.
+        """
+        document = self._output_document()
+        if not document:
+            return None
+        terms = document.get("sapt")
+        return dict(terms) if isinstance(terms, dict) else None
+
+    @property
     def gradient_norm(self):
         """Norm of the nuclear gradient in Hartree/Bohr, or None.
 
@@ -614,6 +671,21 @@ class MBE:
     deck, less the molecules -- which is what crosses to the other ranks.
     `keywords` is the escape hatch: anything the deck accepts can be put
     there, and it is merged over what the arguments produced.
+
+    `level=0` is a single calculation on the whole system rather than an
+    expansion over it, which is how every method that is not a fragmentation
+    method is run from here -- coupled cluster, CASSCF, SAPT0 and the rest.
+    The system still needs a partition, because the validator wants one
+    whether or not the expansion uses it, and for SAPT0 and EFP2 the partition
+    is the physics: those two read the monomers as the interacting pieces.
+
+    The deck's keyword blocks are named arguments of their own -- `scf`,
+    `correlation`, `cc`, `mcscf`, `dft`, `guess`, `xtb`, `pcm` -- each a dict
+    taking the keys that block takes in a deck. They are dicts rather than
+    scalars so that a key added to the schema is reachable without this
+    signature moving, and named rather than left to `keywords` so that what a
+    method needs is discoverable from `help(mqc.MBE)`: an active space is not
+    an obscure setting for a CASSCF, it is the calculation.
     """
 
     def __init__(
@@ -633,6 +705,14 @@ class MBE:
         verbosity="info",
         backend=None,
         pcm=None,
+        scf=None,
+        correlation=None,
+        cc=None,
+        mcscf=None,
+        dft=None,
+        guess=None,
+        xtb=None,
+        properties=None,
         keywords=None,
         system_options=None,
     ):
@@ -663,6 +743,24 @@ class MBE:
         # request that cannot be honoured is refused rather than substituted.
         self.backend = backend
         self.pcm = dict(pcm) if pcm else None
+        # One dict per keyword block of the deck, in the deck's own names, each
+        # merged into `keywords` by `settings`. `scf` merges over what
+        # `allow_crap_scf` and `density_fitting` produced rather than replacing
+        # it, so the two spellings of a fitted SCF do not fight.
+        self.scf = dict(scf) if scf else None
+        self.correlation = dict(correlation) if correlation else None
+        self.cc = dict(cc) if cc else None
+        self.mcscf = dict(mcscf) if mcscf else None
+        self.dft = dict(dft) if dft else None
+        self.guess = dict(guess) if guess else None
+        self.xtb = dict(xtb) if xtb else None
+        # `properties` is not a keyword block: it sits beside `keywords` in the
+        # deck, and the distinction is the one the schema draws -- keywords say
+        # how to compute the wave function and change the number that comes
+        # out, properties ask for something further to be done with it and
+        # change nothing. A bonding analysis is the second kind, which is why
+        # it does not make the driver something other than an energy.
+        self.properties = dict(properties) if properties else None
         self.keywords = dict(keywords) if keywords else {}
         self.system_options = dict(system_options) if system_options else {}
             #: Escape hatch for the deck's `system` block. Not called `system`
@@ -711,6 +809,25 @@ class MBE:
         }
         if self.checkpoint:
             document["system"]["checkpoint"] = str(self.checkpoint)
+
+        # The keyword blocks, in the deck's own names. Merged rather than
+        # assigned so that `scf={"maxiter": 200}` beside `allow_crap_scf=True`
+        # keeps both, and written before `keywords` below so the escape hatch
+        # still wins over everything -- it is the last word by construction, or
+        # it is not an escape hatch.
+        for name, block in (
+            ("scf", self.scf),
+            ("correlation", self.correlation),
+            ("cc", self.cc),
+            ("mcscf", self.mcscf),
+            ("dft", self.dft),
+            ("guess", self.guess),
+            ("xtb", self.xtb),
+        ):
+            if block:
+                _merge(document["keywords"], {name: dict(block)})
+        if self.properties is not None:
+            document["properties"] = dict(self.properties)
 
         # Both blocks get an escape hatch, and for the same reason: a key
         # added to the deck schema should be reachable from here without

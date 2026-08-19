@@ -107,6 +107,20 @@ module mqc_physical_fragment
 
       ! Connectivity information for hydrogen capping
       type(bond_t), allocatable :: bonds(:)  !! Bond connectivity (for H-capping broken bonds)
+
+      ! 256 characters a path, matching `driver_config_t%fragment_potentials`,
+      ! which is where these are copied to.
+      character(len=256), allocatable :: fragment_potentials(:)
+         !! One effective fragment potential file per fragment, in fragment
+         !! order, or unallocated when this is an ordinary quantum system.
+         !!
+         !! A deck names these in its `molecules` block and they reach the
+         !! driver through the config, never through here. This field exists
+         !! for the callers that have no deck: the C and Python interfaces send
+         !! a settings document with no molecules in it, so a potential named
+         !! there would have nowhere to travel. It rides with the geometry
+         !! because that is what the atoms it is placed on ride with -- a
+         !! potential separated from its fragment's atom list means nothing.
    contains
       procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
@@ -878,6 +892,7 @@ contains
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)
       if (allocated(this%bonds)) deallocate (this%bonds)
+      if (allocated(this%fragment_potentials)) deallocate (this%fragment_potentials)
       this%n_monomers = 0
       this%atoms_per_monomer = 0
       this%total_atoms = 0

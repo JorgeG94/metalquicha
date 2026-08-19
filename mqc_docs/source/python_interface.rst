@@ -70,16 +70,13 @@ system is computed at once. For a molecule made of separate pieces,
 ``auto_monomers()`` finds them; it refuses a single covalently bonded molecule,
 because where to cut such a thing is a chemical decision and not one to guess.
 
-Density fitting
-===============
+Methods
+=======
 
-Hartree-Fock on the CPU can fit J and K against an auxiliary basis instead of
-computing exact four-index integrals:
-
-.. code-block:: python
-
-   mqc.MBE(water, level=0, method="hf", basis="sto-3g",
-           aux_basis="def2-universal-jkfit", density_fitting=True)
+Every method the backends implement is reachable from here, and
+``python/examples/methods.py`` runs each one and checks it against PySCF on the
+same geometry -- so this section is a description of something that is tested
+rather than of something that ought to work.
 
 Post-Hartree-Fock and DFT
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -94,6 +91,18 @@ format accepts is reachable here by name:
    mqc.MBE(water, level=0, method="ri-mp2", basis="cc-pvdz",
            aux_basis="cc-pvdz-rifit").run()
 
+A name the parser does not know, and one it knows but nothing implements, are
+both refused when the settings are read -- with the accepted spellings listed
+-- rather than reaching the method factory, which has no error to return and
+can only stop the process:
+
+.. code-block:: python
+
+   >>> mqc.MBE(water, level=0, method="mp3", basis="sto-3g").run()
+   MQCError: unknown model.method 'mp3'. Accepted: gfn1, gfn2, hf, dft, mp2
+   (also scs-, sos-, ri-, df-), ccsd, ccsd(t) (also ri-, df-), casscf, casci,
+   mcscf, sapt0, efp2
+
 Kohn-Sham takes the functional as its own argument, because the functional is a
 separate field from the method:
 
@@ -106,11 +115,114 @@ separate field from the method:
 See the functional table in :doc:`input_files` for the names, and note that any
 libxc name works too.
 
+Unrestricted is not asked for either: the multiplicity selects it, on the
+system or on the monomer.
+
+.. code-block:: python
+
+   oh = mqc.System(symbols=["O", "H"], coords=[[0, 0, 0], [0, 0, 0.97]],
+                   multiplicity=2)
+   oh.set_monomers([[0, 1]], multiplicities=[2])
+   mqc.MBE(oh, level=0, method="hf", basis="sto-3g").run()
+
+The keyword blocks
+^^^^^^^^^^^^^^^^^^
+
+Each of the deck's ``keywords`` blocks is a named argument taking a dict of
+that block's own keys: ``scf``, ``correlation``, ``cc``, ``mcscf``, ``dft``,
+``guess``, ``xtb`` and ``pcm``. They are dicts rather than a scalar per
+setting, so a key added to the schema is reachable without the signature
+moving, and named rather than left to ``keywords`` because what a method needs
+should be visible from ``help(mqc.MBE)`` -- an active space is not an obscure
+setting for a CASSCF, it is the calculation.
+
+.. code-block:: python
+
+   # the frozen core, which is on by default
+   mqc.MBE(water, level=0, method="mp2", basis="cc-pvdz",
+           correlation={"freeze_core": False}).run()
+
+   # the amplitude solver, and the spin-orbital formulation
+   mqc.MBE(water, level=0, method="ccsd(t)", basis="cc-pvdz",
+           cc={"tolerance": 1e-10, "spin_adapted": False}).run()
+
+   # the active space, named directly or chosen by AVAS
+   mqc.MBE(water, level=0, method="casscf", basis="cc-pvdz",
+           mcscf={"n_active_electrons": 4, "n_active_orbitals": 4}).run()
+   mqc.MBE(water, level=0, method="casscf", basis="cc-pvdz",
+           mcscf={"avas": {"orbitals": ["O 2p"], "threshold": 0.2}}).run()
+
+   # an active space cut into subspaces with occupation windows
+   mqc.MBE(water, level=0, method="casci", basis="cc-pvdz",
+           mcscf={"n_active_electrons": 4, "n_active_orbitals": 4,
+                  "ormas": {"subspaces": [1, 3], "min_electrons": [2, 0],
+                            "max_electrons": [4, 2]}}).run()
+
+   # the quadrature, and the initial guess
+   mqc.MBE(water, level=0, method="dft", functional="tpss", basis="cc-pvdz",
+           dft={"grid_level": 5}, guess={"type": "sad"}).run()
+
+Properties
+^^^^^^^^^^
+
+``properties`` is the deck's block of the same name, beside ``keywords``
+rather than inside it, and the distinction is worth keeping: keywords say how
+to compute the wave function and change the number that comes out, properties
+ask for something further to be done with it and change nothing. That is why a
+bonding analysis leaves the driver as an energy:
+
+.. code-block:: python
+
+   mqc.MBE(water, level=0, method="hf", basis="6-31g",
+           properties={"bonding_analysis": {"type": "gms_quao"}}).run()
+
+Interaction energies
+^^^^^^^^^^^^^^^^^^^^
+
+SAPT0 and EFP2 return the interaction between two systems rather than the
+energy of one, so for both of them the partition *is* the physics -- the
+monomers are the interacting pieces, and ``level=0`` is right because there is
+nothing for an expansion to expand.
+
+SAPT0 wants exactly two monomers, and its decomposition comes back on the
+result. The terms travel through the output document rather than through the
+energy, so the run has to write files:
+
+.. code-block:: python
+
+   >>> dimer.auto_monomers()
+   >>> result = mqc.MBE(dimer, level=0, method="sapt0", basis="sto-3g").run(
+   ...     label="dimer", write_to_file=True)
+   >>> result.energy            # the total interaction
+   0.0032483374
+   >>> result.sapt["elst10"]    # and the term another code would quote
+   -0.0033...
+
+EFP2 solves no wave function of its own: each fragment carries one already,
+computed when its potential was made. So it needs a potential per monomer,
+named on the system, and ``driver="makefp"`` is what writes them -- it builds
+one for the whole system it is given and names it after the label:
+
+.. code-block:: python
+
+   monomer.set_monomers([[0, 1, 2]])
+   mqc.MBE(monomer, level=0, method="hf", basis="6-31g",
+           driver="makefp").run(label="water", write_to_file=False)
+
+   dimer.auto_monomers()
+   dimer.set_fragment_potentials(["water.efp", "water.efp"])
+   mqc.MBE(dimer, level=0, method="efp2").run(write_to_file=False).energy
+
+Every monomer needs one. A mixed quantum/EFP system is a deck-only feature,
+and a system with no potentials at all is refused rather than returning the
+zero it used to.
+
 Anything without a named argument
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``keywords`` merges straight into the deck's ``keywords`` block, so a setting does
-not have to wait for a Python argument to be reachable:
+``keywords`` merges straight into the deck's ``keywords`` block, and wins over
+everything above, so a setting does not have to wait for a Python argument to
+be reachable:
 
 .. code-block:: python
 
@@ -119,9 +231,16 @@ not have to wait for a Python argument to be reachable:
                      "correlation": {"n_frozen_core": 1},
                      "scf": {"guess": "sad"}}).run()
 
-   mqc.MBE(water, level=0, method="dft", functional="tpss", basis="cc-pvdz",
-           keywords={"dft": {"grid_level": 5}}).run()
+Density fitting
+^^^^^^^^^^^^^^^
 
+Hartree-Fock on the CPU can fit J and K against an auxiliary basis instead of
+computing exact four-index integrals:
+
+.. code-block:: python
+
+   mqc.MBE(water, level=0, method="hf", basis="sto-3g",
+           aux_basis="def2-universal-jkfit", density_fitting=True)
 
 It has to be asked for. Setting ``aux_basis`` alone does not turn it on,
 because that name carries a default -- inferring the request from its presence
@@ -162,6 +281,18 @@ Examples
    are PySCF; the fragmented cases check the expansion against the same dimer
    computed whole.
 
+``methods.py``
+   Every method the backends implement, run through this interface and checked
+   against PySCF fed this repository's own basis data -- Hartree-Fock,
+   unrestricted, Kohn-Sham through the double hybrids, the MP2 family, coupled
+   cluster with and without the triples and with and without fitting, CASCI,
+   CASSCF, ORMAS, AVAS, SAPT0 and EFP2. Where an identity says more than a
+   reference would, the identity is checked instead: RI against conventional,
+   spin-adapted against spin-orbital, CASSCF against CASCI on the same space.
+   The last cases are the refusals -- an unknown method, ``driver="optimize"``,
+   EFP2 with no potentials -- which are there because each of them used to
+   return a plausible number or take the interpreter down.
+
 ``energy_screened_mbe.py``
    A two-pass calculation: the whole expansion at a cheap level, then the terms
    whose contribution exceeded a threshold recomputed with DFT. The criterion
@@ -170,6 +301,20 @@ Examples
 
 What it cannot do
 =================
+
+``driver="optimize"`` is the one driver a session cannot host. The optimizer
+drives ``run_calculation`` rather than being driven by it, so it works from a
+deck for a single molecule and nowhere else. It is refused before the workers
+are told anything, so it raises rather than -- as it used to -- aborting the
+communicator and taking the interpreter with it:
+
+.. code-block:: python
+
+   >>> mqc.MBE(water, level=0, method="hf", basis="sto-3g",
+   ...         driver="optimize").run()
+   MQCError: driver 'optimize' is not available through a session or the C
+   API. ... Ask for 'energy' or 'gradient' here, or run the deck through the
+   mqc executable.
 
 Gradients are available from every backend, including the CPU one -- that used
 to be the entry in this section and no longer is:

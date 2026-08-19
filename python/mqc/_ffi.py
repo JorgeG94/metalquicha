@@ -133,6 +133,9 @@ system_count_missing_bonds = _declare(
     "mqc_system_count_missing_bonds", _c_int, [_c_ptr, _c_double]
 )
 system_auto_monomers = _declare("mqc_system_auto_monomers", _c_int, [_c_ptr, _c_double])
+system_set_fragment_potentials = _declare(
+    "mqc_system_set_fragment_potentials", _c_int, [_c_ptr, _c_int, _c_int, _c_str]
+)
 system_last_error = _declare("mqc_system_last_error", None, [_c_int, _c_str])
 
 # -- fragment list ---------------------------------------------------------
