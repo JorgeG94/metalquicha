@@ -31,15 +31,24 @@ printed -- a manifest of our own output would detect change, not error.
 PySCF is fed the **same basis JSON that metalquicha reads**, out of
 `basis_sets/`, converted by `bse_to_pyscf`. That matters: PySCF's own basis
 library is rounded differently from the Basis Set Exchange tables, which is
-worth about 2e-8 Hartree on STO-3G water -- indistinguishable from a real bug
-at the 1e-6 tolerance this suite uses, and enough to waste an afternoon. Using
+worth about 2e-8 Hartree on STO-3G water -- an order of magnitude outside the
+1e-9 tolerance this suite uses, and enough to waste an afternoon. Using
 one table for both sides means a disagreement is a disagreement in the
 integrals or the SCF, which is what is being tested.
 
-With the tables shared this way, all 113 cases agree to 8e-12 Hartree or
-better, which is where the 1e-6 manifest tolerance gets its headroom: it is
-loose enough to survive a change of compiler or BLAS and still six orders of
-magnitude tighter than any real integral or contraction bug.
+With the tables shared this way, the Hartree-Fock and DFT cases agree to 8e-12
+Hartree or better. The correlated methods do not, and not because they are worse:
+a correlation energy is not stationary in the density, so where a variational
+energy hides a loose SCF quadratically, MP2 and coupled cluster expose it
+linearly. At an SCF tolerance of 1e-8 that put MP2 4e-9 from PySCF and CCSD 6e-9
+-- entirely the SCF stopping point. The decks converge to 1e-12 instead, which
+brings those to 9e-11 and 5e-10.
+
+That is where the 1e-9 manifest tolerance gets its headroom: two orders above
+the worst case, still loose enough to survive a change of compiler or BLAS, and
+tight enough that a real integral or contraction bug cannot hide under it. The
+suite ran at 1e-6 until the correlated cases were measured; at that level an
+error four orders larger than the numerical noise passed silently.
 
 The shell-construction rule in `bse_to_pyscf` mirrors
 `src/basis/mqc_json_basis_reader.f90`: one shell per coefficient column, with

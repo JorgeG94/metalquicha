@@ -17,7 +17,7 @@
     "keywords": {
         "scf": {
             "maxiter": 200,
-            "tolerance": 1e-10
+            "tolerance": 1e-12
         },
         "mcscf": {
             "n_active_electrons": 8,
