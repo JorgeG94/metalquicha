@@ -22,7 +22,8 @@ module test_mqc_ieda
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_quao, only: quao_result_t
    use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
-                               nuclear_attraction_per_atom, nuclear_decomposition
+                               nuclear_attraction_per_atom, nuclear_decomposition, &
+                               combine_quao_sets
    implicit none
    private
 
@@ -65,6 +66,14 @@ module test_mqc_ieda
    !>     total    = 4 + 8 + 36                           = 48 = 3 * sum(D)
    real(dp), parameter :: FLAT(N_ORB, N_ORB) = 1.0_dp
 
+   !> A second symmetric matrix, so a density and an operator can be rotated
+   !> independently of each other rather than being the same array twice.
+   real(dp), parameter :: DENS(N_ORB, N_ORB) = reshape([ &
+                                                       2.0_dp, 0.3_dp, 0.7_dp, 0.2_dp, &
+                                                       0.3_dp, 1.5_dp, 0.1_dp, 0.9_dp, &
+                                                       0.7_dp, 0.1_dp, 1.8_dp, 0.4_dp, &
+                                                       0.2_dp, 0.9_dp, 0.4_dp, 1.1_dp], [N_ORB, N_ORB])
+
 contains
 
    subroutine collect_mqc_ieda_tests(testsuite)
@@ -80,7 +89,9 @@ contains
                   new_unittest("nuclear_terms_land_in_the_right_bins", nuclear_terms_land_in_the_right_bins), &
                   new_unittest("nuclear_pieces_add_back_up", nuclear_pieces_add_back_up), &
                   new_unittest("rejects_a_partial_nuclear_field", rejects_a_partial_nuclear_field), &
-                  new_unittest("attraction_is_on_the_right_nucleus", attraction_is_on_the_right_nucleus) &
+                  new_unittest("attraction_is_on_the_right_nucleus", attraction_is_on_the_right_nucleus), &
+                  new_unittest("survives_rotation_within_an_atom", survives_rotation_within_an_atom), &
+                  new_unittest("core_joins_with_a_density_of_two", core_joins_with_a_density_of_two) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -318,6 +329,104 @@ contains
       end if
       call mol%destroy()
    end subroutine attraction_is_on_the_right_nucleus
+
+   subroutine survives_rotation_within_an_atom(error)
+      !! Atom and pair totals do not depend on the intra-atomic orientation
+      !!
+      !! Rotating among one atom's orbitals transforms the density and the
+      !! operator by the same rotation, and inside `sum_pq gamma_pq O_pq`
+      !! restricted to a block it cancels. Individual orbital pairs move a lot;
+      !! the atom and atom-pair totals must not move at all.
+      !!
+      !! This is what lets the core orbitals go in unoriented, which is worth
+      !! having as an assertion rather than an argument -- the core set really
+      !! is never oriented, so if the invariance failed the printed numbers
+      !! would depend on how LAPACK happened to return a subspace.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp), allocatable :: intra(:), inter(:, :), spun_intra(:), spun_inter(:, :)
+      real(dp) :: u(N_ORB, N_ORB), d(N_ORB, N_ORB), o(N_ORB, N_ORB)
+      real(dp) :: c, sn
+      integer :: i
+
+      ! Block diagonal: each atom's pair of orbitals rotated among themselves.
+      c = cos(0.7_dp)
+      sn = sin(0.7_dp)
+      u = 0.0_dp
+      u(1, 1) = c; u(1, 2) = -sn; u(2, 1) = sn; u(2, 2) = c
+      u(3, 3) = c; u(3, 4) = -sn; u(4, 3) = sn; u(4, 4) = c
+
+      call two_atom_case(quao)
+      call kinetic_decomposition(quao, DENS*T_INTF, 2, intra, inter, err)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+
+      d = matmul(transpose(u), matmul(DENS, u))
+      o = matmul(transpose(u), matmul(T_INTF, u))
+      call kinetic_decomposition(quao, d*o, 2, spun_intra, spun_inter, err)
+      call check(error,.not. err%has_error(), "the decomposition refused the rotated case")
+      if (allocated(error)) return
+
+      ! The rotation has to have actually done something, or this passes for
+      ! the wrong reason.
+      call check(error, maxval(abs(d*o - DENS*T_INTF)) > 0.1_dp, &
+                 "the rotation left the orbital-pair values alone, so this proves nothing")
+      if (allocated(error)) return
+
+      do i = 1, 2
+         call check(error, spun_intra(i), intra(i), thr=1.0e-12_dp, &
+                    more="an atom total moved under an intra-atomic rotation")
+         if (allocated(error)) return
+      end do
+      call check(error, spun_inter(1, 2), inter(1, 2), thr=1.0e-12_dp, &
+                 more="a pair total moved under an intra-atomic rotation")
+   end subroutine survives_rotation_within_an_atom
+
+   subroutine core_joins_with_a_density_of_two(error)
+      !! Stacking the core in front of the valence
+      !!
+      !! The core density is exactly two on the diagonal and zero everywhere
+      !! else, including in the core-valence blocks, because the core orbitals
+      !! span a space the density projects onto entirely and which is orthogonal
+      !! to the valence one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: core, valence, combined
+      type(error_t) :: err
+
+      core%n_quao = 2
+      allocate (core%atom_of(2), core%orbitals(6, 2), core%population_bond_order(2, 2))
+      core%atom_of = [1, 2]
+      core%orbitals = 0.0_dp
+      core%population_bond_order = 0.0_dp
+
+      valence%n_quao = N_ORB
+      allocate (valence%atom_of(N_ORB), valence%orbitals(6, N_ORB))
+      allocate (valence%population_bond_order(N_ORB, N_ORB))
+      valence%atom_of = ATOM_OF
+      valence%orbitals = 1.0_dp
+      valence%population_bond_order = DENS
+
+      call combine_quao_sets(core, valence, combined, err)
+      call check(error,.not. err%has_error(), "the sets would not combine")
+      if (allocated(error)) return
+
+      call check(error, combined%n_quao, 6, "the combined set is the wrong size")
+      if (allocated(error)) return
+      call check(error, all(combined%atom_of == [1, 2, 1, 1, 2, 2]), &
+                 "the atom assignments were not carried across")
+      if (allocated(error)) return
+      call check(error, combined%population_bond_order(1, 1), 2.0_dp, thr=TOL, &
+                 more="a core orbital does not hold two electrons")
+      if (allocated(error)) return
+      call check(error, maxval(abs(combined%population_bond_order(1:2, 3:6))), 0.0_dp, &
+                 thr=TOL, more="the core-valence block is not zero")
+      if (allocated(error)) return
+      call check(error, maxval(abs(combined%population_bond_order(3:6, 3:6) - DENS)), &
+                 0.0_dp, thr=TOL, more="the valence density was not carried across")
+   end subroutine core_joins_with_a_density_of_two
 
 end module test_mqc_ieda
 

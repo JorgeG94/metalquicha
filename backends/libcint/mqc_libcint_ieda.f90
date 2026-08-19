@@ -44,6 +44,8 @@ module mqc_libcint_ieda
 
    public :: kinetic_decomposition
    public :: kinetic_total
+   public :: combine_quao_sets
+   public :: quao_interference
    public :: nuclear_attraction_per_atom
    public :: quao_nuclear_attraction
    public :: nuclear_decomposition
@@ -163,6 +165,101 @@ contains
 
       total = sum(intra) + 0.5_dp*sum(inter)
    end function kinetic_total
+
+   subroutine combine_quao_sets(core, valence, combined, error)
+      !! Stack the core quasi-atomic orbitals in front of the valence ones
+      !!
+      !! The bonding analysis works in the valence-internal space, because that
+      !! is where bonding happens and the core is inert. An energy decomposition
+      !! cannot: the core carries most of the kinetic energy and most of the
+      !! nuclear attraction, and leaving it out means the pieces sum to a number
+      !! nothing else knows.
+      !!
+      !! The core set is built by the same construction as the valence one, just
+      !! handed the core molecular orbitals and the core minimal-basis ranges
+      !! instead. That matters -- it means core and valence orbitals are atomic
+      !! in the same sense rather than in two different senses.
+      !!
+      !! **The core density is exactly two on the diagonal and zero elsewhere.**
+      !! Not an approximation: the core orbitals span the core molecular-orbital
+      !! space, the density restricted to that space is twice its projector, and
+      !! a projector is the identity in any orthonormal basis of what it
+      !! projects onto. The core-valence blocks are zero for the same reason,
+      !! the two spaces being orthogonal.
+      type(quao_result_t), intent(in) :: core
+      type(quao_result_t), intent(in) :: valence
+      type(quao_result_t), intent(out) :: combined
+      type(error_t), intent(inout) :: error
+
+      integer :: nc, nv, n, i
+
+      if (error%has_error()) return
+
+      nc = core%n_quao
+      nv = valence%n_quao
+      if (size(core%orbitals, 1) /= size(valence%orbitals, 1)) then
+         call error%set(ERROR_VALIDATION, "the core and valence quasi-atomic orbitals "// &
+                        "are expanded in different atomic-orbital bases.")
+         return
+      end if
+      n = nc + nv
+
+      combined%n_quao = n
+      allocate (combined%orbitals(size(core%orbitals, 1), n))
+      combined%orbitals(:, 1:nc) = core%orbitals
+      combined%orbitals(:, nc + 1:n) = valence%orbitals
+
+      allocate (combined%atom_of(n))
+      combined%atom_of(1:nc) = core%atom_of
+      combined%atom_of(nc + 1:n) = valence%atom_of
+
+      allocate (combined%population_bond_order(n, n))
+      combined%population_bond_order = 0.0_dp
+      do concurrent(i=1:nc)
+         combined%population_bond_order(i, i) = 2.0_dp
+      end do
+      combined%population_bond_order(nc + 1:, nc + 1:) = valence%population_bond_order
+   end subroutine combine_quao_sets
+
+   subroutine quao_interference(quao, matrix_ao, weighted, error)
+      !! `gamma_pq * O_pq` in the quasi-atomic basis, for a one-electron operator
+      !!
+      !! The array every decomposition below consumes. Summing it over all pairs
+      !! gives the expectation value of the operator, and summing it over
+      !! subsets of pairs is what the decomposition is.
+      !!
+      !! Unlike `kinetic_bond_orders` this does not require oriented orbitals,
+      !! and it should not. Orientation is a rotation *within* each atom, and
+      !! both `sum_{p,q in A}` and `sum_{p in A, q in B}` are invariant under
+      !! one: the density and the operator transform by the same rotation and it
+      !! cancels inside the trace. Individual orbital pairs move, atom and
+      !! atom-pair totals do not. So the decomposition is well defined for a
+      !! core set that was never oriented, and the tests assert the invariance
+      !! rather than relying on it quietly.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: matrix_ao(:, :)
+      real(dp), allocatable, intent(out) :: weighted(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: work(:, :), transformed(:, :)
+      integer :: n_ao, n
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      n_ao = size(quao%orbitals, 1)
+      if (size(matrix_ao, 1) /= n_ao .or. size(matrix_ao, 2) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "the operator is not in the same "// &
+                        "atomic-orbital basis as the quasi-atomic orbitals.")
+         return
+      end if
+
+      allocate (work(n_ao, n), transformed(n, n), weighted(n, n))
+      call pic_gemm(matrix_ao, quao%orbitals, work)
+      call pic_gemm(quao%orbitals, work, transformed, transa="T")
+      weighted = transformed*quao%population_bond_order
+      deallocate (work, transformed)
+   end subroutine quao_interference
 
    subroutine nuclear_attraction_per_atom(mol, atomic_numbers, coordinates, v_atom, error)
       !! Split the nuclear attraction by which nucleus is doing the attracting

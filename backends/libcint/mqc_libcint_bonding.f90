@@ -31,7 +31,8 @@ module mqc_libcint_bonding
                                kinetic_bond_orders
    use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition, &
                                nuclear_attraction_per_atom, quao_nuclear_attraction, &
-                               nuclear_decomposition, print_nuclear_decomposition
+                               nuclear_decomposition, print_nuclear_decomposition, &
+                               combine_quao_sets, quao_interference, kinetic_total
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -116,6 +117,9 @@ contains
       real(dp), allocatable :: kin_intra(:), kin_inter(:, :)
       real(dp), allocatable :: v_atom_ao(:, :, :), v_atom_quao(:, :, :)
       real(dp), allocatable :: nuc_intra(:), nuc_inter(:, :)
+      real(dp), allocatable :: full_interference(:, :), h_core(:, :), density_ao(:, :)
+      type(quao_result_t) :: core_quao, full_quao
+      real(dp) :: one_electron, reference
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -250,7 +254,27 @@ contains
          ! pair. Unscaled, so unlike the kinetic bond orders above these are
          ! energies and they add up to one -- the valence kinetic energy, since
          ! the core is not in this basis.
-         call kinetic_decomposition(quao, interference, natm, kin_intra, kin_inter, error)
+         ! The decomposition needs the core, which the bonding analysis above
+         ! does not: it carries most of the kinetic energy and most of the
+         ! nuclear attraction, and without it the totals below would sum to a
+         ! number nothing else in the calculation knows. Built by the same
+         ! construction, handed the core orbitals and the core minimal-basis
+         ! ranges. Left unoriented deliberately -- see `quao_interference`.
+         if (dims%n_core > 0) then
+            call quasi_atomic_orbitals(atomic_numbers, orbitals(:, 1:dims%n_core), &
+                                       dims%n_core, mixed, core_off, core_n, &
+                                       core_quao, error)
+            if (error%has_error()) return
+            call combine_quao_sets(core_quao, quao, full_quao, error)
+         else
+            full_quao = quao
+         end if
+         if (error%has_error()) return
+
+         call quao_interference(full_quao, kinetic, full_interference, error)
+         if (error%has_error()) return
+         call kinetic_decomposition(full_quao, full_interference, natm, kin_intra, &
+                                    kin_inter, error)
          if (error%has_error()) return
          call print_kinetic_decomposition(kin_intra, kin_inter, element_symbols)
 
@@ -260,12 +284,43 @@ contains
          ! interaction between that pair rather than a property of one atom.
          call nuclear_attraction_per_atom(mol, atomic_numbers, coordinates, v_atom_ao, error)
          if (error%has_error()) return
-         call quao_nuclear_attraction(quao, v_atom_ao, v_atom_quao, error)
+         call quao_nuclear_attraction(full_quao, v_atom_ao, v_atom_quao, error)
          if (error%has_error()) return
-         call nuclear_decomposition(quao, quao%population_bond_order, v_atom_quao, &
-                                    natm, nuc_intra, nuc_inter, error)
+         call nuclear_decomposition(full_quao, full_quao%population_bond_order, &
+                                    v_atom_quao, natm, nuc_intra, nuc_inter, error)
          if (error%has_error()) return
          call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
+
+         ! **The check the decomposition exists to pass.** Everything above is
+         ! internally consistent by construction -- each routine verifies its own
+         ! bins add up -- but that says nothing about whether the basis they were
+         ! summed in holds the whole density. This compares the one-electron
+         ! energy the decomposition arrives at against the one the converged
+         ! orbitals give directly, in the atomic-orbital basis, with no
+         ! quasi-atomic anything involved.
+         !
+         ! For a reference determinant the two are equal to rounding: the core
+         ! and valence-internal spaces together contain every occupied orbital.
+         ! For a correlated density they are not, and the difference is the same
+         ! occupation living outside the valence-virtual span that the population
+         ! sum reports above -- a statement about the analysis rather than an
+         ! error, so it is printed rather than raised.
+         one_electron = kinetic_total(kin_intra, kin_inter) + &
+                        kinetic_total(nuc_intra, nuc_inter)
+         call mol%core_hamiltonian(h_core)
+         call one_electron_reference(orbitals, dims%n_occupied, occupations, &
+                                     h_core, density_ao, reference)
+         call logger%info("")
+         write (line, "(4x,a30,f16.6,a)") "one-electron energy", one_electron, " hartree"
+         call logger%info(trim(line))
+         write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
+            " hartree"
+         call logger%info(trim(line))
+         if (abs(one_electron - reference) > 1.0e-8_dp) then
+            write (line, "(4x,a30,f16.6,a)") "outside the quasi-atomic span", &
+               reference - one_electron, " hartree"
+            call logger%info(trim(line))
+         end if
 
          ! Two diagnostics, at the end rather than the top: they say whether to
          ! believe the tables above, which is not a question worth asking until
@@ -332,5 +387,43 @@ contains
 
       deallocate (overlap, work, weights, scaled)
    end subroutine project_density
+
+   subroutine one_electron_reference(orbitals, n_occupied, occupations, h, &
+                                     density_ao, energy)
+      !! The one-electron energy straight from the converged orbitals
+      !!
+      !! Deliberately built without touching anything quasi-atomic, so that
+      !! comparing it against the decomposition is a real check rather than a
+      !! restatement. `sum(gamma * h)` rather than a trace with a transpose,
+      !! since both matrices are symmetric.
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: n_occupied
+      real(dp), intent(in), optional :: occupations(:)
+      real(dp), intent(in) :: h(:, :)
+      real(dp), allocatable, intent(out) :: density_ao(:, :)
+      real(dp), intent(out) :: energy
+
+      integer :: n_ao, i, n_use
+
+      n_ao = size(orbitals, 1)
+      allocate (density_ao(n_ao, n_ao))
+      density_ao = 0.0_dp
+
+      if (present(occupations)) then
+         n_use = min(size(occupations), size(orbitals, 2))
+         do i = 1, n_use
+            if (abs(occupations(i)) < 1.0e-14_dp) cycle
+            density_ao = density_ao + occupations(i)* &
+                         spread(orbitals(:, i), 2, n_ao)*spread(orbitals(:, i), 1, n_ao)
+         end do
+      else
+         do i = 1, n_occupied
+            density_ao = density_ao + 2.0_dp* &
+                         spread(orbitals(:, i), 2, n_ao)*spread(orbitals(:, i), 1, n_ao)
+         end do
+      end if
+
+      energy = sum(density_ao*h)
+   end subroutine one_electron_reference
 
 end module mqc_libcint_bonding
