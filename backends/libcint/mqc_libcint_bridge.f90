@@ -1725,11 +1725,32 @@ contains
                                   natural, occupations, analysis_error)
          end if
          if (.not. analysis_error%has_error()) then
-            call run_quao_analysis(mol, fragment%element_numbers, symbols, &
-                                   fragment%coordinates, natural, fragment%nelec, &
-                                   analysis_error, &
-                                   threshold=settings%bonding_threshold, &
-                                   occupations=occupations)
+            ! The two-particle density goes over in the orbitals it was computed
+            ! in, not the natural ones the rest of the analysis uses -- it
+            ! belongs to that basis and is projected out of it. Its energy is
+            ! handed over too, since the decomposition's own reference assumes a
+            ! single determinant and would be short by the correlation energy.
+            if (settings%mcscf%optimize_orbitals) then
+               call run_quao_analysis(mol, fragment%element_numbers, symbols, &
+                                      fragment%coordinates, natural, fragment%nelec, &
+                                      analysis_error, &
+                                      threshold=settings%bonding_threshold, &
+                                      occupations=occupations, &
+                                      active_orbitals=casscf%orbitals(:, space(1) + 1: &
+                                                                      space(1) + space(2)), &
+                                      active_dm1=casscf%dm1, active_dm2=casscf%dm2, &
+                                      reference_energy=casscf%energy)
+            else
+               call run_quao_analysis(mol, fragment%element_numbers, symbols, &
+                                      fragment%coordinates, natural, fragment%nelec, &
+                                      analysis_error, &
+                                      threshold=settings%bonding_threshold, &
+                                      occupations=occupations, &
+                                      active_orbitals=reference(:, space(1) + 1: &
+                                                                space(1) + space(2)), &
+                                      active_dm1=casci%dm1, active_dm2=casci%dm2, &
+                                      reference_energy=casci%energy)
+            end if
          end if
          if (analysis_error%has_error()) then
             call logger%warning("  the bonding analysis could not run: "// &

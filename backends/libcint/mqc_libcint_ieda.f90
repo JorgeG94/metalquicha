@@ -50,6 +50,9 @@ module mqc_libcint_ieda
    public :: quao_nuclear_attraction
    public :: nuclear_decomposition
    public :: quao_eris
+   public :: active_cumulant
+   public :: quao_projection
+   public :: transform_cumulant
    public :: two_electron_decomposition
    public :: print_two_electron_decomposition
    public :: nuclear_repulsion_pairs
@@ -510,30 +513,172 @@ contains
          return
       end if
 
-      allocate (cur(n_ao, n_ao**3))
-      cur = reshape(eri_ao, [n_ao, n_ao**3])
+      call four_index_transform(quao%orbitals, eri_ao, eri_quao)
+   end subroutine quao_eris
+
+   subroutine four_index_transform(coeff, source, result)
+      !! Contract all four indices of an `n_in^4` array with `coeff`
+      !!
+      !!     result_pqrs = sum_abcd coeff_ap coeff_bq coeff_cr coeff_ds source_abcd
+      !!
+      !! Four quarter-transformations, each contracting one index and cycling it
+      !! to the back, so after four passes the order is restored. `coeff` is
+      !! `(n_in, n_out)` and need not be square: the two-electron integrals come
+      !! from a large atomic-orbital basis into a small quasi-atomic one, and
+      !! the cumulant comes from a small active space into the same one.
+      real(dp), intent(in) :: coeff(:, :)          !! (n_in, n_out)
+      real(dp), intent(in) :: source(:, :, :, :)   !! (n_in, n_in, n_in, n_in)
+      real(dp), allocatable, intent(out) :: result(:, :, :, :)
+
+      real(dp), allocatable :: cur(:, :), t(:, :)
+      integer :: n_in, n_out, step, ncol
+
+      n_in = size(coeff, 1)
+      n_out = size(coeff, 2)
+
+      ! A transposed `coeff` still type-checks and still has two dimensions, so
+      ! without this the first reshape reads past the end of `source` and the
+      ! whole thing crashes several frames away from the mistake.
+      if (any(shape(source) /= n_in)) then
+         error stop "four_index_transform: the array does not have the "// &
+            "dimension the coefficients contract over"
+      end if
+
+      allocate (cur(n_in, n_in**3))
+      cur = reshape(source, [n_in, n_in**3])
       do step = 1, 4
          ncol = size(cur, 2)
-         allocate (t(n, ncol))
-         call pic_gemm(quao%orbitals, cur, t, transa="T")
+         allocate (t(n_out, ncol))
+         call pic_gemm(coeff, cur, t, transa="T")
          deallocate (cur)
          if (step < 4) then
-            allocate (cur(n_ao, ncol*n/n_ao))
-            cur = reshape(transpose(t), [n_ao, ncol*n/n_ao])
+            allocate (cur(n_in, ncol*n_out/n_in))
+            cur = reshape(transpose(t), [n_in, ncol*n_out/n_in])
          else
-            allocate (cur(n, n**3))
-            cur = reshape(transpose(t), [n, n**3])
+            allocate (cur(n_out, n_out**3))
+            cur = reshape(transpose(t), [n_out, n_out**3])
          end if
          deallocate (t)
       end do
 
-      allocate (eri_quao(n, n, n, n))
-      eri_quao = reshape(cur, [n, n, n, n])
+      allocate (result(n_out, n_out, n_out, n_out))
+      result = reshape(cur, [n_out, n_out, n_out, n_out])
       deallocate (cur)
-   end subroutine quao_eris
+   end subroutine four_index_transform
+
+   pure subroutine active_cumulant(dm1, dm2, cumulant)
+      !! What correlation adds to the two-particle density
+      !!
+      !!     Lambda_pqrs = d_pqrs - [ D_pq D_rs - (1/2) D_ps D_rq ]
+      !!
+      !! The bracket is the two-particle density a single determinant would
+      !! have, so `Lambda` is exactly the part of `d` that a determinant cannot
+      !! produce. It is zero for a closed-shell reference, and for an MCSCF wave
+      !! function it is zero unless all four indices are active -- the inactive
+      !! orbitals are a closed shell and carry no correlation.
+      !!
+      !! That is what makes the correlated decomposition cheap. The determinant
+      !! expression is already evaluated over the whole quasi-atomic basis; the
+      !! correction lives in the active space alone and is transformed from
+      !! there.
+      real(dp), intent(in) :: dm1(:, :)
+      real(dp), intent(in) :: dm2(:, :, :, :)
+      real(dp), allocatable, intent(out) :: cumulant(:, :, :, :)
+
+      integer :: n, p, q, r, sx
+
+      n = size(dm1, 1)
+      allocate (cumulant(n, n, n, n))
+      do p = 1, n
+         do q = 1, n
+            do r = 1, n
+               do sx = 1, n
+                  cumulant(p, q, r, sx) = dm2(p, q, r, sx) &
+                                          - dm1(p, q)*dm1(r, sx) &
+                                          + 0.5_dp*dm1(p, sx)*dm1(r, q)
+               end do
+            end do
+         end do
+      end do
+   end subroutine active_cumulant
+
+   subroutine quao_projection(quao, overlap, orbitals, u, deficit, error)
+      !! Express a set of molecular orbitals in the quasi-atomic basis
+      !!
+      !!     U = C_quao^T S C
+      !!
+      !! **`U` is an isometry only if the orbitals lie inside the space the
+      !! quasi-atomic orbitals span, and active orbitals do not quite.** The
+      !! valence-virtual orbitals are chosen to look like free-atom orbitals;
+      !! the active orbitals of a converged MCSCF are chosen to lower an energy,
+      !! and the two are not the same choice. N2 in cc-pVDZ with a CAS(6,6)
+      !! misses orthonormality by about 6e-2.
+      !!
+      !! So the deficit is measured and handed back rather than treated as an
+      !! error. It is the same statement the population sum already makes about
+      !! this analysis -- that it describes what lies inside the quasi-atomic
+      !! span and not what lies outside -- and the caller is better placed to
+      !! decide what to do about it. What must not happen is losing it
+      !! silently.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: overlap(:, :)     !! (n_ao, n_ao)
+      real(dp), intent(in) :: orbitals(:, :)    !! (n_ao, n_orb)
+      real(dp), allocatable, intent(out) :: u(:, :)   !! (n_quao, n_orb)
+      real(dp), intent(out) :: deficit
+         !! `max |U^T U - 1|`. Zero when the orbitals are fully inside the span;
+         !! otherwise how much of them is not.
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: work(:, :), gram(:, :)
+      integer :: n_ao, n, n_orb, i
+
+      if (error%has_error()) return
+
+      deficit = 0.0_dp
+      n = quao%n_quao
+      n_ao = size(quao%orbitals, 1)
+      n_orb = size(orbitals, 2)
+      if (size(overlap, 1) /= n_ao .or. size(orbitals, 1) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "the overlap, the orbitals and the "// &
+                        "quasi-atomic orbitals are not in the same basis.")
+         return
+      end if
+
+      allocate (work(n_ao, n_orb), u(n, n_orb), gram(n_orb, n_orb))
+      call pic_gemm(overlap, orbitals, work)
+      call pic_gemm(quao%orbitals, work, u, transa="T")
+
+      call pic_gemm(u, u, gram, transa="T")
+      do i = 1, n_orb
+         gram(i, i) = gram(i, i) - 1.0_dp
+      end do
+      deficit = maxval(abs(gram))
+      deallocate (work, gram)
+   end subroutine quao_projection
+
+   subroutine transform_cumulant(u, cumulant, cumulant_quao, error)
+      !! Carry the cumulant from the active orbitals into the quasi-atomic basis
+      !!
+      !! `U` being an isometry is what makes this exact: the contraction of the
+      !! cumulant against the integrals is the same number computed either side
+      !! of the transformation, so the correlation energy is neither gained nor
+      !! lost by changing basis. `quao_projection` checks that before returning.
+      real(dp), intent(in) :: u(:, :)               !! (n_quao, n_active)
+      real(dp), intent(in) :: cumulant(:, :, :, :)  !! over active orbitals
+      real(dp), allocatable, intent(out) :: cumulant_quao(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      if (error%has_error()) return
+      if (size(u, 2) /= size(cumulant, 1)) then
+         call error%set(ERROR_VALIDATION, "the projection and the cumulant describe "// &
+                        "different numbers of active orbitals.")
+         return
+      end if
+      call four_index_transform(transpose(u), cumulant, cumulant_quao)
+   end subroutine transform_cumulant
 
    subroutine two_electron_decomposition(quao, density, eri_quao, n_atoms, &
-                                         intra, inter, energy, error)
+                                         intra, inter, energy, error, cumulant)
       !! Group the two-electron energy by the atoms of its four orbitals
       !!
       !! For a single determinant the two-particle density is
@@ -568,8 +713,12 @@ contains
          !! `E2` as summed here, so a caller can compare it against the same
          !! quantity computed without any of this.
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: cumulant(:, :, :, :)
+         !! (n_quao^4). What correlation adds to the two-particle density,
+         !! already carried into this basis. Absent means a single determinant,
+         !! for which it is identically zero.
 
-      real(dp) :: w, residual
+      real(dp) :: w, residual, extra
       character(len=400) :: message
       integer :: n, p, q, r, sx, a, b, c, d
 
@@ -600,8 +749,11 @@ contains
                c = quao%atom_of(r)
                do sx = 1, n
                   d = quao%atom_of(sx)
+                  extra = 0.0_dp
+                  if (present(cumulant)) extra = cumulant(p, q, r, sx)
                   w = 0.5_dp*(density(p, q)*density(r, sx) &
-                              - 0.5_dp*density(p, sx)*density(r, q))*eri_quao(p, q, r, sx)
+                              - 0.5_dp*density(p, sx)*density(r, q) &
+                              + extra)*eri_quao(p, q, r, sx)
                   energy = energy + w
                   if (a /= b .and. c /= d) then
                      call deposit(inter, a, b, 0.5_dp*w)

@@ -119,6 +119,13 @@ module mqc_libcint_mcscf
       real(dp), allocatable :: ci_flat(:)
          !! (n_determinants), the vector of a restricted space
       real(dp), allocatable :: dm1(:, :)     !! Active one-particle density
+      real(dp), allocatable :: dm2(:, :, :, :)
+         !! Active two-particle density, spin-traced. Consistent with `dm1`,
+         !! `orbitals` and `energy` when the optimisation converged, because the
+         !! loop tests the gradient and leaves before touching the orbitals. On
+         !! a run that ran out of iterations instead, both densities are one
+         !! orbital step behind -- consistent with each other, which is what a
+         !! cumulant needs, but not with the orbitals they are reported beside.
       integer :: iterations = 0
       integer :: n_determinants = 0
       logical :: converged = .false.
@@ -725,6 +732,7 @@ contains
       if (allocated(ci%ci_vector)) result%ci_vector = ci%ci_vector
       if (allocated(ci%ci_flat)) result%ci_flat = ci%ci_flat
       result%dm1 = dm1
+      result%dm2 = dm2
 
       if (loud) then
          write (line, "(a,f22.12)") "    converged energy        ", result%energy

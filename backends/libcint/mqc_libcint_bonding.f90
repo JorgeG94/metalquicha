@@ -35,7 +35,8 @@ module mqc_libcint_bonding
                                combine_quao_sets, quao_interference, kinetic_total, &
                                quao_eris, two_electron_decomposition, &
                                print_two_electron_decomposition, &
-                               nuclear_repulsion_pairs, print_total_decomposition
+                               nuclear_repulsion_pairs, print_total_decomposition, &
+                               active_cumulant, quao_projection, transform_cumulant
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -85,7 +86,8 @@ contains
 
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
                                 orbitals, n_electrons, error, verbose, threshold, &
-                                occupations)
+                                occupations, active_orbitals, active_dm1, active_dm2, &
+                                reference_energy)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -113,6 +115,24 @@ contains
       type(vvo_result_t) :: vvo
       type(quao_result_t) :: quao
       type(quao_labels_t) :: labels
+      real(dp), intent(in), optional :: active_orbitals(:, :)
+         !! (n_ao, n_active), the orbitals `active_dm2` is expressed in. These
+         !! are the optimised active orbitals, not the natural ones the rest of
+         !! the analysis runs on: the two-particle density belongs to the basis
+         !! it was computed in, and is projected from there.
+      real(dp), intent(in), optional :: active_dm1(:, :)
+      real(dp), intent(in), optional :: active_dm2(:, :, :, :)
+         !! Present together with the two above, or not at all. Their presence
+         !! is what makes the energy decomposition correlated rather than a
+         !! single-determinant one.
+      real(dp), intent(in), optional :: reference_energy
+         !! The energy the calculation reported, to check the decomposition
+         !! against. Required for a correlated wave function and optional
+         !! otherwise: the reference built here from the orbitals is a
+         !! determinant expression, so it is the energy of the wave function
+         !! only when the wave function is a determinant. Passing the CI energy
+         !! is what keeps the correlated case checked rather than trusted.
+
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
       real(dp), allocatable :: kbo(:, :), interference(:, :), populations(:)
@@ -126,6 +146,10 @@ contains
       real(dp), allocatable :: eri_ao(:, :, :, :), eri_quao(:, :, :, :)
       real(dp), allocatable :: two_intra(:), two_inter(:, :)
       real(dp), allocatable :: rep_inter(:, :), tot_intra(:), tot_inter(:, :)
+      real(dp), allocatable :: s_ao(:, :), u_active(:, :)
+      real(dp), allocatable :: cumulant(:, :, :, :), cumulant_quao(:, :, :, :)
+      logical :: correlated
+      real(dp) :: span_deficit
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -317,9 +341,39 @@ contains
          call mol%eris(eri_ao)
          call quao_eris(full_quao, eri_ao, eri_quao, error)
          if (error%has_error()) return
-         call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
-                                         eri_quao, natm, two_intra, two_inter, &
-                                         two_electron, error)
+
+         ! What correlation adds. The determinant expression below is evaluated
+         ! over the whole quasi-atomic basis whatever the wave function; the
+         ! cumulant is the part no determinant can produce, it is zero unless
+         ! all four of its indices are active, and it is carried here from the
+         ! orbitals it was computed in rather than from the natural ones.
+         correlated = present(active_dm2) .and. present(active_dm1) .and. &
+                      present(active_orbitals)
+         if (correlated) then
+            call mol%overlap(s_ao)
+            call quao_projection(full_quao, s_ao, active_orbitals, u_active, &
+                                 span_deficit, error)
+            if (error%has_error()) return
+            ! The active orbitals are not quite inside the span -- they were
+            ! optimised to lower an energy, the valence-virtual ones to look
+            ! atomic. Reported for the same reason the population shortfall is:
+            ! it says how much of the correlation this is describing.
+            if (span_deficit > 1.0e-6_dp) then
+               write (line, "(a,es10.2)") &
+                  "    active orbitals outside the quasi-atomic span ", span_deficit
+               call logger%info(trim(line))
+            end if
+            call active_cumulant(active_dm1, active_dm2, cumulant)
+            call transform_cumulant(u_active, cumulant, cumulant_quao, error)
+            if (error%has_error()) return
+            call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
+                                            eri_quao, natm, two_intra, two_inter, &
+                                            two_electron, error, cumulant=cumulant_quao)
+         else
+            call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
+                                            eri_quao, natm, two_intra, two_inter, &
+                                            two_electron, error)
+         end if
          if (error%has_error()) return
          call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
 
@@ -352,8 +406,24 @@ contains
          call one_electron_reference(orbitals, dims%n_occupied, occupations, &
                                      h_core, density_ao, reference)
          total_energy = one_electron + two_electron + mol%nuclear_repulsion()
-         reference = reference + two_electron_reference(density_ao, eri_ao) + &
-                     mol%nuclear_repulsion()
+         ! The reference built from the orbitals is a determinant expression and
+         ! describes a correlated wave function not at all, so for one of those
+         ! the energy the calculation reported is what the decomposition is held
+         ! against instead. Either way it is a number reached without any of
+         ! this arithmetic, which is the whole point of comparing.
+         if (correlated .and. .not. present(reference_energy)) then
+            call error%set(ERROR_VALIDATION, "a correlated energy decomposition was "// &
+                           "asked for without the energy to check it against. The "// &
+                           "reference built here assumes a single determinant and "// &
+                           "would disagree by the whole correlation energy.")
+            return
+         end if
+         if (present(reference_energy)) then
+            reference = reference_energy
+         else
+            reference = reference + two_electron_reference(density_ao, eri_ao) + &
+                        mol%nuclear_repulsion()
+         end if
 
          call logger%info("")
          write (line, "(4x,a30,f16.6,a)") "one-electron", one_electron, " hartree"
@@ -365,8 +435,13 @@ contains
          call logger%info(trim(line))
          write (line, "(4x,a30,f16.6,a)") "total", total_energy, " hartree"
          call logger%info(trim(line))
-         write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
-            " hartree"
+         if (present(reference_energy)) then
+            write (line, "(4x,a30,f16.6,a)") "reported by the calculation", reference, &
+               " hartree"
+         else
+            write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
+               " hartree"
+         end if
          call logger%info(trim(line))
          if (abs(kinetic_total(tot_intra, tot_inter) - total_energy) > 1.0e-8_dp) then
             call error%set(ERROR_VALIDATION, "the atom and atom-pair table does not "// &

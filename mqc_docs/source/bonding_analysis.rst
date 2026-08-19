@@ -155,6 +155,46 @@ When it does not, a further line reports the difference, under ``outside the
 quasi-atomic span``. That is the same shortfall the population sum reports for a
 correlated density, and it arises for the same reason.
 
+
+Correlated wave functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The energy tables take an MCSCF wave function as well as a determinant, and
+nothing extra is asked for. What changes is one term. A determinant's
+two-particle density is fixed by its one-particle one,
+
+.. math::
+
+   \Gamma_{pqrs} = \gamma_{pq}\gamma_{rs} - \tfrac{1}{2}\gamma_{ps}\gamma_{rq}
+
+and correlation is precisely what makes that false. The difference between the
+true two-particle density and this expression is the cumulant, it is zero unless
+all four of its indices are active, and it is added to the two-electron term.
+
+That locality is what keeps the cost down: the determinant expression is
+evaluated over the whole quasi-atomic basis whatever the wave function, and the
+correction lives in the active space alone.
+
+Two lines appear that do not for a determinant::
+
+    active orbitals outside the quasi-atomic span   5.67E-02
+    ...
+       reported by the calculation     -109.090026 hartree
+     outside the quasi-atomic span       -0.014857 hartree
+
+The first says the active orbitals are not entirely inside the space the
+quasi-atomic orbitals span, and they are not: the valence-virtual orbitals are
+chosen to look like free-atom orbitals, while the active orbitals of a converged
+MCSCF are chosen to lower an energy. Those are different choices and they do not
+give the same space.
+
+The second is what that costs. For N\ :sub:`2` in cc-pVDZ with a CAS(6,6) the
+decomposition reaches -109.075169 hartree against a CASSCF that reported
+-109.090026, so 14.9 of the 135.9 millihartree of correlation energy are outside
+what this analysis can see -- about 89% described. The comparison is against the
+energy the calculation reported, since the reference built from the orbitals
+assumes a determinant and would be short by the whole correlation energy.
+
 Reading the diagnostics
 -----------------------
 
@@ -200,9 +240,10 @@ Limits
 ------
 
 - Closed-shell restricted references only.
-- The energy decomposition assumes a single determinant, since it builds the
-  two-particle density from the one-particle one. The bonding tables above take
-  a correlated density; the energy tables do not yet.
+- A correlated energy decomposition describes only the part of the wave
+  function lying inside the quasi-atomic span, and reports the rest rather than
+  hiding it. N\ :sub:`2` in cc-pVDZ with a CAS(6,6) accounts for about 89% of
+  the correlation energy.
 - The two-electron transformation goes through the dense ``n_ao**4`` integral
   array, which is the practical ceiling on molecule size for the energy tables.
 - Hydrogen through xenon. Past that the free-atom minimal basis this projects

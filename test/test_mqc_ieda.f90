@@ -24,7 +24,8 @@ module test_mqc_ieda
    use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
                                nuclear_attraction_per_atom, nuclear_decomposition, &
                                combine_quao_sets, quao_eris, two_electron_decomposition, &
-                               nuclear_repulsion_pairs
+                               nuclear_repulsion_pairs, active_cumulant, &
+                               quao_projection, transform_cumulant
    implicit none
    private
 
@@ -96,7 +97,11 @@ contains
                   new_unittest("two_electron_bins_by_hand", two_electron_bins_by_hand), &
                   new_unittest("two_electron_energy_has_a_closed_form", two_electron_energy_has_a_closed_form), &
                   new_unittest("eris_keep_their_index_order", eris_keep_their_index_order), &
-                  new_unittest("nuclear_repulsion_is_already_pairwise", nuclear_repulsion_is_already_pairwise) &
+                  new_unittest("nuclear_repulsion_is_already_pairwise", nuclear_repulsion_is_already_pairwise), &
+                  new_unittest("cumulant_vanishes_for_a_determinant", cumulant_vanishes_for_a_determinant), &
+                  new_unittest("cumulant_survives_an_isometry", cumulant_survives_an_isometry), &
+                  new_unittest("projection_measures_what_it_misses", projection_measures_what_it_misses), &
+                  new_unittest("cumulant_reaches_the_energy", cumulant_reaches_the_energy) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -604,6 +609,205 @@ contains
       call check(error, kinetic_total(intra, inter), 1.0_dp/1.4_dp, thr=1.0e-12_dp, &
                  more="the molecule's nuclear repulsion came out wrong")
    end subroutine nuclear_repulsion_is_already_pairwise
+
+   subroutine cumulant_vanishes_for_a_determinant(error)
+      !! Correlation adds nothing when there is none
+      !!
+      !! The cumulant is `d` less the two-particle density a determinant would
+      !! have, so feeding it a determinant's own `d` must give exactly zero.
+      !! That is the sharpest available check on the expression, because it
+      !! fails for any wrong sign, transposed index or factor: none of those
+      !! cancel against the same expression written the other way round.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: d1(N_ORB, N_ORB), d2(N_ORB, N_ORB, N_ORB, N_ORB)
+      real(dp), allocatable :: cumulant(:, :, :, :)
+      integer :: p, q, r, sx
+
+      ! Two electrons in each of the first two orbitals, none in the rest.
+      d1 = 0.0_dp
+      d1(1, 1) = 2.0_dp
+      d1(2, 2) = 2.0_dp
+      do p = 1, N_ORB
+         do q = 1, N_ORB
+            do r = 1, N_ORB
+               do sx = 1, N_ORB
+                  d2(p, q, r, sx) = d1(p, q)*d1(r, sx) - 0.5_dp*d1(p, sx)*d1(r, q)
+               end do
+            end do
+         end do
+      end do
+
+      call active_cumulant(d1, d2, cumulant)
+      call check(error, maxval(abs(cumulant)), 0.0_dp, thr=1.0e-14_dp, &
+                 more="a determinant was given a non-zero cumulant")
+   end subroutine cumulant_vanishes_for_a_determinant
+
+   subroutine cumulant_survives_an_isometry(error)
+      !! Changing basis through an isometry loses nothing
+      !!
+      !! `U` maps a small active space into a larger quasi-atomic one, so it is
+      !! rectangular and cannot be inverted -- but `U^T U = 1`, and that is
+      !! enough for the transformation to be undone by its own transpose. If it
+      !! were not, the correlation energy would depend on which basis it was
+      !! contracted in, which is the failure this guards.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp) :: u(N_ORB, 2), small(2, 2, 2, 2)
+      real(dp), allocatable :: big(:, :, :, :), back(:, :, :, :)
+      integer :: p, q, r, sx
+
+      ! An isometry from two dimensions into four.
+      u = 0.0_dp
+      u(1, 1) = 1.0_dp
+      u(3, 2) = 1.0_dp
+
+      do p = 1, 2
+         do q = 1, 2
+            do r = 1, 2
+               do sx = 1, 2
+                  small(p, q, r, sx) = 1.0_dp*p + 0.1_dp*q + 0.01_dp*r + 0.001_dp*sx
+               end do
+            end do
+         end do
+      end do
+
+      call transform_cumulant(u, small, big, err)
+      call check(error,.not. err%has_error(), "the transformation was refused")
+      if (allocated(error)) return
+      call check(error, size(big, 1), N_ORB, "the transformed array is the wrong size")
+      if (allocated(error)) return
+
+      call transform_cumulant(transpose(u), big, back, err)
+      call check(error,.not. err%has_error(), "the reverse transformation was refused")
+      if (allocated(error)) return
+      call check(error, maxval(abs(back - small)), 0.0_dp, thr=1.0e-12_dp, &
+                 more="the round trip through the isometry did not return the cumulant")
+   end subroutine cumulant_survives_an_isometry
+
+   subroutine projection_measures_what_it_misses(error)
+      !! The deficit is reported, not assumed away
+      !!
+      !! Orbitals inside the quasi-atomic span project to an isometry and the
+      !! deficit is zero. Orbitals partly outside it do not, and the number that
+      !! comes back is how much of them the analysis cannot see. Real active
+      !! orbitals are the second case -- they were optimised to lower an energy,
+      !! the valence-virtual ones to look atomic -- so a routine that treated
+      !! this as an error would refuse every correlated wave function.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: overlap(3, 3), inside(3, 1), outside(3, 1)
+      real(dp), allocatable :: u(:, :)
+      real(dp) :: deficit
+
+      ! Three atomic orbitals, orthonormal, of which the quasi-atomic set spans
+      ! the first two.
+      overlap = 0.0_dp
+      overlap(1, 1) = 1.0_dp
+      overlap(2, 2) = 1.0_dp
+      overlap(3, 3) = 1.0_dp
+
+      quao%n_quao = 2
+      allocate (quao%atom_of(2), quao%orbitals(3, 2), quao%population_bond_order(2, 2))
+      quao%atom_of = [1, 2]
+      quao%orbitals = 0.0_dp
+      quao%orbitals(1, 1) = 1.0_dp
+      quao%orbitals(2, 2) = 1.0_dp
+      quao%population_bond_order = 0.0_dp
+
+      inside = 0.0_dp
+      inside(1, 1) = 1.0_dp
+      call quao_projection(quao, overlap, inside, u, deficit, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+      call check(error, deficit, 0.0_dp, thr=1.0e-14_dp, &
+                 more="an orbital inside the span was reported as outside it")
+      if (allocated(error)) return
+
+      ! Half in the span, half out.
+      outside = 0.0_dp
+      outside(1, 1) = sqrt(0.5_dp)
+      outside(3, 1) = sqrt(0.5_dp)
+      call quao_projection(quao, overlap, outside, u, deficit, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+      call check(error, deficit, 0.5_dp, thr=1.0e-12_dp, &
+                 more="the missing half of the orbital was not measured")
+      if (allocated(error)) return
+
+      ! **With an orthogonal metric the overlap could be dropped entirely and
+      ! nothing above would notice**, since it is the identity. So the metric is
+      ! made non-trivial here: atomic orbital 3 now overlaps orbital 1 by a half,
+      ! which is the only reason a function along 3 projects onto a quasi-atomic
+      ! set spanning only 1. Without `S` the projection is zero and the deficit
+      ! comes back as one instead.
+      overlap(1, 3) = 0.5_dp
+      overlap(3, 1) = 0.5_dp
+      deallocate (quao%atom_of, quao%orbitals, quao%population_bond_order)
+      quao%n_quao = 1
+      allocate (quao%atom_of(1), quao%orbitals(3, 1), quao%population_bond_order(1, 1))
+      quao%atom_of = [1]
+      quao%orbitals = 0.0_dp
+      quao%orbitals(1, 1) = 1.0_dp
+      quao%population_bond_order = 0.0_dp
+
+      outside = 0.0_dp
+      outside(3, 1) = 1.0_dp
+      call quao_projection(quao, overlap, outside, u, deficit, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+      call check(error, u(1, 1), 0.5_dp, thr=1.0e-12_dp, &
+                 more="the projection ignored the overlap metric")
+      if (allocated(error)) return
+      call check(error, deficit, 0.75_dp, thr=1.0e-12_dp, &
+                 more="the deficit ignored the overlap metric")
+   end subroutine projection_measures_what_it_misses
+
+   subroutine cumulant_reaches_the_energy(error)
+      !! That a cumulant handed in actually changes the answer
+      !!
+      !! With every integral one, the determinant part collapses to
+      !! `(1/4)(sum gamma)^2` and a constant cumulant `c` adds `(1/2) c n^4` on
+      !! top, both in closed form. Without this the optional argument could be
+      !! ignored entirely -- every other test passes a wave function with no
+      !! correlation in it, so a dropped cumulant would look exactly like a
+      !! correct one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: eri(N_ORB, N_ORB, N_ORB, N_ORB)
+      real(dp) :: lambda(N_ORB, N_ORB, N_ORB, N_ORB)
+      real(dp) :: energy, plain, expected
+      real(dp), allocatable :: intra(:), inter(:, :)
+
+      eri = 1.0_dp
+      lambda = 0.1_dp
+      call two_atom_case(quao)
+
+      call two_electron_decomposition(quao, DENS, eri, 2, intra, inter, plain, err)
+      call check(error,.not. err%has_error(), "the uncorrelated case was refused")
+      if (allocated(error)) return
+      deallocate (intra, inter)
+
+      call two_electron_decomposition(quao, DENS, eri, 2, intra, inter, energy, err, &
+                                      cumulant=lambda)
+      call check(error,.not. err%has_error(), "the correlated case was refused")
+      if (allocated(error)) return
+
+      expected = 0.25_dp*sum(DENS)**2 + 0.5_dp*0.1_dp*real(N_ORB, dp)**4
+      call check(error, energy, expected, thr=1.0e-10_dp, &
+                 more="the cumulant did not reach the energy")
+      if (allocated(error)) return
+      call check(error, abs(energy - plain) > 1.0_dp, &
+                 "the cumulant changed nothing, so this proves nothing")
+      if (allocated(error)) return
+      call check(error, kinetic_total(intra, inter), energy, thr=1.0e-10_dp, &
+                 more="the correlated bins do not sum to the correlated energy")
+   end subroutine cumulant_reaches_the_energy
 
 end module test_mqc_ieda
 
