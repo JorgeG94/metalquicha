@@ -69,6 +69,14 @@ module mqc_libcint_casci
          !! active orbital basis. Built here rather than left to the caller
          !! because doing it outside means rebuilding the excitation tables,
          !! which this routine has already built and thrown away.
+      real(dp), allocatable :: dm2(:, :, :, :)
+         !! Active two-particle density, spin-traced, in the convention of
+         !! `mqc_rdm`. Kept for the same reason and by the same argument, and
+         !! because an energy decomposition of a correlated wave function cannot
+         !! be rebuilt from `dm1`: the single-determinant
+         !! `Gamma = gamma gamma - (1/2) gamma gamma` is exactly what
+         !! correlation makes false, and the difference between the two is the
+         !! whole correlation contribution.
       integer :: n_determinants = 0
       integer :: iterations = 0
       integer :: sigma_products = 0
@@ -245,12 +253,8 @@ contains
       call move_alloc(davidson%vectors, result%vectors)
       allocate (result%ci_vector(alpha%n_strings, beta%n_strings))
       result%ci_vector = result%vectors(:, :, 1)
-      block
-         real(dp), allocatable :: dm2(:, :, :, :)
-         call active_space_rdms(result%ci_vector, alpha, beta, result%dm1, dm2, error)
-         if (error%has_error()) return
-         deallocate (dm2)
-      end block
+      call active_space_rdms(result%ci_vector, alpha, beta, result%dm1, result%dm2, error)
+      if (error%has_error()) return
 
       if (loud) then
          call logger%info("")
@@ -310,7 +314,7 @@ contains
       real(dp), intent(in), optional :: guess(:, :)   !! (n_determinants, n_roots)
 
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
-      real(dp), allocatable :: energies(:), vectors(:, :), dm2(:, :, :, :)
+      real(dp), allocatable :: energies(:), vectors(:, :)
       type(ormas_space_t) :: space
       character(len=128) :: line
       integer :: roots, i
@@ -359,9 +363,8 @@ contains
       end do
       result%ci_flat = vectors(:, 1)
 
-      call ormas_density_matrices(space, result%ci_flat, result%dm1, dm2, error)
+      call ormas_density_matrices(space, result%ci_flat, result%dm1, result%dm2, error)
       if (error%has_error()) return
-      deallocate (dm2)
 
       if (loud) then
          call logger%info("")

@@ -19,12 +19,15 @@ module test_mqc_ieda
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
+   use mqc_libcint_atomic_guess, only: free_atom_energies
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_quao, only: quao_result_t
    use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
                                nuclear_attraction_per_atom, nuclear_decomposition, &
                                combine_quao_sets, quao_eris, two_electron_decomposition, &
-                               nuclear_repulsion_pairs
+                               nuclear_repulsion_pairs, active_cumulant, &
+                               quao_projection, transform_cumulant, project_no_sharing, &
+                               screened_nucleus_split
    implicit none
    private
 
@@ -96,7 +99,17 @@ contains
                   new_unittest("two_electron_bins_by_hand", two_electron_bins_by_hand), &
                   new_unittest("two_electron_energy_has_a_closed_form", two_electron_energy_has_a_closed_form), &
                   new_unittest("eris_keep_their_index_order", eris_keep_their_index_order), &
-                  new_unittest("nuclear_repulsion_is_already_pairwise", nuclear_repulsion_is_already_pairwise) &
+                  new_unittest("nuclear_repulsion_is_already_pairwise", nuclear_repulsion_is_already_pairwise), &
+                  new_unittest("cumulant_vanishes_for_a_determinant", cumulant_vanishes_for_a_determinant), &
+                  new_unittest("cumulant_survives_an_isometry", cumulant_survives_an_isometry), &
+                  new_unittest("projection_measures_what_it_misses", projection_measures_what_it_misses), &
+                  new_unittest("cumulant_reaches_the_energy", cumulant_reaches_the_energy), &
+                  new_unittest("free_atoms_are_equivalent_and_bound", free_atoms_are_equivalent_and_bound), &
+                  new_unittest("classical_share_is_separated_out", classical_share_is_separated_out), &
+                  new_unittest("no_sharing_keeps_the_neutral_determinants", no_sharing_keeps_the_neutral_determinants), &
+                  new_unittest("no_sharing_is_a_projection_not_a_solve", no_sharing_is_a_projection_not_a_solve), &
+                  new_unittest("screened_nucleus_only_relabels", screened_nucleus_only_relabels), &
+                  new_unittest("screened_nucleus_refuses_a_soft_core", screened_nucleus_refuses_a_soft_core) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -465,6 +478,7 @@ contains
       type(quao_result_t) :: quao
       type(error_t) :: err
       real(dp) :: d(2, 2), eri(2, 2, 2, 2), energy
+      real(dp) :: ones(N_ORB, N_ORB, N_ORB, N_ORB)
       real(dp), allocatable :: intra(:), inter(:, :)
 
       d = 0.0_dp
@@ -604,6 +618,545 @@ contains
       call check(error, kinetic_total(intra, inter), 1.0_dp/1.4_dp, thr=1.0e-12_dp, &
                  more="the molecule's nuclear repulsion came out wrong")
    end subroutine nuclear_repulsion_is_already_pairwise
+
+   subroutine cumulant_vanishes_for_a_determinant(error)
+      !! Correlation adds nothing when there is none
+      !!
+      !! The cumulant is `d` less the two-particle density a determinant would
+      !! have, so feeding it a determinant's own `d` must give exactly zero.
+      !! That is the sharpest available check on the expression, because it
+      !! fails for any wrong sign, transposed index or factor: none of those
+      !! cancel against the same expression written the other way round.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: d1(N_ORB, N_ORB), d2(N_ORB, N_ORB, N_ORB, N_ORB)
+      real(dp), allocatable :: cumulant(:, :, :, :)
+      integer :: p, q, r, sx
+
+      ! Two electrons in each of the first two orbitals, none in the rest.
+      d1 = 0.0_dp
+      d1(1, 1) = 2.0_dp
+      d1(2, 2) = 2.0_dp
+      do p = 1, N_ORB
+         do q = 1, N_ORB
+            do r = 1, N_ORB
+               do sx = 1, N_ORB
+                  d2(p, q, r, sx) = d1(p, q)*d1(r, sx) - 0.5_dp*d1(p, sx)*d1(r, q)
+               end do
+            end do
+         end do
+      end do
+
+      call active_cumulant(d1, d2, cumulant)
+      call check(error, maxval(abs(cumulant)), 0.0_dp, thr=1.0e-14_dp, &
+                 more="a determinant was given a non-zero cumulant")
+   end subroutine cumulant_vanishes_for_a_determinant
+
+   subroutine cumulant_survives_an_isometry(error)
+      !! Changing basis through an isometry loses nothing
+      !!
+      !! `U` maps a small active space into a larger quasi-atomic one, so it is
+      !! rectangular and cannot be inverted -- but `U^T U = 1`, and that is
+      !! enough for the transformation to be undone by its own transpose. If it
+      !! were not, the correlation energy would depend on which basis it was
+      !! contracted in, which is the failure this guards.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp) :: u(N_ORB, 2), small(2, 2, 2, 2)
+      real(dp), allocatable :: big(:, :, :, :), back(:, :, :, :)
+      integer :: p, q, r, sx
+
+      ! An isometry from two dimensions into four.
+      u = 0.0_dp
+      u(1, 1) = 1.0_dp
+      u(3, 2) = 1.0_dp
+
+      do p = 1, 2
+         do q = 1, 2
+            do r = 1, 2
+               do sx = 1, 2
+                  small(p, q, r, sx) = 1.0_dp*p + 0.1_dp*q + 0.01_dp*r + 0.001_dp*sx
+               end do
+            end do
+         end do
+      end do
+
+      call transform_cumulant(u, small, big, err)
+      call check(error,.not. err%has_error(), "the transformation was refused")
+      if (allocated(error)) return
+      call check(error, size(big, 1), N_ORB, "the transformed array is the wrong size")
+      if (allocated(error)) return
+
+      call transform_cumulant(transpose(u), big, back, err)
+      call check(error,.not. err%has_error(), "the reverse transformation was refused")
+      if (allocated(error)) return
+      call check(error, maxval(abs(back - small)), 0.0_dp, thr=1.0e-12_dp, &
+                 more="the round trip through the isometry did not return the cumulant")
+   end subroutine cumulant_survives_an_isometry
+
+   subroutine projection_measures_what_it_misses(error)
+      !! The deficit is reported, not assumed away
+      !!
+      !! Orbitals inside the quasi-atomic span project to an isometry and the
+      !! deficit is zero. Orbitals partly outside it do not, and the number that
+      !! comes back is how much of them the analysis cannot see. Real active
+      !! orbitals are the second case -- they were optimised to lower an energy,
+      !! the valence-virtual ones to look atomic -- so a routine that treated
+      !! this as an error would refuse every correlated wave function.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: overlap(3, 3), inside(3, 1), outside(3, 1)
+      real(dp), allocatable :: u(:, :)
+      real(dp) :: deficit
+
+      ! Three atomic orbitals, orthonormal, of which the quasi-atomic set spans
+      ! the first two.
+      overlap = 0.0_dp
+      overlap(1, 1) = 1.0_dp
+      overlap(2, 2) = 1.0_dp
+      overlap(3, 3) = 1.0_dp
+
+      quao%n_quao = 2
+      allocate (quao%atom_of(2), quao%orbitals(3, 2), quao%population_bond_order(2, 2))
+      quao%atom_of = [1, 2]
+      quao%orbitals = 0.0_dp
+      quao%orbitals(1, 1) = 1.0_dp
+      quao%orbitals(2, 2) = 1.0_dp
+      quao%population_bond_order = 0.0_dp
+
+      inside = 0.0_dp
+      inside(1, 1) = 1.0_dp
+      call quao_projection(quao, overlap, inside, u, deficit, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+      call check(error, deficit, 0.0_dp, thr=1.0e-14_dp, &
+                 more="an orbital inside the span was reported as outside it")
+      if (allocated(error)) return
+
+      ! Half in the span, half out.
+      outside = 0.0_dp
+      outside(1, 1) = sqrt(0.5_dp)
+      outside(3, 1) = sqrt(0.5_dp)
+      call quao_projection(quao, overlap, outside, u, deficit, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+      call check(error, deficit, 0.5_dp, thr=1.0e-12_dp, &
+                 more="the missing half of the orbital was not measured")
+      if (allocated(error)) return
+
+      ! **With an orthogonal metric the overlap could be dropped entirely and
+      ! nothing above would notice**, since it is the identity. So the metric is
+      ! made non-trivial here: atomic orbital 3 now overlaps orbital 1 by a half,
+      ! which is the only reason a function along 3 projects onto a quasi-atomic
+      ! set spanning only 1. Without `S` the projection is zero and the deficit
+      ! comes back as one instead.
+      overlap(1, 3) = 0.5_dp
+      overlap(3, 1) = 0.5_dp
+      deallocate (quao%atom_of, quao%orbitals, quao%population_bond_order)
+      quao%n_quao = 1
+      allocate (quao%atom_of(1), quao%orbitals(3, 1), quao%population_bond_order(1, 1))
+      quao%atom_of = [1]
+      quao%orbitals = 0.0_dp
+      quao%orbitals(1, 1) = 1.0_dp
+      quao%population_bond_order = 0.0_dp
+
+      outside = 0.0_dp
+      outside(3, 1) = 1.0_dp
+      call quao_projection(quao, overlap, outside, u, deficit, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+      call check(error, u(1, 1), 0.5_dp, thr=1.0e-12_dp, &
+                 more="the projection ignored the overlap metric")
+      if (allocated(error)) return
+      call check(error, deficit, 0.75_dp, thr=1.0e-12_dp, &
+                 more="the deficit ignored the overlap metric")
+   end subroutine projection_measures_what_it_misses
+
+   subroutine cumulant_reaches_the_energy(error)
+      !! That a cumulant handed in actually changes the answer
+      !!
+      !! With every integral one, the determinant part collapses to
+      !! `(1/4)(sum gamma)^2` and a constant cumulant `c` adds `(1/2) c n^4` on
+      !! top, both in closed form. Without this the optional argument could be
+      !! ignored entirely -- every other test passes a wave function with no
+      !! correlation in it, so a dropped cumulant would look exactly like a
+      !! correct one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: eri(N_ORB, N_ORB, N_ORB, N_ORB)
+      real(dp) :: lambda(N_ORB, N_ORB, N_ORB, N_ORB)
+      real(dp) :: energy, plain, expected
+      real(dp), allocatable :: intra(:), inter(:, :)
+
+      eri = 1.0_dp
+      lambda = 0.1_dp
+      call two_atom_case(quao)
+
+      call two_electron_decomposition(quao, DENS, eri, 2, intra, inter, plain, err)
+      call check(error,.not. err%has_error(), "the uncorrelated case was refused")
+      if (allocated(error)) return
+      deallocate (intra, inter)
+
+      call two_electron_decomposition(quao, DENS, eri, 2, intra, inter, energy, err, &
+                                      cumulant=lambda)
+      call check(error,.not. err%has_error(), "the correlated case was refused")
+      if (allocated(error)) return
+
+      expected = 0.25_dp*sum(DENS)**2 + 0.5_dp*0.1_dp*real(N_ORB, dp)**4
+      call check(error, energy, expected, thr=1.0e-10_dp, &
+                 more="the cumulant did not reach the energy")
+      if (allocated(error)) return
+      call check(error, abs(energy - plain) > 1.0_dp, &
+                 "the cumulant changed nothing, so this proves nothing")
+      if (allocated(error)) return
+      call check(error, kinetic_total(intra, inter), energy, thr=1.0e-10_dp, &
+                 more="the correlated bins do not sum to the correlated energy")
+   end subroutine cumulant_reaches_the_energy
+
+   subroutine free_atoms_are_equivalent_and_bound(error)
+      !! The reference an energy of formation is measured against
+      !!
+      !! Two hydrogens in the same basis must give the same free-atom energy --
+      !! the reference depends on the element and its basis functions, not on
+      !! where the atom sits -- and each must be bound. Getting the two mixed up
+      !! is the failure that a sum rule cannot see, since swapping references
+      !! between atoms of the same element changes nothing and swapping them
+      !! between different elements still leaves the total intact.
+      !!
+      !! Hydrogen in STO-3G is a single function, so its unrestricted doublet is
+      !! that function singly occupied and the energy is above the exact -0.5.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: energies(:)
+
+      call build_libcint_molecule(H2_Z, H2_SYM, H2, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "could not build H2")
+      if (allocated(error)) return
+
+      call free_atom_energies(mol, energies, err)
+      call check(error,.not. err%has_error(), "the free atoms would not converge")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call check(error, size(energies), 2, "one energy per atom was expected")
+      if (.not. allocated(error)) then
+         call check(error, energies(1), energies(2), thr=1.0e-10_dp, &
+                    more="two atoms of the same element got different references")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, energies(1) < 0.0_dp .and. energies(1) > -0.5_dp, &
+                    "a hydrogen atom in a minimal basis should sit just above -0.5")
+      end if
+      call mol%destroy()
+   end subroutine free_atoms_are_equivalent_and_bound
+
+   subroutine classical_share_is_separated_out(error)
+      !! Which part of a pair interaction an electrostatic model could produce
+      !!
+      !! Both decompositions carry the same numbers as before; what is new is
+      !! that the classical part is reported separately. So the thing to pin is
+      !! that the split is a partition -- the classical share plus what is left
+      !! must be the pair energy that was already being reported, exactly -- and
+      !! that each term lands on the correct side of it.
+      !!
+      !! For the nuclear fixture the classical share is one atom's density in
+      !! the other's field: atom 1's four units in nucleus 2's field at strength
+      !! two, and atom 2's four in nucleus 1's at strength one, giving twelve of
+      !! the thirty-six. For the two-electron fixture it is the pure Coulomb
+      !! terms `(1,1,2,2)` and `(2,2,1,1)`, two each, giving four of the two --
+      !! the interference part is negative there, which is the exchange.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp), allocatable :: v(:, :, :), intra(:), inter(:, :), coulomb(:, :)
+      real(dp) :: d(2, 2), eri(2, 2, 2, 2), energy, expected
+      real(dp) :: ones(N_ORB, N_ORB, N_ORB, N_ORB)
+
+      ones = 1.0_dp
+      call two_atom_case(quao)
+      call flat_field(v)
+      call nuclear_decomposition(quao, FLAT, v, 2, intra, inter, err, coulomb=coulomb)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+
+      call check(error, coulomb(1, 2), 12.0_dp, thr=TOL, &
+                 more="the nuclear classical share is wrong")
+      if (allocated(error)) return
+      call check(error, coulomb(1, 2), coulomb(2, 1), thr=TOL, &
+                 more="the classical share is not symmetric")
+      if (allocated(error)) return
+      call check(error, abs(coulomb(1, 2)) < abs(inter(1, 2)), &
+                 "the classical share is not a part of the pair energy")
+      if (allocated(error)) return
+      deallocate (intra, inter, coulomb)
+
+      d = 0.0_dp
+      d(1, 1) = 2.0_dp
+      d(2, 2) = 2.0_dp
+      eri = 1.0_dp
+      call two_orbital_case(quao)
+      call two_electron_decomposition(quao, d, eri, 2, intra, inter, energy, err, &
+                                      coulomb=coulomb)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+      call check(error, coulomb(1, 2), 4.0_dp, thr=TOL, &
+                 more="the two-electron classical share is wrong")
+      if (allocated(error)) return
+      ! The remainder is exchange and is negative, so a split that quietly
+      ! clamped it to zero would still look plausible.
+      call check(error, inter(1, 2) - coulomb(1, 2), -2.0_dp, thr=TOL, &
+                 more="the interference remainder is wrong")
+      if (allocated(error)) return
+      deallocate (intra, inter, coulomb)
+
+      ! **A diagonal density never reaches the branch where the bra is spread
+      ! and the ket is not**, so the fixture above cannot tell whether that
+      ! branch is charged classically or as interference -- and getting it wrong
+      ! there passed every check until this was added. An off-diagonal density
+      ! reaches all four branches.
+      !
+      ! The reference is built here from the definition rather than from the
+      ! routine: a term is classical when each of its two charge distributions
+      ! sits wholly on one atom and the two atoms differ. Summing exactly those
+      ! terms is an independent statement of the selection rule, using the same
+      ! weight the closed-form test already pinned.
+      call two_atom_case(quao)
+      call classical_by_definition(DENS, expected)
+      call two_electron_decomposition(quao, DENS, ones, 2, intra, inter, energy, err, &
+                                      coulomb=coulomb)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+      call check(error, coulomb(1, 2), expected, thr=1.0e-10_dp, &
+                 more="a term was put on the wrong side of the classical split")
+      if (allocated(error)) return
+      call check(error, abs(inter(1, 2) - coulomb(1, 2)) > 1.0e-6_dp, &
+                 "this density produced no interference, so it proves nothing")
+   end subroutine classical_share_is_separated_out
+
+   subroutine classical_by_definition(d, expected)
+      !! The classical share of the pair, summed straight from the selection rule
+      !!
+      !! Both distributions wholly on one atom, on different atoms. Written from
+      !! the definition rather than lifted from the routine under test, so that
+      !! the two agreeing means something.
+      real(dp), intent(in) :: d(N_ORB, N_ORB)
+      real(dp), intent(out) :: expected
+
+      integer :: p, q, r, sx
+
+      expected = 0.0_dp
+      do p = 1, N_ORB
+         do q = 1, N_ORB
+            if (ATOM_OF(p) /= ATOM_OF(q)) cycle
+            do r = 1, N_ORB
+               do sx = 1, N_ORB
+                  if (ATOM_OF(r) /= ATOM_OF(sx)) cycle
+                  if (ATOM_OF(p) == ATOM_OF(r)) cycle
+                  expected = expected + 0.5_dp*(d(p, q)*d(r, sx) &
+                                                - 0.5_dp*d(p, sx)*d(r, q))
+               end do
+            end do
+         end do
+      end do
+   end subroutine classical_by_definition
+
+   subroutine no_sharing_keeps_the_neutral_determinants(error)
+      !! Which determinants survive, counted against an independent enumeration
+      !!
+      !! Water's valence shell is six orbitals -- oxygen's 2s and three 2p, and
+      !! one on each hydrogen -- holding eight electrons, so the full valence
+      !! space is `C(6,4)^2 = 225` determinants. Requiring six electrons on the
+      !! oxygen and one on each hydrogen leaves 44 of them, which was counted by
+      !! hand from the definition before this was written and not read off the
+      !! routine.
+      !!
+      !! The count is the sharp test. A projector that kept too much would still
+      !! renormalise to one and still produce a plausible density; only the
+      !! number of survivors says whether the condition being applied is the
+      !! right one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: ci(:, :)
+      real(dp) :: recovered
+      integer :: n_kept
+      integer, parameter :: WATER_ATOM_OF(6) = [1, 1, 1, 1, 2, 3]
+      integer, parameter :: WATER_NEUTRAL(3) = [6, 1, 1]
+
+      allocate (ci(15, 15))
+      ci = 1.0_dp/15.0_dp     ! normalised, and flat so every determinant counts
+      call project_no_sharing(WATER_ATOM_OF, 3, WATER_NEUTRAL, 4, 4, ci, &
+                              recovered, n_kept, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+
+      call check(error, n_kept, 44, "the wrong number of determinants survived")
+      if (allocated(error)) return
+      ! A flat vector puts equal weight everywhere, so the surviving fraction is
+      ! the determinant fraction exactly.
+      call check(error, recovered, 44.0_dp/225.0_dp, thr=1.0e-12_dp, &
+                 more="the recovered norm does not match the surviving fraction")
+      if (allocated(error)) return
+      call check(error, sum(ci**2), 1.0_dp, thr=1.0e-12_dp, &
+                 more="the projection was not renormalised")
+   end subroutine no_sharing_keeps_the_neutral_determinants
+
+   subroutine no_sharing_is_a_projection_not_a_solve(error)
+      !! The surviving amplitudes are the parent's, only rescaled
+      !!
+      !! This is the distinction the papers are emphatic about and the one an
+      !! implementation is most likely to lose: optimising a wave function
+      !! inside the neutral space gives a lower energy and a different state.
+      !! So every kept coefficient must stay in the same ratio to every other
+      !! kept coefficient as it was before, which a re-solve would not respect.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: ci(:, :), before(:, :)
+      real(dp) :: recovered, scale
+      integer :: n_kept, ia, ib, first_a, first_b
+      integer, parameter :: WATER_ATOM_OF(6) = [1, 1, 1, 1, 2, 3]
+      integer, parameter :: WATER_NEUTRAL(3) = [6, 1, 1]
+
+      allocate (ci(15, 15), before(15, 15))
+      do ib = 1, 15
+         do ia = 1, 15
+            ci(ia, ib) = sin(real(3*ia + 7*ib, dp))
+         end do
+      end do
+      ci = ci/sqrt(sum(ci**2))
+      before = ci
+
+      call project_no_sharing(WATER_ATOM_OF, 3, WATER_NEUTRAL, 4, 4, ci, &
+                              recovered, n_kept, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+
+      ! Find a survivor to fix the scale, then check every other survivor sits
+      ! at the same multiple of what it was.
+      first_a = 0
+      first_b = 0
+      do ib = 1, 15
+         do ia = 1, 15
+            if (abs(ci(ia, ib)) > 1.0e-12_dp) then
+               first_a = ia
+               first_b = ib
+               exit
+            end if
+         end do
+         if (first_a > 0) exit
+      end do
+      call check(error, first_a > 0, "every coefficient was struck out")
+      if (allocated(error)) return
+
+      scale = ci(first_a, first_b)/before(first_a, first_b)
+      do ib = 1, 15
+         do ia = 1, 15
+            if (abs(ci(ia, ib)) < 1.0e-12_dp) cycle
+            call check(error, ci(ia, ib), scale*before(ia, ib), thr=1.0e-12_dp, &
+                       more="a surviving amplitude is not the parent's, rescaled")
+            if (allocated(error)) return
+         end do
+      end do
+      call check(error, abs(scale - 1.0_dp) > 1.0e-6_dp, &
+                 "nothing was struck out, so this proves nothing")
+   end subroutine no_sharing_is_a_projection_not_a_solve
+
+   subroutine oxygen_and_hydrogen(quao, density)
+      !! One core and one valence orbital on an oxygen, one valence on a hydrogen
+      !!
+      !! Core first across the whole set, which is what `combine_quao_sets`
+      !! produces and what lets a count identify them.
+      type(quao_result_t), intent(out) :: quao
+      real(dp), intent(out) :: density(3, 3)
+
+      quao%n_quao = 3
+      allocate (quao%atom_of(3), quao%orbitals(3, 3), quao%population_bond_order(3, 3))
+      quao%atom_of = [1, 1, 2]
+      quao%orbitals = 0.0_dp
+      quao%population_bond_order = 0.0_dp
+      density = 0.0_dp
+      density(1, 1) = 2.0_dp     ! the oxygen core
+      density(2, 2) = 1.5_dp     ! the oxygen valence
+      density(3, 3) = 0.8_dp     ! the hydrogen
+   end subroutine oxygen_and_hydrogen
+
+   subroutine screened_nucleus_only_relabels(error)
+      !! The two shares add back to the term they divide
+      !!
+      !! Oxygen has `Z = 8` and a two-electron core, so its valence density's
+      !! attraction to its own nucleus is divided one part in four to the core
+      !! and three to the valence, while the core density keeps the whole charge.
+      !! Hydrogen has no core, so nothing is taken from it -- which is the case
+      !! that catches a division that forgot the element and used a fixed
+      !! fraction.
+      !!
+      !! With every integral one the arithmetic is visible: the oxygen core term
+      !! is 2, its valence term 1.5, so the columns are `2 + 0.25*1.5 = 2.375`
+      !! and `0.75*1.5 = 1.125`, summing to 3.5.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: density(3, 3), v(3, 3, 2)
+      real(dp), allocatable :: core_share(:), valence_share(:)
+
+      call oxygen_and_hydrogen(quao, density)
+      v = 1.0_dp
+      call screened_nucleus_split(quao, density, v, 1, [8, 1], 2, &
+                                  core_share, valence_share, err)
+      call check(error,.not. err%has_error(), "the split was refused")
+      if (allocated(error)) return
+
+      call check(error, core_share(1), 2.375_dp, thr=1.0e-12_dp, &
+                 more="the oxygen core share is wrong")
+      if (allocated(error)) return
+      call check(error, valence_share(1), 1.125_dp, thr=1.0e-12_dp, &
+                 more="the oxygen valence share is wrong")
+      if (allocated(error)) return
+      call check(error, core_share(1) + valence_share(1), 3.5_dp, thr=1.0e-12_dp, &
+                 more="the split did not conserve the oxygen term")
+      if (allocated(error)) return
+
+      call check(error, core_share(2), 0.0_dp, thr=1.0e-12_dp, &
+                 more="hydrogen was given a core to screen with")
+      if (allocated(error)) return
+      call check(error, valence_share(2), 0.8_dp, thr=1.0e-12_dp, &
+                 more="the hydrogen term did not survive intact")
+   end subroutine screened_nucleus_only_relabels
+
+   subroutine screened_nucleus_refuses_a_soft_core(error)
+      !! A density connecting core and valence is refused rather than absorbed
+      !!
+      !! The split assumes the core is frozen, which makes the core-valence
+      !! block of the density exactly zero. A correlated core breaks that, and
+      !! the terms would otherwise be quietly swept into the core column where
+      !! nothing would look wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: density(3, 3), v(3, 3, 2)
+      real(dp), allocatable :: core_share(:), valence_share(:)
+
+      call oxygen_and_hydrogen(quao, density)
+      density(1, 2) = 0.05_dp
+      density(2, 1) = 0.05_dp
+      v = 1.0_dp
+      call screened_nucleus_split(quao, density, v, 1, [8, 1], 2, &
+                                  core_share, valence_share, err)
+      call check(error, err%has_error(), "a core-valence density was accepted")
+   end subroutine screened_nucleus_refuses_a_soft_core
 
 end module test_mqc_ieda
 

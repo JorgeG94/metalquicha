@@ -1191,6 +1191,37 @@ contains
                  "the reporting threshold should have been read")
       if (allocated(error)) return
 
+      call check(error, config%bonding_no_sharing .eqv. .false., &
+                 "the no-sharing analysis should be off unless asked for")
+      if (allocated(error)) return
+      call check(error, config%bonding_energy .eqv. .false., &
+                 "the energy decomposition should be off unless asked for")
+      if (allocated(error)) return
+
+      ! Opt-in because it needs the dense two-electron integrals, which the
+      ! bonding tables on their own do not.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "energy_decomposition": true}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_energy, &
+                 "the deck asked for the energy decomposition")
+      if (allocated(error)) return
+
+      ! The no-sharing analysis is opt-in because it costs a full valence CI,
+      ! so the deck asking for it and the deck not mentioning it must differ.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "no_sharing": true}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_no_sharing, &
+                 "the deck asked for the no-sharing analysis")
+      if (allocated(error)) return
+
       ! Naming the analysis and nothing else keeps the default threshold.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
                       two_atoms(), '"properties": {"bonding_analysis": '// &
@@ -1200,6 +1231,9 @@ contains
       if (allocated(error)) return
       call check(error, abs(config%bonding_threshold - 1.0_dp) < 1.0e-12_dp, &
                  "an unmentioned threshold should keep its default")
+      if (allocated(error)) return
+      call check(error, config%bonding_no_sharing .eqv. .false., &
+                 "an unmentioned no-sharing flag should keep its default")
       if (allocated(error)) return
 
       ! Absent leaves it unset, which is what "no analysis" looks like.

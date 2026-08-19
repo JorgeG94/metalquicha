@@ -29,13 +29,21 @@ module mqc_libcint_bonding
                                aambs_atom_ranges, quasi_atomic_orbitals, &
                                quao_result_t, orient_quasi_atomic_orbitals, &
                                kinetic_bond_orders
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
+   use mqc_libcint_atomic_guess, only: free_atom_energies
+   use mqc_libcint_casci, only: active_space_integrals, run_libcint_casci, casci_result_t
+   use mqc_rdm, only: active_space_rdms, rdm_energy
+   use mqc_determinants, only: link_table_t, build_link_table
    use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition, &
                                nuclear_attraction_per_atom, quao_nuclear_attraction, &
                                nuclear_decomposition, print_nuclear_decomposition, &
                                combine_quao_sets, quao_interference, kinetic_total, &
                                quao_eris, two_electron_decomposition, &
                                print_two_electron_decomposition, &
-                               nuclear_repulsion_pairs, print_total_decomposition
+                               nuclear_repulsion_pairs, print_total_decomposition, &
+                               print_interatomic_split, screened_nucleus_split, &
+                               project_no_sharing, &
+                               active_cumulant, quao_projection, transform_cumulant
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -85,7 +93,8 @@ contains
 
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
                                 orbitals, n_electrons, error, verbose, threshold, &
-                                occupations)
+                                occupations, active_orbitals, active_dm1, active_dm2, &
+                                reference_energy, energy_decomposition, no_sharing)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -113,6 +122,37 @@ contains
       type(vvo_result_t) :: vvo
       type(quao_result_t) :: quao
       type(quao_labels_t) :: labels
+      real(dp), intent(in), optional :: active_orbitals(:, :)
+         !! (n_ao, n_active), the orbitals `active_dm2` is expressed in. These
+         !! are the optimised active orbitals, not the natural ones the rest of
+         !! the analysis runs on: the two-particle density belongs to the basis
+         !! it was computed in, and is projected from there.
+      real(dp), intent(in), optional :: active_dm1(:, :)
+      real(dp), intent(in), optional :: active_dm2(:, :, :, :)
+         !! Present together with the two above, or not at all. Their presence
+         !! is what makes the energy decomposition correlated rather than a
+         !! single-determinant one.
+      real(dp), intent(in), optional :: reference_energy
+         !! The energy the calculation reported, to check the decomposition
+         !! against. Required for a correlated wave function and optional
+         !! otherwise: the reference built here from the orbitals is a
+         !! determinant expression, so it is the energy of the wave function
+         !! only when the wave function is a determinant. Passing the CI energy
+         !! is what keeps the correlated case checked rather than trusted.
+      logical, intent(in), optional :: energy_decomposition
+         !! Resolve the energy onto atoms and atom pairs. Off by default, and
+         !! that is a cost decision rather than a taste one: the two-electron
+         !! term needs the dense `n_ao^4` integral array, where the bonding
+         !! tables above need only one-electron integrals. At a hundred basis
+         !! functions that is eight hundred megabytes for an analysis a caller
+         !! may not have asked for.
+      logical, intent(in), optional :: no_sharing
+         !! Run the no-sharing analysis, which solves a full valence CI over the
+         !! quasi-atomic orbitals and projects it. Off by default because that
+         !! CI is factorial in the valence shell -- ethane is eleven million
+         !! determinants and benzene is out of reach by nine orders of
+         !! magnitude.
+
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
       real(dp), allocatable :: kbo(:, :), interference(:, :), populations(:)
@@ -126,6 +166,13 @@ contains
       real(dp), allocatable :: eri_ao(:, :, :, :), eri_quao(:, :, :, :)
       real(dp), allocatable :: two_intra(:), two_inter(:, :)
       real(dp), allocatable :: rep_inter(:, :), tot_intra(:), tot_inter(:, :)
+      real(dp), allocatable :: s_ao(:, :), u_active(:, :)
+      real(dp), allocatable :: cumulant(:, :, :, :), cumulant_quao(:, :, :, :)
+      logical :: correlated, want_energy
+      real(dp) :: span_deficit, formation
+      real(dp), allocatable :: free_energy(:), adaptation(:)
+      real(dp), allocatable :: nuc_coulomb(:, :), two_coulomb(:, :), classical(:, :)
+      real(dp), allocatable :: nuc_core(:), nuc_val(:)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -260,6 +307,16 @@ contains
          ! pair. Unscaled, so unlike the kinetic bond orders above these are
          ! energies and they add up to one -- the valence kinetic energy, since
          ! the core is not in this basis.
+         want_energy = .false.
+         if (present(energy_decomposition)) want_energy = energy_decomposition
+         if (present(no_sharing)) then
+            ! Asking for the no-sharing analysis is asking for the decomposition
+            ! it is part of; refusing on a technicality would be unhelpful.
+            if (no_sharing) want_energy = .true.
+         end if
+      end if
+
+      if (loud .and. want_energy) then
          ! The decomposition needs the core, which the bonding analysis above
          ! does not: it carries most of the kinetic energy and most of the
          ! nuclear attraction, and without it the totals below would sum to a
@@ -293,9 +350,33 @@ contains
          call quao_nuclear_attraction(full_quao, v_atom_ao, v_atom_quao, error)
          if (error%has_error()) return
          call nuclear_decomposition(full_quao, full_quao%population_bond_order, &
-                                    v_atom_quao, natm, nuc_intra, nuc_inter, error)
+                                    v_atom_quao, natm, nuc_intra, nuc_inter, error, &
+                                    coulomb=nuc_coulomb)
          if (error%has_error()) return
          call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
+
+         ! A valence electron does not see the bare nucleus but one screened by
+         ! the core, so its attraction to its own nucleus is divided in the
+         ! ratio of the two charges. Pure relabelling: the shares must add back
+         ! to the term they came from, which is asserted here because a split
+         ! that quietly lost part of it would still print two plausible columns.
+         call screened_nucleus_split(full_quao, full_quao%population_bond_order, &
+                                     v_atom_quao, dims%n_core, atomic_numbers, natm, &
+                                     nuc_core, nuc_val, error)
+         if (error%has_error()) return
+         if (maxval(abs(nuc_core + nuc_val - nuc_intra)) > 1.0e-8_dp) then
+            call error%set(ERROR_VALIDATION, "the screened-nucleus split does not sum "// &
+                           "back to the own-nucleus attraction it divides, so the two "// &
+                           "charge fractions do not add to one.")
+            return
+         end if
+         call logger%info("     own nucleus, by charge      to core     to valence")
+         do iatom = 1, natm
+            write (label, "(a,i0)") trim(adjustl(element_symbols(iatom)))//" ", iatom
+            write (line, "(4x,a8,18x,2f14.3)") label, &
+               nuc_core(iatom)*1000.0_dp, nuc_val(iatom)*1000.0_dp
+            call logger%info(trim(line))
+         end do
 
          ! **The check the decomposition exists to pass.** Everything above is
          ! internally consistent by construction -- each routine verifies its own
@@ -317,9 +398,40 @@ contains
          call mol%eris(eri_ao)
          call quao_eris(full_quao, eri_ao, eri_quao, error)
          if (error%has_error()) return
-         call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
-                                         eri_quao, natm, two_intra, two_inter, &
-                                         two_electron, error)
+
+         ! What correlation adds. The determinant expression below is evaluated
+         ! over the whole quasi-atomic basis whatever the wave function; the
+         ! cumulant is the part no determinant can produce, it is zero unless
+         ! all four of its indices are active, and it is carried here from the
+         ! orbitals it was computed in rather than from the natural ones.
+         correlated = present(active_dm2) .and. present(active_dm1) .and. &
+                      present(active_orbitals)
+         if (correlated) then
+            call mol%overlap(s_ao)
+            call quao_projection(full_quao, s_ao, active_orbitals, u_active, &
+                                 span_deficit, error)
+            if (error%has_error()) return
+            ! The active orbitals are not quite inside the span -- they were
+            ! optimised to lower an energy, the valence-virtual ones to look
+            ! atomic. Reported for the same reason the population shortfall is:
+            ! it says how much of the correlation this is describing.
+            if (span_deficit > 1.0e-6_dp) then
+               write (line, "(a,es10.2)") &
+                  "    active orbitals outside the quasi-atomic span ", span_deficit
+               call logger%info(trim(line))
+            end if
+            call active_cumulant(active_dm1, active_dm2, cumulant)
+            call transform_cumulant(u_active, cumulant, cumulant_quao, error)
+            if (error%has_error()) return
+            call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
+                                            eri_quao, natm, two_intra, two_inter, &
+                                            two_electron, error, cumulant=cumulant_quao, &
+                                            coulomb=two_coulomb)
+         else
+            call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
+                                            eri_quao, natm, two_intra, two_inter, &
+                                            two_electron, error, coulomb=two_coulomb)
+         end if
          if (error%has_error()) return
          call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
 
@@ -346,14 +458,75 @@ contains
          tot_inter = kin_inter + nuc_inter + two_inter + rep_inter
          call print_total_decomposition(tot_intra, tot_inter, element_symbols)
 
+         ! Everything an electrostatic model could account for: each atom's
+         ! density in the other's nuclear field, the repulsion of their two
+         ! charge clouds, and the repulsion of their nuclei. The rest is
+         ! interference, and the kinetic contribution is entirely interference
+         ! by construction -- two orbitals on different atoms is what the word
+         ! means.
+         allocate (classical(natm, natm))
+         classical = nuc_coulomb + two_coulomb + rep_inter
+         call print_interatomic_split(tot_inter, classical, element_symbols)
+
+         ! The atoms as they would be on their own. Subtracting them turns a
+         ! table of large numbers into the energy of formation, which is the
+         ! quantity chemistry is about: what it costs to prepare each atom in
+         ! the shape the molecule needs, against what the pairs give back.
+         call free_atom_energies(mol, free_energy, error)
+         if (error%has_error()) return
+         allocate (adaptation(natm))
+         adaptation = tot_intra - free_energy
+         formation = sum(adaptation) + 0.5_dp*sum(tot_inter)
+         call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
+                              element_symbols, formation)
+
+         ! What the molecule would be if the atoms shared electrons without ever
+         ! lending them. Last, because it is a separate calculation rather than
+         ! a rearrangement of this one.
+         if (present(no_sharing)) then
+            if (no_sharing) then
+               call no_sharing_analysis(mol, full_quao, quao, dims%n_core, &
+                                        atomic_numbers, natm, error)
+               if (error%has_error()) return
+            end if
+         end if
+
+         ! Subtracting a constant from every atomic term cannot change what the
+         ! pieces sum to, so this must equal the total less the free atoms. It
+         ! catches a free-atom energy landing on the wrong atom, which nothing
+         ! else here would notice.
+         if (abs(formation - (kinetic_total(tot_intra, tot_inter) - sum(free_energy))) &
+             > 1.0e-8_dp) then
+            call error%set(ERROR_VALIDATION, "the energy of formation does not match "// &
+                           "the total less the free atoms, so the atomic references "// &
+                           "were not subtracted from the atoms they belong to.")
+            return
+         end if
+
          one_electron = kinetic_total(kin_intra, kin_inter) + &
                         kinetic_total(nuc_intra, nuc_inter)
          call mol%core_hamiltonian(h_core)
          call one_electron_reference(orbitals, dims%n_occupied, occupations, &
                                      h_core, density_ao, reference)
          total_energy = one_electron + two_electron + mol%nuclear_repulsion()
-         reference = reference + two_electron_reference(density_ao, eri_ao) + &
-                     mol%nuclear_repulsion()
+         ! The reference built from the orbitals is a determinant expression and
+         ! describes a correlated wave function not at all, so for one of those
+         ! the energy the calculation reported is what the decomposition is held
+         ! against instead. Either way it is a number reached without any of
+         ! this arithmetic, which is the whole point of comparing.
+         if (correlated .and. .not. present(reference_energy)) then
+            call error%set(ERROR_VALIDATION, "a correlated energy decomposition was "// &
+                           "asked for without the energy to check it against. The "// &
+                           "reference built here assumes a single determinant and "// &
+                           "would disagree by the whole correlation energy.")
+            return
+         end if
+         if (present(reference_energy)) then
+            reference = reference_energy
+         else
+            reference = reference + two_electron_reference(density_ao, eri_ao) + &
+                        mol%nuclear_repulsion()
+         end if
 
          call logger%info("")
          write (line, "(4x,a30,f16.6,a)") "one-electron", one_electron, " hartree"
@@ -365,8 +538,13 @@ contains
          call logger%info(trim(line))
          write (line, "(4x,a30,f16.6,a)") "total", total_energy, " hartree"
          call logger%info(trim(line))
-         write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
-            " hartree"
+         if (present(reference_energy)) then
+            write (line, "(4x,a30,f16.6,a)") "reported by the calculation", reference, &
+               " hartree"
+         else
+            write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
+               " hartree"
+         end if
          call logger%info(trim(line))
          if (abs(kinetic_total(tot_intra, tot_inter) - total_energy) > 1.0e-8_dp) then
             call error%set(ERROR_VALIDATION, "the atom and atom-pair table does not "// &
@@ -511,5 +689,148 @@ contains
          end do
       end do
    end function two_electron_reference
+
+   subroutine print_formation(adaptation, free_energy, intra, inter, &
+                              element_symbols, formation)
+      !! What it costs to prepare the atoms, against what the pairs give back
+      !!
+      !! **The adaptation energy is positive and that is not a bug.** An atom in
+      !! a molecule is deformed -- promoted, and in a polar bond stripped of
+      !! charge -- and both cost energy against the free atom. Binding comes
+      !! from the interatomic terms being more negative than the adaptation is
+      !! positive, which is why the two are printed side by side.
+      real(dp), intent(in) :: adaptation(:), free_energy(:), intra(:), inter(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: formation
+
+      character(len=160) :: line
+      character(len=16) :: label
+      integer :: natm, a
+
+      natm = size(adaptation)
+      call logger%info("")
+      call logger%info("  energy of formation")
+      call logger%info("     atom          in molecule      free atom     adaptation")
+      do a = 1, natm
+         write (label, "(a,i0)") trim(adjustl(element_symbols(a)))//" ", a
+         write (line, "(4x,a10,3f15.6)") label, intra(a), free_energy(a), adaptation(a)
+         call logger%info(trim(line))
+      end do
+      call logger%info("")
+      write (line, "(4x,a24,f16.6,a)") "adaptation total", sum(adaptation), " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f16.6,a)") "interatomic total", 0.5_dp*sum(inter), " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f16.6,a,f12.3,a)") "energy of formation", formation, &
+         " hartree", formation*HARTREE_TO_KCALMOL, " kcal/mol"
+      call logger%info(trim(line))
+   end subroutine print_formation
+
+   subroutine no_sharing_analysis(mol, full_quao, valence_quao, n_core, &
+                                  atomic_numbers, natm, error)
+      !! The no-sharing wave function, and what charge transfer is worth
+      !!
+      !! Three steps, of which only the first is expensive. A full valence CI is
+      !! solved **in the quasi-atomic basis** -- legitimate because a full
+      !! valence CI is invariant under rotation of its active orbitals, and
+      !! necessary because "how many electrons are on this atom" is a question
+      !! only an atomic basis can answer. Its coefficients are then struck out
+      !! wherever an atom is not neutral, and the energy of what remains is
+      !! rebuilt from the projected density matrices.
+      !!
+      !! The difference between the two energies is the charge-transfer
+      !! stabilisation. `E(Psi-0)` must come out **above** `E(Psi)`: a
+      !! projection cannot lower a variational energy, and that is asserted
+      !! because it is the one thing that would catch the projection being
+      !! applied to the wrong space.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(quao_result_t), intent(in) :: full_quao, valence_quao
+      integer, intent(in) :: n_core, natm
+      integer, intent(in) :: atomic_numbers(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :), ci(:, :)
+      type(casci_result_t) :: cas
+      type(link_table_t) :: alpha, beta
+      integer, allocatable :: neutral(:)
+      character(len=160) :: line
+      real(dp) :: core_energy, e_psi, e_zero, recovered
+      integer :: n_active, n_valence_electrons, na, nb, iatom, core_orbitals
+      integer :: valence_orbitals, n_kept, n_total
+
+      n_active = valence_quao%n_quao
+
+      ! Neutral means each atom holding the valence electrons it owns.
+      allocate (neutral(natm))
+      n_valence_electrons = 0
+      do iatom = 1, natm
+         call aambs_element_counts(atomic_numbers(iatom), core_orbitals, &
+                                   valence_orbitals, error)
+         if (error%has_error()) return
+         neutral(iatom) = atomic_numbers(iatom) - 2*core_orbitals
+         n_valence_electrons = n_valence_electrons + neutral(iatom)
+      end do
+      if (mod(n_valence_electrons, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "the valence shell holds an odd number of "// &
+                        "electrons, which this closed-shell analysis cannot describe.")
+         return
+      end if
+      na = n_valence_electrons/2
+      nb = na
+
+      call logger%info("")
+      call logger%info("  no-sharing analysis")
+      write (line, "(a,i0,a,i0,a)") "     full valence CAS(", n_valence_electrons, &
+         ",", n_active, ") over the quasi-atomic orbitals"
+      call logger%info(trim(line))
+
+      call run_libcint_casci(mol, full_quao%orbitals, n_core, n_active, na, nb, &
+                             cas, error, verbose=.false.)
+      if (error%has_error()) return
+      e_psi = cas%energy
+      n_total = size(cas%ci_vector)
+
+      ci = cas%ci_vector
+      call project_no_sharing(valence_quao%atom_of, natm, neutral, na, nb, ci, &
+                              recovered, n_kept, error)
+      if (error%has_error()) return
+
+      ! The energy of the projection, from its own density matrices against the
+      ! same active-space Hamiltonian the CI used.
+      call active_space_integrals(mol, full_quao%orbitals, n_core, n_active, &
+                                  h_eff, eri_act, core_energy, error)
+      if (error%has_error()) return
+      call build_link_table(n_active, na, alpha, error)
+      call build_link_table(n_active, nb, beta, error)
+      if (error%has_error()) return
+      call active_space_rdms(ci, alpha, beta, dm1, dm2, error)
+      if (error%has_error()) return
+      e_zero = rdm_energy(h_eff, eri_act, dm1, dm2) + core_energy
+
+      write (line, "(a,i0,a,i0,a,f8.2,a)") "     neutral determinants ", n_kept, &
+         " of ", n_total, ", holding ", 100.0_dp*recovered, "% of the squared norm"
+      call logger%info(trim(line))
+      ! Printed to twelve figures because it is checkable: a full valence CI is
+      ! invariant under rotation of its active orbitals, so this must equal the
+      ! same CAS run over the ordinary molecular orbitals. Water in STO-3G gives
+      ! -75.011224995270 either way.
+      write (line, "(4x,a24,f18.12,a)") "E(Psi)", e_psi, " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f18.12,a)") "E(Psi-0)", e_zero, " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f16.6,a,f12.3,a)") "charge transfer", e_psi - e_zero, &
+         " hartree", (e_psi - e_zero)*HARTREE_TO_KCALMOL, " kcal/mol"
+      call logger%info(trim(line))
+
+      ! A projection cannot lower a variational energy. If it appears to, the
+      ! coefficients being struck out were not this wave function's.
+      if (e_zero < e_psi - 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "the no-sharing wave function came out below "// &
+                        "the one it was projected from, which a projection cannot do. "// &
+                        "The determinants struck out did not belong to this space.")
+         return
+      end if
+   end subroutine no_sharing_analysis
 
 end module mqc_libcint_bonding

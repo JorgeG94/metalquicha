@@ -31,12 +31,15 @@ module mqc_libcint_ieda
    !! same quantity: that one carries an empirical factor of a tenth to reach
    !! the scale of tabulated bond energies, and the papers say so. Nothing here
    !! is scaled. Where the bond order is a gauge, this is an energy.
+   use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_esp, only: esp_matrices
    use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_aambs, only: aambs_element_counts
+   use mqc_determinants, only: generate_strings
    use mqc_libcint_quao, only: quao_result_t
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
@@ -44,16 +47,22 @@ module mqc_libcint_ieda
 
    public :: kinetic_decomposition
    public :: kinetic_total
+   public :: project_no_sharing
    public :: combine_quao_sets
    public :: quao_interference
    public :: nuclear_attraction_per_atom
    public :: quao_nuclear_attraction
    public :: nuclear_decomposition
+   public :: screened_nucleus_split
    public :: quao_eris
+   public :: active_cumulant
+   public :: quao_projection
+   public :: transform_cumulant
    public :: two_electron_decomposition
    public :: print_two_electron_decomposition
    public :: nuclear_repulsion_pairs
    public :: print_total_decomposition
+   public :: print_interatomic_split
    public :: print_kinetic_decomposition
    public :: print_nuclear_decomposition
 
@@ -170,6 +179,140 @@ contains
 
       total = sum(intra) + 0.5_dp*sum(inter)
    end function kinetic_total
+
+   subroutine project_no_sharing(atom_of, n_atoms, neutral, n_alpha, n_beta, ci, &
+                                 recovered, n_kept, error)
+      !! Strike out every determinant in which an atom is not neutral
+      !!
+      !! The no-sharing wave function `Psi-0` of the intrinsic decomposition:
+      !! the part of `Psi` in which no charge has moved between atoms. It is
+      !! what the molecule would be if the atoms shared electrons without ever
+      !! lending them, and the energy difference from `Psi` is what charge
+      !! transfer is worth.
+      !!
+      !! **`Psi-0` is a projection of `Psi`, not a wave function optimised in
+      !! the neutral space.** Solving a CI restricted to these determinants
+      !! gives a lower energy and a different state; it is a perfectly good
+      !! wave function and it is not this one. So the amplitudes here are the
+      !! parent's, with the rest set to zero and the remainder renormalised.
+      !!
+      !! **The determinants must be over quasi-atomic orbitals** for any of this
+      !! to mean anything -- "how many electrons are on this atom" is a question
+      !! only an atomic basis can answer. A full valence CI is invariant under
+      !! rotation of its active orbitals, so re-solving it in the quasi-atomic
+      !! basis costs an energy that must come back identical and buys a
+      !! determinant expansion that can be read this way.
+      !!
+      !! What comes back is `recovered`, the squared norm kept. That is the
+      !! honest measure of how much of the molecule is describable without
+      !! charge transfer, and the papers quote it as a percentage. Note it is a
+      !! squared norm and not an overlap, which is what the reference
+      !! implementation prints it as.
+      integer, intent(in) :: atom_of(:)
+         !! (n_orbitals) the atom each active orbital belongs to
+      integer, intent(in) :: n_atoms
+      integer, intent(in) :: neutral(:)
+         !! (n_atoms) valence electrons each atom has when neutral
+      integer, intent(in) :: n_alpha, n_beta
+      real(dp), intent(inout) :: ci(:, :)
+         !! (n_alpha_strings, n_beta_strings), overwritten with the projection
+      real(dp), intent(out) :: recovered
+         !! `|| P Psi ||^2` before renormalising
+      integer, intent(out) :: n_kept
+         !! How many determinants survived
+      type(error_t), intent(inout) :: error
+
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer, allocatable :: count_alpha(:, :), count_beta(:, :)
+      integer :: n_orb, na, nb, ia, ib, a
+      real(dp) :: norm
+      logical :: neutral_here
+
+      if (error%has_error()) return
+
+      n_orb = size(atom_of)
+      if (n_atoms < 1 .or. maxval(atom_of) > n_atoms .or. size(neutral) /= n_atoms) then
+         call error%set(ERROR_VALIDATION, "the orbital-to-atom map and the neutral "// &
+                        "electron counts describe different molecules.")
+         return
+      end if
+
+      call generate_strings(n_orb, n_alpha, alpha, error)
+      if (error%has_error()) return
+      call generate_strings(n_orb, n_beta, beta, error)
+      if (error%has_error()) return
+      na = size(alpha)
+      nb = size(beta)
+      if (size(ci, 1) /= na .or. size(ci, 2) /= nb) then
+         call error%set(ERROR_VALIDATION, "the coefficient array is not the shape this "// &
+                        "active space produces, so it came from a different space.")
+         return
+      end if
+
+      ! Per-atom occupation of every string, once, rather than per determinant:
+      ! the determinant count is the product of the two string counts, so doing
+      ! this inside the pair loop would repeat each string's tally thousands of
+      ! times.
+      allocate (count_alpha(n_atoms, na), count_beta(n_atoms, nb))
+      call tally(alpha, atom_of, n_atoms, count_alpha)
+      call tally(beta, atom_of, n_atoms, count_beta)
+
+      n_kept = 0
+      recovered = 0.0_dp
+      do ib = 1, nb
+         do ia = 1, na
+            neutral_here = .true.
+            do a = 1, n_atoms
+               if (count_alpha(a, ia) + count_beta(a, ib) /= neutral(a)) then
+                  neutral_here = .false.
+                  exit
+               end if
+            end do
+            if (neutral_here) then
+               n_kept = n_kept + 1
+               recovered = recovered + ci(ia, ib)**2
+            else
+               ci(ia, ib) = 0.0_dp
+            end if
+         end do
+      end do
+
+      if (recovered <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "no determinant leaves every atom neutral, "// &
+                        "so there is no no-sharing wave function to project onto. A "// &
+                        "closed-shell atom with no valence electrons, or an active "// &
+                        "space that is not the whole valence shell, will do this.")
+         return
+      end if
+
+      norm = 1.0_dp/sqrt(recovered)
+      do ib = 1, nb
+         do ia = 1, na
+            ci(ia, ib) = ci(ia, ib)*norm
+         end do
+      end do
+
+      deallocate (alpha, beta, count_alpha, count_beta)
+   end subroutine project_no_sharing
+
+   pure subroutine tally(strings, atom_of, n_atoms, counts)
+      !! How many electrons each string puts on each atom
+      integer(int64), intent(in) :: strings(:)
+      integer, intent(in) :: atom_of(:)
+      integer, intent(in) :: n_atoms
+      integer, intent(out) :: counts(:, :)     !! (n_atoms, n_strings)
+
+      integer :: is, p
+
+      counts = 0
+      do is = 1, size(strings)
+         do p = 1, size(atom_of)
+            if (btest(strings(is), p - 1)) then
+               counts(atom_of(p), is) = counts(atom_of(p), is) + 1
+            end if
+         end do
+      end do
+   end subroutine tally
 
    subroutine combine_quao_sets(core, valence, combined, error)
       !! Stack the core quasi-atomic orbitals in front of the valence ones
@@ -374,7 +517,8 @@ contains
       deallocate (work)
    end subroutine quao_nuclear_attraction
 
-   subroutine nuclear_decomposition(quao, density, v_atom_quao, n_atoms, intra, inter, error)
+   subroutine nuclear_decomposition(quao, density, v_atom_quao, n_atoms, intra, inter, &
+                                    error, coulomb)
       !! Group `gamma_pq V_pq^C` by the atoms of its two orbitals and its nucleus
       !!
       !! Unlike the kinetic term this one carries three atomic labels: the
@@ -405,6 +549,13 @@ contains
       real(dp), allocatable, intent(out) :: inter(:, :)
          !! Symmetric, zero diagonal, each element the whole pair energy
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: coulomb(:, :)
+         !! The **classical** share of `inter`: one atom's own density sitting in
+         !! another's nuclear field. What is left over is interference -- density
+         !! shared between the two atoms, which has no classical description and
+         !! exists only because they are bonded. Splitting them is the whole
+         !! point of the analysis, since the papers' claim is that binding comes
+         !! from interference and not from electrostatics.
 
       real(dp) :: term, residual, reference
       character(len=400) :: message
@@ -433,6 +584,10 @@ contains
       intra = 0.0_dp
       inter = 0.0_dp
       reference = 0.0_dp
+      if (present(coulomb)) then
+         allocate (coulomb(n_atoms, n_atoms))
+         coulomb = 0.0_dp
+      end if
 
       do c = 1, n_atoms
          do i = 1, n
@@ -449,8 +604,14 @@ contains
                else if (a == c) then
                   intra(a) = intra(a) + term
                else
+                  ! One atom's density in another's nuclear field: an ordinary
+                  ! electrostatic attraction between the two.
                   inter(a, c) = inter(a, c) + term
                   inter(c, a) = inter(c, a) + term
+                  if (present(coulomb)) then
+                     coulomb(a, c) = coulomb(a, c) + term
+                     coulomb(c, a) = coulomb(c, a) + term
+                  end if
                end if
             end do
          end do
@@ -510,30 +671,172 @@ contains
          return
       end if
 
-      allocate (cur(n_ao, n_ao**3))
-      cur = reshape(eri_ao, [n_ao, n_ao**3])
+      call four_index_transform(quao%orbitals, eri_ao, eri_quao)
+   end subroutine quao_eris
+
+   subroutine four_index_transform(coeff, source, result)
+      !! Contract all four indices of an `n_in^4` array with `coeff`
+      !!
+      !!     result_pqrs = sum_abcd coeff_ap coeff_bq coeff_cr coeff_ds source_abcd
+      !!
+      !! Four quarter-transformations, each contracting one index and cycling it
+      !! to the back, so after four passes the order is restored. `coeff` is
+      !! `(n_in, n_out)` and need not be square: the two-electron integrals come
+      !! from a large atomic-orbital basis into a small quasi-atomic one, and
+      !! the cumulant comes from a small active space into the same one.
+      real(dp), intent(in) :: coeff(:, :)          !! (n_in, n_out)
+      real(dp), intent(in) :: source(:, :, :, :)   !! (n_in, n_in, n_in, n_in)
+      real(dp), allocatable, intent(out) :: result(:, :, :, :)
+
+      real(dp), allocatable :: cur(:, :), t(:, :)
+      integer :: n_in, n_out, step, ncol
+
+      n_in = size(coeff, 1)
+      n_out = size(coeff, 2)
+
+      ! A transposed `coeff` still type-checks and still has two dimensions, so
+      ! without this the first reshape reads past the end of `source` and the
+      ! whole thing crashes several frames away from the mistake.
+      if (any(shape(source) /= n_in)) then
+         error stop "four_index_transform: the array does not have the "// &
+            "dimension the coefficients contract over"
+      end if
+
+      allocate (cur(n_in, n_in**3))
+      cur = reshape(source, [n_in, n_in**3])
       do step = 1, 4
          ncol = size(cur, 2)
-         allocate (t(n, ncol))
-         call pic_gemm(quao%orbitals, cur, t, transa="T")
+         allocate (t(n_out, ncol))
+         call pic_gemm(coeff, cur, t, transa="T")
          deallocate (cur)
          if (step < 4) then
-            allocate (cur(n_ao, ncol*n/n_ao))
-            cur = reshape(transpose(t), [n_ao, ncol*n/n_ao])
+            allocate (cur(n_in, ncol*n_out/n_in))
+            cur = reshape(transpose(t), [n_in, ncol*n_out/n_in])
          else
-            allocate (cur(n, n**3))
-            cur = reshape(transpose(t), [n, n**3])
+            allocate (cur(n_out, n_out**3))
+            cur = reshape(transpose(t), [n_out, n_out**3])
          end if
          deallocate (t)
       end do
 
-      allocate (eri_quao(n, n, n, n))
-      eri_quao = reshape(cur, [n, n, n, n])
+      allocate (result(n_out, n_out, n_out, n_out))
+      result = reshape(cur, [n_out, n_out, n_out, n_out])
       deallocate (cur)
-   end subroutine quao_eris
+   end subroutine four_index_transform
+
+   pure subroutine active_cumulant(dm1, dm2, cumulant)
+      !! What correlation adds to the two-particle density
+      !!
+      !!     Lambda_pqrs = d_pqrs - [ D_pq D_rs - (1/2) D_ps D_rq ]
+      !!
+      !! The bracket is the two-particle density a single determinant would
+      !! have, so `Lambda` is exactly the part of `d` that a determinant cannot
+      !! produce. It is zero for a closed-shell reference, and for an MCSCF wave
+      !! function it is zero unless all four indices are active -- the inactive
+      !! orbitals are a closed shell and carry no correlation.
+      !!
+      !! That is what makes the correlated decomposition cheap. The determinant
+      !! expression is already evaluated over the whole quasi-atomic basis; the
+      !! correction lives in the active space alone and is transformed from
+      !! there.
+      real(dp), intent(in) :: dm1(:, :)
+      real(dp), intent(in) :: dm2(:, :, :, :)
+      real(dp), allocatable, intent(out) :: cumulant(:, :, :, :)
+
+      integer :: n, p, q, r, sx
+
+      n = size(dm1, 1)
+      allocate (cumulant(n, n, n, n))
+      do p = 1, n
+         do q = 1, n
+            do r = 1, n
+               do sx = 1, n
+                  cumulant(p, q, r, sx) = dm2(p, q, r, sx) &
+                                          - dm1(p, q)*dm1(r, sx) &
+                                          + 0.5_dp*dm1(p, sx)*dm1(r, q)
+               end do
+            end do
+         end do
+      end do
+   end subroutine active_cumulant
+
+   subroutine quao_projection(quao, overlap, orbitals, u, deficit, error)
+      !! Express a set of molecular orbitals in the quasi-atomic basis
+      !!
+      !!     U = C_quao^T S C
+      !!
+      !! **`U` is an isometry only if the orbitals lie inside the space the
+      !! quasi-atomic orbitals span, and active orbitals do not quite.** The
+      !! valence-virtual orbitals are chosen to look like free-atom orbitals;
+      !! the active orbitals of a converged MCSCF are chosen to lower an energy,
+      !! and the two are not the same choice. N2 in cc-pVDZ with a CAS(6,6)
+      !! misses orthonormality by about 6e-2.
+      !!
+      !! So the deficit is measured and handed back rather than treated as an
+      !! error. It is the same statement the population sum already makes about
+      !! this analysis -- that it describes what lies inside the quasi-atomic
+      !! span and not what lies outside -- and the caller is better placed to
+      !! decide what to do about it. What must not happen is losing it
+      !! silently.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: overlap(:, :)     !! (n_ao, n_ao)
+      real(dp), intent(in) :: orbitals(:, :)    !! (n_ao, n_orb)
+      real(dp), allocatable, intent(out) :: u(:, :)   !! (n_quao, n_orb)
+      real(dp), intent(out) :: deficit
+         !! `max |U^T U - 1|`. Zero when the orbitals are fully inside the span;
+         !! otherwise how much of them is not.
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: work(:, :), gram(:, :)
+      integer :: n_ao, n, n_orb, i
+
+      if (error%has_error()) return
+
+      deficit = 0.0_dp
+      n = quao%n_quao
+      n_ao = size(quao%orbitals, 1)
+      n_orb = size(orbitals, 2)
+      if (size(overlap, 1) /= n_ao .or. size(orbitals, 1) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "the overlap, the orbitals and the "// &
+                        "quasi-atomic orbitals are not in the same basis.")
+         return
+      end if
+
+      allocate (work(n_ao, n_orb), u(n, n_orb), gram(n_orb, n_orb))
+      call pic_gemm(overlap, orbitals, work)
+      call pic_gemm(quao%orbitals, work, u, transa="T")
+
+      call pic_gemm(u, u, gram, transa="T")
+      do i = 1, n_orb
+         gram(i, i) = gram(i, i) - 1.0_dp
+      end do
+      deficit = maxval(abs(gram))
+      deallocate (work, gram)
+   end subroutine quao_projection
+
+   subroutine transform_cumulant(u, cumulant, cumulant_quao, error)
+      !! Carry the cumulant from the active orbitals into the quasi-atomic basis
+      !!
+      !! `U` being an isometry is what makes this exact: the contraction of the
+      !! cumulant against the integrals is the same number computed either side
+      !! of the transformation, so the correlation energy is neither gained nor
+      !! lost by changing basis. `quao_projection` checks that before returning.
+      real(dp), intent(in) :: u(:, :)               !! (n_quao, n_active)
+      real(dp), intent(in) :: cumulant(:, :, :, :)  !! over active orbitals
+      real(dp), allocatable, intent(out) :: cumulant_quao(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      if (error%has_error()) return
+      if (size(u, 2) /= size(cumulant, 1)) then
+         call error%set(ERROR_VALIDATION, "the projection and the cumulant describe "// &
+                        "different numbers of active orbitals.")
+         return
+      end if
+      call four_index_transform(transpose(u), cumulant, cumulant_quao)
+   end subroutine transform_cumulant
 
    subroutine two_electron_decomposition(quao, density, eri_quao, n_atoms, &
-                                         intra, inter, energy, error)
+                                         intra, inter, energy, error, cumulant, coulomb)
       !! Group the two-electron energy by the atoms of its four orbitals
       !!
       !! For a single determinant the two-particle density is
@@ -568,8 +871,17 @@ contains
          !! `E2` as summed here, so a caller can compare it against the same
          !! quantity computed without any of this.
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: cumulant(:, :, :, :)
+         !! (n_quao^4). What correlation adds to the two-particle density,
+         !! already carried into this basis. Absent means a single determinant,
+         !! for which it is identically zero.
+      real(dp), allocatable, intent(out), optional :: coulomb(:, :)
+         !! The classical share of `inter`: both charge distributions sitting
+         !! wholly on one atom each, so the term is the repulsion between two
+         !! atomic charge clouds. Everything else involves a distribution spread
+         !! across two atoms and is interference.
 
-      real(dp) :: w, residual
+      real(dp) :: w, residual, extra
       character(len=400) :: message
       integer :: n, p, q, r, sx, a, b, c, d
 
@@ -591,6 +903,10 @@ contains
       allocate (intra(n_atoms), inter(n_atoms, n_atoms))
       intra = 0.0_dp
       inter = 0.0_dp
+      if (present(coulomb)) then
+         allocate (coulomb(n_atoms, n_atoms))
+         coulomb = 0.0_dp
+      end if
 
       do p = 1, n
          a = quao%atom_of(p)
@@ -600,8 +916,11 @@ contains
                c = quao%atom_of(r)
                do sx = 1, n
                   d = quao%atom_of(sx)
+                  extra = 0.0_dp
+                  if (present(cumulant)) extra = cumulant(p, q, r, sx)
                   w = 0.5_dp*(density(p, q)*density(r, sx) &
-                              - 0.5_dp*density(p, sx)*density(r, q))*eri_quao(p, q, r, sx)
+                              - 0.5_dp*density(p, sx)*density(r, q) &
+                              + extra)*eri_quao(p, q, r, sx)
                   energy = energy + w
                   if (a /= b .and. c /= d) then
                      call deposit(inter, a, b, 0.5_dp*w)
@@ -613,7 +932,10 @@ contains
                   else if (a == c) then
                      intra(a) = intra(a) + w
                   else
+                     ! Two atomic charge clouds repelling each other, which is
+                     ! as classical as this decomposition gets.
                      call deposit(inter, a, c, w)
+                     if (present(coulomb)) call deposit(coulomb, a, c, w)
                   end if
                end do
             end do
@@ -722,6 +1044,149 @@ contains
 
       call print_decomposition("energy decomposition", intra, inter, element_symbols)
    end subroutine print_total_decomposition
+
+   subroutine print_interatomic_split(inter, classical, element_symbols)
+      !! Each pair interaction split into what is classical and what is not
+      !!
+      !! **This is the claim the analysis exists to make.** The classical part is
+      !! everything an electrostatic model could produce: one atom's density in
+      !! the other's nuclear field, the repulsion between two atomic charge
+      !! clouds, and the repulsion of the two nuclei. It is a sum of large terms
+      !! of both signs that very nearly cancel, because a neutral atom is a
+      !! nearly neutral thing to be near.
+      !!
+      !! What is left is interference -- density shared between the two atoms,
+      !! which no classical model has any account of, and which the papers argue
+      !! is where covalent binding actually comes from. If that is right, the
+      !! second column here is small and the third carries the bond.
+      real(dp), intent(in) :: inter(:, :)
+      real(dp), intent(in) :: classical(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+
+      character(len=160) :: line
+      character(len=16) :: label_a, label_b
+      integer :: natm, a, b
+      real(dp) :: total_c, total_i
+
+      natm = size(inter, 1)
+      call logger%info("")
+      call logger%info("  interatomic interactions")
+      call logger%info("     pair                  total     classical  interference")
+      total_c = 0.0_dp
+      total_i = 0.0_dp
+      do a = 1, natm
+         do b = a + 1, natm
+            total_c = total_c + classical(a, b)
+            total_i = total_i + (inter(a, b) - classical(a, b))
+            if (abs(inter(a, b)) < TOL_PRINT_PAIR) cycle
+            write (label_a, "(a,i0)") trim(adjustl(element_symbols(a)))//" ", a
+            write (label_b, "(a,i0)") trim(adjustl(element_symbols(b)))//" ", b
+            write (line, "(4x,a8,a4,a8,3f14.3)") label_a(1:8), " -- ", label_b(1:8), &
+               inter(a, b)*TO_MILLIHARTREE, classical(a, b)*TO_MILLIHARTREE, &
+               (inter(a, b) - classical(a, b))*TO_MILLIHARTREE
+            call logger%info(trim(line))
+         end do
+      end do
+      call logger%info("     millihartree")
+      write (line, "(4x,a24,2f16.6)") "totals, hartree", total_c, total_i
+      call logger%info(trim(line))
+   end subroutine print_interatomic_split
+
+   subroutine screened_nucleus_split(quao, density, v_atom_quao, n_core_quao, &
+                                     atomic_numbers, n_atoms, intra_core, intra_valence, &
+                                     error)
+      !! Divide an atom's own-nucleus attraction between its core and its valence
+      !!
+      !! A valence electron does not see the bare nucleus; it sees a nucleus
+      !! screened by the core. The papers divide the valence density's attraction
+      !! to its own nucleus in the ratio of the charges,
+      !!
+      !!     V1(Av,Av'/A_core) = (Z_core/Z_A) <Av|-Z_A/r_A|Av'>
+      !!     V1(Av,Av'/A_val ) = (Z_val /Z_A) <Av|-Z_A/r_A|Av'>
+      !!
+      !! and the core density keeps the whole nuclear charge, so the split is
+      !! deliberately asymmetric. `Z_core` is twice the chemical-core orbital
+      !! count -- 0, 2, 10, 18, ... -- taken from the same minimal-basis tables
+      !! the rest of this analysis uses rather than from a ladder written out
+      !! again here.
+      !!
+      !! **This is relabelling and cannot move any energy.** The two shares sum
+      !! to the undivided term because the two charge fractions sum to one, and
+      !! that is asserted rather than trusted. It is a rescaling applied after
+      !! the contraction, so it is not orbital-resolved and does not pretend to
+      !! be: no screening model is being solved, a number is being attributed.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: v_atom_quao(:, :, :)
+      integer, intent(in) :: n_core_quao
+         !! How many leading quasi-atomic orbitals are core. `combine_quao_sets`
+         !! puts them first, which is the only reason a count suffices.
+      integer, intent(in) :: atomic_numbers(:)
+      integer, intent(in) :: n_atoms
+      real(dp), allocatable, intent(out) :: intra_core(:), intra_valence(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: z_core(:)
+      real(dp) :: term, cross, share
+      character(len=400) :: message
+      integer :: n, i, j, a, core_orbitals, valence_orbitals
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      if (n_core_quao < 0 .or. n_core_quao > n) then
+         call error%set(ERROR_VALIDATION, "the core orbital count is not a prefix of "// &
+                        "the quasi-atomic set.")
+         return
+      end if
+
+      allocate (z_core(n_atoms))
+      do a = 1, n_atoms
+         call aambs_element_counts(atomic_numbers(a), core_orbitals, valence_orbitals, &
+                                   error)
+         if (error%has_error()) return
+         z_core(a) = 2.0_dp*real(core_orbitals, dp)
+      end do
+
+      allocate (intra_core(n_atoms), intra_valence(n_atoms))
+      intra_core = 0.0_dp
+      intra_valence = 0.0_dp
+      cross = 0.0_dp
+
+      do i = 1, n
+         a = quao%atom_of(i)
+         do j = 1, n
+            if (quao%atom_of(j) /= a) cycle
+            term = density(i, j)*v_atom_quao(i, j, a)
+            if (i <= n_core_quao .and. j <= n_core_quao) then
+               intra_core(a) = intra_core(a) + term
+            else if (i > n_core_quao .and. j > n_core_quao) then
+               share = z_core(a)/real(atomic_numbers(a), dp)
+               intra_core(a) = intra_core(a) + share*term
+               intra_valence(a) = intra_valence(a) + (1.0_dp - share)*term
+            else
+               ! Core-valence: zero for any wave function with a frozen core,
+               ! since the two spaces are orthogonal and the density does not
+               ! connect them. Accumulated rather than assumed away, and checked
+               ! below -- a correlated core would break it silently otherwise.
+               cross = cross + abs(term)
+               intra_core(a) = intra_core(a) + term
+            end if
+         end do
+      end do
+
+      if (cross > TOL_SUM_RULE) then
+         write (message, "(a,es12.4,a)") "the density connects core and valence "// &
+            "quasi-atomic orbitals, by ", cross, " hartree. The screened-nucleus "// &
+            "split assumes it does not, which holds for a frozen core and fails "// &
+            "for a correlated one."
+         call error%set(ERROR_VALIDATION, trim(message))
+         deallocate (intra_core, intra_valence, z_core)
+         return
+      end if
+
+      deallocate (z_core)
+   end subroutine screened_nucleus_split
 
    subroutine print_kinetic_decomposition(intra, inter, element_symbols)
       !! The atom and atom-pair table for the kinetic energy

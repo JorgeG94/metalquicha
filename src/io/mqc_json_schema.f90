@@ -241,6 +241,8 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "type")
       call allow(keys, "energy_threshold")
+      call allow(keys, "energy_decomposition")
+      call allow(keys, "no_sharing")
       call require(keys, "type")
    end function bonding_analysis_keys
 

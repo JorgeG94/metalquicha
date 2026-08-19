@@ -84,7 +84,16 @@ not say what the molecule's energy is made of, and the two questions have
 different answers: the kinetic bond order carries an empirical factor of a tenth
 to reach a familiar scale, so it is a gauge rather than an energy.
 
-Four further tables resolve the actual energy. Every term in
+Four further tables resolve the actual energy. They are opt-in::
+
+    "properties": {
+      "bonding_analysis": {"type": "gms_quao", "energy_decomposition": true}
+    }
+
+and that is a cost decision rather than a taste one. The two-electron term needs
+the dense ``n_ao**4`` integral array, where the bonding tables above need only
+one-electron integrals -- at a hundred basis functions that is eight hundred
+megabytes for an analysis a deck may not have asked for. Every term in
 
 .. math::
 
@@ -155,6 +164,163 @@ When it does not, a further line reports the difference, under ``outside the
 quasi-atomic span``. That is the same shortfall the population sum reports for a
 correlated density, and it arises for the same reason.
 
+
+Correlated wave functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The energy tables take an MCSCF wave function as well as a determinant, and
+nothing extra is asked for. What changes is one term. A determinant's
+two-particle density is fixed by its one-particle one,
+
+.. math::
+
+   \Gamma_{pqrs} = \gamma_{pq}\gamma_{rs} - \tfrac{1}{2}\gamma_{ps}\gamma_{rq}
+
+and correlation is precisely what makes that false. The difference between the
+true two-particle density and this expression is the cumulant, it is zero unless
+all four of its indices are active, and it is added to the two-electron term.
+
+That locality is what keeps the cost down: the determinant expression is
+evaluated over the whole quasi-atomic basis whatever the wave function, and the
+correction lives in the active space alone.
+
+Two lines appear that do not for a determinant::
+
+    active orbitals outside the quasi-atomic span   5.67E-02
+    ...
+       reported by the calculation     -109.090026 hartree
+     outside the quasi-atomic span       -0.014857 hartree
+
+The first says the active orbitals are not entirely inside the space the
+quasi-atomic orbitals span, and they are not: the valence-virtual orbitals are
+chosen to look like free-atom orbitals, while the active orbitals of a converged
+MCSCF are chosen to lower an energy. Those are different choices and they do not
+give the same space.
+
+The second is what that costs. For N\ :sub:`2` in cc-pVDZ with a CAS(6,6) the
+decomposition reaches -109.075169 hartree against a CASSCF that reported
+-109.090026, so 14.9 of the 135.9 millihartree of correlation energy are outside
+what this analysis can see -- about 89% described. The comparison is against the
+energy the calculation reported, since the reference built from the orbitals
+assumes a determinant and would be short by the whole correlation energy.
+
+
+
+What is classical and what is not
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each pair interaction is split into the part an electrostatic model could
+produce and the part it could not::
+
+    interatomic interactions
+       pair                  total     classical  interference
+      O 1      -- H 2          -1186.141      -329.244      -856.897
+      O 1      -- H 3          -1186.141      -329.244      -856.897
+      H 2      -- H 3             56.511        57.617        -1.106
+       millihartree
+
+**Classical** is one atom's density sitting in the other's nuclear field, the
+repulsion between the two atomic charge clouds, and the repulsion of the two
+nuclei. Each is large and they very nearly cancel, because a neutral atom is a
+nearly neutral thing to be near.
+
+**Interference** is what is left: density shared between the two atoms, which no
+electrostatic model has any account of. The kinetic contribution is entirely
+interference by construction -- two orbitals on different atoms is what the word
+means.
+
+The claim the papers make is that covalent binding comes from interference
+rather than from electrostatics, and water says so plainly. Interference carries
+857 of the 1186 millihartree of the O--H interaction. And the H--H pair, where
+there is no bond at all, comes out at +57.6 millihartree classical against -1.1
+of interference -- two like charges repelling, with essentially nothing shared.
+That the analysis finds no interference where chemistry says there is no bond is
+worth more than the O--H number, since nothing in the construction was told
+where the bonds are.
+
+Energy of formation
+~~~~~~~~~~~~~~~~~~~
+
+The intra-atomic terms above are large because they contain most of each atom's
+own energy. Subtracting the atom as it would be on its own turns them into
+something readable::
+
+    energy of formation
+       atom          in molecule      free atom     adaptation
+      O 1            -73.655015     -74.780310       1.125295
+      H 2             -0.006997      -0.498233       0.491236
+      H 3             -0.006997      -0.498233       0.491236
+
+              adaptation total        2.107766 hartree
+             interatomic total       -2.315771 hartree
+           energy of formation       -0.208004 hartree    -130.525 kcal/mol
+
+**Adaptation is positive and that is the point.** An atom in a molecule is
+promoted into the hybridisation the bonding needs, and in a polar bond it is
+stripped of charge as well; both cost energy against the free atom. Water's
+oxygen pays 1.13 hartree and each hydrogen 0.49. Binding happens because the
+interatomic terms are more negative than the adaptation is positive, and the
+difference is what the molecule is worth.
+
+Each free atom is solved unrestricted at its Hund's-rule ground state in
+**exactly the basis functions it contributes to the molecule**, which is the same
+calculation the ``sad`` and ``sac`` guesses need and shares their cache. Because
+neither side has seen the other atoms' functions there is no basis-set
+superposition error to correct.
+
+One caveat for a correlated wave function: the free atoms are still solved at the
+unrestricted Hartree--Fock level, so a CASSCF molecule is being measured against
+uncorrelated atoms and the formation energy inherits that imbalance. The
+molecular correlation is included and the atomic correlation is not.
+
+
+The no-sharing wave function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Opt-in, because it costs a full valence CI on top of the decomposition, which
+it implies::
+
+    "properties": {
+      "bonding_analysis": {"type": "gms_quao", "no_sharing": true}
+    }
+
+This asks what the molecule would be if its atoms shared electrons without ever
+lending them. Every determinant in which some atom is not neutral is struck out,
+and what remains is renormalised::
+
+    no-sharing analysis
+       full valence CAS(8,6) over the quasi-atomic orbitals
+       neutral determinants 44 of 225, holding    31.52% of the squared norm
+                        E(Psi)  -75.011224995270 hartree
+                      E(Psi-0)  -73.342868821289 hartree
+               charge transfer       -1.668356 hartree   -1046.909 kcal/mol
+
+Two things are worth knowing about what this is.
+
+**It is a projection, not a separate optimisation.** A CI solved inside the
+neutral space would give a lower energy and a different state; that is a
+perfectly good wave function and it is not this one. The surviving amplitudes
+here are the parent's, rescaled. E(Psi-0) is therefore an energy of a
+constrained *state*, not a variational minimum, and it must come out above
+E(Psi) -- which is asserted.
+
+**It needs the quasi-atomic basis.** "How many electrons are on this atom" is a
+question only an atomic basis can answer, so the CI is solved with the
+quasi-atomic orbitals as the active space. That is legitimate because a full
+valence CI is invariant under rotation of its active orbitals, and the printed
+E(Psi) is the check: water in STO-3G gives -75.011224995270 here and
+-75.011224995270 from an ordinary ``casci`` deck with ``n_active_electrons: 8``
+and ``n_active_orbitals: 6``.
+
+The percentage is a squared norm and not an overlap. A polar molecule keeps
+little of itself in the neutral space -- water's oxygen genuinely carries about
+6.7 valence electrons rather than 6 -- so 31% is a statement about water and not
+a defect.
+
+**The cost is factorial in the valence shell** and is the reason this is off by
+default. Water is 225 determinants and ethane is 11,778,624; benzene, at
+2.4 x 10^16, is out of reach by any engineering.
+
 Reading the diagnostics
 -----------------------
 
@@ -200,9 +366,10 @@ Limits
 ------
 
 - Closed-shell restricted references only.
-- The energy decomposition assumes a single determinant, since it builds the
-  two-particle density from the one-particle one. The bonding tables above take
-  a correlated density; the energy tables do not yet.
+- A correlated energy decomposition describes only the part of the wave
+  function lying inside the quasi-atomic span, and reports the rest rather than
+  hiding it. N\ :sub:`2` in cc-pVDZ with a CAS(6,6) accounts for about 89% of
+  the correlation energy.
 - The two-electron transformation goes through the dense ``n_ao**4`` integral
   array, which is the practical ceiling on molecule size for the energy tables.
 - Hydrogen through xenon. Past that the free-atom minimal basis this projects
