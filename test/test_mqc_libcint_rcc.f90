@@ -23,7 +23,7 @@ module test_mqc_libcint_rcc
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
-   use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd
+   use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd, ri_ladder_prefers_direct
    implicit none
    private
    public :: collect_mqc_libcint_rcc_tests
@@ -40,6 +40,7 @@ contains
                   new_unittest("spatial_ccsd_equals_spin_orbital_ccsd", test_ccsd_identity), &
                   new_unittest("spatial_ccsd_matches_pyscf_cc_pvdz", test_pyscf_reference), &
                   new_unittest("fitted_path_agrees_with_spin_orbital", test_fitted_identity), &
+                  new_unittest("direct_ri_ladder_agrees_with_assembled", test_ri_ladder_direct), &
                   new_unittest("frozen_core_agrees_between_formulations", test_frozen_identity), &
                   new_unittest("spatial_triples_equal_spin_orbital_triples", test_triples_identity) &
                   ]
@@ -321,6 +322,82 @@ contains
       call check(error, abs(spatial%e_triples - spin%e_triples) < 1.0e-9_dp, &
                  "the two fitted (T) corrections must agree, frozen core")
    end subroutine test_fitted_identity
+
+   subroutine test_ri_ladder_direct(error)
+      !! The fitted ladder's other algorithm, on a system that selects it
+      !!
+      !! `ri_ladder_prefers_direct` chooses between assembling (ac|bd) and
+      !! contracting the fitted tensor against tau without ever forming it, on
+      !! measured operation counts. Every other fitted case in this file lands
+      !! on the assembling side -- water has five occupied orbitals and the
+      !! crossover needs roughly n_vir > 2 n_occ^2 -- so without this the whole
+      !! direct path would be dead code as far as the suite is concerned.
+      !!
+      !! H2 in cc-pVDZ has one occupied orbital and nine virtual, which selects
+      !! direct by a wide margin and costs almost nothing to run.
+      !!
+      !! The choice is asserted, not assumed. If the crossover is ever retuned
+      !! so that this case stops selecting direct, this fails rather than
+      !! quietly going back to testing the branch that was already covered.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(cc_result_t) :: spin
+      type(rcc_result_t) :: spatial
+      real(dp) :: c(3, 2)
+
+      ! Representative counts for this case: one occupied, nine virtual, and an
+      ! auxiliary basis of a few tens. The exact naux does not move the answer
+      ! anywhere near the crossover.
+      call check(error, ri_ladder_prefers_direct(1, 9, 50), &
+                 "H2/cc-pVDZ must select the direct fitted ladder")
+      if (allocated(error)) return
+      call check(error,.not. ri_ladder_prefers_direct(5, 19, 84), &
+                 "water/cc-pVDZ must select the assembled fitted ladder")
+      if (allocated(error)) return
+
+      c = reshape([0.0_dp, 0.0_dp, -0.3707_dp*ANG, &
+                   0.0_dp, 0.0_dp, 0.3707_dp*ANG], [3, 2])
+      call build_libcint_molecule([1, 1], ["H ", "H "], c, "cc-pvdz", mol, err)
+      call check(error,.not. err%has_error(), "H2 basis must load")
+      if (allocated(error)) return
+
+      call build_libcint_molecule([1, 1], ["H ", "H "], c, "cc-pvdz-rifit", aux, err)
+      call check(error,.not. err%has_error(), "H2 auxiliary basis must load")
+      if (allocated(error)) return
+
+      call run_libcint_rhf(mol, 2, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                           in_core=.true.)
+      call check(error,.not. err%has_error() .and. scf%converged, "H2 SCF must converge")
+      if (allocated(error)) return
+
+      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 1, 0, &
+                            60, 1.0e-10_dp, .true., .false., spin, err, aux=aux)
+      call check(error,.not. err%has_error(), "fitted spin-orbital CCSD(T) must converge")
+      if (allocated(error)) return
+
+      call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, 1, 0, &
+                             60, 1.0e-10_dp, .true., .false., spatial, err, aux=aux)
+      call check(error,.not. err%has_error(), "fitted spatial CCSD(T) must converge")
+      if (allocated(error)) return
+
+      ! The spin-orbital path has only the one ladder, so this compares the
+      ! direct algorithm against an assembled one -- which is the whole point.
+      call check(error, abs(spatial%e_correlation - spin%e_singles - spin%e_doubles &
+                            - spin%e_triples) < 1.0e-10_dp, &
+                 "the direct fitted ladder must reproduce the assembled one")
+      if (allocated(error)) return
+
+      ! Two electrons in one orbital: CCSD is exact for a two-electron system,
+      ! so the triples must be zero to numerical noise. A ladder that dropped
+      ! or double-counted a term would not respect that.
+      call check(error, abs(spatial%e_triples) < 1.0e-12_dp, &
+                 "(T) must vanish for two electrons, where CCSD is already exact")
+
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine test_ri_ladder_direct
 
    subroutine test_frozen_identity(error)
       !! And they must still agree with a core orbital frozen

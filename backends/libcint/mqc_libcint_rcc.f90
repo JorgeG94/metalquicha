@@ -68,6 +68,7 @@ module mqc_libcint_rcc
    public :: rcc_eris_t              !! Exported so a test can build them directly
    public :: build_rcc_eris_conventional
    public :: rccsd_correlation_energy  !! Exported for the MP2 identity test
+   public :: ri_ladder_prefers_direct  !! Exported so a test can assert which ladder ran
 
    !> Columns of the compound (cd) index assembled per pass of the ladder.
    !> Same role and same reasoning as LADDER_BATCH in the spin-orbital module:
@@ -1145,6 +1146,98 @@ contains
       call pic_gemm(tau_cols, wblk, t2n, transb="T", beta=1.0_dp)
    end subroutine ladder_accumulate
 
+   pure function ri_ladder_prefers_direct(no, nv, naux) result(direct)
+      !! Whether to contract the fitted tensor against tau without forming (ac|bd)
+      !!
+      !! Two ways to reach the same sum, and neither wins everywhere:
+      !!
+      !!   assemble   naux n_vir^4 to build (ac|bd), then n_occ^2 n_vir^4 to
+      !!              contract it -- what the conventional path does too, with
+      !!              the build replacing a read
+      !!   direct     2 naux n_vir^3 n_occ^2, never forming (ac|bd) at all
+      !!
+      !! Direct wins when n_vir exceeds roughly 2 n_occ^2, which is a small
+      !! molecule in a large basis; assemble wins with many occupied orbitals,
+      !! which is where anyone actually reaches for density fitting. Water in
+      !! cc-pVTZ is 1.0 GFlop against 0.6; benzene in cc-pVDZ is 63 against 284
+      !! the other way. Choosing on measured counts rather than picking one is
+      !! the only honest option, because the ratio spans two orders of magnitude
+      !! across ordinary cases.
+      !!
+      !! The comparison is on operation counts only. Both forms are gemms of
+      !! comparable shape, so the counts predict the ordering; what they do not
+      !! predict is the constant, which is why the crossover is written as the
+      !! full expression rather than the tidy `nv > 2 no^2` it reduces to when
+      !! naux dominates n_occ^2.
+      integer, intent(in) :: no, nv, naux
+      logical :: direct
+
+      real(dp) :: assemble_ops, direct_ops
+
+      assemble_ops = (real(naux, dp) + real(no, dp)**2)*real(nv, dp)**4
+      direct_ops = 2.0_dp*real(naux, dp)*real(nv, dp)**3*real(no, dp)**2
+      direct = (direct_ops < assemble_ops)
+   end function ri_ladder_prefers_direct
+
+   subroutine ri_ladder_pair(nv, gp, tauij, work, accab)
+      !! accab(a,b) += sum_cd G(a,c) tau(c,d) G(b,d), one auxiliary function
+      !!
+      !! `gp` is one column of `b_vv` seen as the n_vir by n_vir matrix its
+      !! memory already is: the compound index runs virtual-fastest, so column P
+      !! laid out as (a,c) is exactly B^P_ac with nothing moved.
+      integer, intent(in) :: nv
+      real(dp), intent(in) :: gp(nv, nv)      !! B^P_ac
+      real(dp), intent(in) :: tauij(nv, nv)   !! tau(i,j,c,d) at fixed (i,j)
+      real(dp), intent(inout) :: work(nv, nv)
+      real(dp), intent(inout) :: accab(nv, nv)
+
+      call pic_gemm(gp, tauij, work)
+      call pic_gemm(work, gp, accab, transb="T", beta=1.0_dp)
+   end subroutine ri_ladder_pair
+
+   subroutine ri_ladder_direct(eris, tau, no, nv, naux, t2n)
+      !! The fitted ladder without ever forming (ac|bd)
+      !!
+      !!     sum_cd (ac|bd) tau(i,j,c,d) = sum_P [ G_P tau_ij G_P^T ](a,b)
+      !!
+      !! which is two n_vir-cubed products per auxiliary function per occupied
+      !! pair, against the n_vir^4 of assembling the integral first. Nothing
+      !! held here exceeds n_vir^2, and `G_P` is not held at all -- it is a
+      !! column of `b_vv` read in place.
+      type(rcc_eris_t), intent(in) :: eris
+      integer, intent(in) :: no, nv, naux
+      real(dp), intent(in) :: tau(no, no, nv, nv)
+      real(dp), intent(inout) :: t2n(no, no, nv, nv)
+
+      real(dp), allocatable :: tauij(:, :), work(:, :), accab(:, :)
+      integer :: i, j, a, b, c, d, p
+
+      allocate (tauij(nv, nv), work(nv, nv), accab(nv, nv))
+
+      do j = 1, no
+         do i = 1, no
+            do d = 1, nv
+               do c = 1, nv
+                  tauij(c, d) = tau(i, j, c, d)
+               end do
+            end do
+
+            accab = 0.0_dp
+            do p = 1, naux
+               call ri_ladder_pair(nv, eris%b_vv(1, p), tauij, work, accab)
+            end do
+
+            do b = 1, nv
+               do a = 1, nv
+                  t2n(i, j, a, b) = t2n(i, j, a, b) + accab(a, b)
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (tauij, work, accab)
+   end subroutine ri_ladder_direct
+
    subroutine ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
       !! The t1 half of the particle-particle ladder, without forming it
       !!
@@ -1275,7 +1368,15 @@ contains
 
       nv2 = nv*nv
       fitted = allocated(eris%b_vv)
-      if (fitted) naux = size(eris%b_vv, 2)
+      if (fitted) then
+         naux = size(eris%b_vv, 2)
+         ! Which way round to do the fitted ladder. See `ri_ladder_prefers_direct`.
+         if (ri_ladder_prefers_direct(no, nv, naux)) then
+            call ri_ladder_direct(eris, tau, no, nv, naux, t2n)
+            call ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+            return
+         end if
+      end if
 
       allocate (wblk(nv, nv, LADDER_BATCH))
       if (fitted) allocate (gvv(nv, nv))
