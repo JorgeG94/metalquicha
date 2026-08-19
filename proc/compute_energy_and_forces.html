@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-need_gradient">need_gradient</a>
             <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-need_hessian">need_hessian</a>
-            <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-result~30">result</a>
+            <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-result~46">result</a>
         </div>
       </div>
     </div>
@@ -182,8 +182,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2585,7 +2585,7 @@ results are returned on master rank only</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~57"></span>
+              <span class="anchor" id="variable-sys_geom~78"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2600,7 +2600,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~4"></span>
+              <span class="anchor" id="variable-driver_config~8"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2615,7 +2615,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~10"></span>
+              <span class="anchor" id="variable-resources~13"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2630,7 +2630,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~14"></span>
+              <span class="anchor" id="variable-energy~16"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2645,7 +2645,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~10"></span>
+              <span class="anchor" id="variable-gradient~12"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2660,7 +2660,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~8"></span>
+              <span class="anchor" id="variable-hessian~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2675,7 +2675,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~16"></span>
+              <span class="anchor" id="variable-bonds~17"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3365,18 +3365,18 @@ results are returned on master rank only</p>
 <path fill="none" stroke="#0078ff" d="M489.97,-2962.55C504.99,-2991.28 547.42,-3063.64 607,-3092.53 715.83,-3145.29 860.24,-3136.95 946.58,-3125.01"/>
 <polygon fill="#0078ff" stroke="#0078ff" points="947.15,-3128.46 956.55,-3123.58 946.16,-3121.53 947.15,-3128.46"/>
 </g>
-<!-- proc~binomial -->
+<!-- proc~binomial~3 -->
 <g id="proc~~compute_energy_and_forces~~CallsGraph_node33" class="node">
-<title>proc~binomial</title>
-<g id="a_proc~~compute_energy_and_forces~~CallsGraph_node33"><a xlink:href="../proc/binomial.html" xlink:title="binomial">
+<title>proc~binomial~3</title>
+<g id="a_proc~~compute_energy_and_forces~~CallsGraph_node33"><a xlink:href="../proc/binomial~3.html" xlink:title="binomial">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="1342.5,-3081.53 1283.5,-3081.53 1283.5,-3057.53 1342.5,-3057.53 1342.5,-3081.53"/>
 <text text-anchor="middle" x="1313" y="-3067.13" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~binomial -->
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~binomial~3 -->
 <g id="proc~~compute_energy_and_forces~~CallsGraph_edge51" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~binomial</title>
+<title>proc~run_fragmented_calculation&#45;&gt;proc~binomial~3</title>
 <path fill="none" stroke="#0078ff" d="M502.66,-2962.71C525.99,-2977.23 567.66,-3000.87 607,-3011.53 837.91,-3074.09 905.88,-3025.46 1144,-3048.53 1188.41,-3052.83 1239.22,-3059.41 1273.23,-3064.06"/>
 <polygon fill="#0078ff" stroke="#0078ff" points="1272.83,-3067.54 1283.22,-3065.43 1273.79,-3060.6 1272.83,-3067.54"/>
 </g>
@@ -5066,9 +5066,9 @@ results are returned on master rank only</p>
 <path fill="none" stroke="#00ffff" d="M1090.03,-3326.34C1146.92,-3333.82 1226.56,-3344.29 1273.37,-3350.45"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="1273.03,-3353.93 1283.4,-3351.77 1273.94,-3346.99 1273.03,-3353.93"/>
 </g>
-<!-- proc~get_nfrags&#45;&gt;proc~binomial -->
+<!-- proc~get_nfrags&#45;&gt;proc~binomial~3 -->
 <g id="proc~~compute_energy_and_forces~~CallsGraph_edge225" class="edge">
-<title>proc~get_nfrags&#45;&gt;proc~binomial</title>
+<title>proc~get_nfrags&#45;&gt;proc~binomial~3</title>
 <path fill="none" stroke="#00b2ff" d="M1056.62,-3153.71C1082.12,-3152.48 1117.22,-3147.75 1144,-3132.53 1165.37,-3120.37 1158.54,-3102.53 1180,-3090.53 1208.55,-3074.56 1245.69,-3069.81 1273.3,-3068.76"/>
 <polygon fill="#00b2ff" stroke="#00b2ff" points="1273.46,-3072.26 1283.38,-3068.53 1273.3,-3065.26 1273.46,-3072.26"/>
 </g>
@@ -5540,7 +5540,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~30"></span>
+              <span class="anchor" id="variable-result~46"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -5656,7 +5656,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 07:28 +0000             </p>
+ on 2026-08-19 08:14 +0000             </p>
           </div>
         </div>
         <br>

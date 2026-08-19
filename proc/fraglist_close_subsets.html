@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">35 statements</a>
+                 title=" 0.2% of total for procedures.">39 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,15 +136,16 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-capacity~6">capacity</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-capacity~4">capacity</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-closed">closed</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-has_next~5">has_next</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~43">i</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~6">iterm</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~12">level</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-has_next">has_next</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~32">i</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~2">iterm</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~8">level</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-n_closed">n_closed</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-pick~2">pick</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-size_wanted">size_wanted</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-subset~2">subset</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-subset">subset</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-term~5">term</a>
         </div>
       </div>
@@ -213,7 +214,7 @@ The saving is real but it is in the tail, not the whole list.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~28"></span>
+              <span class="anchor" id="variable-this~35"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -228,7 +229,7 @@ The saving is real but it is in the tail, not the whole list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~47"></span>
+              <span class="anchor" id="variable-error~24"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -562,7 +563,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~6"></span>
+              <span class="anchor" id="variable-capacity~4"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -596,7 +597,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next~5"></span>
+              <span class="anchor" id="variable-has_next"></span>
               logical,
             </td>
               <td>private</td>
@@ -613,7 +614,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~43"></span>
+              <span class="anchor" id="variable-i~32"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -630,7 +631,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~6"></span>
+              <span class="anchor" id="variable-iterm~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -647,7 +648,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~12"></span>
+              <span class="anchor" id="variable-level~8"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -681,6 +682,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-pick~2"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pick</strong>(MAX_TERM_LEVEL)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-size_wanted"></span>
               integer(kind=default_int),
             </td>
@@ -698,7 +716,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-subset~2"></span>
+              <span class="anchor" id="variable-subset"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -765,6 +783,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">closed</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">MAX_TERM_LEVEL</span><span class="p">),</span><span class="w"> </span><span class="n">term</span><span class="p">(</span><span class="n">MAX_TERM_LEVEL</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pick</span><span class="p">(</span><span class="n">MAX_TERM_LEVEL</span><span class="p">)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iterm</span><span class="p">,</span><span class="w"> </span><span class="n">n_closed</span><span class="p">,</span><span class="w"> </span><span class="n">capacity</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_next</span>
@@ -790,8 +809,31 @@ large graphs.</div>
 <span class="w">         </span><span class="k">do </span><span class="n">size_wanted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">level</span>
 <span class="w">            </span><span class="k">call </span><span class="n">first_combination</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)</span>
 <span class="w">            </span><span class="k">do</span>
+<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="c">! Gathered into a local rather than passed as</span>
+<span class="w">               </span><span class="c">! `[(term(subset(i)), i=1, size_wanted)]`.</span>
+<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="c">! An array constructor as an actual argument builds a temporary,</span>
+<span class="w">               </span><span class="c">! and nvfortran sizes that temporary WRONG under `-Mvect=simd`</span>
+<span class="w">               </span><span class="c">! -- which `-fast` implies, so every optimised NVHPC build was</span>
+<span class="w">               </span><span class="c">! affected. The symptom is a runtime abort asking for a garbage</span>
+<span class="w">               </span><span class="c">! allocation, e.g.</span>
+<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="c">!     0: ALLOCATE: 562935672259264 bytes requested</span>
+<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="c">! the size varying run to run because the value comes from</span>
+<span class="w">               </span><span class="c">! uninitialised stack. `-O2` alone is fine, `-fast -Mnovect` is</span>
+<span class="w">               </span><span class="c">! fine, and adding a print anywhere nearby makes it vanish.</span>
+<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="c">! Gathering explicitly removes the temporary, so there is</span>
+<span class="w">               </span><span class="c">! nothing to size wrongly. It also stops allocating one per</span>
+<span class="w">               </span><span class="c">! iteration of the innermost loop, which this did not need.</span>
+<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span>
+<span class="w">                  </span><span class="n">pick</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">term</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">               </span><span class="k">end do</span>
 <span class="k">               call </span><span class="n">add_unique</span><span class="p">(</span><span class="n">closed</span><span class="p">,</span><span class="w"> </span><span class="n">n_closed</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                               </span><span class="p">[(</span><span class="n">term</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">i</span><span class="p">)),</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)],</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)</span>
+<span class="w">                               </span><span class="n">pick</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">size_wanted</span><span class="p">),</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)</span>
 <span class="w">               </span><span class="k">call </span><span class="n">next_index_set</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">,</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">has_next</span><span class="p">)</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_next</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
 <span class="k">            end do</span>
@@ -826,7 +868,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 07:28 +0000             </p>
+ on 2026-08-19 08:14 +0000             </p>
           </div>
         </div>
         <br>

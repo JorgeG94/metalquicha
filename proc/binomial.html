@@ -94,20 +94,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">16 statements</a>
+                 title=" 0.1% of total for procedures.">12 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_combinatorics.f90"> Source File</a>
+              <a href="../src/mqc_ormas_space.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_combinatorics.f90.html'>mqc_combinatorics.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ormas_space.f90.html'>mqc_ormas_space.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></li>
             <li class="breadcrumb-item active" aria-current="page">binomial</li>
           </ol>
         </nav>
@@ -136,7 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/binomial.html#variable-i~23">i</a>
+            <a class="list-group-item" href="../proc/binomial.html#variable-i~94">i</a>
+            <a class="list-group-item" href="../proc/binomial.html#variable-kk">kk</a>
         </div>
       </div>
     </div>
@@ -172,14 +173,14 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public pure function binomial(n, r) result(c)  
+    <h2>private pure function binomial(n, k) result(c)  
 </h2>
     
 
-    <p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p>
-<p>Calculates &ldquo;n choose r&rdquo; using iterative algorithm to avoid
-factorial overflow for large numbers.
-Uses int64 to handle large combinatorial values that overflow int32.</p>
+    <p><code>C(n, k)</code>, exactly, in 64-bit integers</p>
+<p>One factor at a time, multiplying before dividing, so the running
+value is always the binomial coefficient of a smaller problem and
+never exceeds the answer.</p>
 
 
     <h3>Arguments</h3>
@@ -195,8 +196,8 @@ Uses int64 to handle large combinatorial values that overflow int32.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-n~31"></span>
+              integer,
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -205,22 +206,22 @@ Uses int64 to handle large combinatorial values that overflow int32.</p>
             <td>::</td>
             <td><strong>n</strong></td>
             <td>
-                <p>Total number of items</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~4"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-k~23"></span>
+              integer,
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>r</strong></td>
+            <td><strong>k</strong></td>
             <td>
-                <p>Number of items to choose</p>
+                
             </td>
         </tr>
     </tbody>
@@ -232,7 +233,7 @@ Uses int64 to handle large combinatorial values that overflow int32.</p>
           integer(kind=int64)
         </small>
       </h3>
-      <p>Binomial coefficient result</p>
+      
     <br>
     <div class="card">
       <div class="card-header">
@@ -246,360 +247,192 @@ Uses int64 to handle large combinatorial values that overflow int32.</p>
  -->
 <!-- Title: proc~~binomial~~CalledByGraph Pages: 1 -->
 <svg id="procbinomialCalledByGraph" width="641pt" height="144pt"
- viewBox="0.00 0.00 641.00 144.42" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~binomial~~CalledByGraph" class="graph" transform="scale(0.46 0.46) rotate(0) translate(4 308.49)">
+ viewBox="0.00 0.00 641.00 143.56" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~binomial~~CalledByGraph" class="graph" transform="scale(0.91 0.91) rotate(0) translate(4 153)">
 <title>proc~~binomial~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-308.49 1383,-308.49 1383,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-153 697,-153 697,4 -4,4"/>
 <!-- proc~binomial -->
 <g id="proc~~binomial~~CalledByGraph_node1" class="node">
 <title>proc~binomial</title>
-<polygon fill="none" stroke="black" points="1379,-181.94 1320,-181.94 1320,-157.94 1379,-157.94 1379,-181.94"/>
-<text text-anchor="middle" x="1349.5" y="-167.54" font-family="Helvetica,sans-Serif" font-size="10.50">binomial</text>
+<polygon fill="none" stroke="black" points="693,-86 634,-86 634,-62 693,-62 693,-86"/>
+<text text-anchor="middle" x="663.5" y="-71.6" font-family="Helvetica,sans-Serif" font-size="10.50">binomial</text>
 </g>
-<!-- proc~get_nfrags -->
+<!-- proc~class_size -->
 <g id="proc~~binomial~~CalledByGraph_node2" class="node">
-<title>proc~get_nfrags</title>
-<g id="a_proc~~binomial~~CalledByGraph_node2"><a xlink:href="../proc/get_nfrags.html" xlink:title="get_nfrags">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1284,-201.94 1215,-201.94 1215,-177.94 1284,-177.94 1284,-201.94"/>
-<text text-anchor="middle" x="1249.5" y="-187.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_nfrags</text>
+<title>proc~class_size</title>
+<g id="a_proc~~binomial~~CalledByGraph_node2"><a xlink:href="../proc/class_size.html" xlink:title="class_size">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="577.5,-149 513.5,-149 513.5,-125 577.5,-125 577.5,-149"/>
+<text text-anchor="middle" x="545.5" y="-134.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">class_size</text>
 </a>
 </g>
 </g>
-<!-- proc~get_nfrags&#45;&gt;proc~binomial -->
+<!-- proc~class_size&#45;&gt;proc~binomial -->
 <g id="proc~~binomial~~CalledByGraph_edge1" class="edge">
-<title>proc~get_nfrags&#45;&gt;proc~binomial</title>
-<path fill="none" stroke="#ff0000" d="M1284.23,-183.05C1292.49,-181.37 1301.4,-179.55 1309.88,-177.82"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1310.83,-181.2 1319.93,-175.77 1309.43,-174.34 1310.83,-181.2"/>
+<title>proc~class_size&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#ff0000" d="M577.71,-125.39C584.51,-122.55 591.58,-119.36 598,-116 611.49,-108.94 625.75,-99.84 637.42,-91.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="639.55,-94.71 645.79,-86.15 635.57,-88.95 639.55,-94.71"/>
 </g>
-<!-- proc~run_fragmented_calculation -->
+<!-- proc~describes_a_cas -->
 <g id="proc~~binomial~~CalledByGraph_node3" class="node">
-<title>proc~run_fragmented_calculation</title>
-<g id="a_proc~~binomial~~CalledByGraph_node3"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="999,-161.94 836,-161.94 836,-137.94 999,-137.94 999,-161.94"/>
-<text text-anchor="middle" x="917.5" y="-147.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+<title>proc~describes_a_cas</title>
+<g id="a_proc~~binomial~~CalledByGraph_node3"><a xlink:href="../proc/describes_a_cas.html" xlink:title="describes_a_cas">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="595,-107 496,-107 496,-83 595,-83 595,-107"/>
+<text text-anchor="middle" x="545.5" y="-92.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">describes_a_cas</text>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~binomial -->
+<!-- proc~describes_a_cas&#45;&gt;proc~binomial -->
 <g id="proc~~binomial~~CalledByGraph_edge2" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~binomial</title>
-<path fill="none" stroke="#ff0000" d="M999.13,-153.69C1091.65,-157.99 1239.59,-164.87 1309.49,-168.12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1309.47,-171.63 1319.62,-168.59 1309.8,-164.63 1309.47,-171.63"/>
+<title>proc~describes_a_cas&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#ff0000" d="M595.02,-86.22C604.59,-84.48 614.5,-82.69 623.69,-81.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="624.49,-84.44 633.7,-79.21 623.24,-77.55 624.49,-84.44"/>
 </g>
-<!-- proc~generate_mbe_term_list -->
-<g id="proc~~binomial~~CalledByGraph_node5" class="node">
-<title>proc~generate_mbe_term_list</title>
-<g id="a_proc~~binomial~~CalledByGraph_node5"><a xlink:href="../proc/generate_mbe_term_list.html" xlink:title="generate_mbe_term_list">
-<polygon fill="#d9534f" stroke="#d9534f" points="1178,-201.94 1036,-201.94 1036,-177.94 1178,-177.94 1178,-201.94"/>
-<text text-anchor="middle" x="1107" y="-187.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_mbe_term_list</text>
-</a>
-</g>
-</g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list -->
-<g id="proc~~binomial~~CalledByGraph_edge8" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list</title>
-<path fill="none" stroke="#00ff00" d="M974.76,-161.94C995.15,-166.29 1018.38,-171.24 1039.57,-175.76"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1038.95,-179.21 1049.46,-177.88 1040.41,-172.37 1038.95,-179.21"/>
-</g>
-<!-- proc~fraglist_create -->
+<!-- proc~strings_of_one_spin -->
 <g id="proc~~binomial~~CalledByGraph_node4" class="node">
-<title>proc~fraglist_create</title>
-<g id="a_proc~~binomial~~CalledByGraph_node4"><a xlink:href="../proc/fraglist_create.html" xlink:title="fraglist_t%fraglist_create">
-<polygon fill="#d9534f" stroke="#d9534f" points="1179,-243.94 1035,-243.94 1035,-219.94 1179,-219.94 1179,-243.94"/>
-<text text-anchor="middle" x="1107" y="-229.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_create</text>
+<title>proc~strings_of_one_spin</title>
+<g id="a_proc~~binomial~~CalledByGraph_node4"><a xlink:href="../proc/strings_of_one_spin.html" xlink:title="strings_of_one_spin">
+<polygon fill="#d9534f" stroke="#d9534f" points="451,-24 335,-24 335,0 451,0 451,-24"/>
+<text text-anchor="middle" x="393" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">strings_of_one_spin</text>
 </a>
 </g>
 </g>
-<!-- proc~fraglist_create&#45;&gt;proc~get_nfrags -->
+<!-- proc~strings_of_one_spin&#45;&gt;proc~binomial -->
 <g id="proc~~binomial~~CalledByGraph_edge3" class="edge">
-<title>proc~fraglist_create&#45;&gt;proc~get_nfrags</title>
-<path fill="none" stroke="#ff0000" d="M1148.94,-219.87C1158.78,-216.96 1169.27,-213.85 1179,-210.94 1187.51,-208.39 1196.6,-205.66 1205.31,-203.03"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1206.37,-206.37 1214.93,-200.12 1204.34,-199.67 1206.37,-206.37"/>
+<title>proc~strings_of_one_spin&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#ff0000" d="M451.41,-10.42C493.17,-10.98 550.49,-15.33 598,-32 613.22,-37.34 628.43,-46.98 640.25,-55.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="638.14,-58.48 648.21,-61.77 642.4,-52.92 638.14,-58.48"/>
 </g>
-<!-- proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags -->
+<!-- proc~within_class_rank -->
+<g id="proc~~binomial~~CalledByGraph_node5" class="node">
+<title>proc~within_class_rank</title>
+<g id="a_proc~~binomial~~CalledByGraph_node5"><a xlink:href="../proc/within_class_rank.html" xlink:title="within_class_rank">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="598,-65 493,-65 493,-41 598,-41 598,-65"/>
+<text text-anchor="middle" x="545.5" y="-50.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">within_class_rank</text>
+</a>
+</g>
+</g>
+<!-- proc~within_class_rank&#45;&gt;proc~binomial -->
 <g id="proc~~binomial~~CalledByGraph_edge4" class="edge">
-<title>proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags</title>
-<path fill="none" stroke="#ff0000" d="M1178.25,-189.94C1187.22,-189.94 1196.19,-189.94 1204.58,-189.94"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1204.85,-193.44 1214.85,-189.94 1204.85,-186.44 1204.85,-193.44"/>
+<title>proc~within_class_rank&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#ff0000" d="M598.05,-62.33C606.73,-63.9 615.61,-65.51 623.89,-67.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="623.53,-70.5 634,-68.84 624.78,-63.61 623.53,-70.5"/>
 </g>
-<!-- proc~run_calculation -->
+<!-- proc~class_string_tables -->
 <g id="proc~~binomial~~CalledByGraph_node6" class="node">
-<title>proc~run_calculation</title>
-<g id="a_proc~~binomial~~CalledByGraph_node6"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="798.5,-161.94 704.5,-161.94 704.5,-137.94 798.5,-137.94 798.5,-161.94"/>
-<text text-anchor="middle" x="751.5" y="-147.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+<title>proc~class_string_tables</title>
+<g id="a_proc~~binomial~~CalledByGraph_node6"><a xlink:href="../proc/class_string_tables.html" xlink:title="class_string_tables">
+<polygon fill="#d9534f" stroke="#d9534f" points="449,-149 337,-149 337,-125 449,-125 449,-149"/>
+<text text-anchor="middle" x="393" y="-134.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">class_string_tables</text>
 </a>
 </g>
 </g>
-<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<!-- proc~class_string_tables&#45;&gt;proc~class_size -->
 <g id="proc~~binomial~~CalledByGraph_edge5" class="edge">
-<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#00ffff" d="M798.62,-149.94C807.18,-149.94 816.38,-149.94 825.75,-149.94"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="825.94,-153.44 835.94,-149.94 825.94,-146.44 825.94,-153.44"/>
+<title>proc~class_string_tables&#45;&gt;proc~class_size</title>
+<path fill="none" stroke="#ff0000" d="M449.19,-137C466.94,-137 486.3,-137 502.91,-137"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="503.38,-140.5 513.38,-137 503.38,-133.5 503.38,-140.5"/>
 </g>
-<!-- proc~compute_energy_and_forces -->
+<!-- proc~ormas_string_address -->
 <g id="proc~~binomial~~CalledByGraph_node7" class="node">
-<title>proc~compute_energy_and_forces</title>
-<g id="a_proc~~binomial~~CalledByGraph_node7"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
-<polygon fill="#d9534f" stroke="#d9534f" points="667,-245.94 501,-245.94 501,-221.94 667,-221.94 667,-245.94"/>
-<text text-anchor="middle" x="584" y="-231.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+<title>proc~ormas_string_address</title>
+<g id="a_proc~~binomial~~CalledByGraph_node7"><a xlink:href="../proc/ormas_string_address.html" xlink:title="ormas_string_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="457,-66 329,-66 329,-42 457,-42 457,-66"/>
+<text text-anchor="middle" x="393" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_string_address</text>
 </a>
 </g>
 </g>
-<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
-<g id="proc~~binomial~~CalledByGraph_edge9" class="edge">
-<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#0000ff" d="M643.8,-221.91C651.78,-219.41 659.72,-216.44 667,-212.94 690.69,-201.54 714.29,-182.88 730.32,-168.83"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="732.87,-171.24 737.98,-161.96 728.2,-166.03 732.87,-171.24"/>
-</g>
-<!-- proc~freeze_term_list -->
-<g id="proc~~binomial~~CalledByGraph_node8" class="node">
-<title>proc~freeze_term_list</title>
-<g id="a_proc~~binomial~~CalledByGraph_node8"><a xlink:href="../proc/freeze_term_list.html" xlink:title="freeze_term_list">
-<polygon fill="#d9534f" stroke="#d9534f" points="800,-265.94 703,-265.94 703,-241.94 800,-241.94 800,-265.94"/>
-<text text-anchor="middle" x="751.5" y="-251.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">freeze_term_list</text>
-</a>
-</g>
-</g>
-<!-- proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list -->
+<!-- proc~ormas_string_address&#45;&gt;proc~within_class_rank -->
 <g id="proc~~binomial~~CalledByGraph_edge7" class="edge">
-<title>proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list</title>
-<path fill="none" stroke="#00ff00" d="M770.84,-241.76C787.19,-231.6 812.16,-217.71 836,-210.94 898.04,-193.33 971.1,-188.56 1025.57,-187.93"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1025.89,-191.43 1035.87,-187.85 1025.84,-184.43 1025.89,-191.43"/>
+<title>proc~ormas_string_address&#45;&gt;proc~within_class_rank</title>
+<path fill="none" stroke="#7f00ff" d="M457.39,-53.58C465.73,-53.52 474.27,-53.47 482.58,-53.41"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="482.6,-56.91 492.58,-53.34 482.56,-49.91 482.6,-56.91"/>
 </g>
-<!-- proc~mqc_fraglist_generate -->
-<g id="proc~~binomial~~CalledByGraph_node9" class="node">
-<title>proc~mqc_fraglist_generate</title>
-<g id="a_proc~~binomial~~CalledByGraph_node9"><a xlink:href="../proc/mqc_fraglist_generate.html" xlink:title="mqc_fraglist_generate">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="983.5,-243.94 851.5,-243.94 851.5,-219.94 983.5,-219.94 983.5,-243.94"/>
-<text text-anchor="middle" x="917.5" y="-229.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist_generate</text>
+<!-- proc~ormas_strings -->
+<g id="proc~~binomial~~CalledByGraph_node8" class="node">
+<title>proc~ormas_strings</title>
+<g id="a_proc~~binomial~~CalledByGraph_node8"><a xlink:href="../proc/ormas_strings.html" xlink:title="ormas_strings">
+<polygon fill="#d9534f" stroke="#d9534f" points="279,-24 192,-24 192,0 279,0 279,-24"/>
+<text text-anchor="middle" x="235.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_strings</text>
 </a>
 </g>
 </g>
-<!-- proc~mqc_fraglist_generate&#45;&gt;proc~fraglist_create -->
+<!-- proc~ormas_strings&#45;&gt;proc~strings_of_one_spin -->
 <g id="proc~~binomial~~CalledByGraph_edge6" class="edge">
-<title>proc~mqc_fraglist_generate&#45;&gt;proc~fraglist_create</title>
-<path fill="none" stroke="#ff0000" d="M983.55,-231.94C996.79,-231.94 1010.86,-231.94 1024.58,-231.94"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1024.98,-235.44 1034.98,-231.94 1024.98,-228.44 1024.98,-235.44"/>
+<title>proc~ormas_strings&#45;&gt;proc~strings_of_one_spin</title>
+<path fill="none" stroke="#00ffff" d="M279.4,-12C293.49,-12 309.5,-12 324.93,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="324.97,-15.5 334.97,-12 324.97,-8.5 324.97,-15.5"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~build_ormas_links -->
+<g id="proc~~binomial~~CalledByGraph_node9" class="node">
+<title>proc~build_ormas_links</title>
+<g id="a_proc~~binomial~~CalledByGraph_node9"><a xlink:href="../proc/build_ormas_links.html" xlink:title="build_ormas_links">
+<polygon fill="#d9534f" stroke="#d9534f" points="289,-66 182,-66 182,-42 289,-42 289,-66"/>
+<text text-anchor="middle" x="235.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_ormas_links</text>
+</a>
+</g>
+</g>
+<!-- proc~build_ormas_links&#45;&gt;proc~ormas_string_address -->
+<g id="proc~~binomial~~CalledByGraph_edge9" class="edge">
+<title>proc~build_ormas_links&#45;&gt;proc~ormas_string_address</title>
+<path fill="none" stroke="#00ff00" d="M289.15,-54C298.63,-54 308.67,-54 318.61,-54"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="318.91,-57.5 328.91,-54 318.91,-50.5 318.91,-57.5"/>
+</g>
+<!-- proc~build_ormas_space -->
 <g id="proc~~binomial~~CalledByGraph_node10" class="node">
-<title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~binomial~~CalledByGraph_node10"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="277,-39.94 90,-39.94 90,-15.94 277,-15.94 277,-39.94"/>
-<text text-anchor="middle" x="183.5" y="-25.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<title>proc~build_ormas_space</title>
+<g id="a_proc~~binomial~~CalledByGraph_node10"><a xlink:href="../proc/build_ormas_space.html" xlink:title="build_ormas_space">
+<polygon fill="#d9534f" stroke="#d9534f" points="293,-149 178,-149 178,-125 293,-125 293,-149"/>
+<text text-anchor="middle" x="235.5" y="-134.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_ormas_space</text>
 </a>
 </g>
 </g>
-<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~binomial~~CalledByGraph_edge10" class="edge">
-<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#0000ff" d="M243.59,-15.87C338.51,0.41 528.31,20.07 667,-48.94 701.37,-66.04 726.71,-104.48 739.99,-128.7"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="737.03,-130.59 744.79,-137.81 743.22,-127.33 737.03,-130.59"/>
+<!-- proc~build_ormas_space&#45;&gt;proc~class_string_tables -->
+<g id="proc~~binomial~~CalledByGraph_edge8" class="edge">
+<title>proc~build_ormas_space&#45;&gt;proc~class_string_tables</title>
+<path fill="none" stroke="#ff0000" d="M293.08,-137C303.98,-137 315.49,-137 326.64,-137"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="326.76,-140.5 336.76,-137 326.76,-133.5 326.76,-140.5"/>
 </g>
-<!-- proc~run_step -->
+<!-- proc~ormas_density_matrices -->
 <g id="proc~~binomial~~CalledByGraph_node11" class="node">
-<title>proc~run_step</title>
-<g id="a_proc~~binomial~~CalledByGraph_node11"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
-<polygon fill="#d9534f" stroke="#d9534f" points="613,-203.94 555,-203.94 555,-179.94 613,-179.94 613,-203.94"/>
-<text text-anchor="middle" x="584" y="-189.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+<title>proc~ormas_density_matrices</title>
+<g id="a_proc~~binomial~~CalledByGraph_node11"><a xlink:href="../proc/ormas_density_matrices.html" xlink:title="ormas_density_matrices">
+<polygon fill="#d9534f" stroke="#d9534f" points="142,-66 0,-66 0,-42 142,-42 142,-66"/>
+<text text-anchor="middle" x="71" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_density_matrices</text>
 </a>
 </g>
 </g>
-<!-- proc~run_step&#45;&gt;proc~run_calculation -->
-<g id="proc~~binomial~~CalledByGraph_edge11" class="edge">
-<title>proc~run_step&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#0000ff" d="M613.07,-184.81C635.33,-179.16 667.15,-171.09 694.56,-164.13"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="695.6,-167.48 704.43,-161.63 693.88,-160.7 695.6,-167.48"/>
+<!-- proc~ormas_density_matrices&#45;&gt;proc~ormas_strings -->
+<g id="proc~~binomial~~CalledByGraph_edge10" class="edge">
+<title>proc~ormas_density_matrices&#45;&gt;proc~ormas_strings</title>
+<path fill="none" stroke="#0000ff" d="M118.57,-41.96C138.39,-36.84 161.61,-30.84 182.04,-25.56"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="183.01,-28.92 191.82,-23.03 181.26,-22.14 183.01,-28.92"/>
 </g>
-<!-- proc~session_run -->
-<g id="proc~~binomial~~CalledByGraph_node12" class="node">
-<title>proc~session_run</title>
-<g id="a_proc~~binomial~~CalledByGraph_node12"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
-<polygon fill="#d9534f" stroke="#d9534f" points="664.5,-161.94 503.5,-161.94 503.5,-137.94 664.5,-137.94 664.5,-161.94"/>
-<text text-anchor="middle" x="584" y="-147.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
-</a>
-</g>
-</g>
-<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<!-- proc~ormas_density_matrices&#45;&gt;proc~build_ormas_links -->
 <g id="proc~~binomial~~CalledByGraph_edge12" class="edge">
-<title>proc~session_run&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#0000ff" d="M664.84,-149.94C674.8,-149.94 684.81,-149.94 694.3,-149.94"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="694.36,-153.44 704.36,-149.94 694.36,-146.44 694.36,-153.44"/>
+<title>proc~ormas_density_matrices&#45;&gt;proc~build_ormas_links</title>
+<path fill="none" stroke="#ff0000" d="M142.33,-54C152.03,-54 161.94,-54 171.5,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="171.7,-57.5 181.7,-54 171.7,-50.5 171.7,-57.5"/>
 </g>
-<!-- proc~worker_run -->
-<g id="proc~~binomial~~CalledByGraph_node13" class="node">
-<title>proc~worker_run</title>
-<g id="a_proc~~binomial~~CalledByGraph_node13"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
-<polygon fill="#d9534f" stroke="#d9534f" points="620.5,-81.94 547.5,-81.94 547.5,-57.94 620.5,-57.94 620.5,-81.94"/>
-<text text-anchor="middle" x="584" y="-67.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+<!-- proc~ormas_solve -->
+<g id="proc~~binomial~~CalledByGraph_node12" class="node">
+<title>proc~ormas_solve</title>
+<g id="a_proc~~binomial~~CalledByGraph_node12"><a xlink:href="../proc/ormas_solve.html" xlink:title="ormas_solve">
+<polygon fill="#d9534f" stroke="#d9534f" points="110.5,-24 31.5,-24 31.5,0 110.5,0 110.5,-24"/>
+<text text-anchor="middle" x="71" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_solve</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<!-- proc~ormas_solve&#45;&gt;proc~ormas_strings -->
+<g id="proc~~binomial~~CalledByGraph_edge11" class="edge">
+<title>proc~ormas_solve&#45;&gt;proc~ormas_strings</title>
+<path fill="none" stroke="#0000ff" d="M110.51,-12C131.85,-12 158.68,-12 181.93,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="181.98,-15.5 191.98,-12 181.98,-8.5 181.98,-15.5"/>
+</g>
+<!-- proc~ormas_solve&#45;&gt;proc~build_ormas_links -->
 <g id="proc~~binomial~~CalledByGraph_edge13" class="edge">
-<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#0000ff" d="M620.9,-79.06C635.54,-83.36 652.41,-89.06 667,-95.94 688.08,-105.88 710.15,-120.35 726.3,-131.81"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="724.46,-134.8 734.62,-137.82 728.56,-129.13 724.46,-134.8"/>
-</g>
-<!-- program~main -->
-<g id="proc~~binomial~~CalledByGraph_node14" class="node">
-<title>program~main</title>
-<g id="a_proc~~binomial~~CalledByGraph_node14"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-121.94 0,-121.94 0,-97.94 54,-97.94 54,-121.94"/>
-<text text-anchor="middle" x="27" y="-107.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
-</a>
-</g>
-</g>
-<!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~binomial~~CalledByGraph_edge14" class="edge">
-<title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#0000ff" d="M54.04,-108.7C141.26,-105 430.92,-96.14 667,-128.94 677.88,-130.45 689.4,-132.82 700.29,-135.44"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="699.53,-138.86 710.08,-137.9 701.23,-132.07 699.53,-138.86"/>
-</g>
-<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~binomial~~CalledByGraph_edge16" class="edge">
-<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#00ff3f" d="M37.05,-97.58C48,-83.57 67.74,-61.11 90,-48.94 93.66,-46.94 97.5,-45.13 101.44,-43.49"/>
-<polygon fill="#00ff3f" stroke="#00ff3f" points="102.69,-46.76 110.82,-39.97 100.23,-40.21 102.69,-46.76"/>
-</g>
-<!-- proc~run_geometry_optimization -->
-<g id="proc~~binomial~~CalledByGraph_node17" class="node">
-<title>proc~run_geometry_optimization</title>
-<g id="a_proc~~binomial~~CalledByGraph_node17"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
-<polygon fill="#d9534f" stroke="#d9534f" points="263,-266.94 104,-266.94 104,-242.94 263,-242.94 263,-266.94"/>
-<text text-anchor="middle" x="183.5" y="-252.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
-</a>
-</g>
-</g>
-<!-- program~main&#45;&gt;proc~run_geometry_optimization -->
-<g id="proc~~binomial~~CalledByGraph_edge23" class="edge">
-<title>program~main&#45;&gt;proc~run_geometry_optimization</title>
-<path fill="none" stroke="#00ff00" d="M32.46,-122.02C40.79,-143.06 60.54,-186.7 90,-212.94 102.32,-223.91 117.98,-232.47 132.9,-238.91"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="131.97,-242.31 142.55,-242.85 134.61,-235.83 131.97,-242.31"/>
-</g>
-<!-- proc~evaluate_energy_gradient -->
-<g id="proc~~binomial~~CalledByGraph_node15" class="node">
-<title>proc~evaluate_energy_gradient</title>
-<g id="a_proc~~binomial~~CalledByGraph_node15"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="465,-203.94 313,-203.94 313,-179.94 465,-179.94 465,-203.94"/>
-<text text-anchor="middle" x="389" y="-189.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
-</a>
-</g>
-</g>
-<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
-<g id="proc~~binomial~~CalledByGraph_edge17" class="edge">
-<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ffff" d="M465.17,-191.94C492.4,-191.94 522.01,-191.94 544.74,-191.94"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="544.98,-195.44 554.98,-191.94 544.98,-188.44 544.98,-195.44"/>
-</g>
-<!-- proc~mqc_run -->
-<g id="proc~~binomial~~CalledByGraph_node16" class="node">
-<title>proc~mqc_run</title>
-<g id="a_proc~~binomial~~CalledByGraph_node16"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="418.5,-161.94 359.5,-161.94 359.5,-137.94 418.5,-137.94 418.5,-161.94"/>
-<text text-anchor="middle" x="389" y="-147.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
-</a>
-</g>
-</g>
-<!-- proc~mqc_run&#45;&gt;proc~session_run -->
-<g id="proc~~binomial~~CalledByGraph_edge20" class="edge">
-<title>proc~mqc_run&#45;&gt;proc~session_run</title>
-<path fill="none" stroke="#003fff" d="M418.89,-149.94C438.76,-149.94 466.29,-149.94 493.14,-149.94"/>
-<polygon fill="#003fff" stroke="#003fff" points="493.38,-153.44 503.38,-149.94 493.38,-146.44 493.38,-153.44"/>
-</g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list -->
-<g id="proc~~binomial~~CalledByGraph_edge15" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list</title>
-<path fill="none" stroke="#ffbf00" d="M212.69,-267.02C238.31,-277.3 277.42,-291.27 313,-296.94 449.71,-318.71 612.31,-288.05 695.5,-268.32"/>
-<polygon fill="#ffbf00" stroke="#ffbf00" points="696.34,-271.72 705.24,-265.97 694.7,-264.91 696.34,-271.72"/>
-</g>
-<!-- proc~worker_loop -->
-<g id="proc~~binomial~~CalledByGraph_node18" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~binomial~~CalledByGraph_node18"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="428,-245.94 350,-245.94 350,-221.94 428,-221.94 428,-245.94"/>
-<text text-anchor="middle" x="389" y="-231.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
-<g id="proc~~binomial~~CalledByGraph_edge24" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ffff" d="M263.18,-246.82C288.98,-244.16 316.87,-241.28 339.73,-238.92"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="340.26,-242.38 349.85,-237.87 339.54,-235.42 340.26,-242.38"/>
-</g>
-<!-- proc~write_final_single_point -->
-<g id="proc~~binomial~~CalledByGraph_node20" class="node">
-<title>proc~write_final_single_point</title>
-<g id="a_proc~~binomial~~CalledByGraph_node20"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
-<polygon fill="#d9534f" stroke="#d9534f" points="457,-287.94 321,-287.94 321,-263.94 457,-263.94 457,-287.94"/>
-<text text-anchor="middle" x="389" y="-273.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
-</a>
-</g>
-</g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
-<g id="proc~~binomial~~CalledByGraph_edge26" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point</title>
-<path fill="none" stroke="#ff00ff" d="M263.18,-263.06C278.78,-264.67 295.14,-266.35 310.69,-267.96"/>
-<polygon fill="#ff00ff" stroke="#ff00ff" points="310.47,-271.46 320.77,-269 311.19,-264.49 310.47,-271.46"/>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
-<g id="proc~~binomial~~CalledByGraph_edge18" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ffff" d="M428.13,-225.64C461.98,-218.27 511.18,-207.57 544.99,-200.21"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="545.93,-203.59 554.96,-198.04 544.44,-196.75 545.93,-203.59"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~binomial~~CalledByGraph_node19" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~binomial~~CalledByGraph_node19"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="428,-81.94 350,-81.94 350,-57.94 428,-57.94 428,-81.94"/>
-<text text-anchor="middle" x="389" y="-67.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
-<g id="proc~~binomial~~CalledByGraph_edge21" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#7f00ff" d="M428.13,-69.94C459.36,-69.94 503.64,-69.94 536.86,-69.94"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="537.23,-73.44 547.23,-69.94 537.23,-66.44 537.23,-73.44"/>
-</g>
-<!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
-<g id="proc~~binomial~~CalledByGraph_edge19" class="edge">
-<title>proc~write_final_single_point&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ffff" d="M447.24,-263.79C453.47,-261.35 459.53,-258.43 465,-254.94 485.73,-241.72 480.12,-225.92 501,-212.94 514.05,-204.82 530.13,-199.83 544.58,-196.77"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="545.57,-200.14 554.75,-194.86 544.28,-193.26 545.57,-200.14"/>
-</g>
-<!-- proc~probe_gradient -->
-<g id="proc~~binomial~~CalledByGraph_node21" class="node">
-<title>proc~probe_gradient</title>
-<g id="a_proc~~binomial~~CalledByGraph_node21"><a xlink:href="../proc/probe_gradient.html" xlink:title="probe_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="230.5,-203.94 136.5,-203.94 136.5,-179.94 230.5,-179.94 230.5,-203.94"/>
-<text text-anchor="middle" x="183.5" y="-189.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">probe_gradient</text>
-</a>
-</g>
-</g>
-<!-- proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient -->
-<g id="proc~~binomial~~CalledByGraph_edge22" class="edge">
-<title>proc~probe_gradient&#45;&gt;proc~evaluate_energy_gradient</title>
-<path fill="none" stroke="#ff0000" d="M230.68,-191.94C252.01,-191.94 278.05,-191.94 302.75,-191.94"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.87,-195.44 312.87,-191.94 302.87,-188.44 302.87,-195.44"/>
-</g>
-<!-- proc~session_begin -->
-<g id="proc~~binomial~~CalledByGraph_node22" class="node">
-<title>proc~session_begin</title>
-<g id="a_proc~~binomial~~CalledByGraph_node22"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
-<polygon fill="#d9534f" stroke="#d9534f" points="270,-81.94 97,-81.94 97,-57.94 270,-57.94 270,-81.94"/>
-<text text-anchor="middle" x="183.5" y="-67.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
-</a>
-</g>
-</g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~binomial~~CalledByGraph_edge25" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0000ff" d="M270.21,-69.94C294,-69.94 318.99,-69.94 339.8,-69.94"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="339.96,-73.44 349.96,-69.94 339.96,-66.44 339.96,-73.44"/>
+<title>proc~ormas_solve&#45;&gt;proc~build_ormas_links</title>
+<path fill="none" stroke="#ff0000" d="M110.51,-21.95C130.7,-27.17 155.82,-33.66 178.16,-39.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="177.31,-42.83 187.87,-41.95 179.06,-36.06 177.31,-42.83"/>
 </g>
 </g>
 </svg>
@@ -705,8 +538,8 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~23"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-i~94"></span>
+              integer,
             </td>
               <td>private</td>
             <td>
@@ -717,7 +550,24 @@ large graphs.</div>
                 <td></td>
                 <td></td>
             <td>
-                <p>Loop counter</p>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kk"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kk</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
             </td>
         </tr>
     </tbody>
@@ -736,27 +586,24 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">binomial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">binomial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! `C(n, k)`, exactly, in 64-bit integers</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Calculates "n choose r" using iterative algorithm to avoid</span>
-<span class="w">      </span><span class="c">!! factorial overflow for large numbers.</span>
-<span class="w">      </span><span class="c">!! Uses int64 to handle large combinatorial values that overflow int32.</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w">  </span><span class="c">!! Total number of items</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">r</span><span class="w">  </span><span class="c">!! Number of items to choose</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c</span><span class="w">              </span><span class="c">!! Binomial coefficient result</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="w">              </span><span class="c">!! Loop counter</span>
+<span class="w">      </span><span class="c">!! One factor at a time, multiplying before dividing, so the running</span>
+<span class="w">      </span><span class="c">!! value is always the binomial coefficient of a smaller problem and</span>
+<span class="w">      </span><span class="c">!! never exceeds the answer.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span>
-<span class="w">      </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
-<span class="w">      </span><span class="k">else</span>
-<span class="k">         </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">r</span>
-<span class="w">            </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span><span class="o">/</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span>
-<span class="w">         </span><span class="k">end do</span>
-<span class="k">      end if</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">kk</span>
+
+<span class="w">      </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      </span><span class="n">kk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">      </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">kk</span>
+<span class="w">         </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">kk</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span><span class="o">/</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
 <span class="k">   end function </span><span class="n">binomial</span>
 </pre></div>
 
@@ -781,7 +628,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-19 07:28 +0000             </p>
+ on 2026-08-19 08:14 +0000             </p>
           </div>
         </div>
         <br>
