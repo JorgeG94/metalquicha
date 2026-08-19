@@ -190,6 +190,8 @@ contains
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &
                          config%bonding_threshold)
+      call optional_logical(json, "properties.bonding_analysis.energy_decomposition", &
+                            config%bonding_energy)
       call optional_logical(json, "properties.bonding_analysis.no_sharing", &
                             config%bonding_no_sharing)
 

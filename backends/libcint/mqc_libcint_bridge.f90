@@ -785,6 +785,7 @@ contains
          call run_quao_analysis(mol, fragment%element_numbers, symbols, &
                                 fragment%coordinates, scf%orbitals, fragment%nelec, &
                                 analysis_error, threshold=settings%bonding_threshold, &
+                                energy_decomposition=settings%bonding_energy, &
                                 no_sharing=settings%bonding_no_sharing)
          if (analysis_error%has_error()) then
             call logger%warning("  the bonding analysis could not run: "// &
@@ -1741,6 +1742,7 @@ contains
                                                                       space(1) + space(2)), &
                                       active_dm1=casscf%dm1, active_dm2=casscf%dm2, &
                                       reference_energy=casscf%energy, &
+                                      energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing)
             else
                call run_quao_analysis(mol, fragment%element_numbers, symbols, &
@@ -1752,6 +1754,7 @@ contains
                                                                 space(1) + space(2)), &
                                       active_dm1=casci%dm1, active_dm2=casci%dm2, &
                                       reference_energy=casci%energy, &
+                                      energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing)
             end if
          end if

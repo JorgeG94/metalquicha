@@ -84,7 +84,16 @@ not say what the molecule's energy is made of, and the two questions have
 different answers: the kinetic bond order carries an empirical factor of a tenth
 to reach a familiar scale, so it is a gauge rather than an energy.
 
-Four further tables resolve the actual energy. Every term in
+Four further tables resolve the actual energy. They are opt-in::
+
+    "properties": {
+      "bonding_analysis": {"type": "gms_quao", "energy_decomposition": true}
+    }
+
+and that is a cost decision rather than a taste one. The two-electron term needs
+the dense ``n_ao**4`` integral array, where the bonding tables above need only
+one-electron integrals -- at a hundred basis functions that is eight hundred
+megabytes for an analysis a deck may not have asked for. Every term in
 
 .. math::
 
@@ -268,7 +277,8 @@ molecular correlation is included and the atomic correlation is not.
 The no-sharing wave function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Opt-in, because it costs a full valence CI::
+Opt-in, because it costs a full valence CI on top of the decomposition, which
+it implies::
 
     "properties": {
       "bonding_analysis": {"type": "gms_quao", "no_sharing": true}

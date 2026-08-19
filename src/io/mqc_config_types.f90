@@ -118,6 +118,12 @@ module mqc_config_types
       character(len=:), allocatable :: bonding_analysis
          !! From `properties.bonding_analysis.type`. Absent or "none" means no
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
+      logical :: bonding_energy = .false.
+         !! From `properties.bonding_analysis.energy_decomposition`. Off by
+         !! default because the two-electron term needs the dense `n_ao^4`
+         !! integral array, and the bonding tables on their own need only
+         !! one-electron integrals. Asking for the decomposition is asking for
+         !! that memory.
       logical :: bonding_no_sharing = .false.
          !! From `properties.bonding_analysis.no_sharing`. Asks for the
          !! no-sharing wave function, which needs a full valence CI over the

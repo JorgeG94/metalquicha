@@ -234,6 +234,8 @@ contains
       end if
       driver_config%method_config%properties%bonding_threshold = &
          mqc_config%bonding_threshold
+      driver_config%method_config%properties%bonding_energy = &
+         mqc_config%bonding_energy
       driver_config%method_config%properties%bonding_no_sharing = &
          mqc_config%bonding_no_sharing
 

@@ -94,7 +94,7 @@ contains
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
                                 orbitals, n_electrons, error, verbose, threshold, &
                                 occupations, active_orbitals, active_dm1, active_dm2, &
-                                reference_energy, no_sharing)
+                                reference_energy, energy_decomposition, no_sharing)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -139,6 +139,13 @@ contains
          !! determinant expression, so it is the energy of the wave function
          !! only when the wave function is a determinant. Passing the CI energy
          !! is what keeps the correlated case checked rather than trusted.
+      logical, intent(in), optional :: energy_decomposition
+         !! Resolve the energy onto atoms and atom pairs. Off by default, and
+         !! that is a cost decision rather than a taste one: the two-electron
+         !! term needs the dense `n_ao^4` integral array, where the bonding
+         !! tables above need only one-electron integrals. At a hundred basis
+         !! functions that is eight hundred megabytes for an analysis a caller
+         !! may not have asked for.
       logical, intent(in), optional :: no_sharing
          !! Run the no-sharing analysis, which solves a full valence CI over the
          !! quasi-atomic orbitals and projects it. Off by default because that
@@ -161,7 +168,7 @@ contains
       real(dp), allocatable :: rep_inter(:, :), tot_intra(:), tot_inter(:, :)
       real(dp), allocatable :: s_ao(:, :), u_active(:, :)
       real(dp), allocatable :: cumulant(:, :, :, :), cumulant_quao(:, :, :, :)
-      logical :: correlated
+      logical :: correlated, want_energy
       real(dp) :: span_deficit, formation
       real(dp), allocatable :: free_energy(:), adaptation(:)
       real(dp), allocatable :: nuc_coulomb(:, :), two_coulomb(:, :), classical(:, :)
@@ -300,6 +307,16 @@ contains
          ! pair. Unscaled, so unlike the kinetic bond orders above these are
          ! energies and they add up to one -- the valence kinetic energy, since
          ! the core is not in this basis.
+         want_energy = .false.
+         if (present(energy_decomposition)) want_energy = energy_decomposition
+         if (present(no_sharing)) then
+            ! Asking for the no-sharing analysis is asking for the decomposition
+            ! it is part of; refusing on a technicality would be unhelpful.
+            if (no_sharing) want_energy = .true.
+         end if
+      end if
+
+      if (loud .and. want_energy) then
          ! The decomposition needs the core, which the bonding analysis above
          ! does not: it carries most of the kinetic energy and most of the
          ! nuclear attraction, and without it the totals below would sum to a
@@ -455,6 +472,14 @@ contains
          ! table of large numbers into the energy of formation, which is the
          ! quantity chemistry is about: what it costs to prepare each atom in
          ! the shape the molecule needs, against what the pairs give back.
+         call free_atom_energies(mol, free_energy, error)
+         if (error%has_error()) return
+         allocate (adaptation(natm))
+         adaptation = tot_intra - free_energy
+         formation = sum(adaptation) + 0.5_dp*sum(tot_inter)
+         call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
+                              element_symbols, formation)
+
          ! What the molecule would be if the atoms shared electrons without ever
          ! lending them. Last, because it is a separate calculation rather than
          ! a rearrangement of this one.
@@ -465,14 +490,6 @@ contains
                if (error%has_error()) return
             end if
          end if
-
-         call free_atom_energies(mol, free_energy, error)
-         if (error%has_error()) return
-         allocate (adaptation(natm))
-         adaptation = tot_intra - free_energy
-         formation = sum(adaptation) + 0.5_dp*sum(tot_inter)
-         call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
-                              element_symbols, formation)
 
          ! Subtracting a constant from every atomic term cannot change what the
          ! pieces sum to, so this must equal the total less the free atoms. It

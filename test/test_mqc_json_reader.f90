@@ -1194,6 +1194,21 @@ contains
       call check(error, config%bonding_no_sharing .eqv. .false., &
                  "the no-sharing analysis should be off unless asked for")
       if (allocated(error)) return
+      call check(error, config%bonding_energy .eqv. .false., &
+                 "the energy decomposition should be off unless asked for")
+      if (allocated(error)) return
+
+      ! Opt-in because it needs the dense two-electron integrals, which the
+      ! bonding tables on their own do not.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "energy_decomposition": true}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_energy, &
+                 "the deck asked for the energy decomposition")
+      if (allocated(error)) return
 
       ! The no-sharing analysis is opt-in because it costs a full valence CI,
       ! so the deck asking for it and the deck not mentioning it must differ.
