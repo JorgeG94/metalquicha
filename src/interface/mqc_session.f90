@@ -33,6 +33,9 @@ module mqc_session
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_text
    use mqc_config_adapter, only: driver_config_t, config_to_driver, get_logger_level
+   use mqc_calc_types, only: CALC_TYPE_OPTIMIZE
+   use mqc_method_factory, only: method_backend_built
+   use mqc_method_types, only: method_type_to_string
    use mqc_driver, only: run_calculation
    use mqc_result_types, only: calculation_result_t
    use mqc_io_helpers, only: set_output_json_filename
@@ -231,6 +234,14 @@ contains
       ! asked for. Both sides must pass the same count, and they do because
       ! both take it from the geometry they hold.
       call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers)
+      ! Effective fragment potentials ride with the geometry rather than with
+      ! the settings, because the settings document has no molecules block for
+      ! them to live in -- see `system_geometry_t%fragment_potentials`. Copied
+      ! after `config_to_driver`, which fills that field from a deck's
+      ! molecules and leaves it unallocated when, as here, there are none.
+      if (allocated(sys_geom%fragment_potentials)) then
+         driver%fragment_potentials = sys_geom%fragment_potentials
+      end if
       ! `main` sets the verbosity and a session never runs `main`, so without
       ! this the level in the settings is read, validated, and ignored -- and
       ! the default is loud enough that a script running a few thousand
@@ -245,6 +256,35 @@ contains
       ! bad list comes back as an error the caller can act on, and the workers
       ! never learn anything was attempted. The driver's copy stays as the
       ! backstop for every other entry path.
+      ! A method whose backend this build does not carry. The semi-empirical
+      ! ones are the case: without tblite their method type reaches a factory
+      ! that has no branch for it and stops the process -- which from a deck is
+      ! an exit with a clear message, and from here would kill the caller's
+      ! interpreter and every rank with it. Asked here rather than in the
+      ! reader so that parsing a deck means the same thing on every build.
+      if (.not. method_backend_built(driver%method_config%method_type)) then
+         call error%set(ERROR_VALIDATION, "method '"// &
+                        method_type_to_string(driver%method_config%method_type)// &
+                        "' needs the tblite library, and this build does not have "// &
+                        "it. Reconfigure with -DMQC_ENABLE_TBLITE=ON.")
+         return
+      end if
+
+      ! Refused here, where there is still a caller to tell. `run_calculation`
+      ! also refuses it, but by aborting the communicator -- right for `main`,
+      ! which has nobody to return to, and fatal for a driven run: it takes the
+      ! interpreter and every rank with it instead of raising something a script
+      ! can catch.
+      if (driver%calc_type == CALC_TYPE_OPTIMIZE) then
+         call error%set(ERROR_VALIDATION, "driver 'optimize' is not available "// &
+                        "through a session or the C API. The optimizer drives "// &
+                        "run_calculation rather than being driven by it, so it "// &
+                        "works from an input deck for a single molecule only. "// &
+                        "Ask for 'energy' or 'gradient' here, or run the deck "// &
+                        "through the mqc executable.")
+         return
+      end if
+
       call validate_system(sys_geom,.not. config%unchecked_input, error, &
                            check_bonds=allocated(sys_geom%bonds))
       if (error%has_error()) return

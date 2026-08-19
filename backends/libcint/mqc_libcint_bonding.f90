@@ -94,7 +94,9 @@ contains
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
                                 orbitals, n_electrons, error, verbose, threshold, &
                                 occupations, active_orbitals, active_dm1, active_dm2, &
-                                reference_energy, energy_decomposition, no_sharing)
+                                reference_energy, energy_decomposition, no_sharing, &
+                                atom_energy, free_atom_energy, pair_energy, &
+                                pair_classical, formation_energy)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -152,6 +154,20 @@ contains
          !! CI is factorial in the valence shell -- ethane is eleven million
          !! determinants and benzene is out of reach by nine orders of
          !! magnitude.
+      real(dp), intent(out), optional, allocatable :: atom_energy(:)
+      real(dp), intent(out), optional, allocatable :: free_atom_energy(:)
+      real(dp), intent(out), optional, allocatable :: pair_energy(:, :)
+      real(dp), intent(out), optional, allocatable :: pair_classical(:, :)
+      real(dp), intent(out), optional :: formation_energy
+         !! The decomposition, for a caller that wants the numbers rather than
+         !! the tables. Left unallocated when the energy decomposition did not
+         !! run, which is the only state that distinguishes "not asked for"
+         !! from "came out zero" -- and the tables are printed either way,
+         !! because a deck asking for an analysis is asking for its output.
+         !!
+         !! `pair_energy` and `pair_classical` carry the full pair energy in
+         !! both (A,B) and (B,A), as everything in the decomposition does, so
+         !! the total is `sum(atom_energy) + 0.5*sum(pair_energy)`.
 
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
@@ -180,6 +196,11 @@ contains
       logical :: loud
 
       if (error%has_error()) return
+      ! An `intent(out)` scalar is undefined until it is written, and this one
+      ! is written only where the decomposition runs. Defined here so a caller
+      ! that reads it unconditionally reads a zero rather than a stack value;
+      ! the allocatables beside it say whether that zero means anything.
+      if (present(formation_energy)) formation_energy = 0.0_dp
       loud = .true.
       if (present(verbose)) loud = verbose
       natm = size(atomic_numbers)
@@ -479,6 +500,16 @@ contains
          formation = sum(adaptation) + 0.5_dp*sum(tot_inter)
          call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
                               element_symbols, formation)
+
+         ! Handed out here rather than at the end of the routine: everything
+         ! below is a check or a separate calculation, and a caller that asked
+         ! for the decomposition should get it even if the no-sharing CI it
+         ! also asked for turns out to be unaffordable.
+         if (present(atom_energy)) atom_energy = tot_intra
+         if (present(free_atom_energy)) free_atom_energy = free_energy
+         if (present(pair_energy)) pair_energy = tot_inter
+         if (present(pair_classical)) pair_classical = classical
+         if (present(formation_energy)) formation_energy = formation
 
          ! What the molecule would be if the atoms shared electrons without ever
          ! lending them. Last, because it is a separate calculation rather than

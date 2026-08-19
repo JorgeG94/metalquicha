@@ -51,13 +51,17 @@ jobs:
             tblite: false
             legacy_mpi: false
             libcint: true
-          # The Python interface needs both backends in one library: the
-          # examples cover standalone and fragmented, xTB and Hartree-Fock, and
-          # three of those four paths can break without the others noticing.
+          # The Python interface needs every backend in one library. backends.py
+          # covers standalone and fragmented, xTB and Hartree-Fock -- three of
+          # those four paths can break without the others noticing -- and
+          # methods.py covers what each backend implements, which is where
+          # libxc comes in: without it the Kohn-Sham cases are refused by the
+          # build rather than run, and a skip is not a check.
           - name: "python interface"
             tblite: true
             legacy_mpi: false
             libcint: true
+            libxc: true
             python: true
     steps:
       - uses: actions/checkout@v4
@@ -111,6 +115,11 @@ jobs:
           cmake --build build --target mqc_shared
           MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
             python3 python/examples/backends.py
+          # Separate script, separate failure: backends.py breaking means the
+          # plumbing moved, methods.py breaking means a method a deck can run is
+          # no longer reachable from Python, or is reachable and wrong.
+          MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
+            python3 python/examples/methods.py
 
       # Needs libxc as well as libcint: twelve of these cases name a functional
       # and are refused outright without it, which is how this step first went

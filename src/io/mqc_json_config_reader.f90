@@ -39,10 +39,12 @@ module mqc_json_config_reader
                                  MAX_ORBITAL_LABEL_LEN
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
-   use mqc_calc_types, only: calc_type_from_string
+   use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_UNKNOWN
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
                                method_wants_density_fitting, method_type_to_string, &
-                               method_is_casci
+                               method_is_casci, METHOD_TYPE_UNKNOWN, &
+                               METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, &
+                               METHOD_TYPE_CCSD_T_F12
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, BACKEND_CUEST
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
@@ -168,6 +170,15 @@ contains
       call require_string(json, "model.method", text, error)
       if (error%has_error()) return
       config%method = parse_method_string(text)
+      ! Refused here rather than by the factory, which is the only other place
+      ! that looks at the number and can do nothing but `ERROR STOP` -- it has
+      ! no error to set and no caller to hand it to. That is survivable for a
+      ! deck, where the process was going to end anyway, and not for a driven
+      ! run: a misspelt method took the caller's interpreter down with it, and
+      ! on a Python session every other rank with it. The spelling still exists
+      ! here, so this is also the only place that can quote it back.
+      call check_method_supported(text, config%method, error)
+      if (error%has_error()) return
       ! "scs-mp2" and "sos-mp2" parse to the same method type as "mp2", so the
       ! spin scaling has to be picked up here, while the spelling still exists.
       ! Left to the type alone they would run plain MP2 and report it as SCS.
@@ -199,6 +210,11 @@ contains
       call require_string(json, "driver", text, error)
       if (error%has_error()) return
       config%calc_type = calc_type_from_string(text)
+      if (config%calc_type == CALC_TYPE_UNKNOWN) then
+         call error%set(ERROR_VALIDATION, "unknown driver '"//trim(text)// &
+                        "'. Accepted: energy, gradient, hessian, optimize, makefp")
+         return
+      end if
 
       ! ---- system ----------------------------------------------------------
       ! Written straight into the config fields, which already hold the
@@ -533,6 +549,45 @@ contains
          name = ""
       end select
    end function nmer_name
+
+   subroutine check_method_supported(spelling, method_type, error)
+      !! Refuse a method name nothing downstream can run
+      !!
+      !! Two failures, and they read the same to whoever typed the name. A
+      !! spelling the parser does not know at all comes back UNKNOWN; a
+      !! spelling it knows and no backend implements -- the F12 family, which
+      !! has a method type and no code behind it -- parses cleanly and then
+      !! stops in the factory. Both used to end in `ERROR STOP` from a routine
+      !! with no error to set, which takes a driven run's caller down with it.
+      character(len=*), intent(in) :: spelling
+      integer, intent(in) :: method_type
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: known = &
+                                     "gfn1, gfn2, hf, dft, mp2 (also scs-, sos-, ri-, df-), ccsd, ccsd(t) "// &
+                                     "(also ri-, df-), casscf, casci, mcscf, sapt0, efp2"
+
+      if (method_type == METHOD_TYPE_UNKNOWN) then
+         call error%set(ERROR_VALIDATION, "unknown model.method '"//trim(spelling)// &
+                        "'. Accepted: "//known)
+         return
+      end if
+
+      select case (method_type)
+      case (METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12)
+         call error%set(ERROR_VALIDATION, "model.method '"//trim(spelling)// &
+                        "' is recognised but not implemented: there is no F12 "// &
+                        "correlation factor in this program. Accepted: "//known)
+         return
+      case default
+         ! Every other type is implemented somewhere. Whether *this build* has
+         ! the backend for it is a different question and deliberately not
+         ! asked here: reading a deck must mean the same thing whatever was
+         ! linked, or a parse test starts depending on the CMake options. The
+         ! entry points that are about to run something ask it instead --
+         ! `mqc_session`, for the callers that cannot survive an `ERROR STOP`.
+      end select
+   end subroutine check_method_supported
 
    subroutine read_guess_steps(json, config, error)
       !! The basis-set-projection ladder, one entry per preliminary SCF

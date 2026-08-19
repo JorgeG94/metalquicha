@@ -292,6 +292,25 @@ contains
                json_data%gradient = result%gradient
                json_data%has_gradient = .true.
             end if
+
+            ! The energy decomposition, when `properties.bonding_analysis`
+            ! asked for one. Carried whole rather than summarised: a caller
+            ! screening atoms or pairs by contribution needs the terms, and
+            ! there is no norm of this the way there is of a gradient.
+            if (result%has_ieda) then
+               json_data%ieda_atom = result%ieda_atom
+               if (allocated(result%ieda_free_atom)) then
+                  json_data%ieda_free_atom = result%ieda_free_atom
+               end if
+               if (allocated(result%ieda_pair)) then
+                  json_data%ieda_pair = result%ieda_pair
+               end if
+               if (allocated(result%ieda_classical)) then
+                  json_data%ieda_classical = result%ieda_classical
+               end if
+               json_data%ieda_formation = result%ieda_formation
+               json_data%has_ieda = .true.
+            end if
          end if
       end block
       call result%destroy()

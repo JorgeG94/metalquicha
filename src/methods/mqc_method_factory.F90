@@ -22,6 +22,7 @@ module mqc_method_factory
 
    public :: method_factory_t
    public :: create_method  !! Convenience function
+   public :: method_backend_built  !! Whether this build can run a method at all
 
    type :: method_factory_t
       !! Factory for creating quantum chemistry method instances
@@ -40,6 +41,30 @@ module mqc_method_factory
    end type method_factory_t
 
 contains
+
+   pure function method_backend_built(method_type) result(built)
+      !! Whether the backend this method needs was compiled into this binary
+      !!
+      !! Asked before the factory is, because the factory cannot answer: it
+      !! returns a polymorphic allocatable and has no error to set, so a method
+      !! whose backend is absent can only `ERROR STOP` -- which ends the process
+      !! and, when the process is a Python interpreter driving a session, takes
+      !! the caller's whole script and every other rank with it.
+      !!
+      !! Only tblite is asked about here. The libcint and cuEST paths each have
+      !! a stub that reports the missing build on the result, so they refuse
+      !! cleanly on their own; tblite has no stub, because the method type it
+      !! backs is not compiled at all without it.
+      integer, intent(in) :: method_type
+      logical :: built
+
+      built = .true.
+#ifdef MQC_WITHOUT_TBLITE
+      if (method_type == METHOD_TYPE_GFN1 .or. method_type == METHOD_TYPE_GFN2) then
+         built = .false.
+      end if
+#endif
+   end function method_backend_built
 
    function factory_create(this, config) result(method)
       !! Create a quantum chemistry method instance from configuration
