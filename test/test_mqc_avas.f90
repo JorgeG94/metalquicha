@@ -23,7 +23,10 @@ module test_mqc_avas
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_avas, only: avas_select, avas_result_t, parse_orbital_label
+   use mqc_libcint_avas, only: avas_select, avas_result_t, parse_orbital_label, &
+                               valence_select
+   use pic_blas_interfaces, only: pic_gemm
+   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t
    use mqc_libcint_mcscf, only: run_libcint_casscf, casscf_result_t
    implicit none
    private
@@ -59,6 +62,7 @@ contains
                   new_unittest("nitrogen_2s2p_against_pyscf", test_nitrogen_2s2p), &
                   new_unittest("water_2p_against_pyscf", test_water), &
                   new_unittest("the_cut_falls_in_a_gap", test_gap), &
+                  new_unittest("full_valence_space", test_valence), &
                   new_unittest("refusals", test_refusals) &
                   ]
    end subroutine collect_mqc_avas_tests
@@ -296,6 +300,85 @@ contains
                  "so the threshold sits in a wide gap, and moving it anywhere "// &
                  "inside that gap would not change the selection")
    end subroutine test_gap
+
+   subroutine test_valence(error)
+      !! The whole valence shell, by counting rather than by judgement
+      !!
+      !! Nitrogen: each atom contributes 1s, 2s and 2p to the free-atom minimal
+      !! basis, so ten minimal-basis orbitals against seven occupied. Two of the
+      !! occupied are the 1s core, which leaves five valence occupied and three
+      !! valence virtual -- CAS(10,8), the space anyone would have written down
+      !! for N2 by hand.
+      !!
+      !! Nothing here is a threshold. The size follows from the elements, so the
+      !! same molecule gives the same space in any basis set, and the assertion
+      !! below would hold in 6-31G as it does in cc-pVDZ.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(avas_result_t) :: valence
+      type(casci_result_t) :: small, full
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :), gram(:, :), work(:, :)
+      integer :: i, j, n_mo
+
+      call build_libcint_molecule(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", mol, err)
+      call run_libcint_rhf(mol, 14, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error, scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+
+      call valence_select(mol, NITROGEN_Z, NITROGEN_SYM, NITROGEN, scf%orbitals, 14, &
+                          valence, err)
+      call check(error,.not. err%has_error(), "the valence space should be found")
+      if (allocated(error)) return
+
+      call check(error, valence%n_inactive, 2, "two 1s cores are inactive")
+      if (allocated(error)) return
+      call check(error, valence%n_active, 8, "eight valence orbitals")
+      if (allocated(error)) return
+      call check(error, valence%n_active_electrons, 10, "ten valence electrons")
+      if (allocated(error)) return
+      call check(error, valence%n_active_occupied, 5, "five of them occupied")
+      if (allocated(error)) return
+
+      ! The orbitals have to be a usable set, not only a correctly counted one:
+      ! the valence virtuals are combinations of canonical virtuals and the
+      ! external block is what is left, so orthonormality is the thing that
+      ! would break if those two were assembled wrongly.
+      n_mo = size(valence%orbitals, 2)
+      call mol%overlap(overlap)
+      allocate (work(size(overlap, 1), n_mo), gram(n_mo, n_mo))
+      call pic_gemm(overlap, valence%orbitals, work)
+      call pic_gemm(valence%orbitals, work, gram, transa="T")
+      do j = 1, n_mo
+         do i = 1, n_mo
+            if (i == j) then
+               call check(error, abs(gram(i, j) - 1.0_dp) < 1.0e-10_dp, &
+                          "the valence orbital set should be normalised")
+            else
+               call check(error, abs(gram(i, j)) < 1.0e-10_dp, &
+                          "and orthogonal")
+            end if
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! And it has to be a better space than the one it contains. CAS(6,6) on
+      ! the same reference is a subset of the valence space, so the valence CI
+      ! cannot be higher.
+      call run_libcint_casci(mol, scf%orbitals, 4, 6, 3, 3, small, err, &
+                             tolerance=1.0e-11_dp)
+      call run_libcint_casci(mol, valence%orbitals, valence%n_inactive, &
+                             valence%n_active, 5, 5, full, err, tolerance=1.0e-11_dp)
+      call check(error,.not. err%has_error(), "both CIs should run")
+      if (allocated(error)) return
+      call check(error, full%energy < small%energy, &
+                 "the valence space contains CAS(6,6) and cannot do worse")
+      if (allocated(error)) return
+
+      deallocate (work, gram)
+      call mol%destroy()
+   end subroutine test_valence
 
    subroutine test_refusals(error)
       !! Requests that name nothing

@@ -7,6 +7,12 @@ module mqc_libcint_avas
    !! chromium 3d" -- and let the projection decide which molecular orbitals
    !! carry that character.
    !!
+   !! `valence_select` answers it a second way, by not asking at all: take the
+   !! whole valence shell. That space is not a judgement about the molecule, so
+   !! there is nothing to get wrong about it, and it is the one an old paper
+   !! means by a full optimised reaction space. What it is instead is large --
+   !! see the note there.
+   !!
    !! Sayfutyarova, Sun, Chan and Knizia, JCTC 13, 4063 (2017).
    !!
    !! The construction is a projector. With `P` the space spanned by the chosen
@@ -36,13 +42,15 @@ module mqc_libcint_avas
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_aambs, only: aambs_shell_labels
+   use mqc_aambs, only: aambs_shell_labels, aambs_dimensions, aambs_dimensions_t
    use mqc_libcint_integrals, only: libcint_molecule_t, mixed_basis_overlap
-   use mqc_libcint_quao, only: build_aambs_molecule
+   use mqc_libcint_quao, only: build_aambs_molecule, mo_aambs_overlap, &
+                               valence_virtual_orbitals, vvo_result_t
    implicit none
    private
 
    public :: avas_select
+   public :: valence_select
    public :: avas_result_t
    public :: parse_orbital_label
 
@@ -125,6 +133,111 @@ contains
                         "s, p, d and f.")
       end select
    end subroutine parse_orbital_label
+
+   subroutine valence_select(mol, atomic_numbers, element_symbols, coordinates, &
+                             orbitals, n_electrons, result, error, verbose)
+      !! The whole valence shell as an active space
+      !!
+      !! Every occupied orbital that is not core, plus the valence-virtual
+      !! orbitals that complete the minimal basis. No threshold and no labels:
+      !! the size is fixed by counting the free-atom minimal basis, so the same
+      !! molecule gives the same space in any basis set, which is the property
+      !! that makes it reproducible where a judgement is not.
+      !!
+      !! The valence-virtual orbitals are the work, and they already exist --
+      !! `mqc_libcint_quao` extracts them for the bonding analysis. There they
+      !! are a basis to analyse in; here they are the empty half of an active
+      !! space. Same orbitals, and no threshold decides how many: `n_vvo =
+      !! n_mbs - n_occupied`, exactly.
+      !!
+      !! **It gets big quickly.** Nitrogen is CAS(10,8) and comfortable; water
+      !! is CAS(8,6); but the count grows with the molecule and not with what is
+      !! interesting in it, so a full valence space on anything of size is past
+      !! what a complete expansion can hold. That is what `keywords.mcscf.ormas`
+      !! is for -- restrict the occupations of a space chosen this way and the
+      !! two answer each other.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      real(dp), intent(in) :: orbitals(:, :)   !! Converged reference orbitals
+      integer, intent(in) :: n_electrons
+      type(avas_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: verbose
+
+      type(libcint_molecule_t) :: aambs
+      type(aambs_dimensions_t) :: dims
+      type(vvo_result_t) :: vvo
+      real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
+      character(len=160) :: line
+      integer :: n_ao, n_mo, filled
+      logical :: loud
+
+      if (error%has_error()) return
+      loud = .false.
+      if (present(verbose)) loud = verbose
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+
+      ! Counting first: it refuses an element past xenon or an odd electron
+      ! count before any integral is built.
+      call aambs_dimensions(atomic_numbers, n_electrons, dims, error)
+      if (error%has_error()) return
+
+      call build_aambs_molecule(atomic_numbers, element_symbols, coordinates, aambs, error)
+      if (error%has_error()) return
+      call aambs%overlap(s_mbs)
+      call mixed_basis_overlap(mol, aambs, mixed, error)
+      if (error%has_error()) return
+      call mo_aambs_overlap(orbitals, mixed, s_mbs, projection, error)
+      call valence_virtual_orbitals(orbitals, projection, dims, vvo, error)
+      if (error%has_error()) return
+
+      result%n_inactive = dims%n_core
+      result%n_active = dims%n_valocc + vvo%n_vvo
+      result%n_active_occupied = dims%n_valocc
+      result%n_active_electrons = 2*dims%n_valocc
+
+      ! Core, then the valence occupied, then the valence virtuals, then
+      ! whatever is left. The active block comes out contiguous from
+      ! `n_inactive + 1` without any reordering, because that is already the
+      ! order the three pieces are in.
+      allocate (result%orbitals(n_ao, n_mo))
+      result%orbitals(:, 1:dims%n_occupied) = orbitals(:, 1:dims%n_occupied)
+      filled = dims%n_occupied
+      if (vvo%n_vvo > 0) then
+         result%orbitals(:, filled + 1:filled + vvo%n_vvo) = vvo%orbitals
+         filled = filled + vvo%n_vvo
+      end if
+      if (filled < n_mo) then
+         result%orbitals(:, filled + 1:n_mo) = vvo%external_orbitals
+      end if
+
+      ! The gap between these is the diagnostic the paper reports: a clean
+      ! valence space has the retained singular values at essentially one and
+      ! the rejected ones far below. No gap means the minimal basis is not
+      ! finding a valence space, and the count that fixed the size was the only
+      ! thing holding the answer together.
+      if (loud) then
+         call logger%info("")
+         call logger%info("  full valence active space")
+         write (line, "(a,i0,a,i0,a)") "    active space                CAS(", &
+            result%n_active_electrons, ",", result%n_active, ")"
+         call logger%info(trim(line))
+         write (line, "(a,i0)") "    inactive (core) orbitals    ", result%n_inactive
+         call logger%info(trim(line))
+         write (line, "(a,i0,a,i0)") "    valence occupied            ", &
+            dims%n_valocc, "   valence virtual  ", vvo%n_vvo
+         call logger%info(trim(line))
+         write (line, "(a,f10.6,a,f10.6)") "    smallest kept               ", &
+            vvo%smallest_retained, "   largest rejected ", vvo%largest_rejected
+         call logger%info(trim(line))
+      end if
+
+      call aambs%destroy()
+   end subroutine valence_select
 
    subroutine avas_select(mol, atomic_numbers, element_symbols, coordinates, orbitals, &
                           n_occupied, labels, result, error, threshold, verbose)

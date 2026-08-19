@@ -67,6 +67,12 @@ module mqc_libcint_quao
       real(dp), allocatable :: orbitals(:, :)
          !! (n_ao, n_vvo), in the AO basis, orthonormal and orthogonal to the
          !! occupied space because they are combinations of virtuals only
+      real(dp), allocatable :: external_orbitals(:, :)
+         !! (n_ao, n_virt - n_vvo), the rest of the virtual space. Kept because
+         !! together with `orbitals` they are a complete, orthonormal virtual
+         !! block, which is what anything wanting to *run* in the valence space
+         !! rather than analyse it needs -- a CASSCF has to be handed every
+         !! orbital, not only the interesting ones.
       real(dp), allocatable :: singular_values(:)
          !! All of them, descending. The first `n_vvo` are retained; the rest
          !! span the valence-external space.
@@ -512,6 +518,17 @@ contains
       c_virt = orbitals(:, n_occ + 1:n_mo)
       call pic_gemm(c_virt, b(:, 1:dims%n_vvo), rotated)
       call move_alloc(rotated, result%orbitals)
+
+      ! The same rotation applied to the columns the count rejected. They are
+      ! the valence-external space and are wanted for nothing except being the
+      ! other half of a complete virtual block.
+      if (dims%n_vvo < n_virt) then
+         allocate (rotated(n_ao, n_virt - dims%n_vvo))
+         call pic_gemm(c_virt, b(:, dims%n_vvo + 1:n_virt), rotated)
+         call move_alloc(rotated, result%external_orbitals)
+      else
+         allocate (result%external_orbitals(n_ao, 0))
+      end if
 
       deallocate (sigma, b, values, c_virt)
    end subroutine valence_virtual_orbitals
