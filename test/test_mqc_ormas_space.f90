@@ -547,7 +547,7 @@ contains
          call check(error, ormas_string_address(space, alpha(i), .true.) == i, &
                     "an alpha string does not address back to itself")
          if (allocated(error)) return
-         call check(error, popcnt(alpha(i)), space%n_alpha, "alpha electron count")
+         call check(error, int(popcnt(alpha(i))), space%n_alpha, "alpha electron count")
          if (allocated(error)) return
 
          ! Generation walks the classes in order, so a string's position must
@@ -562,7 +562,7 @@ contains
          call check(error, ormas_string_address(space, beta(i), .false.) == i, &
                     "a beta string does not address back to itself")
          if (allocated(error)) return
-         call check(error, popcnt(beta(i)), space%n_beta, "beta electron count")
+         call check(error, int(popcnt(beta(i))), space%n_beta, "beta electron count")
          if (allocated(error)) return
       end do
    end subroutine round_trips

@@ -156,7 +156,7 @@ contains
             call check(error, address_to_string(norb, nelec, i) == strings(i), &
                        "and the string at address i should be the i'th string")
             if (allocated(error)) return
-            call check(error, popcnt(strings(i)), nelec, &
+            call check(error, int(popcnt(strings(i))), nelec, &
                        "every string should hold exactly the electron count")
             if (allocated(error)) return
          end do

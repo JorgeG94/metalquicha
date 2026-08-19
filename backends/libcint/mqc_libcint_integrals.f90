@@ -1175,6 +1175,12 @@ contains
 
       real(dp), allocatable :: buf(:)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, lsh_max
+      ! `ksh_local` was a BLOCK-scoped declaration inside the parallel region.
+      ! nvfortran cannot compile a BLOCK construct in the scope of a parallel
+      ! directive (NVFORTRAN-S-1219), and the construct existed only to
+      ! declare this one integer, so it is declared here and privatised with
+      ! the rest instead.
+      integer :: ksh_local
       integer :: shls(4)
       integer :: i, j, k, l, io, jo, ko, lo, ret, idx
       integer :: p, q, r, t
@@ -1208,7 +1214,7 @@ contains
       !$omp parallel default(none) &
       !$omp    shared(this, eri, opt, npair, pair_i, pair_j) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
-      !$omp            i, j, k, l, p, q, r, t, shls, ret, idx, value, buf)
+      !$omp            i, j, k, l, p, q, r, t, shls, ret, idx, value, buf, ksh_local)
       allocate (buf(max_block(this)**4))
       !$omp do schedule(dynamic)
       do ipair = 1, npair
@@ -1218,8 +1224,6 @@ contains
          io = this%shell_offset(ish)
          dj = shell_dim(this%cartesian, jsh - 1, this%bas)
          jo = this%shell_offset(jsh)
-         block
-            integer :: ksh_local
             do ksh_local = 1, ish
                ksh = ksh_local
                dk = shell_dim(this%cartesian, ksh - 1, this%bas)
@@ -1258,7 +1262,6 @@ contains
                   end do
                end do
             end do
-         end block
       end do
       !$omp end do
       deallocate (buf)
