@@ -26,7 +26,7 @@ module test_mqc_ieda
                                nuclear_attraction_per_atom, nuclear_decomposition, &
                                combine_quao_sets, quao_eris, two_electron_decomposition, &
                                nuclear_repulsion_pairs, active_cumulant, &
-                               quao_projection, transform_cumulant
+                               quao_projection, transform_cumulant, project_no_sharing
    implicit none
    private
 
@@ -104,7 +104,9 @@ contains
                   new_unittest("projection_measures_what_it_misses", projection_measures_what_it_misses), &
                   new_unittest("cumulant_reaches_the_energy", cumulant_reaches_the_energy), &
                   new_unittest("free_atoms_are_equivalent_and_bound", free_atoms_are_equivalent_and_bound), &
-                  new_unittest("classical_share_is_separated_out", classical_share_is_separated_out) &
+                  new_unittest("classical_share_is_separated_out", classical_share_is_separated_out), &
+                  new_unittest("no_sharing_keeps_the_neutral_determinants", no_sharing_keeps_the_neutral_determinants), &
+                  new_unittest("no_sharing_is_a_projection_not_a_solve", no_sharing_is_a_projection_not_a_solve) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -964,6 +966,108 @@ contains
          end do
       end do
    end subroutine classical_by_definition
+
+   subroutine no_sharing_keeps_the_neutral_determinants(error)
+      !! Which determinants survive, counted against an independent enumeration
+      !!
+      !! Water's valence shell is six orbitals -- oxygen's 2s and three 2p, and
+      !! one on each hydrogen -- holding eight electrons, so the full valence
+      !! space is `C(6,4)^2 = 225` determinants. Requiring six electrons on the
+      !! oxygen and one on each hydrogen leaves 44 of them, which was counted by
+      !! hand from the definition before this was written and not read off the
+      !! routine.
+      !!
+      !! The count is the sharp test. A projector that kept too much would still
+      !! renormalise to one and still produce a plausible density; only the
+      !! number of survivors says whether the condition being applied is the
+      !! right one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: ci(:, :)
+      real(dp) :: recovered
+      integer :: n_kept
+      integer, parameter :: WATER_ATOM_OF(6) = [1, 1, 1, 1, 2, 3]
+      integer, parameter :: WATER_NEUTRAL(3) = [6, 1, 1]
+
+      allocate (ci(15, 15))
+      ci = 1.0_dp/15.0_dp     ! normalised, and flat so every determinant counts
+      call project_no_sharing(WATER_ATOM_OF, 3, WATER_NEUTRAL, 4, 4, ci, &
+                              recovered, n_kept, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+
+      call check(error, n_kept, 44, "the wrong number of determinants survived")
+      if (allocated(error)) return
+      ! A flat vector puts equal weight everywhere, so the surviving fraction is
+      ! the determinant fraction exactly.
+      call check(error, recovered, 44.0_dp/225.0_dp, thr=1.0e-12_dp, &
+                 more="the recovered norm does not match the surviving fraction")
+      if (allocated(error)) return
+      call check(error, sum(ci**2), 1.0_dp, thr=1.0e-12_dp, &
+                 more="the projection was not renormalised")
+   end subroutine no_sharing_keeps_the_neutral_determinants
+
+   subroutine no_sharing_is_a_projection_not_a_solve(error)
+      !! The surviving amplitudes are the parent's, only rescaled
+      !!
+      !! This is the distinction the papers are emphatic about and the one an
+      !! implementation is most likely to lose: optimising a wave function
+      !! inside the neutral space gives a lower energy and a different state.
+      !! So every kept coefficient must stay in the same ratio to every other
+      !! kept coefficient as it was before, which a re-solve would not respect.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: ci(:, :), before(:, :)
+      real(dp) :: recovered, scale
+      integer :: n_kept, ia, ib, first_a, first_b
+      integer, parameter :: WATER_ATOM_OF(6) = [1, 1, 1, 1, 2, 3]
+      integer, parameter :: WATER_NEUTRAL(3) = [6, 1, 1]
+
+      allocate (ci(15, 15), before(15, 15))
+      do ib = 1, 15
+         do ia = 1, 15
+            ci(ia, ib) = sin(real(3*ia + 7*ib, dp))
+         end do
+      end do
+      ci = ci/sqrt(sum(ci**2))
+      before = ci
+
+      call project_no_sharing(WATER_ATOM_OF, 3, WATER_NEUTRAL, 4, 4, ci, &
+                              recovered, n_kept, err)
+      call check(error,.not. err%has_error(), "the projection was refused")
+      if (allocated(error)) return
+
+      ! Find a survivor to fix the scale, then check every other survivor sits
+      ! at the same multiple of what it was.
+      first_a = 0
+      first_b = 0
+      do ib = 1, 15
+         do ia = 1, 15
+            if (abs(ci(ia, ib)) > 1.0e-12_dp) then
+               first_a = ia
+               first_b = ib
+               exit
+            end if
+         end do
+         if (first_a > 0) exit
+      end do
+      call check(error, first_a > 0, "every coefficient was struck out")
+      if (allocated(error)) return
+
+      scale = ci(first_a, first_b)/before(first_a, first_b)
+      do ib = 1, 15
+         do ia = 1, 15
+            if (abs(ci(ia, ib)) < 1.0e-12_dp) cycle
+            call check(error, ci(ia, ib), scale*before(ia, ib), thr=1.0e-12_dp, &
+                       more="a surviving amplitude is not the parent's, rescaled")
+            if (allocated(error)) return
+         end do
+      end do
+      call check(error, abs(scale - 1.0_dp) > 1.0e-6_dp, &
+                 "nothing was struck out, so this proves nothing")
+   end subroutine no_sharing_is_a_projection_not_a_solve
 
 end module test_mqc_ieda
 

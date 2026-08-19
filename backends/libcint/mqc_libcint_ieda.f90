@@ -31,12 +31,14 @@ module mqc_libcint_ieda
    !! same quantity: that one carries an empirical factor of a tenth to reach
    !! the scale of tabulated bond energies, and the papers say so. Nothing here
    !! is scaled. Where the bond order is a gauge, this is an energy.
+   use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_esp, only: esp_matrices
    use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_determinants, only: generate_strings
    use mqc_libcint_quao, only: quao_result_t
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
@@ -44,6 +46,7 @@ module mqc_libcint_ieda
 
    public :: kinetic_decomposition
    public :: kinetic_total
+   public :: project_no_sharing
    public :: combine_quao_sets
    public :: quao_interference
    public :: nuclear_attraction_per_atom
@@ -174,6 +177,140 @@ contains
 
       total = sum(intra) + 0.5_dp*sum(inter)
    end function kinetic_total
+
+   subroutine project_no_sharing(atom_of, n_atoms, neutral, n_alpha, n_beta, ci, &
+                                 recovered, n_kept, error)
+      !! Strike out every determinant in which an atom is not neutral
+      !!
+      !! The no-sharing wave function `Psi-0` of the intrinsic decomposition:
+      !! the part of `Psi` in which no charge has moved between atoms. It is
+      !! what the molecule would be if the atoms shared electrons without ever
+      !! lending them, and the energy difference from `Psi` is what charge
+      !! transfer is worth.
+      !!
+      !! **`Psi-0` is a projection of `Psi`, not a wave function optimised in
+      !! the neutral space.** Solving a CI restricted to these determinants
+      !! gives a lower energy and a different state; it is a perfectly good
+      !! wave function and it is not this one. So the amplitudes here are the
+      !! parent's, with the rest set to zero and the remainder renormalised.
+      !!
+      !! **The determinants must be over quasi-atomic orbitals** for any of this
+      !! to mean anything -- "how many electrons are on this atom" is a question
+      !! only an atomic basis can answer. A full valence CI is invariant under
+      !! rotation of its active orbitals, so re-solving it in the quasi-atomic
+      !! basis costs an energy that must come back identical and buys a
+      !! determinant expansion that can be read this way.
+      !!
+      !! What comes back is `recovered`, the squared norm kept. That is the
+      !! honest measure of how much of the molecule is describable without
+      !! charge transfer, and the papers quote it as a percentage. Note it is a
+      !! squared norm and not an overlap, which is what the reference
+      !! implementation prints it as.
+      integer, intent(in) :: atom_of(:)
+         !! (n_orbitals) the atom each active orbital belongs to
+      integer, intent(in) :: n_atoms
+      integer, intent(in) :: neutral(:)
+         !! (n_atoms) valence electrons each atom has when neutral
+      integer, intent(in) :: n_alpha, n_beta
+      real(dp), intent(inout) :: ci(:, :)
+         !! (n_alpha_strings, n_beta_strings), overwritten with the projection
+      real(dp), intent(out) :: recovered
+         !! `|| P Psi ||^2` before renormalising
+      integer, intent(out) :: n_kept
+         !! How many determinants survived
+      type(error_t), intent(inout) :: error
+
+      integer(int64), allocatable :: alpha(:), beta(:)
+      integer, allocatable :: count_alpha(:, :), count_beta(:, :)
+      integer :: n_orb, na, nb, ia, ib, a
+      real(dp) :: norm
+      logical :: neutral_here
+
+      if (error%has_error()) return
+
+      n_orb = size(atom_of)
+      if (n_atoms < 1 .or. maxval(atom_of) > n_atoms .or. size(neutral) /= n_atoms) then
+         call error%set(ERROR_VALIDATION, "the orbital-to-atom map and the neutral "// &
+                        "electron counts describe different molecules.")
+         return
+      end if
+
+      call generate_strings(n_orb, n_alpha, alpha, error)
+      if (error%has_error()) return
+      call generate_strings(n_orb, n_beta, beta, error)
+      if (error%has_error()) return
+      na = size(alpha)
+      nb = size(beta)
+      if (size(ci, 1) /= na .or. size(ci, 2) /= nb) then
+         call error%set(ERROR_VALIDATION, "the coefficient array is not the shape this "// &
+                        "active space produces, so it came from a different space.")
+         return
+      end if
+
+      ! Per-atom occupation of every string, once, rather than per determinant:
+      ! the determinant count is the product of the two string counts, so doing
+      ! this inside the pair loop would repeat each string's tally thousands of
+      ! times.
+      allocate (count_alpha(n_atoms, na), count_beta(n_atoms, nb))
+      call tally(alpha, atom_of, n_atoms, count_alpha)
+      call tally(beta, atom_of, n_atoms, count_beta)
+
+      n_kept = 0
+      recovered = 0.0_dp
+      do ib = 1, nb
+         do ia = 1, na
+            neutral_here = .true.
+            do a = 1, n_atoms
+               if (count_alpha(a, ia) + count_beta(a, ib) /= neutral(a)) then
+                  neutral_here = .false.
+                  exit
+               end if
+            end do
+            if (neutral_here) then
+               n_kept = n_kept + 1
+               recovered = recovered + ci(ia, ib)**2
+            else
+               ci(ia, ib) = 0.0_dp
+            end if
+         end do
+      end do
+
+      if (recovered <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "no determinant leaves every atom neutral, "// &
+                        "so there is no no-sharing wave function to project onto. A "// &
+                        "closed-shell atom with no valence electrons, or an active "// &
+                        "space that is not the whole valence shell, will do this.")
+         return
+      end if
+
+      norm = 1.0_dp/sqrt(recovered)
+      do ib = 1, nb
+         do ia = 1, na
+            ci(ia, ib) = ci(ia, ib)*norm
+         end do
+      end do
+
+      deallocate (alpha, beta, count_alpha, count_beta)
+   end subroutine project_no_sharing
+
+   pure subroutine tally(strings, atom_of, n_atoms, counts)
+      !! How many electrons each string puts on each atom
+      integer(int64), intent(in) :: strings(:)
+      integer, intent(in) :: atom_of(:)
+      integer, intent(in) :: n_atoms
+      integer, intent(out) :: counts(:, :)     !! (n_atoms, n_strings)
+
+      integer :: is, p
+
+      counts = 0
+      do is = 1, size(strings)
+         do p = 1, size(atom_of)
+            if (btest(strings(is), p - 1)) then
+               counts(atom_of(p), is) = counts(atom_of(p), is) + 1
+            end if
+         end do
+      end do
+   end subroutine tally
 
    subroutine combine_quao_sets(core, valence, combined, error)
       !! Stack the core quasi-atomic orbitals in front of the valence ones
