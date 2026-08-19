@@ -19,6 +19,12 @@ jobs:
           # The matrix values below are what the defaults currently *are*, and
           # they only decide which validation steps run. If a default drifts away
           # from them this job fails rather than quietly skipping work.
+          #
+          # Note this job now builds Release, which is the default as of the
+          # commit that changed it, and Release carries -march=native. That is
+          # right here -- one runner builds and runs -- and wrong for anything
+          # built somewhere other than where it runs, which is what
+          # MQC_ARCH_FLAGS is for.
           - name: "default build (no flags)"
             defaults: true
             tblite: true
@@ -51,6 +57,28 @@ jobs:
             tblite: false
             legacy_mpi: false
             libcint: true
+          # The other integral backend. MQC_USE_LIBFINT swaps libcint for
+          # libfint, the Fortran port, behind the same `libcint_fortran` module
+          # -- no source in this repository changes, only which library the
+          # calls land in. Nothing else here builds it, so without this job the
+          # backend that is becoming the default has no coverage at all and the
+          # first sign of a break is somebody's checkout.
+          #
+          # It fetches libfint at GIT_TAG main rather than a pin, which makes
+          # this a drift detector as much as a build: libfint moving under us
+          # shows up here as a red square on a metalquicha commit that changed
+          # nothing. That is the point -- the two repositories are developed
+          # together and this is the only place that notices.
+          #
+          # libxc is on so the CPU validation step below runs: twelve of those
+          # cases name a functional, and it is the validation, not the build,
+          # that catches an integral going subtly wrong.
+          - name: "with libfint (instead of libcint)"
+            tblite: false
+            legacy_mpi: false
+            libcint: true
+            libxc: true
+            libfint: true
           # The Python interface needs every backend in one library. backends.py
           # covers standalone and fragmented, xTB and Hartree-Fock -- three of
           # those four paths can break without the others noticing -- and
@@ -89,6 +117,7 @@ jobs:
                   -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
+                  -DMQC_USE_LIBFINT=${{ matrix.libfint && 'ON' || 'OFF' }} \
                   -B build
           fi
           cmake --build build --parallel 2
