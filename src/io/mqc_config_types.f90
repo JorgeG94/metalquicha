@@ -118,6 +118,11 @@ module mqc_config_types
       character(len=:), allocatable :: bonding_analysis
          !! From `properties.bonding_analysis.type`. Absent or "none" means no
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
+      logical :: bonding_no_sharing = .false.
+         !! From `properties.bonding_analysis.no_sharing`. Asks for the
+         !! no-sharing wave function, which needs a full valence CI over the
+         !! quasi-atomic orbitals and is therefore far too expensive to do by
+         !! default.
       real(dp) :: bonding_threshold = 1.0_dp
          !! From `properties.bonding_analysis.energy_threshold`, in kcal/mol.
          !! Orbital pairs whose kinetic bond order is weaker than this are

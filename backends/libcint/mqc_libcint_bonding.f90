@@ -31,6 +31,9 @@ module mqc_libcint_bonding
                                kinetic_bond_orders
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    use mqc_libcint_atomic_guess, only: free_atom_energies
+   use mqc_libcint_casci, only: active_space_integrals, run_libcint_casci, casci_result_t
+   use mqc_rdm, only: active_space_rdms, rdm_energy
+   use mqc_determinants, only: link_table_t, build_link_table
    use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition, &
                                nuclear_attraction_per_atom, quao_nuclear_attraction, &
                                nuclear_decomposition, print_nuclear_decomposition, &
@@ -39,6 +42,7 @@ module mqc_libcint_bonding
                                print_two_electron_decomposition, &
                                nuclear_repulsion_pairs, print_total_decomposition, &
                                print_interatomic_split, screened_nucleus_split, &
+                               project_no_sharing, &
                                active_cumulant, quao_projection, transform_cumulant
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
@@ -90,7 +94,7 @@ contains
    subroutine run_quao_analysis(mol, atomic_numbers, element_symbols, coordinates, &
                                 orbitals, n_electrons, error, verbose, threshold, &
                                 occupations, active_orbitals, active_dm1, active_dm2, &
-                                reference_energy)
+                                reference_energy, no_sharing)
       !! The quasi-atomic bonding analysis, start to finish
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -135,6 +139,12 @@ contains
          !! determinant expression, so it is the energy of the wave function
          !! only when the wave function is a determinant. Passing the CI energy
          !! is what keeps the correlated case checked rather than trusted.
+      logical, intent(in), optional :: no_sharing
+         !! Run the no-sharing analysis, which solves a full valence CI over the
+         !! quasi-atomic orbitals and projects it. Off by default because that
+         !! CI is factorial in the valence shell -- ethane is eleven million
+         !! determinants and benzene is out of reach by nine orders of
+         !! magnitude.
 
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
@@ -445,6 +455,17 @@ contains
          ! table of large numbers into the energy of formation, which is the
          ! quantity chemistry is about: what it costs to prepare each atom in
          ! the shape the molecule needs, against what the pairs give back.
+         ! What the molecule would be if the atoms shared electrons without ever
+         ! lending them. Last, because it is a separate calculation rather than
+         ! a rearrangement of this one.
+         if (present(no_sharing)) then
+            if (no_sharing) then
+               call no_sharing_analysis(mol, full_quao, quao, dims%n_core, &
+                                        atomic_numbers, natm, error)
+               if (error%has_error()) return
+            end if
+         end if
+
          call free_atom_energies(mol, free_energy, error)
          if (error%has_error()) return
          allocate (adaptation(natm))
@@ -687,5 +708,112 @@ contains
          " hartree", formation*HARTREE_TO_KCALMOL, " kcal/mol"
       call logger%info(trim(line))
    end subroutine print_formation
+
+   subroutine no_sharing_analysis(mol, full_quao, valence_quao, n_core, &
+                                  atomic_numbers, natm, error)
+      !! The no-sharing wave function, and what charge transfer is worth
+      !!
+      !! Three steps, of which only the first is expensive. A full valence CI is
+      !! solved **in the quasi-atomic basis** -- legitimate because a full
+      !! valence CI is invariant under rotation of its active orbitals, and
+      !! necessary because "how many electrons are on this atom" is a question
+      !! only an atomic basis can answer. Its coefficients are then struck out
+      !! wherever an atom is not neutral, and the energy of what remains is
+      !! rebuilt from the projected density matrices.
+      !!
+      !! The difference between the two energies is the charge-transfer
+      !! stabilisation. `E(Psi-0)` must come out **above** `E(Psi)`: a
+      !! projection cannot lower a variational energy, and that is asserted
+      !! because it is the one thing that would catch the projection being
+      !! applied to the wrong space.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(quao_result_t), intent(in) :: full_quao, valence_quao
+      integer, intent(in) :: n_core, natm
+      integer, intent(in) :: atomic_numbers(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :), ci(:, :)
+      type(casci_result_t) :: cas
+      type(link_table_t) :: alpha, beta
+      integer, allocatable :: neutral(:)
+      character(len=160) :: line
+      real(dp) :: core_energy, e_psi, e_zero, recovered
+      integer :: n_active, n_valence_electrons, na, nb, iatom, core_orbitals
+      integer :: valence_orbitals, n_kept, n_total
+
+      n_active = valence_quao%n_quao
+
+      ! Neutral means each atom holding the valence electrons it owns.
+      allocate (neutral(natm))
+      n_valence_electrons = 0
+      do iatom = 1, natm
+         call aambs_element_counts(atomic_numbers(iatom), core_orbitals, &
+                                   valence_orbitals, error)
+         if (error%has_error()) return
+         neutral(iatom) = atomic_numbers(iatom) - 2*core_orbitals
+         n_valence_electrons = n_valence_electrons + neutral(iatom)
+      end do
+      if (mod(n_valence_electrons, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "the valence shell holds an odd number of "// &
+                        "electrons, which this closed-shell analysis cannot describe.")
+         return
+      end if
+      na = n_valence_electrons/2
+      nb = na
+
+      call logger%info("")
+      call logger%info("  no-sharing analysis")
+      write (line, "(a,i0,a,i0,a)") "     full valence CAS(", n_valence_electrons, &
+         ",", n_active, ") over the quasi-atomic orbitals"
+      call logger%info(trim(line))
+
+      call run_libcint_casci(mol, full_quao%orbitals, n_core, n_active, na, nb, &
+                             cas, error, verbose=.false.)
+      if (error%has_error()) return
+      e_psi = cas%energy
+      n_total = size(cas%ci_vector)
+
+      ci = cas%ci_vector
+      call project_no_sharing(valence_quao%atom_of, natm, neutral, na, nb, ci, &
+                              recovered, n_kept, error)
+      if (error%has_error()) return
+
+      ! The energy of the projection, from its own density matrices against the
+      ! same active-space Hamiltonian the CI used.
+      call active_space_integrals(mol, full_quao%orbitals, n_core, n_active, &
+                                  h_eff, eri_act, core_energy, error)
+      if (error%has_error()) return
+      call build_link_table(n_active, na, alpha, error)
+      call build_link_table(n_active, nb, beta, error)
+      if (error%has_error()) return
+      call active_space_rdms(ci, alpha, beta, dm1, dm2, error)
+      if (error%has_error()) return
+      e_zero = rdm_energy(h_eff, eri_act, dm1, dm2) + core_energy
+
+      write (line, "(a,i0,a,i0,a,f8.2,a)") "     neutral determinants ", n_kept, &
+         " of ", n_total, ", holding ", 100.0_dp*recovered, "% of the squared norm"
+      call logger%info(trim(line))
+      ! Printed to twelve figures because it is checkable: a full valence CI is
+      ! invariant under rotation of its active orbitals, so this must equal the
+      ! same CAS run over the ordinary molecular orbitals. Water in STO-3G gives
+      ! -75.011224995270 either way.
+      write (line, "(4x,a24,f18.12,a)") "E(Psi)", e_psi, " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f18.12,a)") "E(Psi-0)", e_zero, " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f16.6,a,f12.3,a)") "charge transfer", e_psi - e_zero, &
+         " hartree", (e_psi - e_zero)*HARTREE_TO_KCALMOL, " kcal/mol"
+      call logger%info(trim(line))
+
+      ! A projection cannot lower a variational energy. If it appears to, the
+      ! coefficients being struck out were not this wave function's.
+      if (e_zero < e_psi - 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "the no-sharing wave function came out below "// &
+                        "the one it was projected from, which a projection cannot do. "// &
+                        "The determinants struck out did not belong to this space.")
+         return
+      end if
+   end subroutine no_sharing_analysis
 
 end module mqc_libcint_bonding

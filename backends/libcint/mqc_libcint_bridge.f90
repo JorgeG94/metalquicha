@@ -784,7 +784,8 @@ contains
          ! the analysis found nothing to say.
          call run_quao_analysis(mol, fragment%element_numbers, symbols, &
                                 fragment%coordinates, scf%orbitals, fragment%nelec, &
-                                analysis_error, threshold=settings%bonding_threshold)
+                                analysis_error, threshold=settings%bonding_threshold, &
+                                no_sharing=settings%bonding_no_sharing)
          if (analysis_error%has_error()) then
             call logger%warning("  the bonding analysis could not run: "// &
                                 analysis_error%get_message())
@@ -1739,7 +1740,8 @@ contains
                                       active_orbitals=casscf%orbitals(:, space(1) + 1: &
                                                                       space(1) + space(2)), &
                                       active_dm1=casscf%dm1, active_dm2=casscf%dm2, &
-                                      reference_energy=casscf%energy)
+                                      reference_energy=casscf%energy, &
+                                      no_sharing=settings%bonding_no_sharing)
             else
                call run_quao_analysis(mol, fragment%element_numbers, symbols, &
                                       fragment%coordinates, natural, fragment%nelec, &
@@ -1749,7 +1751,8 @@ contains
                                       active_orbitals=reference(:, space(1) + 1: &
                                                                 space(1) + space(2)), &
                                       active_dm1=casci%dm1, active_dm2=casci%dm2, &
-                                      reference_energy=casci%energy)
+                                      reference_energy=casci%energy, &
+                                      no_sharing=settings%bonding_no_sharing)
             end if
          end if
          if (analysis_error%has_error()) then

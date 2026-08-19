@@ -264,6 +264,53 @@ unrestricted Hartree--Fock level, so a CASSCF molecule is being measured against
 uncorrelated atoms and the formation energy inherits that imbalance. The
 molecular correlation is included and the atomic correlation is not.
 
+
+The no-sharing wave function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Opt-in, because it costs a full valence CI::
+
+    "properties": {
+      "bonding_analysis": {"type": "gms_quao", "no_sharing": true}
+    }
+
+This asks what the molecule would be if its atoms shared electrons without ever
+lending them. Every determinant in which some atom is not neutral is struck out,
+and what remains is renormalised::
+
+    no-sharing analysis
+       full valence CAS(8,6) over the quasi-atomic orbitals
+       neutral determinants 44 of 225, holding    31.52% of the squared norm
+                        E(Psi)  -75.011224995270 hartree
+                      E(Psi-0)  -73.342868821289 hartree
+               charge transfer       -1.668356 hartree   -1046.909 kcal/mol
+
+Two things are worth knowing about what this is.
+
+**It is a projection, not a separate optimisation.** A CI solved inside the
+neutral space would give a lower energy and a different state; that is a
+perfectly good wave function and it is not this one. The surviving amplitudes
+here are the parent's, rescaled. E(Psi-0) is therefore an energy of a
+constrained *state*, not a variational minimum, and it must come out above
+E(Psi) -- which is asserted.
+
+**It needs the quasi-atomic basis.** "How many electrons are on this atom" is a
+question only an atomic basis can answer, so the CI is solved with the
+quasi-atomic orbitals as the active space. That is legitimate because a full
+valence CI is invariant under rotation of its active orbitals, and the printed
+E(Psi) is the check: water in STO-3G gives -75.011224995270 here and
+-75.011224995270 from an ordinary ``casci`` deck with ``n_active_electrons: 8``
+and ``n_active_orbitals: 6``.
+
+The percentage is a squared norm and not an overlap. A polar molecule keeps
+little of itself in the neutral space -- water's oxygen genuinely carries about
+6.7 valence electrons rather than 6 -- so 31% is a statement about water and not
+a defect.
+
+**The cost is factorial in the valence shell** and is the reason this is off by
+default. Water is 225 determinants and ethane is 11,778,624; benzene, at
+2.4 x 10^16, is out of reach by any engineering.
+
 Reading the diagnostics
 -----------------------
 
