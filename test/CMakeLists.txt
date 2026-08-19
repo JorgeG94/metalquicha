@@ -223,7 +223,17 @@ endif()
 if(MQC_ENABLE_CUEST)
   addtestpp(mqc_cuest_spin)
   target_compile_definitions(test_mqc_cuest_spin PRIVATE MQC_WITH_CUEST)
+  # The DF-gradient memory policy names against cuEST's own enumerators. Only
+  # here, because only here do the bindings exist to disagree with.
+  addtestpp(mqc_cuest_memory_policy)
+  target_compile_definitions(test_mqc_cuest_memory_policy
+                             PRIVATE MQC_WITH_CUEST)
 endif()
+
+# The multi-GPU mode's arithmetic: that slicing the radial mesh across ranks
+# partitions it exactly, and that a dormant team is the identity. Unconditional
+# -- neither claim needs a GPU, and both are what the mode rests on.
+addtest(mqc_gpu_team)
 # The continuum cavity radii. Unconditional: the table is ours, a wrong entry
 # gives a wrong solvation energy with nothing to object, and neither cuEST nor
 # libxc is needed to check it.

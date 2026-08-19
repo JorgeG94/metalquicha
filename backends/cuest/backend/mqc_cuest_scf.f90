@@ -69,6 +69,7 @@ module mqc_cuest_scf
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis_device, only: diis_device_t
    use mqc_cuest_integrals, only: cuest_system_t
+   use mqc_gpu_team, only: gpu_team_agree
    use mqc_cuest_context, only: cuest_context_t
    use mqc_cuest_runtime, only: device_sync, cublas_status_check, &
                                 cusolver_status_check, copy_int_to_host, copy_to_host, &
@@ -373,6 +374,7 @@ contains
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy, pcm_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
+      logical :: iteration_converged
 
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -577,8 +579,17 @@ contains
             call logger%info(trim(line))
          end if
 
-         if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
-             .and. error_norm < density_tolerance) then
+         ! Every rank of a GPU team runs this same loop, and every rank has to
+         ! leave it on the same iteration: one rank exiting early would leave
+         ! the others waiting forever in the next XC reduction. The ranks
+         ! should already agree -- the only term that differs before reduction
+         ! is Exc, and that is reduced before it reaches the energy -- so this
+         ! is a guard against a hang, not a correction. Outside a team it is a
+         ! no-op.
+         iteration_converged = (iteration > 1 .and. abs(energy_change) < energy_tolerance &
+                                .and. error_norm < density_tolerance)
+         call gpu_team_agree(iteration_converged)
+         if (iteration_converged) then
             result%converged = .true.
             result%iterations = iteration
             exit
@@ -770,6 +781,7 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration
       integer :: n_fock_spin, n_err_spin
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
+      logical :: iteration_converged
       real(dp) :: pcm_energy
       real(dp) :: trace_h, trace_j, trace_ka, trace_kb
       logical :: diis_ok, occupations_ok, beta_exchange
@@ -989,8 +1001,17 @@ contains
             call logger%info(trim(line))
          end if
 
-         if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
-             .and. error_norm < density_tolerance) then
+         ! Every rank of a GPU team runs this same loop, and every rank has to
+         ! leave it on the same iteration: one rank exiting early would leave
+         ! the others waiting forever in the next XC reduction. The ranks
+         ! should already agree -- the only term that differs before reduction
+         ! is Exc, and that is reduced before it reaches the energy -- so this
+         ! is a guard against a hang, not a correction. Outside a team it is a
+         ! no-op.
+         iteration_converged = (iteration > 1 .and. abs(energy_change) < energy_tolerance &
+                                .and. error_norm < density_tolerance)
+         call gpu_team_agree(iteration_converged)
+         if (iteration_converged) then
             result%converged = .true.
             result%iterations = iteration
             exit

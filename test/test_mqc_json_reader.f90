@@ -65,6 +65,7 @@ contains
                   new_unittest("backend_keyword", test_backend_keyword), &
                   new_unittest("system_gpu_keyword", test_gpu_keyword), &
                   new_unittest("system_gpu_conflicts_with_backend", test_gpu_conflict), &
+                  new_unittest("multi_gpu_and_memory_keywords", test_multi_gpu_keywords), &
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("dft_keywords", test_dft_keywords), &
@@ -652,6 +653,63 @@ contains
       call check(error, parse_error%has_error(), &
                  "system.gpu true must be refused for a method cuEST cannot run")
    end subroutine test_gpu_keyword
+
+   subroutine test_multi_gpu_keywords(error)
+      !! `system.multi_gpu` and the two device-memory keys beside it
+      !!
+      !! All three default off/auto, which is the property that matters most:
+      !! they were added to rescue a calculation that did not fit, and a deck
+      !! that never mentions them has to behave exactly as it did before they
+      !! existed. Reading a default wrong here would change every GPU run in
+      !! the suite at once.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Absent: the defaults, untouched.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%multi_gpu, "system.multi_gpu defaults on")
+      if (allocated(error)) return
+      call check(error,.not. config%scf_df_integral_direct, &
+                 "keywords.scf.df_integral_direct defaults on")
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%scf_df_derivative_memory), &
+                 "an absent df_derivative_memory must stay unallocated, not 'auto'")
+      if (allocated(error)) return
+
+      ! Present: each read into its own field.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"df_integral_direct": true, '// &
+                      '"df_derivative_memory": "recompute"}', &
+                      '"multi_gpu": true', two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%multi_gpu, "system.multi_gpu true was not read")
+      if (allocated(error)) return
+      call check(error, config%scf_df_integral_direct, &
+                 "keywords.scf.df_integral_direct true was not read")
+      if (allocated(error)) return
+      call check(error, allocated(config%scf_df_derivative_memory), &
+                 "keywords.scf.df_derivative_memory was not read")
+      if (allocated(error)) return
+      call check(error, trim(config%scf_df_derivative_memory) == "recompute", &
+                 "keywords.scf.df_derivative_memory read the wrong value")
+      if (allocated(error)) return
+
+      ! The schema validator rejects what it does not know, so a key added to
+      ! the reader but not to the allow-list would never reach the reader at
+      ! all. A near-miss spelling proves the allow-list is what let the real
+      ! ones through, rather than the validator being off entirely.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", &
+                      '"multi_gpus": true', two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown system key was accepted")
+   end subroutine test_multi_gpu_keywords
 
    subroutine test_gpu_conflict(error)
       !! `system.gpu` and `backend` naming different things is refused

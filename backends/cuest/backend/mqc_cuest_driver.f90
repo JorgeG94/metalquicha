@@ -22,7 +22,8 @@ module mqc_cuest_driver
                             SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC
    use mqc_cuest_atomic_guess, only: build_sac_guess
    use mqc_cuest_gradient, only: compute_scf_gradient
-   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t, parse_df_derivative_memory
+   use mqc_gpu_team, only: gpu_team_active, gpu_team_size
    implicit none
    private
 
@@ -57,9 +58,23 @@ contains
       character(len=8), allocatable :: element_symbols(:)
       integer :: iatom, functional_id, n_alpha, n_beta
       logical :: need_gradient, unrestricted, occupations_ok
+      logical :: shard_grid
+      integer :: derivative_memory
 
       need_gradient = .false.
       if (present(want_gradient)) need_gradient = want_gradient
+
+      ! Resolved before any integrals, so a misspelled policy costs nothing.
+      call parse_df_derivative_memory(settings%df_derivative_memory, derivative_memory, error)
+      if (error%has_error()) then
+         call record_failure(result, error)
+         return
+      end if
+
+      ! Only the molecular system is sharded. `gpu_team_active` is false for a
+      ! single-rank run whatever the deck asked for, so this is also what turns
+      ! the mode off when there is nothing to spread over.
+      shard_grid = settings%multi_gpu .and. gpu_team_active()
 
       ! ---- which functional, if any ----------------------------------------
       if (len_trim(settings%functional) == 0) then
@@ -154,13 +169,19 @@ contains
                             orbital_basis, auxiliary_basis, settings%spherical, &
                             n_alpha, functional_id, settings%radial_points, &
                             settings%angular_points, error, n_occ_beta=n_beta, &
-                            n_guess_columns=n_guess_columns, pcm=settings%pcm)
+                            n_guess_columns=n_guess_columns, pcm=settings%pcm, &
+                            shard_xc_grid=shard_grid, &
+                            df_integral_direct=settings%df_integral_direct, &
+                            df_derivative_memory_policy=derivative_memory)
       else
          call system%create(context, fragment%element_numbers, fragment%coordinates, &
                             orbital_basis, auxiliary_basis, settings%spherical, &
                             fragment%nelec/2, functional_id, settings%radial_points, &
                             settings%angular_points, error, &
-                            n_guess_columns=n_guess_columns, pcm=settings%pcm)
+                            n_guess_columns=n_guess_columns, pcm=settings%pcm, &
+                            shard_xc_grid=shard_grid, &
+                            df_integral_direct=settings%df_integral_direct, &
+                            df_derivative_memory_policy=derivative_memory)
       end if
 
       if (.not. error%has_error()) then

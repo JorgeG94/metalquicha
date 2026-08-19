@@ -190,6 +190,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "logger")
       call allow(keys, "gpu")
+      call allow(keys, "multi_gpu")
       call allow(keys, "skip_json_output")
       call allow(keys, "unchecked_input")
       call allow(keys, "checkpoint")
@@ -288,6 +289,8 @@ contains
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
+      call allow(keys, "df_integral_direct")
+      call allow(keys, "df_derivative_memory")
    end function scf_keys
 
    function correlation_keys() result(keys)

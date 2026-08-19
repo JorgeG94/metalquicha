@@ -21,7 +21,7 @@ module mqc_cuest_runtime
    use cusolver, only: CUSOLVER_STATUS_SUCCESS, cusolver_status_name
    use cuda_runtime, only: cudaMalloc, cudaFree, cudaMemcpy, cudaSuccess, &
                            cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost, &
-                           cudaDeviceSynchronize
+                           cudaDeviceSynchronize, cudaMemGetInfo
    use cuda_helpers, only: cuda_error_name, cuda_error_string
    implicit none
    private
@@ -36,6 +36,9 @@ module mqc_cuest_runtime
    public :: device_alloc, device_free        !! Device buffers counted in doubles
    public :: device_offset        !! Address of an element part-way into a buffer
    public :: copy_to_device, copy_to_host     !! Host <-> device transfers
+   public :: device_memory_info   !! Free and total bytes on the current device
+   public :: format_bytes         !! Byte count as a human-readable string
+   public :: workspace_bytes      !! Device bytes a workspace descriptor asks for
 
    integer(c_size_t), parameter :: BYTES_PER_DOUBLE = 8_c_size_t
 
@@ -266,5 +269,71 @@ contains
                                         cudaMemcpyDeviceToHost), &
                              "cudaMemcpy D2H ("//trim(context)//")", error)
    end subroutine copy_to_host
+
+   subroutine device_memory_info(free_bytes, total_bytes, ok)
+      !! Free and total device memory, in bytes
+      !!
+      !! `ok` is false when CUDA declines to answer, in which case the two
+      !! counts are zero. Callers use this to *report*, never to decide -- a
+      !! free-memory reading is a snapshot, another process can take the
+      !! memory a microsecond later, and the allocation itself remains the
+      !! authority on whether it fits.
+      integer(c_int64_t), intent(out) :: free_bytes, total_bytes
+      logical, intent(out) :: ok
+
+      integer(c_size_t) :: free_c, total_c
+      integer(c_int) :: status
+
+      free_c = 0_c_size_t
+      total_c = 0_c_size_t
+      status = cudaMemGetInfo(free_c, total_c)
+      ok = (status == cudaSuccess)
+      if (ok) then
+         free_bytes = int(free_c, c_int64_t)
+         total_bytes = int(total_c, c_int64_t)
+      else
+         free_bytes = 0_c_int64_t
+         total_bytes = 0_c_int64_t
+      end if
+   end subroutine device_memory_info
+
+   pure function workspace_bytes(descriptor) result(bytes)
+      !! Device bytes a workspace descriptor asks for
+      type(cuestWorkspaceDescriptor_t), intent(in) :: descriptor
+      integer(c_int64_t) :: bytes
+
+      bytes = int(descriptor%deviceBufferSizeInBytes, c_int64_t)
+   end function workspace_bytes
+
+   pure function format_bytes(bytes) result(text)
+      !! A byte count as GiB/MiB/KiB, two decimals
+      !!
+      !! Written out rather than left in bytes because the numbers these
+      !! messages carry are in the tens of billions, and "84.3 GiB" is a
+      !! sentence a person can act on where 90529103872 is not.
+      integer(c_int64_t), intent(in) :: bytes
+      character(len=32) :: text
+
+      real(dp) :: value
+      character(len=3) :: unit
+
+      value = real(bytes, dp)
+      if (value >= 1024.0_dp**3) then
+         value = value/1024.0_dp**3
+         unit = "GiB"
+      else if (value >= 1024.0_dp**2) then
+         value = value/1024.0_dp**2
+         unit = "MiB"
+      else if (value >= 1024.0_dp) then
+         value = value/1024.0_dp
+         unit = "KiB"
+      else
+         write (text, "(I0,1X,A)") bytes, "B"
+         text = adjustl(text)
+         return
+      end if
+      write (text, "(F0.2,1X,A)") value, unit
+      text = adjustl(text)
+   end function format_bytes
 
 end module mqc_cuest_runtime

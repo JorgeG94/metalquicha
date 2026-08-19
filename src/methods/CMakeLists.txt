@@ -8,6 +8,7 @@ target_sources(
           mqc_method_dft.F90
           mqc_method_mcscf.f90
           mqc_cuest_iface.f90
+          mqc_gpu_team.f90
           mqc_diis.f90
           mqc_lebedev_data.f90
           mqc_lebedev.f90

@@ -49,6 +49,12 @@ module mqc_method_dft
          !! Print SCF iterations
       integer :: device_rank = 0
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
+      logical :: multi_gpu = .false.
+         !! Spread one system's GPU work over every rank's device
+      logical :: df_integral_direct = .false.
+         !! Recompute the three-index DF integrals instead of caching them
+      character(len=16) :: df_derivative_memory = "auto"
+         !! Where the DF gradient keeps its intermediates
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
       character(len=32) :: guess = "auto"
@@ -161,6 +167,9 @@ contains
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
       settings%device_rank = this%options%device_rank
+      settings%multi_gpu = this%options%multi_gpu
+      settings%df_integral_direct = this%options%df_integral_direct
+      settings%df_derivative_memory = this%options%df_derivative_memory
       ! Resolved here rather than carried as a string, so an unknown name fails
       ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
