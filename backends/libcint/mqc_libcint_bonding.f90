@@ -29,6 +29,8 @@ module mqc_libcint_bonding
                                aambs_atom_ranges, quasi_atomic_orbitals, &
                                quao_result_t, orient_quasi_atomic_orbitals, &
                                kinetic_bond_orders
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
+   use mqc_libcint_atomic_guess, only: free_atom_energies
    use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition, &
                                nuclear_attraction_per_atom, quao_nuclear_attraction, &
                                nuclear_decomposition, print_nuclear_decomposition, &
@@ -149,7 +151,8 @@ contains
       real(dp), allocatable :: s_ao(:, :), u_active(:, :)
       real(dp), allocatable :: cumulant(:, :, :, :), cumulant_quao(:, :, :, :)
       logical :: correlated
-      real(dp) :: span_deficit
+      real(dp) :: span_deficit, formation
+      real(dp), allocatable :: free_energy(:), adaptation(:)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -400,6 +403,30 @@ contains
          tot_inter = kin_inter + nuc_inter + two_inter + rep_inter
          call print_total_decomposition(tot_intra, tot_inter, element_symbols)
 
+         ! The atoms as they would be on their own. Subtracting them turns a
+         ! table of large numbers into the energy of formation, which is the
+         ! quantity chemistry is about: what it costs to prepare each atom in
+         ! the shape the molecule needs, against what the pairs give back.
+         call free_atom_energies(mol, free_energy, error)
+         if (error%has_error()) return
+         allocate (adaptation(natm))
+         adaptation = tot_intra - free_energy
+         formation = sum(adaptation) + 0.5_dp*sum(tot_inter)
+         call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
+                              element_symbols, formation)
+
+         ! Subtracting a constant from every atomic term cannot change what the
+         ! pieces sum to, so this must equal the total less the free atoms. It
+         ! catches a free-atom energy landing on the wrong atom, which nothing
+         ! else here would notice.
+         if (abs(formation - (kinetic_total(tot_intra, tot_inter) - sum(free_energy))) &
+             > 1.0e-8_dp) then
+            call error%set(ERROR_VALIDATION, "the energy of formation does not match "// &
+                           "the total less the free atoms, so the atomic references "// &
+                           "were not subtracted from the atoms they belong to.")
+            return
+         end if
+
          one_electron = kinetic_total(kin_intra, kin_inter) + &
                         kinetic_total(nuc_intra, nuc_inter)
          call mol%core_hamiltonian(h_core)
@@ -586,5 +613,41 @@ contains
          end do
       end do
    end function two_electron_reference
+
+   subroutine print_formation(adaptation, free_energy, intra, inter, &
+                              element_symbols, formation)
+      !! What it costs to prepare the atoms, against what the pairs give back
+      !!
+      !! **The adaptation energy is positive and that is not a bug.** An atom in
+      !! a molecule is deformed -- promoted, and in a polar bond stripped of
+      !! charge -- and both cost energy against the free atom. Binding comes
+      !! from the interatomic terms being more negative than the adaptation is
+      !! positive, which is why the two are printed side by side.
+      real(dp), intent(in) :: adaptation(:), free_energy(:), intra(:), inter(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: formation
+
+      character(len=160) :: line
+      character(len=16) :: label
+      integer :: natm, a
+
+      natm = size(adaptation)
+      call logger%info("")
+      call logger%info("  energy of formation")
+      call logger%info("     atom          in molecule      free atom     adaptation")
+      do a = 1, natm
+         write (label, "(a,i0)") trim(adjustl(element_symbols(a)))//" ", a
+         write (line, "(4x,a10,3f15.6)") label, intra(a), free_energy(a), adaptation(a)
+         call logger%info(trim(line))
+      end do
+      call logger%info("")
+      write (line, "(4x,a24,f16.6,a)") "adaptation total", sum(adaptation), " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f16.6,a)") "interatomic total", 0.5_dp*sum(inter), " hartree"
+      call logger%info(trim(line))
+      write (line, "(4x,a24,f16.6,a,f12.3,a)") "energy of formation", formation, &
+         " hartree", formation*HARTREE_TO_KCALMOL, " kcal/mol"
+      call logger%info(trim(line))
+   end subroutine print_formation
 
 end module mqc_libcint_bonding

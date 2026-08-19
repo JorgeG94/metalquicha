@@ -195,6 +195,42 @@ what this analysis can see -- about 89% described. The comparison is against the
 energy the calculation reported, since the reference built from the orbitals
 assumes a determinant and would be short by the whole correlation energy.
 
+
+Energy of formation
+~~~~~~~~~~~~~~~~~~~
+
+The intra-atomic terms above are large because they contain most of each atom's
+own energy. Subtracting the atom as it would be on its own turns them into
+something readable::
+
+    energy of formation
+       atom          in molecule      free atom     adaptation
+      O 1            -73.655015     -74.780310       1.125295
+      H 2             -0.006997      -0.498233       0.491236
+      H 3             -0.006997      -0.498233       0.491236
+
+              adaptation total        2.107766 hartree
+             interatomic total       -2.315771 hartree
+           energy of formation       -0.208004 hartree    -130.525 kcal/mol
+
+**Adaptation is positive and that is the point.** An atom in a molecule is
+promoted into the hybridisation the bonding needs, and in a polar bond it is
+stripped of charge as well; both cost energy against the free atom. Water's
+oxygen pays 1.13 hartree and each hydrogen 0.49. Binding happens because the
+interatomic terms are more negative than the adaptation is positive, and the
+difference is what the molecule is worth.
+
+Each free atom is solved unrestricted at its Hund's-rule ground state in
+**exactly the basis functions it contributes to the molecule**, which is the same
+calculation the ``sad`` and ``sac`` guesses need and shares their cache. Because
+neither side has seen the other atoms' functions there is no basis-set
+superposition error to correct.
+
+One caveat for a correlated wave function: the free atoms are still solved at the
+unrestricted Hartree--Fock level, so a CASSCF molecule is being measured against
+uncorrelated atoms and the formation energy inherits that imbalance. The
+molecular correlation is included and the atomic correlation is not.
+
 Reading the diagnostics
 -----------------------
 

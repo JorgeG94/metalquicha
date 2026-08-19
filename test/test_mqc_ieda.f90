@@ -19,6 +19,7 @@ module test_mqc_ieda
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
+   use mqc_libcint_atomic_guess, only: free_atom_energies
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_quao, only: quao_result_t
    use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
@@ -101,7 +102,8 @@ contains
                   new_unittest("cumulant_vanishes_for_a_determinant", cumulant_vanishes_for_a_determinant), &
                   new_unittest("cumulant_survives_an_isometry", cumulant_survives_an_isometry), &
                   new_unittest("projection_measures_what_it_misses", projection_measures_what_it_misses), &
-                  new_unittest("cumulant_reaches_the_energy", cumulant_reaches_the_energy) &
+                  new_unittest("cumulant_reaches_the_energy", cumulant_reaches_the_energy), &
+                  new_unittest("free_atoms_are_equivalent_and_bound", free_atoms_are_equivalent_and_bound) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -808,6 +810,47 @@ contains
       call check(error, kinetic_total(intra, inter), energy, thr=1.0e-10_dp, &
                  more="the correlated bins do not sum to the correlated energy")
    end subroutine cumulant_reaches_the_energy
+
+   subroutine free_atoms_are_equivalent_and_bound(error)
+      !! The reference an energy of formation is measured against
+      !!
+      !! Two hydrogens in the same basis must give the same free-atom energy --
+      !! the reference depends on the element and its basis functions, not on
+      !! where the atom sits -- and each must be bound. Getting the two mixed up
+      !! is the failure that a sum rule cannot see, since swapping references
+      !! between atoms of the same element changes nothing and swapping them
+      !! between different elements still leaves the total intact.
+      !!
+      !! Hydrogen in STO-3G is a single function, so its unrestricted doublet is
+      !! that function singly occupied and the energy is above the exact -0.5.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: energies(:)
+
+      call build_libcint_molecule(H2_Z, H2_SYM, H2, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "could not build H2")
+      if (allocated(error)) return
+
+      call free_atom_energies(mol, energies, err)
+      call check(error,.not. err%has_error(), "the free atoms would not converge")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call check(error, size(energies), 2, "one energy per atom was expected")
+      if (.not. allocated(error)) then
+         call check(error, energies(1), energies(2), thr=1.0e-10_dp, &
+                    more="two atoms of the same element got different references")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, energies(1) < 0.0_dp .and. energies(1) > -0.5_dp, &
+                    "a hydrogen atom in a minimal basis should sit just above -0.5")
+      end if
+      call mol%destroy()
+   end subroutine free_atoms_are_equivalent_and_bound
 
 end module test_mqc_ieda
 

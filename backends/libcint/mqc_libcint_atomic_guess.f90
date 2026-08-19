@@ -67,6 +67,7 @@ module mqc_libcint_atomic_guess
    public :: guess_display_name     !! SCF_GUESS_* back to a name, for reporting
    public :: hund_multiplicity      !! Ground-state multiplicity of a free atom
    public :: spherical_average      !! Rotationally invariant part of an atomic density
+   public :: free_atom_energies     !! Converged energy of each atom on its own
    public :: clear_atomic_cache     !! Drop cached atomic solutions
 
    !> How many distinct (element, basis) atomic solutions are kept at once.
@@ -95,6 +96,14 @@ module mqc_libcint_atomic_guess
       !! One converged free-atom calculation, with both guesses precomputed
       integer :: atomic_number = 0
       integer :: n_ao = 0
+      real(dp) :: energy = 0.0_dp
+         !! The converged free-atom energy. Kept because it is the reference an
+         !! energy decomposition subtracts to get an energy of formation, and it
+         !! is already being computed here and thrown away. Solved in exactly the
+         !! basis functions this atom contributes to the parent molecule, so the
+         !! difference from the atom-in-molecule energy is free of any
+         !! basis-set superposition -- neither side has seen the other's
+         !! functions.
       real(dp), allocatable :: d_alpha(:, :), d_beta(:, :)  !! As converged, for SAC
       real(dp), allocatable :: d_half(:, :)                 !! Averaged and halved, for SAD
       logical :: average_exact = .true.
@@ -441,6 +450,7 @@ contains
 
       solution%atomic_number = atomic_number
       solution%n_ao = atom_mol%nao
+      solution%energy = scf%energy
       solution%d_alpha = scf%density
       solution%d_beta = scf%density_beta
       solution%d_half = 0.5_dp*averaged
@@ -477,6 +487,65 @@ contains
          return
       end do
    end function cached_index
+
+   subroutine free_atom_energies(mol, energies, error)
+      !! The energy each atom would have on its own, in its own basis
+      !!
+      !! One unrestricted SCF per *distinct* element at its Hund's-rule ground
+      !! state, which is the same calculation the SAD and SAC guesses need and
+      !! the same cache: asking for these after a run that used an atomic guess
+      !! costs nothing at all.
+      !!
+      !! **Each atom is solved in exactly the basis functions it contributes to
+      !! the molecule**, so subtracting these from atom-in-molecule energies
+      !! leaves no basis-set superposition error to correct -- neither side has
+      !! seen the other atoms' functions. That is the reference the papers mean
+      !! by a free atom, and it is why the slice rather than the element name is
+      !! the cache key.
+      !!
+      !! A ghost centre carries no electrons and gets zero.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), allocatable, intent(out) :: energies(:)   !! (n_atoms), hartree
+      type(error_t), intent(inout) :: error
+
+      type(libcint_molecule_t) :: atom_mol
+      integer :: iatom, idx, z
+
+      if (error%has_error()) return
+
+      allocate (energies(mol%natm))
+      energies = 0.0_dp
+
+      do iatom = 1, mol%natm
+         z = nint(mol%charges(iatom))
+         if (z <= 0) cycle
+
+         call mol%atom_subset(iatom, atom_mol, error)
+         if (error%has_error()) return
+
+         idx = cached_index(z, atom_mol)
+         if (idx == 0) then
+            if (n_cached >= MAX_CACHED) then
+               call error%set(ERROR_VALIDATION, "free atom energies: solution cache "// &
+                              "exhausted")
+               call atom_mol%destroy()
+               return
+            end if
+            n_cached = n_cached + 1
+            call solve_free_atom(atom_mol, z, cache(n_cached), error)
+            if (error%has_error()) then
+               cache(n_cached)%valid = .false.
+               n_cached = n_cached - 1
+               call atom_mol%destroy()
+               return
+            end if
+            idx = n_cached
+         end if
+
+         energies(iatom) = cache(idx)%energy
+         call atom_mol%destroy()
+      end do
+   end subroutine free_atom_energies
 
    subroutine clear_atomic_cache()
       !! Drop every cached atomic solution
