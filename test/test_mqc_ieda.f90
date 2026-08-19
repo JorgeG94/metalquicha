@@ -23,7 +23,7 @@ module test_mqc_ieda
    use mqc_libcint_quao, only: quao_result_t
    use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
                                nuclear_attraction_per_atom, nuclear_decomposition, &
-                               combine_quao_sets
+                               combine_quao_sets, quao_eris, two_electron_decomposition
    implicit none
    private
 
@@ -91,7 +91,10 @@ contains
                   new_unittest("rejects_a_partial_nuclear_field", rejects_a_partial_nuclear_field), &
                   new_unittest("attraction_is_on_the_right_nucleus", attraction_is_on_the_right_nucleus), &
                   new_unittest("survives_rotation_within_an_atom", survives_rotation_within_an_atom), &
-                  new_unittest("core_joins_with_a_density_of_two", core_joins_with_a_density_of_two) &
+                  new_unittest("core_joins_with_a_density_of_two", core_joins_with_a_density_of_two), &
+                  new_unittest("two_electron_bins_by_hand", two_electron_bins_by_hand), &
+                  new_unittest("two_electron_energy_has_a_closed_form", two_electron_energy_has_a_closed_form), &
+                  new_unittest("eris_keep_their_index_order", eris_keep_their_index_order) &
                   ]
    end subroutine collect_mqc_ieda_tests
 
@@ -427,6 +430,145 @@ contains
       call check(error, maxval(abs(combined%population_bond_order(3:6, 3:6) - DENS)), &
                  0.0_dp, thr=TOL, more="the valence density was not carried across")
    end subroutine core_joins_with_a_density_of_two
+
+   subroutine two_orbital_case(quao)
+      !! One orbital on each of two atoms, so an atom label is an orbital label
+      type(quao_result_t), intent(out) :: quao
+
+      quao%n_quao = 2
+      allocate (quao%atom_of(2))
+      quao%atom_of = [1, 2]
+   end subroutine two_orbital_case
+
+   subroutine two_electron_bins_by_hand(error)
+      !! Where each of the four labels sends a term, worked out on paper
+      !!
+      !! Two atoms, one orbital each, a density of two on each diagonal and
+      !! every integral equal to one. With `gamma` diagonal only three families
+      !! of term survive:
+      !!
+      !!   * all four indices on one atom -- Coulomb 4 less half of exchange 4,
+      !!     halved, so 1 to that atom's own bin;
+      !!   * `(1,1,2,2)` and `(2,2,1,1)` -- pure Coulomb, 2 each, and since each
+      !!     distribution sits on one atom and the atoms differ they are the
+      !!     Coulombic interaction of the pair;
+      !!   * `(1,2,2,1)` and `(2,1,1,2)` -- pure exchange, -1 each, and both
+      !!     distributions are spread across the two atoms, so each is split in
+      !!     half between `{1,2}` and `{2,1}`, which is the same pair.
+      !!
+      !! Giving `intra = 1, 1` and a pair energy of `2 + 2 - 1 - 1 = 2`, with
+      !! the four bins summing to `0.25 * (sum gamma)^2 = 4`.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: d(2, 2), eri(2, 2, 2, 2), energy
+      real(dp), allocatable :: intra(:), inter(:, :)
+
+      d = 0.0_dp
+      d(1, 1) = 2.0_dp
+      d(2, 2) = 2.0_dp
+      eri = 1.0_dp
+
+      call two_orbital_case(quao)
+      call two_electron_decomposition(quao, d, eri, 2, intra, inter, energy, err)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+
+      call check(error, energy, 4.0_dp, thr=TOL, more="the two-electron energy")
+      if (allocated(error)) return
+      call check(error, intra(1), 1.0_dp, thr=TOL, more="atom 1's own bin")
+      if (allocated(error)) return
+      call check(error, intra(2), 1.0_dp, thr=TOL, more="atom 2's own bin")
+      if (allocated(error)) return
+      call check(error, inter(1, 2), 2.0_dp, thr=TOL, more="the pair bin")
+   end subroutine two_electron_bins_by_hand
+
+   subroutine two_electron_energy_has_a_closed_form(error)
+      !! With every integral equal to one the energy collapses analytically
+      !!
+      !!     E2 = (1/2) sum [gamma_pq gamma_rs - (1/2) gamma_ps gamma_rq]
+      !!        = (1/2)(sum gamma)^2 - (1/4)(sum gamma)^2
+      !!        = (1/4)(sum gamma)^2
+      !!
+      !! for **any** density, because both double sums factorize the same way.
+      !! So this pins the Coulomb and exchange prefactors against a number that
+      !! owes nothing to the implementation, using an off-diagonal density where
+      !! the hand-worked case above could not.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: eri(N_ORB, N_ORB, N_ORB, N_ORB), energy
+      real(dp), allocatable :: intra(:), inter(:, :)
+
+      eri = 1.0_dp
+      call two_atom_case(quao)
+      call two_electron_decomposition(quao, DENS, eri, 2, intra, inter, energy, err)
+      call check(error,.not. err%has_error(), "the decomposition refused a valid case")
+      if (allocated(error)) return
+
+      call check(error, energy, 0.25_dp*sum(DENS)**2, thr=1.0e-10_dp, &
+                 more="the Coulomb and exchange prefactors do not give the closed form")
+      if (allocated(error)) return
+      call check(error, kinetic_total(intra, inter), energy, thr=1.0e-10_dp, &
+                 more="the bins do not sum to the energy")
+   end subroutine two_electron_energy_has_a_closed_form
+
+   subroutine eris_keep_their_index_order(error)
+      !! That four quarter-transformations leave the indices where they started
+      !!
+      !! The transformation cycles each contracted index to the back, so after
+      !! four passes the order is restored -- provided every pass agrees about
+      !! which index it is on. A permutation matrix makes that readable: with
+      !! `C` swapping the two basis functions, the transformed array must be the
+      !! original with all four indices swapped, and any pair of passes that
+      !! disagree shows up as an element in the wrong place.
+      !!
+      !! An identity matrix would not catch it. A permutation does.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(error_t) :: err
+      real(dp) :: eri(2, 2, 2, 2)
+      real(dp), allocatable :: transformed(:, :, :, :)
+      integer :: p, q, r, sx, swap(2)
+
+      swap = [2, 1]
+      do p = 1, 2
+         do q = 1, 2
+            do r = 1, 2
+               do sx = 1, 2
+                  eri(p, q, r, sx) = 1000.0_dp*p + 100.0_dp*q + 10.0_dp*r + real(sx, dp)
+               end do
+            end do
+         end do
+      end do
+
+      call two_orbital_case(quao)
+      allocate (quao%orbitals(2, 2), quao%population_bond_order(2, 2))
+      quao%orbitals = 0.0_dp
+      quao%orbitals(2, 1) = 1.0_dp
+      quao%orbitals(1, 2) = 1.0_dp
+      quao%population_bond_order = 0.0_dp
+
+      call quao_eris(quao, eri, transformed, err)
+      call check(error,.not. err%has_error(), "the transformation refused a valid case")
+      if (allocated(error)) return
+
+      do p = 1, 2
+         do q = 1, 2
+            do r = 1, 2
+               do sx = 1, 2
+                  call check(error, transformed(p, q, r, sx), &
+                             eri(swap(p), swap(q), swap(r), swap(sx)), thr=1.0e-10_dp, &
+                             more="an index came out of the transformation in the wrong place")
+                  if (allocated(error)) return
+               end do
+            end do
+         end do
+      end do
+   end subroutine eris_keep_their_index_order
 
 end module test_mqc_ieda
 

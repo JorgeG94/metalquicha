@@ -32,7 +32,9 @@ module mqc_libcint_bonding
    use mqc_libcint_ieda, only: kinetic_decomposition, print_kinetic_decomposition, &
                                nuclear_attraction_per_atom, quao_nuclear_attraction, &
                                nuclear_decomposition, print_nuclear_decomposition, &
-                               combine_quao_sets, quao_interference, kinetic_total
+                               combine_quao_sets, quao_interference, kinetic_total, &
+                               quao_eris, two_electron_decomposition, &
+                               print_two_electron_decomposition
    use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
                                       print_quao_report
    implicit none
@@ -119,7 +121,9 @@ contains
       real(dp), allocatable :: nuc_intra(:), nuc_inter(:, :)
       real(dp), allocatable :: full_interference(:, :), h_core(:, :), density_ao(:, :)
       type(quao_result_t) :: core_quao, full_quao
-      real(dp) :: one_electron, reference
+      real(dp) :: one_electron, reference, two_electron, total_energy
+      real(dp), allocatable :: eri_ao(:, :, :, :), eri_quao(:, :, :, :)
+      real(dp), allocatable :: two_intra(:), two_inter(:, :)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       character(len=160) :: line
       character(len=8) :: label
@@ -305,20 +309,56 @@ contains
          ! occupation living outside the valence-virtual span that the population
          ! sum reports above -- a statement about the analysis rather than an
          ! error, so it is printed rather than raised.
+         ! The two-electron energy, where a term carries four atomic labels
+         ! rather than three and both a bra and a ket distribution can be spread
+         ! across two atoms at once.
+         call mol%eris(eri_ao)
+         call quao_eris(full_quao, eri_ao, eri_quao, error)
+         if (error%has_error()) return
+         call two_electron_decomposition(full_quao, full_quao%population_bond_order, &
+                                         eri_quao, natm, two_intra, two_inter, &
+                                         two_electron, error)
+         if (error%has_error()) return
+         call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
+
+         ! **The check the whole thing exists to pass.** Each routine above
+         ! verifies its own bins add up, which says nothing about whether the
+         ! basis they were summed in holds the whole density. This compares the
+         ! energy the decomposition arrives at against the energy of the same
+         ! wave function computed in the atomic-orbital basis, with nothing
+         ! quasi-atomic anywhere in it.
+         !
+         ! For a reference determinant the two are equal to rounding: the core
+         ! and valence-internal spaces together contain every occupied orbital.
+         ! For a correlated density they are not, and the difference is the same
+         ! occupation living outside the valence-virtual span the population sum
+         ! reports above -- a statement about the analysis rather than an error,
+         ! so it is printed rather than raised.
          one_electron = kinetic_total(kin_intra, kin_inter) + &
                         kinetic_total(nuc_intra, nuc_inter)
          call mol%core_hamiltonian(h_core)
          call one_electron_reference(orbitals, dims%n_occupied, occupations, &
                                      h_core, density_ao, reference)
+         total_energy = one_electron + two_electron + mol%nuclear_repulsion()
+         reference = reference + two_electron_reference(density_ao, eri_ao) + &
+                     mol%nuclear_repulsion()
+
          call logger%info("")
-         write (line, "(4x,a30,f16.6,a)") "one-electron energy", one_electron, " hartree"
+         write (line, "(4x,a30,f16.6,a)") "one-electron", one_electron, " hartree"
+         call logger%info(trim(line))
+         write (line, "(4x,a30,f16.6,a)") "two-electron", two_electron, " hartree"
+         call logger%info(trim(line))
+         write (line, "(4x,a30,f16.6,a)") "nuclear repulsion", &
+            mol%nuclear_repulsion(), " hartree"
+         call logger%info(trim(line))
+         write (line, "(4x,a30,f16.6,a)") "total", total_energy, " hartree"
          call logger%info(trim(line))
          write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
             " hartree"
          call logger%info(trim(line))
-         if (abs(one_electron - reference) > 1.0e-8_dp) then
+         if (abs(total_energy - reference) > 1.0e-8_dp) then
             write (line, "(4x,a30,f16.6,a)") "outside the quasi-atomic span", &
-               reference - one_electron, " hartree"
+               reference - total_energy, " hartree"
             call logger%info(trim(line))
          end if
 
@@ -425,5 +465,33 @@ contains
 
       energy = sum(density_ao*h)
    end subroutine one_electron_reference
+
+   pure function two_electron_reference(density_ao, eri_ao) result(energy)
+      !! The two-electron energy straight from the atomic-orbital density
+      !!
+      !! The same `Gamma = gamma gamma - (1/2) gamma gamma` as the decomposition
+      !! uses, contracted in the basis the integrals were computed in. Built
+      !! independently so that comparing the two is a check and not a
+      !! restatement.
+      real(dp), intent(in) :: density_ao(:, :)
+      real(dp), intent(in) :: eri_ao(:, :, :, :)
+      real(dp) :: energy
+
+      integer :: n, mu, nu, la, si
+
+      n = size(density_ao, 1)
+      energy = 0.0_dp
+      do mu = 1, n
+         do nu = 1, n
+            do la = 1, n
+               do si = 1, n
+                  energy = energy + 0.5_dp*(density_ao(mu, nu)*density_ao(la, si) &
+                                            - 0.5_dp*density_ao(mu, si)*density_ao(la, nu)) &
+                           *eri_ao(mu, nu, la, si)
+               end do
+            end do
+         end do
+      end do
+   end function two_electron_reference
 
 end module mqc_libcint_bonding

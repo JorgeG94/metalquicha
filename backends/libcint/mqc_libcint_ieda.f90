@@ -49,6 +49,9 @@ module mqc_libcint_ieda
    public :: nuclear_attraction_per_atom
    public :: quao_nuclear_attraction
    public :: nuclear_decomposition
+   public :: quao_eris
+   public :: two_electron_decomposition
+   public :: print_two_electron_decomposition
    public :: print_kinetic_decomposition
    public :: print_nuclear_decomposition
 
@@ -472,6 +475,185 @@ contains
       call print_decomposition("nuclear attraction decomposition", intra, inter, &
                                element_symbols)
    end subroutine print_nuclear_decomposition
+
+   subroutine quao_eris(quao, eri_ao, eri_quao, error)
+      !! Two-electron integrals over the quasi-atomic orbitals
+      !!
+      !! Four quarter-transformations, each contracting one atomic-orbital index
+      !! and cycling it to the back, so after four passes `(mu nu|lambda sigma)`
+      !! has become `(pq|rs)` with the indices in the order they started.
+      !!
+      !! **This takes the dense atomic-orbital array and is therefore bounded by
+      !! `n_ao^4`.** That is fine for the molecules this analysis is run on and
+      !! it is not a fundamental cost -- the transformation could be driven from
+      !! the packed integrals, or direct from shell quartets, and nothing above
+      !! here would change. It is written the simple way because the decomposition
+      !! is the part that needed care, and the ceiling is stated rather than
+      !! discovered.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: eri_ao(:, :, :, :)
+      real(dp), allocatable, intent(out) :: eri_quao(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: cur(:, :), t(:, :)
+      integer :: n_ao, n, step, ncol
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      n_ao = size(quao%orbitals, 1)
+      if (any(shape(eri_ao) /= n_ao)) then
+         call error%set(ERROR_VALIDATION, "the two-electron integrals are not in the "// &
+                        "same atomic-orbital basis as the quasi-atomic orbitals.")
+         return
+      end if
+
+      allocate (cur(n_ao, n_ao**3))
+      cur = reshape(eri_ao, [n_ao, n_ao**3])
+      do step = 1, 4
+         ncol = size(cur, 2)
+         allocate (t(n, ncol))
+         call pic_gemm(quao%orbitals, cur, t, transa="T")
+         deallocate (cur)
+         if (step < 4) then
+            allocate (cur(n_ao, ncol*n/n_ao))
+            cur = reshape(transpose(t), [n_ao, ncol*n/n_ao])
+         else
+            allocate (cur(n, n**3))
+            cur = reshape(transpose(t), [n, n**3])
+         end if
+         deallocate (t)
+      end do
+
+      allocate (eri_quao(n, n, n, n))
+      eri_quao = reshape(cur, [n, n, n, n])
+      deallocate (cur)
+   end subroutine quao_eris
+
+   subroutine two_electron_decomposition(quao, density, eri_quao, n_atoms, &
+                                         intra, inter, energy, error)
+      !! Group the two-electron energy by the atoms of its four orbitals
+      !!
+      !! For a single determinant the two-particle density is
+      !!
+      !!     Gamma_pqrs = gamma_pq gamma_rs - (1/2) gamma_ps gamma_rq
+      !!
+      !! and `E2 = (1/2) sum_pqrs Gamma_pqrs (pq|rs)`. Both terms are carried
+      !! together rather than decomposed separately, because splitting them
+      !! invites the question of which atoms an exchange term belongs to -- its
+      !! density factors pair `p` with `s` while the integral pairs `p` with `q`
+      !! -- and there is no need to answer it. The integral is what says which
+      !! charge distributions are interacting.
+      !!
+      !! `(pq|rs)` is the interaction of the distribution `pq` with the
+      !! distribution `rs`, so the assignment follows the one-electron case with
+      !! a bra pair and a ket pair instead of a pair and a nucleus:
+      !!
+      !!   * both distributions on one atom, the same atom -- `intra(A)`;
+      !!   * both on one atom, different atoms -- the Coulombic interaction of
+      !!     `A` with `B`, so `{A,B}`;
+      !!   * one distribution spread over two atoms, the other on one -- an
+      !!     interference, charged to the two atoms sharing it;
+      !!   * both spread -- split evenly between the two pairs, which is the
+      !!     only symmetric thing to do with a term that belongs to both.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: eri_quao(:, :, :, :)
+      integer, intent(in) :: n_atoms
+      real(dp), allocatable, intent(out) :: intra(:)
+      real(dp), allocatable, intent(out) :: inter(:, :)
+      real(dp), intent(out) :: energy
+         !! `E2` as summed here, so a caller can compare it against the same
+         !! quantity computed without any of this.
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: w, residual
+      character(len=400) :: message
+      integer :: n, p, q, r, sx, a, b, c, d
+
+      if (error%has_error()) return
+
+      n = quao%n_quao
+      energy = 0.0_dp
+      if (size(density, 1) /= n .or. size(eri_quao, 1) /= n) then
+         call error%set(ERROR_VALIDATION, "the density and the two-electron integrals "// &
+                        "are not both in the quasi-atomic basis.")
+         return
+      end if
+      if (n_atoms < 1 .or. maxval(quao%atom_of(1:n)) > n_atoms) then
+         call error%set(ERROR_VALIDATION, "a quasi-atomic orbital is assigned to an "// &
+                        "atom outside the molecule.")
+         return
+      end if
+
+      allocate (intra(n_atoms), inter(n_atoms, n_atoms))
+      intra = 0.0_dp
+      inter = 0.0_dp
+
+      do p = 1, n
+         a = quao%atom_of(p)
+         do q = 1, n
+            b = quao%atom_of(q)
+            do r = 1, n
+               c = quao%atom_of(r)
+               do sx = 1, n
+                  d = quao%atom_of(sx)
+                  w = 0.5_dp*(density(p, q)*density(r, sx) &
+                              - 0.5_dp*density(p, sx)*density(r, q))*eri_quao(p, q, r, sx)
+                  energy = energy + w
+                  if (a /= b .and. c /= d) then
+                     call deposit(inter, a, b, 0.5_dp*w)
+                     call deposit(inter, c, d, 0.5_dp*w)
+                  else if (a /= b) then
+                     call deposit(inter, a, b, w)
+                  else if (c /= d) then
+                     call deposit(inter, c, d, w)
+                  else if (a == c) then
+                     intra(a) = intra(a) + w
+                  else
+                     call deposit(inter, a, c, w)
+                  end if
+               end do
+            end do
+         end do
+      end do
+
+      residual = kinetic_total(intra, inter) - energy
+      if (abs(residual) > TOL_SUM_RULE) then
+         write (message, "(a,es12.4,a)") "the two-electron decomposition does not sum "// &
+            "back to the energy it was built from; it is short by ", residual, &
+            " hartree. Every term carries four atomic labels and each must reach "// &
+            "exactly one bin, whole or in two halves."
+         call error%set(ERROR_VALIDATION, trim(message))
+         deallocate (intra, inter)
+         return
+      end if
+   end subroutine two_electron_decomposition
+
+   pure subroutine deposit(inter, a, b, value)
+      !! Charge `value` to the pair `{a,b}`
+      !!
+      !! Written into both elements, because `inter` holds the whole pair energy
+      !! in each and `kinetic_total` halves the matrix. The one place any
+      !! decomposition in this module touches the pair matrix, so the convention
+      !! is stated once and cannot drift between terms.
+      real(dp), intent(inout) :: inter(:, :)
+      integer, intent(in) :: a, b
+      real(dp), intent(in) :: value
+
+      inter(a, b) = inter(a, b) + value
+      inter(b, a) = inter(b, a) + value
+   end subroutine deposit
+
+   subroutine print_two_electron_decomposition(intra, inter, element_symbols)
+      !! The atom and atom-pair table for the two-electron energy
+      real(dp), intent(in) :: intra(:)
+      real(dp), intent(in) :: inter(:, :)
+      character(len=*), intent(in) :: element_symbols(:)
+
+      call print_decomposition("two-electron decomposition", intra, inter, &
+                               element_symbols)
+   end subroutine print_two_electron_decomposition
 
    subroutine print_kinetic_decomposition(intra, inter, element_symbols)
       !! The atom and atom-pair table for the kinetic energy
