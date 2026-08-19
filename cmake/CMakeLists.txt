@@ -5,16 +5,16 @@
 # The two differ by more than a `-g`. RelWithDebInfo is `-O2` and picks up none
 # of the architecture tuning below, which is attached to the Release
 # configuration alone -- so the default build was leaving both `-O3` and
-# `-march=native` on the table. It also propagates: an integral library
-# fetched into this build inherits *this* configuration, and libfint's own
-# tuning is expressed for Release, so a RelWithDebInfo parent quietly compiled
-# it at `-O2` and undid it.
+# `-march=native` on the table. It also propagates: an integral library fetched
+# into this build inherits *this* configuration, and libfint's own tuning is
+# expressed for Release, so a RelWithDebInfo parent quietly compiled it at `-O2`
+# and undid it.
 #
-# `-march=native` comes with the Release configuration, and on a cluster that
-# is the wrong default -- see the MQC_ARCH_FLAGS comment below, and pass
-# `-DMQC_ARCH_FLAGS=` for anything built somewhere other than where it runs.
-# The knob was already there; this only changes which configuration a build
-# lands in when the caller says nothing.
+# `-march=native` comes with the Release configuration, and on a cluster that is
+# the wrong default -- see the MQC_ARCH_FLAGS comment below, and pass
+# `-DMQC_ARCH_FLAGS=` for anything built somewhere other than where it runs. The
+# knob was already there; this only changes which configuration a build lands in
+# when the caller says nothing.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE
       "Release"
