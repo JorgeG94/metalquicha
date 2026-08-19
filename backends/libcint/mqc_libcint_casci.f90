@@ -284,7 +284,7 @@ contains
 
    subroutine run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                                    subspaces, min_electrons, max_electrons, result, &
-                                   error, n_roots, verbose, tolerance)
+                                   error, n_roots, verbose, tolerance, guess)
       !! A CI over an occupation-restricted active space, on converged orbitals
       !!
       !! The same integrals as a CASCI -- a restricted space changes which
@@ -307,6 +307,7 @@ contains
       integer, intent(in), optional :: n_roots
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: tolerance
+      real(dp), intent(in), optional :: guess(:, :)   !! (n_determinants, n_roots)
 
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: energies(:), vectors(:, :), dm2(:, :, :, :)
@@ -340,8 +341,13 @@ contains
          return
       end if
 
-      call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
-                       tolerance=tolerance)
+      if (present(guess)) then
+         call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
+                          tolerance=tolerance, guess=guess)
+      else
+         call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
+                          tolerance=tolerance)
+      end if
       if (error%has_error()) return
 
       result%converged = .true.

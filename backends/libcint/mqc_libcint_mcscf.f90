@@ -491,6 +491,7 @@ contains
       real(dp), allocatable :: step_matrix(:, :), overlap(:, :), flat(:)
       real(dp), allocatable :: candidate(:, :)
       real(dp), allocatable :: guess(:, :, :)
+      real(dp), allocatable :: flat_guess(:, :)
       type(diis_state_t) :: diis
       logical :: extrapolated
       character(len=160) :: line
@@ -548,7 +549,7 @@ contains
       if (restricted) then
          call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
                        guess, have_guess, ci, error, subspaces, min_electrons, &
-                       max_electrons)
+                       max_electrons, flat_guess)
       else
          call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
                        guess, have_guess, ci, error)
@@ -641,7 +642,7 @@ contains
                if (restricted) then
                   call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
                                 alpha, beta, guess, have_guess, trial_ci, error, &
-                                subspaces, min_electrons, max_electrons)
+                                subspaces, min_electrons, max_electrons, flat_guess)
                else
                   call solve_ci(mol, candidate, n_inactive, n_active, n_alpha, n_beta, &
                                 alpha, beta, guess, have_guess, trial_ci, error)
@@ -681,7 +682,7 @@ contains
             if (restricted) then
                call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
                              alpha, beta, guess, have_guess, trial_ci, error, &
-                             subspaces, min_electrons, max_electrons)
+                             subspaces, min_electrons, max_electrons, flat_guess)
             else
                call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
                              alpha, beta, guess, have_guess, trial_ci, error)
@@ -837,7 +838,7 @@ contains
 
    subroutine solve_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                        alpha, beta, guess, have_guess, ci, error, &
-                       subspaces, min_electrons, max_electrons)
+                       subspaces, min_electrons, max_electrons, flat_guess)
       !! One CASCI, started from the previous vector when there is one
       !!
       !! After the first couple of macro-iterations the orbitals barely move, so
@@ -855,16 +856,29 @@ contains
       type(casci_result_t), intent(out) :: ci
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: subspaces(:), min_electrons(:), max_electrons(:)
+      real(dp), allocatable, intent(inout), optional :: flat_guess(:, :)
 
-      ! A restricted space starts its CI from scratch each macro-iteration. The
-      ! guess below is a rectangle of alpha by beta strings and a restricted
-      ! space has no such rectangle; carrying the previous vector across would
-      ! need the flat one threaded through instead, which is worth doing once
-      ! the rest of this is known to work and not before.
+      ! A restricted space has no alpha-by-beta rectangle to keep a guess in, so
+      ! it carries the flat vector instead. Same idea and the same payoff: after
+      ! the first few macro-iterations the previous answer is nearly this one,
+      ! and a trust-region backtrack re-solves the CI at a rejected geometry.
       if (present(subspaces)) then
-         call run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
-                                   n_beta, subspaces, min_electrons, max_electrons, &
-                                   ci, error, tolerance=1.0e-11_dp)
+         if (have_guess .and. present(flat_guess)) then
+            call run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
+                                      n_beta, subspaces, min_electrons, max_electrons, &
+                                      ci, error, tolerance=1.0e-11_dp, guess=flat_guess)
+         else
+            call run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
+                                      n_beta, subspaces, min_electrons, max_electrons, &
+                                      ci, error, tolerance=1.0e-11_dp)
+         end if
+         if (error%has_error()) return
+         if (present(flat_guess)) then
+            if (allocated(flat_guess)) deallocate (flat_guess)
+            allocate (flat_guess(size(ci%ci_flat), 1))
+            flat_guess(:, 1) = ci%ci_flat
+            have_guess = .true.
+         end if
          return
       end if
 

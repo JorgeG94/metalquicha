@@ -792,7 +792,7 @@ contains
    end subroutine ormas_apply
 
    subroutine ormas_solve(space, h1e, eri, n_roots, energies, vectors, error, &
-                          tolerance, max_iterations)
+                          tolerance, max_iterations, guess)
       !! The lowest states of a restricted active space, iteratively
       !!
       !! Everything from the partition and the integrals: the strings, the
@@ -811,6 +811,10 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: tolerance
       integer, intent(in), optional :: max_iterations
+      real(dp), intent(in), optional :: guess(:, :)
+         !! (n_determinants, n_roots) starting vectors. An orbital optimiser
+         !! hands back the previous macro-iteration's answer, which after the
+         !! first few is nearly this one already.
 
       type(ormas_operator_t) :: operator
       type(ormas_closure_t), target :: closure
@@ -837,9 +841,15 @@ contains
       operator%alpha_table => alpha_table
       operator%beta_table => beta_table
 
-      call davidson_flat(operator, diagonal, n_roots, energies, vectors, residuals, &
-                         iterations_taken, sigma_products, converged, error, &
-                         tolerance, max_iterations)
+      if (present(guess)) then
+         call davidson_flat(operator, diagonal, n_roots, energies, vectors, residuals, &
+                            iterations_taken, sigma_products, converged, error, &
+                            tolerance, max_iterations, guess=guess)
+      else
+         call davidson_flat(operator, diagonal, n_roots, energies, vectors, residuals, &
+                            iterations_taken, sigma_products, converged, error, &
+                            tolerance, max_iterations)
+      end if
       if (error%has_error()) return
 
       if (.not. converged) then
