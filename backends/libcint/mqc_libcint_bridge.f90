@@ -409,6 +409,9 @@ contains
       real(dp), allocatable :: guess_a(:, :), guess_b(:, :), guess_total(:, :)
       type(error_t) :: guess_error
       type(error_t) :: analysis_error
+      real(dp), allocatable :: ieda_atom(:), ieda_free(:)
+      real(dp), allocatable :: ieda_pair(:, :), ieda_classical(:, :)
+      real(dp) :: ieda_formation
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
@@ -786,11 +789,16 @@ contains
                                 fragment%coordinates, scf%orbitals, fragment%nelec, &
                                 analysis_error, threshold=settings%bonding_threshold, &
                                 energy_decomposition=settings%bonding_energy, &
-                                no_sharing=settings%bonding_no_sharing)
+                                no_sharing=settings%bonding_no_sharing, &
+                                atom_energy=ieda_atom, free_atom_energy=ieda_free, &
+                                pair_energy=ieda_pair, pair_classical=ieda_classical, &
+                                formation_energy=ieda_formation)
          if (analysis_error%has_error()) then
             call logger%warning("  the bonding analysis could not run: "// &
                                 analysis_error%get_message())
          end if
+         call store_decomposition(result, ieda_atom, ieda_free, ieda_pair, &
+                                  ieda_classical, ieda_formation)
       end if
 
       ! ---- dE/dR, analytically ----------------------------------------------
@@ -1479,6 +1487,9 @@ contains
       type(casci_result_t) :: casci
       type(error_t) :: error
       type(error_t) :: analysis_error
+      real(dp), allocatable :: ieda_atom(:), ieda_free(:)
+      real(dp), allocatable :: ieda_pair(:, :), ieda_classical(:, :)
+      real(dp) :: ieda_formation
       type(avas_result_t) :: avas
       logical :: use_avas, use_valence
       real(dp), allocatable :: natural(:, :), occupations(:), reference(:, :)
@@ -1743,7 +1754,12 @@ contains
                                       active_dm1=casscf%dm1, active_dm2=casscf%dm2, &
                                       reference_energy=casscf%energy, &
                                       energy_decomposition=settings%bonding_energy, &
-                                      no_sharing=settings%bonding_no_sharing)
+                                      no_sharing=settings%bonding_no_sharing, &
+                                      atom_energy=ieda_atom, &
+                                      free_atom_energy=ieda_free, &
+                                      pair_energy=ieda_pair, &
+                                      pair_classical=ieda_classical, &
+                                      formation_energy=ieda_formation)
             else
                call run_quao_analysis(mol, fragment%element_numbers, symbols, &
                                       fragment%coordinates, natural, fragment%nelec, &
@@ -1755,19 +1771,49 @@ contains
                                       active_dm1=casci%dm1, active_dm2=casci%dm2, &
                                       reference_energy=casci%energy, &
                                       energy_decomposition=settings%bonding_energy, &
-                                      no_sharing=settings%bonding_no_sharing)
+                                      no_sharing=settings%bonding_no_sharing, &
+                                      atom_energy=ieda_atom, &
+                                      free_atom_energy=ieda_free, &
+                                      pair_energy=ieda_pair, &
+                                      pair_classical=ieda_classical, &
+                                      formation_energy=ieda_formation)
             end if
          end if
          if (analysis_error%has_error()) then
             call logger%warning("  the bonding analysis could not run: "// &
                                 analysis_error%get_message())
          end if
+         call store_decomposition(result, ieda_atom, ieda_free, ieda_pair, &
+                                  ieda_classical, ieda_formation)
       end if
 
       result%scf_status = SCF_CONVERGED
       result%has_energy = .true.
       call mol%destroy()
    end subroutine run_libcint_mcscf
+
+   subroutine store_decomposition(result, atom_energy, free_atom_energy, &
+                                  pair_energy, pair_classical, formation_energy)
+      !! Put the energy decomposition on the result, if there is one
+      !!
+      !! Written once and called from both analysis sites, because the two
+      !! differ only in which wave function they analysed. Nothing happens when
+      !! the decomposition did not run: `energy_decomposition` is off by
+      !! default and the arrays come back unallocated, which is what tells
+      !! "not asked for" from "came out zero".
+      type(calculation_result_t), intent(inout) :: result
+      real(dp), intent(in), allocatable :: atom_energy(:), free_atom_energy(:)
+      real(dp), intent(in), allocatable :: pair_energy(:, :), pair_classical(:, :)
+      real(dp), intent(in) :: formation_energy
+
+      if (.not. allocated(atom_energy)) return
+      result%ieda_atom = atom_energy
+      if (allocated(free_atom_energy)) result%ieda_free_atom = free_atom_energy
+      if (allocated(pair_energy)) result%ieda_pair = pair_energy
+      if (allocated(pair_classical)) result%ieda_classical = pair_classical
+      result%ieda_formation = formation_energy
+      result%has_ieda = .true.
+   end subroutine store_decomposition
 
    pure function to_real_text(value) result(out)
       !! A small real in exponent form, for an error message

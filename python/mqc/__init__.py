@@ -528,6 +528,47 @@ class Result:
         return dict(terms) if isinstance(terms, dict) else None
 
     @property
+    def bonding(self):
+        """The intrinsic energy decomposition, or None.
+
+        Present when the run asked for one --
+        ``properties={"bonding_analysis": {"type": "gms_quao",
+        "energy_decomposition": True}}`` -- and wrote its output. Three keys:
+
+        ``energy_of_formation``
+            The molecule against its free atoms, in Hartree.
+        ``atoms``
+            One entry per atom, 0-based: its ``energy`` (everything happening
+            inside that atom), the ``free_atom`` it would be on its own, and
+            the ``adaptation`` between them -- what it cost to prepare it in
+            the shape the molecule needs.
+        ``pairs``
+            One entry per pair, ``i < j``, carrying the full pair energy once:
+            ``energy``, the ``classical`` part an electrostatic model could
+            produce, and the ``interference`` that is left, which is where the
+            analysis argues covalent binding lives.
+
+        **For a single determinant the pieces add up exactly**:
+        ``sum(atoms) + sum(pairs)`` is the total energy, because the
+        decomposition is a regrouping of that sum rather than a model of it.
+        That identity is the thing to assert when using this.
+
+        For a correlated wave function it does not, and the gap is not an
+        error: it is the part of the density living outside the quasi-atomic
+        span the analysis is summed over. On water in 6-31G a CAS(4,4) leaves
+        23 millihartree there. Take ``result.energy - sum(pieces)`` as the
+        measure of how much of the wave function the decomposition is
+        describing, not as a bug.
+
+        The tables are printed too, whatever the verbosity; this is the same
+        numbers in a form a script can screen on.
+        """
+        document = self._output_document()
+        if not document:
+            return None
+        return document.get("bonding_energy")
+
+    @property
     def gradient_norm(self):
         """Norm of the nuclear gradient in Hartree/Bohr, or None.
 

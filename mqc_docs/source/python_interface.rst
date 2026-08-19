@@ -412,7 +412,59 @@ bonding analysis leaves the driver as an energy:
    mqc.MBE(water, level=0, method="hf", basis="6-31g",
            properties={"bonding_analysis": {"type": "gms_quao"}}).run()
 
-See :doc:`bonding_analysis` for what comes out.
+See :doc:`bonding_analysis` for what the tables mean.
+
+The energy decomposition
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+``energy_decomposition`` resolves the total energy onto atoms and atom pairs
+in the quasi-atomic basis, and ``result.bonding`` hands the numbers back:
+
+.. code-block:: python
+
+   >>> result = mqc.MBE(water, level=0, method="hf", basis="6-31g",
+   ...     properties={"bonding_analysis": {"type": "gms_quao",
+   ...                                      "energy_decomposition": True}}
+   ...     ).run(label="water", write_to_file=True)
+   >>> result.bonding["energy_of_formation"]
+   -0.20800323755355832
+   >>> result.bonding["atoms"][0]
+   {'index': 0, 'energy': -73.655036293688, 'free_atom': -74.78030989551682,
+    'adaptation': 1.1252736018288232}
+   >>> result.bonding["pairs"][0]
+   {'atoms': [0, 1], 'energy': -1.186123764253729,
+    'classical': -0.3292398999705206, 'interference': -0.8568838642832084}
+
+Atoms are 0-based; each pair is written once, with ``i < j``, carrying the full
+pair energy. Everything is Hartree -- the printed tables convert to
+millihartree and kcal/mol, this does not.
+
+**For a single determinant the pieces add up exactly.** Every term of the
+decomposition belongs to one atom or to one pair, so
+
+.. code-block:: python
+
+   sum(a["energy"] for a in b["atoms"]) + sum(p["energy"] for p in b["pairs"])
+
+is ``result.energy`` to rounding -- it is a regrouping of that sum, not a model
+of it. ``python/examples/methods.py`` asserts exactly that, and it is a
+stronger check than any external reference: another code's number would say the
+analysis agrees with somebody, this says it did not lose or double-count a term
+of its own energy.
+
+For a correlated wave function the two differ, and that is a statement rather
+than an error: the gap is the part of the density living outside the
+quasi-atomic span being summed over. A CAS(4,4) on water in 6-31G leaves
+23 millihartree there, and the difference is worth reading as "how much of this
+wave function the decomposition describes".
+
+Two costs to know about. ``energy_decomposition`` is off by default because it
+needs the dense ``n_ao^4`` integral array -- eight hundred megabytes at a
+hundred basis functions -- where the bonding tables alone need one-electron
+integrals; ``result.bonding`` being ``None`` is how you can tell it did not
+run. And ``no_sharing: True`` (which implies the decomposition) solves a full
+valence CI over the quasi-atomic orbitals: ethane is eleven million
+determinants and benzene is out of reach.
 
 .. _Interaction energies:
 
@@ -570,6 +622,9 @@ rest available.
      - Norm of the nuclear gradient, from a ``driver="gradient"`` run.
    * - ``sapt``
      - The SAPT0 decomposition as a dict, or ``None``.
+   * - ``bonding``
+     - The intrinsic energy decomposition -- formation energy, per-atom and
+       per-pair terms -- from a run that asked for one, or ``None``.
    * - ``breakdown()``
      - The per-term rows, as ``Term`` objects.
    * - ``unconverged()``
@@ -659,6 +714,29 @@ Let the chemistry choose the fragments
 One xTB single point, then as many trial partitions as you like off the same
 matrix.
 
+Rank the bonds by what actually holds them
+------------------------------------------
+
+The decomposition gives every pair an energy and splits it into the part an
+electrostatic model could produce and the part it could not. Sorting on the
+second is asking which contacts are covalent rather than which are close:
+
+.. code-block:: python
+
+   result = mqc.MBE(molecule, level=0, method="hf", basis="6-31g",
+                    properties={"bonding_analysis": {"type": "gms_quao",
+                                                     "energy_decomposition": True}}
+                    ).run(label="bonds", write_to_file=True)
+
+   pairs = sorted(result.bonding["pairs"], key=lambda p: p["interference"])
+   for pair in pairs[:5]:
+       i, j = pair["atoms"]
+       print(symbols[i], symbols[j], pair["energy"], pair["interference"])
+
+The atom entries answer the other half of the question -- ``adaptation`` is
+what it cost to prepare each atom in the shape the molecule needs, and binding
+is the pairs giving back more than the atoms paid.
+
 SAPT0 over every pair of a cluster
 ----------------------------------
 
@@ -702,7 +780,8 @@ there going quietly stale:
    CASSCF against CASCI on the same space. The last cases are the refusals --
    an unknown method, ``driver="optimize"``, EFP2 with no potentials -- which
    are there because each of them used to return a plausible number or take the
-   interpreter down.
+   interpreter down. The energy decomposition is checked against itself: its
+   atoms and pairs must add back up to the energy the run reported.
 
 ``energy_screened_mbe.py``
    The two-pass calculation above: GFN2 over every term, DFT over the ones
@@ -914,7 +993,7 @@ Session
 -------------------------------
 
 ``Result``: ``energy``, ``label``, ``wrote``, ``fingerprint``, ``gap_ev``,
-``gradient_norm``, ``sapt``, ``breakdown()``, ``breakdown_csv``,
+``gradient_norm``, ``sapt``, ``bonding``, ``breakdown()``, ``breakdown_csv``,
 ``unconverged()``.
 
 ``Term``: ``monomers``, ``energy``, ``delta``, ``distance``, ``converged``,

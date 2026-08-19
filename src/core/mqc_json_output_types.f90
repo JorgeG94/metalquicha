@@ -88,6 +88,17 @@ module mqc_json_output_types
       !! total also goes to `total_energy` like any other method's, but on its
       !! own it is the one number a supermolecular calculation would also give;
       !! the decomposition is what the method was run for.
+      ! Intrinsic energy decomposition, unfragmented runs that asked for one.
+      ! Hartree, and the pair matrices carry the full pair energy in both
+      ! (A,B) and (B,A) -- see `calculation_result_t`, which these are copied
+      ! from unchanged.
+      real(dp), allocatable :: ieda_atom(:)
+      real(dp), allocatable :: ieda_free_atom(:)
+      real(dp), allocatable :: ieda_pair(:, :)
+      real(dp), allocatable :: ieda_classical(:, :)
+      real(dp) :: ieda_formation = 0.0_dp
+      logical :: has_ieda = .false.
+
       real(dp), allocatable :: sapt_terms(:)
       logical :: has_sapt = .false.
 
@@ -127,6 +138,10 @@ contains
       if (allocated(this%pie_coefficients)) deallocate (this%pie_coefficients)
       if (allocated(this%pie_energies)) deallocate (this%pie_energies)
       if (allocated(this%sapt_terms)) deallocate (this%sapt_terms)
+      if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
+      if (allocated(this%ieda_free_atom)) deallocate (this%ieda_free_atom)
+      if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)
+      if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
 
       call this%reset()
    end subroutine json_output_data_destroy
@@ -147,6 +162,8 @@ contains
       this%max_level = 0
       this%n_pie_terms = 0
       this%has_sapt = .false.
+      this%has_ieda = .false.
+      this%ieda_formation = 0.0_dp
    end subroutine json_output_data_reset
 
 end module mqc_json_output_types

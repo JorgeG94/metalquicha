@@ -364,6 +364,55 @@ def bonding_analysis():
             "the analysis leaves the energy alone")
 
 
+def energy_decomposition():
+    """The intrinsic decomposition, and the identity it must satisfy.
+
+    Every term of it belongs to one atom or to one pair, so for a single
+    determinant the pieces are a regrouping of the total and are obliged to add
+    back up to it. That is a stronger check than any reference: an external
+    number would say the analysis agrees with somebody, this says it did not
+    lose or double-count a term of its own energy.
+
+    The reference is the run's own energy, which is why no constant appears
+    here.
+    """
+    system = water()
+    result = mqc.MBE(system, level=0, method="hf", basis="6-31g",
+                     verbosity=VERBOSITY,
+                     properties={"bonding_analysis": {"type": "gms_quao",
+                                                      "energy_decomposition": True}}
+                     ).run(label="m_ieda", write_to_file=True)
+    parts = result.bonding
+    if not parts:
+        return False, None, None, "no decomposition came back"
+    total = (sum(a["energy"] for a in parts["atoms"])
+             + sum(p["energy"] for p in parts["pairs"]))
+    ok = abs(total - result.energy) <= TOL_TIGHT
+    # Each pair is written once, i < j, carrying the full pair energy -- so a
+    # three-atom molecule has three of them, not six and not a triangle of a
+    # doubled matrix.
+    ok = ok and len(parts["pairs"]) == 3 and len(parts["atoms"]) == 3
+    return ok, None, None, f"atoms + pairs = total, diff {abs(total - result.energy):.2e}"
+
+
+def energy_decomposition_is_opt_in():
+    """A plain bonding analysis must not pay for the decomposition.
+
+    The two-electron term needs the dense n_ao^4 array -- thirteen gigabytes at
+    two hundred basis functions -- so it is off unless asked for. The visible
+    consequence is that `result.bonding` is None, and that is what says the
+    memory was not spent.
+    """
+    plain = mqc.MBE(water(), level=0, method="hf", basis="6-31g",
+                    verbosity=VERBOSITY,
+                    properties={"bonding_analysis": {"type": "gms_quao"}}
+                    ).run(label="m_quao_only", write_to_file=True)
+    bare = mqc.MBE(water(), level=0, method="hf", basis="6-31g",
+                   verbosity=VERBOSITY).run(label="m_no_props", write_to_file=True)
+    return (plain.bonding is None and bare.bonding is None, None, None,
+            "no decomposition unless it is asked for")
+
+
 # -- what must be refused ---------------------------------------------------
 #
 # Each of these returned a plausible number or killed the interpreter before
@@ -459,6 +508,8 @@ CASES = [
     ("makefp + efp2", makefp_and_efp2),
     ("gradient", gradient),
     ("bonding analysis", bonding_analysis),
+    ("energy decomposition", energy_decomposition),
+    ("decomposition opt-in", energy_decomposition_is_opt_in),
     ("refuse method", refuses_unknown_method),
     ("refuse f12", refuses_unimplemented_method),
     ("refuse driver", refuses_unknown_driver),
@@ -488,21 +539,21 @@ def main(argv):
                 message = str(exc)
                 if any(hint in message for hint in MISSING_BUILD):
                     skipped.append((name, message.split(".")[0][:70]))
-                    print(f"  {name:<18} {'skipped':>18}   {message.split('.')[0][:60]}")
+                    print(f"  {name:<22} {'skipped':>18}   {message.split('.')[0][:60]}")
                     continue
                 failures.append(f"{name}: {message}")
-                print(f"  {name:<18} {'RAISED':>18}   {message[:70]}")
+                print(f"  {name:<22} {'RAISED':>18}   {message[:70]}")
                 continue
 
             if reference is None:
                 ok = bool(value)
-                print(f"  {name:<18} {('ok' if ok else 'FAIL'):>18}   {source}")
+                print(f"  {name:<22} {('ok' if ok else 'FAIL'):>18}   {source}")
                 if not ok:
                     failures.append(f"{name}: {source}")
             else:
                 delta = abs(value - reference)
                 ok = delta <= tolerance
-                print(f"  {name:<18} {value:>18.9f}   ref {reference:>18.9f} "
+                print(f"  {name:<22} {value:>18.9f}   ref {reference:>18.9f} "
                       f"({source})   diff {delta:.2e}   {'ok' if ok else 'FAIL'}")
                 if not ok:
                     failures.append(
