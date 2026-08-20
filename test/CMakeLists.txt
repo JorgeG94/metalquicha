@@ -77,6 +77,8 @@ if(MQC_ENABLE_LIBCINT)
   # The quasi-atomic orbitals themselves, and the density in their basis.
   addtest(mqc_quao)
   target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
+  addtest(mqc_hess_ints)
+  target_link_libraries(test_mqc_hess_ints PRIVATE cint_fortran cint)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)
