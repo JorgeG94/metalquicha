@@ -15,6 +15,7 @@ module mqc_cuest_driver
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
+                               scf_not_converged_message, &
                                frontier_orbitals
    use mqc_cuest_context, only: cuest_context_t, get_cuest_context
    use mqc_cuest_integrals, only: cuest_system_t
@@ -256,8 +257,7 @@ contains
       ! silently on the other, which is what it did while this was only
       ! recorded here.
       if (.not. scf%converged .and. .not. settings%allow_crap_scf) then
-         call error%set(ERROR_GENERIC, "SCF not converged in "// &
-                        to_char(scf%iterations)//" cycles")
+         call error%set(ERROR_GENERIC, scf_not_converged_message(scf%iterations))
          call record_failure(result, error)
          return
       end if

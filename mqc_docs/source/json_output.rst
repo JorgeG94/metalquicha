@@ -134,9 +134,16 @@ never converged. Those fragments are listed::
 
     "unconverged": {
       "count": 2,
+      "energy_at_stake": -0.0031,
+      "largest_contribution": 0.0024,
       "fragments": [
-        {"id": 12, "level": 2, "monomers": [3, 7]},
-        {"id": 45, "level": 1, "monomers": [9]}
+        {"id": 12, "level": 2, "monomers": [3, 7], "delta_energy": -0.0024},
+        {"id": 45, "level": 1, "monomers": [9], "delta_energy": -0.0007}
+      ],
+      "monomers_involved": [
+        {"monomer": 9, "fragments": 2},
+        {"monomer": 3, "fragments": 1},
+        {"monomer": 7, "fragments": 1}
       ]
     }
 
@@ -145,6 +152,20 @@ re-run: a dimer is only reconstructible if you know which two monomers it was.
 With them, a follow-up job that revisits exactly the misbehaving fragments --
 tighter thresholds, a different guess, a smaller trust radius -- writes itself
 from the output, which is what the Python interface is for.
+
+``energy_at_stake`` answers the question the count does not: whether to care.
+It is the net contribution of the failed fragments to the total, so a run that
+lost a hundred fragments which screening had already made negligible is a run to
+accept rather than repeat. It is signed, because the failures are a subset of a
+sum with cancellation in it; ``largest_contribution`` sits beside it because a
+net near zero can still be two large terms that happen to oppose.
+
+``monomers_involved`` answers the other one: why. A monomer with a wrecked
+geometry, a mis-assigned charge or an accidental radical drags down every
+fragment it belongs to, so failures cluster on their cause. Four hundred failed
+dimers sharing one monomer is one problem, not four hundred, and the list is
+ordered by how many failures each monomer appears in so that the culprit is the
+first row rather than one of four hundred that look alike.
 
 Three things about how it is written.
 
