@@ -95,6 +95,16 @@ contains
 
       if (error%has_error()) return
 
+      ! **The dispatch below ends in a `case default`**, so an unrecognised
+      ! selector would silently return whichever integral that branch names --
+      ! a real integral, of the right shape, and the wrong one. Checked here
+      ! instead of letting the fallthrough decide.
+      if (which < HESS_OVLP_II .or. which > HESS_NUC_IJ) then
+         call error%set(ERROR_VALIDATION, "unknown one-electron second-derivative "// &
+                        "selector; expected one of the HESS_* constants.")
+         return
+      end if
+
       mx = 0
       do ish = 1, mol%nbas
          mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
@@ -220,6 +230,15 @@ contains
       logical :: have
 
       if (error%has_error()) return
+
+      ! Same reason as the one-electron driver: the dispatch has a
+      ! `case default` and an unrecognised selector would come back as a
+      ! plausible wrong integral rather than as an error.
+      if (which < HESS_ERI_II .or. which > HESS_ERI_IK) then
+         call error%set(ERROR_VALIDATION, "unknown two-electron second-derivative "// &
+                        "selector; expected one of the HESS_ERI_* constants.")
+         return
+      end if
 
       mx = 0
       do ish = 1, mol%nbas

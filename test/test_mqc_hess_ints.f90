@@ -48,7 +48,8 @@ contains
            new_unittest("hcore_derivative_is_translationally_invariant", hcore_derivative_is_translationally_invariant), &
                   new_unittest("the_perturbation_sums_to_nothing", the_perturbation_sums_to_nothing), &
                   new_unittest("overlap_derivative_moves_only_one_atom", overlap_derivative_moves_only_one_atom), &
-                  new_unittest("first_order_density_against_finite_difference", first_order_density_fd) &
+                  new_unittest("first_order_density_against_finite_difference", first_order_density_fd), &
+                  new_unittest("an_unknown_selector_is_refused", an_unknown_selector_is_refused) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -671,6 +672,37 @@ contains
       call mol_p%destroy()
       call mol_m%destroy()
    end subroutine first_order_density_fd
+
+   subroutine an_unknown_selector_is_refused(error)
+      !! A selector outside the named set is an error, not a default
+      !!
+      !! Both dispatches end in a `case default`, so without this an
+      !! unrecognised selector returns whichever integral that branch happens to
+      !! name -- a real integral of exactly the right shape, and the wrong one.
+      !! Nothing downstream could tell.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: m(:, :, :)
+      real(dp), allocatable :: e(:, :, :, :, :)
+      logical :: ok
+
+      call build_water(mol, err, ok)
+      call check(error, ok, "could not build water")
+      if (allocated(error)) return
+
+      call hess_1e_block(mol, 99, m, err)
+      call check(error, err%has_error(), "an unknown one-electron selector was accepted")
+      call err%clear()
+      if (.not. allocated(error)) then
+         call hess_2e_block(mol, 99, e, err)
+         call check(error, err%has_error(), &
+                    "an unknown two-electron selector was accepted")
+         call err%clear()
+      end if
+      call mol%destroy()
+   end subroutine an_unknown_selector_is_refused
 
 end module test_mqc_hess_ints
 

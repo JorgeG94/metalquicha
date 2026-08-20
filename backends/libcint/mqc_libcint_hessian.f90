@@ -308,6 +308,12 @@ contains
       !! already known -- orthonormality fixes them -- so the iteration must not
       !! move them, and the solver puts them back from the right-hand side on
       !! every pass.
+      !!
+      !! Allocates its scratch on every call, and this runs once per iteration.
+      !! At the sizes this is correct for that is invisible against the Fock
+      !! build it wraps; on anything large the arrays want to live in the type
+      !! alongside the bounds. Left as it is because moving them there before
+      !! the assembly exists would be guessing at what the assembly needs.
       class(nuclear_response_t), intent(inout) :: this
       real(dp), intent(in) :: vector(:)
       real(dp), intent(out) :: image(:)
@@ -391,6 +397,10 @@ contains
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
 
+      ! Rebuilt per atom, including the Schwarz bounds and a copy of the
+      ! orbitals. One pass over shell pairs per atom where one per molecule
+      ! would do, which is worth hoisting when the assembly above this decides
+      ! how it wants to loop -- and not before.
       type(nuclear_response_t) :: operator
       real(dp), allocatable :: rhs(:), answer(:), h1mo(:, :), s1mo(:, :)
       real(dp), allocatable :: work(:, :), base(:, :)
