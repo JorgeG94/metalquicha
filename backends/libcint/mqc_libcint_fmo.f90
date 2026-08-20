@@ -114,6 +114,19 @@ module mqc_libcint_fmo
       !! What to run, and how hard
       character(len=64) :: basis = "6-31g"
       character(len=16) :: esp = "exact"
+      character(len=16) :: bond_breaking = "none"
+         !! How a cut covalent bond is represented. `"none"` refuses a partition
+         !! that cuts one. `"caps"` closes it with a hydrogen.
+         !!
+         !! Only sound without an embedding field so far. A cap puts an electron
+         !! in the bond region while `u^X` already supplies the neighbour's
+         !! nucleus and density there, so the two double-count -- which is why
+         !! `caps` with `esp` other than `"none"` is refused rather than
+         !! approximated. Removing the host atom's contribution is clean for
+         !! point charges and not for an exact density, and that is the whole
+         !! reason FMO proper uses a frozen orbital instead of a cap.
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a cap sits along the bond it closes; see mqc_physical_fragment.
          !! How a fragment's neighbours are represented to it.
          !!
          !! `"exact"` builds the embedding from the neighbours' actual
@@ -329,6 +342,14 @@ module mqc_libcint_fmo
       real(dp) :: energy = 0.0_dp                !! internal, E'
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
+      integer :: n_caps = 0
+         !! Hydrogen caps closing cut bonds, held at the end of `z`, `sym`
+         !! and `xyz` and deliberately absent from `atoms`. `atoms` maps a
+         !! fragment's entries back onto the system and a cap answers to no
+         !! system atom, so it must not appear there -- it is used as a
+         !! scatter index in several places and a zero would write outside
+         !! the array. The consequence is that `size(atoms)` counts real
+         !! atoms and `size(z)` counts what the SCF actually sees.
       integer, allocatable :: near(:)            !! fragments close enough for the exact term
    end type fragment_t
 
@@ -464,8 +485,37 @@ contains
          return
       end if
 
-      call refuse_severed_bonds(z, coords, owner, n_atoms, error)
-      if (error%has_error()) return
+      if (opts%bond_breaking == "none") then
+         call refuse_severed_bonds(z, coords, owner, n_atoms, error)
+         if (error%has_error()) return
+      else
+         ! Refused, and worth saying why rather than leaving the option to look
+         ! available. Capping a fragment is easy; capping the expansion is not.
+         ! A cap belongs to a *group*, not to a fragment: a bond cut between two
+         ! monomers is restored inside the dimer that contains both ends, so that
+         ! dimer must carry no cap there. N-mers here are built by concatenating
+         ! their members, so caps baked into a monomer arrive inside the dimer
+         ! sitting on the bond they were standing in for -- coincident nuclei and
+         ! an energy 11 Hartree adrift on a tripeptide, measured. What has to
+         ! come first is deciding the cap set per group at n-mer assembly, which
+         ! is what makes the cap contributions cancel through the expansion.
+         !
+         ! There is a second question behind that one. A cap and an embedding
+         ! field both charge the bond region -- the cap supplies an electron and
+         ! a proton where `u^X` already supplies the neighbour's nucleus and
+         ! density -- so caps are only sound at `esp = "none"` until the host
+         ! atom can be removed from the field. That is clean for point charges
+         ! and not for an exact density, which is why FMO proper detaches a bond
+         ! with a frozen orbital rather than a cap.
+         call error%set(ERROR_VALIDATION, "fmo: bond_breaking='"// &
+                        trim(opts%bond_breaking)//"' is not implemented for this "// &
+                        "expansion. A cap has to be decided per n-mer rather than per "// &
+                        "fragment -- a dimer spanning a cut bond must not carry the "// &
+                        "caps its monomers needed -- and that bookkeeping is not built. "// &
+                        "Fragment on whole molecules, or use the many-body path, which "// &
+                        "caps covalent cuts already")
+         return
+      end if
 
       allocate (frag(n_frag))
       do f = 1, n_frag
@@ -593,7 +643,10 @@ contains
       ! already knows would undo the point of building on demand.
       do f = 1, n_frag
          if (.not. allocated(frag(f)%charges)) cycle
-         q_all(frag(f)%atoms) = frag(f)%charges
+         ! Only the real atoms map back. A cap's charge belongs to no atom
+         ! of the system, and `charges` is as long as the molecule the SCF
+         ! saw, which includes them.
+         q_all(frag(f)%atoms) = frag(f)%charges(1:size(frag(f)%atoms))
       end do
    end subroutine all_charges
 

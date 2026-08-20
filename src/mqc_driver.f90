@@ -595,12 +595,22 @@ contains
             end if
             call fragment_owner_map(sys_geom, expansion%owner, expansion%n_fragments)
             expansion%basis = config%method_config%basis_set
+            expansion%bond_breaking = config%bond_breaking
+            expansion%cap_scale = config%cap_scale
             if (config%expansion_kind == "fmo") then
                expansion%esp = "exact"
                expansion%expansion = "fmo"
             else
                expansion%esp = "ptc"
                expansion%expansion = "mbe"
+            end if
+            ! `embedding` overrides what the expansion implies, which is how a
+            ! deck reaches the third pairing the backend supports: esp "none"
+            ! with an mbe expansion, a plain many-body expansion through this
+            ! module. It was parsed and dropped before this, so a deck asking for
+            ! it silently got the embedded method instead.
+            if (trim(config%embedding) == "none") then
+               expansion%esp = "none"
             end if
             expansion%far_field = config%fmo_far_field
             ! The deck's fragmentation level means the same thing here as it
