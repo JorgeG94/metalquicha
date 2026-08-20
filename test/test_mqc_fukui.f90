@@ -38,7 +38,8 @@ contains
       testsuite = [ &
                   new_unittest("indices_sum_to_one_electron", indices_sum_to_one_electron), &
                   new_unittest("water_is_nucleophilic_at_oxygen", water_is_nucleophilic_at_oxygen), &
-                  new_unittest("refuses_an_open_shell_neutral", refuses_an_open_shell_neutral) &
+                  new_unittest("refuses_an_open_shell_neutral", refuses_an_open_shell_neutral), &
+                  new_unittest("values_have_not_drifted", values_have_not_drifted) &
                   ]
    end subroutine collect_mqc_fukui_tests
 
@@ -162,6 +163,47 @@ contains
       call check(error, err%has_error(), "an open-shell neutral was accepted")
       call mol%destroy()
    end subroutine refuses_an_open_shell_neutral
+
+   subroutine values_have_not_drifted(error)
+      !! A regression pin, and not a claim that these are the right numbers
+      !!
+      !! **These are this code's own output, not a reference.** PySCF has no
+      !! Fukui indices, so there is nothing external to check against, and the
+      !! values depend on the population scheme and the basis besides -- water
+      !! in 6-31G gives a quite different set. What they catch is drift: a
+      !! change to the charge fitting, to the ion SCFs, or to the differencing
+      !! that moves the answer without breaking the sum rule or reversing the
+      !! chemistry, both of which the tests above already pin.
+      !!
+      !! Loose on purpose. The electrostatic fit samples a grid, so the last
+      !! couple of figures move with anything that perturbs it; a tolerance
+      !! tight enough to catch that would fail on a compiler change and teach
+      !! everyone to update the number without looking.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(fukui_result_t) :: res
+      type(error_t) :: err
+      logical :: ok
+      real(dp), parameter :: PIN = 1.0e-4_dp
+
+      call water_fukui("chelpg", res, err, ok)
+      call check(error, ok, "the analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, res%f_plus(1), 0.141096_dp, thr=PIN, more="O f+ has drifted")
+      if (allocated(error)) return
+      call check(error, res%f_minus(1), 0.562489_dp, thr=PIN, more="O f- has drifted")
+      if (allocated(error)) return
+      call check(error, res%f_plus(2), 0.429599_dp, thr=PIN, more="H f+ has drifted")
+      if (allocated(error)) return
+      call check(error, res%f_minus(2), 0.218800_dp, thr=PIN, more="H f- has drifted")
+      if (allocated(error)) return
+      call check(error, res%ionisation_potential, 0.307154_dp, thr=PIN, &
+                 more="the ionisation potential has drifted")
+      if (allocated(error)) return
+      call check(error, res%electron_affinity, -0.713407_dp, thr=PIN, &
+                 more="the electron affinity has drifted")
+   end subroutine values_have_not_drifted
 
 end module test_mqc_fukui
 

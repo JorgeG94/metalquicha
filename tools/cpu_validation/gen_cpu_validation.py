@@ -297,6 +297,14 @@ HAND_MAINTAINED = {
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
+    # Fukui indices. PySCF has no Fukui, so this script has no reference to
+    # generate: what the manifest checks for these is the ordinary RHF energy,
+    # and the indices themselves are pinned in test/test_mqc_fukui.f90. The run
+    # is still the assertion -- two SCFs on the ions and a sum rule that aborts
+    # rather than printing something wrong -- so a case that finishes has
+    # exercised the path end to end.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
     # FMO2/FMO3 and EE-MBE. This script generates single-determinant references
     # from PySCF, which has no FMO, so it cannot produce these and would sweep the
     # decks away while leaving their manifest entries pointing at nothing. The two
@@ -492,16 +500,6 @@ MCSCF_CASES = [
 QUAO_CASES = [
     ("water", "6-31g"),
     ("h2s", "6-31g"),
-]
-
-# Fukui indices, one case per population scheme. Water is the molecule because
-# its anion is genuinely unbound -- so the case also exercises the path that
-# warns about it, which is the common one and would otherwise never be run in
-# anger. Both schemes are covered because they are separate code paths through
-# `mqc_libcint_charges` and only one of them can be the default.
-FUKUI_CASES = [
-    ("water", "6-31g", "chelpg"),
-    ("water", "6-31g", "mulliken"),
 ]
 
 GRADIENT_CASES = [
@@ -1993,30 +1991,6 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} quao E={energy:.12f}", flush=True)
-
-    # Fukui indices, through the real driver. As with the analysis above, the
-    # energy the harness checks is the ordinary RHF one -- but here the run
-    # itself is the assertion. Two further SCFs happen on the ions, the
-    # condensed indices are required to sum to one, and a failure of either
-    # aborts the calculation rather than printing something wrong, so a case
-    # that finishes has exercised all of it.
-    for name, basis, scheme in FUKUI_CASES:
-        mol = MOLECULES[name]
-        energy, nao = pyscf_rhf(mol.atoms, basis)
-        tag = normalize_basis_name(basis)
-        deck = deck_for(f"{CPU_MQC}/fukui", f"cpu_{name}_{tag}_fukui_{scheme}")
-        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
-        if not args.dry_run:
-            d = deck_json(xyz_for(mol), basis,
-                          properties={"fukui": {"population": scheme}})
-            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
-        tests.append({
-            "name": f"RHF with Fukui indices ({scheme}) {mol.label} {basis} (CPU)",
-            "input": deck,
-            "expected_energy": round(energy, 12),
-            "type": "unfragmented",
-        })
-        print(f"{mol.label:6s} {basis:12s} fukui/{scheme} E={energy:.12f}", flush=True)
 
     for name, basis, aux, functional, mult in GRADIENT_CASES:
         mol = MOLECULES[name]
