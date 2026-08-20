@@ -31,7 +31,7 @@ module mqc_rdm
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_determinants, only: link_table_t
-   use mqc_ci, only: apply_excitations
+   use mqc_ci, only: excitations_block, beta_strings_per_block
    implicit none
    private
 
@@ -51,6 +51,7 @@ contains
       real(dp), allocatable :: gathered(:, :), paired(:, :)
       real(dp), allocatable :: flat(:)
       integer :: norb, na, nb, npair, ndet, p, q, r, s, pq, qp, rs
+      integer :: per_block, first, last, width
 
       if (error%has_error()) return
       norb = alpha%n_orbitals
@@ -72,22 +73,38 @@ contains
          return
       end if
 
-      call apply_excitations(ci, alpha, beta, gathered)
+      ! Blocked over beta strings, for the reason `beta_strings_per_block`
+      ! gives: the intermediate is `norb^2` by the determinant count, which for
+      ! a large active space is tens of gigabytes. Both contractions below sum
+      ! over determinants, so a block contributes a partial sum and the totals
+      ! accumulate -- exactly, not approximately.
+      per_block = beta_strings_per_block(npair, na, nb)
+      allocate (gathered(npair, na*per_block))
+      allocate (dm1(norb, norb), paired(npair, npair), flat(na*per_block))
+      dm1 = 0.0_dp
+      paired = 0.0_dp
 
-      ! D_pq = <Psi| E_pq |Psi>
-      allocate (dm1(norb, norb), flat(ndet))
-      flat = reshape(ci, [ndet])
-      do q = 1, norb
-         do p = 1, norb
-            pq = p + (q - 1)*norb
-            dm1(p, q) = dot_product(gathered(pq, :), flat)
+      do first = 1, nb, per_block
+         last = min(first + per_block - 1, nb)
+         width = na*(last - first + 1)
+
+         call excitations_block(ci, alpha, beta, first, last, gathered(:, 1:width))
+         flat(1:width) = reshape(ci(:, first:last), [width])
+
+         ! D_pq = <Psi| E_pq |Psi>
+         do q = 1, norb
+            do p = 1, norb
+               pq = p + (q - 1)*norb
+               dm1(p, q) = dm1(p, q) &
+                           + dot_product(gathered(pq, 1:width), flat(1:width))
+            end do
          end do
-      end do
 
-      ! <Psi| E_pq E_rs |Psi> = <E_qp Psi | E_rs Psi>, every pair against every
-      ! other, in one multiply.
-      allocate (paired(npair, npair))
-      call pic_gemm(gathered, gathered, paired, transb="T")
+         ! <Psi| E_pq E_rs |Psi> = <E_qp Psi | E_rs Psi>, every pair against
+         ! every other. `beta=1` so the blocks add rather than overwrite.
+         call pic_gemm(gathered(:, 1:width), gathered(:, 1:width), paired, &
+                       transb="T", alpha=1.0_dp, beta=1.0_dp)
+      end do
 
       allocate (dm2(norb, norb, norb, norb))
       do s = 1, norb
