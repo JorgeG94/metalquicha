@@ -167,12 +167,12 @@ contains
       integer :: ia, ja, a, b
 
       call reference_scf(dens, weight, mol, err)
-      call check(error, .not. err%has_error(), "the reference did not converge")
+      call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
       call partial_hessian(mol, dens, weight, hess, err)
       call nuclear_repulsion_hessian(WATER_Z, WATER, nn, err)
-      call check(error, .not. err%has_error(), "the partial Hessian did not build")
+      call check(error,.not. err%has_error(), "the partial Hessian did not build")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -211,7 +211,7 @@ contains
          end do
       end do
 
-      call check(error, .not. err%has_error(), "a displaced evaluation failed")
+      call check(error,.not. err%has_error(), "a displaced evaluation failed")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -249,12 +249,12 @@ contains
       integer :: ja, ia
 
       call reference_scf(dens, weight, mol, err)
-      call check(error, .not. err%has_error(), "the reference did not converge")
+      call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
       call partial_hessian(mol, dens, weight, hess, err)
       call nuclear_repulsion_hessian(WATER_Z, WATER, nn, err)
-      call check(error, .not. err%has_error(), "the partial Hessian did not build")
+      call check(error,.not. err%has_error(), "the partial Hessian did not build")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -316,12 +316,12 @@ contains
 
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
-      call check(error, .not. err%has_error(), "the reference did not converge")
+      call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
       call eri_ip1_block(mol, ip1, err)
       call h1_contract(mol, scf%density, fast, err)
-      call check(error, .not. err%has_error(), "the one-pass perturbation failed")
+      call check(error,.not. err%has_error(), "the one-pass perturbation failed")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -345,7 +345,7 @@ contains
          deallocate (slow)
       end do
 
-      call check(error, .not. err%has_error(), "the per-atom perturbation failed")
+      call check(error,.not. err%has_error(), "the per-atom perturbation failed")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -412,12 +412,12 @@ contains
       nocc = 5
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
-      call check(error, .not. err%has_error(), "the reference did not converge")
+      call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
       call rhf_hessian(mol, WATER_Z, scf%density, scf%orbitals, &
                        scf%orbital_energies, nocc, hess, err)
-      call check(error, .not. err%has_error(), "the Hessian did not build")
+      call check(error,.not. err%has_error(), "the Hessian did not build")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -457,7 +457,7 @@ contains
          end do
       end do
 
-      call check(error, .not. err%has_error(), "a displaced SCF did not converge")
+      call check(error,.not. err%has_error(), "a displaced SCF did not converge")
       if (allocated(error)) then
          call mol%destroy()
          return
@@ -581,7 +581,7 @@ contains
          else
             call hess_1e_block(mol, HESS_NUC_IJ, nuc, err)
          end if
-         call check(error, .not. err%has_error(), "nuclear block failed")
+         call check(error,.not. err%has_error(), "nuclear block failed")
          if (allocated(error)) return
 
          allocate (total(size(nuc, 1), size(nuc, 2), size(nuc, 3)))
@@ -592,7 +592,7 @@ contains
             else
                call hess_rinv_block(mol, c, HESS_RINV_IJ, rinv, err)
             end if
-            call check(error, .not. err%has_error(), "rinv block failed")
+            call check(error,.not. err%has_error(), "rinv block failed")
             if (allocated(error)) return
             total = total - mol%charges(c)*rinv
             deallocate (rinv)

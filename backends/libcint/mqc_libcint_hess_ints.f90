@@ -652,7 +652,7 @@ contains
                            ! swapped ordering reuse it.
                            gam = 0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
                                  - 0.125_dp*(density(io + i, lo + l)*density(ko + k, jo + j) &
-                                          + density(io + i, ko + k)*density(jo + j, lo + l))
+                                             + density(io + i, ko + k)*density(jo + j, lo + l))
                            if (gam == 0.0_dp) cycle
                            do comp = 1, N_COMPONENTS
                               a = (comp - 1)/3 + 1
