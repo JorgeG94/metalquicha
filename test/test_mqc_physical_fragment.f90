@@ -3,7 +3,8 @@ module test_mqc_physical_fragment
    use mqc_physical_fragment, only: to_angstrom, to_bohr, initialize_system_geometry, &
                                     build_fragment_from_indices, &
                                     redistribute_cap_gradients, &
-                                    system_geometry_t, physical_fragment_t
+                                    system_geometry_t, physical_fragment_t, &
+                                    check_system_geometry
    use mqc_config_types, only: bond_t
    use mqc_error, only: error_t
    use pic_types, only: dp
@@ -31,6 +32,10 @@ contains
                   new_unittest("unit_conversions_bohr_to_angstrom", test_bohr_to_angstrom), &
                   new_unittest("unit_conversions_round_trip", test_unit_conversions_round_trip), &
                   new_unittest("initialize_system_geometry_valid", test_initialize_system_geometry), &
+                  new_unittest("geometry_check_accepts_a_real_molecule", test_geometry_check_accepts), &
+                  new_unittest("geometry_check_finds_a_repeated_atom", test_geometry_check_finds_repeat), &
+                  new_unittest("geometry_check_is_not_fooled_by_a_flat_molecule", test_geometry_check_flat), &
+                  new_unittest("geometry_check_allows_a_shared_coordinate", test_geometry_check_shared_coord), &
                   new_unittest("initialize_system_geometry_invalid", test_initialize_system_invalid), &
                   new_unittest("build_fragment_single_monomer", test_build_fragment_single), &
                   new_unittest("build_fragment_multiple_monomers", test_build_fragment_multiple), &
@@ -661,6 +666,116 @@ contains
          close (unit, status="delete")
       end if
    end subroutine delete_file
+
+   subroutine build_geometry(coords, sys_geom)
+      !! A bare system geometry, which is all the check reads
+      real(dp), intent(in) :: coords(:, :)
+      type(system_geometry_t), intent(out) :: sys_geom
+
+      integer :: n
+
+      n = size(coords, 2)
+      sys_geom%total_atoms = n
+      allocate (sys_geom%coordinates(3, n), sys_geom%element_numbers(n))
+      sys_geom%coordinates = coords
+      sys_geom%element_numbers = 1
+   end subroutine build_geometry
+
+   subroutine test_geometry_check_accepts(error)
+      !! A real molecule is not refused
+      !!
+      !! Nuclei sit a couple of Bohr apart, three orders of magnitude above the
+      !! threshold, so a check that fired on ordinary bond lengths would make
+      !! the program useless -- and would still pass a test that only ever fed
+      !! it broken input.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(error_t) :: geom_error
+      real(dp) :: coords(3, 3)
+
+      coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                        0.0_dp, 0.0_dp, 1.8_dp, &
+                        0.0_dp, 1.7_dp, -0.6_dp], [3, 3])
+      call build_geometry(coords, sys_geom)
+      call check_system_geometry(sys_geom, geom_error)
+      call check(error,.not. geom_error%has_error(), &
+                 "an ordinary molecule was refused")
+   end subroutine test_geometry_check_accepts
+
+   subroutine test_geometry_check_finds_repeat(error)
+      !! Two atoms in the same place are refused, and named
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(error_t) :: geom_error
+      real(dp) :: coords(3, 4)
+
+      coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                        0.0_dp, 0.0_dp, 1.8_dp, &
+                        0.0_dp, 1.7_dp, -0.6_dp, &
+                        0.0_dp, 0.0_dp, 1.8_dp], [3, 4])   ! a copy of atom 2
+      call build_geometry(coords, sys_geom)
+      call check_system_geometry(sys_geom, geom_error)
+      call check(error, geom_error%has_error(), "a repeated atom was accepted")
+      if (allocated(error)) return
+      call check(error, index(geom_error%get_message(), "2") > 0, &
+                 "the message should name the atoms involved")
+   end subroutine test_geometry_check_finds_repeat
+
+   subroutine test_geometry_check_flat(error)
+      !! A molecule with no extent along one axis
+      !!
+      !! **The axis the sweep sorts on is chosen by extent, and this is why.**
+      !! Every atom here has `x = 0`, so sorting on a fixed first axis would put
+      !! the whole system in one bucket -- correct, but quadratic, and silently
+      !! so on the large systems where the check has to be cheap. Worse, a sweep
+      !! that then breaks out of the inner loop on the first `x` gap would find
+      !! nothing at all, since there are no gaps. Planar and linear molecules
+      !! are ordinary, so this is the arrangement to get right.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(error_t) :: geom_error
+      real(dp) :: coords(3, 4)
+
+      coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                        0.0_dp, 2.0_dp, 0.0_dp, &
+                        0.0_dp, 4.0_dp, 0.0_dp, &
+                        0.0_dp, 2.0_dp, 0.0_dp], [3, 4])   ! a copy of atom 2
+      call build_geometry(coords, sys_geom)
+      call check_system_geometry(sys_geom, geom_error)
+      call check(error, geom_error%has_error(), &
+                 "a repeated atom in a flat molecule was missed")
+   end subroutine test_geometry_check_flat
+
+   subroutine test_geometry_check_shared_coord(error)
+      !! Atoms sharing one coordinate are not thereby in the same place
+      !!
+      !! **The separation has to be measured in three dimensions, and this is
+      !! the case that says so.** Two atoms here sit at the same point along the
+      !! axis the sweep sorts on and three Bohr apart in the plane -- an
+      !! ordinary arrangement, since any symmetric molecule is full of atoms
+      !! sharing a coordinate. A check that compared along the sort axis alone
+      !! would call them coincident and refuse the geometry, and every fixture
+      !! whose duplicate coincides on all three axes passes such a check
+      !! happily.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(error_t) :: geom_error
+      real(dp) :: coords(3, 4)
+
+      ! y is the widest axis, and atoms 2 and 3 share y = 2 exactly.
+      coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                        0.0_dp, 2.0_dp, 0.0_dp, &
+                        0.0_dp, 2.0_dp, 3.0_dp, &
+                        0.0_dp, 6.0_dp, 0.0_dp], [3, 4])
+      call build_geometry(coords, sys_geom)
+      call check_system_geometry(sys_geom, geom_error)
+      call check(error,.not. geom_error%has_error(), &
+                 "two atoms sharing one coordinate were called coincident")
+   end subroutine test_geometry_check_shared_coord
 
 end module test_mqc_physical_fragment
 
