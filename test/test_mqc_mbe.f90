@@ -1,6 +1,7 @@
 module test_mqc_mbe
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_mbe, only: compute_mbe
+   use mqc_mbe, only: compute_mbe, collect_unconverged
+   use mqc_result_types, only: SCF_CONVERGED, SCF_NOT_CONVERGED, SCF_UNKNOWN
    use mqc_result_types, only: calculation_result_t, mbe_result_t
    use pic_types, only: dp, int64
    implicit none
@@ -19,7 +20,9 @@ contains
                   new_unittest("mbe_simple_dimer", test_mbe_simple_dimer), &
                   new_unittest("mbe_sorted_order", test_mbe_sorted_order), &
                   new_unittest("mbe_reverse_order", test_mbe_reverse_order), &
-                  new_unittest("mbe_random_order", test_mbe_random_order) &
+                  new_unittest("mbe_random_order", test_mbe_random_order), &
+                  new_unittest("unconverged_carry_their_monomers", test_unconverged_carry_their_monomers), &
+                  new_unittest("unconverged_ignores_silent_methods", test_unconverged_ignores_silent_methods) &
                   ]
    end subroutine collect_mqc_mbe_tests
 
@@ -287,6 +290,85 @@ contains
       if (allocated(polymers)) deallocate (polymers)
 
    end subroutine test_mbe_random_order
+
+   subroutine test_unconverged_carry_their_monomers(error)
+      !! The failed fragments come back with what they were built from
+      !!
+      !! An identifier on its own cannot be re-run: a dimer is only
+      !! reconstructible if you know which two monomers it was. So the pair has
+      !! to survive together, and in the same order as the fragments they came
+      !! from -- a follow-up job built from a list that is right in aggregate
+      !! and shuffled in detail would re-run the wrong dimers and look fine.
+      !!
+      !! Five fragments here: three monomers and two dimers, of which the second
+      !! monomer and the second dimer failed. The third monomer is left
+      !! `SCF_UNKNOWN` **deliberately and in the same array as real failures**:
+      !! a case built only from unknowns never reaches the selection at all,
+      !! because there is nothing to collect and the routine returns early. It
+      !! takes a mixture to find out whether "did not converge" and "did not
+      !! say" are being told apart.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: status(5), polymers(5, 2)
+      integer(int64), allocatable :: ids(:)
+      integer, allocatable :: monomers(:, :)
+
+      polymers = 0
+      polymers(1, 1) = 1
+      polymers(2, 1) = 2
+      polymers(3, 1) = 3
+      polymers(4, :) = [1, 2]
+      polymers(5, :) = [2, 3]
+
+      status = SCF_CONVERGED
+      status(2) = SCF_NOT_CONVERGED
+      status(3) = SCF_UNKNOWN
+      status(5) = SCF_NOT_CONVERGED
+
+      call collect_unconverged(status, polymers, 5_int64, ids, monomers)
+
+      call check(error, size(ids), 2, &
+                 "two fragments failed; the silent one is not a third")
+      if (allocated(error)) return
+      call check(error, int(ids(1)), 2, "the first failure is fragment 2")
+      if (allocated(error)) return
+      call check(error, int(ids(2)), 5, "the second failure is fragment 5")
+      if (allocated(error)) return
+
+      ! The monomer keeps its single member and its padding; the dimer keeps
+      ! both, in order.
+      call check(error, monomers(1, 1), 2, "fragment 2 is monomer 2")
+      if (allocated(error)) return
+      call check(error, monomers(1, 2), 0, "and nothing else")
+      if (allocated(error)) return
+      call check(error, monomers(2, 1), 2, "fragment 5 is the dimer of 2")
+      if (allocated(error)) return
+      call check(error, monomers(2, 2), 3, "and 3")
+   end subroutine test_unconverged_carry_their_monomers
+
+   subroutine test_unconverged_ignores_silent_methods(error)
+      !! A method that never reports convergence has not failed everywhere
+      !!
+      !! `SCF_UNKNOWN` is what a method that does not report leaves on every
+      !! fragment. Listing those would fill the follow-up job with the entire
+      !! calculation, in exactly the runs this exists to help with, so only
+      !! genuine failures are collected. An empty list is still returned rather
+      !! than nothing, because "nothing failed" and "nobody said" are different
+      !! claims and the caller distinguishes them by allocation.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: status(3), polymers(3, 1)
+      integer(int64), allocatable :: ids(:)
+      integer, allocatable :: monomers(:, :)
+
+      polymers(:, 1) = [1, 2, 3]
+      status = SCF_UNKNOWN
+
+      call collect_unconverged(status, polymers, 3_int64, ids, monomers)
+      call check(error, allocated(ids), "a list should still come back")
+      if (allocated(error)) return
+      call check(error, size(ids), 0, "a silent method has not failed everywhere")
+   end subroutine test_unconverged_ignores_silent_methods
 
 end module test_mqc_mbe
 

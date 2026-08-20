@@ -498,6 +498,13 @@ SCF Options
   false). Off because the energy of an SCF that ran out of iterations has the
   right magnitude and nothing downstream can tell.
 
+  In a fragmented run this is often the only way to finish at all -- a few
+  fragments out of millions will not converge, and stopping on the first one
+  wastes the other million. What makes that safe rather than merely tolerable
+  is that the fragments which failed are named in the output, with the monomers
+  each was built from, so the run can be followed up rather than trusted. See
+  :ref:`unconverged-fragments`.
+
 Correlation Options
 ^^^^^^^^^^^^^^^^^^^
 

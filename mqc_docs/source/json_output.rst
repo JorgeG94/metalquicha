@@ -123,6 +123,52 @@ electrophilicity -- unreliable in the same breath.
 Both indices sum to one over the molecule by construction, so a consumer can
 assert it as a cheap check that it read the right section.
 
+.. _unconverged-fragments:
+
+Fragments that did not converge
+===============================
+
+A fragmented run with ``allow_crap_scf`` finishes rather than stopping at the
+first failure, and the total it reports is built partly from fragments that
+never converged. Those fragments are listed::
+
+    "unconverged": {
+      "count": 2,
+      "fragments": [
+        {"id": 12, "level": 2, "monomers": [3, 7]},
+        {"id": 45, "level": 1, "monomers": [9]}
+      ]
+    }
+
+``monomers`` is what makes this actionable. An identifier on its own cannot be
+re-run: a dimer is only reconstructible if you know which two monomers it was.
+With them, a follow-up job that revisits exactly the misbehaving fragments --
+tighter thresholds, a different guess, a smaller trust radius -- writes itself
+from the output, which is what the Python interface is for.
+
+Three things about how it is written.
+
+**The section appears whenever the method reports convergence at all**, with a
+``count`` of zero when nothing failed. That is deliberate: an absent section
+means "this method never said", which is a different claim from "everything
+converged", and a consumer should be able to tell them apart. Methods that do
+not report convergence omit the section entirely rather than claiming success
+for every fragment.
+
+**Fragments whose status is unknown are not listed.** They are not failures, and
+including them would fill the list with the entire calculation in exactly the
+runs where it matters.
+
+**The list is not truncated.** Ten thousand unconverged fragments is a large
+list and also the situation this exists for; keeping the first hundred would
+produce a follow-up job that looked complete and was not. The log still names
+only the first ten, because that is the right length for something a person
+reads.
+
+Currently written for the many-body expansion. The overlapping-fragment path
+does not record per-fragment convergence, so the section is absent there rather
+than empty.
+
 
 Unfragmented Calculations
 =========================
