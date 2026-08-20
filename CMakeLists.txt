@@ -198,6 +198,9 @@ set(MQC_BASIS_BUNDLE
 set(MQC_BASIS_SETS
     # Pople, Dunning, and the auxiliaries the validation inputs name
     "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;cc-pvqz;6-31g(2df,p);aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
+    # the basis the quasi-atomic bonding papers use, so their numbers can be
+    # reproduced rather than approached in a smaller one
+    "6-311++g(3df,3pd)"
     # every def2 the bundle carries: orbital, diffuse, RI/JK auxiliaries, ECP
     "def2-sv(p);def2-sv(p)-jkfit;def2-sv(p)-rifit;def2-svp;def2-svp-rifit;def2-svpd;def2-svpd-rifit"
     "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
