@@ -20,6 +20,7 @@ module mqc_driver
                              gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, &
                              sort_fragments_by_size, generate_mbe_term_list
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
+                                    check_system_geometry, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, &
                                  check_counterpoise_support
@@ -93,6 +94,7 @@ contains
       type(json_output_data_t) :: json_data  !! Cached output data for centralized JSON writing
       logical :: should_write_json  !! Whether this rank should write JSON
       logical :: wants_output       !! Whether the caller asked for files at all
+      type(error_t) :: geometry_error  !! Two atoms in the same place, if any
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -116,6 +118,24 @@ contains
          call logger%info("  Fragment level: "//to_char(max_level))
          call logger%info("  Total atoms: "//to_char(sys_geom%total_atoms))
          call logger%info("============================================")
+      end if
+
+      ! Before anything is dispatched, and on every path. Two atoms in the same
+      ! place make the electron count wrong, so nothing computed afterwards
+      ! means anything -- and the per-fragment check that would eventually
+      ! notice does so a long way into a large expansion, on whichever rank drew
+      ! that term, or never at all if screening drops the fragment that would
+      ! have paired the two copies. It costs one sorted sweep.
+      call check_system_geometry(sys_geom, geometry_error)
+      if (geometry_error%has_error()) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            call logger%error(geometry_error%get_message())
+         end if
+         ! `abort_comm` rather than `error stop`: under MPI the latter reaches
+         ! MPI_ABORT before anything written above it is flushed, so the run
+         ! dies with a rank number and no reason -- which is a worse failure
+         ! than the late discovery this check exists to replace.
+         call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
 
       ! An optimization is a loop over calculations and is driven from above
