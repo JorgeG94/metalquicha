@@ -712,8 +712,8 @@ contains
       end if
       if (n_min /= n_spaces .or. n_max /= n_spaces) then
          call error%set(ERROR_VALIDATION, "keywords.mcscf.ormas names "// &
-                        int_text(n_spaces)//" subspaces but gives "// &
-                        int_text(n_min)//" minima and "//int_text(n_max)// &
+                        int_to_text(n_spaces)//" subspaces but gives "// &
+                        int_to_text(n_min)//" minima and "//int_to_text(n_max)// &
                         " maxima. All three lists describe the same subspaces and "// &
                         "have to be the same length.")
          return
