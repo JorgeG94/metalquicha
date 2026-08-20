@@ -22,6 +22,18 @@ module mqc_vibrational_analysis
    public :: compute_ir_intensities
    public :: print_vibrational_analysis
 
+   !> A direction in the translation-rotation basis counts as real above this,
+   !> and is discarded below it. Applied to a column norm before normalising and
+   !> to the singular values that follow, which are the same question asked twice:
+   !> a linear molecule has five of these directions rather than six, and it is
+   !> the vanishing singular value that says so.
+   real(dp), parameter :: TR_NULL_TOL = 1.0e-10_dp
+
+   !> Denominators below this are left alone rather than divided by. Every use
+   !> is a normalisation whose scale is a sum of squares, so the guard is against
+   !> a mode that is identically zero, not against ordinary smallness.
+   real(dp), parameter :: NORMALISE_FLOOR = 1.0e-14_dp
+
 contains
 
    subroutine compute_vibrational_frequencies(hessian, element_numbers, frequencies, &
@@ -352,7 +364,7 @@ contains
       ! Normalize each column of D
       do k = 1, 6
          norm = sqrt(sum(D(:, k)**2))
-         if (norm > 1.0e-10_dp) then
+         if (norm > TR_NULL_TOL) then
             D(:, k) = D(:, k)/norm
          end if
       end do
@@ -369,14 +381,14 @@ contains
       ! Count non-zero singular values (determines number of modes to project)
       n_modes = 0
       do k = 1, 6
-         if (S(k) > 1.0e-10_dp) n_modes = n_modes + 1
+         if (S(k) > TR_NULL_TOL) n_modes = n_modes + 1
       end do
 
       ! Build orthonormalized D matrix from U (columns with non-zero singular values)
       allocate (D_orth(n_coords, n_modes))
       j = 0
       do k = 1, 6
-         if (S(k) > 1.0e-10_dp) then
+         if (S(k) > TR_NULL_TOL) then
             j = j + 1
             D_orth(:, j) = U(:, k)
          end if
@@ -465,7 +477,7 @@ contains
          end do
 
          ! μ_k = 1 / Σ_i (L²_{i,k} / m_i)
-         if (sum_over_mass > 1.0e-14_dp) then
+         if (sum_over_mass > NORMALISE_FLOOR) then
             reduced_masses(k) = 1.0_dp/sum_over_mass
          else
             ! Near-zero contribution (e.g., trans/rot mode) - assign a large mass
@@ -564,13 +576,13 @@ contains
          if (use_max_norm) then
             ! Gaussian convention: normalize so max |displacement| = 1
             max_disp = maxval(abs(cartesian_displacements(:, k)))
-            if (max_disp > 1.0e-14_dp) then
+            if (max_disp > NORMALISE_FLOOR) then
                cartesian_displacements(:, k) = cartesian_displacements(:, k)/max_disp
             end if
          else
             ! Standard normalization: Σ_i x²_{i,k} = 1
             norm = sqrt(sum(cartesian_displacements(:, k)**2))
-            if (norm > 1.0e-14_dp) then
+            if (norm > NORMALISE_FLOOR) then
                cartesian_displacements(:, k) = cartesian_displacements(:, k)/norm
             end if
          end if

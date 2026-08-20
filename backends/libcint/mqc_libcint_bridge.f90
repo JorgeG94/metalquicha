@@ -14,6 +14,7 @@ module mqc_libcint_bridge
    !! the redistribution of forces back onto the heavy atoms happens later and
    !! elsewhere.
    use pic_logger, only: logger => global_logger
+   use mqc_string_utils, only: int_to_text
    use pic_types, only: dp
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
@@ -22,7 +23,8 @@ module mqc_libcint_bridge
    use mqc_elements, only: element_number_to_symbol
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
    use mqc_cuest_iface, only: cuest_scf_settings_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
+                                    angular_form_name
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
    use mqc_libcint_projection, only: climb_basis_ladder
@@ -607,9 +609,9 @@ contains
       ! a charged or open-shell fragment reads identically to a neutral one
       ! without this, which is exactly the case a fragmented run most needs to
       ! see. Same integers the breakdown CSV carries.
-      call logger%verbose("charge "//to_text(fragment%charge)// &
-                          ", multiplicity "//to_text(fragment%multiplicity)// &
-                          ", electrons "//to_text(fragment%nelec))
+      call logger%verbose("charge "//int_to_text(fragment%charge)// &
+                          ", multiplicity "//int_to_text(fragment%multiplicity)// &
+                          ", electrons "//int_to_text(fragment%nelec))
 
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
@@ -824,7 +826,7 @@ contains
       result%scf_iterations = scf%iterations
       if (.not. scf%converged .and. .not. settings%allow_crap_scf) then
          call result%error%set(ERROR_VALIDATION, "SCF not converged in "// &
-                               to_text(scf%iterations)//" cycles")
+                               int_to_text(scf%iterations)//" cycles")
          result%has_error = .true.
          call aux%destroy()
          call mol%destroy()
@@ -1428,18 +1430,6 @@ contains
       call mol%destroy()
    end subroutine run_libcint_hf
 
-   pure function angular_form_name(cartesian) result(name)
-      !! "Cartesian" or "spherical", so an error can say which basis is which
-      logical, intent(in) :: cartesian
-      character(len=:), allocatable :: name
-
-      if (cartesian) then
-         name = "Cartesian"
-      else
-         name = "spherical"
-      end if
-   end function angular_form_name
-
    subroutine resolve_active_space(settings, fragment, n_ao, space, error)
       !! Turn the deck's active space into the four integers the CI needs
       !!
@@ -1491,8 +1481,8 @@ contains
       unpaired = fragment%multiplicity - 1
       if (mod(n_active_electrons - unpaired, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "an active space of "// &
-                        to_text(n_active_electrons)//" electrons cannot have "// &
-                        "multiplicity "//to_text(fragment%multiplicity)//": the two "// &
+                        int_to_text(n_active_electrons)//" electrons cannot have "// &
+                        "multiplicity "//int_to_text(fragment%multiplicity)//": the two "// &
                         "differ in parity, so there is no way to split the electrons "// &
                         "into alpha and beta counts. Change either the electron count "// &
                         "or the multiplicity by one.")
@@ -1502,10 +1492,10 @@ contains
       n_beta = (n_active_electrons - unpaired)/2
 
       if (n_beta < 0 .or. n_alpha > n_active) then
-         call error%set(ERROR_VALIDATION, "an active space of "//to_text(n_active)// &
-                        " orbitals cannot hold "//to_text(n_alpha)//" alpha and "// &
-                        to_text(n_beta)//" beta electrons at multiplicity "// &
-                        to_text(fragment%multiplicity)//". Widen the active space or "// &
+         call error%set(ERROR_VALIDATION, "an active space of "//int_to_text(n_active)// &
+                        " orbitals cannot hold "//int_to_text(n_alpha)//" alpha and "// &
+                        int_to_text(n_beta)//" beta electrons at multiplicity "// &
+                        int_to_text(fragment%multiplicity)//". Widen the active space or "// &
                         "put fewer electrons in it.")
          return
       end if
@@ -1519,9 +1509,9 @@ contains
       if (settings%mcscf%n_inactive_orbitals < 0) then
          if (closed_shell_electrons < 0 .or. mod(closed_shell_electrons, 2) /= 0) then
             call error%set(ERROR_VALIDATION, "cannot derive the inactive orbitals: "// &
-                           to_text(fragment%nelec)//" electrons less an active space "// &
-                           "of "//to_text(n_active_electrons)//" leaves "// &
-                           to_text(closed_shell_electrons)//", which is not a "// &
+                           int_to_text(fragment%nelec)//" electrons less an active space "// &
+                           "of "//int_to_text(n_active_electrons)//" leaves "// &
+                           int_to_text(closed_shell_electrons)//", which is not a "// &
                            "non-negative even number of doubly occupied electrons. "// &
                            "Set keywords.mcscf.n_inactive_orbitals if the partition is "// &
                            "meant to be something other than the obvious one.")
@@ -1532,11 +1522,11 @@ contains
          n_inactive = settings%mcscf%n_inactive_orbitals
          if (2*n_inactive + n_active_electrons /= fragment%nelec) then
             call error%set(ERROR_VALIDATION, "the orbital partition does not account "// &
-                           "for every electron: "//to_text(n_inactive)//" inactive "// &
-                           "orbitals hold "//to_text(2*n_inactive)//" electrons and "// &
-                           "the active space "//to_text(n_active_electrons)//", which "// &
-                           "is "//to_text(2*n_inactive + n_active_electrons)//" against "// &
-                           "the molecule's "//to_text(fragment%nelec)//".")
+                           "for every electron: "//int_to_text(n_inactive)//" inactive "// &
+                           "orbitals hold "//int_to_text(2*n_inactive)//" electrons and "// &
+                           "the active space "//int_to_text(n_active_electrons)//", which "// &
+                           "is "//int_to_text(2*n_inactive + n_active_electrons)//" against "// &
+                           "the molecule's "//int_to_text(fragment%nelec)//".")
             return
          end if
       end if
@@ -1544,9 +1534,9 @@ contains
       ! The virtual space may be empty -- a CAS in a minimal basis legitimately
       ! uses every orbital -- but it may not be negative.
       if (n_inactive + n_active > n_ao) then
-         call error%set(ERROR_VALIDATION, to_text(n_inactive)//" inactive plus "// &
-                        to_text(n_active)//" active orbitals is more than the "// &
-                        to_text(n_ao)//" the basis '"//trim(settings%basis_set)// &
+         call error%set(ERROR_VALIDATION, int_to_text(n_inactive)//" inactive plus "// &
+                        int_to_text(n_active)//" active orbitals is more than the "// &
+                        int_to_text(n_ao)//" the basis '"//trim(settings%basis_set)// &
                         "' provides. Use a larger basis or a smaller active space.")
          return
       end if
@@ -1603,7 +1593,7 @@ contains
       if (mod(fragment%nelec, 2) /= 0) then
          call result%error%set(ERROR_VALIDATION, "a multiconfigurational calculation "// &
                                "here starts from a closed-shell SCF, and "// &
-                               to_text(fragment%nelec)//" electrons have no restricted "// &
+                               int_to_text(fragment%nelec)//" electrons have no restricted "// &
                                "solution. An open-shell reference would need separate "// &
                                "alpha and beta transforms into the active space, which "// &
                                "are not implemented. An open-shell *state* on an "// &
@@ -1667,7 +1657,7 @@ contains
       ! nothing downstream of this one would say it had happened.
       if (.not. scf%converged) then
          call result%error%set(ERROR_VALIDATION, "the reference SCF did not converge in "// &
-                               to_text(settings%max_iter)//" iterations, so there are no "// &
+                               int_to_text(settings%max_iter)//" iterations, so there are no "// &
                                "orbitals to build an active space from")
          result%has_error = .true.
          call mol%destroy()
@@ -1750,7 +1740,7 @@ contains
                               "improving at a gradient of "// &
                               to_real_text(casscf%gradient_norm)//", short of the "// &
                               to_real_text(settings%mcscf%orbital_convergence)// &
-                              " asked for, after "//to_text(casscf%iterations)// &
+                              " asked for, after "//int_to_text(casscf%iterations)// &
                               " macro-iterations. More iterations will not help -- "// &
                               "no step downhill could be found. Ask for a looser "// &
                               "keywords.mcscf.orbital_convergence; on a flat surface "// &
@@ -1759,7 +1749,7 @@ contains
                call error%set(ERROR_VALIDATION, "the orbital optimisation did not reach an "// &
                               "orbital gradient of "// &
                               to_real_text(settings%mcscf%orbital_convergence)//" in "// &
-                              to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
+                              int_to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
                               "(it stopped at "//to_real_text(casscf%gradient_norm)// &
                               "). Raise keywords.mcscf.max_macro_iter.")
             end if
@@ -1916,14 +1906,6 @@ contains
       write (buffer, "(es9.2)") value
       out = trim(adjustl(buffer))
    end function to_real_text
-
-   pure function to_text(value) result(out)
-      integer, intent(in) :: value
-      character(len=:), allocatable :: out
-      character(len=16) :: buffer
-      write (buffer, "(i0)") value
-      out = trim(adjustl(buffer))
-   end function to_text
 
    subroutine correlation_aux_basis(settings, fragment, symbols, aux, error)
       !! Build the auxiliary basis the correlation step will fit with

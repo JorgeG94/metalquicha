@@ -81,7 +81,7 @@ contains
       real(dp) :: r
 
       call vdw_radius(6, r, err)
-      call check(error,.not. err%has_error(), "carbon must have a radius")
+      call check(error,.not. err%has_error(), "carbon must have a radius: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, r > 3.2_dp .and. r < 3.22_dp, &
                  "carbon's radius must be about 3.21 Bohr, not 1.70 -- an "// &
@@ -106,7 +106,7 @@ contains
       call vdw_radius(16, r_s, err)
       call vdw_radius(11, r_na, err)
       call vdw_radius(12, r_mg, err)
-      call check(error,.not. err%has_error(), "all seven must have radii")
+      call check(error,.not. err%has_error(), "all seven must have radii: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, r_c > r_n .and. r_n > r_o .and. r_o > r_f, &
@@ -125,7 +125,7 @@ contains
 
       call vdw_radius(8, bare, err)
       call cavity_radius(8, DEFAULT_RADII_SCALE, scaled, err)
-      call check(error,.not. err%has_error(), "oxygen must scale")
+      call check(error,.not. err%has_error(), "oxygen must scale: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, abs(scaled - DEFAULT_RADII_SCALE*bare) < TOL, &
                  "the cavity radius must be the scaled van der Waals radius")
@@ -145,7 +145,7 @@ contains
       do z = 1, MAX_PCM_ELEMENT
          call err%clear()
          call vdw_radius(z, r, err)
-         call check(error,.not. err%has_error(), "every element in range must resolve")
+         call check(error,.not. err%has_error(), "every element in range must resolve: "//err%get_full_trace())
          if (allocated(error)) return
          call check(error, r > 0.0_dp, "every radius must be positive")
          if (allocated(error)) return

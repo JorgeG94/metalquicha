@@ -22,6 +22,7 @@ module mqc_dft_prune
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_dft_radial, only: bragg_radius
+   use mqc_dft_partition, only: TINY_RADIUS
    implicit none
    private
 
@@ -54,8 +55,6 @@ module mqc_dft_prune
 
    !> Below this order there is nothing to gain, so pruning is skipped
    integer, parameter :: MIN_PRUNABLE = 50
-
-   real(dp), parameter :: TINY_RADIUS = 1.0e-200_dp
 
 contains
 

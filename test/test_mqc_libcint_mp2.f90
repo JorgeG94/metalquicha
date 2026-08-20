@@ -79,7 +79,7 @@ contains
       type(error_t) :: err
 
       call water_mp2("cc-pvdz", 0, mp2, err)
-      call check(error,.not. err%has_error(), "water MP2 must run")
+      call check(error,.not. err%has_error(), "water MP2 must run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, mp2%opposite_spin < 0.0_dp, "E_OS must be negative")
       if (allocated(error)) return
@@ -123,7 +123,7 @@ contains
 
       call water_mp2("cc-pvdz", 0, all_e, err)
       call water_mp2("cc-pvdz", 1, frozen, err)
-      call check(error,.not. err%has_error(), "both must run")
+      call check(error,.not. err%has_error(), "both must run: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, frozen%n_occupied, all_e%n_occupied - 1)
@@ -223,7 +223,7 @@ contains
                    0.0_dp, -0.757_dp*ANG, 0.587_dp*ANG], [3, 3])
       call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz", mol, err)
       call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz-rifit", aux, err)
-      call check(error,.not. err%has_error(), "water and its auxiliary must build")
+      call check(error,.not. err%has_error(), "water and its auxiliary must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call run_libcint_rhf(mol, 10, 200, E_TOL, D_TOL, .false., scf, err)
@@ -231,7 +231,7 @@ contains
                            exact, err, n_frozen=1)
       call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
                               scf%energy, ri, err, n_frozen=1)
-      call check(error,.not. err%has_error(), "both routes must run")
+      call check(error,.not. err%has_error(), "both routes must run: "//err%get_full_trace())
       if (allocated(error)) return
 
       gap = abs(ri%correlation - exact%correlation)

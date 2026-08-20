@@ -21,10 +21,12 @@ module mqc_cuest_grid
                                                                              c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t
+   use mqc_physical_constants, only: PI
    use mqc_cuest_runtime, only: cuest_status_check
    use cuest, only: cuestAtomGridCreate, cuestAtomGridDestroy, &
                     cuestParametersCreate, cuestParametersDestroy, &
                     CUEST_ATOMGRID_PARAMETERS
+   use mqc_dft_radial, only: M4_ALPHA
    implicit none
    private
 
@@ -32,11 +34,6 @@ module mqc_cuest_grid
    public :: build_atom_grids     !! Build one atom grid per atom
    public :: ahlrichs_radius      !! Element radius used to scale the radial mesh
    public :: ahlrichs_radial_quadrature  !! Treutler-Ahlrichs M4 radial mesh
-
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
-
-   real(dp), parameter :: M4_ALPHA = 0.6_dp
-      !! Exponent of the (1+x) factor in the Treutler-Ahlrichs M4 mapping
 
    integer, parameter :: MAX_TABULATED_Z = 36  !! Radii are tabulated H..Kr
 

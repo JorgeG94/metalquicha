@@ -49,7 +49,7 @@ contains
       ! Check for overlap - should find none
       call check_fragment_overlap(fragments, 2, parse_error)
 
-      call check(error,.not. parse_error%has_error(), "Non-overlapping fragments should pass validation")
+      call check(error,.not. parse_error%has_error(), "Non-overlapping fragments should pass validation: "//parse_error%get_full_trace())
       if (allocated(error)) return
 
       ! Clean up
@@ -114,7 +114,7 @@ contains
       ! Check for overlap - single fragment should pass
       call check_fragment_overlap(fragments, 1, parse_error)
 
-      call check(error,.not. parse_error%has_error(), "Single fragment should pass validation")
+ call check(error,.not. parse_error%has_error(), "Single fragment should pass validation: "//parse_error%get_full_trace())
       if (allocated(error)) return
 
       ! Clean up

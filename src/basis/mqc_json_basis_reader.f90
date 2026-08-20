@@ -33,6 +33,7 @@ module mqc_json_basis_reader
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE
    use json_module, only: json_file
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -117,16 +118,6 @@ contains
       json => basis_cache(n + 1)%json
    end subroutine cached_basis_json
 
-   pure function integer_to_key(value) result(key)
-      !! Atomic number as the string BSE keys its elements by
-      integer, intent(in) :: value
-      character(len=:), allocatable :: key
-      character(len=12) :: buffer
-
-      write (buffer, "(I0)") value
-      key = trim(buffer)
-   end function integer_to_key
-
    subroutine read_json_basis_element(json_path, element_symbol, atom_basis, error)
       !! Parse the basis definition for one element from a BSE JSON file
       !!
@@ -154,7 +145,7 @@ contains
          call error%set(ERROR_PARSE, "Unrecognized element symbol: "//trim(element_symbol))
          return
       end if
-      element_key = integer_to_key(atomic_number)
+      element_key = int_to_text(atomic_number)
 
       call cached_basis_json(json_path, json, error)
       if (error%has_error()) return
@@ -219,7 +210,7 @@ contains
          call shell_angular_momenta(json, element_key, ishell, angular_momenta, found)
          if (.not. found) cycle
 
-         shell_path = "elements."//element_key//".electron_shells("//integer_to_key(ishell)//")"
+         shell_path = "elements."//element_key//".electron_shells("//int_to_text(ishell)//")"
 
          ! Values are read one at a time by indexed path. BSE stores them as
          ! strings to preserve every digit, and json-fortran's scalar string
@@ -251,7 +242,7 @@ contains
             call atom_basis%shells(shell_index)%allocate_arrays(n_prim)
 
             do iprim = 1, n_prim
-               call json%get(shell_path//".exponents("//integer_to_key(iprim)//")", &
+               call json%get(shell_path//".exponents("//int_to_text(iprim)//")", &
                              value_text, found)
                if (.not. found) then
                   call error%set(ERROR_PARSE, "Missing exponent in "//trim(json_path))
@@ -265,8 +256,8 @@ contains
                end if
                atom_basis%shells(shell_index)%exponents(iprim) = value
 
-               call json%get(shell_path//".coefficients("//integer_to_key(imom)//")("// &
-                             integer_to_key(iprim)//")", value_text, found)
+               call json%get(shell_path//".coefficients("//int_to_text(imom)//")("// &
+                             int_to_text(iprim)//")", value_text, found)
                if (.not. found) then
                   call error%set(ERROR_PARSE, "Coefficient set does not match the "// &
                                  "exponent count in "//trim(json_path))
@@ -312,7 +303,7 @@ contains
       if (maxval(angular_momenta) < 2) return
 
       call json%get("elements."//element_key//".electron_shells("// &
-                    integer_to_key(ishell)//").function_type", function_type, found)
+                    int_to_text(ishell)//").function_type", function_type, found)
       if (.not. found) then
          form = ANGULAR_FORM_SPHERICAL
       else if (function_type == "gto_cartesian") then
@@ -434,7 +425,7 @@ contains
       integer :: n_children
 
       call json%info("elements."//element_key//".electron_shells("// &
-                     integer_to_key(ishell)//").coefficients", &
+                     int_to_text(ishell)//").coefficients", &
                      found=found, n_children=n_children)
       if (found .and. n_children > 0) then
          n = n_children

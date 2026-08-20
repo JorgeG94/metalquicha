@@ -37,11 +37,11 @@ module mqc_libcint_mp2_gradient
    !! relaxed density which are not built here.
    use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, max_block, atom_ao_blocks, &
                                     two_electron_block, three_centre, two_centre, &
                                     metric_inverse_sqrt
    use mqc_libcint_mp2, only: transform_ovov
-   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general
+   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general, IN_CORE_LIMIT
    use mqc_libcint_rhf, only: build_fock
    use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use pic_blas_interfaces, only: pic_gemm
@@ -69,10 +69,6 @@ module mqc_libcint_mp2_gradient
       !! hard limit on the routine -- the half-transformed amplitudes and the
       !! one-particle quantities sit outside it -- but it is what sets the block
       !! size, and it is the number to raise on a machine with room.
-
-   real(dp), parameter, public :: IN_CORE_LIMIT = 4.0e9_dp
-      !! Bytes. The same ceiling `mqc_libcint_cphf` applies to its own stored
-      !! tensor, for the same reason and deliberately not a different number.
 
 contains
 
@@ -1141,7 +1137,7 @@ contains
       nao = mol%nao
       nbas = mol%nbas
       natm = mol%natm
-      mx = largest_shell(mol)
+      mx = max_block(mol)
 
       allocate (offsets(natm), counts(natm))
       call atom_ao_blocks(mol, offsets, counts)
@@ -1314,16 +1310,5 @@ contains
 
       call libcint_del_optimizer(opt)
    end subroutine two_electron_mp2_terms
-
-   function largest_shell(mol) result(mx)
-      !! The largest number of functions any one shell contributes
-      type(libcint_molecule_t), intent(in) :: mol
-      integer :: mx, ish
-
-      mx = 1
-      do ish = 1, mol%nbas
-         mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
-      end do
-   end function largest_shell
 
 end module mqc_libcint_mp2_gradient

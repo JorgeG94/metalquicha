@@ -6,6 +6,7 @@ module mqc_combinatorics
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_program_limits, only: MAX_LINE_LENGTH
+   use mqc_math_utils, only: binomial
    implicit none
    private
 
@@ -42,29 +43,6 @@ contains
          n_expected_fragments = n_expected_fragments + binomial(n_monomers, i)
       end do
    end function get_nfrags
-
-   pure function binomial(n, r) result(c)
-      !! Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)
-      !!
-      !! Calculates "n choose r" using iterative algorithm to avoid
-      !! factorial overflow for large numbers.
-      !! Uses int64 to handle large combinatorial values that overflow int32.
-      integer(default_int), intent(in) :: n  !! Total number of items
-      integer(default_int), intent(in) :: r  !! Number of items to choose
-      integer(int64) :: c              !! Binomial coefficient result
-      integer(default_int) :: i              !! Loop counter
-
-      if (r == 0 .or. r == n) then
-         c = 1_int64
-      else if (r > n) then
-         c = 0_int64
-      else
-         c = 1_int64
-         do i = 1, r
-            c = c*int(n - i + 1, int64)/int(i, int64)
-         end do
-      end if
-   end function binomial
 
    pure subroutine create_monomer_list(monomers)
       !! Generate a list of monomer indices from 1 to N

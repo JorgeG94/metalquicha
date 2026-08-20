@@ -27,8 +27,9 @@ module mqc_libcint_gradient
    !! atoms is zero by construction only if they are right -- which is worth
    !! checking, and is checked in the tests.
    use pic_types, only: dp
+   use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, max_block, atom_ao_blocks, &
                                     build_df_shell_table, three_centre, two_centre, &
                                     metric_inverse_sqrt, eri_shell_table_t, &
                                     eri_shell_table, eri_schwarz_collapse
@@ -1149,27 +1150,10 @@ contains
 
    subroutine nuclear_repulsion_gradient(mol, gradient)
       !! dE_NN/dR, accumulated into `gradient`
-      !!
-      !! E_NN = sum_{A<B} Z_A Z_B / R_AB, so the derivative on A points away
-      !! from every other nucleus -- repulsion pushes atoms apart, and the
-      !! gradient being the direction of steepest *ascent* makes the sign the
-      !! one below.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(inout) :: gradient(:, :)
 
-      integer :: ia, ib
-      real(dp) :: rvec(3)
-      real(dp) :: r
-
-      do ia = 1, mol%natm
-         do ib = 1, mol%natm
-            if (ia == ib) cycle
-            rvec = mol%coords(:, ia) - mol%coords(:, ib)
-            r = norm2(rvec)
-            gradient(:, ia) = gradient(:, ia) &
-                              - mol%charges(ia)*mol%charges(ib)*rvec/r**3
-         end do
-      end do
+      call add_nuclear_repulsion_gradient(mol%charges, mol%coords, gradient)
    end subroutine nuclear_repulsion_gradient
 
    subroutine energy_weighted_density(orbitals, energies, n_occ, closed_shell, weighted)
@@ -1226,7 +1210,7 @@ contains
       ! *actual* shell dimensions, so a rank-3 buffer declared at the largest
       ! shell has the wrong strides for every smaller one -- which is invisible
       ! in a basis of s functions and wrong everywhere else.
-      mx = largest_shell(mol)
+      mx = max_block(mol)
       allocate (buf(mx*mx*3))
 
       do ish = 1, mol%nbas
@@ -1294,7 +1278,7 @@ contains
       env(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = mol%coords(:, iatom)
 
       matrix = 0.0_dp
-      mx = largest_shell(mol)
+      mx = max_block(mol)
       allocate (buf(mx*mx*3))
 
       do ish = 1, mol%nbas
@@ -1875,7 +1859,7 @@ contains
       allocate (deriv(orb%nao, orb%nao, aux%nao, 3))
       deriv = 0.0_dp
 
-      mx = max(largest_shell(orb), largest_shell(aux))
+      mx = max(max_block(orb), max_block(aux))
 
       ! Threaded over the first orbital shell. Each (ish, jsh, ksh) writes its
       ! own block of `deriv` and reads nothing another writes, so the only
@@ -1953,7 +1937,7 @@ contains
       env_local = aux%env
       if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
-      mx = largest_shell(aux)
+      mx = max_block(aux)
       allocate (buf(mx*mx*3))
 
       do ish = 1, aux%nbas
@@ -1984,18 +1968,5 @@ contains
          end do
       end do
    end subroutine two_centre_deriv
-
-   pure function largest_shell(mol) result(n)
-      !! Functions in the biggest shell, for sizing a scratch block
-      type(libcint_molecule_t), intent(in) :: mol
-      integer :: n
-
-      integer :: ish
-
-      n = 1
-      do ish = 1, mol%nbas
-         n = max(n, mol%shell_offset(ish + 1) - mol%shell_offset(ish))
-      end do
-   end function largest_shell
 
 end module mqc_libcint_gradient

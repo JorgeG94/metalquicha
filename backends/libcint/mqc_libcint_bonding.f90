@@ -56,6 +56,24 @@ module mqc_libcint_bonding
 
    integer, parameter :: BONDING_NONE = 0
    integer, parameter :: BONDING_GMS_QUAO = 1
+
+   !> The population analysis must account for every electron. Loose next to the
+   !> others because it is a sum over the whole molecule, so it carries the
+   !> rounding of every term in it.
+   real(dp), parameter :: SUM_RULE_TOL = 1.0e-6_dp
+
+   !> How far the valence virtual space may fall short of spanning what the
+   !> minimal basis asks for before the analysis is refused.
+   real(dp), parameter :: SPAN_TOL = 1.0e-6_dp
+
+   !> A decomposition has to add back up to the thing it decomposed. Tighter
+   !> than the sum rule above: these compare a handful of terms rather than a
+   !> sum over the molecule, so there is less rounding to allow for.
+   real(dp), parameter :: BALANCE_TOL = 1.0e-8_dp
+
+   !> Occupations below this contribute nothing and are skipped, which also
+   !> keeps them out of divisions.
+   real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-14_dp
       !! The Ruedenberg quasi-atomic analysis as GAMESS implements it. Named for
       !! the reference implementation rather than the papers because the labels
       !! and the thresholds are GAMESS's, and only the underlying quantities are
@@ -312,7 +330,7 @@ contains
          ! function this analysis is describing. Printed rather than hidden,
          ! because a population analysis quietly losing electrons is the kind of
          ! thing that gets discovered much later and from much further away.
-         if (abs(sum(populations) - real(n_electrons, dp)) > 1.0e-6_dp) then
+         if (abs(sum(populations) - real(n_electrons, dp)) > SUM_RULE_TOL) then
             write (line, "(a,f10.6,a,i0,a)") &
                "    outside the valence space ", &
                real(n_electrons, dp) - sum(populations), " of ", n_electrons, &
@@ -385,7 +403,7 @@ contains
                                      v_atom_quao, dims%n_core, atomic_numbers, natm, &
                                      nuc_core, nuc_val, error)
          if (error%has_error()) return
-         if (maxval(abs(nuc_core + nuc_val - nuc_intra)) > 1.0e-8_dp) then
+         if (maxval(abs(nuc_core + nuc_val - nuc_intra)) > BALANCE_TOL) then
             call error%set(ERROR_VALIDATION, "the screened-nucleus split does not sum "// &
                            "back to the own-nucleus attraction it divides, so the two "// &
                            "charge fractions do not add to one.")
@@ -436,7 +454,7 @@ contains
             ! optimised to lower an energy, the valence-virtual ones to look
             ! atomic. Reported for the same reason the population shortfall is:
             ! it says how much of the correlation this is describing.
-            if (span_deficit > 1.0e-6_dp) then
+            if (span_deficit > SPAN_TOL) then
                write (line, "(a,es10.2)") &
                   "    active orbitals outside the quasi-atomic span ", span_deficit
                call logger%info(trim(line))
@@ -527,7 +545,7 @@ contains
          ! catches a free-atom energy landing on the wrong atom, which nothing
          ! else here would notice.
          if (abs(formation - (kinetic_total(tot_intra, tot_inter) - sum(free_energy))) &
-             > 1.0e-8_dp) then
+             > BALANCE_TOL) then
             call error%set(ERROR_VALIDATION, "the energy of formation does not match "// &
                            "the total less the free atoms, so the atomic references "// &
                            "were not subtracted from the atoms they belong to.")
@@ -577,13 +595,13 @@ contains
                " hartree"
          end if
          call logger%info(trim(line))
-         if (abs(kinetic_total(tot_intra, tot_inter) - total_energy) > 1.0e-8_dp) then
+         if (abs(kinetic_total(tot_intra, tot_inter) - total_energy) > BALANCE_TOL) then
             call error%set(ERROR_VALIDATION, "the atom and atom-pair table does not "// &
                            "sum to the total energy, so the four contributions were "// &
                            "not accumulated consistently.")
             return
          end if
-         if (abs(total_energy - reference) > 1.0e-8_dp) then
+         if (abs(total_energy - reference) > BALANCE_TOL) then
             write (line, "(4x,a30,f16.6,a)") "outside the quasi-atomic span", &
                reference - total_energy, " hartree"
             call logger%info(trim(line))
@@ -679,7 +697,7 @@ contains
       if (present(occupations)) then
          n_use = min(size(occupations), size(orbitals, 2))
          do i = 1, n_use
-            if (abs(occupations(i)) < 1.0e-14_dp) cycle
+            if (abs(occupations(i)) < OCCUPATION_FLOOR) cycle
             density_ao = density_ao + occupations(i)* &
                          spread(orbitals(:, i), 2, n_ao)*spread(orbitals(:, i), 1, n_ao)
          end do

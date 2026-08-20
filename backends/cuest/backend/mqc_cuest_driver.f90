@@ -6,6 +6,7 @@ module mqc_cuest_driver
    !! so both methods funnel through here rather than each carrying its own
    !! copy of the basis loading, context acquisition and teardown.
    use pic_types, only: dp
+   use mqc_string_utils, only: int_to_text
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
    use pic_io, only: to_char
    use mqc_cgto, only: molecular_basis_type
@@ -373,23 +374,13 @@ contains
       do iatom = 1, size(element_symbols)
          if (mol_basis%elements(iatom)%nshells <= 0) then
             call error%set(ERROR_VALIDATION, "No "//what//" defined for element "// &
-                           trim(adjustl(element_symbols(iatom)))//" (atom "//index_text(iatom)// &
+                           trim(adjustl(element_symbols(iatom)))//" (atom "//int_to_text(iatom)// &
                            ") in "//trim(basis_path)//". Add the element to the basis file or "// &
                            "choose a basis that covers it.")
             return
          end if
       end do
    end subroutine check_basis_covers_atoms
-
-   pure function index_text(value) result(text)
-      !! An integer as a trimmed string, for error messages
-      integer, intent(in) :: value
-      character(len=:), allocatable :: text
-      character(len=12) :: buffer
-
-      write (buffer, "(I0)") value
-      text = trim(buffer)
-   end function index_text
 
    subroutine record_failure(result, error)
       !! Mark a calculation as failed, carrying the diagnostic with it

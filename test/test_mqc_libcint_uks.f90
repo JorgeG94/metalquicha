@@ -92,23 +92,23 @@ contains
       ! stalls near 5e-8, so whether it trips a 1e-8 test depends on the DIIS
       ! subspace size rather than on anything this test is about.
       call water(mol, err, "cc-pvdz")
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call xc_context_create(mol, functional, xc_r, err, level=3)
-      call check(error,.not. err%has_error(), "the restricted context must build")
+      call check(error,.not. err%has_error(), "the restricted context must build: "//err%get_full_trace())
       if (allocated(error)) return
       call run_libcint_rhf(mol, 10, 100, E_TOL, D_TOL, .false., rks, err, xc=xc_r)
-      call check(error,.not. err%has_error(), "the restricted SCF must run")
+      call check(error,.not. err%has_error(), "the restricted SCF must run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, rks%converged, "the restricted SCF must converge")
       if (allocated(error)) return
 
       call xc_context_create(mol, functional, xc_u, err, level=3, polarized=.true.)
-      call check(error,.not. err%has_error(), "the polarised context must build")
+      call check(error,.not. err%has_error(), "the polarised context must build: "//err%get_full_trace())
       if (allocated(error)) return
       call run_libcint_uhf(mol, 10, 1, 30, E_TOL, D_TOL, .true., uks, err, xc=xc_u)
-      call check(error,.not. err%has_error(), "the unrestricted SCF must run")
+      call check(error,.not. err%has_error(), "the unrestricted SCF must run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, uks%converged, "the unrestricted SCF must converge")
       if (allocated(error)) return
@@ -180,11 +180,11 @@ contains
       ! Hartree-Fock test on this same molecule: OH is the case whose sigma and pi
       ! solutions compete, and it is slow to settle rather than difficult.
       call build_libcint_molecule([8, 1], ["O ", "H "], c, "def2-svp", mol, err)
-      call check(error,.not. err%has_error(), "OH must build")
+      call check(error,.not. err%has_error(), "OH must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call xc_context_create(mol, "pbe", xc, err, level=3, polarized=.true.)
-      call check(error,.not. err%has_error(), "the polarised context must build")
+      call check(error,.not. err%has_error(), "the polarised context must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! Convergence is deliberately *not* required, and the iteration limit is
@@ -197,13 +197,13 @@ contains
       ! trajectory. It failed about half the time on a 40-core box and never on
       ! CI's two cores, which is the worst possible distribution of a failure.
       call run_libcint_uhf(mol, 9, 2, 60, E_TOL, D_TOL, .false., uks, err, xc=xc)
-      call check(error,.not. err%has_error(), "the unrestricted SCF must run")
+      call check(error,.not. err%has_error(), "the unrestricted SCF must run: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (v_a(mol%nao, mol%nao), v_b(mol%nao, mol%nao))
       call xc_add_potential_uks(xc, mol, uks%density, uks%density_beta, v_a, v_b, &
                                 e_xc, n_elec, err)
-      call check(error,.not. err%has_error(), "the polarised potential must evaluate")
+      call check(error,.not. err%has_error(), "the polarised potential must evaluate: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! Tr(D S) per spin, which the grid integral must reproduce.
@@ -241,10 +241,10 @@ contains
       if (.not. xc_available()) return
 
       call water(mol, err, "sto-3g")
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
       call xc_context_create(mol, "svwn", xc, err, level=1, polarized=.true.)
-      call check(error,.not. err%has_error(), "the polarised context must build")
+      call check(error,.not. err%has_error(), "the polarised context must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (v(mol%nao, mol%nao), d(mol%nao, mol%nao))
@@ -270,10 +270,10 @@ contains
       if (.not. xc_available()) return
 
       call water(mol, err, "sto-3g")
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
       call xc_context_create(mol, "svwn", xc, err, level=1)
-      call check(error,.not. err%has_error(), "the restricted context must build")
+      call check(error,.not. err%has_error(), "the restricted context must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (v_a(mol%nao, mol%nao), v_b(mol%nao, mol%nao), d(mol%nao, mol%nao))

@@ -104,13 +104,13 @@ contains
 
       call clear_atomic_cache()
       call water(mol, err, "cc-pvdz")
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       do i = 1, 4
          if (KINDS(i) == SCF_GUESS_SAC .or. KINDS(i) == SCF_GUESS_SAD) then
             call build_atomic_guess(mol, KINDS(i), g_a, g_b, err)
-            call check(error,.not. err%has_error(), "the atomic guess must build")
+            call check(error,.not. err%has_error(), "the atomic guess must build: "//err%get_full_trace())
             if (allocated(error)) return
             total = g_a + g_b
             call run_libcint_rhf(mol, 10, 100, E_TOL, D_TOL, .false., r(i), err, &
@@ -120,7 +120,7 @@ contains
             call run_libcint_rhf(mol, 10, 100, E_TOL, D_TOL, .false., r(i), err, &
                                  in_core=.true., guess=KINDS(i))
          end if
-         call check(error,.not. err%has_error(), "the SCF must run")
+         call check(error,.not. err%has_error(), "the SCF must run: "//err%get_full_trace())
          if (allocated(error)) return
          call check(error, r(i)%converged, "every guess must converge")
          if (allocated(error)) return
@@ -156,14 +156,14 @@ contains
 
       call clear_atomic_cache()
       call single_atom(6, "C ", "sto-3g", mol, err)
-      call check(error,.not. err%has_error(), "carbon must build")
+      call check(error,.not. err%has_error(), "carbon must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAD, sad_a, sad_b, err)
-      call check(error,.not. err%has_error(), "the SAD guess must build")
+      call check(error,.not. err%has_error(), "the SAD guess must build: "//err%get_full_trace())
       if (allocated(error)) return
       call build_atomic_guess(mol, SCF_GUESS_SAC, sac_a, sac_b, err)
-      call check(error,.not. err%has_error(), "the SAC guess must build")
+      call check(error,.not. err%has_error(), "the SAC guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! SAD is spin-restricted by construction, so the two spins must be equal.
@@ -231,11 +231,11 @@ contains
 
       call clear_atomic_cache()
       call single_atom(8, "O ", "cc-pvdz", mol, err)
-      call check(error,.not. err%has_error(), "oxygen must build")
+      call check(error,.not. err%has_error(), "oxygen must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAC, d_a, d_b, err)
-      call check(error,.not. err%has_error(), "the SAC guess must build")
+      call check(error,.not. err%has_error(), "the SAC guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call mol%overlap(s)
@@ -273,11 +273,11 @@ contains
 
       call clear_atomic_cache()
       call single_atom(7, "N ", "cc-pvdz", mol, err)
-      call check(error,.not. err%has_error(), "nitrogen must build")
+      call check(error,.not. err%has_error(), "nitrogen must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAC, d_a, d_b, err)
-      call check(error,.not. err%has_error(), "the SAC guess must build")
+      call check(error,.not. err%has_error(), "the SAC guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (total(mol%nao, mol%nao), once(mol%nao, mol%nao), twice(mol%nao, mol%nao))
@@ -307,17 +307,17 @@ contains
 
       call clear_atomic_cache()
       call water(mol, err, "cc-pvdz")
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAD, d_a, d_b, err)
-      call check(error,.not. err%has_error(), "the SAD guess must build")
+      call check(error,.not. err%has_error(), "the SAD guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       allocate (total(mol%nao, mol%nao), rebuilt(mol%nao, mol%nao))
       total = d_a + d_b
       call density_pseudo_orbitals(total, c, n_modes, err)
-      call check(error,.not. err%has_error(), "the factorisation must succeed")
+      call check(error,.not. err%has_error(), "the factorisation must succeed: "//err%get_full_trace())
       if (allocated(error)) return
 
       rebuilt = 0.0_dp
@@ -349,14 +349,14 @@ contains
 
       call clear_atomic_cache()
       call single_atom(10, "Ne", "cc-pvdz", mol, err)
-      call check(error,.not. err%has_error(), "neon must build")
+      call check(error,.not. err%has_error(), "neon must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAD, sad_a, sad_b, err)
-      call check(error,.not. err%has_error(), "the SAD guess must build")
+      call check(error,.not. err%has_error(), "the SAD guess must build: "//err%get_full_trace())
       if (allocated(error)) return
       call build_atomic_guess(mol, SCF_GUESS_SAC, sac_a, sac_b, err)
-      call check(error,.not. err%has_error(), "the SAC guess must build")
+      call check(error,.not. err%has_error(), "the SAC guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, maxval(abs(sad_a - sac_a)) < 1.0e-9_dp, &
@@ -383,11 +383,11 @@ contains
 
       call clear_atomic_cache()
       call water(mol, err, "sto-3g")
-      call check(error,.not. err%has_error(), "water must build")
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call build_atomic_guess(mol, SCF_GUESS_SAD, d_a, d_b, err)
-      call check(error,.not. err%has_error(), "the SAD guess must build")
+      call check(error,.not. err%has_error(), "the SAD guess must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! sto-3g water: oxygen takes functions 1-5, the two hydrogens 6 and 7.
@@ -446,7 +446,7 @@ contains
 
       call err%clear()
       call parse_guess_name("auto", kind, err)
-      call check(error,.not. err%has_error(), "'auto' must be accepted")
+      call check(error,.not. err%has_error(), "'auto' must be accepted: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, kind == SCF_GUESS_SAD, "'auto' must resolve to SAD on the CPU path")
       if (allocated(error)) return

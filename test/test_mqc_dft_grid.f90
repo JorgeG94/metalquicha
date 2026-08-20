@@ -87,7 +87,7 @@ contains
 
       call water(coords, z)
       call build_dft_grid(coords, z, grid, err, level=1, prune=PRUNE_NONE)
-      call check(error,.not. err%has_error(), "grid must build")
+      call check(error,.not. err%has_error(), "grid must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       expected = 0
@@ -184,7 +184,7 @@ contains
       call water(coords, z)
       call build_dft_grid(coords, z, grid, err, n_radial=20, n_angular=50, &
                           prune=PRUNE_NONE)
-      call check(error,.not. err%has_error(), "an override must be accepted")
+      call check(error,.not. err%has_error(), "an override must be accepted: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, grid%n_points, 3*20*50)
       call grid%destroy()

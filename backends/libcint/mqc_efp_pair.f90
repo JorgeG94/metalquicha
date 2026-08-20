@@ -16,6 +16,7 @@ module mqc_efp_pair
    !! potential is a self-contained object, and the shipped GAMESS library potentials
    !! do not all name a basis this program has.
    use pic_types, only: dp
+   use mqc_physical_constants, only: PI
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, ANGULAR_FORM_CARTESIAN
@@ -42,8 +43,6 @@ module mqc_efp_pair
    !> anything unpacking one needs the same number, and two files agreeing by
    !> coincidence is how a packing convention drifts apart.
    public :: N_DQ_SLOTS, N_QQ_SLOTS
-
-   real(dp), parameter :: PI = 3.141592653589793_dp
 
    !> Overlap below which a pair's damping series is not evaluated at all,
    !> `efdrvr.src:4464`.
@@ -820,7 +819,11 @@ contains
       real(dp) :: energy
 
       real(dp), parameter :: RT2PI = 0.7978845608028654_dp   !! sqrt(2/pi)
-      real(dp), parameter :: S_FLOOR = 1.0e-7_dp
+      !> Named apart from the module's `S_FLOOR_LOCAL` deliberately: that one is the
+      !> 1e-5 damping cutoff from `efdrvr.src:4464`, this is a different and
+      !> tighter threshold, and one name for both made the module constant
+      !> silently mean something else inside this procedure.
+      real(dp), parameter :: S_FLOOR_LOCAL = 1.0e-7_dp
       type(libcint_molecule_t) :: pair
       real(dp), allocatable :: s_ao(:, :), t_ao(:, :), lmo_a(:, :), lmo_b(:, :)
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :), work(:, :)
@@ -887,7 +890,7 @@ contains
             tij = t_lmo(i, j)
             rij = sqrt(sum((cen_a(:, i) - cen_b(:, j))**2))
 
-            if (abs(sij) > S_FLOOR) then
+            if (abs(sij) > S_FLOOR_LOCAL) then
                xr1 = xr1 - 2.0_dp*RT2PI*sqrt(-log(abs(sij)))*sij2/rij
             end if
 

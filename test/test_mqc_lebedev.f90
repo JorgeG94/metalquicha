@@ -104,7 +104,7 @@ contains
       orders = lebedev_available_orders()
       do i = 1, size(orders)
          call lebedev_grid(orders(i), points, weights, err)
-         call check(error,.not. err%has_error(), "grid must build")
+         call check(error,.not. err%has_error(), "grid must build: "//err%get_full_trace())
          if (allocated(error)) return
 
          has_negative = any(weights < 0.0_dp)
@@ -130,7 +130,7 @@ contains
       orders = lebedev_available_orders()
       do i = 1, size(orders)
          call lebedev_grid(orders(i), points, weights, err)
-         call check(error,.not. err%has_error(), "grid must build")
+         call check(error,.not. err%has_error(), "grid must build: "//err%get_full_trace())
          if (allocated(error)) return
          call check(error, size(weights), orders(i))
          if (allocated(error)) return
@@ -238,7 +238,7 @@ contains
       logical :: found
 
       call lebedev_grid(110, p, w, err)
-      call check(error,.not. err%has_error(), "grid must build")
+      call check(error,.not. err%has_error(), "grid must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       n = size(w)

@@ -79,7 +79,7 @@ contains
                owner = ia
                call becke_partition_weights(probes, coords, z, owner, &
                                             schemes(s), adjusts(a), w, err)
-               call check(error,.not. err%has_error(), "partition must build")
+               call check(error,.not. err%has_error(), "partition must build: "//err%get_full_trace())
                if (allocated(error)) return
                unity = unity + w
             end do
@@ -104,7 +104,7 @@ contains
       owner = 1
       call becke_partition_weights(probes, coords, z, owner, PARTITION_BECKE, &
                                    ADJUST_BECKE, w, err)
-      call check(error,.not. err%has_error(), "one atom must be allowed")
+      call check(error,.not. err%has_error(), "one atom must be allowed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, all(abs(w - 1.0_dp) < 1.0e-15_dp), "one atom owns everything")
    end subroutine test_single_atom

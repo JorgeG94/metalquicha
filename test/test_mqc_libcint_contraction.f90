@@ -95,7 +95,7 @@ contains
       integer :: reader_shells
 
       call water(CC_PVDZ, mol, reader_shells, err)
-      call check(error,.not. err%has_error(), "cc-pVDZ water must build")
+      call check(error,.not. err%has_error(), "cc-pVDZ water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call check(error, mol%nbas < reader_shells, &
@@ -114,7 +114,7 @@ contains
       integer :: reader_shells
 
       call water(CC_PVDZ, mol, reader_shells, err)
-      call check(error,.not. err%has_error(), "cc-pVDZ water must build")
+      call check(error,.not. err%has_error(), "cc-pVDZ water must build: "//err%get_full_trace())
       if (allocated(error)) return
       ! H(2s 1p) x2 + O(3s 2p 1d) = 2*(2 + 3) + (3 + 6 + 5) = 24
       call check(error, mol%nao, 24)
@@ -136,7 +136,7 @@ contains
       real(dp) :: worst
 
       call water(CC_PVDZ, mol, reader_shells, err)
-      call check(error,.not. err%has_error(), "cc-pVDZ water must build")
+      call check(error,.not. err%has_error(), "cc-pVDZ water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call mol%overlap(s)
@@ -198,7 +198,7 @@ contains
       integer :: reader_shells
 
       call water(POPLE, mol, reader_shells, err)
-      call check(error,.not. err%has_error(), "6-31G water must build")
+      call check(error,.not. err%has_error(), "6-31G water must build: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, mol%nbas, reader_shells, &
                  "SP columns carry different angular momenta and must not merge")
@@ -217,7 +217,7 @@ contains
       integer :: reader_shells
 
       call water(STO_3G, mol, reader_shells, err)
-      call check(error,.not. err%has_error(), "STO-3G water must build")
+      call check(error,.not. err%has_error(), "STO-3G water must build: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, mol%nbas, reader_shells, &
                  "a segmented basis has nothing to merge")

@@ -181,7 +181,7 @@ contains
 
       call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, 5, scf%energy, &
                            mp2, err)
-      call check(error,.not. err%has_error(), "conventional MP2 must run")
+      call check(error,.not. err%has_error(), "conventional MP2 must run: "//err%get_full_trace())
       if (allocated(error)) return
 
       call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, 0, &

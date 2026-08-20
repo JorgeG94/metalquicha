@@ -144,7 +144,7 @@ module mqc_libcint_cphf
    integer, parameter :: IN_CORE_MAX_ORBITALS = 40
 
    !> Even below that, refuse to store what will not fit.
-   real(dp), parameter :: IN_CORE_LIMIT = 4.0e9_dp
+   real(dp), parameter, public :: IN_CORE_LIMIT = 4.0e9_dp
 
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp

@@ -38,7 +38,7 @@ contains
 
       call read_xyz_string(test_xyz, geom, parse_error)
 
-      call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed")
+      call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed: "//parse_error%get_full_trace())
       if (allocated(error)) return
 
       call check(error, geom%natoms, 3, "Water molecule should have 3 atoms")
@@ -66,7 +66,7 @@ contains
                            "Single carbon atom"//new_line("a")// &
                            "C  1.0  2.0  3.0", geom, parse_error)
 
-      call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed for single atom")
+      call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed for single atom: "//parse_error%get_full_trace())
       if (allocated(error)) return
 
       call check(error, geom%natoms, 1, "Should have 1 atom")
@@ -92,7 +92,7 @@ contains
                            "He  0.0  0.0  0.0"//new_line("a")// &
                            "Ne  5.0  0.0  0.0", geom, parse_error)
 
-      call check(error,.not. parse_error%has_error(), "read_xyz_string should handle empty comment")
+      call check(error,.not. parse_error%has_error(), "read_xyz_string should handle empty comment: "//parse_error%get_full_trace())
       if (allocated(error)) return
 
       call check(error, geom%natoms, 2, "Should have 2 atoms")

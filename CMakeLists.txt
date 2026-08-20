@@ -161,6 +161,13 @@ endif()
 option(MQC_ENABLE_DLFIND "Fetch libdlfind (DL-FIND) for geometry optimization"
        OFF)
 
+# Which CODATA revision the Bohr radius in mqc_physical_constants follows. Only
+# the length conversion is selected this way; see that module for why.
+set(MQC_CODATA_YEAR
+    "2018"
+    CACHE STRING "CODATA revision for the Bohr radius: 2018 | 2010")
+set_property(CACHE MQC_CODATA_YEAR PROPERTY STRINGS 2018 2010)
+
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
@@ -216,6 +223,9 @@ endif()
 if(NOT TARGET pic-blas::pic-blas)
   find_package("pic-blas" REQUIRED)
 endif()
+
+target_compile_definitions(${main_lib} PRIVATE CODATA_YEAR=${MQC_CODATA_YEAR})
+message(STATUS "CODATA revision for the Bohr radius: ${MQC_CODATA_YEAR}")
 
 if(MQC_ENABLE_TBLITE)
   if(NOT TARGET "tblite::tblite")

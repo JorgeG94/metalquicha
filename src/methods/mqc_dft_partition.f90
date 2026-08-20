@@ -58,7 +58,7 @@ module mqc_dft_partition
    real(dp), parameter :: MAX_ADJUST = 0.5_dp
 
    !> Guards the ratio when a radius is zero (a ghost atom)
-   real(dp), parameter :: TINY_RADIUS = 1.0e-200_dp
+   real(dp), parameter, public :: TINY_RADIUS = 1.0e-200_dp
 
    integer, parameter :: N_DIM = 3
 

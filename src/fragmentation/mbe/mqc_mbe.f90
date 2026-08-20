@@ -8,6 +8,7 @@ module mqc_mbe
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
+   use mqc_physical_constants, only: AU_TO_DEBYE
    use mqc_mbe_io, only: print_detailed_breakdown
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE
    use mqc_result_types, only: SCF_UNKNOWN, SCF_NOT_CONVERGED
@@ -878,7 +879,7 @@ contains
          block
             character(len=256) :: dipole_line
             real(dp) :: dipole_magnitude
-            dipole_magnitude = norm2(mbe_result%dipole)*2.541746_dp  ! Convert e*Bohr to Debye
+            dipole_magnitude = norm2(mbe_result%dipole)*AU_TO_DEBYE
             call logger%info("MBE Dipole moment:")
             write (dipole_line, "(a,3f15.8)") "  Dipole (e*Bohr): ", mbe_result%dipole
             call logger%info(trim(dipole_line))

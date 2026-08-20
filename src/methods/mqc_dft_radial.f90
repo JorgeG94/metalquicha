@@ -22,6 +22,7 @@ module mqc_dft_radial
    !! want a ready-made spherical quadrature.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_physical_constants, only: PI
    use mqc_dft_radial_data, only: TREUTLER_XI_TABLE, BRAGG_RADII_TABLE, &
                                   MAX_XI_Z, MAX_BRAGG_Z
    implicit none
@@ -32,10 +33,8 @@ module mqc_dft_radial
    public :: treutler_ahlrichs_radial  !! M4 radial nodes and mapping weights
    public :: radial_volume_weights    !! 4*pi*r^2*dr, for a full spherical quadrature
 
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
-
    !> Exponent of the M4 mapping
-   real(dp), parameter :: M4_ALPHA = 0.6_dp
+   real(dp), parameter, public :: M4_ALPHA = 0.6_dp
 
    !> Used where an element has no tabulated value. Every element up to Z=103
    !> has one, so this is only reached by superheavy placeholders.

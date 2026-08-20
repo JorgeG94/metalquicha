@@ -23,6 +23,7 @@ module mqc_pcm_radii
    !! tabulate them and a converted table cannot be checked against its source.
    use pic_types, only: dp
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
+   use mqc_atomic_radii, only: vdw_radius_bondi, MAX_Z_BONDI
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
@@ -37,7 +38,7 @@ module mqc_pcm_radii
    !> Argon, matching the range the CPU validation suite covers. A heavier atom
    !> is refused rather than given a guessed radius: an invented cavity radius is
    !> exactly the failure this module is arranged to prevent.
-   integer, parameter :: MAX_PCM_ELEMENT = 18
+   integer, parameter :: MAX_PCM_ELEMENT = MAX_Z_BONDI
 
    !> Scaling from a van der Waals radius to a cavity radius.
    !>
@@ -48,29 +49,6 @@ module mqc_pcm_radii
    !> this and from each other. So it is a default rather than a constant, and a
    !> deck can override it.
    real(dp), parameter :: DEFAULT_RADII_SCALE = 1.2_dp
-
-   !> Van der Waals radii in Angstrom, H through Ar, indexed by atomic number.
-   !>
-   !> Bondi (1964) except Li, Be, B, Na, Mg and Al, which are Mantina (2009).
-   real(dp), parameter :: VDW_ANGSTROM(MAX_PCM_ELEMENT) = [ &
-                          1.20_dp, &   ! H
-                          1.40_dp, &   ! He
-                          1.82_dp, &   ! Li
-                          1.53_dp, &   ! Be   (Mantina)
-                          1.92_dp, &   ! B    (Mantina)
-                          1.70_dp, &   ! C
-                          1.55_dp, &   ! N
-                          1.52_dp, &   ! O
-                          1.47_dp, &   ! F
-                          1.54_dp, &   ! Ne
-                          2.27_dp, &   ! Na   (Mantina)
-                          1.73_dp, &   ! Mg   (Mantina)
-                          1.84_dp, &   ! Al   (Mantina)
-                          2.10_dp, &   ! Si
-                          1.80_dp, &   ! P
-                          1.80_dp, &   ! S
-                          1.75_dp, &   ! Cl
-                          1.88_dp]     ! Ar
 
 contains
 
@@ -97,7 +75,7 @@ contains
          return
       end if
 
-      radius = ANGSTROM_TO_BOHR*VDW_ANGSTROM(atomic_number)
+      radius = ANGSTROM_TO_BOHR*vdw_radius_bondi(atomic_number)
    end subroutine vdw_radius
 
    subroutine cavity_radius(atomic_number, scale, radius, error)

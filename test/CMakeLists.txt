@@ -233,6 +233,9 @@ endif()
 # gives a wrong solvation energy with nothing to object, and neither cuEST nor
 # libxc is needed to check it.
 addtest(mqc_pcm_radii)
+addtest(mqc_atomic_radii)
+addtest(mqc_scf_common)
+addtest(mqc_shared_helpers)
 
 # What a functional name means as a composition. Unconditional: the
 # double-hybrid coefficients are ours, and libxc is not needed to check them.

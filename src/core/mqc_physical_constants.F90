@@ -4,7 +4,13 @@ module mqc_physical_constants
    !! used throughout the metalquicha codebase.
    !!
    !! All values are in atomic units unless otherwise specified.
-   !! Reference: CODATA 2018 recommended values where applicable.
+   !! Reference: CODATA 2018 recommended values, except where a constant is
+   !! selected by `CODATA_YEAR` below.
+   !!
+   !! This is the only place a unit conversion may be written down. Backends
+   !! used to carry their own copies of the Bohr radius, which had drifted to
+   !! three different values across the tree; anything needing a conversion
+   !! takes it from here so that they cannot disagree again.
    use pic_types, only: dp
    implicit none
    private
@@ -13,8 +19,23 @@ module mqc_physical_constants
    ! Fundamental Constants
    !---------------------------------------------------------------------------
 
+   !> Which CODATA revision the length conversion follows.
+   !>
+   !> Set at configure time with `-DMQC_CODATA_YEAR=<year>`; the build defaults
+   !> to 2018. Only the Bohr radius is selected this way, because it is the only
+   !> constant here that has moved by more than this code's precision between
+   !> revisions. The energy conversions below are quoted at CODATA 2018 and are
+   !> unchanged from 2014 to every digit stored.
+#ifndef CODATA_YEAR
+#define CODATA_YEAR 2018
+#endif
+
    !> Bohr radius in Angstrom (a0 = 0.529177... A)
+#if CODATA_YEAR >= 2018
+   real(dp), parameter, public :: BOHR_TO_ANGSTROM = 0.529177210903_dp
+#else
    real(dp), parameter, public :: BOHR_TO_ANGSTROM = 0.52917721092_dp
+#endif
 
    !> Angstrom to Bohr conversion
    real(dp), parameter, public :: ANGSTROM_TO_BOHR = 1.0_dp/BOHR_TO_ANGSTROM
