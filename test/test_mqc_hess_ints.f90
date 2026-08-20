@@ -16,6 +16,7 @@ module test_mqc_hess_ints
    use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
+   use mqc_libcint_hessian, only: hcore_deriv_atom
    implicit none
    private
 
@@ -38,7 +39,8 @@ contains
                   new_unittest("derivatives_on_one_centre_commute", derivatives_commute), &
                   new_unittest("every_block_is_populated", every_block_is_populated), &
                   new_unittest("components_are_where_they_belong", components_are_where_they_belong), &
-                  new_unittest("two_electron_blocks", two_electron_blocks) &
+                  new_unittest("two_electron_blocks", two_electron_blocks), &
+            new_unittest("hcore_derivative_is_translationally_invariant", hcore_derivative_is_translationally_invariant) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -356,6 +358,74 @@ contains
       end if
       call mol%destroy()
    end subroutine two_electron_blocks
+
+   subroutine hcore_derivative_is_translationally_invariant(error)
+      !! Moving every atom together cannot change the core Hamiltonian
+      !!
+      !!     sum_A dH/dR_A = 0
+      !!
+      !! exactly, because a rigid translation is not a change of the molecule.
+      !! This is worth more than it looks: `dH/dR_A` has a basis-function part
+      !! that touches only atom `A`'s block and a Hellmann-Feynman part that
+      !! touches everything, and the two enter with opposite signs and different
+      !! index ranges. Getting either wrong -- the sign the library's nabla
+      !! implies, the nuclear charge, which block the basis term lands in --
+      !! leaves a residue here.
+      !!
+      !! Checked against PySCF's `hcore_generator` while being written, matching
+      !! to 4e-16 on every atom. That comparison needs Python; this one does
+      !! not.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: h(:, :, :), total(:, :, :)
+      logical :: ok
+      integer :: a
+
+      call build_water(mol, err, ok)
+      call check(error, ok, "could not build water")
+      if (allocated(error)) return
+
+      do a = 1, 3
+         call hcore_deriv_atom(mol, a, h, err)
+         call check(error,.not. err%has_error(), "a core Hamiltonian derivative failed")
+         if (allocated(error)) exit
+         if (a == 1) then
+            allocate (total(size(h, 1), size(h, 2), 3))
+            total = 0.0_dp
+         end if
+         total = total + h
+         deallocate (h)
+      end do
+
+      if (.not. allocated(error)) then
+         call check(error, maxval(abs(total)) < 1.0e-10_dp, &
+                    "the core Hamiltonian derivatives do not sum to zero over atoms")
+      end if
+      if (.not. allocated(error)) then
+         ! **The sum rule does not see a missing kinetic term.** Its own
+         ! contribution sums to zero over atoms independently, so dropping it
+         ! altogether leaves the identity above satisfied -- which is what
+         ! happened when that was tried. So the magnitude is pinned as well,
+         ! per component and per atom, against the values PySCF's
+         ! `hcore_generator` gave when this agreed with it to 4e-16.
+         call hcore_deriv_atom(mol, 1, h, err)
+         call check(error, sum(abs(h(:, :, 1))), 6.542609_dp, thr=1.0e-5_dp, &
+                    more="the oxygen x component has the wrong magnitude")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, sum(abs(h(:, :, 2))), 28.624459_dp, thr=1.0e-5_dp, &
+                    more="the oxygen y component has the wrong magnitude")
+      end if
+      if (.not. allocated(error)) then
+         deallocate (h)
+         call hcore_deriv_atom(mol, 2, h, err)
+         call check(error, sum(abs(h(:, :, 3))), 13.350037_dp, thr=1.0e-5_dp, &
+                    more="the hydrogen z component has the wrong magnitude")
+      end if
+      call mol%destroy()
+   end subroutine hcore_derivative_is_translationally_invariant
 
 end module test_mqc_hess_ints
 
