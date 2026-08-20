@@ -441,19 +441,19 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                </tr>
 			   <tr>
                  <td><a href='../proc/binomial.html'>binomial</a></td>
-                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
+                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
                  <td>Function</td>
-                 <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/binomial~2.html'>binomial</a></td>
-                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
-                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/binomial~3.html'>binomial</a></td>
-                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Function</td>
                  <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~3.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
@@ -1801,6 +1801,12 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                  <td><p>Pick HOMO and LUMO out of an ascending orbital spectrum</p><a href="../proc/frontier_orbitals.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/fukui_keys.html'>fukui_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Settings for the Fukui index analysis</p><a href="../proc/fukui_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/full_space_index.html'>full_space_index</a></td>
                  <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
@@ -2670,15 +2676,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
-                 <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
                  <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -4308,6 +4314,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>Write one row per fragment: identity, energy, many-body correction, distance</p><a href="../proc/write_fragment_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/write_fukui_section.html'>write_fukui_section</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Where the molecule reacts, per atom, for something other than a reader</p><a href="../proc/write_fukui_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/write_gmbe_pie_json_impl.html'>write_gmbe_pie_json_impl</a></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
@@ -4446,7 +4458,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 03:52 +0000             </p>
+ on 2026-08-20 04:17 +0000             </p>
           </div>
         </div>
         <br>

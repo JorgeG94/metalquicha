@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for source files.">213 statements</a>
+                 title=" 1.0% of total for source files.">225 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1889,13 +1889,30 @@ large graphs.</div>
 <a id="ln-311" name="ln-311" href="#ln-311"></a><span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">ieda_formation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">ieda_formation</span>
 <a id="ln-312" name="ln-312" href="#ln-312"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_ieda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <a id="ln-313" name="ln-313" href="#ln-313"></a><span class="w">            </span><span class="k">end if</span>
-<a id="ln-314" name="ln-314" href="#ln-314"></a><span class="k">         end if</span>
-<a id="ln-315" name="ln-315" href="#ln-315"></a><span class="k">      end block</span>
-<a id="ln-316" name="ln-316" href="#ln-316"></a><span class="k">      call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
-<a id="ln-317" name="ln-317" href="#ln-317"></a>
-<a id="ln-318" name="ln-318" href="#ln-318"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">unfragmented_calculation</span>
-<a id="ln-319" name="ln-319" href="#ln-319"></a>
-<a id="ln-320" name="ln-320" href="#ln-320"></a><span class="k">end submodule </span><span class="n">mqc_unfragmented_workflow</span>
+<a id="ln-314" name="ln-314" href="#ln-314"></a>
+<a id="ln-315" name="ln-315" href="#ln-315"></a><span class="w">            </span><span class="c">! Where the molecule reacts, when `properties.fukui` asked. Carried</span>
+<a id="ln-316" name="ln-316" href="#ln-316"></a><span class="w">            </span><span class="c">! per atom rather than reduced to "the most reactive site": ranking</span>
+<a id="ln-317" name="ln-317" href="#ln-317"></a><span class="w">            </span><span class="c">! sites is what the caller is doing, and which index to rank on</span>
+<a id="ln-318" name="ln-318" href="#ln-318"></a><span class="w">            </span><span class="c">! depends on the reaction being asked about.</span>
+<a id="ln-319" name="ln-319" href="#ln-319"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_fukui</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-320" name="ln-320" href="#ln-320"></a><span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_plus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_plus</span>
+<a id="ln-321" name="ln-321" href="#ln-321"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_minus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_minus</span>
+<a id="ln-322" name="ln-322" href="#ln-322"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_dual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_dual</span>
+<a id="ln-323" name="ln-323" href="#ln-323"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_ip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_ip</span>
+<a id="ln-324" name="ln-324" href="#ln-324"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_ea</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_ea</span>
+<a id="ln-325" name="ln-325" href="#ln-325"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_hardness</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_hardness</span>
+<a id="ln-326" name="ln-326" href="#ln-326"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_electrophilicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_electrophilicity</span>
+<a id="ln-327" name="ln-327" href="#ln-327"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_anion_bound</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_anion_bound</span>
+<a id="ln-328" name="ln-328" href="#ln-328"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_scheme</span>
+<a id="ln-329" name="ln-329" href="#ln-329"></a><span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_fukui</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<a id="ln-330" name="ln-330" href="#ln-330"></a><span class="w">            </span><span class="k">end if</span>
+<a id="ln-331" name="ln-331" href="#ln-331"></a><span class="k">         end if</span>
+<a id="ln-332" name="ln-332" href="#ln-332"></a><span class="k">      end block</span>
+<a id="ln-333" name="ln-333" href="#ln-333"></a><span class="k">      call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<a id="ln-334" name="ln-334" href="#ln-334"></a>
+<a id="ln-335" name="ln-335" href="#ln-335"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">unfragmented_calculation</span>
+<a id="ln-336" name="ln-336" href="#ln-336"></a>
+<a id="ln-337" name="ln-337" href="#ln-337"></a><span class="k">end submodule </span><span class="n">mqc_unfragmented_workflow</span>
 </pre></div>
 
       </section>
@@ -1917,7 +1934,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 03:52 +0000             </p>
+ on 2026-08-20 04:17 +0000             </p>
           </div>
         </div>
         <br>

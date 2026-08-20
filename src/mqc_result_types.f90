@@ -135,6 +135,20 @@ module mqc_result_types
       real(dp) :: ieda_formation = 0.0_dp
          !! The energy of formation: the molecule against its free atoms.
       logical :: has_ieda = .false.
+      real(dp), allocatable :: fukui_plus(:)
+         !! Condensed Fukui index for nucleophilic attack, per atom
+      real(dp), allocatable :: fukui_minus(:)   !! ... for electrophilic attack
+      real(dp), allocatable :: fukui_dual(:)    !! `f+ - f-`
+      real(dp) :: fukui_ip = 0.0_dp             !! E(N-1) - E(N)
+      real(dp) :: fukui_ea = 0.0_dp             !! E(N) - E(N+1)
+      real(dp) :: fukui_hardness = 0.0_dp
+      real(dp) :: fukui_electrophilicity = 0.0_dp
+      logical :: fukui_anion_bound = .true.
+         !! Carried so a consumer can discard `f+` without re-deriving why. An
+         !! unbound anion makes that column describe an orbital the basis
+         !! invented, and nothing about the numbers themselves says so.
+      character(len=16) :: fukui_scheme = ""
+      logical :: has_fukui = .false.
 
       ! Fragment metadata
       real(dp) :: distance = 0.0_dp      !! Minimal atomic distance between monomers (Angstrom, 0 for monomers)
@@ -342,6 +356,7 @@ contains
       this%lumo = 0.0_dp
       this%has_orbitals = .false.
       this%has_ieda = .false.
+      this%has_fukui = .false.
       this%ieda_formation = 0.0_dp
    end subroutine result_reset
 

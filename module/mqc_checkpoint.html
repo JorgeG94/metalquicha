@@ -232,12 +232,12 @@ killed run, which is exactly the case this is for.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1014,7 +1014,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-active~5"></span>
+              <span class="anchor" id="variable-active~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1031,7 +1031,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~7"></span>
+              <span class="anchor" id="variable-energies"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1065,7 +1065,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals~3"></span>
+              <span class="anchor" id="variable-has_orbitals"></span>
               logical,
             </td>
               <td>public,</td>
@@ -1082,7 +1082,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~4"></span>
+              <span class="anchor" id="variable-homo"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1099,7 +1099,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~4"></span>
+              <span class="anchor" id="variable-lumo"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1116,7 +1116,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~23"></span>
+              <span class="anchor" id="variable-max_level~10"></span>
               integer,
             </td>
               <td>public</td>
@@ -1133,7 +1133,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_loaded~2"></span>
+              <span class="anchor" id="variable-n_loaded"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -1150,7 +1150,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~25"></span>
+              <span class="anchor" id="variable-path~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1167,7 +1167,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~5"></span>
+              <span class="anchor" id="variable-scf_status"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1184,7 +1184,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~14"></span>
+              <span class="anchor" id="variable-terms~6"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1201,7 +1201,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~7"></span>
+              <span class="anchor" id="variable-unit~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1248,22 +1248,22 @@ when the driver needs them, or when the path asks for it by name.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/checkpoint_t.html#boundprocedure-close~2'>close</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_close.html'>checkpoint_close</a></td>
+  <strong><a href='../type/checkpoint_t.html#boundprocedure-close'>close</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_close.html'>checkpoint_close</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/checkpoint_t.html#boundprocedure-lookup~7'>lookup</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_lookup.html'>checkpoint_lookup</a></td>
+  <strong><a href='../type/checkpoint_t.html#boundprocedure-lookup'>lookup</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_lookup.html'>checkpoint_lookup</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/checkpoint_t.html#boundprocedure-open~2'>open</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_open.html'>checkpoint_open</a></td>
+  <strong><a href='../type/checkpoint_t.html#boundprocedure-open'>open</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_open.html'>checkpoint_open</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/checkpoint_t.html#boundprocedure-record~5'>record</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_record.html'>checkpoint_record</a></td>
+  <strong><a href='../type/checkpoint_t.html#boundprocedure-record~3'>record</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/checkpoint_record.html'>checkpoint_record</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1311,7 +1311,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~2"></span>
+              <span class="anchor" id="variable-b"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1326,7 +1326,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~49"></span>
+              <span class="anchor" id="variable-n~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1371,7 +1371,7 @@ when the driver needs them, or when the path asks for it by name.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~25"></span>
+              <span class="anchor" id="variable-text~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1386,7 +1386,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-suffix~4"></span>
+              <span class="anchor" id="variable-suffix~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1431,7 +1431,7 @@ when the driver needs them, or when the path asks for it by name.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~26"></span>
+              <span class="anchor" id="variable-text~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1481,7 +1481,7 @@ when the driver needs them, or when the path asks for it by name.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~129"></span>
+              <span class="anchor" id="variable-this~43"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1521,7 +1521,7 @@ when the driver needs them, or when the path asks for it by name.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~127"></span>
+              <span class="anchor" id="variable-this~41"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1536,7 +1536,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term~4"></span>
+              <span class="anchor" id="variable-term~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1551,7 +1551,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~43"></span>
+              <span class="anchor" id="variable-found~2"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1566,7 +1566,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~17"></span>
+              <span class="anchor" id="variable-energy~7"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1581,7 +1581,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~7"></span>
+              <span class="anchor" id="variable-scf_status~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1596,7 +1596,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~41"></span>
+              <span class="anchor" id="variable-n_atoms~18"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1611,7 +1611,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~13"></span>
+              <span class="anchor" id="variable-gradient~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1626,7 +1626,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~13"></span>
+              <span class="anchor" id="variable-hessian~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1641,7 +1641,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~6"></span>
+              <span class="anchor" id="variable-homo~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1656,7 +1656,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~6"></span>
+              <span class="anchor" id="variable-lumo~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1671,7 +1671,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals~5"></span>
+              <span class="anchor" id="variable-has_orbitals~3"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -1711,7 +1711,7 @@ when the driver needs them, or when the path asks for it by name.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~123"></span>
+              <span class="anchor" id="variable-this~37"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1726,7 +1726,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~26"></span>
+              <span class="anchor" id="variable-path~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1741,7 +1741,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint~3"></span>
+              <span class="anchor" id="variable-fingerprint"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1756,7 +1756,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~24"></span>
+              <span class="anchor" id="variable-max_level~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1786,7 +1786,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~131"></span>
+              <span class="anchor" id="variable-error~43"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1826,7 +1826,7 @@ when the driver needs them, or when the path asks for it by name.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~126"></span>
+              <span class="anchor" id="variable-this~40"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1841,7 +1841,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term~3"></span>
+              <span class="anchor" id="variable-term"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1856,7 +1856,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~16"></span>
+              <span class="anchor" id="variable-energy~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1871,7 +1871,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~6"></span>
+              <span class="anchor" id="variable-scf_status~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1886,7 +1886,7 @@ when the driver needs them, or when the path asks for it by name.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~40"></span>
+              <span class="anchor" id="variable-n_atoms~17"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1902,7 +1902,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~12"></span>
+              <span class="anchor" id="variable-gradient~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1917,7 +1917,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~12"></span>
+              <span class="anchor" id="variable-hessian~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1932,7 +1932,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~5"></span>
+              <span class="anchor" id="variable-homo~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1947,7 +1947,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~5"></span>
+              <span class="anchor" id="variable-lumo~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1962,7 +1962,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals~4"></span>
+              <span class="anchor" id="variable-has_orbitals~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2005,7 +2005,7 @@ fragment does not come back claiming a gap of zero.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~125"></span>
+              <span class="anchor" id="variable-this~39"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2020,7 +2020,7 @@ fragment does not come back claiming a gap of zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~7"></span>
+              <span class="anchor" id="variable-capacity~3"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2060,7 +2060,7 @@ fragment does not come back claiming a gap of zero.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~124"></span>
+              <span class="anchor" id="variable-this~38"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2075,7 +2075,7 @@ fragment does not come back claiming a gap of zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint~4"></span>
+              <span class="anchor" id="variable-fingerprint~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2090,7 +2090,7 @@ fragment does not come back claiming a gap of zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~132"></span>
+              <span class="anchor" id="variable-error~44"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2130,7 +2130,7 @@ fragment does not come back claiming a gap of zero.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~128"></span>
+              <span class="anchor" id="variable-this~42"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2173,7 +2173,7 @@ fragment does not come back claiming a gap of zero.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 03:52 +0000             </p>
+ on 2026-08-20 04:17 +0000             </p>
           </div>
         </div>
         <br>

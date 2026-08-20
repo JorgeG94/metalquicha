@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">61 statements</a>
+                 title=" 0.3% of total for procedures.">64 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~81"></span>
+              <span class="anchor" id="variable-this~77"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -208,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~18"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~31"></span>
+              <span class="anchor" id="variable-result~35"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -238,7 +238,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~3"></span>
+              <span class="anchor" id="variable-want_gradient~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -682,7 +682,10 @@ large graphs.</div>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_analysis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_analysis</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_threshold</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_energy</span>
-<span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_no_sharing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_no_sharing</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_population</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">settings</span><span class="p">%</span><span class="n">fukui_population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_population</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_no_sharing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_no_sharing</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">basis_set</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">aux_basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">aux_basis_set</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">aux_basis_named</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">aux_basis_named</span>
@@ -777,7 +780,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 03:52 +0000             </p>
+ on 2026-08-20 04:17 +0000             </p>
           </div>
         </div>
         <br>

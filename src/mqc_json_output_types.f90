@@ -98,6 +98,14 @@ module mqc_json_output_types
       real(dp), allocatable :: ieda_classical(:, :)
       real(dp) :: ieda_formation = 0.0_dp
       logical :: has_ieda = .false.
+      real(dp), allocatable :: fukui_plus(:), fukui_minus(:), fukui_dual(:)
+      real(dp) :: fukui_ip = 0.0_dp
+      real(dp) :: fukui_ea = 0.0_dp
+      real(dp) :: fukui_hardness = 0.0_dp
+      real(dp) :: fukui_electrophilicity = 0.0_dp
+      logical :: fukui_anion_bound = .true.
+      character(len=16) :: fukui_scheme = ""
+      logical :: has_fukui = .false.
 
       real(dp), allocatable :: sapt_terms(:)
       logical :: has_sapt = .false.
@@ -139,6 +147,9 @@ contains
       if (allocated(this%pie_energies)) deallocate (this%pie_energies)
       if (allocated(this%sapt_terms)) deallocate (this%sapt_terms)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
+      if (allocated(this%fukui_plus)) deallocate (this%fukui_plus)
+      if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
+      if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
       if (allocated(this%ieda_free_atom)) deallocate (this%ieda_free_atom)
       if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)
       if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
@@ -163,6 +174,7 @@ contains
       this%n_pie_terms = 0
       this%has_sapt = .false.
       this%has_ieda = .false.
+      this%has_fukui = .false.
       this%ieda_formation = 0.0_dp
    end subroutine json_output_data_reset
 

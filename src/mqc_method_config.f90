@@ -167,6 +167,7 @@ module mqc_method_config
    type :: properties_config_t
       !! Analyses to run once the wave function exists
       character(len=32) :: bonding_analysis = "none"
+      character(len=:), allocatable :: fukui_population
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
       real(dp) :: bonding_threshold = 1.0_dp
