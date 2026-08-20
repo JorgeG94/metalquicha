@@ -24,7 +24,8 @@ module mqc_libcint_hess_ints
    use, intrinsic :: iso_fortran_env, only: real64
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
+                                    eri_shell_table_t, eri_shell_table
    use cint_workspace, only: cint_ws
    use cint_bas, only: cint_cgto_spheric, cint_cgto_cart
    use cint_gen_hess, only: int1e_ipipovlp_sph, int1e_ipipovlp_cart, &
@@ -674,7 +675,8 @@ contains
 
       real(dp), allocatable :: buf(:), hloc(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
-      integer, allocatable :: offsets(:), counts(:), sh_dim(:), sh_off(:)
+      integer, allocatable :: offsets(:), counts(:)
+      type(eri_shell_table_t) :: tab
       integer :: dims(0:3), shls(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
@@ -696,17 +698,22 @@ contains
          end do
       end do
 
-      allocate (sh_dim(mol%nbas), sh_off(mol%nbas))
-      mx = 0
-      do ish = 1, mol%nbas
-         sh_dim(ish) = shell_dim(mol%cartesian, ish - 1, mol%bas)
-         sh_off(ish) = mol%shell_offset(ish)
-         mx = max(mx, sh_dim(ish))
-      end do
+      ! **The fused-sp view where the molecule has one.** `int2e_ip1` is one of
+      ! the two drivers libfint carries an L shell through -- the same table
+      ! the gradient's two-electron derivative takes, for the same
+      ! 6-31G-shaped reason. `hess_2e_contract` above must *not* do this:
+      ! `ipip1`, `ipvip1` and `ip1ip2` behave as though L shells did not exist
+      ! and would read a fused entry as a p shell over the s coefficients --
+      ! not an error, a silently wrong integral.
+      !
+      ! A fused shell's AO order is its split shells' order, so `owner` and the
+      ! density are indexed exactly as before and the deposits need no map.
+      call eri_shell_table(mol, tab)
+      mx = tab%block_max
 
       atm_flat = reshape(mol%atm, [size(mol%atm)])
-      bas_flat = reshape(mol%bas, [size(mol%bas)])
-      n_pairs = mol%nbas*mol%nbas
+      bas_flat = reshape(tab%bas, [size(tab%bas)])
+      n_pairs = tab%nbas*tab%nbas
 
       allocate (h1(nao, nao, 3, natm))
       h1 = 0.0_dp
@@ -717,7 +724,7 @@ contains
       ! alternative is an atomic per deposit, and there are seven per buffer
       ! element.
       !$omp parallel default(none) &
-      !$omp shared(mol, density, h1, owner, sh_dim, sh_off, atm_flat, bas_flat, &
+      !$omp shared(mol, density, h1, owner, tab, atm_flat, bas_flat, &
       !$omp        mx, nao, natm, n_pairs) &
       !$omp private(buf, hloc, dims, shls, ish, jsh, ksh, lsh, di, dj, dk, dl, &
       !$omp         io, jo, ko, lo, i, j, k, l, comp, idx, ii, jj, kk, ll, at, b, &
@@ -728,27 +735,27 @@ contains
 
       !$omp do schedule(dynamic)
       do pair = 1, n_pairs
-         ish = (pair - 1)/mol%nbas + 1
-         jsh = pair - mol%nbas*(ish - 1)
-         di = sh_dim(ish)
-         io = sh_off(ish)
-         dj = sh_dim(jsh)
-         jo = sh_off(jsh)
-         do ksh = 1, mol%nbas
-            dk = sh_dim(ksh)
-            ko = sh_off(ksh)
-            do lsh = 1, mol%nbas
-               dl = sh_dim(lsh)
-               lo = sh_off(lsh)
+         ish = (pair - 1)/tab%nbas + 1
+         jsh = pair - tab%nbas*(ish - 1)
+         di = tab%dims(ish)
+         io = tab%offs(ish)
+         dj = tab%dims(jsh)
+         jo = tab%offs(jsh)
+         do ksh = 1, tab%nbas
+            dk = tab%dims(ksh)
+            ko = tab%offs(ksh)
+            do lsh = 1, tab%nbas
+               dl = tab%dims(lsh)
+               lo = tab%offs(lsh)
                shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                dims = [di, dj, dk, dl]
 
                if (mol%cartesian) then
                   have = int2e_ip1_cart(buf, dims, shls, atm_flat, mol%natm, &
-                                        bas_flat, mol%nbas, mol%env, ws)
+                                        bas_flat, tab%nbas, tab%env, ws)
                else
                   have = int2e_ip1_sph(buf, dims, shls, atm_flat, mol%natm, &
-                                       bas_flat, mol%nbas, mol%env, ws)
+                                       bas_flat, tab%nbas, tab%env, ws)
                end if
                if (.not. have) cycle
 
@@ -790,7 +797,7 @@ contains
       deallocate (buf, hloc)
       !$omp end parallel
 
-      deallocate (atm_flat, bas_flat, owner, offsets, counts, sh_dim, sh_off)
+      deallocate (atm_flat, bas_flat, owner, offsets, counts)
    end subroutine h1_contract
 
 end module mqc_libcint_hess_ints
