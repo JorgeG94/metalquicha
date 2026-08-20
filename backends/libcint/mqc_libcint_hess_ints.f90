@@ -33,6 +33,7 @@ module mqc_libcint_hess_ints
                             int1e_ipkinip_sph, int1e_ipkinip_cart, &
                             int1e_ipipnuc_sph, int1e_ipipnuc_cart, &
                             int1e_ipnucip_sph, int1e_ipnucip_cart
+   use cint_gen_grad2, only: int2e_ip1_sph, int2e_ip1_cart
    use cint_gen_hess, only: int2e_ipip1_sph, int2e_ipip1_cart, &
                             int2e_ipvip1_sph, int2e_ipvip1_cart, &
                             int2e_ip1ip2_sph, int2e_ip1ip2_cart
@@ -44,6 +45,7 @@ module mqc_libcint_hess_ints
    public :: hess_1e_block
    public :: HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    public :: hess_2e_block
+   public :: eri_ip1_block
 
    integer, parameter :: HESS_OVLP_II = 1   !! `int1e_ipipovlp`, both derivatives on the bra
    integer, parameter :: HESS_OVLP_IJ = 2   !! `int1e_ipovlpip`, one on each centre
@@ -305,5 +307,85 @@ contains
          end select
       end if
    end function drive_2e
+
+   subroutine eri_ip1_block(mol, eri, error)
+      !! `int2e_ip1` over the whole basis, as `(n_ao, n_ao, n_ao, n_ao, 3)`
+      !!
+      !! The first derivative with the nabla on the bra's first index. The
+      !! gradient contracts this on the fly and never materialises it, which is
+      !! the right thing there; the Hessian's per-atom perturbation needs the
+      !! same integrals summed over four different index positions per atom, so
+      !! having the array is what makes that assembly readable.
+      !!
+      !! Same `n_ao^4` caveat as the second derivatives next door: correct
+      !! first, contracted on the fly once it matters.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), allocatable, intent(out) :: eri(:, :, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: buf(:)
+      integer, allocatable :: atm_flat(:), bas_flat(:)
+      integer :: dims(0:3), shls(0:3)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
+      logical :: have
+
+      if (error%has_error()) return
+
+      mx = 0
+      do ish = 1, mol%nbas
+         mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+
+      allocate (buf(mx**4*3))
+      allocate (eri(mol%nao, mol%nao, mol%nao, mol%nao, 3))
+      eri = 0.0_dp
+      atm_flat = reshape(mol%atm, [size(mol%atm)])
+      bas_flat = reshape(mol%bas, [size(mol%bas)])
+
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            do ksh = 1, mol%nbas
+               dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
+               ko = mol%shell_offset(ksh)
+               do lsh = 1, mol%nbas
+                  dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
+                  lo = mol%shell_offset(lsh)
+                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+                  dims = [di, dj, dk, dl]
+
+                  if (mol%cartesian) then
+                     have = int2e_ip1_cart(buf, dims, shls, atm_flat, mol%natm, &
+                                           bas_flat, mol%nbas, mol%env, ws)
+                  else
+                     have = int2e_ip1_sph(buf, dims, shls, atm_flat, mol%natm, &
+                                          bas_flat, mol%nbas, mol%env, ws)
+                  end if
+                  if (.not. have) cycle
+
+                  do comp = 1, 3
+                     do l = 1, dl
+                        do k = 1, dk
+                           do j = 1, dj
+                              do i = 1, di
+                                 idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 &
+                                                                       + dl*(comp - 1))))
+                                 eri(io + i, jo + j, ko + k, lo + l, comp) = buf(idx)
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (buf, atm_flat, bas_flat)
+   end subroutine eri_ip1_block
 
 end module mqc_libcint_hess_ints

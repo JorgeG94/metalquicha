@@ -16,7 +16,9 @@ module test_mqc_hess_ints
    use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
-   use mqc_libcint_hessian, only: hcore_deriv_atom
+   use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom
+   use mqc_libcint_hess_ints, only: eri_ip1_block
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
    private
 
@@ -40,7 +42,8 @@ contains
                   new_unittest("every_block_is_populated", every_block_is_populated), &
                   new_unittest("components_are_where_they_belong", components_are_where_they_belong), &
                   new_unittest("two_electron_blocks", two_electron_blocks), &
-            new_unittest("hcore_derivative_is_translationally_invariant", hcore_derivative_is_translationally_invariant) &
+           new_unittest("hcore_derivative_is_translationally_invariant", hcore_derivative_is_translationally_invariant), &
+                  new_unittest("the_perturbation_sums_to_nothing", the_perturbation_sums_to_nothing) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -426,6 +429,74 @@ contains
       end if
       call mol%destroy()
    end subroutine hcore_derivative_is_translationally_invariant
+
+   subroutine the_perturbation_sums_to_nothing(error)
+      !! The per-atom perturbation, summed over atoms, vanishes
+      !!
+      !! `h1_A` is the core Hamiltonian and the mean field differentiated with
+      !! respect to atom `A`. Translating every atom together changes neither,
+      !! so the sum over atoms is zero -- and it has to be zero for the whole
+      !! Hessian, since this is what drives the response.
+      !!
+      !! **What this catches and what it misses.** It catches a mishandled
+      !! index in the two-electron assembly, where a quartet contributes
+      !! through each of its four positions and only the ones on this atom
+      !! should count -- get the ownership test wrong and the sum stops
+      !! cancelling. It does not catch a term that is translationally invariant
+      !! on its own, which is why the magnitudes are pinned beside it, exactly
+      !! as for the core Hamiltonian derivative next door.
+      !!
+      !! Checked against PySCF's own `make_h1` while being written: agreement
+      !! to 4e-11 on a quantity of order one, which is the level the two SCF
+      !! densities differ at rather than anything structural.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: h(:, :, :), total(:, :, :), ip1(:, :, :, :, :)
+      logical :: ok
+      integer :: a
+      real(dp), parameter :: PIN = 1.0e-4_dp
+
+      call build_water(mol, err, ok)
+      call check(error, ok, "could not build water")
+      if (allocated(error)) return
+      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error,.not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call eri_ip1_block(mol, ip1, err)
+
+      do a = 1, 3
+         call make_h1_atom(mol, scf%density, ip1, a, h, err)
+         call check(error,.not. err%has_error(), "a perturbation failed to build")
+         if (allocated(error)) exit
+         if (a == 1) then
+            allocate (total(size(h, 1), size(h, 2), 3))
+            total = 0.0_dp
+         end if
+         total = total + h
+         if (a < 3) deallocate (h)
+      end do
+
+      if (.not. allocated(error)) then
+         call check(error, maxval(abs(total)) < 1.0e-9_dp, &
+                    "the perturbations do not sum to zero over atoms")
+      end if
+      if (.not. allocated(error)) then
+         ! The last one built was atom 3, whose norms match atom 2 by symmetry.
+         call check(error, sum(abs(h(:, :, 2))), 6.984370_dp, thr=PIN, &
+                    more="the hydrogen y component has the wrong magnitude")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, sum(abs(h(:, :, 3))), 5.044607_dp, thr=PIN, &
+                    more="the hydrogen z component has the wrong magnitude")
+      end if
+      call mol%destroy()
+   end subroutine the_perturbation_sums_to_nothing
 
 end module test_mqc_hess_ints
 

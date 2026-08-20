@@ -22,10 +22,12 @@ module mqc_libcint_hessian
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
    use mqc_libcint_gradient, only: one_electron_deriv, iprinv_deriv_at, &
                                    DERIV_KIN, DERIV_NUC
+   use mqc_libcint_hess_ints, only: eri_ip1_block
    implicit none
    private
 
    public :: hcore_deriv_atom
+   public :: make_h1_atom
 
 contains
 
@@ -86,5 +88,118 @@ contains
 
       deallocate (kin, nuc, vrinv, offsets, counts)
    end subroutine hcore_deriv_atom
+
+   subroutine make_h1_atom(mol, density, eri_ip1, iatom, h1, error)
+      !! The perturbation that drives the coupled-perturbed equations
+      !!
+      !!     h1_A = dH_core/dR_A + dV_HF/dR_A
+      !!
+      !! with the mean field differentiated with respect to the same atom. It
+      !! needs **first** derivatives only -- the second derivatives belong to
+      !! the explicit part of the Hessian, not here, which is easy to assume the
+      !! other way round.
+      !!
+      !! **A quartet contributes through every index that sits on this atom.**
+      !! `int2e_ip1` puts the nabla on the first index alone, so the derivative
+      !! with respect to atom `A` is assembled by permuting each of the four
+      !! positions into first place in turn and keeping the ones whose orbital
+      !! belongs to `A`. The permutations used are the ordinary symmetries of
+      !! an undifferentiated integral -- `(ij|kl) = (ji|kl) = (kl|ij)` -- which
+      !! hold because the nabla is applied *after* the permutation, not before.
+      !!
+      !! The sign is the library's, as everywhere else here: `ip` carries a
+      !! nabla on the bra and the derivative with respect to that centre is
+      !! minus it.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)          !! Total AO density
+      real(dp), intent(in) :: eri_ip1(:, :, :, :, :)  !! From `eri_ip1_block`
+      integer, intent(in) :: iatom
+      real(dp), allocatable, intent(out) :: h1(:, :, :)   !! (n_ao, n_ao, 3)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: hcore_a(:, :, :), vhf(:, :, :)
+      integer, allocatable :: offsets(:), counts(:), owner(:)
+      integer :: nao, comp, mu, nu, la, si, a, p0, p1
+      real(dp) :: d
+
+      if (error%has_error()) return
+
+      nao = mol%nao
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      ! Which atom each basis function belongs to, so the inner loop can ask
+      ! rather than search.
+      allocate (owner(nao))
+      owner = 0
+      do a = 1, mol%natm
+         p0 = offsets(a) + 1
+         p1 = offsets(a) + counts(a)
+         if (counts(a) > 0) owner(p0:p1) = a
+      end do
+
+      allocate (vhf(nao, nao, 3))
+      vhf = 0.0_dp
+
+      ! J - K/2, differentiated. Written as a plain quadruple loop over the
+      ! whole basis: this is the readable form, and the shell-driven one that
+      ! replaces it will be checked against it.
+      do comp = 1, 3
+         do si = 1, nao
+            do la = 1, nao
+               do nu = 1, nao
+                  do mu = 1, nao
+                     d = density(la, si)
+                     if (abs(d) < 1.0e-14_dp) cycle
+                     ! Coulomb: `(mu nu | la si)`, with the nabla on whichever
+                     ! index sits on this atom, each permuted into first place.
+                     if (owner(mu) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            - d*eri_ip1(mu, nu, la, si, comp)
+                     end if
+                     if (owner(nu) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            - d*eri_ip1(nu, mu, la, si, comp)
+                     end if
+                     if (owner(la) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            - d*eri_ip1(la, si, mu, nu, comp)
+                     end if
+                     if (owner(si) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            - d*eri_ip1(si, la, mu, nu, comp)
+                     end if
+                     ! Exchange: `(mu la | si nu)`, half weight for a closed
+                     ! shell, where the total density already carries its two.
+                     if (owner(mu) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            + 0.5_dp*d*eri_ip1(mu, la, si, nu, comp)
+                     end if
+                     if (owner(la) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            + 0.5_dp*d*eri_ip1(la, mu, si, nu, comp)
+                     end if
+                     if (owner(si) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            + 0.5_dp*d*eri_ip1(si, nu, mu, la, comp)
+                     end if
+                     if (owner(nu) == iatom) then
+                        vhf(mu, nu, comp) = vhf(mu, nu, comp) &
+                                            + 0.5_dp*d*eri_ip1(nu, si, mu, la, comp)
+                     end if
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      call hcore_deriv_atom(mol, iatom, hcore_a, error)
+      if (error%has_error()) return
+
+      allocate (h1(nao, nao, 3))
+      h1 = vhf + hcore_a
+
+      deallocate (vhf, hcore_a, offsets, counts, owner)
+   end subroutine make_h1_atom
 
 end module mqc_libcint_hessian
