@@ -34,7 +34,13 @@ INPUTS = VALIDATION / "inputs"
 XYZ_DIR = INPUTS / "sample_inputs"
 MANIFEST = VALIDATION / "validation_tests_cpu.json"
 
-TOLERANCE = 1e-6
+# The suite default. Measured agreement is 8e-12 or better for Hartree-Fock and
+# DFT and, with the SCF converged as tightly as it is below, ~5e-10 at worst for
+# the correlated methods -- so 1e-9 still carries a couple of orders of headroom
+# while being tight enough to see a regression. At the old 1e-6 an error four
+# orders larger than the numerical noise passed silently, which is a manifest
+# that detects nothing rather than one that detects change.
+TOLERANCE = 1e-9
 
 DESCRIPTION = (
     "CPU Hartree-Fock through the libcint backend. Reference energies are PySCF "
@@ -620,9 +626,17 @@ GRADIENT_FRAGMENTED_TOLERANCE = 1.0e-7
 # Looser than the energy tolerance, and for a reason rather than to make the
 # cases pass: the reference is another program's assembly of the same terms in
 # another order, and the exchange-correlation ones are quadratures. Measured
-# agreement over these nine cases is 4e-12 to 3e-9 without a functional and
-# 7e-10 to 7e-9 with one, so each bound keeps a factor of a few in hand. That
-# is enough: a term going missing is a 1e-3 event, not a 1e-8 one.
+# agreement without a functional runs to 7.7e-9 -- the fitted Hartree-Fock and
+# the two MP2 gradients on water/cc-pVDZ sit there, against serial references.
+#
+# So this bound keeps only about 1.3x in hand on those three, and that is
+# deliberate rather than an oversight waiting to be widened. A gradient is a
+# sum over the same terms in a different order, so what moves it at 1e-9 is the
+# arithmetic underneath -- a different BLAS, a different vectorisation, a
+# different compiler. Held here, those three cases are the first thing to go
+# red when that changes, which is worth knowing and is not visible anywhere
+# else in the suite. If they do fail, suspect the library before the code.
+# Loosen this to 1e-7 and they still pass, and the signal is gone.
 GRADIENT_TOLERANCE = 1.0e-8
 GRADIENT_DFT_TOLERANCE = 1.0e-7
 
@@ -643,6 +657,13 @@ GRADIENT_DF_RSH_TOLERANCE = 5.0e-7
 #: Functionals whose exchange is split by range. Named here because the
 #: generator has no libxc to ask, and only the tolerance above depends on it.
 RSH_FUNCTIONALS = {"wb97x", "cam-b3lyp"}
+
+# The energy bound for range separated *and* fitted. Neither the SCF tolerance
+# nor the grid moves these: cam-b3lyp/cc-pVDZ fitted sits 7.6e-10 from PySCF
+# whatever is tightened, because what is left is the fit of the long-range
+# exchange rather than a convergence threshold. At the suite default that is
+# 76% of the budget used before our code has done anything wrong.
+DF_RSH_ENERGY_TOLERANCE = 1.0e-8
 GRADIENT_GRID_LEVEL = 3
 
 DF_CASES = [
@@ -844,7 +865,14 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
              "molecular_multiplicity": multiplicity}
         ],
         "model": model,
-        "keywords": {"scf": {"maxiter": 100, "tolerance": 1e-08}},
+        # Converged far past what the energy itself needs, because what is
+        # being compared is not always variational in the density. A Hartree-Fock
+        # or DFT energy is stationary, so a loose SCF shows up in it
+        # quadratically; a correlation energy and a gradient are not, and show up
+        # linearly. At 1e-8 that put MP2 4e-9 from PySCF and CCSD 6e-9 -- the SCF
+        # stopping point, not the correlation treatment. At 1e-12 the same cases
+        # sit at 9e-11 and 5e-10.
+        "keywords": {"scf": {"maxiter": 100, "tolerance": 1e-12}},
         "system": {"logger": {"level": "Verbose"}},
         "driver": "Energy",
     }
@@ -1541,6 +1569,66 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     return float(energy), grad.kernel().tolist(), mol.nao
 
 
+MCSCF_STARTS = 10
+MCSCF_SEED = 20240817
+# Rotation amplitude, radians. Measured over 0.05 to 0.30 on the three CASSCF
+# cases: water/STO-3G reaches its minimum from a rotated start at every value,
+# so the fix this exists for is not sensitive to it, and 0.30 converges the most
+# starts there (6 of 10 against 3 at 0.05). Amplitude does not decide whether
+# N2 explores -- see `_mcscf_starts`.
+MCSCF_ROTATION = 0.30
+
+
+def _mcscf_starts(mf, mo0, count, seed, ncore, ncas):
+    """The given guess first, then `count - 1` deterministically rotated ones.
+
+    The rotation is `exp(X)` for a random antisymmetric `X`, which is a proper
+    orbital rotation rather than a perturbation that would need reorthogonalising.
+
+    `X` is confined to core-active and active-virtual. Rotations *within* the
+    core, within the active space, or within the virtuals are invariances of the
+    CASSCF energy -- the CI expansion spans the whole active space, so mixing
+    active orbitals among themselves gives an equivalent guess. Only changing
+    which orbitals are in the space explores anything.
+
+    This does not make every case explorable, and the limit is worth recording
+    rather than rediscovering. N2/cc-pVDZ CAS(6,6) converges only from its
+    Hartree-Fock guess: one start in ten, at every amplitude from 0.05 to 0.30
+    and for every block choice tried, including one that is a pure invariance
+    and so cannot be a worse guess. Its stationary point is reproducible but it
+    is not audited by this, and a sweep that converges only from the default
+    start is not evidence of anything. Water/STO-3G, the case this was written
+    for, converges from 3 to 7 starts and splits them across two solutions
+    1.67 mHartree apart, which is what a working probe looks like.
+    """
+    import numpy
+    from scipy.linalg import expm
+
+    base = mf.mo_coeff if mo0 is None else mo0
+    yield ("rhf" if mo0 is None else "avas"), mo0
+    rng = numpy.random.default_rng(seed)
+    nmo = base.shape[1]
+    act = slice(ncore, ncore + ncas)
+    # Only the blocks that change the active space. A rotation *within* the
+    # core, within the active space, or within the virtuals is an invariance of
+    # the CASSCF energy -- the CI expansion spans the whole active space, so
+    # mixing active orbitals among themselves produces an equivalent guess and
+    # explores nothing. What distinguishes one stationary point from another is
+    # which orbitals are in the space at all, so the rotation is confined to
+    # core-active and active-virtual. The virtual side is capped a few orbitals
+    # above the space; the high virtuals are not candidates for it.
+    occ = slice(max(0, ncore - ncas), ncore)
+    vir = slice(ncore + ncas, min(nmo, ncore + 2 * ncas + 4))
+    for i in range(1, count):
+        x = numpy.zeros((nmo, nmo))
+        for blk in (occ, vir):
+            n_blk = len(range(*blk.indices(nmo)))
+            if n_blk:
+                x[blk, act] = rng.standard_normal((n_blk, ncas)) * MCSCF_ROTATION
+                x[act, blk] = -x[blk, act].T
+        yield f"rotated-{i}", base @ expm(x - x.T)
+
+
 def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
     """CASSCF or CASCI, and the active space AVAS picked when labels are given.
 
@@ -1566,15 +1654,81 @@ def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
         ncas, nelecas, mo = avas_mod.avas(mf, avas_labels, threshold=0.2)
 
     if optimize:
-        mc = mcscf.CASSCF(mf, ncas, nelecas)
-        mc.conv_tol = 1e-11
-        mc.conv_tol_grad = 1e-7
+        # Multi-start, because a CASSCF from Hartree-Fock orbitals converges to
+        # whichever stationary point that guess falls toward, and on some
+        # surfaces that is a saddle rather than the minimum. Water/STO-3G
+        # CAS(6,5) is one: from RHF orbitals PySCF stalls 1.7 mHartree high and
+        # reports `converged = False`, while a rotated start reaches the
+        # minimum and converges. Taking the lowest *converged* run makes the
+        # reference a property of the active space rather than of the guess.
+        #
+        # The rotations come from a fixed seed, so this is reproducible run to
+        # run and machine to machine. It deliberately does not read
+        # metalquicha's answer: the reference has to stay independent of the
+        # code it checks, which is the whole point of generating it here.
+        #
+        # `sort_mo` with explicit indices would be cheaper and equally
+        # deterministic, but it needs to know which orbitals the minimum wants,
+        # per case and per basis, and that is a table somebody has to maintain.
+        results = []
+        default_outcome = None   # what the RHF/AVAS guess itself did
+        import numpy as _np
+        _nel = int(_np.sum(nelecas)) if _np.ndim(nelecas) else int(nelecas)
+        ncore = (mol.nelectron - _nel) // 2
+        for label, guess in _mcscf_starts(mf, mo, MCSCF_STARTS, MCSCF_SEED,
+                                          ncore, ncas):
+            mc = mcscf.CASSCF(mf, ncas, nelecas)
+            mc.conv_tol = 1e-11
+            mc.conv_tol_grad = 1e-7
+            mc.fcisolver.conv_tol = 1e-12
+            # More macro iterations than the default: a rotated start begins
+            # further from any stationary point than the Hartree-Fock guess,
+            # and running out of iterations is not the same as being trapped.
+            # Same convergence criteria, only more room to reach them.
+            mc.max_cycle_macro = 100
+            mc.verbose = 0
+            converged, energy = False, None
+            try:
+                mc.kernel(guess)
+                converged, energy = bool(mc.converged), float(mc.e_tot)
+            except Exception:
+                pass
+            if label in ("rhf", "avas"):
+                default_outcome = (converged, energy)
+            if converged:
+                results.append((energy, label))
+        if not results:
+            raise SystemExit(
+                f"PySCF MCSCF did not converge for {basis} from any of "
+                f"{MCSCF_STARTS} starts")
+        results.sort()
+        best, best_label = results[0]
+        spread = results[-1][0] - best
+        print(f"    MCSCF multi-start {basis} CAS({nelecas},{ncas}): "
+              f"{len(results)}/{MCSCF_STARTS} converged, lowest from "
+              f"{best_label}, spread among converged {spread:.2e}")
+        mc_energy = best
+        mcscf_note = None
+        if best_label not in ("rhf", "avas"):
+            # Say what the default guess actually did. Failing to converge and
+            # converging onto something higher are different failures, and the
+            # spread among the converged runs describes neither of them.
+            if default_outcome is None or not default_outcome[0]:
+                did = "does not converge"
+            else:
+                did = f"converges {default_outcome[1] - best:.2e} Hartree higher"
+            mcscf_note = (
+                f"reference is the lowest of {MCSCF_STARTS} deterministic "
+                f"CASSCF starts ({len(results)} converged). The Hartree-Fock "
+                f"guess {did}; a rotated start reaches this minimum.")
     else:
         mc = mcscf.CASCI(mf, ncas, nelecas)
-    mc.fcisolver.conv_tol = 1e-12
-    mc.kernel(mo)
-    if not mc.converged:
-        raise SystemExit(f"PySCF MCSCF did not converge for {basis}")
+        mc.fcisolver.conv_tol = 1e-12
+        mc.kernel(mo)
+        if not mc.converged:
+            raise SystemExit(f"PySCF MCSCF did not converge for {basis}")
+        mc_energy = float(mc.e_tot)
+        mcscf_note = None
     # `nelecas` is a plain int from a hand-written case, a (na, nb) pair from
     # mcscf, and a numpy scalar from avas -- which is not an `int` as far as
     # isinstance is concerned, so testing for that alone sends a scalar into
@@ -1584,7 +1738,7 @@ def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
         total = int(nelecas)
     else:
         total = int(sum(nelecas))
-    return float(mc.e_tot), total, int(ncas)
+    return mc_energy, total, int(ncas), mcscf_note
 
 
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
@@ -1628,11 +1782,74 @@ def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
     return float(energy), mol.nao
 
 
+# Cases whose reference this script cannot compute. ORMAS is not in PySCF, so
+# these two energies come from GAMESS and are transcribed rather than generated.
+#
+# They used to live in the manifest by hand, which does not survive: the
+# generator rewrites the manifest wholesale and deletes any deck it did not just
+# write, so every regeneration dropped both cases and their decks. That went
+# unnoticed because the generator has been unable to finish -- the water CASSCF
+# reference aborted it -- so nobody had regenerated to find out. Holding them
+# here keeps the generator the single source of the manifest, which is the
+# property everything else in this file assumes.
+MANUAL_CASES = [
+    {
+        "stem": "cpu_h2o_3-21g_ormas_cisd",
+        "name": "ORMAS CI-SD H2O 3-21G against GAMESS (CPU)",
+        "expected_energy": -75.7103507602,
+        "tolerance": 1e-8,
+        "xyz": "water_gamess_ci.xyz",
+        "basis": "3-21g",
+        "mcscf": {
+            "n_active_electrons": 8,
+            "n_active_orbitals": 12,
+            "n_inactive_orbitals": 1,
+            "optimize_orbitals": False,
+            "ormas": {"subspaces": [1, 5], "min_electrons": [6, 0],
+                      "max_electrons": [8, 2]},
+        },
+    },
+    {
+        "stem": "cpu_n2_cc-pvdz_ormas_6e6o_sd",
+        "name": "ORMAS(6,6) N2 cc-pvdz singles and doubles (CPU)",
+        "expected_energy": -109.019592219941,
+        # Looser than the suite default, and not for want of a tighter SCF: at
+        # scf 1e-12 this case still sits 8.9e-10 from the GAMESS number, where
+        # every other correlated case moved to ~5e-10 or below. What is left is
+        # the CI treatment against a reference from a different program, not a
+        # convergence threshold, so 1e-9 would leave it 1.1x from red and it
+        # would go there on the first change of compiler.
+        "tolerance": 1e-8,
+        "xyz": "n2.xyz",
+        "basis": "cc-pvdz",
+        "mcscf": {
+            "n_active_electrons": 6,
+            "n_active_orbitals": 6,
+            "optimize_orbitals": False,
+            "ormas": {"subspaces": [1, 4], "min_electrons": [4, 0],
+                      "max_electrons": [6, 2]},
+        },
+    },
+]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true",
                     help="compute and print, write nothing")
     args = ap.parse_args()
+
+    # Reference energies must not depend on how many cores the generating
+    # machine happens to have. PySCF's FCI contraction reassociates its sums
+    # with the thread count, and the result moves in steps rather than drifting:
+    # N2 CAS(6,6) CASCI comes out -109.021785987045 on 1, 2 or 4 threads and
+    # -109.021785987598 on 8 or 16. That 5.5e-10 gap is half the suite's
+    # tolerance, so a reference regenerated on a bigger box would look like a
+    # regression in whatever code was checked against it. One thread is the only
+    # setting with no such dependence, and it reproduces the values already in
+    # the manifest.
+    from pyscf import lib as _pyscf_lib
+    _pyscf_lib.num_threads(1)
 
     os.environ.setdefault("OMP_NUM_THREADS", "1")
 
@@ -1697,7 +1914,7 @@ def main():
     # PySCF is agreeing about the wave function.
     for name, basis, nelecas, ncas, optimize, avas_labels in MCSCF_CASES:
         mol = multiref_molecule(name)
-        energy, nelecas_used, ncas_used = pyscf_mcscf(
+        energy, nelecas_used, ncas_used, mcscf_note = pyscf_mcscf(
             mol.atoms, basis, nelecas, ncas, optimize=optimize,
             avas_labels=avas_labels)
         tag = normalize_basis_name(basis)
@@ -1726,13 +1943,19 @@ def main():
         theory = "CASSCF" if optimize else "CASCI"
         if avas_labels:
             theory += " (AVAS " + ", ".join(avas_labels) + ")"
-        tests.append({
+        entry = {
             "name": f"{theory} CAS({nelecas_used},{ncas_used}) {mol.label} {basis} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
-            "energy_tolerance": 1e-08,
             "type": "unfragmented",
-        })
+        }
+        # Prose, deliberately not a threshold: `run_validation.py` reads no such
+        # key and is not meant to. It is here so that regenerating on a machine
+        # where PySCF lands elsewhere shows a documented reason for the number
+        # rather than a silent millihartree move.
+        if mcscf_note:
+            entry["reference_note"] = mcscf_note
+        tests.append(entry)
         print(f"{mol.label:6s} {basis:12s} {theory:24s} "
               f"CAS({nelecas_used},{ncas_used}) E={energy:.12f}", flush=True)
 
@@ -1757,7 +1980,6 @@ def main():
             "name": f"RHF with quasi-atomic bonding analysis {mol.label} {basis} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
-            "energy_tolerance": 1e-08,
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} quao E={energy:.12f}", flush=True)
@@ -1779,19 +2001,13 @@ def main():
             if functional:
                 d["model"]["functional"] = functional
                 d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
-            # Tighter than the suite default, because a gradient is a
-            # derivative of the converged energy and an unconverged density
-            # shows up in it linearly rather than quadratically. At the default
-            # 1e-8 these cases sat ~1e-7 from PySCF -- which is the SCF
-            # stopping point, not the gradient.
-            d["keywords"]["scf"]["tolerance"] = 1e-11
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         theory = functional.upper() if functional else ("UHF" if mult != 1 else "RHF")
         label = f"{theory} gradient {mol.label} {basis}"
         if aux:
             label += f" density fitted with {aux}"
-        tests.append({
+        entry = {
             "name": label + " (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
@@ -1802,7 +2018,13 @@ def main():
             # though the converse does not hold.
             "check_translation": True,
             "type": "unfragmented",
-        })
+        }
+        # The energy of a fitted range-separated case is held to the same bound
+        # as its energy-only twin: the case is a gradient case, but the number
+        # checked here is the same fitted total energy, limited the same way.
+        if aux and functional in RSH_FUNCTIONALS:
+            entry["tolerance"] = DF_RSH_ENERGY_TOLERANCE
+        tests.append(entry)
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {theory:8s} grad |g|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
@@ -1816,7 +2038,6 @@ def main():
         if not args.dry_run:
             d = deck_json(xyz_for(mol), basis, method="mp2",
                           correlation={"freeze_core": False})
-            d["keywords"]["scf"]["tolerance"] = 1e-12
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -1844,7 +2065,6 @@ def main():
             # gradient refuses -- correctly, and that is a different energy.
             d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
                           correlation={"freeze_core": False}, aux_only=True)
-            d["keywords"]["scf"]["tolerance"] = 1e-12
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -1872,7 +2092,6 @@ def main():
             # difference between the two decks.
             d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
                           correlation={"freeze_core": False})
-            d["keywords"]["scf"]["tolerance"] = 1e-12
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -1901,7 +2120,6 @@ def main():
             # being one.
             d = deck_json(xyz_for(mol), basis, aux=aux, method="mp2",
                           correlation={"freeze_core": False})
-            d["keywords"]["scf"]["tolerance"] = 1e-12
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -1931,7 +2149,6 @@ def main():
                           correlation={"freeze_core": False})
             d["model"]["functional"] = functional
             d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
-            d["keywords"]["scf"]["tolerance"] = 1e-12
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -1965,7 +2182,6 @@ def main():
                           correlation={"freeze_core": False})
             d["model"]["functional"] = functional
             d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
-            d["keywords"]["scf"]["tolerance"] = 1e-12
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -1991,12 +2207,15 @@ def main():
             d = deck_json(xyz_for(mol), basis, aux=aux, method="dft")
             d["model"]["functional"] = functional
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
-        tests.append({
+        entry = {
             "name": f"{functional.upper()} {mol.label} {basis} density fitted with {aux} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
             "type": "unfragmented",
-        })
+        }
+        if functional in RSH_FUNCTIONALS:
+            entry["tolerance"] = DF_RSH_ENERGY_TOLERANCE
+        tests.append(entry)
         print(f"{mol.label:6s} {basis:12s} {functional:8s} df={aux:20s} "
               f"E={energy:.12f}", flush=True)
 
@@ -2015,7 +2234,6 @@ def main():
                 "method": "MBE", "level": len(fragments),
                 "allow_overlapping_fragments": False, "embedding": "none",
             }
-            d["keywords"]["scf"]["tolerance"] = 1e-11
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
@@ -2270,6 +2488,36 @@ def main():
             if rel in HAND_MAINTAINED and deck not in generated_inputs:
                 tests.append(entry)
                 print(f"kept hand-maintained {deck}", flush=True)
+
+    # The transcribed-reference cases, written the same way as the rest so the
+    # deck on disk is the one the manifest names.
+    for case in MANUAL_CASES:
+        deck = deck_for(f"{CPU_MQC}/mcscf", case["stem"])
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = {
+                "schema": {"name": "mqc-frag", "version": "1.0"},
+                "molecules": [{"xyz": f"../../../sample_inputs/{case['xyz']}",
+                               "molecular_charge": 0,
+                               "molecular_multiplicity": 1}],
+                "model": {"method": "casci", "basis": case["basis"]},
+                "keywords": {"scf": {"maxiter": 200, "tolerance": 1e-12},
+                             "mcscf": case["mcscf"]},
+                "system": {"logger": {"level": "Verbose"}},
+                "driver": "Energy",
+            }
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entry = {
+            "name": case["name"],
+            "input": deck,
+            "expected_energy": case["expected_energy"],
+            "type": "unfragmented",
+        }
+        if "tolerance" in case:
+            entry["tolerance"] = case["tolerance"]
+        tests.append(entry)
+        print(f"{case['name']}: transcribed reference "
+              f"E={case['expected_energy']:.12f}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

@@ -37,7 +37,7 @@
     "keywords": {
         "scf": {
             "maxiter": 100,
-            "tolerance": 1e-11
+            "tolerance": 1e-12
         },
         "fragmentation": {
             "method": "MBE",
