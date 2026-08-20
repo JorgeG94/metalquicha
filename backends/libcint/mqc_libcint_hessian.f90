@@ -21,13 +21,14 @@ module mqc_libcint_hessian
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
    use mqc_libcint_gradient, only: one_electron_deriv, iprinv_deriv_at, &
-                                   DERIV_KIN, DERIV_NUC
+                                   DERIV_KIN, DERIV_NUC, DERIV_OVLP
    use mqc_libcint_hess_ints, only: eri_ip1_block
    implicit none
    private
 
    public :: hcore_deriv_atom
    public :: make_h1_atom
+   public :: overlap_deriv_atom
 
 contains
 
@@ -201,5 +202,56 @@ contains
 
       deallocate (vhf, hcore_a, offsets, counts, owner)
    end subroutine make_h1_atom
+
+   subroutine overlap_deriv_atom(mol, iatom, s1, error)
+      !! `dS/dR_A`, the overlap matrix moved by one atom
+      !!
+      !! **The reason a nuclear Hessian needs a different coupled-perturbed
+      !! solve from every other perturbation in this code.** An electric field
+      !! does not move the basis functions, so the overlap is unchanged and its
+      !! derivative is zero; displacing a nucleus drags its functions with it,
+      !! and the orbitals must stay orthonormal while that happens. That
+      !! constraint is what puts a non-zero occupied-occupied block into the
+      !! orbital response, and this matrix is where it comes from.
+      !!
+      !! Only functions centred on `A` move, so the derivative is the
+      !! differentiated overlap restricted to that atom's rows, plus its
+      !! transpose in the same columns -- one term for the bra moving and one
+      !! for the ket. The sign is the library's, as everywhere else here.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: iatom
+      real(dp), allocatable, intent(out) :: s1(:, :, :)   !! (n_ao, n_ao, 3)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ds(:, :, :)
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: comp, p0, p1
+
+      if (error%has_error()) return
+      if (iatom < 1 .or. iatom > mol%natm) then
+         call error%set(ERROR_VALIDATION, "the overlap derivative was asked for with "// &
+                        "respect to an atom outside the molecule.")
+         return
+      end if
+
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      call one_electron_deriv(mol, ds, DERIV_OVLP)
+      ds = -ds
+
+      allocate (s1(mol%nao, mol%nao, 3))
+      s1 = 0.0_dp
+      p0 = offsets(iatom) + 1
+      p1 = offsets(iatom) + counts(iatom)
+      if (counts(iatom) > 0) then
+         do comp = 1, 3
+            s1(p0:p1, :, comp) = s1(p0:p1, :, comp) + ds(p0:p1, :, comp)
+            s1(:, p0:p1, comp) = s1(:, p0:p1, comp) + transpose(ds(p0:p1, :, comp))
+         end do
+      end if
+
+      deallocate (ds, offsets, counts)
+   end subroutine overlap_deriv_atom
 
 end module mqc_libcint_hessian

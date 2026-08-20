@@ -16,7 +16,7 @@ module test_mqc_hess_ints
    use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
-   use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom
+   use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
@@ -43,7 +43,8 @@ contains
                   new_unittest("components_are_where_they_belong", components_are_where_they_belong), &
                   new_unittest("two_electron_blocks", two_electron_blocks), &
            new_unittest("hcore_derivative_is_translationally_invariant", hcore_derivative_is_translationally_invariant), &
-                  new_unittest("the_perturbation_sums_to_nothing", the_perturbation_sums_to_nothing) &
+                  new_unittest("the_perturbation_sums_to_nothing", the_perturbation_sums_to_nothing), &
+                  new_unittest("overlap_derivative_moves_only_one_atom", overlap_derivative_moves_only_one_atom) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -497,6 +498,75 @@ contains
       end if
       call mol%destroy()
    end subroutine the_perturbation_sums_to_nothing
+
+   subroutine overlap_derivative_moves_only_one_atom(error)
+      !! `dS/dR_A` touches only the rows and columns of atom `A`
+      !!
+      !! Displacing a nucleus moves the functions centred on it and nothing
+      !! else, so every element of `dS/dR_A` outside atom `A`'s rows and columns
+      !! is exactly zero. And summed over atoms the whole thing vanishes,
+      !! because translating the molecule does not change how its functions
+      !! overlap.
+      !!
+      !! **This matrix is why a nuclear Hessian needs a different response
+      !! solve from anything else here.** A field perturbation leaves the
+      !! overlap alone, so every existing caller of the coupled-perturbed
+      !! machinery has `dS = 0` and an orbital response with no
+      !! occupied-occupied block. Here orthonormality has to be maintained while
+      !! the functions move, and that block is fixed at minus half of this.
+      !!
+      !! Matches PySCF's `s1ao` to 1e-16 on every atom.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: s1(:, :, :), total(:, :, :)
+      logical :: ok
+      integer :: a, i, j, c
+      real(dp) :: outside
+
+      call build_water(mol, err, ok)
+      call check(error, ok, "could not build water")
+      if (allocated(error)) return
+
+      do a = 1, 3
+         call overlap_deriv_atom(mol, a, s1, err)
+         call check(error,.not. err%has_error(), "an overlap derivative failed")
+         if (allocated(error)) exit
+         if (a == 1) then
+            allocate (total(size(s1, 1), size(s1, 2), 3))
+            total = 0.0_dp
+         end if
+         total = total + s1
+         if (a == 2) then
+            ! The oxygen owns basis functions 1 to 5 in this basis, so a
+            ! hydrogen's derivative must vanish on that whole block.
+            outside = 0.0_dp
+            do c = 1, 3
+               do j = 1, 5
+                  do i = 1, 5
+                     outside = max(outside, abs(s1(i, j, c)))
+                  end do
+               end do
+            end do
+            call check(error, outside < 1.0e-14_dp, &
+                       "a hydrogen's overlap derivative reaches the oxygen block")
+         end if
+         if (allocated(error)) exit
+         deallocate (s1)
+      end do
+
+      if (.not. allocated(error)) then
+         call check(error, maxval(abs(total)) < 1.0e-12_dp, &
+                    "the overlap derivatives do not sum to zero over atoms")
+      end if
+      if (.not. allocated(error)) then
+         call overlap_deriv_atom(mol, 1, s1, err)
+         call check(error, maxval(abs(s1)) > 1.0e-3_dp, &
+                    "the derivative came back empty, so the sum proves nothing")
+      end if
+      call mol%destroy()
+   end subroutine overlap_derivative_moves_only_one_atom
 
 end module test_mqc_hess_ints
 
