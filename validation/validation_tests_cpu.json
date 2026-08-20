@@ -1114,7 +1114,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "PBE gradient H2O cc-pvdz (CPU)",
@@ -1140,7 +1140,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "B3LYP gradient H2O cc-pvdz (CPU)",
@@ -1166,7 +1166,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "PBE gradient CH3 cc-pvdz (CPU)",
@@ -1197,7 +1197,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "TPSS gradient H2O cc-pvdz (CPU)",
@@ -1223,7 +1223,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "M06L gradient H2O cc-pvdz (CPU)",
@@ -1249,7 +1249,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "PBE gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1275,7 +1275,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1301,7 +1301,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "TPSS gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1327,7 +1327,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "WB97X gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1354,7 +1354,7 @@
             "check_translation": true,
             "type": "unfragmented",
             "tolerance": 1e-08,
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "CAM-B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1381,7 +1381,7 @@
             "check_translation": true,
             "type": "unfragmented",
             "tolerance": 1e-08,
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "MP2 gradient H2O sto-3g (CPU)",
@@ -1647,7 +1647,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "DH B2PLYP gradient H2O sto-3g (CPU)",
@@ -1673,7 +1673,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "DH B2GP-PLYP gradient H2O cc-pvdz (CPU)",
@@ -1699,7 +1699,7 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "DH MPW2PLYP gradient NH3 sto-3g (CPU)",
@@ -1730,28 +1730,28 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "PBE H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_pbe_df.json",
             "expected_energy": -76.335467103918,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_b3lyp_df.json",
             "expected_energy": -76.422171387807,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "TPSS H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_tpss_df.json",
             "expected_energy": -76.4251513078,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "WB97X H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1759,7 +1759,7 @@
             "expected_energy": -76.402216052144,
             "type": "unfragmented",
             "tolerance": 1e-08,
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "CAM-B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1767,7 +1767,7 @@
             "expected_energy": -76.393652022904,
             "type": "unfragmented",
             "tolerance": 1e-08,
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "MBE(2) RHF gradient (H2O)2 cc-pvdz (CPU)",
@@ -1917,7 +1917,7 @@
             "expected_energy": -76.353392173249,
             "tolerance": 5e-05,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "DH B2GP-PLYP H2O cc-pvdz/cc-pvdz-rifit (CPU)",
@@ -1925,7 +1925,7 @@
             "expected_energy": -76.336977629198,
             "tolerance": 5e-05,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "DH MPW2PLYP H2O cc-pvdz/cc-pvdz-rifit (CPU)",
@@ -1933,112 +1933,112 @@
             "expected_energy": -76.35287249257,
             "tolerance": 5e-05,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS SVWN H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_svwn.json",
             "expected_energy": -75.854445341479,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS PBE H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_pbe.json",
             "expected_energy": -76.33306566891,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS B3LYP H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_b3lyp.json",
             "expected_energy": -76.420035465696,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS PBE0 H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_pbe0.json",
             "expected_energy": -76.338452163786,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS TPSS H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_tpss.json",
             "expected_energy": -76.422747225964,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS M06-L H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_m06l.json",
             "expected_energy": -76.413432743074,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS PBE CH4 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_ch4_cc-pvdz_pbe.json",
             "expected_energy": -40.442813478982,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS WB97X H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_wb97x.json",
             "expected_energy": -76.400024619839,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "KS CAM-B3LYP H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_camb3lyp.json",
             "expected_energy": -76.391504007376,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "UKS SVWN CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_svwn.json",
             "expected_energy": -39.421122039737,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "UKS PBE CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_pbe.json",
             "expected_energy": -39.769139688915,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "UKS B3LYP CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_b3lyp.json",
             "expected_energy": -39.838786859584,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "UKS TPSS CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_tpss.json",
             "expected_energy": -39.846631370639,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "UKS WB97X CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_wb97x.json",
             "expected_energy": -39.820521613415,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "UKS PBE O2 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_o2_cc-pvdz_pbe.json",
             "expected_energy": -150.19325937787,
             "type": "unfragmented",
-            "needs": "libxc"
+            "requires": "libxc"
         },
         {
             "name": "RI-CCSD H2O sto-3g/cc-pvdz-rifit frozen 0 (CPU)",

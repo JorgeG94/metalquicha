@@ -78,12 +78,23 @@ set(MQC_ARCH_FLAGS
     "DEFAULT"
     CACHE STRING "Architecture flags for Release builds; empty for portable")
 
+# The optimisation level a coverage build compiles at. -O0 is the safe default
+# -- every statement keeps its own line and gcov's attribution is exact -- and
+# it is also brutally slow on the numerics here: `mqc_quao` takes 12 s in a
+# release build and 704 s under -O0 coverage, which is most of a CI budget for
+# one test. -O1 keeps line attribution usable (gfortran does not yet fuse
+# statements across lines at that level) and is the setting to reach for when
+# the coverage job is timing out rather than dropping half the program from it.
+set(MQC_COVERAGE_OPT
+    "-O0"
+    CACHE STRING "Optimisation level for Coverage-mqc builds")
+
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(FLAGS_STANDARD "-ffree-line-length-none -fbacktrace")
   set(FLAGS_DEBUG "-ffpe-trap=invalid,zero,overflow -fcheck=all")
   set(FLAGS_RELEASE "-march=native")
   set(FLAGS_WARNINGS "-Wall -Wextra -Wpedantic")
-  set(FLAGS_COVERAGE "-O0 -g --coverage")
+  set(FLAGS_COVERAGE "${MQC_COVERAGE_OPT} -g --coverage")
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
   set(FLAGS_STANDARD "-traceback")

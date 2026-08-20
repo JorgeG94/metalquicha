@@ -1046,6 +1046,17 @@ install(
 print_summary()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
+  # Both manifests, every time. A case naming a backend this build does not have
+  # is skipped by the runner rather than failed -- that is what the `requires`
+  # markers are for -- so the xTB manifest costs nothing without tblite and the
+  # CPU one costs nothing without libcint. Running only the manifest someone
+  # remembered to enable is how half the program stopped being measured in the
+  # first place.
+  #
+  # The CPU manifest is where the driver, the fragmentation schemes and the JSON
+  # writer get exercised: those are reached by *running* the program rather than
+  # by calling into it, so no unit test touches them, and the coverage report
+  # showed them near zero until this ran.
   add_custom_target(
     coverage
     COMMAND ${CMAKE_CTEST_COMMAND} -R "mqc" --output-on-failure
@@ -1053,6 +1064,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
             run_validation.py
     COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
             run_validation.py --mpi --np 2
+    COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
+            run_validation.py --manifest validation_tests_cpu.json
     COMMAND ${CMAKE_COMMAND} -E remove -f coverage.info
     COMMAND lcov --directory . --capture --output-file coverage.info
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'

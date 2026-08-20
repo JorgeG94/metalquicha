@@ -2606,7 +2606,7 @@ def main():
     # Every case that names a functional needs libxc, and a build without it
     # refuses the deck rather than computing something else. Marked here, in
     # one place, rather than at each of the six sites that emit a Kohn-Sham
-    # case: `run_validation.py` skips a case whose `needs` the binary does not
+    # case: `run_validation.py` skips a case whose `requires` the binary does not
     # report, so a libcint-only build -- which is what a coverage build is --
     # runs the rest of this manifest instead of failing two dozen cases it was
     # never going to be able to run.
@@ -2615,7 +2615,7 @@ def main():
         if not deck.exists():
             continue
         if "functional" in json.loads(deck.read_text()).get("model", {}):
-            entry["needs"] = "libxc"
+            entry["requires"] = "libxc"
 
     MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
     print(f"\nwrote {MANIFEST} with {len(tests)} cases")

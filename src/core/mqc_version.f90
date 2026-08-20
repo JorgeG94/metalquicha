@@ -26,12 +26,18 @@ contains
       !! so the answer is a property of the binary that exists rather than of
       !! the flags somebody believes they configured with.
       use mqc_libcint_bridge, only: libcint_backend_available, xc_available
+      use mqc_method_factory, only: method_backend_built
+      use mqc_method_types, only: METHOD_TYPE_GFN2
       use mqc_cuest_bridge, only: cuest_backend_available
       use mqc_dlfind_bridge, only: dlfind_available
 
       call logger%info("metalquicha version "//MQC_VERSION_STR)
+      ! tblite has no bridge of its own to ask, so the question goes to the
+      ! factory, which is preprocessed and knows whether the xTB method type
+      ! has a branch to reach.
       call logger%info("features: libcint="//available(libcint_backend_available())// &
                        " libxc="//available(xc_available())// &
+                       " tblite="//available(method_backend_built(METHOD_TYPE_GFN2))// &
                        " cuest="//available(cuest_backend_available())// &
                        " dlfind="//available(dlfind_available()))
    end subroutine print_version
