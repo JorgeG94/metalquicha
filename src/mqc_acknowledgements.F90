@@ -4,8 +4,9 @@ module mqc_acknowledgements
    !! on, and thanking the people who wrote it.
    !!
    !! Metalquicha computes almost no integrals of its own. Every number it
-   !! reports comes out of somebody else's library -- cuEST on the GPU, libcint
-   !! on the CPU, tblite for the semi-empirical methods -- and a code that
+   !! reports comes out of somebody else's library -- cuEST on the GPU, libfint
+   !! or libcint on the CPU, tblite for the semi-empirical methods -- and a code
+   !! that
    !! prints its own logo at startup and never names them has its priorities
    !! backwards. This says which one ran, in the output the user keeps.
    !!
@@ -14,6 +15,11 @@ module mqc_acknowledgements
    !! `mqc_method_hf`/`mqc_method_dft` uses -- the method, the requested
    !! backend, and whether this build has cuEST. Thanking a library that did not
    !! run would be worse than thanking none.
+   !!
+   !! `ACK_LIBCINT` names the CPU integrals slot rather than a library: which of
+   !! libfint and libcint filled it is a build-time choice, so the banner text
+   !! is the one thing here decided by the preprocessor rather than derived at
+   !! run time. `MQC_WITH_LIBCINT` cannot answer it -- both branches define it.
    use pic_logger, only: logger => global_logger
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
@@ -46,7 +52,16 @@ contains
       case (ACK_CUEST)
          call banner("Integrals and SCF provided through NVIDIA's cuEST")
       case (ACK_LIBCINT)
+#ifdef MQC_WITH_LIBFINT
+         ! libfint is a port rather than a new derivation, so the credit is
+         ! still Qiming Sun's; naming only the port would take it away from him,
+         ! and naming only libcint would credit a library this build did not
+         ! link. Both, in the order they matter.
+         call banner("Integrals provided through libfint, a Fortran port of "// &
+                     "Qiming Sun's LibCint")
+#else
          call banner("Integrals provided through Qiming Sun's LibCint")
+#endif
       case (ACK_TBLITE)
          call banner("Semi-empirical methods provided through the Grimme group's tblite")
       case default
