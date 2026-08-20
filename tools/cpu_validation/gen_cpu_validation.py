@@ -494,6 +494,16 @@ QUAO_CASES = [
     ("h2s", "6-31g"),
 ]
 
+# Fukui indices, one case per population scheme. Water is the molecule because
+# its anion is genuinely unbound -- so the case also exercises the path that
+# warns about it, which is the common one and would otherwise never be run in
+# anger. Both schemes are covered because they are separate code paths through
+# `mqc_libcint_charges` and only one of them can be the default.
+FUKUI_CASES = [
+    ("water", "6-31g", "chelpg"),
+    ("water", "6-31g", "mulliken"),
+]
+
 GRADIENT_CASES = [
     ("water", "sto-3g", "", "", 1),
     ("ch4", "6-31g**", "", "", 1),       # Cartesian d functions
@@ -1983,6 +1993,30 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} quao E={energy:.12f}", flush=True)
+
+    # Fukui indices, through the real driver. As with the analysis above, the
+    # energy the harness checks is the ordinary RHF one -- but here the run
+    # itself is the assertion. Two further SCFs happen on the ions, the
+    # condensed indices are required to sum to one, and a failure of either
+    # aborts the calculation rather than printing something wrong, so a case
+    # that finishes has exercised all of it.
+    for name, basis, scheme in FUKUI_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rhf(mol.atoms, basis)
+        tag = normalize_basis_name(basis)
+        deck = deck_for(f"{CPU_MQC}/fukui", f"cpu_{name}_{tag}_fukui_{scheme}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis,
+                          properties={"fukui": {"population": scheme}})
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"RHF with Fukui indices ({scheme}) {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} fukui/{scheme} E={energy:.12f}", flush=True)
 
     for name, basis, aux, functional, mult in GRADIENT_CASES:
         mol = MOLECULES[name]

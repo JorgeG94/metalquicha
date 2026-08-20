@@ -859,6 +859,16 @@ contains
                                    fukui_error%get_message())
             else
                call print_fukui_report(fukui, symbols)
+               result%fukui_plus = fukui%f_plus
+               result%fukui_minus = fukui%f_minus
+               result%fukui_dual = fukui%dual
+               result%fukui_ip = fukui%ionisation_potential
+               result%fukui_ea = fukui%electron_affinity
+               result%fukui_hardness = fukui%hardness
+               result%fukui_electrophilicity = fukui%electrophilicity
+               result%fukui_anion_bound = fukui%anion_bound
+               result%fukui_scheme = fukui%scheme
+               result%has_fukui = .true.
             end if
          end block
       end if

@@ -118,6 +118,7 @@ contains
 
       call write_sapt_section(json, main_obj, data)
       call write_ieda_section(json, main_obj, data)
+      call write_fukui_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
@@ -280,6 +281,57 @@ contains
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine write_mbe_breakdown_json_impl
+
+   subroutine write_fukui_section(json, parent, data)
+      !! Where the molecule reacts, per atom, for something other than a reader
+      !!
+      !! Emitted per atom rather than reduced to a most-reactive site, because
+      !! ranking sites is the caller's job and which index to rank on depends on
+      !! the reaction being asked about -- `f+` for an incoming nucleophile,
+      !! `f-` for an electrophile, the dual descriptor to tell the two kinds of
+      !! site apart.
+      !!
+      !! `anion_bound` travels with the numbers. When it is false the `f_plus`
+      !! column describes an orbital the basis invented rather than a real
+      !! anion, and nothing about the values themselves says so -- a consumer
+      !! sorting on `f_plus` would rank sites confidently off a fiction.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, entry
+      integer :: i, natm
+
+      if (.not. data%has_fukui) return
+      if (.not. allocated(data%fukui_plus)) return
+      natm = size(data%fukui_plus)
+
+      call json%create_object(section, "fukui")
+      call json%add(parent, section)
+      call json%add(section, "population_scheme", trim(data%fukui_scheme))
+      call json%add(section, "ionisation_potential", data%fukui_ip)
+      call json%add(section, "electron_affinity", data%fukui_ea)
+      call json%add(section, "chemical_potential", -0.5_dp*(data%fukui_ip + data%fukui_ea))
+      call json%add(section, "hardness", data%fukui_hardness)
+      call json%add(section, "electrophilicity", data%fukui_electrophilicity)
+      call json%add(section, "anion_bound", data%fukui_anion_bound)
+
+      call json%create_array(arr, "atoms")
+      call json%add(section, arr)
+      do i = 1, natm
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         ! Numbered rather than named: the output payload carries no element
+         ! symbols, and the atom order is the input order, so a consumer that
+         ! read the geometry already knows which is which.
+         call json%add(entry, "atom", i)
+         call json%add(entry, "f_plus", data%fukui_plus(i))
+         call json%add(entry, "f_minus", data%fukui_minus(i))
+         call json%add(entry, "f_zero", &
+                       0.5_dp*(data%fukui_plus(i) + data%fukui_minus(i)))
+         call json%add(entry, "dual", data%fukui_dual(i))
+      end do
+   end subroutine write_fukui_section
 
    subroutine write_gmbe_pie_json_impl(data)
       !! Write GMBE PIE calculation results to output JSON file
