@@ -15,6 +15,7 @@ target_sources(
   ${main_lib}
   PRIVATE mqc_libcint_atomic_guess.f90
           mqc_libcint_gradient.f90
+          mqc_libcint_response.f90
           mqc_libcint_hess_ints.f90
           mqc_libcint_hessian.f90
           mqc_libcint_bridge.f90

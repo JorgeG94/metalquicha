@@ -23,12 +23,42 @@ module mqc_libcint_hessian
    use mqc_libcint_gradient, only: one_electron_deriv, iprinv_deriv_at, &
                                    DERIV_KIN, DERIV_NUC, DERIV_OVLP
    use mqc_libcint_hess_ints, only: eri_ip1_block
+   use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
+   use mqc_libcint_response, only: response_operator_t, solve_response
+   use pic_blas_interfaces, only: pic_gemm
    implicit none
    private
 
    public :: hcore_deriv_atom
    public :: make_h1_atom
    public :: overlap_deriv_atom
+   public :: nuclear_response_t
+   public :: solve_mo1_atom
+
+   type, extends(response_operator_t) :: nuclear_response_t
+      !! The electronic Hessian, applied to a response that has occupied rows
+      !!
+      !! The trial vector is `n_mo` by `n_occ` flattened, **not** virtual by
+      !! occupied. That is the whole difference from the field case: the
+      !! occupied-occupied block is not zero here, it is fixed by orthonormality
+      !! at minus half the overlap derivative, and it contributes a density of
+      !! its own that a virtual-by-occupied layout has nowhere to put.
+      !!
+      !! Everything the operator needs is held rather than rebuilt: the Schwarz
+      !! bounds cost a pass over shell pairs and would otherwise be recomputed
+      !! once per iteration.
+      type(libcint_molecule_t), pointer :: mol => null()
+      real(dp), allocatable :: orbitals(:, :)     !! (n_ao, n_mo)
+      real(dp), allocatable :: c_occ(:, :)        !! (n_ao, n_occ)
+      real(dp), allocatable :: energies(:)        !! (n_mo)
+      real(dp), allocatable :: bounds(:, :)
+      real(dp), allocatable :: zero_h(:, :)
+      integer :: n_occ = 0
+      integer :: n_mo = 0
+   contains
+      procedure :: apply => nuclear_apply
+      procedure :: length => nuclear_length
+   end type nuclear_response_t
 
 contains
 
@@ -253,5 +283,166 @@ contains
 
       deallocate (ds, offsets, counts)
    end subroutine overlap_deriv_atom
+
+   pure function nuclear_length(this) result(n)
+      !! `n_mo` by `n_occ`, occupied rows included
+      class(nuclear_response_t), intent(in) :: this
+      integer :: n
+
+      n = this%n_mo*this%n_occ
+   end function nuclear_length
+
+   subroutine nuclear_apply(this, vector, image, error)
+      !! The two-electron response a trial vector induces, scaled and flattened
+      !!
+      !! Four steps and each is somewhere the conventions can go wrong. The
+      !! trial vector becomes an atomic-orbital density; that density is
+      !! **symmetrised**, which is what makes the fast Fock build correct here
+      !! -- the antisymmetrised variant belongs to the frequency-dependent
+      !! `A - B` block and needs a different build entirely. The resulting `G`
+      !! goes back to the molecular basis, and finally the virtual rows are
+      !! divided by their orbital energy gaps while the occupied rows are set to
+      !! zero.
+      !!
+      !! **The occupied rows are zeroed rather than solved for.** They are
+      !! already known -- orthonormality fixes them -- so the iteration must not
+      !! move them, and the solver puts them back from the right-hand side on
+      !! every pass.
+      class(nuclear_response_t), intent(inout) :: this
+      real(dp), intent(in) :: vector(:)
+      real(dp), intent(out) :: image(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: mo1(:, :), half(:, :), dens(:, :), g(:, :), work(:, :)
+      real(dp), allocatable :: gmo(:, :)
+      type(direct_stats_t) :: stats
+      integer :: n_ao, i, a
+
+      if (error%has_error()) return
+
+      n_ao = size(this%orbitals, 1)
+      allocate (mo1(this%n_mo, this%n_occ))
+      mo1 = reshape(vector, [this%n_mo, this%n_occ])
+
+      ! The density this response implies, symmetrised.
+      allocate (half(n_ao, this%n_occ), dens(n_ao, n_ao))
+      ! **Twice, for double occupancy.** The trial vector describes how one
+      ! spatial orbital moves; the density it perturbs holds two electrons in
+      ! that orbital. Leaving the factor out halves the response, which does not
+      ! stop the iteration converging -- it converges to the wrong answer, and
+      ! the first-order density comes out roughly a third too large rather than
+      ! obviously doubled, because the error feeds back through the coupling.
+      call pic_gemm(this%orbitals, mo1, half, alpha=2.0_dp, beta=0.0_dp)
+      call pic_gemm(half, this%c_occ, dens, transb="T")
+      dens = dens + transpose(dens)
+
+      allocate (g(n_ao, n_ao))
+      call build_fock_direct(this%mol, this%zero_h, dens, this%bounds, g, stats, &
+                             error, density_screen=.false.)
+      if (error%has_error()) return
+
+      ! Back to the molecular basis, occupied columns only.
+      allocate (work(n_ao, this%n_occ), gmo(this%n_mo, this%n_occ))
+      call pic_gemm(g, this%c_occ, work)
+      call pic_gemm(this%orbitals, work, gmo, transa="T")
+
+      do i = 1, this%n_occ
+         do a = 1, this%n_mo
+            if (a <= this%n_occ) then
+               gmo(a, i) = 0.0_dp
+            else
+               gmo(a, i) = gmo(a, i)/(this%energies(i) - this%energies(a))
+            end if
+         end do
+      end do
+
+      image = reshape(gmo, [this%n_mo*this%n_occ])
+      deallocate (mo1, half, dens, g, work, gmo)
+   end subroutine nuclear_apply
+
+   subroutine solve_mo1_atom(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                             max_iter, tol)
+      !! The first-order orbitals for one atom's displacement
+      !!
+      !! Assembles the right-hand side and hands it to the shared solver.
+      !!
+      !! **The occupied-occupied block is not solved for.** Orthonormality fixes
+      !! it at minus half the overlap derivative, so it goes into the
+      !! right-hand side and the operator zeroes it on every pass, which leaves
+      !! it exactly where it was put. The virtual-occupied block is the only
+      !! unknown, and it is coupled to the fixed block through the density the
+      !! whole vector induces -- which is the reason the occupied rows have to
+      !! be carried at all rather than dropped.
+      !!
+      !! The right-hand side is `h1 - s1 e_i` divided by the orbital energy
+      !! gap, with the sign that makes the response enter the fixed point with
+      !! the opposite one. That asymmetry is not a typo: the base is the
+      !! uncoupled solution of an equation whose response term sits on the other
+      !! side of the equals sign.
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: h1(:, :, :)    !! (n_ao, n_ao, 3), from `make_h1_atom`
+      real(dp), intent(in) :: s1(:, :, :)    !! (n_ao, n_ao, 3), from `overlap_deriv_atom`
+      real(dp), allocatable, intent(out) :: mo1(:, :, :)
+         !! (n_mo, n_occ, 3), the first-order orbitals in the molecular basis
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      type(nuclear_response_t) :: operator
+      real(dp), allocatable :: rhs(:), answer(:), h1mo(:, :), s1mo(:, :)
+      real(dp), allocatable :: work(:, :), base(:, :)
+      integer :: n_ao, n_mo, comp, a, i
+
+      if (error%has_error()) return
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+
+      operator%mol => mol
+      operator%orbitals = orbitals
+      operator%c_occ = orbitals(:, 1:n_occ)
+      operator%energies = energies
+      operator%n_occ = n_occ
+      operator%n_mo = n_mo
+      allocate (operator%zero_h(n_ao, n_ao))
+      operator%zero_h = 0.0_dp
+      call schwarz_bounds(mol, operator%bounds, error)
+      if (error%has_error()) return
+
+      allocate (mo1(n_mo, n_occ, 3))
+      allocate (h1mo(n_mo, n_occ), s1mo(n_mo, n_occ), base(n_mo, n_occ))
+      allocate (work(n_ao, n_occ), rhs(n_mo*n_occ))
+
+      do comp = 1, 3
+         call pic_gemm(h1(:, :, comp), operator%c_occ, work)
+         call pic_gemm(orbitals, work, h1mo, transa="T")
+         call pic_gemm(s1(:, :, comp), operator%c_occ, work)
+         call pic_gemm(orbitals, work, s1mo, transa="T")
+
+         do i = 1, n_occ
+            do a = 1, n_mo
+               if (a <= n_occ) then
+                  ! Fixed by orthonormality, not solved for.
+                  base(a, i) = -0.5_dp*s1mo(a, i)
+               else
+                  base(a, i) = -(h1mo(a, i) - s1mo(a, i)*energies(i)) &
+                               /(energies(a) - energies(i))
+               end if
+            end do
+         end do
+
+         rhs = reshape(base, [n_mo*n_occ])
+         call solve_response(operator, rhs, rhs, answer, error, &
+                             max_iter=max_iter, tol=tol)
+         if (error%has_error()) return
+         mo1(:, :, comp) = reshape(answer, [n_mo, n_occ])
+         deallocate (answer)
+      end do
+
+      deallocate (h1mo, s1mo, base, work, rhs)
+   end subroutine solve_mo1_atom
 
 end module mqc_libcint_hessian

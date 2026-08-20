@@ -16,7 +16,10 @@ module test_mqc_hess_ints
    use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
-   use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom
+   use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
+                                  solve_mo1_atom
+   use mqc_libcint_hess_ints, only: eri_ip1_block
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
@@ -44,7 +47,8 @@ contains
                   new_unittest("two_electron_blocks", two_electron_blocks), &
            new_unittest("hcore_derivative_is_translationally_invariant", hcore_derivative_is_translationally_invariant), &
                   new_unittest("the_perturbation_sums_to_nothing", the_perturbation_sums_to_nothing), &
-                  new_unittest("overlap_derivative_moves_only_one_atom", overlap_derivative_moves_only_one_atom) &
+                  new_unittest("overlap_derivative_moves_only_one_atom", overlap_derivative_moves_only_one_atom), &
+                  new_unittest("first_order_density_against_finite_difference", first_order_density_fd) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -567,6 +571,106 @@ contains
       end if
       call mol%destroy()
    end subroutine overlap_derivative_moves_only_one_atom
+
+   subroutine density_at(geo, dens, orbitals, energies, mol, err)
+      !! A converged density at one geometry, and the orbitals with it
+      real(dp), intent(in) :: geo(3, 3)
+      real(dp), allocatable, intent(out) :: dens(:, :), orbitals(:, :), energies(:)
+      type(libcint_molecule_t), intent(out) :: mol
+      type(error_t), intent(inout) :: err
+
+      type(rhf_result_t) :: scf
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      if (err%has_error()) return
+      dens = scf%density
+      orbitals = scf%orbitals
+      energies = scf%orbital_energies
+   end subroutine density_at
+
+   subroutine first_order_density_fd(error)
+      !! The analytic first-order density, against differencing two SCFs
+      !!
+      !! **The check that needs nothing external.** Displacing a nucleus and
+      !! differencing the converged densities gives `dD/dR` directly, in the
+      !! atomic-orbital basis, with no reference implementation and no
+      !! molecular-orbital phase convention to agree about -- and phases are
+      !! exactly what makes a coefficient-by-coefficient comparison against
+      !! another program meaningless.
+      !!
+      !! Central differences, so the error is second order in the step, and the
+      !! step is chosen where that error and the SCF's own convergence noise
+      !! are both small: too large and the quadratic term shows, too small and
+      !! differencing two nearly equal densities loses the digits that carry
+      !! the answer.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol, mol_p, mol_m
+      type(error_t) :: err
+      real(dp), allocatable :: d0(:, :), dp_(:, :), dm(:, :), c0(:, :), e0(:)
+      real(dp), allocatable :: cp(:, :), ep(:), cm(:, :), em(:)
+      real(dp), allocatable :: h1(:, :, :), s1(:, :, :), mo1(:, :, :)
+      real(dp), allocatable :: ip1(:, :, :, :, :), half(:, :), analytic(:, :), fd(:, :)
+      real(dp) :: geo(3, 3)
+      real(dp), parameter :: H = 1.0e-3_dp
+      integer :: n, nocc
+      real(dp) :: worst, scale
+
+      nocc = 5
+      call density_at(WATER, d0, c0, e0, mol, err)
+      call check(error,.not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) return
+      n = size(d0, 1)
+
+      ! Atom 1 along z, chosen because water lies in the yz plane so the
+      ! displacement is not along a symmetry axis that makes the answer zero.
+      geo = WATER
+      geo(3, 1) = geo(3, 1) + H
+      call density_at(geo, dp_, cp, ep, mol_p, err)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) - H
+      call density_at(geo, dm, cm, em, mol_m, err)
+      call check(error,.not. err%has_error(), "a displaced point did not converge")
+      if (allocated(error)) return
+
+      allocate (fd(n, n))
+      fd = (dp_ - dm)/(2.0_dp*H)
+
+      call eri_ip1_block(mol, ip1, err)
+      call make_h1_atom(mol, d0, ip1, 1, h1, err)
+      call overlap_deriv_atom(mol, 1, s1, err)
+      call solve_mo1_atom(mol, c0, e0, nocc, h1, s1, mo1, err)
+      call check(error,.not. err%has_error(), "the response did not solve")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! dD/dx = 2 (C mo1 Cocc^T + transpose), the z component
+      allocate (half(n, nocc), analytic(n, n))
+      call pic_gemm(c0, mo1(:, :, 3), half, alpha=2.0_dp, beta=0.0_dp)
+      call pic_gemm(half, c0(:, 1:nocc), analytic, transb="T")
+      analytic = analytic + transpose(analytic)
+
+      worst = maxval(abs(analytic - fd))
+      scale = maxval(abs(fd))
+
+      ! Not vacuous: the density really does move when the oxygen does, so
+      ! agreeing to nothing is not the same as agreeing.
+      call check(error, scale > 1.0e-2_dp, &
+                 "the density barely moved, so this comparison proves nothing")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, worst < 1.0e-5_dp*scale + 1.0e-6_dp, &
+                 "the analytic first-order density disagrees with finite differences")
+      call mol%destroy()
+      call mol_p%destroy()
+      call mol_m%destroy()
+   end subroutine first_order_density_fd
 
 end module test_mqc_hess_ints
 
