@@ -90,6 +90,12 @@ module mqc_libcint_quao
          !! (n_ao, n_quao), orthonormal, each one belonging to a single atom
       integer, allocatable :: atom_of(:)
          !! Which atom each quasi-atomic orbital sits on
+      integer, allocatable :: subspace_of(:)
+         !! Which occupation-restricted subspace each one was drawn from. All
+         !! ones when the space is unrestricted, which is the case that says why
+         !! it exists: where there is more than one subspace, no rotation may
+         !! mix two of them, because a restricted wave function is not invariant
+         !! under one that does.
       real(dp), allocatable :: population_bond_order(:, :)
          !! (n_quao, n_quao). Diagonal elements are orbital populations;
          !! interatomic off-diagonal elements are bond orders. Paper I eq (5.2).
@@ -268,7 +274,159 @@ contains
       end do
    end subroutine aambs_atom_ranges
 
-   subroutine atom_adapted_block(sigma, block, error)
+   subroutine select_atomic_claims(projection, offset, count, natm, first, last, &
+                                   claims, atom_of, subspace_of, error)
+      !! Which atom gets which orbital, by competition rather than by decree
+      !!
+      !! Every atom is offered every subspace. The claims are pooled, ranked by
+      !! how much of the subspace each one actually captures, and the strongest
+      !! are kept until the subspace is full. **An atom's share is therefore an
+      !! output.** It is not read off the free-atom minimal basis, and it can
+      !! differ from that atom's free-atom valence count.
+      !!
+      !! That is GAMESS's rule and it is deliberate there -- `LOCAL_PPASVD`
+      !! offers every atom every subspace under the comment "NO KEEPER LINE HERE
+      !! BECAUSE WE WANT TO LOOK (NOT USE) ALL POSSIBLE SVD VALUES", pools into
+      !! one flat list and sorts by (subspace, singular value), and Aaron West's
+      !! changelog calls the result auto-assignment. Only the molecule-wide sum
+      !! is checked against the free-atom counts; no atom's individual share is.
+      !!
+      !! **With one subspace this is exactly the old prescribed rule**, and that
+      !! is worth knowing rather than hoping. Each atom offers as many claims as
+      !! it has minimal-basis valence orbitals, and those counts sum to the
+      !! valence dimension by construction -- the check above enforces it -- so
+      !! the pool exactly fills the space and the ranking selects everything.
+      !! What the ranking is *for* is a restricted space, where the subspaces
+      !! are smaller than the whole and the atoms genuinely compete.
+      !!
+      !! Each claim's coefficients are confined to the rows of its own subspace,
+      !! which is what makes the eventual transformation block-diagonal by
+      !! construction rather than by assertion: two claims from different
+      !! subspaces have disjoint support and are orthogonal whatever else
+      !! happens to them.
+      real(dp), intent(in) :: projection(:, :)   !! (n_val, n_mbs)
+      integer, intent(in) :: offset(:), count(:)
+      integer, intent(in) :: natm
+      integer, intent(in) :: first(:), last(:)   !! (n_subspaces) row ranges
+      real(dp), allocatable, intent(out) :: claims(:, :)     !! (n_val, n_val)
+      integer, allocatable, intent(out) :: atom_of(:), subspace_of(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: pool(:, :), weight(:), sigma(:, :), block(:, :)
+      real(dp), allocatable :: piece(:)
+      integer, allocatable :: pool_atom(:), pool_sub(:), taken(:), share(:)
+      integer :: n_val, n_sub, k, iatom, m, width, i, j, n_cand, filled, best, kept
+      real(dp) :: top
+
+      if (error%has_error()) return
+      n_val = size(projection, 1)
+      n_sub = size(first)
+
+      n_cand = 0
+      do k = 1, n_sub
+         width = last(k) - first(k) + 1
+         do iatom = 1, natm
+            n_cand = n_cand + min(count(iatom), width)
+         end do
+      end do
+
+      allocate (pool(n_val, n_cand), weight(n_cand))
+      allocate (pool_atom(n_cand), pool_sub(n_cand))
+      pool = 0.0_dp
+      filled = 0
+      do k = 1, n_sub
+         width = last(k) - first(k) + 1
+         do iatom = 1, natm
+            m = min(count(iatom), width)
+            if (m == 0 .or. count(iatom) == 0) cycle
+            allocate (sigma(width, count(iatom)))
+            sigma = projection(first(k):last(k), &
+                               offset(iatom) + 1:offset(iatom) + count(iatom))
+            call atom_adapted_block(sigma, block, error, weights=piece, n_wanted=m)
+            deallocate (sigma)
+            if (error%has_error()) return
+            do i = 1, m
+               filled = filled + 1
+               ! Confined to this subspace's rows, zero elsewhere.
+               pool(first(k):last(k), filled) = block(:, i)
+               weight(filled) = piece(i)
+               pool_atom(filled) = iatom
+               pool_sub(filled) = k
+            end do
+            deallocate (block, piece)
+         end do
+      end do
+
+      ! Keep the strongest claims on each subspace until it is full. Selection
+      ! rather than a full sort: the pool is a few dozen columns and the winners
+      ! are wanted in a particular order anyway.
+      allocate (taken(n_cand), share(natm))
+      taken = 0
+      share = 0
+      do k = 1, n_sub
+         width = last(k) - first(k) + 1
+         do kept = 1, width
+            best = 0
+            top = -1.0_dp
+            do i = 1, n_cand
+               if (taken(i) /= 0 .or. pool_sub(i) /= k) cycle
+               if (weight(i) > top) then
+                  top = weight(i)
+                  best = i
+               end if
+            end do
+            if (best == 0) then
+               call error%set(ERROR_VALIDATION, "subspace "//to_char(k)//" has "// &
+                              to_char(width)//" orbitals but the atoms between them "// &
+                              "claim fewer, so it cannot be filled.")
+               return
+            end if
+            taken(best) = 1
+            share(pool_atom(best)) = share(pool_atom(best)) + 1
+         end do
+      end do
+
+      ! Every atom must end up with something. GAMESS asserts the same and says
+      ! what to do about it; an atom with no quasi-atomic orbital has no
+      ! population, no bond order and no place in the decomposition.
+      do iatom = 1, natm
+         if (share(iatom) < 1) then
+            call error%set(ERROR_VALIDATION, "atom "//to_char(iatom)//" was left "// &
+                           "with no quasi-atomic orbital, so it has no population "// &
+                           "and no place in the analysis. The subspaces are too "// &
+                           "small, or too few, to give every atom one.")
+            return
+         end if
+      end do
+
+      ! Laid out subspace by subspace and, inside each, atom by atom -- so with
+      ! one subspace the ordering is atom-major exactly as before. GAMESS sorts
+      ! its survivors by atom label for the same reason.
+      allocate (claims(n_val, n_val), atom_of(n_val), subspace_of(n_val))
+      j = 0
+      do k = 1, n_sub
+         do iatom = 1, natm
+            do i = 1, n_cand
+               if (taken(i) == 0) cycle
+               if (pool_sub(i) /= k .or. pool_atom(i) /= iatom) cycle
+               j = j + 1
+               claims(:, j) = pool(:, i)
+               atom_of(j) = iatom
+               subspace_of(j) = k
+            end do
+         end do
+      end do
+      if (j /= n_val) then
+         call error%set(ERROR_VALIDATION, "the subspaces between them hold "// &
+                        to_char(j)//" orbitals and the valence space has "// &
+                        to_char(n_val)//".")
+         return
+      end if
+
+      deallocate (pool, weight, pool_atom, pool_sub, taken, share)
+   end subroutine select_atomic_claims
+
+   subroutine atom_adapted_block(sigma, block, error, weights, n_wanted)
       !! The orbitals of one subspace that best match one atom's free-atom set
       !!
       !! `sigma` is the overlap of an orthonormal set of molecular orbitals with
@@ -282,14 +440,30 @@ contains
       !! an SVD of a matrix whose row count is the whole valence space, for
       !! exactly the same answer.
       real(dp), intent(in) :: sigma(:, :)     !! (n_rows, m_atom)
-      real(dp), allocatable, intent(out) :: block(:, :)   !! (n_rows, m_atom)
+      real(dp), allocatable, intent(out) :: block(:, :)   !! (n_rows, n_wanted)
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: weights(:)
+         !! The squared projections of the vectors returned, descending. These
+         !! are what an atom's claim on a subspace is *ranked* by when several
+         !! atoms compete for it, so they are an output rather than an internal.
+      integer, intent(in), optional :: n_wanted
+         !! How many vectors to return, default all of them. Fewer is asked for
+         !! when the subspace is smaller than the atom's minimal basis, where
+         !! the atom cannot be given a vector per free-atom orbital because
+         !! there are not that many dimensions to give.
 
       real(dp), allocatable :: gram(:, :), values(:), work(:, :)
-      integer :: m, i, info
+      integer :: m, i, info, taken
 
       if (error%has_error()) return
       m = size(sigma, 2)
+      taken = m
+      if (present(n_wanted)) taken = min(n_wanted, m)
+      if (taken < 1) then
+         allocate (block(size(sigma, 1), 0))
+         if (present(weights)) allocate (weights(0))
+         return
+      end if
       allocate (gram(m, m), values(m))
       call pic_gemm(sigma, sigma, gram, transa="T")
 
@@ -304,24 +478,29 @@ contains
       end if
       values = -values
 
-      if (values(m) < 1.0e-10_dp) then
+      ! Only the vectors actually being taken have to be representable. When
+      ! the subspace is smaller than the atom's minimal basis the trailing
+      ! projections are legitimately zero -- there is no room for them -- and
+      ! refusing on that would refuse every restricted space.
+      if (values(taken) < 1.0e-10_dp) then
          call error%set(ERROR_VALIDATION, "one of this atom's free-atom orbitals has "// &
                         "no counterpart in the molecular orbital space (projection "// &
-                        to_char(values(m))//"). The orbital basis cannot represent the "// &
-                        "minimal basis, which usually means it is far too small.")
+                        to_char(values(taken))//"). The orbital basis cannot represent "// &
+                        "the minimal basis, which usually means it is far too small.")
          return
       end if
 
-      allocate (work(size(sigma, 1), m), block(size(sigma, 1), m))
+      allocate (work(size(sigma, 1), m), block(size(sigma, 1), taken))
       call pic_gemm(sigma, gram, work)
-      do i = 1, m
+      do i = 1, taken
          block(:, i) = work(:, i)/sqrt(values(i))
       end do
+      if (present(weights)) weights = values(1:taken)
       deallocate (gram, values, work)
    end subroutine atom_adapted_block
 
-   subroutine refine_atomic_character(coefficients, projection, atom_of, offset, &
-                                      count, sweeps, functional, error)
+   subroutine refine_atomic_character(coefficients, projection, atom_of, subspace_of, &
+                                      offset, count, sweeps, functional, error)
       !! Rotate between atoms so each orbital sits as fully as possible on its own
       !!
       !! Paper II's Appendix, eqs (A.1)-(A.11), which replaces the plain
@@ -347,6 +526,13 @@ contains
       real(dp), intent(inout) :: coefficients(:, :)   !! (n_rows, n_quao)
       real(dp), intent(in) :: projection(:, :)        !! (n_rows, n_mbs), raw AAMBS
       integer, intent(in) :: atom_of(:)
+      integer, intent(in) :: subspace_of(:)
+         !! Rotations across two subspaces are skipped. A restricted wave
+         !! function is not invariant under them -- mixing two active orbitals
+         !! stops being redundant the moment the space is incomplete -- and one
+         !! would also destroy the disjoint support that makes the
+         !! transformation block-diagonal to begin with. With a single subspace
+         !! the guard never fires.
       integer, intent(in) :: offset(:), count(:)      !! AAMBS range per atom
       integer, intent(out) :: sweeps
       real(dp), intent(out) :: functional
@@ -374,7 +560,8 @@ contains
 
          do i = 1, n
             do j = i + 1, n
-               if (atom_of(i) == atom_of(j)) cycle   ! invisible to the functional
+               if (atom_of(i) == atom_of(j)) cycle
+               if (subspace_of(i) /= subspace_of(j)) cycle   ! invisible to the functional
 
                d = 0.0_dp
                f = 0.0_dp
@@ -534,7 +721,8 @@ contains
    end subroutine valence_virtual_orbitals
 
    subroutine quasi_atomic_orbitals(atomic_numbers, valence_internal, n_occupied_valence, &
-                                    mixed, offset, count, result, error, valence_density)
+                                    mixed, offset, count, result, error, &
+                                    valence_density, subspaces)
       !! Quasi-atomic orbitals for the valence-internal space
       !!
       !! Each atom claims the combinations of valence-internal orbitals that
@@ -565,6 +753,13 @@ contains
       integer, intent(in) :: offset(:), count(:)   !! Valence AAMBS range per atom
       type(quao_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: subspaces(:)
+         !! The valence-internal orbital each occupation-restricted subspace
+         !! starts at, ascending, as `ormas_space_t%first_orbital` gives them.
+         !! Absent means one subspace covering everything, which is the
+         !! unrestricted case and reproduces the prescribed per-atom assignment
+         !! exactly -- see `select_atomic_claims` for why that is a theorem
+         !! rather than a hope.
       real(dp), intent(in), optional :: valence_density(:, :)
          !! (n_val, n_val), the one-particle density matrix in the
          !! valence-internal orbital basis. Absent means the closed-shell
@@ -593,10 +788,11 @@ contains
          !! numbers, and nothing here can detect that. Build both from one wave
          !! function and pass them together.
 
-      real(dp), allocatable :: projection(:, :), sigma(:, :), block(:, :)
+      real(dp), allocatable :: projection(:, :)
       real(dp), allocatable :: claims(:, :), gram(:, :), half(:, :), orthogonal(:, :)
       real(dp), allocatable :: density(:, :), work(:, :)
-      integer :: n_ao, n_val, natm, iatom, m, filled, i
+      integer, allocatable :: first(:), last(:)
+      integer :: n_ao, n_val, natm, i, k
 
       if (error%has_error()) return
       n_ao = size(valence_internal, 1)
@@ -617,21 +813,29 @@ contains
       allocate (projection(n_val, size(mixed, 2)))
       call pic_gemm(valence_internal, mixed, projection, transa="T")
 
-      allocate (claims(n_val, n_val), result%atom_of(n_val))
-      filled = 0
-      do iatom = 1, natm
-         m = count(iatom)
-         if (m == 0) cycle
-         allocate (sigma(n_val, m))
-         sigma = projection(:, offset(iatom) + 1:offset(iatom) + m)
-         call atom_adapted_block(sigma, block, error)
-         deallocate (sigma)
-         if (error%has_error()) return
-         claims(:, filled + 1:filled + m) = block
-         result%atom_of(filled + 1:filled + m) = iatom
-         filled = filled + m
-         deallocate (block)
-      end do
+      ! One subspace unless told otherwise, which is the unrestricted case.
+      if (present(subspaces)) then
+         allocate (first(size(subspaces)), last(size(subspaces)))
+         first = subspaces
+         do k = 1, size(subspaces) - 1
+            last(k) = subspaces(k + 1) - 1
+         end do
+         last(size(subspaces)) = n_val
+         if (first(1) /= 1 .or. any(last < first)) then
+            call error%set(ERROR_VALIDATION, "the subspaces do not partition the "// &
+                           "valence space: they must start at orbital one, ascend, "// &
+                           "and none may be empty.")
+            return
+         end if
+      else
+         allocate (first(1), last(1))
+         first(1) = 1
+         last(1) = n_val
+      end if
+
+      call select_atomic_claims(projection, offset, count, natm, first, last, &
+                                claims, result%atom_of, result%subspace_of, error)
+      if (error%has_error()) return
 
       ! Orthonormal within an atom, not between atoms. Symmetric
       ! orthogonalization is the choice that moves every orbital as little as
@@ -642,8 +846,9 @@ contains
       if (error%has_error()) return
       call pic_gemm(claims, half, orthogonal)
 
-      call refine_atomic_character(orthogonal, projection, result%atom_of, offset, &
-                                   count, result%sweeps, result%atomic_character, error)
+      call refine_atomic_character(orthogonal, projection, result%atom_of, &
+                                   result%subspace_of, offset, count, result%sweeps, &
+                                   result%atomic_character, error)
       if (error%has_error()) return
 
       allocate (result%orbitals(n_ao, n_val))
@@ -740,6 +945,10 @@ contains
                ! which atom an orbital belongs to, which is the one thing the
                ! previous stage established.
                if (quao%atom_of(i) /= quao%atom_of(j)) cycle
+               ! And not across two subspaces, for the reason the refinement
+               ! above gives: a restricted wave function is not invariant under
+               ! a rotation that mixes them.
+               if (quao%subspace_of(i) /= quao%subspace_of(j)) cycle
 
                r2 = 0.0_dp
                r3 = 0.0_dp
