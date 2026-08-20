@@ -29,7 +29,7 @@ source-form = "free"
 [dependencies]
 pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.6.0"}
 pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.5.1"}
-pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", tag = "v0.3.0"}
+pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", tag = "v0.3.1"}
 tblite = { git = "https://github.com/tblite/tblite", tag = "v0.6.0"}
 test-drive.git = "https://github.com/JorgeG94/test-drive"
 json-fortran = { git = "https://github.com/jacobwilliams/json-fortran.git", tag = "9.2.0"}
