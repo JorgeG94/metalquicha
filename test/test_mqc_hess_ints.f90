@@ -17,7 +17,7 @@ module test_mqc_hess_ints
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
-                                  solve_mo1_atom
+                                  solve_mo1_atom, nuclear_repulsion_hessian
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_hess_ints, only: eri_ip1_block
@@ -49,7 +49,8 @@ contains
                   new_unittest("the_perturbation_sums_to_nothing", the_perturbation_sums_to_nothing), &
                   new_unittest("overlap_derivative_moves_only_one_atom", overlap_derivative_moves_only_one_atom), &
                   new_unittest("first_order_density_against_finite_difference", first_order_density_fd), &
-                  new_unittest("an_unknown_selector_is_refused", an_unknown_selector_is_refused) &
+                  new_unittest("an_unknown_selector_is_refused", an_unknown_selector_is_refused), &
+                  new_unittest("nuclear_repulsion_hessian_is_right", nuclear_repulsion_hessian_ok) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -703,6 +704,120 @@ contains
       end if
       call mol%destroy()
    end subroutine an_unknown_selector_is_refused
+
+   pure function repulsion(z, geo) result(e)
+      !! `sum_{A<B} Z_A Z_B / R_AB`, written out so the test differences it
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: geo(:, :)
+      real(dp) :: e
+      integer :: a, b
+
+      e = 0.0_dp
+      do a = 1, size(z)
+         do b = a + 1, size(z)
+            e = e + real(z(a), dp)*real(z(b), dp) &
+                /norm2(geo(:, a) - geo(:, b))
+         end do
+      end do
+   end function repulsion
+
+   subroutine nuclear_repulsion_hessian_ok(error)
+      !! The analytic nuclear Hessian against differencing the energy twice
+      !!
+      !! No electrons and no integrals, so this can be checked against the
+      !! closed-form energy directly -- which makes it the one block of the
+      !! Hessian that needs nothing but arithmetic to trust.
+      !!
+      !! Two structural properties come with it. Each row sums to zero over
+      !! atoms, because translating the molecule does not change how its nuclei
+      !! repel; and the whole thing is symmetric under exchanging the two atoms
+      !! together with the two Cartesian directions, because it is a second
+      !! derivative.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: hess(:, :, :, :)
+      real(dp) :: geo(3, 3), fd, worst, plus_plus, plus_minus, minus_plus, minus_minus
+      real(dp), parameter :: H = 1.0e-4_dp
+      integer :: a, b, i, j
+
+      call nuclear_repulsion_hessian(WATER_Z, WATER, hess, err)
+      call check(error,.not. err%has_error(), "the nuclear Hessian failed")
+      if (allocated(error)) return
+
+      ! One mixed second derivative by central differences in both variables:
+      ! the oxygen z against a hydrogen y.
+      geo = WATER
+      geo(3, 1) = geo(3, 1) + H; geo(2, 2) = geo(2, 2) + H
+      plus_plus = repulsion(WATER_Z, geo)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) + H; geo(2, 2) = geo(2, 2) - H
+      plus_minus = repulsion(WATER_Z, geo)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) - H; geo(2, 2) = geo(2, 2) + H
+      minus_plus = repulsion(WATER_Z, geo)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) - H; geo(2, 2) = geo(2, 2) - H
+      minus_minus = repulsion(WATER_Z, geo)
+      fd = (plus_plus - plus_minus - minus_plus + minus_minus)/(4.0_dp*H*H)
+
+      call check(error, hess(3, 2, 1, 2), fd, thr=1.0e-6_dp, &
+                 more="the mixed second derivative disagrees with finite differences")
+      if (allocated(error)) return
+      call check(error, abs(fd) > 1.0e-3_dp, &
+                 "the reference derivative is zero, so that comparison proves nothing")
+      if (allocated(error)) return
+
+      ! **And one where the two Cartesian directions agree.** The isotropic
+      ! term only enters when they do, so a mixed component alone cannot see it
+      ! -- a wrong power there survives the check above, the translation sum and
+      ! the symmetry, because all three treat that term consistently however
+      ! wrong it is.
+      geo = WATER
+      geo(3, 1) = geo(3, 1) + H; geo(3, 2) = geo(3, 2) + H
+      plus_plus = repulsion(WATER_Z, geo)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) + H; geo(3, 2) = geo(3, 2) - H
+      plus_minus = repulsion(WATER_Z, geo)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) - H; geo(3, 2) = geo(3, 2) + H
+      minus_plus = repulsion(WATER_Z, geo)
+      geo = WATER
+      geo(3, 1) = geo(3, 1) - H; geo(3, 2) = geo(3, 2) - H
+      minus_minus = repulsion(WATER_Z, geo)
+      fd = (plus_plus - plus_minus - minus_plus + minus_minus)/(4.0_dp*H*H)
+
+      call check(error, hess(3, 3, 1, 2), fd, thr=1.0e-6_dp, &
+                 more="the diagonal second derivative disagrees with finite differences")
+      if (allocated(error)) return
+
+      ! Translations are free: every row sums to zero over the second atom.
+      worst = 0.0_dp
+      do j = 1, 3
+         do i = 1, 3
+            do a = 1, 3
+               worst = max(worst, abs(sum(hess(i, j, a, :))))
+            end do
+         end do
+      end do
+      call check(error, worst < 1.0e-10_dp, &
+                 "the nuclear Hessian is not translationally invariant")
+      if (allocated(error)) return
+
+      ! And it is a second derivative, so exchanging both indices together
+      ! leaves it alone.
+      worst = 0.0_dp
+      do b = 1, 3
+         do a = 1, 3
+            do j = 1, 3
+               do i = 1, 3
+                  worst = max(worst, abs(hess(i, j, a, b) - hess(j, i, b, a)))
+               end do
+            end do
+         end do
+      end do
+      call check(error, worst < 1.0e-10_dp, "the nuclear Hessian is not symmetric")
+   end subroutine nuclear_repulsion_hessian_ok
 
 end module test_mqc_hess_ints
 

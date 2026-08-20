@@ -34,6 +34,7 @@ module mqc_libcint_hessian
    public :: overlap_deriv_atom
    public :: nuclear_response_t
    public :: solve_mo1_atom
+   public :: nuclear_repulsion_hessian
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -454,5 +455,68 @@ contains
 
       deallocate (h1mo, s1mo, base, work, rhs)
    end subroutine solve_mo1_atom
+
+   subroutine nuclear_repulsion_hessian(atomic_numbers, coordinates, hess, error)
+      !! Second derivatives of the nuclear repulsion
+      !!
+      !!     E_nn = sum_{A<B} Z_A Z_B / R_AB
+      !!
+      !! The only part of the Hessian with no electrons in it, and the only part
+      !! that can be written down. For `A /= B` the block is
+      !!
+      !!     Z_A Z_B [ delta_ij / R^3 - 3 r_i r_j / R^5 ]
+      !!
+      !! and the diagonal block is minus the sum of the others in its row --
+      !! which is not an economy but the statement that translating the whole
+      !! molecule costs nothing, imposed rather than hoped for.
+      !!
+      !! `(3, 3, n_atoms, n_atoms)` with the Cartesian pair innermost, which is
+      !! the layout the electronic part will want to add into.
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: coordinates(:, :)      !! (3, n_atoms), Bohr
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: r(3), block(3, 3)
+      real(dp) :: dist, zz
+      integer :: natm, a, b, i, j
+
+      if (error%has_error()) return
+
+      natm = size(atomic_numbers)
+      if (size(coordinates, 2) /= natm) then
+         call error%set(ERROR_VALIDATION, "the coordinates and the atomic numbers "// &
+                        "describe different numbers of atoms.")
+         return
+      end if
+
+      allocate (hess(3, 3, natm, natm))
+      hess = 0.0_dp
+
+      do a = 1, natm
+         do b = 1, natm
+            if (a == b) cycle
+            r = coordinates(:, a) - coordinates(:, b)
+            dist = norm2(r)
+            if (dist < 1.0e-10_dp) then
+               call error%set(ERROR_VALIDATION, "two atoms are on top of each other, "// &
+                              "so the nuclear repulsion has no second derivative.")
+               deallocate (hess)
+               return
+            end if
+            zz = real(atomic_numbers(a), dp)*real(atomic_numbers(b), dp)
+            do j = 1, 3
+               do i = 1, 3
+                  block(i, j) = -3.0_dp*zz*r(i)*r(j)/dist**5
+                  if (i == j) block(i, j) = block(i, j) + zz/dist**3
+               end do
+            end do
+            hess(:, :, a, b) = block
+            ! The diagonal takes the negative of every off-diagonal partner, so
+            ! each row sums to zero and a rigid translation is free.
+            hess(:, :, a, a) = hess(:, :, a, a) - block
+         end do
+      end do
+   end subroutine nuclear_repulsion_hessian
 
 end module mqc_libcint_hessian
