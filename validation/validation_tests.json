@@ -182,7 +182,10 @@
             "input": "inputs/cpu/tblite/gfn2/w1_optimize.json",
             "expected_energy": -5.070544354,
             "type": "unfragmented",
-            "requires": "tblite",
+            "requires": [
+                "tblite",
+                "dlfind"
+            ],
             "tolerance": 1e-06,
             "expected_distances": [
                 0.959191,
@@ -196,7 +199,10 @@
             "input": "inputs/cpu/tblite/gfn2/w2_dimer_optimize.json",
             "expected_energy": -10.149006723,
             "type": "fragmented",
-            "requires": "tblite",
+            "requires": [
+                "tblite",
+                "dlfind"
+            ],
             "tolerance": 1e-05,
             "expected_distances": [
                 0.958281,
