@@ -22,7 +22,11 @@ module mqc_libcint_hessian
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
    use mqc_libcint_gradient, only: one_electron_deriv, iprinv_deriv_at, &
                                    DERIV_KIN, DERIV_NUC, DERIV_OVLP
-   use mqc_libcint_hess_ints, only: eri_ip1_block
+   use mqc_libcint_hess_ints, only: eri_ip1_block, hess_1e_block, hess_2e_block, &
+                                    hess_rinv_block, &
+                                    HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
+                                    HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
+                                    HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use mqc_libcint_response, only: response_operator_t, solve_response
    use pic_blas_interfaces, only: pic_gemm
@@ -35,6 +39,7 @@ module mqc_libcint_hessian
    public :: nuclear_response_t
    public :: solve_mo1_atom
    public :: nuclear_repulsion_hessian
+   public :: partial_hessian
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -518,5 +523,214 @@ contains
          end do
       end do
    end subroutine nuclear_repulsion_hessian
+
+   subroutine partial_hessian(mol, density, weighted, hess, error)
+      !! The Hessian of the energy expression with the orbitals held fixed
+      !!
+      !! Everything in `d2E/dRdR` that survives when the density is not allowed
+      !! to relax: the second derivatives of the integrals, contracted with the
+      !! density that the unperturbed SCF converged to. The rest -- the response
+      !! -- is what `solve_mo1_atom` is for, and is added on top of this.
+      !!
+      !! **Assembled by depositing rather than by slicing.** Each derivative
+      !! belongs to whichever atom the differentiated basis function sits on, so
+      !! the loop runs over all indices once and adds each term into the atom
+      !! pair its own indices name. The usual arrangement instead fixes a pair
+      !! of atoms and slices the integrals to their rows, which is faster and
+      !! puts the ownership rules in the slice bounds, where an off-by-one is a
+      !! wrong Hessian rather than a crash. Depositing keeps the rule next to
+      !! the term it belongs to.
+      !!
+      !! **The permutational folding is real and is worth stating.** The
+      !! two-electron sum has sixteen terms, one per ordered pair of the four
+      !! indices. Contracted against a weight symmetric under all eight
+      !! permutations of `(mu nu|lambda sigma)`, they collapse to three: four
+      !! copies of the both-on-one-index term, four of the same-pair term and
+      !! eight of the cross-pair term. That is where the 4, 4 and 8 below come
+      !! from -- not from spin, and not from counting a term twice.
+      !!
+      !! The symmetric weight is
+      !!
+      !!     G = 1/2 D_mn D_ls - 1/8 (D_ms D_ln + D_ml D_ns)
+      !!
+      !! which is the Coulomb-minus-half-exchange contraction with its exchange
+      !! half written in both of the ways the eightfold symmetry allows, so that
+      !! no permutation of the four indices can tell it apart from itself.
+      !!
+      !! Cost is `nao^4` times nine, three times over, because that is what
+      !! `hess_2e_block` returns. It is a correct implementation and not yet a
+      !! usable one; the fix is to drive the contraction from shells and never
+      !! form the array, which changes nothing above this line.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)    !! Closed shell, carrying its factor of two
+      real(dp), intent(in) :: weighted(:, :)   !! `2 sum_i eps_i C_i C_i^T`
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: s2(:, :, :), sab(:, :, :)
+      real(dp), allocatable :: h2(:, :, :), hab(:, :, :)
+      real(dp), allocatable :: tmp(:, :, :)
+      real(dp), allocatable :: r2(:, :, :), rab(:, :, :)
+      real(dp), allocatable :: eri_ii(:, :, :, :, :), eri_ij(:, :, :, :, :), &
+                               eri_ik(:, :, :, :, :)
+      integer, allocatable :: owner(:), offsets(:), counts(:)
+      real(dp), allocatable :: cross(:, :, :)
+      real(dp) :: total(3, 3)
+      real(dp) :: w, gam, zc
+      integer :: nao, natm, iao, jao, kao, lao, ia, ja, ka, a, b, comp, c
+
+      if (error%has_error()) return
+
+      nao = mol%nao
+      natm = mol%natm
+      if (size(density, 1) /= nao .or. size(weighted, 1) /= nao) then
+         call error%set(ERROR_VALIDATION, "the density and the basis disagree about "// &
+                        "how many orbitals there are.")
+         return
+      end if
+
+      allocate (offsets(natm), counts(natm))
+      call atom_ao_blocks(mol, offsets, counts)
+      allocate (owner(nao))
+      owner = 0
+      do c = 1, natm
+         do iao = offsets(c) + 1, offsets(c) + counts(c)
+            owner(iao) = c
+         end do
+      end do
+
+      allocate (hess(3, 3, natm, natm))
+      hess = 0.0_dp
+
+      ! ---- one electron, both derivatives on basis centres -----------------
+      !
+      ! `ipipnuc` and `ipnucip` carry the sum over every nucleus and its charge
+      ! already, so these are the terms where the nuclei sat still and only the
+      ! functions moved. The terms where a nucleus moved come further down and
+      ! need the operator pinned one atom at a time.
+      call hess_1e_block(mol, HESS_KIN_II, h2, error)
+      call hess_1e_block(mol, HESS_NUC_II, tmp, error)
+      if (error%has_error()) return
+      h2 = h2 + tmp
+      deallocate (tmp)
+
+      call hess_1e_block(mol, HESS_KIN_IJ, hab, error)
+      call hess_1e_block(mol, HESS_NUC_IJ, tmp, error)
+      if (error%has_error()) return
+      hab = hab + tmp
+      deallocate (tmp)
+
+      call hess_1e_block(mol, HESS_OVLP_II, s2, error)
+      call hess_1e_block(mol, HESS_OVLP_IJ, sab, error)
+      if (error%has_error()) return
+
+      ! Twice, because the bra and the ket each contribute and their two terms
+      ! are the same number: relabelling the two indices maps one onto the
+      ! other, and both the density and the operator are symmetric.
+      do comp = 1, 9
+         a = (comp - 1)/3 + 1
+         b = comp - 3*(a - 1)
+         do jao = 1, nao
+            ja = owner(jao)
+            do iao = 1, nao
+               ia = owner(iao)
+               w = density(iao, jao)
+               hess(a, b, ia, ia) = hess(a, b, ia, ia) + 2.0_dp*w*h2(iao, jao, comp)
+               hess(a, b, ia, ja) = hess(a, b, ia, ja) + 2.0_dp*w*hab(iao, jao, comp)
+               w = weighted(iao, jao)
+               hess(a, b, ia, ia) = hess(a, b, ia, ia) - 2.0_dp*w*s2(iao, jao, comp)
+               hess(a, b, ia, ja) = hess(a, b, ia, ja) - 2.0_dp*w*sab(iao, jao, comp)
+            end do
+         end do
+      end do
+      deallocate (h2, hab, s2, sab)
+
+      ! ---- one electron, at least one derivative on a nucleus --------------
+      !
+      ! `-Z_C / |r - R_C|` depends on three positions, not two: the bra centre,
+      ! the ket centre and the nucleus. Differentiating the nucleus is the
+      ! Hellmann-Feynman direction and produces no basis derivative at all, so
+      ! it reaches atom pairs that the block above cannot see -- a nucleus with
+      ! no basis functions on it would still have a Hessian row.
+      !
+      ! `cross(a, b, A)` collects, for the atom `c` whose nucleus is moving, the
+      ! part belonging to basis functions centred on `A`. Both the bra and the
+      ! ket contribute and fold onto each other, hence the factor of two; the
+      ! sign is the derivative of a basis function with respect to its own
+      ! centre being minus the derivative with respect to the electron.
+      allocate (cross(3, 3, natm))
+      do c = 1, natm
+         call hess_rinv_block(mol, c, HESS_RINV_II, r2, error)
+         call hess_rinv_block(mol, c, HESS_RINV_IJ, rab, error)
+         if (error%has_error()) return
+         zc = mol%charges(c)
+
+         cross = 0.0_dp
+         do comp = 1, 9
+            a = (comp - 1)/3 + 1
+            b = comp - 3*(a - 1)
+            do jao = 1, nao
+               do iao = 1, nao
+                  ia = owner(iao)
+                  cross(a, b, ia) = cross(a, b, ia) + density(iao, jao) &
+                                    *(r2(iao, jao, comp) + rab(iao, jao, comp))
+               end do
+            end do
+         end do
+         deallocate (r2, rab)
+
+         ! `w = -Z_C` is the charge and sign of the electron-nucleus
+         ! attraction, which `hess_rinv_block` deliberately leaves off.
+         w = -zc
+         total = 0.0_dp
+         do ia = 1, natm
+            total = total + cross(:, :, ia)
+            do b = 1, 3
+               do a = 1, 3
+                  hess(a, b, ia, c) = hess(a, b, ia, c) - 2.0_dp*w*cross(a, b, ia)
+                  hess(a, b, c, ia) = hess(a, b, c, ia) - 2.0_dp*w*cross(b, a, ia)
+               end do
+            end do
+         end do
+         ! Both derivatives on the same nucleus. Translational invariance of
+         ! `1/|r - R_C|` in its three arguments turns that into the sum of the
+         ! four basis-derivative terms, which is what `total` already holds.
+         hess(:, :, c, c) = hess(:, :, c, c) + 2.0_dp*w*total
+      end do
+      deallocate (cross)
+
+      ! ---- two electron ----------------------------------------------------
+      call hess_2e_block(mol, HESS_ERI_II, eri_ii, error)
+      call hess_2e_block(mol, HESS_ERI_IJ, eri_ij, error)
+      call hess_2e_block(mol, HESS_ERI_IK, eri_ik, error)
+      if (error%has_error()) return
+
+      do comp = 1, 9
+         a = (comp - 1)/3 + 1
+         b = comp - 3*(a - 1)
+         do lao = 1, nao
+            do kao = 1, nao
+               ka = owner(kao)
+               do jao = 1, nao
+                  ja = owner(jao)
+                  do iao = 1, nao
+                     ia = owner(iao)
+                     gam = 0.5_dp*density(iao, jao)*density(kao, lao) &
+                           - 0.125_dp*(density(iao, lao)*density(kao, jao) &
+                                       + density(iao, kao)*density(jao, lao))
+                     hess(a, b, ia, ia) = hess(a, b, ia, ia) &
+                                          + 4.0_dp*gam*eri_ii(iao, jao, kao, lao, comp)
+                     hess(a, b, ia, ja) = hess(a, b, ia, ja) &
+                                          + 4.0_dp*gam*eri_ij(iao, jao, kao, lao, comp)
+                     hess(a, b, ia, ka) = hess(a, b, ia, ka) &
+                                          + 8.0_dp*gam*eri_ik(iao, jao, kao, lao, comp)
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (eri_ii, eri_ij, eri_ik, owner, offsets, counts)
+   end subroutine partial_hessian
 
 end module mqc_libcint_hessian

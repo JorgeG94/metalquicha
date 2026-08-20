@@ -33,6 +33,9 @@ module mqc_libcint_hess_ints
                             int1e_ipkinip_sph, int1e_ipkinip_cart, &
                             int1e_ipipnuc_sph, int1e_ipipnuc_cart, &
                             int1e_ipnucip_sph, int1e_ipnucip_cart
+   use cint_gen_hess, only: int1e_ipiprinv_sph, int1e_ipiprinv_cart, &
+                            int1e_iprinvip_sph, int1e_iprinvip_cart
+   use cint_envs, only: PTR_RINV_ORIG
    use cint_gen_grad2, only: int2e_ip1_sph, int2e_ip1_cart
    use cint_gen_hess, only: int2e_ipip1_sph, int2e_ipip1_cart, &
                             int2e_ipvip1_sph, int2e_ipvip1_cart, &
@@ -43,6 +46,8 @@ module mqc_libcint_hess_ints
    public :: HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ
    public :: HESS_NUC_II, HESS_NUC_IJ
    public :: hess_1e_block
+   public :: HESS_RINV_II, HESS_RINV_IJ
+   public :: hess_rinv_block
    public :: HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    public :: hess_2e_block
    public :: eri_ip1_block
@@ -53,6 +58,9 @@ module mqc_libcint_hess_ints
    integer, parameter :: HESS_KIN_IJ = 4
    integer, parameter :: HESS_NUC_II = 5
    integer, parameter :: HESS_NUC_IJ = 6
+
+   integer, parameter :: HESS_RINV_II = 1   !! `int1e_ipiprinv`, both derivatives on the bra
+   integer, parameter :: HESS_RINV_IJ = 2   !! `int1e_iprinvip`, one on each centre
 
    integer, parameter :: HESS_ERI_II = 1   !! `int2e_ipip1`, both derivatives on centre 1
    integer, parameter :: HESS_ERI_IJ = 2   !! `int2e_ipvip1`, one on centre 1 and one on centre 2
@@ -201,6 +209,103 @@ contains
          end select
       end if
    end function drive
+
+   subroutine hess_rinv_block(mol, iatom, which, matrix, error)
+      !! A second derivative of `1/|r-R|` with the operator origin on one atom
+      !!
+      !! The nuclear attraction second derivative splits three ways, and only
+      !! one of the three is `int1e_ipipnuc`. Moving atom `A` moves the basis
+      !! functions centred on it -- that is the `ipipnuc`/`ipnucip` part, which
+      !! carries the sum over **all** nuclei and their charges. It also moves
+      !! the nucleus itself, and the electrons feel that through the origin of
+      !! `1/|r-R_A|` alone. Those cross and diagonal terms need the operator
+      !! pinned to one atom at a time, which is what `rinv` is for.
+      !!
+      !! Returned **unscaled**, exactly as `iprinv_deriv_at` returns the first
+      !! derivative: the charge and the sign of the electron-nucleus attraction
+      !! are the caller's, because the caller is also the one that knows which
+      !! of the three terms it is assembling.
+      !!
+      !! `env` is copied so the origin can be moved without touching a molecule
+      !! that other threads share.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: iatom
+      integer, intent(in) :: which          !! `HESS_RINV_II` or `HESS_RINV_IJ`
+      real(dp), allocatable, intent(out) :: matrix(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: buf(:), env(:)
+      integer, allocatable :: atm_flat(:), bas_flat(:)
+      integer :: dims(0:3), shls(0:1)
+      integer :: ish, jsh, di, dj, io, jo, i, j, comp, mx
+      logical :: have
+
+      if (error%has_error()) return
+
+      if (which /= HESS_RINV_II .and. which /= HESS_RINV_IJ) then
+         call error%set(ERROR_VALIDATION, "unknown rinv second-derivative "// &
+                        "selector; expected HESS_RINV_II or HESS_RINV_IJ.")
+         return
+      end if
+      if (iatom < 1 .or. iatom > mol%natm) then
+         call error%set(ERROR_VALIDATION, "rinv origin atom is outside the molecule.")
+         return
+      end if
+
+      mx = 0
+      do ish = 1, mol%nbas
+         mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+
+      allocate (buf(mx*mx*N_COMPONENTS))
+      allocate (matrix(mol%nao, mol%nao, N_COMPONENTS))
+      matrix = 0.0_dp
+      atm_flat = reshape(mol%atm, [size(mol%atm)])
+      bas_flat = reshape(mol%bas, [size(mol%bas)])
+      allocate (env(size(mol%env)), source=mol%env)
+      env(PTR_RINV_ORIG + 1:PTR_RINV_ORIG + 3) = mol%coords(:, iatom)
+
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1]
+            dims = [di, dj, 1, 1]
+
+            if (mol%cartesian) then
+               if (which == HESS_RINV_II) then
+                  have = int1e_ipiprinv_cart(buf, dims, shls, atm_flat, mol%natm, &
+                                             bas_flat, mol%nbas, env, ws)
+               else
+                  have = int1e_iprinvip_cart(buf, dims, shls, atm_flat, mol%natm, &
+                                             bas_flat, mol%nbas, env, ws)
+               end if
+            else
+               if (which == HESS_RINV_II) then
+                  have = int1e_ipiprinv_sph(buf, dims, shls, atm_flat, mol%natm, &
+                                            bas_flat, mol%nbas, env, ws)
+               else
+                  have = int1e_iprinvip_sph(buf, dims, shls, atm_flat, mol%natm, &
+                                            bas_flat, mol%nbas, env, ws)
+               end if
+            end if
+            if (.not. have) cycle
+
+            do comp = 1, N_COMPONENTS
+               do j = 1, dj
+                  do i = 1, di
+                     matrix(io + i, jo + j, comp) = &
+                        buf(i + di*(j - 1 + dj*(comp - 1)))
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (buf, env, atm_flat, bas_flat)
+   end subroutine hess_rinv_block
 
    subroutine hess_2e_block(mol, which, eri, error)
       !! One second-derivative two-electron integral over the whole basis
