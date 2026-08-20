@@ -422,10 +422,20 @@ option(MQC_USE_LIBFINT
 
 if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   include(FetchContent)
+  # Pinned now that it is the default. Tracking `main` was right while this was
+  # the alternative backend and one job built it -- an upstream commit showed up
+  # as a red square here, which is the drift detection the two repositories
+  # wanted from each other. As the default it is every job, so the same commit
+  # would redden the whole matrix on a metalquicha change that touched nothing,
+  # and the signal would be indistinguishable from a real break.
+  #
+  # v0.1.0 is 587db64f8b400a4f7e5953bd5d1224dac6bd40ff today. The other two
+  # fetches below pin by SHA rather than by name, which is the stronger form --
+  # a tag can be moved and a SHA cannot.
   FetchContent_Declare(
     libfint
     GIT_REPOSITORY https://github.com/JorgeG94/libfint.git
-    GIT_TAG main)
+    GIT_TAG v0.1.0)
   FetchContent_MakeAvailable(libfint)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
   # libfint carries L (sp) shells; libcint cannot represent one at all.
