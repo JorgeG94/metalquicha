@@ -57,6 +57,11 @@ addtest(mqc_json_writer)
 # declares, so the two are a pair that can drift; the solvation summary is the
 # only place a run says which continuum it used.
 addtest(mqc_method_config)
+
+# What each expansion context refuses to run without. A refusal is not a number,
+# so no validation deck can express one: the case guarded against is a caller
+# assembling a context and missing a field, not a deck missing a geometry.
+addtest(mqc_mbe_contexts)
 addtest(mqc_checkpoint)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
