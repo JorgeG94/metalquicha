@@ -398,18 +398,27 @@ endif()
 # libcint.so in 9 seconds against 46 MB of pre-generated source and a long
 # build. For a backend whose job is to be correct and always available, build
 # time is the property that matters; if throughput ever does, libint can sit
-# behind the same interface later. MQC_USE_LIBFINT picks libfint, the Fortran
-# port of libcint, instead of libcint itself.  Nothing under backends/libcint/
-# changes: libfint defines the same `libcint_fortran` module with the same 25
-# procedures, so this program cannot tell which one it linked.  That is the
-# whole point of a port that is bit-identical -- the swap is a build option, not
-# a migration.
+# behind the same interface later.
+#
+# libfint, the Fortran port, is now what a default build uses; MQC_USE_LIBFINT
+# OFF selects libcint instead. Nothing under backends/libcint/ changes with the
+# choice: libfint defines the same `libcint_fortran` module with the same 25
+# procedures, so this program cannot tell which one it linked. That is the whole
+# point of a port that is bit-identical -- the swap is a build option, not a
+# migration.
 #
 # What changes is the dependency: libfint is Fortran with no C in it and no
-# LAPACK either, so an all-Fortran build of this program becomes possible.
+# LAPACK either, so an all-Fortran build of this program becomes possible, and
+# that is why it is the default rather than the alternative.
+#
+# One thing the swap is *not* is purely a link: libfint carries L (sp) shells
+# and libcint cannot represent one, so selecting it also defines
+# MQC_WITH_SP_SHELLS and the fused-sp view in mqc_libcint_integrals.F90 is
+# compiled in. A libcint build takes the split-shell path instead. The two
+# configurations therefore run different source, which is why both are built in
+# CI rather than only the default.
 option(MQC_USE_LIBFINT
-       "Use libfint (the Fortran port) instead of libcint for CPU integrals"
-       OFF)
+       "Use libfint (the Fortran port) instead of libcint for CPU integrals" ON)
 
 if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   include(FetchContent)
@@ -427,6 +436,11 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   # which libcint would read as a relativistic kappa and act on -- so the fused
   # view can only be built when libfint is what will read it.
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_SP_SHELLS)
+  # Which of the two actually linked. MQC_WITH_LIBCINT above is set by both
+  # branches -- it means "this build has CPU integrals" -- so it cannot answer
+  # that question, and the startup acknowledgement has to name what ran rather
+  # than what the interface is called.
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBFINT)
   # One target, not two: libfint has no C library beside it.
   set(MQC_INTEGRALS_LIBS fint)
   # Answer to libcint's target names as well as our own.
