@@ -33,15 +33,11 @@ module mqc_capi_run
    use mqc_error, only: error_t
    use mqc_config_types, only: bond_t
    use mqc_bond_perception, only: missing_broken_bonds
+   use mqc_capi_status, only: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    implicit none
    private
 
    public :: mqc_run, mqc_run_last_error
-
-   integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_FAIL = 1
-   integer(c_int), parameter :: MQC_BAD_HANDLE = 2
-
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
 

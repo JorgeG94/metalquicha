@@ -196,7 +196,7 @@ over rather than waited on.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -211,7 +211,7 @@ over rather than waited on.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~3"></span>
+              <span class="anchor" id="variable-n_pie_terms~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -226,7 +226,7 @@ over rather than waited on.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~64"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -331,7 +331,7 @@ over rather than waited on.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~3"></span>
+              <span class="anchor" id="variable-world_comm~22"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -400,14 +400,14 @@ over rather than waited on.</p>
 <!-- error -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_node4" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="1116.5,-344 1062.5,-344 1062.5,-320 1116.5,-320 1116.5,-344"/>
-<text text-anchor="middle" x="1089.5" y="-329.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="1116.5,-354 1062.5,-354 1062.5,-330 1116.5,-330 1116.5,-354"/>
+<text text-anchor="middle" x="1089.5" y="-339.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~assemble_one_pie_term_hessian&#45;&gt;error -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_edge3" class="edge">
 <title>proc~assemble_one_pie_term_hessian&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M295.64,-231.14C316.99,-251.58 363.6,-292.29 412,-309 644.5,-389.29 949.05,-353.66 1052.4,-338"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1052.98,-341.45 1062.33,-336.46 1051.91,-334.53 1052.98,-341.45"/>
+<path fill="none" stroke="#ff0000" d="M295.64,-231.14C316.99,-251.58 363.6,-292.29 412,-309 644.64,-389.34 949.1,-360.36 1052.42,-347.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1052.88,-350.59 1062.34,-345.82 1051.97,-343.65 1052.88,-350.59"/>
 </g>
 <!-- proc~build_fragment_from_atom_list -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_node5" class="node">
@@ -502,14 +502,14 @@ over rather than waited on.</p>
 <!-- to_char -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_node11" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="1116.5,-147 1062.5,-147 1062.5,-123 1116.5,-123 1116.5,-147"/>
-<text text-anchor="middle" x="1089.5" y="-132.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="1116.5,-126 1062.5,-126 1062.5,-102 1116.5,-102 1116.5,-126"/>
+<text text-anchor="middle" x="1089.5" y="-111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~assemble_one_pie_term_hessian&#45;&gt;to_char -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_edge10" class="edge">
 <title>proc~assemble_one_pie_term_hessian&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M294.13,-206.87C314.52,-184.46 361.6,-136.8 412,-114 625.31,-17.51 707.55,-24.52 937,-71 981.19,-79.95 1028.51,-102.21 1058.28,-117.95"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1056.84,-121.15 1067.31,-122.81 1060.16,-114.99 1056.84,-121.15"/>
+<path fill="none" stroke="#ff0000" d="M294.13,-206.87C314.52,-184.46 361.6,-136.8 412,-114 625.31,-17.51 705.12,-38.73 937,-71 977.51,-76.64 1022.41,-90.37 1052.73,-100.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1051.83,-104.2 1062.43,-104.21 1054.15,-97.6 1051.83,-104.2"/>
 </g>
 <!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_edge15" class="edge">
@@ -631,56 +631,71 @@ over rather than waited on.</p>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_edge20" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#00ff00" d="M872.59,-266.13C893.6,-269.26 916.6,-273.96 937,-281 954.3,-286.97 956.03,-294.13 973,-301 998.7,-311.4 1029.02,-319.39 1052.14,-324.65"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1051.7,-328.13 1062.22,-326.87 1053.21,-321.3 1051.7,-328.13"/>
+<path fill="none" stroke="#00ff00" d="M872.64,-261.93C894.22,-264.81 917.53,-270.42 937,-281 958.01,-292.42 952.11,-309.35 973,-321 997.19,-334.49 1028.24,-339.58 1052.06,-341.38"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1051.92,-344.88 1062.11,-341.98 1052.33,-337.89 1051.92,-344.88"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge23" class="edge">
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge24" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ff00" d="M872.68,-255.08C893.81,-252.01 916.85,-247.04 937,-239 950.74,-233.52 1024.09,-181.39 1063.47,-153.08"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1065.71,-155.78 1071.78,-147.1 1061.62,-150.1 1065.71,-155.78"/>
+<path fill="none" stroke="#00ff00" d="M872.6,-258.65C894.29,-255.82 917.68,-250.1 937,-239 958.91,-226.41 954.48,-212.19 973,-195 999.74,-170.18 1034.47,-146.81 1058.83,-131.62"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1060.94,-134.43 1067.63,-126.21 1057.28,-128.47 1060.94,-134.43"/>
 </g>
 <!-- proc~element_number_to_symbol -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_node19" class="node">
 <title>proc~element_number_to_symbol</title>
 <g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node19"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1171,-250 1008,-250 1008,-226 1171,-226 1171,-250"/>
-<text text-anchor="middle" x="1089.5" y="-235.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1171,-312 1008,-312 1008,-288 1171,-288 1171,-312"/>
+<text text-anchor="middle" x="1089.5" y="-297.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_edge21" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#00ff00" d="M872.55,-254.76C909.99,-251.85 957.05,-248.2 997.68,-245.05"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="998.16,-248.52 1007.86,-244.26 997.62,-241.54 998.16,-248.52"/>
+<path fill="none" stroke="#00ff00" d="M872.55,-269.53C910.07,-274.82 957.25,-281.48 997.94,-287.22"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="997.47,-290.69 1007.86,-288.62 998.45,-283.76 997.47,-290.69"/>
 </g>
 <!-- proc~error_set -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_node20" class="node">
 <title>proc~error_set</title>
 <g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node20"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="1142,-292 1037,-292 1037,-268 1142,-268 1142,-292"/>
-<text text-anchor="middle" x="1089.5" y="-277.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="1142,-270 1037,-270 1037,-246 1142,-246 1142,-270"/>
+<text text-anchor="middle" x="1089.5" y="-255.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
 <g id="proc~~fold_completed_pie_terms~~CallsGraph_edge22" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#00ff00" d="M872.55,-264.77C919.44,-268.07 981.43,-272.45 1026.96,-275.66"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1026.77,-279.15 1036.99,-276.37 1027.26,-272.17 1026.77,-279.15"/>
+<path fill="none" stroke="#00ff00" d="M872.55,-259.52C919.44,-259.19 981.43,-258.76 1026.96,-258.43"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1027.02,-261.93 1036.99,-258.36 1026.97,-254.93 1027.02,-261.93"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node21" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node21"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1129,-228 1050,-228 1050,-204 1129,-204 1129,-228"/>
+<text text-anchor="middle" x="1089.5" y="-213.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~to_angstrom -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge23" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#00ff00" d="M872.55,-249.52C924.01,-241.53 993.65,-230.72 1039.77,-223.56"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1040.46,-227 1049.81,-222.01 1039.39,-220.08 1040.46,-227"/>
 </g>
 <!-- proc~cgto_destroy -->
-<g id="proc~~fold_completed_pie_terms~~CallsGraph_node21" class="node">
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node22" class="node">
 <title>proc~cgto_destroy</title>
-<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node21"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node22"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
 <polygon fill="#d9534f" stroke="#d9534f" points="1384,-24 1242,-24 1242,0 1384,0 1384,-24"/>
 <text text-anchor="middle" x="1313" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
-<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge24" class="edge">
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge25" class="edge">
 <title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
 <path fill="none" stroke="#ff0000" d="M1206.12,-12C1214.77,-12 1223.38,-12 1231.74,-12"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="1231.79,-15.5 1241.79,-12 1231.79,-8.5 1231.79,-15.5"/>
@@ -1019,7 +1034,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>

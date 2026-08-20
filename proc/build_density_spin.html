@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>int_text &ndash; metalquicha</title>
+    <title>build_density_spin &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,8 +83,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>int_text
-      <small>Function</small>
+    <h1>build_density_spin
+      <small>Subroutine</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.0% of total for procedures.">7 statements</a>
+                 title=" 0.0% of total for procedures.">8 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_capi_system.f90"> Source File</a>
+              <a href="../src/mqc_scf_common.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_system.f90.html'>mqc_capi_system.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></li>
-            <li class="breadcrumb-item active" aria-current="page">int_text</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_scf_common.f90.html'>mqc_scf_common.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_scf_common.html'>mqc_scf_common</a></li>
+            <li class="breadcrumb-item active" aria-current="page">build_density_spin</li>
           </ol>
         </nav>
       </div>
@@ -129,18 +129,7 @@
       <div id="sidebar">
       <h3>Contents</h3>
   
-      <div class="card mb-4">
-      <a data-bs-toggle="collapse" href="#vars-0"
-         aria-expanded="false" aria-controls="vars-0">
-         <h4 class="card-header bg-primary text-white">Variables</h4>
-      </a>
-      <div id="vars-0" class="collapse">
-        <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/int_text~2.html#variable-buffer~18">buffer</a>
-        </div>
-      </div>
-    </div>
-
+  
   
   
   
@@ -162,7 +151,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/int_text~2.html#src">int_text</a>
+        <a class="list-group-item" href="../proc/build_density_spin.html#src">build_density_spin</a>
       </div>
     </div>
 
@@ -172,10 +161,15 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private pure function int_text(value) result(text)  
+    <h2>public  subroutine build_density_spin(coeff, n_occ, density)  
 </h2>
     
 
+    <p>D_sigma = C_occ C_occ^T, one electron per occupied orbital</p>
+<p>Deliberately a separate routine rather than the closed-shell one with a
+factor: that one carries the two electrons per spatial orbital, and
+reusing it here would double every spin density. That error converges,
+which is what makes it worth keeping the two names apart.</p>
 
 
     <h3>Arguments</h3>
@@ -191,33 +185,56 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~25"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-coeff~5"></span>
+              real(kind=dp),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>value</strong></td>
+            <td><strong>coeff</strong>(:,:)</td>
             <td>
-                
+                <p>C_sigma, (n_ao, n_mo)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_occ~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_occ</strong></td>
+            <td>
+                <p>Occupied orbitals of this spin</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-density~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>density</strong>(:,:)</td>
+            <td>
+                <p>D_sigma, (n_ao, n_ao)</p>
             </td>
         </tr>
     </tbody>
   </table>
 
-      <h3>Return Value
-        <small>
-          <span class="anchor" id="variable-text~26"></span>
-          character(len=:), allocatable
-        </small>
-      </h3>
-      
     <br>
     <div class="card">
       <div class="card-header">
-  <h3 class="card-title">Called by</h3>
+  <h3 class="card-title">Calls</h3>
       </div>
       <div class="card-body">
   <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -225,39 +242,36 @@
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~int_text~2~~CalledByGraph Pages: 1 -->
-<svg id="procint_text2CalledByGraph" width="235pt" height="32pt"
- viewBox="0.00 0.00 235.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~int_text~2~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
-<title>proc~~int_text~2~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 231,-28 231,4 -4,4"/>
-<!-- proc~int_text~2 -->
-<g id="proc~~int_text~2~~CalledByGraph_node1" class="node">
-<title>proc~int_text~2</title>
-<polygon fill="none" stroke="black" points="227,-24 173,-24 173,0 227,0 227,-24"/>
-<text text-anchor="middle" x="200" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">int_text</text>
+<!-- Title: proc~~build_density_spin~~CallsGraph Pages: 1 -->
+<svg id="procbuild_density_spinCallsGraph" width="221pt" height="32pt"
+ viewBox="0.00 0.00 221.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_density_spin~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~build_density_spin~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 217,-28 217,4 -4,4"/>
+<!-- proc~build_density_spin -->
+<g id="proc~~build_density_spin~~CallsGraph_node1" class="node">
+<title>proc~build_density_spin</title>
+<polygon fill="none" stroke="black" points="109,-24 0,-24 0,0 109,0 109,-24"/>
+<text text-anchor="middle" x="54.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_density_spin</text>
 </g>
-<!-- proc~mqc_system_set_bonds -->
-<g id="proc~~int_text~2~~CalledByGraph_node2" class="node">
-<title>proc~mqc_system_set_bonds</title>
-<g id="a_proc~~int_text~2~~CalledByGraph_node2"><a xlink:href="../proc/mqc_system_set_bonds.html" xlink:title="mqc_system_set_bonds">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="137,-24 0,-24 0,0 137,0 137,-24"/>
-<text text-anchor="middle" x="68.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_system_set_bonds</text>
-</a>
+<!-- pic_gemm -->
+<g id="proc~~build_density_spin~~CallsGraph_node2" class="node">
+<title>pic_gemm</title>
+<polygon fill="#777777" stroke="#777777" points="213,-24 145,-24 145,0 213,0 213,-24"/>
+<text text-anchor="middle" x="179" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
 </g>
-</g>
-<!-- proc~mqc_system_set_bonds&#45;&gt;proc~int_text~2 -->
-<g id="proc~~int_text~2~~CalledByGraph_edge1" class="edge">
-<title>proc~mqc_system_set_bonds&#45;&gt;proc~int_text~2</title>
-<path fill="none" stroke="#ff0000" d="M137.28,-12C146.05,-12 154.74,-12 162.71,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="162.73,-15.5 172.73,-12 162.73,-8.5 162.73,-15.5"/>
+<!-- proc~build_density_spin&#45;&gt;pic_gemm -->
+<g id="proc~~build_density_spin~~CallsGraph_edge1" class="edge">
+<title>proc~build_density_spin&#45;&gt;pic_gemm</title>
+<path fill="none" stroke="#ff0000" d="M109.23,-12C117.73,-12 126.42,-12 134.64,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="134.76,-15.5 144.76,-12 134.76,-8.5 134.76,-15.5"/>
 </g>
 </g>
 </svg>
 </div>          <div>
-            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
           </div>
-          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">
@@ -338,40 +352,6 @@ large graphs.</div>
     <br>
 
 
-    <section>    
-      <h2>Variables</h2>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-<th></th><th scope="col">Initial</th>        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-buffer~18"></span>
-              character(len=16),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>buffer</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-    </section>
-    <br>
     
     
 
@@ -383,14 +363,22 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">int_text</span><span class="p">(</span><span class="k">value</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">value</span>
-<span class="k">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">text</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buffer</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_density_spin</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span><span class="w"> </span><span class="n">n_occ</span><span class="p">,</span><span class="w"> </span><span class="n">density</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! D_sigma = C_occ C_occ^T, one electron per occupied orbital</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Deliberately a separate routine rather than the closed-shell one with a</span>
+<span class="w">      </span><span class="c">!! factor: that one carries the two electrons per spatial orbital, and</span>
+<span class="w">      </span><span class="c">!! reusing it here would double every spin density. That error converges,</span>
+<span class="w">      </span><span class="c">!! which is what makes it worth keeping the two names apart.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coeff</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">        </span><span class="c">!! C_sigma, (n_ao, n_mo)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_occ</span><span class="w">               </span><span class="c">!! Occupied orbitals of this spin</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">density</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! D_sigma, (n_ao, n_ao)</span>
 
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="s2">"(I0)"</span><span class="p">)</span><span class="w"> </span><span class="k">value</span>
-<span class="k">      </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">buffer</span><span class="p">))</span>
-<span class="w">   </span><span class="k">end function </span><span class="n">int_text</span>
+<span class="w">      </span><span class="n">density</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_occ</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">coeff</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_occ</span><span class="p">),</span><span class="w"> </span><span class="n">coeff</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_occ</span><span class="p">),</span><span class="w"> </span><span class="n">density</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                    </span><span class="n">transb</span><span class="o">=</span><span class="s2">"T"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="o">=</span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="o">=</span><span class="mf">0.0_dp</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">build_density_spin</span>
 </pre></div>
 
     </section>
@@ -414,7 +402,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>

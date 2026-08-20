@@ -32,6 +32,7 @@ module mqc_bond_perception
    public :: missing_broken_bonds  !! Cut bonds a caller's list does not mention
    public :: auto_monomers         !! Partition into covalently connected molecules
    public :: connected_components  !! Which covalently connected group each atom is in
+   public :: monomer_of            !! Which monomer holds a 0-based atom
    public :: DEFAULT_BOND_TOLERANCE
 
    real(dp), parameter :: DEFAULT_BOND_TOLERANCE = 1.2_dp
@@ -338,6 +339,10 @@ contains
 
    pure function monomer_of(sys_geom, atom) result(imon)
       !! Which monomer holds a 0-based atom, or 0 if the partition omits it
+      !!
+      !! Zero for an unpartitioned atom is deliberate: two atoms nobody claimed
+      !! compare equal and their bond is not called a cut, which is the right
+      !! answer for a partition that does not cover the molecule.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: atom
       integer :: imon

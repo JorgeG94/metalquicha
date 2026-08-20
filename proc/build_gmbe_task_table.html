@@ -136,15 +136,15 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-atom_list~2">atom_list</a>
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-base">base</a>
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-error~12">error</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-atom_list~4">atom_list</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-base~8">base</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-error~124">error</a>
             <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-frag">frag</a>
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-k~4">k</a>
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-max_atoms~2">max_atoms</a>
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-n_atoms~5">n_atoms</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-k~38">k</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-max_atoms~10">max_atoms</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-n_atoms~36">n_atoms</a>
             <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-n_disp">n_disp</a>
-            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-t">t</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-t~2">t</a>
         </div>
       </div>
     </div>
@@ -328,7 +328,7 @@ scan at max_atoms and reads the code from the row past it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~2"></span>
+              <span class="anchor" id="variable-pie_atom_sets~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -343,7 +343,7 @@ scan at max_atoms and reads the code from the row past it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~2"></span>
+              <span class="anchor" id="variable-n_pie_terms~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -358,7 +358,7 @@ scan at max_atoms and reads the code from the row past it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~62"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -448,7 +448,7 @@ scan at max_atoms and reads the code from the row past it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm"></span>
+              <span class="anchor" id="variable-world_comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -502,14 +502,14 @@ scan at max_atoms and reads the code from the row past it.</p>
 <!-- error -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_node3" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="874.5,-296 820.5,-296 820.5,-272 874.5,-272 874.5,-296"/>
-<text text-anchor="middle" x="847.5" y="-281.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="874.5,-306 820.5,-306 820.5,-282 874.5,-282 874.5,-306"/>
+<text text-anchor="middle" x="847.5" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~build_gmbe_task_table&#45;&gt;error -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_edge2" class="edge">
 <title>proc~build_gmbe_task_table&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M90.72,-256.07C110.9,-266.07 141.52,-279.49 170,-285 399.09,-329.32 461.67,-285.77 695,-285 734.41,-284.87 779.59,-284.55 810.28,-284.31"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="810.53,-287.8 820.5,-284.22 810.47,-280.8 810.53,-287.8"/>
+<path fill="none" stroke="#ff0000" d="M91.14,-256.18C111.33,-266.09 141.74,-279.34 170,-285 410.26,-333.14 708.19,-308.8 810.25,-298.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="810.76,-301.6 820.33,-297.06 810.02,-294.64 810.76,-301.6"/>
 </g>
 <!-- proc~build_fragment_from_atom_list -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_node4" class="node">
@@ -691,62 +691,77 @@ scan at max_atoms and reads the code from the row past it.</p>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_edge16" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#00ff00" d="M630.79,-181.66C652.38,-184.51 675.66,-190.18 695,-201 716.46,-213 710.73,-229.08 731,-243 755.1,-259.54 786.59,-270.14 810.61,-276.41"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="809.85,-279.82 820.4,-278.83 811.53,-273.03 809.85,-279.82"/>
+<path fill="none" stroke="#00ff00" d="M630.69,-179.46C652.75,-182.11 676.34,-188.2 695,-201 721.28,-219.02 705.7,-243.63 731,-263 753.79,-280.45 785.65,-288.09 810.14,-291.43"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="809.79,-294.92 820.13,-292.62 810.61,-287.97 809.79,-294.92"/>
 </g>
 <!-- proc~element_number_to_symbol -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_node15" class="node">
 <title>proc~element_number_to_symbol</title>
 <g id="a_proc~~build_gmbe_task_table~~CallsGraph_node15"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="929,-234 766,-234 766,-210 929,-210 929,-234"/>
-<text text-anchor="middle" x="847.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="929,-254 766,-254 766,-230 929,-230 929,-254"/>
+<text text-anchor="middle" x="847.5" y="-239.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_edge17" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#00ff00" d="M630.55,-190.01C668.07,-195.57 715.25,-202.56 755.94,-208.58"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="755.45,-212.05 765.86,-210.05 756.48,-205.13 755.45,-212.05"/>
+<path fill="none" stroke="#00ff00" d="M630.59,-186.13C651.6,-189.26 674.6,-193.96 695,-201 712.3,-206.97 713.77,-214.84 731,-221 738.93,-223.84 747.31,-226.3 755.79,-228.45"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="755.23,-231.91 765.77,-230.82 756.85,-225.1 755.23,-231.91"/>
 </g>
 <!-- proc~error_set -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_node16" class="node">
 <title>proc~error_set</title>
 <g id="a_proc~~build_gmbe_task_table~~CallsGraph_node16"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="900,-192 795,-192 795,-168 900,-168 900,-192"/>
-<text text-anchor="middle" x="847.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="900,-212 795,-212 795,-188 900,-188 900,-212"/>
+<text text-anchor="middle" x="847.5" y="-197.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
 <g id="proc~~build_gmbe_task_table~~CallsGraph_edge18" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#00ff00" d="M630.55,-180C677.44,-180 739.43,-180 784.96,-180"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="784.99,-183.5 794.99,-180 784.99,-176.5 784.99,-183.5"/>
+<path fill="none" stroke="#00ff00" d="M630.55,-184.77C677.44,-188.07 739.43,-192.45 784.96,-195.66"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="784.77,-199.15 794.99,-196.37 785.26,-192.17 784.77,-199.15"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node17" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node17"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="887,-170 808,-170 808,-146 887,-146 887,-170"/>
+<text text-anchor="middle" x="847.5" y="-155.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~to_angstrom -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge19" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#00ff00" d="M630.55,-174.76C682.01,-170.76 751.65,-165.36 797.77,-161.78"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="798.11,-165.27 807.81,-161 797.57,-158.29 798.11,-165.27"/>
 </g>
 <!-- to_char -->
-<g id="proc~~build_gmbe_task_table~~CallsGraph_node17" class="node">
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node18" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="874.5,-150 820.5,-150 820.5,-126 874.5,-126 874.5,-150"/>
-<text text-anchor="middle" x="847.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="874.5,-128 820.5,-128 820.5,-104 874.5,-104 874.5,-128"/>
+<text text-anchor="middle" x="847.5" y="-113.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~build_gmbe_task_table~~CallsGraph_edge19" class="edge">
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge20" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ff00" d="M630.55,-169.99C686.92,-161.64 765.09,-150.06 810.28,-143.37"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="810.83,-146.82 820.21,-141.89 809.81,-139.9 810.83,-146.82"/>
+<path fill="none" stroke="#00ff00" d="M630.77,-174.38C651.79,-171.28 674.75,-166.46 695,-159 712.59,-152.51 713.48,-143.68 731,-137 756.43,-127.3 786.76,-122.01 809.96,-119.16"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="810.53,-122.62 820.07,-118.02 809.74,-115.67 810.53,-122.62"/>
 </g>
 <!-- proc~cgto_destroy -->
-<g id="proc~~build_gmbe_task_table~~CallsGraph_node18" class="node">
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node19" class="node">
 <title>proc~cgto_destroy</title>
-<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node18"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node19"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
 <polygon fill="#d9534f" stroke="#d9534f" points="1142,-24 1000,-24 1000,0 1142,0 1142,-24"/>
 <text text-anchor="middle" x="1071" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
-<g id="proc~~build_gmbe_task_table~~CallsGraph_edge20" class="edge">
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge21" class="edge">
 <title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
 <path fill="none" stroke="#ff0000" d="M964.12,-12C972.77,-12 981.38,-12 989.74,-12"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="989.79,-15.5 999.79,-12 989.79,-8.5 989.79,-15.5"/>
@@ -990,7 +1005,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_list~2"></span>
+              <span class="anchor" id="variable-atom_list~4"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1007,7 +1022,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-base"></span>
+              <span class="anchor" id="variable-base~8"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1024,7 +1039,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~12"></span>
+              <span class="anchor" id="variable-error~124"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1058,7 +1073,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~4"></span>
+              <span class="anchor" id="variable-k~38"></span>
               integer,
             </td>
               <td>private</td>
@@ -1075,7 +1090,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~2"></span>
+              <span class="anchor" id="variable-max_atoms~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -1092,7 +1107,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~5"></span>
+              <span class="anchor" id="variable-n_atoms~36"></span>
               integer,
             </td>
               <td>private</td>
@@ -1126,7 +1141,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-t"></span>
+              <span class="anchor" id="variable-t~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1265,7 +1280,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>

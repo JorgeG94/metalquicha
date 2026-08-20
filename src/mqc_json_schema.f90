@@ -29,6 +29,7 @@ module mqc_json_schema
    !! give two places to update and two chances to disagree.
    use mqc_error, only: error_t, ERROR_VALIDATION
    use json_module, only: json_file, json_core, json_value
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -711,8 +712,8 @@ contains
       end if
       if (n_min /= n_spaces .or. n_max /= n_spaces) then
          call error%set(ERROR_VALIDATION, "keywords.mcscf.ormas names "// &
-                        int_text(n_spaces)//" subspaces but gives "// &
-                        int_text(n_min)//" minima and "//int_text(n_max)// &
+                        int_to_text(n_spaces)//" subspaces but gives "// &
+                        int_to_text(n_min)//" minima and "//int_to_text(n_max)// &
                         " maxima. All three lists describe the same subspaces and "// &
                         "have to be the same length.")
          return
@@ -955,16 +956,16 @@ contains
       n_charges = child_count(core, molecule, "fragment_charges")
       if (n_charges > 0 .and. n_charges /= n_fragments) then
          call error%set(ERROR_VALIDATION, molecule_path(imol)// &
-                        ": 'fragment_charges' has "//int_text(n_charges)// &
-                        " entries for "//int_text(n_fragments)//" fragments")
+                        ": 'fragment_charges' has "//int_to_text(n_charges)// &
+                        " entries for "//int_to_text(n_fragments)//" fragments")
          return
       end if
 
       n_mults = child_count(core, molecule, "fragment_multiplicities")
       if (n_mults > 0 .and. n_mults /= n_fragments) then
          call error%set(ERROR_VALIDATION, molecule_path(imol)// &
-                        ": 'fragment_multiplicities' has "//int_text(n_mults)// &
-                        " entries for "//int_text(n_fragments)//" fragments")
+                        ": 'fragment_multiplicities' has "//int_to_text(n_mults)// &
+                        " entries for "//int_to_text(n_fragments)//" fragments")
          return
       end if
 
@@ -977,8 +978,8 @@ contains
       if (.not. found) return
       if (total /= molecular_charge) then
          call error%set(ERROR_VALIDATION, molecule_path(imol)// &
-                        ": fragment charges sum to "//int_text(total)// &
-                        " but the molecular charge is "//int_text(molecular_charge)// &
+                        ": fragment charges sum to "//int_to_text(total)// &
+                        " but the molecular charge is "//int_to_text(molecular_charge)// &
                         "; these must agree")
       end if
    end subroutine check_molecule_fragments
@@ -1055,7 +1056,7 @@ contains
       character(len=:), allocatable :: text
 
       ! Written 0-based to match how a user counts entries in the array.
-      text = PREFIX//int_text(imol - 1)//"]"
+      text = PREFIX//int_to_text(imol - 1)//"]"
    end function molecule_path
 
    function has_key(core, object, name) result(present_key)
@@ -1132,14 +1133,5 @@ contains
          if (status /= 0 .or. level < 2) level = 0
       end select
    end function nmer_level
-
-   pure function int_text(value) result(text)
-      integer, intent(in) :: value
-      character(len=:), allocatable :: text
-      character(len=16) :: buffer
-
-      write (buffer, "(I0)") value
-      text = trim(adjustl(buffer))
-   end function int_text
 
 end module mqc_json_schema

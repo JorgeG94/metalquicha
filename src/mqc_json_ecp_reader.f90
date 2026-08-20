@@ -35,6 +35,7 @@ module mqc_json_ecp_reader
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE
    use json_module, only: json_file
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -42,16 +43,6 @@ module mqc_json_ecp_reader
    public :: build_molecular_ecp_json  !! Build a per-atom ECP set for a molecule
 
 contains
-
-   pure function integer_to_key(value) result(key)
-      !! An integer as the string BSE keys its elements by
-      integer, intent(in) :: value
-      character(len=:), allocatable :: key
-      character(len=12) :: buffer
-
-      write (buffer, "(I0)") value
-      key = trim(buffer)
-   end function integer_to_key
 
    subroutine read_json_ecp_element(json_path, element_symbol, atom_ecp, error)
       !! Parse the ECP for one element, if the file defines one
@@ -82,7 +73,7 @@ contains
          call error%set(ERROR_PARSE, "Unrecognized element symbol: "//trim(element_symbol))
          return
       end if
-      element_key = integer_to_key(atomic_number)
+      element_key = int_to_text(atomic_number)
 
       call json%initialize()
       call json%load(filename=json_path)
@@ -160,7 +151,7 @@ contains
       integer, allocatable :: momenta(:)
 
       ang_mom = -1
-      call json%get(base_path//".ecp_potentials("//integer_to_key(ipot)// &
+      call json%get(base_path//".ecp_potentials("//int_to_text(ipot)// &
                     ").angular_momentum", momenta, found)
       if (.not. found .or. .not. allocated(momenta)) then
          found = .false.
@@ -189,7 +180,7 @@ contains
       real(dp) :: value
       logical :: found
 
-      path = base_path//".ecp_potentials("//integer_to_key(ipot)//")"
+      path = base_path//".ecp_potentials("//int_to_text(ipot)//")"
 
       call json%get(path//".r_exponents", powers, found)
       if (.not. found .or. .not. allocated(powers)) then
@@ -210,7 +201,7 @@ contains
       shell%radial_powers = powers
 
       do iprim = 1, nprim
-         call json%get(path//".gaussian_exponents("//integer_to_key(iprim)//")", &
+         call json%get(path//".gaussian_exponents("//int_to_text(iprim)//")", &
                        value_text, found)
          if (.not. found) then
             call error%set(ERROR_PARSE, "Missing ECP exponent in "//trim(json_path))
@@ -227,7 +218,7 @@ contains
          ! Coefficients are nested one level deeper: a channel has a single
          ! coefficient set, stored as a list of lists to match the orbital
          ! shells, which can have several.
-         call json%get(path//".coefficients(1)("//integer_to_key(iprim)//")", &
+         call json%get(path//".coefficients(1)("//int_to_text(iprim)//")", &
                        value_text, found)
          if (.not. found) then
             call error%set(ERROR_PARSE, "Missing ECP coefficient in "//trim(json_path))

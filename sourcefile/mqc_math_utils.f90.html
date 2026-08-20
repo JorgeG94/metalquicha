@@ -1,0 +1,947 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_math_utils.f90 &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_math_utils.f90
+      <small>Source File</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for source files.">28 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_math_utils.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+            <li class="breadcrumb-item active" aria-current="page">mqc_math_utils.f90</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#mods-0"
+         aria-expanded="false" aria-controls="mods-0">
+         <h4 class="card-header bg-primary text-white">Modules</h4>
+      </a>
+      <div id="mods-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_math_utils.html">mqc_math_utils</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../sourcefile/mqc_math_utils.f90.html#src">mqc_math_utils.f90</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    <div class="col-md-9" id='text'>
+      <p>Small exact-arithmetic helpers with no domain of their own</p>
+      <br>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Files dependent on this one</h3>
+          </div>
+          <div class="card-body">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~mqc_math_utils.f90~~AfferentGraph Pages: 1 -->
+<svg id="sourcefilemqc_math_utilsf90AfferentGraph" width="641pt" height="145pt"
+ viewBox="0.00 0.00 641.00 144.68" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph" class="graph" transform="scale(0.26 0.26) rotate(0) translate(4 545.4)">
+<title>sourcefile~~mqc_math_utils.f90~~AfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-545.4 2430,-545.4 2430,4 -4,4"/>
+<!-- sourcefile~mqc_math_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node1" class="node">
+<title>sourcefile~mqc_math_utils.f90</title>
+<polygon fill="none" stroke="black" points="116,-186.6 0,-186.6 0,-162.6 116,-162.6 116,-186.6"/>
+<text text-anchor="middle" x="58" y="-172.2" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_math_utils.f90</text>
+</g>
+<!-- sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node2" class="node">
+<title>sourcefile~mqc_combinatorics.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node2"><a xlink:href="../sourcefile/mqc_combinatorics.f90.html" xlink:title="mqc_combinatorics.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="289,-284.6 152,-284.6 152,-260.6 289,-260.6 289,-284.6"/>
+<text text-anchor="middle" x="220.5" y="-270.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_combinatorics.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_combinatorics.f90&#45;&gt;sourcefile~mqc_math_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge1" class="edge">
+<title>sourcefile~mqc_combinatorics.f90&#45;&gt;sourcefile~mqc_math_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M199.82,-260.58C171.66,-243.39 119.72,-211.68 87.4,-191.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="89.2,-188.94 78.84,-186.71 85.55,-194.91 89.2,-188.94"/>
+</g>
+<!-- sourcefile~mqc_determinants.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node3" class="node">
+<title>sourcefile~mqc_determinants.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node3"><a xlink:href="../sourcefile/mqc_determinants.f90.html" xlink:title="mqc_determinants.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="287,-146.6 154,-146.6 154,-122.6 287,-122.6 287,-146.6"/>
+<text text-anchor="middle" x="220.5" y="-132.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_determinants.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_determinants.f90&#45;&gt;sourcefile~mqc_math_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge2" class="edge">
+<title>sourcefile~mqc_determinants.f90&#45;&gt;sourcefile~mqc_math_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M171.34,-146.6C154.44,-150.81 135.26,-155.59 117.6,-160"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="116.26,-156.72 107.4,-162.54 117.95,-163.52 116.26,-156.72"/>
+</g>
+<!-- sourcefile~mqc_ormas_space.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node4" class="node">
+<title>sourcefile~mqc_ormas_space.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node4"><a xlink:href="../sourcefile/mqc_ormas_space.f90.html" xlink:title="mqc_ormas_space.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="457,-186.6 325,-186.6 325,-162.6 457,-162.6 457,-186.6"/>
+<text text-anchor="middle" x="391" y="-172.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ormas_space.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_ormas_space.f90&#45;&gt;sourcefile~mqc_math_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge3" class="edge">
+<title>sourcefile~mqc_ormas_space.f90&#45;&gt;sourcefile~mqc_math_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M325,-174.6C267.63,-174.6 184.34,-174.6 126.29,-174.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="126.12,-171.1 116.12,-174.6 126.12,-178.1 126.12,-171.1"/>
+</g>
+<!-- sourcefile~mqc_ormas_space.f90&#45;&gt;sourcefile~mqc_determinants.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge14" class="edge">
+<title>sourcefile~mqc_ormas_space.f90&#45;&gt;sourcefile~mqc_determinants.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M339.44,-162.6C321.45,-158.33 301,-153.47 282.24,-149.02"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="282.85,-145.57 272.31,-146.66 281.23,-152.38 282.85,-145.57"/>
+</g>
+<!-- sourcefile~mqc_ci.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node5" class="node">
+<title>sourcefile~mqc_ci.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node5"><a xlink:href="../sourcefile/mqc_ci.f90.html" xlink:title="mqc_ci.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="426,-106.6 356,-106.6 356,-82.6 426,-82.6 426,-106.6"/>
+<text text-anchor="middle" x="391" y="-92.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ci.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_ci.f90&#45;&gt;sourcefile~mqc_determinants.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge11" class="edge">
+<title>sourcefile~mqc_ci.f90&#45;&gt;sourcefile~mqc_determinants.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M355.9,-102.69C334.77,-107.71 307.02,-114.3 282.23,-120.18"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="281.1,-116.85 272.18,-122.57 282.71,-123.67 281.1,-116.85"/>
+</g>
+<!-- sourcefile~mqc_davidson.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node6" class="node">
+<title>sourcefile~mqc_davidson.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node6"><a xlink:href="../sourcefile/mqc_davidson.f90.html" xlink:title="mqc_davidson.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="602.5,-146.6 493.5,-146.6 493.5,-122.6 602.5,-122.6 602.5,-146.6"/>
+<text text-anchor="middle" x="548" y="-132.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_davidson.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_davidson.f90&#45;&gt;sourcefile~mqc_determinants.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge12" class="edge">
+<title>sourcefile~mqc_davidson.f90&#45;&gt;sourcefile~mqc_determinants.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M493.25,-134.6C439.82,-134.6 357.39,-134.6 297.32,-134.6"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="297.13,-131.1 287.13,-134.6 297.13,-138.1 297.13,-131.1"/>
+</g>
+<!-- sourcefile~mqc_davidson.f90&#45;&gt;sourcefile~mqc_ci.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge17" class="edge">
+<title>sourcefile~mqc_davidson.f90&#45;&gt;sourcefile~mqc_ci.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M500.49,-122.6C480.05,-117.32 456.16,-111.16 436.01,-105.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="436.71,-102.52 426.15,-103.41 434.96,-109.3 436.71,-102.52"/>
+</g>
+<!-- sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node7" class="node">
+<title>sourcefile~mqc_frag_utils.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node7"><a xlink:href="../sourcefile/mqc_frag_utils.f90.html" xlink:title="mqc_frag_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="603,-264.6 493,-264.6 493,-240.6 603,-240.6 603,-264.6"/>
+<text text-anchor="middle" x="548" y="-250.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_frag_utils.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge4" class="edge">
+<title>sourcefile~mqc_frag_utils.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M492.8,-251.05C463.02,-250.59 425.45,-250.64 392,-252.6"/>
+</g>
+<!-- sourcefile~mqc_gmbe_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node9" class="node">
+<title>sourcefile~mqc_gmbe_utils.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node9"><a xlink:href="../sourcefile/mqc_gmbe_utils.f90.html" xlink:title="mqc_gmbe_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="450.5,-304.6 331.5,-304.6 331.5,-280.6 450.5,-280.6 450.5,-304.6"/>
+<text text-anchor="middle" x="391" y="-290.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_frag_utils.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge29" class="edge">
+<title>sourcefile~mqc_frag_utils.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90</title>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M500.49,-264.6C484.17,-268.81 465.65,-273.59 448.59,-278"/>
+<polygon fill="#00ff2e" stroke="#00ff2e" points="447.55,-274.65 438.74,-280.54 449.3,-281.43 447.55,-274.65"/>
+</g>
+<!-- sourcefile~mqc_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node8" class="node">
+<title>sourcefile~mqc_fraglist.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node8"><a xlink:href="../sourcefile/mqc_fraglist.f90.html" xlink:title="mqc_fraglist.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1274.5,-168.6 1176.5,-168.6 1176.5,-144.6 1274.5,-144.6 1274.5,-168.6"/>
+<text text-anchor="middle" x="1225.5" y="-154.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_fraglist.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge5" class="edge">
+<title>sourcefile~mqc_fraglist.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1176.35,-159.81C1059.01,-168.02 749.1,-191.95 493,-231.6 447.69,-238.61 437.72,-249.2 392,-252.6"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M390,-252.6C360.41,-254.46 328.04,-257.94 299.66,-261.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="298.87,-258.06 289.39,-262.8 299.75,-265.01 298.87,-258.06"/>
+</g>
+<!-- sourcefile~mqc_gmbe_utils.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge6" class="edge">
+<title>sourcefile~mqc_gmbe_utils.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M331.07,-285.6C320.78,-284.38 309.94,-283.1 299.24,-281.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="299.4,-278.32 289.05,-280.62 298.57,-285.27 299.4,-278.32"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node10" class="node">
+<title>sourcefile~mqc_mbe.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node10"><a xlink:href="../sourcefile/mqc_mbe.f90.html" xlink:title="mqc_mbe.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="736,-384.6 651,-384.6 651,-360.6 736,-360.6 736,-384.6"/>
+<text text-anchor="middle" x="693.5" y="-370.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge7" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M547,-372.6C476,-368.1 458.98,-436.58 392,-412.6"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M390,-412.6C323.27,-388.71 264.41,-325.42 237.31,-292.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="239.85,-290.32 230.83,-284.77 234.42,-294.74 239.85,-290.32"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge23" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_frag_utils.f90</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M677.95,-360.43C652.81,-339.41 601.08,-296.15 571.35,-271.29"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="573.5,-268.53 563.59,-264.8 569.01,-273.9 573.5,-268.53"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge30" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90</title>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M650.7,-373.99C622.05,-374.61 583.19,-374.77 549,-372.6"/>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M547,-372.6C494.69,-369.28 442.26,-333.88 413.78,-311.29"/>
+<polygon fill="#00ff2e" stroke="#00ff2e" points="415.7,-308.34 405.74,-304.74 411.28,-313.77 415.7,-308.34"/>
+</g>
+<!-- sourcefile~mqc_mbe_io.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node11" class="node">
+<title>sourcefile~mqc_mbe_io.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node11"><a xlink:href="../sourcefile/mqc_mbe_io.f90.html" xlink:title="mqc_mbe_io.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="598,-424.6 498,-424.6 498,-400.6 598,-400.6 598,-424.6"/>
+<text text-anchor="middle" x="548" y="-410.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_io.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_mbe_io.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge34" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_mbe_io.f90</title>
+<path fill="none" stroke="#00b9ff" stroke-dasharray="5,2" d="M650.99,-384.17C635.71,-388.43 618.18,-393.32 602.02,-397.82"/>
+<polygon fill="#00b9ff" stroke="#00b9ff" points="600.85,-394.51 592.16,-400.57 602.73,-401.26 600.85,-394.51"/>
+</g>
+<!-- sourcefile~mqc_mbe_io.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge8" class="edge">
+<title>sourcefile~mqc_mbe_io.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M497.73,-420.92C466.52,-424.19 425.82,-424.71 392,-412.6"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node12" class="node">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node12"><a xlink:href="../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html" xlink:title="mqc_mbe_mpi_fragment_distribution_scheme.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1910,-497.6 1630,-497.6 1630,-473.6 1910,-473.6 1910,-497.6"/>
+<text text-anchor="middle" x="1770" y="-483.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_mpi_fragment_distribution_scheme.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge9" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1224.5,-536.6C851.71,-505.56 744.2,-538.67 392,-412.6"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node21" class="node">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node21"><a xlink:href="../sourcefile/mqc_mbe_fragment_distribution_scheme.f90.html" xlink:title="mqc_mbe_fragment_distribution_scheme.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1039,-424.6 784,-424.6 784,-400.6 1039,-400.6 1039,-424.6"/>
+<text text-anchor="middle" x="911.5" y="-410.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge46" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1714.32,-497.67C1616.45,-517.72 1404.91,-554.05 1226.5,-536.6"/>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1224.5,-536.6C1157.75,-531.04 1137.92,-540.57 1075,-517.6 1019.86,-497.47 964.28,-455.9 934.55,-431.53"/>
+<polygon fill="#003fff" stroke="#003fff" points="936.46,-428.56 926.53,-424.86 931.98,-433.95 936.46,-428.56"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node28" class="node">
+<title>sourcefile~mqc_many_body_expansion.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node28"><a xlink:href="../sourcefile/mqc_many_body_expansion.f90.html" xlink:title="mqc_many_body_expansion.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1594,-446.6 1412,-446.6 1412,-422.6 1594,-422.6 1594,-446.6"/>
+<text text-anchor="middle" x="1503" y="-432.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_many_body_expansion.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge56" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M1706.53,-473.58C1667.52,-466.07 1617.13,-456.37 1576.38,-448.53"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="1576.99,-445.08 1566.51,-446.63 1575.66,-451.96 1576.99,-445.08"/>
+</g>
+<!-- sourcefile~mqc_ormas_ci.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node13" class="node">
+<title>sourcefile~mqc_ormas_ci.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node13"><a xlink:href="../sourcefile/mqc_ormas_ci.f90.html" xlink:title="mqc_ormas_ci.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="748,-126.6 639,-126.6 639,-102.6 748,-102.6 748,-126.6"/>
+<text text-anchor="middle" x="693.5" y="-112.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ormas_ci.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_determinants.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge13" class="edge">
+<title>sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_determinants.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M683.39,-102.35C668.77,-83.76 638.13,-48.98 603,-33.6 516.75,4.16 483.38,8.08 392,-14.6"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M390,-14.6C325.96,-30.28 267.11,-85.19 238.94,-114.99"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="236.37,-112.62 232.15,-122.34 241.51,-117.38 236.37,-112.62"/>
+</g>
+<!-- sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_ormas_space.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge16" class="edge">
+<title>sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_ormas_space.f90</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M671.56,-126.67C653.89,-136.24 627.61,-149.06 603,-155.6 558.92,-167.31 508.05,-172.13 467.29,-174"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="467.01,-170.5 457.16,-174.41 467.3,-177.5 467.01,-170.5"/>
+</g>
+<!-- sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_ci.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge18" class="edge">
+<title>sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_ci.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M638.78,-111.02C581.01,-107.18 490.23,-101.14 436.37,-97.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="436.32,-94.04 426.11,-96.87 435.85,-101.03 436.32,-94.04"/>
+</g>
+<!-- sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_davidson.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge20" class="edge">
+<title>sourcefile~mqc_ormas_ci.f90&#45;&gt;sourcefile~mqc_davidson.f90</title>
+<path fill="none" stroke="#ff8b00" stroke-dasharray="5,2" d="M638.66,-122.1C630.2,-123.28 621.38,-124.51 612.73,-125.72"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="612.09,-122.27 602.67,-127.12 613.05,-129.21 612.09,-122.27"/>
+</g>
+<!-- sourcefile~mqc_rdm.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node14" class="node">
+<title>sourcefile~mqc_rdm.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node14"><a xlink:href="../sourcefile/mqc_rdm.f90.html" xlink:title="mqc_rdm.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="589.5,-66.6 506.5,-66.6 506.5,-42.6 589.5,-42.6 589.5,-66.6"/>
+<text text-anchor="middle" x="548" y="-52.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_rdm.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_rdm.f90&#45;&gt;sourcefile~mqc_determinants.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge15" class="edge">
+<title>sourcefile~mqc_rdm.f90&#45;&gt;sourcefile~mqc_determinants.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M515.05,-42.53C476.83,-28.76 415.13,-8.86 392,-14.6"/>
+</g>
+<!-- sourcefile~mqc_rdm.f90&#45;&gt;sourcefile~mqc_ci.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge19" class="edge">
+<title>sourcefile~mqc_rdm.f90&#45;&gt;sourcefile~mqc_ci.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M506.28,-65.11C484.65,-70.69 458.06,-77.55 435.96,-83.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="434.97,-79.9 426.17,-85.78 436.72,-86.67 434.97,-79.9"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node15" class="node">
+<title>sourcefile~mqc_serial_fragment_processor.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node15"><a xlink:href="../sourcefile/mqc_serial_fragment_processor.f90.html" xlink:title="mqc_serial_fragment_processor.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1326,-306.6 1125,-306.6 1125,-282.6 1326,-282.6 1326,-306.6"/>
+<text text-anchor="middle" x="1225.5" y="-292.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_serial_fragment_processor.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_combinatorics.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge10" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_combinatorics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1124.71,-297.28C983.52,-299.82 717.6,-299.96 493,-273.6 447.46,-268.25 437.77,-249.92 392,-252.6"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge47" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1124.73,-298.74C1106.96,-303.02 1089.51,-309.87 1075,-320.6 1046.56,-341.64 1067.53,-370.67 1039,-391.6 1037.1,-392.99 1035.15,-394.3 1033.14,-395.54"/>
+<polygon fill="#003fff" stroke="#003fff" points="1031.15,-392.64 1024.05,-400.5 1034.51,-398.78 1031.15,-392.64"/>
+</g>
+<!-- sourcefile~mqc_capi_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node16" class="node">
+<title>sourcefile~mqc_capi_fraglist.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node16"><a xlink:href="../sourcefile/mqc_capi_fraglist.f90.html" xlink:title="mqc_capi_fraglist.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1566,-108.6 1440,-108.6 1440,-84.6 1566,-84.6 1566,-108.6"/>
+<text text-anchor="middle" x="1503" y="-94.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_fraglist.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_fraglist.f90&#45;&gt;sourcefile~mqc_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge24" class="edge">
+<title>sourcefile~mqc_capi_fraglist.f90&#45;&gt;sourcefile~mqc_fraglist.f90</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M1446.58,-108.67C1399.64,-118.89 1332.55,-133.5 1284.8,-143.9"/>
+<polygon fill="#5cff00" stroke="#5cff00" points="1283.95,-140.51 1274.92,-146.05 1285.44,-147.35 1283.95,-140.51"/>
+</g>
+<!-- sourcefile~mqc_capi_run.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node17" class="node">
+<title>sourcefile~mqc_capi_run.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node17"><a xlink:href="../sourcefile/mqc_capi_run.f90.html" xlink:title="mqc_capi_run.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2426,-88.6 2319,-88.6 2319,-64.6 2426,-64.6 2426,-88.6"/>
+<text text-anchor="middle" x="2372.5" y="-74.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge25" class="edge">
+<title>sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_fraglist.f90</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M2318.79,-66.49C2289.76,-61.72 2253.03,-56.98 2220,-56.6"/>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M2218,-56.6C1859.7,-52.53 1761.87,1.77 1412,-75.6 1353.89,-88.45 1291.48,-119.75 1255.89,-139.46"/>
+<polygon fill="#5cff00" stroke="#5cff00" points="1254.02,-136.5 1247.01,-144.45 1257.45,-142.6 1254.02,-136.5"/>
+</g>
+<!-- sourcefile~mqc_session.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node22" class="node">
+<title>sourcefile~mqc_session.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node22"><a xlink:href="../sourcefile/mqc_session.f90.html" xlink:title="mqc_session.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2082.5,-108.6 1982.5,-108.6 1982.5,-84.6 2082.5,-84.6 2082.5,-108.6"/>
+<text text-anchor="middle" x="2032.5" y="-94.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_session.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge49" class="edge">
+<title>sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_session.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2218,-56.6C2193.09,-56.32 2132.72,-70.47 2087.77,-82.02"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="2086.67,-78.69 2077.86,-84.59 2088.42,-85.47 2086.67,-78.69"/>
+</g>
+<!-- sourcefile~mqc_capi_session.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node26" class="node">
+<title>sourcefile~mqc_capi_session.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node26"><a xlink:href="../sourcefile/mqc_capi_session.f90.html" xlink:title="mqc_capi_session.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2283,-108.6 2155,-108.6 2155,-84.6 2283,-84.6 2283,-108.6"/>
+<text text-anchor="middle" x="2219" y="-94.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_capi_session.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge53" class="edge">
+<title>sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_capi_session.f90</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M2318.94,-83.54C2310.65,-84.63 2301.94,-85.78 2293.28,-86.93"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="2292.62,-83.48 2283.16,-88.26 2293.54,-90.42 2292.62,-83.48"/>
+</g>
+<!-- sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node18" class="node">
+<title>sourcefile~mqc_driver.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node18"><a xlink:href="../sourcefile/mqc_driver.f90.html" xlink:title="mqc_driver.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1815.5,-268.6 1724.5,-268.6 1724.5,-244.6 1815.5,-244.6 1815.5,-268.6"/>
+<text text-anchor="middle" x="1770" y="-254.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge21" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_frag_utils.f90</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1502,-254.6C1379.57,-252.82 1348.87,-250.42 1226.5,-254.6"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge26" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_fraglist.f90</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M1724.45,-256.45C1671.8,-256.24 1581.52,-255.73 1504,-254.6"/>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M1502,-254.6C1407.1,-253.22 1303.88,-201.59 1255.1,-173.84"/>
+<polygon fill="#5cff00" stroke="#5cff00" points="1256.78,-170.77 1246.37,-168.79 1253.28,-176.83 1256.78,-170.77"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge31" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe.f90</title>
+<path fill="none" stroke="#00ffb9" stroke-dasharray="5,2" d="M1502,-254.6C1439.79,-253.69 1435.64,-297.89 1376,-315.6 1311.79,-334.67 1292.16,-321.39 1226.5,-334.6"/>
+<path fill="none" stroke="#00ffb9" stroke-dasharray="5,2" d="M1224.5,-334.6C1032.45,-373.22 977.9,-321.72 784,-349.6 770.71,-351.51 756.55,-354.63 743.5,-357.96"/>
+<polygon fill="#00ffb9" stroke="#00ffb9" points="742.55,-354.59 733.78,-360.54 744.34,-361.36 742.55,-354.59"/>
+</g>
+<!-- sourcefile~mqc_json_writer.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node20" class="node">
+<title>sourcefile~mqc_json_writer.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node20"><a xlink:href="../sourcefile/mqc_json_writer.f90.html" xlink:title="mqc_json_writer.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="970.5,-382.6 852.5,-382.6 852.5,-358.6 970.5,-358.6 970.5,-382.6"/>
+<text text-anchor="middle" x="911.5" y="-368.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_writer.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_json_writer.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge41" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_json_writer.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1224.5,-334.6C1141.58,-351.28 1044.6,-360.96 981.04,-366"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="980.44,-362.54 970.74,-366.8 980.99,-369.52 980.44,-362.54"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge42" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1224.5,-334.6C1156.84,-348.21 1140.2,-353.95 1075,-376.6 1058.63,-382.29 1055.66,-386.82 1039,-391.6 1030.03,-394.18 1020.6,-396.47 1011.11,-398.51"/>
+<polygon fill="#003fff" stroke="#003fff" points="1010.3,-395.1 1001.21,-400.54 1011.71,-401.96 1010.3,-395.1"/>
+</g>
+<!-- sourcefile~mqc_validate.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node23" class="node">
+<title>sourcefile~mqc_validate.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node23"><a xlink:href="../sourcefile/mqc_validate.f90.html" xlink:title="mqc_validate.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1555,-188.6 1451,-188.6 1451,-164.6 1555,-164.6 1555,-188.6"/>
+<text text-anchor="middle" x="1503" y="-174.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_validate.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_validate.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge51" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_validate.f90</title>
+<path fill="none" stroke="#ff00bf" stroke-dasharray="5,2" d="M1729.04,-244.54C1682.14,-230.38 1604.34,-206.89 1553.62,-191.58"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="1554.44,-188.17 1543.85,-188.63 1552.41,-194.87 1554.44,-188.17"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge55" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M1750.79,-268.83C1704.82,-299.71 1583.95,-380.9 1530.3,-416.93"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="1528.34,-414.03 1521.99,-422.51 1532.24,-419.84 1528.34,-414.03"/>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node19" class="node">
+<title>sourcefile~mqc_geometry_optimizer.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node19"><a xlink:href="../sourcefile/mqc_geometry_optimizer.f90.html" xlink:title="mqc_geometry_optimizer.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2116,-228.6 1949,-228.6 1949,-204.6 2116,-204.6 2116,-228.6"/>
+<text text-anchor="middle" x="2032.5" y="-214.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry_optimizer.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge22" class="edge">
+<title>sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_frag_utils.f90</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1948.78,-218.84C1829.96,-222.28 1604.08,-229.63 1412,-240.6 1329.46,-245.31 1309.13,-251.77 1226.5,-254.6"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1224.5,-254.6C1000.04,-258.44 733.58,-255.42 613.42,-253.65"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="613.34,-250.15 603.29,-253.5 613.24,-257.15 613.34,-250.15"/>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge38" class="edge">
+<title>sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1953.34,-228.6C1912.25,-234.91 1862.87,-242.49 1825.86,-248.18"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1825.13,-244.75 1815.77,-249.72 1826.19,-251.67 1825.13,-244.75"/>
+</g>
+<!-- sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_mbe_io.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge33" class="edge">
+<title>sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_mbe_io.f90</title>
+<path fill="none" stroke="#00b9ff" stroke-dasharray="5,2" d="M852.42,-379.42C830.87,-382.91 806.27,-387.14 784,-391.6 743.94,-399.62 735.31,-410.64 694.5,-412.6"/>
+<path fill="none" stroke="#00b9ff" stroke-dasharray="5,2" d="M692.5,-412.6C664.82,-413.93 634.1,-414.1 608.21,-413.88"/>
+<polygon fill="#00b9ff" stroke="#00b9ff" points="608.21,-410.38 598.18,-413.77 608.14,-417.38 608.21,-410.38"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge32" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe.f90</title>
+<path fill="none" stroke="#00ffb9" stroke-dasharray="5,2" d="M834.48,-400.55C817.82,-397.75 800.3,-394.68 784,-391.6 771.81,-389.29 758.72,-386.63 746.42,-384.03"/>
+<polygon fill="#00ffb9" stroke="#00ffb9" points="746.82,-380.54 736.31,-381.88 745.36,-387.39 746.82,-380.54"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_io.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge35" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_io.f90</title>
+<path fill="none" stroke="#00b9ff" stroke-dasharray="5,2" d="M783.96,-410.57C754.58,-410.66 723.44,-411.21 694.5,-412.6"/>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge27" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_fraglist.f90</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M1982.2,-105.35C1929.93,-114.36 1844.88,-128.22 1771,-136.6"/>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M1769,-136.6C1676.75,-147.07 1405.2,-153.27 1284.95,-155.57"/>
+<polygon fill="#5cff00" stroke="#5cff00" points="1284.76,-152.07 1274.83,-155.76 1284.89,-159.07 1284.76,-152.07"/>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge39" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M2011.92,-108.63C1966.28,-136.66 1852.69,-206.42 1799.42,-239.14"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1797.5,-236.22 1790.81,-244.43 1801.16,-242.18 1797.5,-236.22"/>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_validate.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge52" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_validate.f90</title>
+<path fill="none" stroke="#ff00bf" stroke-dasharray="5,2" d="M1769,-136.6C1698.86,-144.56 1618.78,-157.13 1565.17,-166.06"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="1564.43,-162.63 1555.15,-167.74 1565.59,-169.54 1564.43,-162.63"/>
+</g>
+<!-- sourcefile~mqc_validate.f90&#45;&gt;sourcefile~mqc_fraglist.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge28" class="edge">
+<title>sourcefile~mqc_validate.f90&#45;&gt;sourcefile~mqc_fraglist.f90</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M1450.83,-172.88C1403.76,-169.47 1334.01,-164.4 1284.8,-160.83"/>
+<polygon fill="#5cff00" stroke="#5cff00" points="1284.86,-157.33 1274.63,-160.09 1284.35,-164.31 1284.86,-157.33"/>
+</g>
+<!-- sourcefile~main.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node24" class="node">
+<title>sourcefile~main.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node24"><a xlink:href="../sourcefile/main.f90.html" xlink:title="main.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2249,-248.6 2189,-248.6 2189,-224.6 2249,-224.6 2249,-248.6"/>
+<text text-anchor="middle" x="2219" y="-234.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge36" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M2188.67,-237.91C2115.02,-241.21 1921.38,-249.87 1825.87,-254.14"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1825.66,-250.65 1815.83,-254.59 1825.98,-257.64 1825.66,-250.65"/>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_geometry_optimizer.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge40" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_geometry_optimizer.f90</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M2188.77,-233.43C2171.68,-231.58 2149.08,-229.13 2126.42,-226.67"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="2126.69,-223.18 2116.37,-225.58 2125.94,-230.14 2126.69,-223.18"/>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node25" class="node">
+<title>sourcefile~mqc_calculation_interface.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node25"><a xlink:href="../sourcefile/mqc_calculation_interface.f90.html" xlink:title="mqc_calculation_interface.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2119,-308.6 1946,-308.6 1946,-284.6 2119,-284.6 2119,-308.6"/>
+<text text-anchor="middle" x="2032.5" y="-294.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_interface.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge37" class="edge">
+<title>sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1953.34,-284.6C1912.25,-278.29 1862.87,-270.71 1825.86,-265.02"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1826.19,-261.53 1815.77,-263.47 1825.13,-268.45 1826.19,-261.53"/>
+</g>
+<!-- sourcefile~mqc_capi_session.f90&#45;&gt;sourcefile~mqc_session.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge50" class="edge">
+<title>sourcefile~mqc_capi_session.f90&#45;&gt;sourcefile~mqc_session.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2154.76,-96.6C2134.69,-96.6 2112.57,-96.6 2092.78,-96.6"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="2092.67,-93.1 2082.67,-96.6 2092.67,-100.1 2092.67,-93.1"/>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node27" class="node">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node27"><a xlink:href="../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html" xlink:title="mqc_gmbe_fragment_distribution_scheme.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1355,-508.6 1096,-508.6 1096,-484.6 1355,-484.6 1355,-508.6"/>
+<text text-anchor="middle" x="1225.5" y="-494.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge43" class="edge">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1116.93,-484.53C1102.73,-482.05 1088.44,-479.1 1075,-475.6 1029.76,-463.82 979.93,-443.31 947.53,-428.9"/>
+<polygon fill="#003fff" stroke="#003fff" points="948.62,-425.55 938.06,-424.64 945.75,-431.93 948.62,-425.55"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge44" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1475.14,-422.54C1450.08,-411.99 1411.34,-397.46 1376,-391.6 1242.34,-369.42 1084.24,-385.45 991.51,-399.06"/>
+<polygon fill="#003fff" stroke="#003fff" points="990.73,-395.63 981.36,-400.57 991.77,-402.56 990.73,-395.63"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_gmbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge54" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_gmbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M1470.33,-446.62C1445.1,-455.77 1408.72,-468.04 1376,-475.6 1364.21,-478.32 1351.81,-480.75 1339.41,-482.89"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="1338.76,-479.45 1329.47,-484.55 1339.91,-486.36 1338.76,-479.45"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node29" class="node">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node29"><a xlink:href="../sourcefile/mqc_mbe_fragment_distribution_scheme_hessian.f90.html" xlink:title="mqc_mbe_fragment_distribution_scheme_hessian.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1376,-466.6 1075,-466.6 1075,-442.6 1376,-442.6 1376,-466.6"/>
+<text text-anchor="middle" x="1225.5" y="-452.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme_hessian.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge45" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1135.09,-442.56C1096.5,-437.37 1051.21,-431.27 1011.59,-425.94"/>
+<polygon fill="#003fff" stroke="#003fff" points="1012.03,-422.47 1001.65,-424.6 1011.09,-429.4 1012.03,-422.47"/>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_node30" class="node">
+<title>sourcefile~mqc_unfragmented_workflow.f90</title>
+<g id="a_sourcefile~~mqc_math_utils.f90~~AfferentGraph_node30"><a xlink:href="../sourcefile/mqc_unfragmented_workflow.f90.html" xlink:title="mqc_unfragmented_workflow.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1320.5,-424.6 1130.5,-424.6 1130.5,-400.6 1320.5,-400.6 1320.5,-424.6"/>
+<text text-anchor="middle" x="1225.5" y="-410.2" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_unfragmented_workflow.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_math_utils.f90~~AfferentGraph_edge48" class="edge">
+<title>sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M1130.47,-412.6C1104.9,-412.6 1076.68,-412.6 1049.26,-412.6"/>
+<polygon fill="#003fff" stroke="#003fff" points="1049.21,-409.1 1039.21,-412.6 1049.21,-416.1 1049.21,-409.1"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pansourcefilemqc_math_utilsf90AfferentGraph = svgPanZoom('#sourcefilemqc_math_utilsf90AfferentGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#AfferentGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="AfferentGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a file to a file which it depends on. A file
+is dependent upon another if the latter must be compiled before the former
+can be.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
+<br>
+      <section>
+        <h2><span class="anchor" id="src"></span>Source Code</h2>
+        <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! Small exact-arithmetic helpers with no domain of their own</span>
+<a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_math_utils</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Pure combinatorial arithmetic, shared rather than reimplemented.</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!!</span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! `binomial` existed three times before this module did: once in</span>
+<a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! `mqc_combinatorics` for counting fragments and twice in `src/mcscf` for</span>
+<a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! sizing CI vectors. The two in `src/mcscf` were identical to the character;</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! the one in `mqc_combinatorics` was subtly weaker, and that is the reason</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! this lives here rather than in either of them. Neither domain owns it,</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! and a fragment count and a determinant count want exactly the same</span>
+<a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! function.</span>
+<a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">int32</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span>
+<a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="k">implicit none</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="k">   private</span>
+<a id="ln-15" name="ln-15" href="#ln-15"></a>
+<a id="ln-16" name="ln-16" href="#ln-16"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">binomial</span>
+<a id="ln-17" name="ln-17" href="#ln-17"></a>
+<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="w">   </span><span class="k">interface </span><span class="n">binomial</span>
+<a id="ln-19" name="ln-19" href="#ln-19"></a><span class="w">      </span><span class="c">!! `C(n, k)`, exactly, in 64-bit integers, for either integer kind.</span>
+<a id="ln-20" name="ln-20" href="#ln-20"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-21" name="ln-21" href="#ln-21"></a><span class="w">      </span><span class="c">!! Two specifics rather than one because `pic`'s `default_int` is not a</span>
+<a id="ln-22" name="ln-22" href="#ln-22"></a><span class="w">      </span><span class="c">!! fixed kind -- it is `int64` in a USE_INT8 build and `c_int` otherwise --</span>
+<a id="ln-23" name="ln-23" href="#ln-23"></a><span class="w">      </span><span class="c">!! so a single specific would compile in one configuration and not the</span>
+<a id="ln-24" name="ln-24" href="#ln-24"></a><span class="w">      </span><span class="c">!! other.</span>
+<a id="ln-25" name="ln-25" href="#ln-25"></a><span class="w">      </span><span class="k">module procedure </span><span class="n">binomial_i32</span>
+<a id="ln-26" name="ln-26" href="#ln-26"></a><span class="w">      </span><span class="k">module procedure </span><span class="n">binomial_i64</span>
+<a id="ln-27" name="ln-27" href="#ln-27"></a><span class="w">   </span><span class="k">end interface </span><span class="n">binomial</span>
+<a id="ln-28" name="ln-28" href="#ln-28"></a>
+<a id="ln-29" name="ln-29" href="#ln-29"></a><span class="k">contains</span>
+<a id="ln-30" name="ln-30" href="#ln-30"></a>
+<a id="ln-31" name="ln-31" href="#ln-31"></a><span class="k">   pure function </span><span class="n">binomial_i32</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">      </span><span class="c">!! `C(n, k)` from default-kind arguments</span>
+<a id="ln-33" name="ln-33" href="#ln-33"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c</span>
+<a id="ln-35" name="ln-35" href="#ln-35"></a>
+<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="w">      </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binomial_i64</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">))</span>
+<a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">   </span><span class="k">end function </span><span class="n">binomial_i32</span>
+<a id="ln-38" name="ln-38" href="#ln-38"></a>
+<a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">   </span><span class="k">pure function </span><span class="n">binomial_i64</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<a id="ln-40" name="ln-40" href="#ln-40"></a><span class="w">      </span><span class="c">!! `C(n, k)`, exactly, in 64-bit integers</span>
+<a id="ln-41" name="ln-41" href="#ln-41"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">      </span><span class="c">!! One factor at a time, multiplying before dividing, so the running value</span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">      </span><span class="c">!! is always the binomial coefficient of a smaller problem and never</span>
+<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">      </span><span class="c">!! exceeds the answer -- which the naive factorial form does by an enormous</span>
+<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="c">!! margin, overflowing at `n = 21` for a result that fits easily.</span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">      </span><span class="c">!! `kk = min(k, n - k)` is not only a saving: it is what keeps the</span>
+<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">      </span><span class="c">!! intermediate products small. Out-of-range arguments give zero rather</span>
+<a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">      </span><span class="c">!! than a wrong number, which the count of an empty set should be.</span>
+<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+<a id="ln-51" name="ln-51" href="#ln-51"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c</span>
+<a id="ln-52" name="ln-52" href="#ln-52"></a>
+<a id="ln-53" name="ln-53" href="#ln-53"></a><span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">kk</span>
+<a id="ln-54" name="ln-54" href="#ln-54"></a>
+<a id="ln-55" name="ln-55" href="#ln-55"></a><span class="w">      </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
+<a id="ln-56" name="ln-56" href="#ln-56"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0_int64</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0_int64</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<a id="ln-57" name="ln-57" href="#ln-57"></a><span class="k">      </span><span class="n">kk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-58" name="ln-58" href="#ln-58"></a><span class="w">      </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span>
+<a id="ln-59" name="ln-59" href="#ln-59"></a><span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">kk</span>
+<a id="ln-60" name="ln-60" href="#ln-60"></a><span class="w">         </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">kk</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="n">i</span>
+<a id="ln-61" name="ln-61" href="#ln-61"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-62" name="ln-62" href="#ln-62"></a><span class="k">   end function </span><span class="n">binomial_i64</span>
+<a id="ln-63" name="ln-63" href="#ln-63"></a>
+<a id="ln-64" name="ln-64" href="#ln-64"></a><span class="k">end module </span><span class="n">mqc_math_utils</span>
+</pre></div>
+
+      </section>
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-20 07:13 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-h~20">h</a>
-            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-ibond~7">ibond</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-h~18">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_bonds.html#variable-ibond~6">ibond</a>
         </div>
       </div>
     </div>
@@ -290,7 +290,7 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~37"></span>
+          <span class="anchor" id="variable-status~24"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -318,33 +318,33 @@ every entry as broken is the plain &ldquo;here is my list of broken bonds&rdquo;
 <polygon fill="none" stroke="black" points="137,-45 0,-45 0,-21 137,-21 137,-45"/>
 <text text-anchor="middle" x="68.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_system_set_bonds</text>
 </g>
-<!-- proc~int_text~2 -->
+<!-- proc~int_to_text -->
 <g id="proc~~mqc_system_set_bonds~~CallsGraph_node2" class="node">
-<title>proc~int_text~2</title>
-<g id="a_proc~~mqc_system_set_bonds~~CallsGraph_node2"><a xlink:href="../proc/int_text~2.html" xlink:title="int_text">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="240.5,-66 186.5,-66 186.5,-42 240.5,-42 240.5,-66"/>
-<text text-anchor="middle" x="213.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_text</text>
+<title>proc~int_to_text</title>
+<g id="a_proc~~mqc_system_set_bonds~~CallsGraph_node2"><a xlink:href="../proc/int_to_text.html" xlink:title="int_to_text">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="247,-66 180,-66 180,-42 247,-42 247,-66"/>
+<text text-anchor="middle" x="213.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_text</text>
 </a>
 </g>
 </g>
-<!-- proc~mqc_system_set_bonds&#45;&gt;proc~int_text~2 -->
+<!-- proc~mqc_system_set_bonds&#45;&gt;proc~int_to_text -->
 <g id="proc~~mqc_system_set_bonds~~CallsGraph_edge1" class="edge">
-<title>proc~mqc_system_set_bonds&#45;&gt;proc~int_text~2</title>
-<path fill="none" stroke="#ff0000" d="M137.23,-42.95C150.74,-44.93 164.43,-46.94 176.37,-48.69"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="175.95,-52.17 186.36,-50.16 176.97,-45.24 175.95,-52.17"/>
+<title>proc~mqc_system_set_bonds&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M137.23,-42.95C148.38,-44.58 159.66,-46.24 169.97,-47.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="169.51,-51.22 179.92,-49.21 170.53,-44.3 169.51,-51.22"/>
 </g>
-<!-- proc~monomer_of~2 -->
+<!-- proc~monomer_of -->
 <g id="proc~~mqc_system_set_bonds~~CallsGraph_node3" class="node">
-<title>proc~monomer_of~2</title>
-<g id="a_proc~~mqc_system_set_bonds~~CallsGraph_node3"><a xlink:href="../proc/monomer_of~2.html" xlink:title="monomer_of">
+<title>proc~monomer_of</title>
+<g id="a_proc~~mqc_system_set_bonds~~CallsGraph_node3"><a xlink:href="../proc/monomer_of.html" xlink:title="monomer_of">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="254,-24 173,-24 173,0 254,0 254,-24"/>
 <text text-anchor="middle" x="213.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">monomer_of</text>
 </a>
 </g>
 </g>
-<!-- proc~mqc_system_set_bonds&#45;&gt;proc~monomer_of~2 -->
+<!-- proc~mqc_system_set_bonds&#45;&gt;proc~monomer_of -->
 <g id="proc~~mqc_system_set_bonds~~CallsGraph_edge2" class="edge">
-<title>proc~mqc_system_set_bonds&#45;&gt;proc~monomer_of~2</title>
+<title>proc~mqc_system_set_bonds&#45;&gt;proc~monomer_of</title>
 <path fill="none" stroke="#ff0000" d="M137.23,-23.05C145.76,-21.8 154.36,-20.54 162.54,-19.34"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="163.26,-22.77 172.65,-17.85 162.25,-15.84 163.26,-22.77"/>
 </g>
@@ -448,7 +448,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~20"></span>
+              <span class="anchor" id="variable-h~18"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -465,7 +465,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ibond~7"></span>
+              <span class="anchor" id="variable-ibond~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -567,9 +567,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! one thing here worth failing hard over.</span>
 <span class="w">      </span><span class="k">do </span><span class="n">ibond</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_bonds</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_broken</span><span class="p">(</span><span class="n">ibond</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_of</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_i</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">monomer_of</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">)))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_of</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">atom_i</span><span class="p">(</span><span class="n">ibond</span><span class="p">)))</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">monomer_of</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">))))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mqc_system_set_bonds: the bond between atoms "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="n">int_text</span><span class="p">(</span><span class="n">atom_i</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="o">//</span><span class="s2">" and "</span><span class="o">//</span><span class="n">int_text</span><span class="p">(</span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">int_to_text</span><span class="p">(</span><span class="n">atom_i</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="o">//</span><span class="s2">" and "</span><span class="o">//</span><span class="n">int_to_text</span><span class="p">(</span><span class="n">atom_j</span><span class="p">(</span><span class="n">ibond</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">" crosses a monomer boundary but is not marked broken; "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"fragmenting it would leave an uncapped valence"</span>
 <span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
@@ -613,7 +613,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>

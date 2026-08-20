@@ -29,6 +29,7 @@ module mqc_determinants
    use pic_types, only: int64, int32
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_math_utils, only: binomial
    implicit none
    private
 
@@ -80,27 +81,6 @@ module mqc_determinants
    end type link_table_t
 
 contains
-
-   pure function binomial(n, k) result(c)
-      !! `C(n, k)`, exactly, in 64-bit integers
-      !!
-      !! Multiply-then-divide one factor at a time. The running product stays
-      !! the binomial coefficient of a smaller problem at every step, so it
-      !! never exceeds the answer -- which the naive factorial form does by an
-      !! enormous margin, overflowing at `n = 21` for a result that fits easily.
-      integer, intent(in) :: n, k
-      integer(int64) :: c
-
-      integer :: i, kk
-
-      c = 0_int64
-      if (k < 0 .or. k > n .or. n < 0) return
-      kk = min(k, n - k)
-      c = 1_int64
-      do i = 1, kk
-         c = c*int(n - kk + i, int64)/int(i, int64)
-      end do
-   end function binomial
 
    pure function n_strings(n_orbitals, n_electrons) result(count)
       !! How many strings put `n_electrons` into `n_orbitals`

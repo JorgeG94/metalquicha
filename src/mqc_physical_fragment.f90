@@ -12,6 +12,7 @@ module mqc_physical_fragment
    use mqc_cgto, only: molecular_basis_type
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_physical_constants, only: BOHR_TO_ANGSTROM, ANGSTROM_TO_BOHR
+   use mqc_program_limits, only: MIN_ATOM_DISTANCE
    implicit none
    private
 
@@ -791,7 +792,6 @@ contains
 
       integer :: i, j, n_atoms
       real(dp) :: distance, dx, dy, dz
-      real(dp), parameter :: MIN_ATOM_DISTANCE = 0.01_dp  !! Bohr - atoms closer than this are overlapping
 
       ! Only check non-cap atoms (caps can be close to replaced atoms)
       n_atoms = fragment%n_atoms - fragment%n_caps
@@ -816,7 +816,7 @@ contains
                call logger%error("ERROR: Fragment contains overlapping atoms!")
                call logger%error("  Atoms "//to_char(i)//" and "//to_char(j)//" are too close together")
                call logger%error("  Distance: "//to_char(distance)//" Bohr ("// &
-                                 to_char(distance*0.529177_dp)//" Angstrom)")
+                                 to_char(to_angstrom(distance))//" Angstrom)")
                call logger%error("  Atom "//to_char(i)//": "// &
                                  element_number_to_symbol(fragment%element_numbers(i))// &
                                  " at ("//to_char(fragment%coordinates(1, i))//", "// &

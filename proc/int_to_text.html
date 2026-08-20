@@ -1,0 +1,1112 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>int_to_text &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>int_to_text
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for procedures.">7 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_string_utils.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_string_utils.f90.html'>mqc_string_utils.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_string_utils.html'>mqc_string_utils</a></li>
+            <li class="breadcrumb-item active" aria-current="page">int_to_text</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/int_to_text.html#variable-buffer~16">buffer</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/int_to_text.html#src">int_to_text</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public pure function int_to_text(value) result(text)  
+</h2>
+    
+
+    <p>An integer as its shortest decimal string, no padding</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~21"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-text~22"></span>
+          character(len=:), allocatable
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~int_to_text~~CalledByGraph Pages: 1 -->
+<svg id="procint_to_textCalledByGraph" width="641pt" height="254pt"
+ viewBox="0.00 0.00 641.00 254.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~int_to_text~~CalledByGraph" class="graph" transform="scale(0.44 0.44) rotate(0) translate(4 567)">
+<title>proc~~int_to_text~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-567 1437,-567 1437,4 -4,4"/>
+<!-- proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_node1" class="node">
+<title>proc~int_to_text</title>
+<polygon fill="none" stroke="black" points="1433,-303 1366,-303 1366,-279 1433,-279 1433,-303"/>
+<text text-anchor="middle" x="1399.5" y="-288.6" font-family="Helvetica,sans-Serif" font-size="10.50">int_to_text</text>
+</g>
+<!-- proc~channel_angular_momentum -->
+<g id="proc~~int_to_text~~CalledByGraph_node2" class="node">
+<title>proc~channel_angular_momentum</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node2"><a xlink:href="../proc/channel_angular_momentum.html" xlink:title="channel_angular_momentum">
+<polygon fill="#d9534f" stroke="#d9534f" points="1330,-563 1161,-563 1161,-539 1330,-539 1330,-563"/>
+<text text-anchor="middle" x="1245.5" y="-548.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">channel_angular_momentum</text>
+</a>
+</g>
+</g>
+<!-- proc~channel_angular_momentum&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge1" class="edge">
+<title>proc~channel_angular_momentum&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1317.73,-538.99C1322.19,-536.5 1326.35,-533.53 1330,-530 1391.45,-470.53 1398.81,-359.97 1399,-313.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1402.5,-312.98 1398.93,-303 1395.5,-313.02 1402.5,-312.98"/>
+</g>
+<!-- proc~check_molecule_fragments -->
+<g id="proc~~int_to_text~~CalledByGraph_node3" class="node">
+<title>proc~check_molecule_fragments</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node3"><a xlink:href="../proc/check_molecule_fragments.html" xlink:title="check_molecule_fragments">
+<polygon fill="#d9534f" stroke="#d9534f" points="1125,-403 966,-403 966,-379 1125,-379 1125,-403"/>
+<text text-anchor="middle" x="1045.5" y="-388.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_molecule_fragments</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge2" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1125.16,-402.54C1184.63,-407.54 1266.6,-406.23 1330,-374 1356.33,-360.61 1376.27,-332.1 1387.67,-312.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1390.83,-313.76 1392.56,-303.31 1384.69,-310.4 1390.83,-313.76"/>
+</g>
+<!-- proc~molecule_path -->
+<g id="proc~~int_to_text~~CalledByGraph_node6" class="node">
+<title>proc~molecule_path</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node6"><a xlink:href="../proc/molecule_path.html" xlink:title="molecule_path">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1291,-323 1200,-323 1200,-299 1291,-299 1291,-323"/>
+<text text-anchor="middle" x="1245.5" y="-308.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecule_path</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~molecule_path -->
+<g id="proc~~int_to_text~~CalledByGraph_edge19" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~molecule_path</title>
+<path fill="none" stroke="#48ff00" d="M1093.57,-378.99C1104.28,-375.3 1115.34,-370.67 1125,-365 1143.72,-354.01 1141.89,-342.29 1161,-332 1169.88,-327.21 1179.89,-323.49 1189.8,-320.61"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="1190.88,-323.94 1199.64,-317.99 1189.08,-317.18 1190.88,-323.94"/>
+</g>
+<!-- proc~check_ormas_group -->
+<g id="proc~~int_to_text~~CalledByGraph_node4" class="node">
+<title>proc~check_ormas_group</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node4"><a xlink:href="../proc/check_ormas_group.html" xlink:title="check_ormas_group">
+<polygon fill="#d9534f" stroke="#d9534f" points="1105,-445 986,-445 986,-421 1105,-421 1105,-445"/>
+<text text-anchor="middle" x="1045.5" y="-430.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_ormas_group</text>
+</a>
+</g>
+</g>
+<!-- proc~check_ormas_group&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge3" class="edge">
+<title>proc~check_ormas_group&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1105.12,-441.11C1166.11,-446.48 1262.01,-445.97 1330,-403 1363.02,-382.13 1382.53,-339 1391.82,-312.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1395.24,-313.6 1395.09,-303 1388.6,-311.38 1395.24,-313.6"/>
+</g>
+<!-- proc~check_subset_closure -->
+<g id="proc~~int_to_text~~CalledByGraph_node5" class="node">
+<title>proc~check_subset_closure</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node5"><a xlink:href="../proc/check_subset_closure.html" xlink:title="check_subset_closure">
+<polygon fill="#d9534f" stroke="#d9534f" points="1109,-142 982,-142 982,-118 1109,-118 1109,-142"/>
+<text text-anchor="middle" x="1045.5" y="-127.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_subset_closure</text>
+</a>
+</g>
+</g>
+<!-- proc~check_subset_closure&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge4" class="edge">
+<title>proc~check_subset_closure&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1092.18,-117.97C1152.2,-104.98 1258.39,-92.04 1330,-140 1374.03,-169.49 1390.16,-234.64 1395.74,-268.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1392.29,-269.5 1397.21,-278.89 1399.22,-268.48 1392.29,-269.5"/>
+</g>
+<!-- proc~molecule_path&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge5" class="edge">
+<title>proc~molecule_path&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1291.28,-305.11C1311.57,-302.44 1335.44,-299.3 1355.51,-296.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1356.15,-300.1 1365.61,-295.33 1355.24,-293.16 1356.15,-300.1"/>
+</g>
+<!-- proc~mqc_system_set_bonds -->
+<g id="proc~~int_to_text~~CalledByGraph_node7" class="node">
+<title>proc~mqc_system_set_bonds</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node7"><a xlink:href="../proc/mqc_system_set_bonds.html" xlink:title="mqc_system_set_bonds">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1314,-365 1177,-365 1177,-341 1314,-341 1314,-365"/>
+<text text-anchor="middle" x="1245.5" y="-350.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_system_set_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_system_set_bonds&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge6" class="edge">
+<title>proc~mqc_system_set_bonds&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1303.82,-340.96C1312.73,-338.41 1321.71,-335.43 1330,-332 1344.94,-325.81 1360.49,-316.74 1372.99,-308.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1375.08,-311.53 1381.5,-303.1 1371.23,-305.68 1375.08,-311.53"/>
+</g>
+<!-- proc~read_channel -->
+<g id="proc~~int_to_text~~CalledByGraph_node8" class="node">
+<title>proc~read_channel</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node8"><a xlink:href="../proc/read_channel.html" xlink:title="read_channel">
+<polygon fill="#d9534f" stroke="#d9534f" points="1288,-521 1203,-521 1203,-497 1288,-497 1288,-521"/>
+<text text-anchor="middle" x="1245.5" y="-506.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_channel</text>
+</a>
+</g>
+</g>
+<!-- proc~read_channel&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge7" class="edge">
+<title>proc~read_channel&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1288.24,-503.85C1303,-500.15 1318.72,-493.83 1330,-483 1378.54,-436.4 1392.76,-353.12 1396.87,-313.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1400.36,-313.62 1397.78,-303.34 1393.39,-312.98 1400.36,-313.62"/>
+</g>
+<!-- proc~read_json_basis_element -->
+<g id="proc~~int_to_text~~CalledByGraph_node9" class="node">
+<title>proc~read_json_basis_element</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node9"><a xlink:href="../proc/read_json_basis_element.html" xlink:title="read_json_basis_element">
+<polygon fill="#d9534f" stroke="#d9534f" points="1118,-201 973,-201 973,-177 1118,-177 1118,-201"/>
+<text text-anchor="middle" x="1045.5" y="-186.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_basis_element</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge8" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1075.06,-176.88C1129.07,-155.99 1248.09,-119.86 1330,-168 1367,-189.74 1385.47,-239.52 1393.42,-268.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1390.12,-269.86 1395.97,-278.7 1396.9,-268.14 1390.12,-269.86"/>
+</g>
+<!-- proc~shell_angular_form -->
+<g id="proc~~int_to_text~~CalledByGraph_node12" class="node">
+<title>proc~shell_angular_form</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node12"><a xlink:href="../proc/shell_angular_form.html" xlink:title="shell_angular_form">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1303,-243 1188,-243 1188,-219 1303,-219 1303,-243"/>
+<text text-anchor="middle" x="1245.5" y="-228.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">shell_angular_form</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~shell_angular_form -->
+<g id="proc~~int_to_text~~CalledByGraph_edge26" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~shell_angular_form</title>
+<path fill="none" stroke="#4800ff" d="M1103.24,-201.04C1126.54,-205.98 1153.69,-211.74 1177.92,-216.88"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="1177.24,-220.31 1187.75,-218.96 1178.7,-213.46 1177.24,-220.31"/>
+</g>
+<!-- proc~shell_contractions -->
+<g id="proc~~int_to_text~~CalledByGraph_node13" class="node">
+<title>proc~shell_contractions</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node13"><a xlink:href="../proc/shell_contractions.html" xlink:title="shell_contractions">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1300,-201 1191,-201 1191,-177 1300,-177 1300,-201"/>
+<text text-anchor="middle" x="1245.5" y="-186.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">shell_contractions</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~shell_contractions -->
+<g id="proc~~int_to_text~~CalledByGraph_edge27" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~shell_contractions</title>
+<path fill="none" stroke="#b600ff" d="M1118.26,-189C1138.71,-189 1160.85,-189 1180.78,-189"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="1180.99,-192.5 1190.99,-189 1180.99,-185.5 1180.99,-192.5"/>
+</g>
+<!-- proc~read_json_ecp_element -->
+<g id="proc~~int_to_text~~CalledByGraph_node10" class="node">
+<title>proc~read_json_ecp_element</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node10"><a xlink:href="../proc/read_json_ecp_element.html" xlink:title="read_json_ecp_element">
+<polygon fill="#d9534f" stroke="#d9534f" points="1114.5,-521 976.5,-521 976.5,-497 1114.5,-497 1114.5,-521"/>
+<text text-anchor="middle" x="1045.5" y="-506.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_ecp_element</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_ecp_element&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge9" class="edge">
+<title>proc~read_json_ecp_element&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1104.89,-496.96C1182.69,-480.5 1312.6,-451.37 1330,-437 1368.98,-404.8 1387.05,-345.38 1394.32,-313.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1397.75,-313.87 1396.38,-303.36 1390.9,-312.42 1397.75,-313.87"/>
+</g>
+<!-- proc~read_json_ecp_element&#45;&gt;proc~channel_angular_momentum -->
+<g id="proc~~int_to_text~~CalledByGraph_edge15" class="edge">
+<title>proc~read_json_ecp_element&#45;&gt;proc~channel_angular_momentum</title>
+<path fill="none" stroke="#ff0000" d="M1103.24,-521.04C1126.54,-525.98 1153.69,-531.74 1177.92,-536.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1177.24,-540.31 1187.75,-538.96 1178.7,-533.46 1177.24,-540.31"/>
+</g>
+<!-- proc~read_json_ecp_element&#45;&gt;proc~read_channel -->
+<g id="proc~~int_to_text~~CalledByGraph_edge22" class="edge">
+<title>proc~read_json_ecp_element&#45;&gt;proc~read_channel</title>
+<path fill="none" stroke="#00ff91" d="M1114.64,-509C1140.17,-509 1168.74,-509 1192.57,-509"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="1192.82,-512.5 1202.82,-509 1192.82,-505.5 1192.82,-512.5"/>
+</g>
+<!-- proc~read_xyz_string -->
+<g id="proc~~int_to_text~~CalledByGraph_node11" class="node">
+<title>proc~read_xyz_string</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node11"><a xlink:href="../proc/read_xyz_string.html" xlink:title="read_xyz_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="1292.5,-45 1198.5,-45 1198.5,-21 1292.5,-21 1292.5,-45"/>
+<text text-anchor="middle" x="1245.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_xyz_string</text>
+</a>
+</g>
+</g>
+<!-- proc~read_xyz_string&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge10" class="edge">
+<title>proc~read_xyz_string&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1292.89,-38.97C1306.36,-42.76 1320.09,-48.94 1330,-59 1388,-117.86 1397.31,-223.31 1398.51,-268.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1395.01,-269.01 1398.67,-278.96 1402.01,-268.9 1395.01,-269.01"/>
+</g>
+<!-- proc~shell_angular_form&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge11" class="edge">
+<title>proc~shell_angular_form&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1289.87,-243.07C1302.92,-247.09 1317.18,-251.86 1330,-257 1342.42,-261.98 1355.68,-268.31 1367.19,-274.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1365.9,-277.42 1376.39,-278.9 1369.11,-271.2 1365.9,-277.42"/>
+</g>
+<!-- proc~shell_contractions&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge12" class="edge">
+<title>proc~shell_contractions&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M1300.19,-197.25C1310.56,-200.27 1320.99,-204.38 1330,-210 1354.2,-225.09 1374.18,-251.56 1386.2,-270.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1383.33,-272.13 1391.59,-278.76 1389.27,-268.42 1383.33,-272.13"/>
+</g>
+<!-- proc~validate_system -->
+<g id="proc~~int_to_text~~CalledByGraph_node14" class="node">
+<title>proc~validate_system</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node14"><a xlink:href="../proc/validate_system.html" xlink:title="validate_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="900.5,-280 802.5,-280 802.5,-256 900.5,-256 900.5,-280"/>
+<text text-anchor="middle" x="851.5" y="-265.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_system</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_system&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge13" class="edge">
+<title>proc~validate_system&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M900.95,-270.04C1006.44,-274.48 1255.46,-284.97 1355.65,-289.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1355.57,-292.69 1365.71,-289.62 1355.87,-285.7 1355.57,-292.69"/>
+</g>
+<!-- proc~validate_terms -->
+<g id="proc~~int_to_text~~CalledByGraph_node15" class="node">
+<title>proc~validate_terms</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node15"><a xlink:href="../proc/validate_terms.html" xlink:title="validate_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="897,-151 806,-151 806,-127 897,-127 897,-151"/>
+<text text-anchor="middle" x="851.5" y="-136.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~int_to_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge14" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M877.72,-126.88C954.02,-92.15 1186.01,-1.03 1330,-102 1384.97,-140.55 1396.01,-227.88 1398.1,-268.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1394.6,-269.1 1398.47,-278.96 1401.6,-268.84 1394.6,-269.1"/>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~check_subset_closure -->
+<g id="proc~~int_to_text~~CalledByGraph_edge18" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~check_subset_closure</title>
+<path fill="none" stroke="#b6ff00" d="M897.03,-136.91C919.13,-135.88 946.4,-134.6 971.46,-133.42"/>
+<polygon fill="#b6ff00" stroke="#b6ff00" points="971.84,-136.91 981.67,-132.95 971.51,-129.92 971.84,-136.91"/>
+</g>
+<!-- proc~build_molecular_basis_json -->
+<g id="proc~~int_to_text~~CalledByGraph_node16" class="node">
+<title>proc~build_molecular_basis_json</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node16"><a xlink:href="../proc/build_molecular_basis_json.html" xlink:title="build_molecular_basis_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="930,-201 773,-201 773,-177 930,-177 930,-201"/>
+<text text-anchor="middle" x="851.5" y="-186.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_molecular_basis_json</text>
+</a>
+</g>
+</g>
+<!-- proc~build_molecular_basis_json&#45;&gt;proc~read_json_basis_element -->
+<g id="proc~~int_to_text~~CalledByGraph_edge23" class="edge">
+<title>proc~build_molecular_basis_json&#45;&gt;proc~read_json_basis_element</title>
+<path fill="none" stroke="#00ffff" d="M930.04,-189C940.77,-189 951.81,-189 962.61,-189"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="962.88,-192.5 972.88,-189 962.88,-185.5 962.88,-192.5"/>
+</g>
+<!-- proc~build_molecular_ecp_json -->
+<g id="proc~~int_to_text~~CalledByGraph_node17" class="node">
+<title>proc~build_molecular_ecp_json</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node17"><a xlink:href="../proc/build_molecular_ecp_json.html" xlink:title="build_molecular_ecp_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="926.5,-521 776.5,-521 776.5,-497 926.5,-497 926.5,-521"/>
+<text text-anchor="middle" x="851.5" y="-506.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_molecular_ecp_json</text>
+</a>
+</g>
+</g>
+<!-- proc~build_molecular_ecp_json&#45;&gt;proc~read_json_ecp_element -->
+<g id="proc~~int_to_text~~CalledByGraph_edge24" class="edge">
+<title>proc~build_molecular_ecp_json&#45;&gt;proc~read_json_ecp_element</title>
+<path fill="none" stroke="#0091ff" d="M926.73,-509C939.64,-509 953.1,-509 966.11,-509"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="966.43,-512.5 976.43,-509 966.43,-505.5 966.43,-512.5"/>
+</g>
+<!-- proc~check_molecule_geometry -->
+<g id="proc~~int_to_text~~CalledByGraph_node18" class="node">
+<title>proc~check_molecule_geometry</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node18"><a xlink:href="../proc/check_molecule_geometry.html" xlink:title="check_molecule_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="1123.5,-323 967.5,-323 967.5,-299 1123.5,-299 1123.5,-323"/>
+<text text-anchor="middle" x="1045.5" y="-308.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_molecule_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_geometry&#45;&gt;proc~molecule_path -->
+<g id="proc~~int_to_text~~CalledByGraph_edge20" class="edge">
+<title>proc~check_molecule_geometry&#45;&gt;proc~molecule_path</title>
+<path fill="none" stroke="#48ff00" d="M1123.62,-311C1145.73,-311 1169.37,-311 1189.83,-311"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="1189.9,-314.5 1199.9,-311 1189.9,-307.5 1189.9,-314.5"/>
+</g>
+<!-- proc~check_molecules -->
+<g id="proc~~int_to_text~~CalledByGraph_node19" class="node">
+<title>proc~check_molecules</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node19"><a xlink:href="../proc/check_molecules.html" xlink:title="check_molecules">
+<polygon fill="#d9534f" stroke="#d9534f" points="903.5,-363 799.5,-363 799.5,-339 903.5,-339 903.5,-363"/>
+<text text-anchor="middle" x="851.5" y="-348.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_molecules</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~check_molecule_fragments -->
+<g id="proc~~int_to_text~~CalledByGraph_edge16" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~check_molecule_fragments</title>
+<path fill="none" stroke="#ff6d00" d="M903.7,-361.67C926.06,-366.32 952.59,-371.85 976.57,-376.85"/>
+<polygon fill="#ff6d00" stroke="#ff6d00" points="976.16,-380.34 986.66,-378.95 977.59,-373.48 976.16,-380.34"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~molecule_path -->
+<g id="proc~~int_to_text~~CalledByGraph_edge21" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~molecule_path</title>
+<path fill="none" stroke="#48ff00" d="M903.63,-349.03C958.5,-346.54 1048.15,-341.41 1125,-332 1146.28,-329.39 1169.54,-325.54 1189.83,-321.84"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="1190.64,-325.25 1199.84,-319.99 1189.37,-318.37 1190.64,-325.25"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~check_molecule_geometry -->
+<g id="proc~~int_to_text~~CalledByGraph_edge32" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~check_molecule_geometry</title>
+<path fill="none" stroke="#aaff00" d="M903.7,-340.33C926.06,-335.68 952.59,-330.15 976.57,-325.15"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="977.59,-328.52 986.66,-323.05 976.16,-321.66 977.59,-328.52"/>
+</g>
+<!-- proc~check_supplied_terms -->
+<g id="proc~~int_to_text~~CalledByGraph_node20" class="node">
+<title>proc~check_supplied_terms</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node20"><a xlink:href="../proc/check_supplied_terms.html" xlink:title="check_supplied_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="720.5,-240 590.5,-240 590.5,-216 720.5,-216 720.5,-240"/>
+<text text-anchor="middle" x="655.5" y="-225.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_supplied_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~check_supplied_terms&#45;&gt;proc~validate_terms -->
+<g id="proc~~int_to_text~~CalledByGraph_edge30" class="edge">
+<title>proc~check_supplied_terms&#45;&gt;proc~validate_terms</title>
+<path fill="none" stroke="#ff006d" d="M718.22,-215.85C724.78,-213.41 731.18,-210.49 737,-207 757.23,-194.87 753.42,-181.16 773,-168 780.62,-162.88 789.26,-158.51 797.94,-154.83"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="799.32,-158.05 807.33,-151.11 796.74,-151.54 799.32,-158.05"/>
+</g>
+<!-- proc~ensure_valid_json -->
+<g id="proc~~int_to_text~~CalledByGraph_node21" class="node">
+<title>proc~ensure_valid_json</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node21"><a xlink:href="../proc/ensure_valid_json.html" xlink:title="ensure_valid_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="708.5,-363 602.5,-363 602.5,-339 708.5,-339 708.5,-363"/>
+<text text-anchor="middle" x="655.5" y="-348.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ensure_valid_json</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_ormas_group -->
+<g id="proc~~int_to_text~~CalledByGraph_edge17" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_ormas_group</title>
+<path fill="none" stroke="#ffda00" d="M708.83,-362.06C778.41,-376.76 901.46,-402.77 977.68,-418.88"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="977.15,-422.34 987.66,-420.99 978.6,-415.49 977.15,-422.34"/>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_molecules -->
+<g id="proc~~int_to_text~~CalledByGraph_edge33" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_molecules</title>
+<path fill="none" stroke="#00ff00" d="M708.74,-351C733.51,-351 763.27,-351 789.11,-351"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="789.17,-354.5 799.17,-351 789.17,-347.5 789.17,-354.5"/>
+</g>
+<!-- proc~read_xyz_file -->
+<g id="proc~~int_to_text~~CalledByGraph_node22" class="node">
+<title>proc~read_xyz_file</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node22"><a xlink:href="../proc/read_xyz_file.html" xlink:title="read_xyz_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="1086,-45 1005,-45 1005,-21 1086,-21 1086,-45"/>
+<text text-anchor="middle" x="1045.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_xyz_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_xyz_file&#45;&gt;proc~read_xyz_string -->
+<g id="proc~~int_to_text~~CalledByGraph_edge25" class="edge">
+<title>proc~read_xyz_file&#45;&gt;proc~read_xyz_string</title>
+<path fill="none" stroke="#0024ff" d="M1086.09,-33C1115.32,-33 1155.51,-33 1188.09,-33"/>
+<polygon fill="#0024ff" stroke="#0024ff" points="1188.38,-36.5 1198.38,-33 1188.38,-29.5 1188.38,-36.5"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_node23" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node23"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="737,-198 574,-198 574,-174 737,-174 737,-198"/>
+<text text-anchor="middle" x="655.5" y="-183.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_system -->
+<g id="proc~~int_to_text~~CalledByGraph_edge28" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#ff00da" d="M709.9,-198.02C719.06,-200.62 728.4,-203.62 737,-207 767.56,-219 800.39,-237.29 822.84,-250.72"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="821.13,-253.77 831.49,-255.96 824.75,-247.78 821.13,-253.77"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_terms -->
+<g id="proc~~int_to_text~~CalledByGraph_edge31" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_terms</title>
+<path fill="none" stroke="#ff006d" d="M706.21,-173.96C733.6,-167.32 767.66,-159.07 795.81,-152.25"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="797,-155.56 805.89,-149.81 795.35,-148.76 797,-155.56"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~int_to_text~~CalledByGraph_node24" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node24"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="362,-280 201,-280 201,-256 362,-256 362,-280"/>
+<text text-anchor="middle" x="281.5" y="-265.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~validate_system -->
+<g id="proc~~int_to_text~~CalledByGraph_edge29" class="edge">
+<title>proc~session_run&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#ff00da" d="M362.08,-268C477.79,-268 689.81,-268 792.16,-268"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="792.31,-271.5 802.31,-268 792.31,-264.5 792.31,-271.5"/>
+</g>
+<!-- proc~session_run&#45;&gt;proc~check_supplied_terms -->
+<g id="proc~~int_to_text~~CalledByGraph_edge34" class="edge">
+<title>proc~session_run&#45;&gt;proc~check_supplied_terms</title>
+<path fill="none" stroke="#00ffa9" d="M362.01,-259.31C378.22,-257.55 395.16,-255.71 411,-254 467.83,-247.87 532.12,-241.01 580.37,-235.87"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="580.84,-239.34 590.41,-234.81 580.1,-232.38 580.84,-239.34"/>
+</g>
+<!-- proc~read_json_config_text -->
+<g id="proc~~int_to_text~~CalledByGraph_node28" class="node">
+<title>proc~read_json_config_text</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node28"><a xlink:href="../proc/read_json_config_text.html" xlink:title="read_json_config_text">
+<polygon fill="#d9534f" stroke="#d9534f" points="538,-321 411,-321 411,-297 538,-297 538,-321"/>
+<text text-anchor="middle" x="474.5" y="-306.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_text</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~read_json_config_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge42" class="edge">
+<title>proc~session_run&#45;&gt;proc~read_json_config_text</title>
+<path fill="none" stroke="#00ffff" d="M338.52,-280.02C360.19,-284.68 385.15,-290.03 407.67,-294.87"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="406.97,-298.3 417.49,-296.98 408.44,-291.45 406.97,-298.3"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_node30" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node30"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="521.5,-198 427.5,-198 427.5,-174 521.5,-174 521.5,-198"/>
+<text text-anchor="middle" x="474.5" y="-183.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge48" class="edge">
+<title>proc~session_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M353.03,-255.94C360.64,-253.49 368.12,-250.54 375,-247 394.04,-237.21 393.1,-226.74 411,-215 418.04,-210.38 425.93,-206.11 433.68,-202.35"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="435.4,-205.41 442.98,-198.01 432.44,-199.06 435.4,-205.41"/>
+</g>
+<!-- proc~initialize_system_geometry -->
+<g id="proc~~int_to_text~~CalledByGraph_node25" class="node">
+<title>proc~initialize_system_geometry</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node25"><a xlink:href="../proc/initialize_system_geometry.html" xlink:title="initialize_system_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="930,-66 773,-66 773,-42 930,-42 930,-66"/>
+<text text-anchor="middle" x="851.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize_system_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~initialize_system_geometry&#45;&gt;proc~read_xyz_file -->
+<g id="proc~~int_to_text~~CalledByGraph_edge37" class="edge">
+<title>proc~initialize_system_geometry&#45;&gt;proc~read_xyz_file</title>
+<path fill="none" stroke="#0000ff" d="M930.04,-45.52C951.93,-43.12 975.15,-40.58 994.92,-38.42"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="995.35,-41.9 1004.91,-37.33 994.59,-34.94 995.35,-41.9"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~int_to_text~~CalledByGraph_node26" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node26"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="105.5,-280 46.5,-280 46.5,-256 105.5,-256 105.5,-280"/>
+<text text-anchor="middle" x="76" y="-265.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~int_to_text~~CalledByGraph_edge40" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#ff00aa" d="M105.72,-268C127.97,-268 160.06,-268 190.69,-268"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="191,-271.5 201,-268 191,-264.5 191,-271.5"/>
+</g>
+<!-- proc~read_json_config_file -->
+<g id="proc~~int_to_text~~CalledByGraph_node27" class="node">
+<title>proc~read_json_config_file</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node27"><a xlink:href="../proc/read_json_config_file.html" xlink:title="read_json_config_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="536.5,-363 412.5,-363 412.5,-339 536.5,-339 536.5,-363"/>
+<text text-anchor="middle" x="474.5" y="-348.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_file&#45;&gt;proc~ensure_valid_json -->
+<g id="proc~~int_to_text~~CalledByGraph_edge35" class="edge">
+<title>proc~read_json_config_file&#45;&gt;proc~ensure_valid_json</title>
+<path fill="none" stroke="#00a9ff" d="M536.6,-351C554.55,-351 574.2,-351 592.22,-351"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="592.32,-354.5 602.32,-351 592.32,-347.5 592.32,-354.5"/>
+</g>
+<!-- proc~read_json_config_text&#45;&gt;proc~ensure_valid_json -->
+<g id="proc~~int_to_text~~CalledByGraph_edge36" class="edge">
+<title>proc~read_json_config_text&#45;&gt;proc~ensure_valid_json</title>
+<path fill="none" stroke="#00a9ff" d="M526.79,-321.04C547.58,-325.91 571.75,-331.58 593.43,-336.67"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="592.66,-340.09 603.2,-338.96 594.26,-333.27 592.66,-340.09"/>
+</g>
+<!-- proc~read_molecule_geometry -->
+<g id="proc~~int_to_text~~CalledByGraph_node29" class="node">
+<title>proc~read_molecule_geometry</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node29"><a xlink:href="../proc/read_molecule_geometry.html" xlink:title="read_molecule_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="925.5,-24 777.5,-24 777.5,0 925.5,0 925.5,-24"/>
+<text text-anchor="middle" x="851.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_molecule_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~read_xyz_file -->
+<g id="proc~~int_to_text~~CalledByGraph_edge38" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~read_xyz_file</title>
+<path fill="none" stroke="#0000ff" d="M925.63,-20C948.77,-22.53 973.78,-25.26 994.87,-27.57"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="994.55,-31.06 1004.88,-28.67 995.32,-24.1 994.55,-31.06"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge39" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#aa00ff" d="M521.6,-186C534.56,-186 549.12,-186 563.73,-186"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="563.83,-189.5 573.83,-186 563.83,-182.5 563.83,-189.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~int_to_text~~CalledByGraph_node31" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node31"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="364.5,-238 198.5,-238 198.5,-214 364.5,-214 364.5,-238"/>
+<text text-anchor="middle" x="281.5" y="-223.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge45" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M339.81,-214C364.43,-208.84 393.12,-202.83 417.59,-197.71"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="418.37,-201.12 427.44,-195.65 416.94,-194.27 418.37,-201.12"/>
+</g>
+<!-- proc~read_molecule -->
+<g id="proc~~int_to_text~~CalledByGraph_node32" class="node">
+<title>proc~read_molecule</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node32"><a xlink:href="../proc/read_molecule.html" xlink:title="read_molecule">
+<polygon fill="#d9534f" stroke="#d9534f" points="701,-24 610,-24 610,0 701,0 701,-24"/>
+<text text-anchor="middle" x="655.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_molecule</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~read_molecule_geometry -->
+<g id="proc~~int_to_text~~CalledByGraph_edge44" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~read_molecule_geometry</title>
+<path fill="none" stroke="#0000ff" d="M701.01,-12C720.69,-12 744.5,-12 767.28,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="767.31,-15.5 777.31,-12 767.31,-8.5 767.31,-15.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~int_to_text~~CalledByGraph_node33" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node33"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="375,-158 188,-158 188,-134 375,-134 375,-158"/>
+<text text-anchor="middle" x="281.5" y="-143.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge46" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M339.81,-158C364.43,-163.16 393.12,-169.17 417.59,-174.29"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="416.94,-177.73 427.44,-176.35 418.37,-170.88 416.94,-177.73"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~int_to_text~~CalledByGraph_node34" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node34"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="310.5,-115 252.5,-115 252.5,-91 310.5,-91 310.5,-115"/>
+<text text-anchor="middle" x="281.5" y="-100.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge47" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M310.76,-107.29C329.46,-110.71 354.27,-116.38 375,-125 402.06,-136.25 430.22,-154.45 449.47,-168.05"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="447.48,-170.93 457.65,-173.93 451.57,-165.25 447.48,-170.93"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~int_to_text~~CalledByGraph_node35" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node35"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="318,-322 245,-322 245,-298 318,-298 318,-322"/>
+<text text-anchor="middle" x="281.5" y="-307.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~read_json_config_text -->
+<g id="proc~~int_to_text~~CalledByGraph_edge43" class="edge">
+<title>proc~worker_run&#45;&gt;proc~read_json_config_text</title>
+<path fill="none" stroke="#00ffff" d="M318.43,-309.81C341.52,-309.69 372.36,-309.53 400.46,-309.38"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="400.68,-312.88 410.66,-309.33 400.64,-305.88 400.68,-312.88"/>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge49" class="edge">
+<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M318.08,-306.83C336.05,-304.05 357.66,-298.82 375,-289 411.46,-268.34 442.79,-229.94 459.82,-206.31"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="462.74,-208.24 465.63,-198.04 457.01,-204.21 462.74,-208.24"/>
+</g>
+<!-- program~main -->
+<g id="proc~~int_to_text~~CalledByGraph_node36" class="node">
+<title>program~main</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node36"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="103,-199 49,-199 49,-175 103,-175 103,-199"/>
+<text text-anchor="middle" x="76" y="-184.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_json_config_file -->
+<g id="proc~~int_to_text~~CalledByGraph_edge41" class="edge">
+<title>program~main&#45;&gt;proc~read_json_config_file</title>
+<path fill="none" stroke="#00ff00" d="M97.14,-199.1C113.71,-209.92 136.85,-227.1 152,-247 176.6,-279.32 154.89,-307.47 188,-331 251.68,-376.26 344.85,-373.47 407.25,-364.58"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="408.02,-368 417.38,-363.04 406.97,-361.08 408.02,-368"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~int_to_text~~CalledByGraph_edge50" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M103.02,-186.93C166.42,-186.77 330.11,-186.36 417.14,-186.14"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="417.37,-189.64 427.36,-186.12 417.35,-182.64 417.37,-189.64"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~int_to_text~~CalledByGraph_edge52" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#00ff00" d="M103.19,-181.72C130.17,-176.29 173.4,-167.58 210.41,-160.12"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="211.56,-163.46 220.67,-158.05 210.18,-156.6 211.56,-163.46"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="proc~~int_to_text~~CalledByGraph_node37" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node37"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="152,-157 0,-157 0,-133 152,-133 152,-157"/>
+<text text-anchor="middle" x="76" y="-142.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
+<g id="proc~~int_to_text~~CalledByGraph_edge53" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ffff" d="M135.31,-132.96C169.67,-125.87 212.16,-117.1 242.27,-110.89"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="243.29,-114.25 252.38,-108.8 241.87,-107.4 243.29,-114.25"/>
+</g>
+<!-- proc~populate_config -->
+<g id="proc~~int_to_text~~CalledByGraph_node38" class="node">
+<title>proc~populate_config</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node38"><a xlink:href="../proc/populate_config.html" xlink:title="populate_config">
+<polygon fill="#d9534f" stroke="#d9534f" points="523.5,-24 425.5,-24 425.5,0 523.5,0 523.5,-24"/>
+<text text-anchor="middle" x="474.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">populate_config</text>
+</a>
+</g>
+</g>
+<!-- proc~populate_config&#45;&gt;proc~read_molecule -->
+<g id="proc~~int_to_text~~CalledByGraph_edge51" class="edge">
+<title>proc~populate_config&#45;&gt;proc~read_molecule</title>
+<path fill="none" stroke="#ffff00" d="M523.94,-12C547.31,-12 575.46,-12 599.62,-12"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="599.71,-15.5 609.71,-12 599.71,-8.5 599.71,-15.5"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~int_to_text~~CalledByGraph_node39" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node39"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-115 37,-115 37,-91 115,-91 115,-115"/>
+<text text-anchor="middle" x="76" y="-100.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="proc~~int_to_text~~CalledByGraph_edge54" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ffff" d="M115.28,-103C151.53,-103 205.7,-103 242.02,-103"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="242.22,-106.5 252.22,-103 242.22,-99.5 242.22,-106.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~int_to_text~~CalledByGraph_node40" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node40"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-322 37,-322 37,-298 115,-298 115,-322"/>
+<text text-anchor="middle" x="76" y="-307.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~int_to_text~~CalledByGraph_edge56" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M115.28,-310C149.12,-310 198.57,-310 234.55,-310"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="234.78,-313.5 244.78,-310 234.78,-306.5 234.78,-313.5"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="proc~~int_to_text~~CalledByGraph_node41" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node41"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="144,-73 8,-73 8,-49 144,-49 144,-73"/>
+<text text-anchor="middle" x="76" y="-58.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
+<g id="proc~~int_to_text~~CalledByGraph_edge55" class="edge">
+<title>proc~write_final_single_point&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ffff" d="M135.31,-73.04C169.67,-80.13 212.16,-88.9 242.27,-95.11"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="241.87,-98.6 252.38,-97.2 243.29,-91.75 241.87,-98.6"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocint_to_textCalledByGraph = svgPanZoom('#procint_to_textCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-buffer~16"></span>
+              character(len=32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>buffer</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">int_to_text</span><span class="p">(</span><span class="k">value</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! An integer as its shortest decimal string, no padding</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">value</span>
+<span class="k">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">text</span>
+
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">buffer</span>
+
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="s2">"(I0)"</span><span class="p">)</span><span class="w"> </span><span class="k">value</span>
+<span class="k">      </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">int_to_text</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-20 07:13 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

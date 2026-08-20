@@ -1,0 +1,621 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_capi_status &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_capi_status
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for modules and submodules.">9 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_status.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_status.f90.html'>mqc_capi_status.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_capi_status</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_status.html#variable-mqc_bad_handle">MQC_BAD_HANDLE</a>
+            <a class="list-group-item" href="../module/mqc_capi_status.html#variable-mqc_fail">MQC_FAIL</a>
+            <a class="list-group-item" href="../module/mqc_capi_status.html#variable-mqc_ok">MQC_OK</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>One declaration of the C API&rsquo;s return values, for all of it.</p>
+<p>These are the contract with anything that is not Fortran &ndash; the ctypes
+wrapper in <code>python/</code>, and whatever else links <code>libmqc.so</code>. That makes them
+the worst constants in the program to hold four copies of: nothing inside
+this program compares a code from one module against a code from another,
+so the copies could drift apart for a long time without a test noticing,
+and the symptom would land in somebody else&rsquo;s language.</p>
+<p><code>MQC_BAD_HANDLE</code> is separate from <code>MQC_FAIL</code> because a caller can act on
+it: a bad handle is a bug in the caller&rsquo;s bookkeeping, where a failure is
+usually a bad calculation.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_capi_status~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_capi_statusUsesGraph" width="228pt" height="32pt"
+ viewBox="0.00 0.00 228.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_capi_status~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>module~~mqc_capi_status~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 224,-28 224,4 -4,4"/>
+<!-- module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsesGraph_node1" class="node">
+<title>module~mqc_capi_status</title>
+<polygon fill="none" stroke="black" points="220,-24 120,-24 120,0 220,0 220,-24"/>
+<text text-anchor="middle" x="170" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_capi_status</text>
+</g>
+<!-- iso_c_binding -->
+<g id="module~~mqc_capi_status~~UsesGraph_node2" class="node">
+<title>iso_c_binding</title>
+<g id="a_module~~mqc_capi_status~~UsesGraph_node2"><a xlink:href="http://fortranwiki.org/fortran/show/iso_c_binding" xlink:title="iso_c_binding">
+<polygon fill="#337ab7" stroke="#337ab7" points="84,-24 0,-24 0,0 84,0 84,-24"/>
+<text text-anchor="middle" x="42" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iso_c_binding</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_status&#45;&gt;iso_c_binding -->
+<g id="module~~mqc_capi_status~~UsesGraph_edge1" class="edge">
+<title>module~mqc_capi_status&#45;&gt;iso_c_binding</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M119.92,-12C111.57,-12 102.88,-12 94.47,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="94.39,-8.5 84.39,-12 94.39,-15.5 94.39,-8.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_capi_status~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_capi_statusUsedByGraph" width="424pt" height="194pt"
+ viewBox="0.00 0.00 424.00 194.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_capi_status~~UsedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 190)">
+<title>module~~mqc_capi_status~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-190 420,-190 420,4 -4,4"/>
+<!-- module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node1" class="node">
+<title>module~mqc_capi_status</title>
+<polygon fill="none" stroke="black" points="100,-104 0,-104 0,-80 100,-80 100,-104"/>
+<text text-anchor="middle" x="50" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_capi_status</text>
+</g>
+<!-- module~mqc_capi_bond_orders -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node2" class="node">
+<title>module~mqc_capi_bond_orders</title>
+<g id="a_module~~mqc_capi_status~~UsedByGraph_node2"><a xlink:href="../module/mqc_capi_bond_orders.html" xlink:title="mqc_capi_bond_orders">
+<polygon fill="#337ab7" stroke="#337ab7" points="416,-186 280,-186 280,-162 416,-162 416,-186"/>
+<text text-anchor="middle" x="348" y="-171.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_bond_orders</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_bond_orders&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_capi_bond_orders&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M279.78,-178.95C252.1,-179.71 219.83,-178.94 191,-174"/>
+</g>
+<!-- module~mqc_capi_system -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node7" class="node">
+<title>module~mqc_capi_system</title>
+<g id="a_module~~mqc_capi_status~~UsedByGraph_node7"><a xlink:href="../module/mqc_capi_system.html" xlink:title="mqc_capi_system">
+<polygon fill="#337ab7" stroke="#337ab7" points="243,-104 137,-104 137,-80 243,-80 243,-104"/>
+<text text-anchor="middle" x="190" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_system</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_bond_orders&#45;&gt;module~mqc_capi_system -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge8" class="edge">
+<title>module~mqc_capi_bond_orders&#45;&gt;module~mqc_capi_system</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M326.75,-161.89C297.96,-144.71 248.22,-115.07 244,-113 240.5,-111.28 236.82,-109.6 233.11,-107.98"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="234.44,-104.74 223.87,-104.09 231.73,-111.19 234.44,-104.74"/>
+</g>
+<!-- module~mqc_capi_charges -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node3" class="node">
+<title>module~mqc_capi_charges</title>
+<g id="a_module~~mqc_capi_status~~UsedByGraph_node3"><a xlink:href="../module/mqc_capi_charges.html" xlink:title="mqc_capi_charges">
+<polygon fill="#337ab7" stroke="#337ab7" points="404,-125 292,-125 292,-101 404,-101 404,-125"/>
+<text text-anchor="middle" x="348" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_charges</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_charges&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_capi_charges&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M324.66,-125.06C288.31,-144.11 217.73,-178.58 191,-174"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M189,-174C142.36,-166.01 96.87,-132.54 71.54,-110.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="73.57,-108.04 63.74,-104.08 68.96,-113.31 73.57,-108.04"/>
+</g>
+<!-- module~mqc_capi_charges&#45;&gt;module~mqc_capi_system -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge9" class="edge">
+<title>module~mqc_capi_charges&#45;&gt;module~mqc_capi_system</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M291.56,-105.54C279.12,-103.86 265.85,-102.08 253.15,-100.37"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="253.51,-96.88 243.13,-99.02 252.57,-103.82 253.51,-96.88"/>
+</g>
+<!-- module~mqc_capi_fraglist -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node4" class="node">
+<title>module~mqc_capi_fraglist</title>
+<g id="a_module~~mqc_capi_status~~UsedByGraph_node4"><a xlink:href="../module/mqc_capi_fraglist.html" xlink:title="mqc_capi_fraglist">
+<polygon fill="#337ab7" stroke="#337ab7" points="243,-146 137,-146 137,-122 243,-122 243,-146"/>
+<text text-anchor="middle" x="190" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_fraglist</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_fraglist&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge3" class="edge">
+<title>module~mqc_capi_fraglist&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M149.45,-121.96C134.15,-117.31 116.47,-111.93 100.35,-107.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="101.14,-103.6 90.55,-104.04 99.1,-110.3 101.14,-103.6"/>
+</g>
+<!-- module~mqc_capi_run -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node5" class="node">
+<title>module~mqc_capi_run</title>
+<g id="a_module~~mqc_capi_status~~UsedByGraph_node5"><a xlink:href="../module/mqc_capi_run.html" xlink:title="mqc_capi_run">
+<polygon fill="#337ab7" stroke="#337ab7" points="391.5,-64 304.5,-64 304.5,-40 391.5,-40 391.5,-64"/>
+<text text-anchor="middle" x="348" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge4" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M304.32,-53.93C261.53,-56.32 193.86,-61.31 136,-71 125.66,-72.73 114.73,-75.06 104.26,-77.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="103.3,-74.16 94.41,-79.92 104.96,-80.96 103.3,-74.16"/>
+</g>
+<!-- module~mqc_capi_session -->
+<g id="module~~mqc_capi_status~~UsedByGraph_node6" class="node">
+<title>module~mqc_capi_session</title>
+<g id="a_module~~mqc_capi_status~~UsedByGraph_node6"><a xlink:href="../module/mqc_capi_session.html" xlink:title="mqc_capi_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="244,-24 136,-24 136,0 244,0 244,-24"/>
+<text text-anchor="middle" x="190" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_session -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge7" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_session</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M304.37,-41.07C286.94,-36.6 266.51,-31.36 247.84,-26.57"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="248.52,-23.14 237.96,-24.04 246.78,-29.92 248.52,-23.14"/>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_system -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge10" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_system</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M304.37,-62.93C286.94,-67.4 266.51,-72.64 247.84,-77.43"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="246.78,-74.08 237.96,-79.96 248.52,-80.86 246.78,-74.08"/>
+</g>
+<!-- module~mqc_capi_session&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge5" class="edge">
+<title>module~mqc_capi_session&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M163.1,-24C154.38,-28.23 144.67,-33.14 136,-38 115.93,-49.25 94.03,-63.21 77.48,-74.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="75.28,-71.38 68.89,-79.82 79.15,-77.21 75.28,-71.38"/>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_status~~UsedByGraph_edge6" class="edge">
+<title>module~mqc_capi_system&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M136.83,-92C128.16,-92 119.12,-92 110.29,-92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="110.06,-88.5 100.06,-92 110.06,-95.5 110.06,-88.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_bad_handle"></span>
+              integer(kind=c_int),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MQC_BAD_HANDLE</strong></td>
+<td> =</td>
+                <td>2</td>
+            <td>
+                <p>The handle names nothing</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_fail"></span>
+              integer(kind=c_int),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MQC_FAIL</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                <p>It did not; see the last message</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_ok"></span>
+              integer(kind=c_int),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MQC_OK</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The call did what was asked</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+
+
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-20 07:13 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

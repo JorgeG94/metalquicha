@@ -12,13 +12,13 @@ module mqc_basis_normalization
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: cgto_type
+   use mqc_physical_constants, only: PI
    implicit none
    private
 
    public :: normalize_shell_coefficients  !! Normalize one shell's coefficients
    public :: normalized_coefficients       !! Normalize raw exponent/coefficient arrays
 
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
    integer, parameter :: MAX_ANG_MOM = 8  !! Highest L the closed form is valid for
 
 contains

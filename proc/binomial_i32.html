@@ -1,0 +1,1121 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>binomial_i32 &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>binomial_i32
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for procedures.">5 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_math_utils.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_math_utils.f90.html'>mqc_math_utils.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_math_utils.html'>mqc_math_utils</a></li>
+            <li class="breadcrumb-item active" aria-current="page">binomial_i32</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/binomial_i32.html#src">binomial_i32</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private pure function binomial_i32(n, k) result(c)  
+</h2>
+    
+
+    <p><code>C(n, k)</code> from default-kind arguments</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~15"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~12"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-c"></span>
+          integer(kind=int64)
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~binomial_i32~~CallsGraph Pages: 1 -->
+<svg id="procbinomial_i32CallsGraph" width="206pt" height="32pt"
+ viewBox="0.00 0.00 206.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~binomial_i32~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~binomial_i32~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 202,-28 202,4 -4,4"/>
+<!-- proc~binomial_i32 -->
+<g id="proc~~binomial_i32~~CallsGraph_node1" class="node">
+<title>proc~binomial_i32</title>
+<polygon fill="none" stroke="black" points="81,-24 0,-24 0,0 81,0 81,-24"/>
+<text text-anchor="middle" x="40.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">binomial_i32</text>
+</g>
+<!-- proc~binomial_i64 -->
+<g id="proc~~binomial_i32~~CallsGraph_node2" class="node">
+<title>proc~binomial_i64</title>
+<g id="a_proc~~binomial_i32~~CallsGraph_node2"><a xlink:href="../proc/binomial_i64.html" xlink:title="binomial_i64">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="198,-24 117,-24 117,0 198,0 198,-24"/>
+<text text-anchor="middle" x="157.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial_i64</text>
+</a>
+</g>
+</g>
+<!-- proc~binomial_i32&#45;&gt;proc~binomial_i64 -->
+<g id="proc~~binomial_i32~~CallsGraph_edge1" class="edge">
+<title>proc~binomial_i32&#45;&gt;proc~binomial_i64</title>
+<path fill="none" stroke="#ff0000" d="M81.08,-12C89.3,-12 98.06,-12 106.6,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="106.85,-15.5 116.85,-12 106.85,-8.5 106.85,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~binomial_i32~~CalledByGraph Pages: 1 -->
+<svg id="procbinomial_i32CalledByGraph" width="641pt" height="236pt"
+ viewBox="0.00 0.00 641.00 236.38" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~binomial_i32~~CalledByGraph" class="graph" transform="scale(0.49 0.49) rotate(0) translate(4 479.08)">
+<title>proc~~binomial_i32~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-479.08 1306,-479.08 1306,4 -4,4"/>
+<!-- proc~binomial_i32 -->
+<g id="proc~~binomial_i32~~CalledByGraph_node1" class="node">
+<title>proc~binomial_i32</title>
+<polygon fill="none" stroke="black" points="1302,-276 1221,-276 1221,-252 1302,-252 1302,-276"/>
+<text text-anchor="middle" x="1261.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50">binomial_i32</text>
+</g>
+<!-- interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_node2" class="node">
+<title>interface~binomial</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node2"><a xlink:href="../interface/binomial.html" xlink:title="binomial">
+<polygon fill="#a7506f" stroke="#a7506f" points="1185,-276 1126,-276 1126,-252 1185,-252 1185,-276"/>
+<text text-anchor="middle" x="1155.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- interface~binomial&#45;&gt;proc~binomial_i32 -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge1" class="edge">
+<title>interface~binomial&#45;&gt;proc~binomial_i32</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1185.19,-264C1193.06,-264 1201.82,-264 1210.51,-264"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1210.61,-267.5 1220.61,-264 1210.61,-260.5 1210.61,-267.5"/>
+</g>
+<!-- proc~address_to_string -->
+<g id="proc~~binomial_i32~~CalledByGraph_node3" class="node">
+<title>proc~address_to_string</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node3"><a xlink:href="../proc/address_to_string.html" xlink:title="address_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1090,-459 985,-459 985,-435 1090,-435 1090,-459"/>
+<text text-anchor="middle" x="1037.5" y="-444.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">address_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~address_to_string&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge2" class="edge">
+<title>proc~address_to_string&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1078.01,-434.89C1082.4,-432.43 1086.53,-429.5 1090,-426 1129.05,-386.63 1145.24,-320.66 1151.29,-286.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1154.76,-286.78 1152.92,-276.35 1147.85,-285.65 1154.76,-286.78"/>
+</g>
+<!-- proc~check_space -->
+<g id="proc~~binomial_i32~~CalledByGraph_node4" class="node">
+<title>proc~check_space</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node4"><a xlink:href="../proc/check_space.html" xlink:title="check_space">
+<polygon fill="#d9534f" stroke="#d9534f" points="1078,-417 997,-417 997,-393 1078,-393 1078,-417"/>
+<text text-anchor="middle" x="1037.5" y="-402.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_space</text>
+</a>
+</g>
+</g>
+<!-- proc~check_space&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge3" class="edge">
+<title>proc~check_space&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1076.85,-392.92C1081.59,-390.44 1086.12,-387.49 1090,-384 1120.12,-356.91 1138.81,-312.36 1147.88,-285.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1151.21,-286.9 1150.99,-276.31 1144.56,-284.73 1151.21,-286.9"/>
+</g>
+<!-- proc~class_size -->
+<g id="proc~~binomial_i32~~CalledByGraph_node5" class="node">
+<title>proc~class_size</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node5"><a xlink:href="../proc/class_size.html" xlink:title="class_size">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1069.5,-256 1005.5,-256 1005.5,-232 1069.5,-232 1069.5,-256"/>
+<text text-anchor="middle" x="1037.5" y="-241.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">class_size</text>
+</a>
+</g>
+</g>
+<!-- proc~class_size&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge4" class="edge">
+<title>proc~class_size&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1069.59,-249.36C1083.76,-251.8 1100.7,-254.72 1115.7,-257.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1115.27,-260.79 1125.72,-259.04 1116.46,-253.89 1115.27,-260.79"/>
+</g>
+<!-- proc~describes_a_cas -->
+<g id="proc~~binomial_i32~~CalledByGraph_node6" class="node">
+<title>proc~describes_a_cas</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node6"><a xlink:href="../proc/describes_a_cas.html" xlink:title="describes_a_cas">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1087,-214 988,-214 988,-190 1087,-190 1087,-214"/>
+<text text-anchor="middle" x="1037.5" y="-199.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">describes_a_cas</text>
+</a>
+</g>
+</g>
+<!-- proc~describes_a_cas&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge5" class="edge">
+<title>proc~describes_a_cas&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1070.5,-214.01C1077.05,-216.75 1083.82,-219.81 1090,-223 1103.34,-229.89 1117.49,-238.7 1129.13,-246.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1127.23,-249.33 1137.48,-251.99 1131.13,-243.51 1127.23,-249.33"/>
+</g>
+<!-- proc~get_nfrags -->
+<g id="proc~~binomial_i32~~CalledByGraph_node7" class="node">
+<title>proc~get_nfrags</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node7"><a xlink:href="../proc/get_nfrags.html" xlink:title="get_nfrags">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1072,-172 1003,-172 1003,-148 1072,-148 1072,-172"/>
+<text text-anchor="middle" x="1037.5" y="-157.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_nfrags</text>
+</a>
+</g>
+</g>
+<!-- proc~get_nfrags&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge6" class="edge">
+<title>proc~get_nfrags&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1072.02,-170.68C1078.32,-173.5 1084.61,-176.92 1090,-181 1112.41,-197.99 1131.22,-224.61 1142.64,-243.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1139.78,-245.15 1147.91,-251.94 1145.79,-241.56 1139.78,-245.15"/>
+</g>
+<!-- proc~n_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_node8" class="node">
+<title>proc~n_strings</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node8"><a xlink:href="../proc/n_strings.html" xlink:title="n_strings">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1067.5,-89 1007.5,-89 1007.5,-65 1067.5,-65 1067.5,-89"/>
+<text text-anchor="middle" x="1037.5" y="-74.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">n_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~n_strings&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge7" class="edge">
+<title>proc~n_strings&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1067.69,-87.24C1075.73,-91.17 1083.91,-96.36 1090,-103 1127.12,-143.47 1144.09,-208 1150.77,-241.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1147.4,-242.75 1152.66,-251.95 1154.28,-241.48 1147.4,-242.75"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_node9" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node9"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="769,-127 606,-127 606,-103 769,-103 769,-127"/>
+<text text-anchor="middle" x="687.5" y="-112.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge8" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M769.14,-110.64C870.94,-106.68 1038.94,-105.76 1090,-139 1125.93,-162.39 1142.92,-212.49 1150.04,-241.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1146.69,-242.74 1152.31,-251.72 1153.52,-241.2 1146.69,-242.74"/>
+</g>
+<!-- proc~generate_mbe_term_list -->
+<g id="proc~~binomial_i32~~CalledByGraph_node17" class="node">
+<title>proc~generate_mbe_term_list</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node17"><a xlink:href="../proc/generate_mbe_term_list.html" xlink:title="generate_mbe_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="948,-169 806,-169 806,-145 948,-145 948,-169"/>
+<text text-anchor="middle" x="877" y="-154.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_mbe_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge26" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#00ffa9" d="M742.23,-127.04C764.1,-131.93 789.55,-137.63 812.34,-142.74"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="811.74,-146.19 822.26,-144.96 813.27,-139.36 811.74,-146.19"/>
+</g>
+<!-- proc~string_address -->
+<g id="proc~~binomial_i32~~CalledByGraph_node10" class="node">
+<title>proc~string_address</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node10"><a xlink:href="../proc/string_address.html" xlink:title="string_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1082,-375 993,-375 993,-351 1082,-351 1082,-375"/>
+<text text-anchor="middle" x="1037.5" y="-360.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">string_address</text>
+</a>
+</g>
+</g>
+<!-- proc~string_address&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge9" class="edge">
+<title>proc~string_address&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M1067.18,-350.93C1074.94,-347.03 1083.1,-342.32 1090,-337 1109.66,-321.83 1127.98,-300.05 1140.04,-284.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1142.9,-286.25 1146.06,-276.14 1137.28,-282.07 1142.9,-286.25"/>
+</g>
+<!-- proc~strings_of_one_spin -->
+<g id="proc~~binomial_i32~~CalledByGraph_node11" class="node">
+<title>proc~strings_of_one_spin</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node11"><a xlink:href="../proc/strings_of_one_spin.html" xlink:title="strings_of_one_spin">
+<polygon fill="#d9534f" stroke="#d9534f" points="745.5,-337 629.5,-337 629.5,-313 745.5,-313 745.5,-337"/>
+<text text-anchor="middle" x="687.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">strings_of_one_spin</text>
+</a>
+</g>
+</g>
+<!-- proc~strings_of_one_spin&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge10" class="edge">
+<title>proc~strings_of_one_spin&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M745.74,-323.78C824.28,-321.1 969.46,-312.51 1090,-285 1098.58,-283.04 1107.65,-280.44 1116.19,-277.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1117.51,-280.98 1125.91,-274.54 1115.32,-274.33 1117.51,-280.98"/>
+</g>
+<!-- proc~generate_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_node18" class="node">
+<title>proc~generate_strings</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node18"><a xlink:href="../proc/generate_strings.html" xlink:title="generate_strings">
+<polygon fill="#d9534f" stroke="#d9534f" points="928,-417 826,-417 826,-393 928,-393 928,-417"/>
+<text text-anchor="middle" x="877" y="-402.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~strings_of_one_spin&#45;&gt;proc~generate_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge28" class="edge">
+<title>proc~strings_of_one_spin&#45;&gt;proc~generate_strings</title>
+<path fill="none" stroke="#00a9ff" d="M709.44,-337.06C732.35,-349.92 770.45,-370.27 805,-384 810.15,-386.05 815.58,-388 821.05,-389.83"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="820.3,-393.27 830.89,-393 822.44,-386.6 820.3,-393.27"/>
+</g>
+<!-- proc~within_class_rank -->
+<g id="proc~~binomial_i32~~CalledByGraph_node12" class="node">
+<title>proc~within_class_rank</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node12"><a xlink:href="../proc/within_class_rank.html" xlink:title="within_class_rank">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="929.5,-295 824.5,-295 824.5,-271 929.5,-271 929.5,-295"/>
+<text text-anchor="middle" x="877" y="-280.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">within_class_rank</text>
+</a>
+</g>
+</g>
+<!-- proc~within_class_rank&#45;&gt;interface~binomial -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge11" class="edge">
+<title>proc~within_class_rank&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M929.68,-279.45C983.71,-275.74 1067.25,-270 1115.83,-266.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1116.2,-270.14 1125.93,-265.96 1115.72,-263.16 1116.2,-270.14"/>
+</g>
+<!-- proc~within_class_rank&#45;&gt;proc~string_address -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge20" class="edge">
+<title>proc~within_class_rank&#45;&gt;proc~string_address</title>
+<path fill="none" stroke="#3200ff" d="M902.07,-295.15C929.11,-308.8 973.16,-331.03 1003.42,-346.3"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="1002.22,-349.62 1012.72,-351 1005.37,-343.37 1002.22,-349.62"/>
+</g>
+<!-- proc~build_link_table -->
+<g id="proc~~binomial_i32~~CalledByGraph_node13" class="node">
+<title>proc~build_link_table</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node13"><a xlink:href="../proc/build_link_table.html" xlink:title="build_link_table">
+<polygon fill="#d9534f" stroke="#d9534f" points="735,-457 640,-457 640,-433 735,-433 735,-457"/>
+<text text-anchor="middle" x="687.5" y="-442.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_link_table</text>
+</a>
+</g>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~check_space -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge12" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~check_space</title>
+<path fill="none" stroke="#ff9900" d="M728.5,-457.06C781.06,-470.74 875.34,-487.65 949,-459 969.23,-451.13 966.66,-437.61 985,-426 987.57,-424.37 990.28,-422.83 993.07,-421.37"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="994.63,-424.51 1002.13,-417.02 991.6,-418.2 994.63,-424.51"/>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~string_address -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge18" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~string_address</title>
+<path fill="none" stroke="#3200ff" d="M735.09,-451.93C789.52,-457.77 880.79,-460.43 949,-426 970.95,-414.92 965.06,-398.38 985,-384 987.06,-382.52 989.23,-381.12 991.48,-379.8"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="993.19,-382.86 1000.42,-375.12 989.94,-376.66 993.19,-382.86"/>
+</g>
+<!-- proc~build_link_table&#45;&gt;proc~generate_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge27" class="edge">
+<title>proc~build_link_table&#45;&gt;proc~generate_strings</title>
+<path fill="none" stroke="#00a9ff" d="M735.33,-435.01C759.76,-429.8 789.92,-423.36 816.04,-417.79"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="816.78,-421.21 825.83,-415.7 815.32,-414.37 816.78,-421.21"/>
+</g>
+<!-- proc~class_string_tables -->
+<g id="proc~~binomial_i32~~CalledByGraph_node14" class="node">
+<title>proc~class_string_tables</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node14"><a xlink:href="../proc/class_string_tables.html" xlink:title="class_string_tables">
+<polygon fill="#d9534f" stroke="#d9534f" points="933,-253 821,-253 821,-229 933,-229 933,-253"/>
+<text text-anchor="middle" x="877" y="-238.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">class_string_tables</text>
+</a>
+</g>
+</g>
+<!-- proc~class_string_tables&#45;&gt;proc~class_size -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge14" class="edge">
+<title>proc~class_string_tables&#45;&gt;proc~class_size</title>
+<path fill="none" stroke="#cbff00" d="M933.44,-242.05C953.77,-242.43 976.42,-242.86 995.29,-243.22"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="995.28,-246.72 1005.35,-243.41 995.41,-239.72 995.28,-246.72"/>
+</g>
+<!-- proc~fraglist_create -->
+<g id="proc~~binomial_i32~~CalledByGraph_node15" class="node">
+<title>proc~fraglist_create</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node15"><a xlink:href="../proc/fraglist_create.html" xlink:title="fraglist_t%fraglist_create">
+<polygon fill="#d9534f" stroke="#d9534f" points="949,-211 805,-211 805,-187 949,-187 949,-211"/>
+<text text-anchor="middle" x="877" y="-196.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_create</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_create&#45;&gt;proc~get_nfrags -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge15" class="edge">
+<title>proc~fraglist_create&#45;&gt;proc~get_nfrags</title>
+<path fill="none" stroke="#00ff66" d="M926.85,-186.98C947.86,-181.81 972.23,-175.81 992.65,-170.79"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="993.75,-174.12 1002.63,-168.33 992.08,-167.33 993.75,-174.12"/>
+</g>
+<!-- proc~full_space_index -->
+<g id="proc~~binomial_i32~~CalledByGraph_node16" class="node">
+<title>proc~full_space_index</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node16"><a xlink:href="../proc/full_space_index.html" xlink:title="full_space_index">
+<polygon fill="#d9534f" stroke="#d9534f" points="927,-375 827,-375 827,-351 927,-351 927,-375"/>
+<text text-anchor="middle" x="877" y="-360.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">full_space_index</text>
+</a>
+</g>
+</g>
+<!-- proc~full_space_index&#45;&gt;proc~string_address -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge19" class="edge">
+<title>proc~full_space_index&#45;&gt;proc~string_address</title>
+<path fill="none" stroke="#3200ff" d="M927.28,-363C944.91,-363 964.86,-363 982.84,-363"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="982.89,-366.5 992.89,-363 982.89,-359.5 982.89,-366.5"/>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge16" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags</title>
+<path fill="none" stroke="#00ff66" d="M948.44,-158.33C963.47,-158.62 978.91,-158.91 992.6,-159.17"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="992.61,-162.67 1002.68,-159.36 992.75,-155.67 992.61,-162.67"/>
+</g>
+<!-- proc~generate_strings&#45;&gt;proc~check_space -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge13" class="edge">
+<title>proc~generate_strings&#45;&gt;proc~check_space</title>
+<path fill="none" stroke="#ff9900" d="M928.15,-405C946.9,-405 968.17,-405 986.87,-405"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="986.96,-408.5 996.96,-405 986.96,-401.5 986.96,-408.5"/>
+</g>
+<!-- proc~ormas_string_address -->
+<g id="proc~~binomial_i32~~CalledByGraph_node19" class="node">
+<title>proc~ormas_string_address</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node19"><a xlink:href="../proc/ormas_string_address.html" xlink:title="ormas_string_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="751.5,-295 623.5,-295 623.5,-271 751.5,-271 751.5,-295"/>
+<text text-anchor="middle" x="687.5" y="-280.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_string_address</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_string_address&#45;&gt;proc~within_class_rank -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge22" class="edge">
+<title>proc~ormas_string_address&#45;&gt;proc~within_class_rank</title>
+<path fill="none" stroke="#ff0098" d="M751.72,-283C771.82,-283 794.02,-283 814.03,-283"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="814.27,-286.5 824.27,-283 814.27,-279.5 814.27,-286.5"/>
+</g>
+<!-- proc~ormas_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_node20" class="node">
+<title>proc~ormas_strings</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node20"><a xlink:href="../proc/ormas_strings.html" xlink:title="ormas_strings">
+<polygon fill="#d9534f" stroke="#d9534f" points="534,-337 447,-337 447,-313 534,-313 534,-337"/>
+<text text-anchor="middle" x="490.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_strings&#45;&gt;proc~strings_of_one_spin -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge21" class="edge">
+<title>proc~ormas_strings&#45;&gt;proc~strings_of_one_spin</title>
+<path fill="none" stroke="#cc00ff" d="M534.29,-325C559.16,-325 591.04,-325 619.19,-325"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="619.37,-328.5 629.37,-325 619.37,-321.5 619.37,-328.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_node21" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node21"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="537.5,-127 443.5,-127 443.5,-103 537.5,-103 537.5,-127"/>
+<text text-anchor="middle" x="490.5" y="-112.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge17" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#0066ff" d="M537.71,-115C555.15,-115 575.65,-115 595.76,-115"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="595.91,-118.5 605.91,-115 595.91,-111.5 595.91,-118.5"/>
+</g>
+<!-- proc~build_ormas_links -->
+<g id="proc~~binomial_i32~~CalledByGraph_node22" class="node">
+<title>proc~build_ormas_links</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node22"><a xlink:href="../proc/build_ormas_links.html" xlink:title="build_ormas_links">
+<polygon fill="#d9534f" stroke="#d9534f" points="544,-295 437,-295 437,-271 544,-271 544,-295"/>
+<text text-anchor="middle" x="490.5" y="-280.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_ormas_links</text>
+</a>
+</g>
+</g>
+<!-- proc~build_ormas_links&#45;&gt;proc~ormas_string_address -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge29" class="edge">
+<title>proc~build_ormas_links&#45;&gt;proc~ormas_string_address</title>
+<path fill="none" stroke="#0000ff" d="M544.01,-283C565.34,-283 590.34,-283 613.39,-283"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="613.48,-286.5 623.48,-283 613.48,-279.5 613.48,-286.5"/>
+</g>
+<!-- proc~build_ormas_space -->
+<g id="proc~~binomial_i32~~CalledByGraph_node23" class="node">
+<title>proc~build_ormas_space</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node23"><a xlink:href="../proc/build_ormas_space.html" xlink:title="build_ormas_space">
+<polygon fill="#d9534f" stroke="#d9534f" points="745,-253 630,-253 630,-229 745,-229 745,-253"/>
+<text text-anchor="middle" x="687.5" y="-238.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_ormas_space</text>
+</a>
+</g>
+</g>
+<!-- proc~build_ormas_space&#45;&gt;proc~class_string_tables -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge23" class="edge">
+<title>proc~build_ormas_space&#45;&gt;proc~class_string_tables</title>
+<path fill="none" stroke="#ffaa00" d="M745.01,-241C765.77,-241 789.44,-241 810.89,-241"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="810.89,-244.5 820.89,-241 810.89,-237.5 810.89,-244.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~binomial_i32~~CalledByGraph_node24" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node24"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="364.5,-232 198.5,-232 198.5,-208 364.5,-208 364.5,-232"/>
+<text text-anchor="middle" x="281.5" y="-217.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge32" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00aa" d="M359.47,-207.95C364.98,-205.48 370.24,-202.53 375,-199 400.92,-179.81 385.45,-155.68 411,-136 417.67,-130.86 425.49,-126.98 433.57,-124.05"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="434.64,-127.38 443.11,-121.02 432.52,-120.7 434.64,-127.38"/>
+</g>
+<!-- proc~freeze_term_list -->
+<g id="proc~~binomial_i32~~CalledByGraph_node25" class="node">
+<title>proc~freeze_term_list</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node25"><a xlink:href="../proc/freeze_term_list.html" xlink:title="freeze_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="736,-169 639,-169 639,-145 736,-145 736,-169"/>
+<text text-anchor="middle" x="687.5" y="-154.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">freeze_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge25" class="edge">
+<title>proc~freeze_term_list&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#00ffa9" d="M736.3,-157C754.4,-157 775.53,-157 795.81,-157"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="795.99,-160.5 805.99,-157 795.99,-153.5 795.99,-160.5"/>
+</g>
+<!-- proc~mqc_fraglist_generate -->
+<g id="proc~~binomial_i32~~CalledByGraph_node26" class="node">
+<title>proc~mqc_fraglist_generate</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node26"><a xlink:href="../proc/mqc_fraglist_generate.html" xlink:title="mqc_fraglist_generate">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="753.5,-211 621.5,-211 621.5,-187 753.5,-187 753.5,-211"/>
+<text text-anchor="middle" x="687.5" y="-196.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist_generate</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_fraglist_generate&#45;&gt;proc~fraglist_create -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge24" class="edge">
+<title>proc~mqc_fraglist_generate&#45;&gt;proc~fraglist_create</title>
+<path fill="none" stroke="#aaff00" d="M753.55,-199C766.79,-199 780.86,-199 794.58,-199"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="794.98,-202.5 804.98,-199 794.98,-195.5 794.98,-202.5"/>
+</g>
+<!-- proc~ormas_density_matrices -->
+<g id="proc~~binomial_i32~~CalledByGraph_node27" class="node">
+<title>proc~ormas_density_matrices</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node27"><a xlink:href="../proc/ormas_density_matrices.html" xlink:title="ormas_density_matrices">
+<polygon fill="#d9534f" stroke="#d9534f" points="352.5,-295 210.5,-295 210.5,-271 352.5,-271 352.5,-295"/>
+<text text-anchor="middle" x="281.5" y="-280.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_density_matrices</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_density_matrices&#45;&gt;proc~ormas_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge30" class="edge">
+<title>proc~ormas_density_matrices&#45;&gt;proc~ormas_strings</title>
+<path fill="none" stroke="#aa00ff" d="M341.82,-295.04C371.85,-301.13 407.99,-308.46 437,-314.35"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="436.45,-317.81 446.94,-316.36 437.84,-310.95 436.45,-317.81"/>
+</g>
+<!-- proc~ormas_density_matrices&#45;&gt;proc~build_ormas_links -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge38" class="edge">
+<title>proc~ormas_density_matrices&#45;&gt;proc~build_ormas_links</title>
+<path fill="none" stroke="#ff0000" d="M352.58,-283C376.59,-283 403.29,-283 426.69,-283"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="426.84,-286.5 436.84,-283 426.84,-279.5 426.84,-286.5"/>
+</g>
+<!-- proc~ormas_solve -->
+<g id="proc~~binomial_i32~~CalledByGraph_node28" class="node">
+<title>proc~ormas_solve</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node28"><a xlink:href="../proc/ormas_solve.html" xlink:title="ormas_solve">
+<polygon fill="#d9534f" stroke="#d9534f" points="321,-337 242,-337 242,-313 321,-313 321,-337"/>
+<text text-anchor="middle" x="281.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_solve</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_solve&#45;&gt;proc~ormas_strings -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge31" class="edge">
+<title>proc~ormas_solve&#45;&gt;proc~ormas_strings</title>
+<path fill="none" stroke="#aa00ff" d="M321.44,-325C353.95,-325 400.61,-325 436.52,-325"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="436.82,-328.5 446.82,-325 436.82,-321.5 436.82,-328.5"/>
+</g>
+<!-- proc~ormas_solve&#45;&gt;proc~build_ormas_links -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge39" class="edge">
+<title>proc~ormas_solve&#45;&gt;proc~build_ormas_links</title>
+<path fill="none" stroke="#ff0000" d="M321.44,-317.1C351.07,-311.09 392.46,-302.69 426.75,-295.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="427.57,-299.14 436.68,-293.72 426.18,-292.28 427.57,-299.14"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~binomial_i32~~CalledByGraph_node29" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node29"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="375,-64 188,-64 188,-40 375,-40 375,-64"/>
+<text text-anchor="middle" x="281.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge33" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00aa" d="M341.02,-64.09C352.36,-66.77 364.1,-69.78 375,-73 400.36,-80.5 428.22,-90.67 450.11,-99.13"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="449.13,-102.5 459.72,-102.88 451.68,-95.98 449.13,-102.5"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~binomial_i32~~CalledByGraph_node30" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node30"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="310.5,-148 252.5,-148 252.5,-124 310.5,-124 310.5,-148"/>
+<text text-anchor="middle" x="281.5" y="-133.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge34" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00aa" d="M310.85,-133.12C342.22,-129.94 393.58,-124.73 433.2,-120.71"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="433.66,-124.18 443.26,-119.69 432.96,-117.22 433.66,-124.18"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~binomial_i32~~CalledByGraph_node31" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node31"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="362,-106 201,-106 201,-82 362,-82 362,-106"/>
+<text text-anchor="middle" x="281.5" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge35" class="edge">
+<title>proc~session_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00aa" d="M362.24,-102.09C385.93,-104.49 411.38,-107.08 433.25,-109.29"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="433.05,-112.79 443.35,-110.32 433.75,-105.83 433.05,-112.79"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~binomial_i32~~CalledByGraph_node32" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node32"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="318,-190 245,-190 245,-166 318,-166 318,-190"/>
+<text text-anchor="middle" x="281.5" y="-175.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge36" class="edge">
+<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00aa" d="M318.4,-172.49C335.86,-169.15 356.92,-164.13 375,-157 392.23,-150.2 393.9,-143.12 411,-136 418.14,-133.02 425.83,-130.36 433.49,-128.01"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="434.53,-131.35 443.15,-125.2 432.57,-124.63 434.53,-131.35"/>
+</g>
+<!-- program~main -->
+<g id="proc~~binomial_i32~~CalledByGraph_node33" class="node">
+<title>program~main</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node33"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="103,-24 49,-24 49,0 103,0 103,-24"/>
+<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge37" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff00aa" d="M103.1,-8.89C156.18,-3.57 279.74,3.59 375,-31 413.01,-44.8 449.33,-75.41 470.51,-95.61"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="468.26,-98.31 477.86,-102.79 473.15,-93.3 468.26,-98.31"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge41" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#007fff" d="M103.19,-17.15C129.88,-22.39 172.46,-30.76 209.2,-37.99"/>
+<polygon fill="#007fff" stroke="#007fff" points="208.9,-41.49 219.39,-39.99 210.25,-34.63 208.9,-41.49"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="proc~~binomial_i32~~CalledByGraph_node34" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node34"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="152,-192 0,-192 0,-168 152,-168 152,-192"/>
+<text text-anchor="middle" x="76" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge42" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#0000ff" d="M132.61,-167.98C167.5,-160.43 211.57,-150.9 242.49,-144.22"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="243.41,-147.6 252.44,-142.07 241.93,-140.76 243.41,-147.6"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~binomial_i32~~CalledByGraph_node35" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node35"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="105.5,-66 46.5,-66 46.5,-42 105.5,-42 105.5,-66"/>
+<text text-anchor="middle" x="76" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge45" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#7f00ff" d="M105.72,-59.65C132.56,-64.92 173.73,-73.01 209.37,-80.02"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="208.77,-83.47 219.26,-81.96 210.12,-76.6 208.77,-83.47"/>
+</g>
+<!-- proc~run_geometry_optimization -->
+<g id="proc~~binomial_i32~~CalledByGraph_node36" class="node">
+<title>proc~run_geometry_optimization</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node36"><a xlink:href="../proc/run_geometry_optimization.html" xlink:title="run_geometry_optimization">
+<polygon fill="#d9534f" stroke="#d9534f" points="570,-169 411,-169 411,-145 570,-145 570,-169"/>
+<text text-anchor="middle" x="490.5" y="-154.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_geometry_optimization</text>
+</a>
+</g>
+</g>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge40" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~freeze_term_list</title>
+<path fill="none" stroke="#7fff00" d="M570.25,-157C589.78,-157 610.36,-157 628.68,-157"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="628.89,-160.5 638.89,-157 628.89,-153.5 628.89,-160.5"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~binomial_i32~~CalledByGraph_node37" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node37"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
+<text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge43" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#0000ff" d="M115.28,-137.62C151.53,-137.27 205.7,-136.74 242.02,-136.38"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="242.26,-139.88 252.22,-136.28 242.19,-132.88 242.26,-139.88"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~binomial_i32~~CalledByGraph_node38" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node38"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-234 37,-234 37,-210 115,-210 115,-234"/>
+<text text-anchor="middle" x="76" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge46" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#ff00ff" d="M115.28,-213.72C149.12,-206.41 198.57,-195.71 234.55,-187.94"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="235.75,-191.26 244.78,-185.72 234.27,-184.42 235.75,-191.26"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="proc~~binomial_i32~~CalledByGraph_node39" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_proc~~binomial_i32~~CalledByGraph_node39"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="144,-108 8,-108 8,-84 144,-84 144,-108"/>
+<text text-anchor="middle" x="76" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
+<g id="proc~~binomial_i32~~CalledByGraph_edge44" class="edge">
+<title>proc~write_final_single_point&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#0000ff" d="M138.06,-108C171.99,-114.67 213.15,-122.76 242.48,-128.53"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="241.84,-131.97 252.33,-130.46 243.19,-125.1 241.84,-131.97"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocbinomial_i32CalledByGraph = svgPanZoom('#procbinomial_i32CalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">binomial_i32</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! `C(n, k)` from default-kind arguments</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c</span>
+
+<span class="w">      </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binomial_i64</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">))</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">binomial_i32</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-20 07:13 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

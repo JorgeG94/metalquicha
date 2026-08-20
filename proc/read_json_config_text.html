@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_json_config_text.html#variable-json~5">json</a>
+            <a class="list-group-item" href="../proc/read_json_config_text.html#variable-json~14">json</a>
         </div>
       </div>
     </div>
@@ -203,7 +203,7 @@ to the one on the handle.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~14"></span>
+              <span class="anchor" id="variable-text~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -218,7 +218,7 @@ to the one on the handle.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~9"></span>
+              <span class="anchor" id="variable-config~11"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -233,7 +233,7 @@ to the one on the handle.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~40"></span>
+              <span class="anchor" id="variable-error~52"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1601,18 +1601,18 @@ to the one on the handle.</p>
 <path fill="none" stroke="#4cff00" d="M404.77,-2770.95C426.05,-2753.9 468.11,-2723.47 510,-2711.97 585.41,-2691.25 677.33,-2701.3 731.28,-2710.57"/>
 <polygon fill="#4cff00" stroke="#4cff00" points="730.77,-2714.03 741.23,-2712.34 732,-2707.14 730.77,-2714.03"/>
 </g>
-<!-- proc~int_text -->
+<!-- proc~int_to_text -->
 <g id="proc~~read_json_config_text~~CallsGraph_node74" class="node">
-<title>proc~int_text</title>
-<g id="a_proc~~read_json_config_text~~CallsGraph_node74"><a xlink:href="../proc/int_text.html" xlink:title="int_text">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="991,-3005.97 937,-3005.97 937,-2981.97 991,-2981.97 991,-3005.97"/>
-<text text-anchor="middle" x="964" y="-2991.57" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_text</text>
+<title>proc~int_to_text</title>
+<g id="a_proc~~read_json_config_text~~CallsGraph_node74"><a xlink:href="../proc/int_to_text.html" xlink:title="int_to_text">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="997.5,-3005.97 930.5,-3005.97 930.5,-2981.97 997.5,-2981.97 997.5,-3005.97"/>
+<text text-anchor="middle" x="964" y="-2991.57" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_text</text>
 </a>
 </g>
 </g>
-<!-- proc~check_ormas_group&#45;&gt;proc~int_text -->
+<!-- proc~check_ormas_group&#45;&gt;proc~int_to_text -->
 <g id="proc~~read_json_config_text~~CallsGraph_edge114" class="edge">
-<title>proc~check_ormas_group&#45;&gt;proc~int_text</title>
+<title>proc~check_ormas_group&#45;&gt;proc~int_to_text</title>
 <path fill="none" stroke="#4cff00" d="M449,-2787.62C539.76,-2796.83 717.87,-2822.95 851,-2892.97 890.21,-2913.59 926.52,-2951.08 946.63,-2974.13"/>
 <polygon fill="#4cff00" stroke="#4cff00" points="944.13,-2976.58 953.29,-2981.91 949.45,-2972.03 944.13,-2976.58"/>
 </g>
@@ -2258,11 +2258,11 @@ to the one on the handle.</p>
 <path fill="none" stroke="#ffd300" d="M653.44,-2909.97C658.98,-2907.5 664.27,-2904.54 669,-2900.97 697.71,-2879.27 746.05,-2784.08 766.92,-2741.12"/>
 <polygon fill="#ffd300" stroke="#ffd300" points="770.08,-2742.62 771.27,-2732.1 763.77,-2739.58 770.08,-2742.62"/>
 </g>
-<!-- proc~check_molecule_fragments&#45;&gt;proc~int_text -->
+<!-- proc~check_molecule_fragments&#45;&gt;proc~int_to_text -->
 <g id="proc~~read_json_config_text~~CallsGraph_edge200" class="edge">
-<title>proc~check_molecule_fragments&#45;&gt;proc~int_text</title>
-<path fill="none" stroke="#ffd300" d="M600.26,-2934.08C618.28,-2955.35 659.15,-2998.69 705,-3014.97 780.64,-3041.81 876.31,-3020.98 927.25,-3005.93"/>
-<polygon fill="#ffd300" stroke="#ffd300" points="928.27,-3009.27 936.82,-3003.01 926.23,-3002.58 928.27,-3009.27"/>
+<title>proc~check_molecule_fragments&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ffd300" d="M600.26,-2934.08C618.28,-2955.35 659.15,-2998.69 705,-3014.97 777.41,-3040.67 868.19,-3022.67 920.49,-3007.88"/>
+<polygon fill="#ffd300" stroke="#ffd300" points="921.49,-3011.24 930.11,-3005.07 919.53,-3004.52 921.49,-3011.24"/>
 </g>
 <!-- proc~check_molecule_fragments&#45;&gt;proc~molecule_path -->
 <g id="proc~~read_json_config_text~~CallsGraph_edge201" class="edge">
@@ -2348,11 +2348,11 @@ to the one on the handle.</p>
 <path fill="none" stroke="#00e4ff" d="M635.39,-3670.72C647.95,-3673.7 660.49,-3679.17 669,-3688.97 712.32,-3738.82 693.15,-3919 705,-3983.97 723.82,-4087.15 756.87,-4208.13 770.67,-4256.92"/>
 <polygon fill="#00e4ff" stroke="#00e4ff" points="767.35,-4258.05 773.46,-4266.71 774.09,-4256.14 767.35,-4258.05"/>
 </g>
-<!-- proc~molecule_path&#45;&gt;proc~int_text -->
+<!-- proc~molecule_path&#45;&gt;proc~int_to_text -->
 <g id="proc~~read_json_config_text~~CallsGraph_edge212" class="edge">
-<title>proc~molecule_path&#45;&gt;proc~int_text</title>
-<path fill="none" stroke="#00afff" d="M823.54,-2993.97C855.08,-2993.97 896.88,-2993.97 926.46,-2993.97"/>
-<polygon fill="#00afff" stroke="#00afff" points="926.77,-2997.47 936.77,-2993.97 926.77,-2990.47 926.77,-2997.47"/>
+<title>proc~molecule_path&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#00afff" d="M823.54,-2993.97C852.91,-2993.97 891.15,-2993.97 920.17,-2993.97"/>
+<polygon fill="#00afff" stroke="#00afff" points="920.4,-2997.47 930.4,-2993.97 920.4,-2990.47 920.4,-2997.47"/>
 </g>
 <!-- proc~ormas_keys&#45;&gt;proc~allow -->
 <g id="proc~~read_json_config_text~~CallsGraph_edge213" class="edge">
@@ -2787,18 +2787,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M428.51,-54C438.77,-54 450.97,-54 463.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="463.91,-57.5 473.91,-54 463.91,-50.5 463.91,-57.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="proc~~read_json_config_text~~CalledByGraph_node5" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~read_json_config_text~~CalledByGraph_node5"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~read_json_config_text~~CalledByGraph_node5"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438,-24 360,-24 360,0 438,0 438,-24"/>
 <text text-anchor="middle" x="399" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~read_json_config_text~~CalledByGraph_edge4" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ffff" d="M438.34,-12C459.34,-12 485.52,-12 507.61,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="507.75,-15.5 517.75,-12 507.75,-8.5 507.75,-15.5"/>
 </g>
@@ -2811,9 +2811,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
 <g id="proc~~read_json_config_text~~CalledByGraph_edge5" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
 <path fill="none" stroke="#00ffff" d="M324.32,-12C332.93,-12 341.45,-12 349.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="349.69,-15.5 359.69,-12 349.69,-8.5 349.69,-15.5"/>
 </g>
@@ -2936,7 +2936,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~5"></span>
+              <span class="anchor" id="variable-json~14"></span>
               type(json_file),
             </td>
               <td>private</td>
@@ -3029,7 +3029,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>

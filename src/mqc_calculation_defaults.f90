@@ -51,6 +51,16 @@ module mqc_calculation_defaults
    ! =========================================================================
    ! XTB
    ! =========================================================================
+   !> Innermost layer of the EFP screening grid, as a fraction of a van der
+   !> Waals radius. GAMESS's `VDWSCL`.
+   !>
+   !> One name for what used to be `VDW_SCALE` in the screening grid and
+   !> `vdwscl` on the potential writer. Note that they are still only *equal*,
+   !> not connected: the writer reports its own copy in the output header and
+   !> the grid uses this default regardless, so overriding the writer's value
+   !> changes the header without changing the grid.
+   real(dp), parameter, public :: DEFAULT_VDW_SCALE = 0.7_dp
+
    real(dp), parameter, public :: DEFAULT_XTB_ACCURACY = 0.01_dp
    integer, parameter, public :: DEFAULT_CPCM_NANG = 110
    real(dp), parameter, public :: DEFAULT_CPCM_RSCALE = 1.0_dp

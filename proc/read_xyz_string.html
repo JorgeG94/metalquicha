@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-element">element</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-iatom~10">iatom</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-iatom~3">iatom</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-io_stat~2">io_stat</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-lines">lines</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-nlines">nlines</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-x">x</a>
             <a class="list-group-item" href="../proc/read_xyz_string.html#variable-y">y</a>
-            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-z~3">z</a>
+            <a class="list-group-item" href="../proc/read_xyz_string.html#variable-z~2">z</a>
         </div>
       </div>
     </div>
@@ -214,7 +214,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~4"></span>
+              <span class="anchor" id="variable-geom~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(out)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~30"></span>
+              <span class="anchor" id="variable-error~8"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -283,20 +283,20 @@
 <path fill="none" stroke="#ff0000" d="M86.26,-66.04C100.92,-70.65 117.84,-75.97 133.32,-80.84"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="132.65,-84.3 143.24,-83.96 134.75,-77.62 132.65,-84.3"/>
 </g>
-<!-- proc~int_to_string -->
+<!-- proc~int_to_text -->
 <g id="proc~~read_xyz_string~~CallsGraph_node3" class="node">
-<title>proc~int_to_string</title>
-<g id="a_proc~~read_xyz_string~~CallsGraph_node3"><a xlink:href="../proc/int_to_string.html" xlink:title="int_to_string">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="221,-66 144,-66 144,-42 221,-42 221,-66"/>
-<text text-anchor="middle" x="182.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_string</text>
+<title>proc~int_to_text</title>
+<g id="a_proc~~read_xyz_string~~CallsGraph_node3"><a xlink:href="../proc/int_to_text.html" xlink:title="int_to_text">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="216,-66 149,-66 149,-42 216,-42 216,-66"/>
+<text text-anchor="middle" x="182.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_text</text>
 </a>
 </g>
 </g>
-<!-- proc~read_xyz_string&#45;&gt;proc~int_to_string -->
+<!-- proc~read_xyz_string&#45;&gt;proc~int_to_text -->
 <g id="proc~~read_xyz_string~~CallsGraph_edge2" class="edge">
-<title>proc~read_xyz_string&#45;&gt;proc~int_to_string</title>
-<path fill="none" stroke="#ff0000" d="M94.32,-54C107.03,-54 120.85,-54 133.65,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="133.66,-57.5 143.66,-54 133.66,-50.5 133.66,-57.5"/>
+<title>proc~read_xyz_string&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#ff0000" d="M94.32,-54C108.6,-54 124.26,-54 138.33,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="138.72,-57.5 148.72,-54 138.72,-50.5 138.72,-57.5"/>
 </g>
 <!-- proc~split_lines -->
 <g id="proc~~read_xyz_string~~CallsGraph_node4" class="node">
@@ -644,7 +644,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~10"></span>
+              <span class="anchor" id="variable-iatom~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -746,7 +746,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z~3"></span>
+              <span class="anchor" id="variable-z~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -814,8 +814,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! Check we have enough lines</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nlines</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"XYZ file has insufficient lines: expected "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">))</span><span class="o">//</span><span class="s2">", got "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="n">nlines</span><span class="p">)))</span>
+<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_text</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">))</span><span class="o">//</span><span class="s2">", got "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_text</span><span class="p">(</span><span class="n">nlines</span><span class="p">)))</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -828,7 +828,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">lines</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">element</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">"Failed to parse atom data on line "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_string</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">": '"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">int_to_text</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">": '"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="nb">trim</span><span class="p">(</span><span class="n">lines</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iatom</span><span class="p">))</span><span class="o">//</span><span class="s2">"'"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -863,7 +863,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>

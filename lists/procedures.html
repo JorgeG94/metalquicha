@@ -169,6 +169,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Everything that decides what number a fragment gets</p><a href="../proc/add_method.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_nuclear_repulsion_gradient.html'>add_nuclear_repulsion_gradient</a></td>
+                 <td><a href='../module/mqc_nuclear_repulsion.html'>mqc_nuclear_repulsion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Add <code>dE_NN/dR</code> to <code>gradient</code>, Hartree/Bohr</p><a href="../proc/add_nuclear_repulsion_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_solvation_to_calc.html'>add_solvation_to_calc</a></td>
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td>Subroutine</td>
@@ -440,22 +446,22 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Put this optimization where the evaluator can reach it</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/binomial.html'>binomial</a></td>
-                 <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
-                 <td>Function</td>
-                 <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><a href='../interface/binomial.html'>binomial</a></td>
+                 <td><a href='../module/mqc_math_utils.html'>mqc_math_utils</a></td>
+                 <td>Interface</td>
+                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers, for either integer kind.</p><a href="../interface/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/binomial~2.html'>binomial</a></td>
-                 <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
+                 <td><a href='../proc/binomial_i32.html'>binomial_i32</a></td>
+                 <td><a href='../module/mqc_math_utils.html'>mqc_math_utils</a></td>
                  <td>Function</td>
-                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p><code>C(n, k)</code> from default-kind arguments</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/binomial~3.html'>binomial</a></td>
-                 <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
+                 <td><a href='../proc/binomial_i64.html'>binomial_i64</a></td>
+                 <td><a href='../module/mqc_math_utils.html'>mqc_math_utils</a></td>
                  <td>Function</td>
-                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial~3.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p><code>C(n, k)</code>, exactly, in 64-bit integers</p><a href="../proc/binomial_i64.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/bond_is_broken.html'>bond_is_broken</a></td>
@@ -486,6 +492,18 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Subroutine</td>
                  <td><p>The space&rsquo;s own addressing, from its compatibility grid</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_density_closed_shell.html'>build_density_closed_shell</a></td>
+                 <td><a href='../module/mqc_scf_common.html'>mqc_scf_common</a></td>
+                 <td>Subroutine</td>
+                 <td><p>D = 2 C_occ C_occ^T, the closed-shell density</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_density_spin.html'>build_density_spin</a></td>
+                 <td><a href='../module/mqc_scf_common.html'>mqc_scf_common</a></td>
+                 <td>Subroutine</td>
+                 <td><p>D_sigma = C_occ C_occ^T, one electron per occupied orbital</p><a href="../proc/build_density_spin.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_dft_grid.html'>build_dft_grid</a></td>
@@ -570,6 +588,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Subroutine</td>
                  <td><p>Assemble a partition from what a deck can state</p><a href="../proc/build_ormas_space.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_orthogonalizer.html'>build_orthogonalizer</a></td>
+                 <td><a href='../module/mqc_scf_common.html'>mqc_scf_common</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped</p><a href="../proc/build_orthogonalizer.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_residues.html'>build_residues</a></td>
@@ -1185,6 +1209,18 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
 A cap is needed when exactly one atom of a broken bond is in the fragment</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/covalent_radius_cordero.html'>covalent_radius_cordero</a></td>
+                 <td><a href='../module/mqc_atomic_radii.html'>mqc_atomic_radii</a></td>
+                 <td>Function</td>
+                 <td><p>Cordero covalent radius in Angstrom, or 0 where none is tabulated</p><a href="../proc/covalent_radius_cordero.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/covalent_radius_emsley.html'>covalent_radius_emsley</a></td>
+                 <td><a href='../module/mqc_atomic_radii.html'>mqc_atomic_radii</a></td>
+                 <td>Function</td>
+                 <td><p>Emsley/GAMESS covalent radius in Angstrom, or 0 where none is tabulated</p><a href="../proc/covalent_radius_emsley.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/create_method.html'>create_method</a></td>
                  <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
                  <td>Function</td>
@@ -1436,15 +1472,9 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
-                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
-                 <td>Function</td>
-                 <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
                  <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
-                 <td><p>Check if string ends with suffix</p></td>
+                 <td><p>Case-insensitive suffix test, for choosing a format by filename</p><a href="../proc/ends_with.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/energy_reset.html'>energy_reset</a></td>
@@ -2253,6 +2283,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Run a density-fitted RHF calculation through cuEST</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/hund_multiplicity.html'>hund_multiplicity</a></td>
+                 <td><a href='../module/mqc_atomic_guess_common.html'>mqc_atomic_guess_common</a></td>
+                 <td>Function</td>
+                 <td><p>Ground-state spin multiplicity of a neutral free atom</p><a href="../proc/hund_multiplicity.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/initial_basis.html'>initial_basis</a></td>
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td>Subroutine</td>
@@ -2284,40 +2320,16 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Small integer to text, so the warning above needs no io module</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
-                 <td>Function</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
-                 <td>Function</td>
-                 <td></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/int_to_key.html'>int_to_key</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Function</td>
                  <td><p>An integer as the string json-fortran&rsquo;s paths and keys want</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/int_to_string.html'>int_to_string</a></td>
-                 <td><a href='../module/mqc_xyz_reader.html'>mqc_xyz_reader</a></td>
+                 <td><a href='../proc/int_to_text.html'>int_to_text</a></td>
+                 <td><a href='../module/mqc_string_utils.html'>mqc_string_utils</a></td>
                  <td>Function</td>
-                 <td><p>Convert integer to string</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
-                 <td>Function</td>
-                 <td><p>An integer as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
+                 <td><p>An integer as its shortest decimal string, no padding</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -2430,12 +2442,6 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
 			   <tr>
                  <td><a href='../proc/logger_keys.html'>logger_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
-                 <td>Function</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/lower.html'>lower</a></td>
-                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -2678,13 +2684,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
-                 <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -3053,6 +3053,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_basis_normalization.html'>mqc_basis_normalization</a></td>
                  <td>Subroutine</td>
                  <td><p>Normalized contraction coefficients for a single shell</p><a href="../proc/normalized_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/nuclear_repulsion.html'>nuclear_repulsion</a></td>
+                 <td><a href='../module/mqc_nuclear_repulsion.html'>mqc_nuclear_repulsion</a></td>
+                 <td>Function</td>
+                 <td><p>`sum_{A</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/occupation_of.html'>occupation_of</a></td>
@@ -4076,6 +4082,12 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
                  <td><p>Whether a Fock exchange build is required</p><a href="../proc/spec_needs_exact_exchange.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/spin_contamination.html'>spin_contamination</a></td>
+                 <td><a href='../module/mqc_scf_common.html'>mqc_scf_common</a></td>
+                 <td>Function</td>
+                 <td><p><S^2> for a UHF/UKS determinant</p><a href="../proc/spin_contamination.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/split_lines.html'>split_lines</a></td>
                  <td><a href='../module/mqc_xyz_reader.html'>mqc_xyz_reader</a></td>
                  <td>Subroutine</td>
@@ -4114,15 +4126,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -4174,12 +4186,6 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td>Subroutine</td>
                  <td><p>Copy the bond-order matrix out of tblite&rsquo;s results dictionary</p><a href="../proc/take_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/text.html'>text</a></td>
-                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
-                 <td>Function</td>
-                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/text64.html'>text64</a></td>
@@ -4266,6 +4272,18 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>The van der Waals radius of an element, in Bohr</p><a href="../proc/vdw_radius.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/vdw_radius_bondi.html'>vdw_radius_bondi</a></td>
+                 <td><a href='../module/mqc_atomic_radii.html'>mqc_atomic_radii</a></td>
+                 <td>Function</td>
+                 <td><p>Bondi/Mantina van der Waals radius in Angstrom, or 0 if untabulated</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/vdw_radius_geodesic.html'>vdw_radius_geodesic</a></td>
+                 <td><a href='../module/mqc_atomic_radii.html'>mqc_atomic_radii</a></td>
+                 <td>Function</td>
+                 <td><p>GAMESS geodesic van der Waals radius in Angstrom</p><a href="../proc/vdw_radius_geodesic.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/vmfc_subset_key.html'>vmfc_subset_key</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Subroutine</td>
@@ -4285,15 +4303,15 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -4458,7 +4476,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 04:39 +0000             </p>
+ on 2026-08-20 07:13 +0000             </p>
           </div>
         </div>
         <br>
