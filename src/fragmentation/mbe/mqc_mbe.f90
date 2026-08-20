@@ -30,6 +30,8 @@ module mqc_mbe
    ! Public interface
    public :: compute_mbe   !! MBE energy with optional gradient and hessian
    public :: compute_gmbe  !! GMBE energy with optional gradient and hessian
+   public :: collect_unconverged
+      !! The fragments that failed, with what they were built from
 
 contains
 
@@ -416,6 +418,46 @@ contains
       call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
                         ", entries: "//to_char(lookup%n_entries))
    end subroutine build_mbe_lookup_table
+
+   subroutine collect_unconverged(scf_status, polymers, fragment_count, ids, monomers)
+      !! The fragments that failed, and which monomers each was built from
+      !!
+      !! Both are already known -- convergence comes back on every result and
+      !! the composition is the row of `polymers` the fragment was built from --
+      !! so this gathers rather than computes. What it buys is that the pair
+      !! survives into the output together: an identifier on its own is not
+      !! enough to rebuild a dimer, and at a million fragments the table that
+      !! holds the composition is not something a follow-up script should have
+      !! to read back.
+      !!
+      !! **Only genuine failures are listed.** `SCF_UNKNOWN` means the method
+      !! never reported, which is every fragment of a method that does not, and
+      !! putting those here would make the list useless in exactly the runs it
+      !! exists for.
+      !!
+      !! Not truncated. Ten thousand unconverged fragments is a large list and
+      !! also the situation this is for; silently keeping the first hundred
+      !! would produce a follow-up job that looked complete and was not.
+      integer, intent(in) :: scf_status(:)
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      integer(int64), allocatable, intent(out) :: ids(:)
+      integer, allocatable, intent(out) :: monomers(:, :)
+
+      integer(int64) :: i, n_bad, k
+
+      n_bad = count(scf_status(1:fragment_count) == SCF_NOT_CONVERGED, kind=int64)
+      allocate (ids(n_bad), monomers(n_bad, size(polymers, 2)))
+      if (n_bad == 0_int64) return
+
+      k = 0_int64
+      do i = 1_int64, fragment_count
+         if (scf_status(i) /= SCF_NOT_CONVERGED) cycle
+         k = k + 1_int64
+         ids(k) = i
+         monomers(k, :) = polymers(i, :)
+      end do
+   end subroutine collect_unconverged
 
    subroutine report_unconverged(scf_status, fragment_count)
       !! Say how many fragments did not converge, and name the first few
@@ -947,6 +989,15 @@ contains
          ! per fragment is invisible in a run with a million of them, and a
          ! total assembled from unconverged pieces is otherwise indistinguishable
          ! from a good one.
+         ! The same fragments, in a form something other than a human can act
+         ! on. `report_unconverged` names the first ten in the log, which is the
+         ! right thing for a reader and useless to a script; this is the list a
+         ! follow-up job is built from.
+         call collect_unconverged(json_data%fragment_scf_status, &
+                                  polymers(1:fragment_count, 1:max_level), &
+                                  fragment_count, json_data%unconverged_ids, &
+                                  json_data%unconverged_monomers)
+
          call report_unconverged(json_data%fragment_scf_status, fragment_count)
 
          ! Copy dipole if available

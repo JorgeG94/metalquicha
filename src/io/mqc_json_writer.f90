@@ -192,6 +192,8 @@ contains
 
       call json%add(main_obj, "total_energy", data%total_energy)
 
+      call write_unconverged_section(json, main_obj, data)
+
       ! Build levels array
       call json%create_array(levels_arr, "levels")
       call json%add(main_obj, levels_arr)
@@ -332,6 +334,51 @@ contains
          call json%add(entry, "dual", data%fukui_dual(i))
       end do
    end subroutine write_fukui_section
+
+   subroutine write_unconverged_section(json, parent, data)
+      !! The fragments whose SCF failed, in a form a follow-up job can be built from
+      !!
+      !! Written whenever the method reports convergence at all, **including
+      !! when nothing failed**: a `count` of zero is a statement, and its
+      !! absence would be indistinguishable from a run whose method never
+      !! reported. A consumer can then treat a missing section as "no
+      !! information" rather than as "all good", which is the reading that
+      !! matters when the whole point is that unconverged fragments still
+      !! produce numbers of the right magnitude.
+      !!
+      !! Each entry carries the monomers the fragment was built from, so a
+      !! dimer can be reconstructed without reading back the per-fragment
+      !! table -- which for a large run is a separate CSV of millions of rows.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, entry
+      integer, allocatable :: members(:)
+      integer(int64) :: i
+      integer :: level
+
+      if (.not. allocated(data%unconverged_ids)) return
+
+      call json%create_object(section, "unconverged")
+      call json%add(parent, section)
+      call json%add(section, "count", int(size(data%unconverged_ids)))
+
+      call json%create_array(arr, "fragments")
+      call json%add(section, arr)
+      do i = 1_int64, int(size(data%unconverged_ids), int64)
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         call json%add(entry, "id", int(data%unconverged_ids(i)))
+         ! Zero-padded in storage, so the real membership is the non-zero part
+         ! and the level is how many of those there are.
+         members = pack(data%unconverged_monomers(i, :), &
+                        data%unconverged_monomers(i, :) > 0)
+         level = size(members)
+         call json%add(entry, "level", level)
+         call json%add(entry, "monomers", members)
+      end do
+   end subroutine write_unconverged_section
 
    subroutine write_gmbe_pie_json_impl(data)
       !! Write GMBE PIE calculation results to output JSON file
