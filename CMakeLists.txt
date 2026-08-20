@@ -1066,6 +1066,21 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
             run_validation.py --mpi --np 2
     COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
             run_validation.py --manifest validation_tests_cpu.json
+    # And the Python interface, which is the only thing that drives the
+    # program through its C entry points. `src/parallel` is 0% without this
+    # and it is not untested code: `mqc_bcast` and `mqc_bcast_system` are used
+    # by `mqc_session` and by nothing else, so no deck reaches them however
+    # many ranks it runs on. The examples assert against PySCF references and
+    # skip whatever this build cannot do, so they are a test rather than a
+    # warm-up lap.
+    COMMAND
+      ${CMAKE_COMMAND} -E env MQC_LIBRARY=$<TARGET_FILE:mqc_shared>
+      PYTHONPATH=${CMAKE_SOURCE_DIR}/python python3
+      ${CMAKE_SOURCE_DIR}/python/examples/backends.py
+    COMMAND
+      ${CMAKE_COMMAND} -E env MQC_LIBRARY=$<TARGET_FILE:mqc_shared>
+      PYTHONPATH=${CMAKE_SOURCE_DIR}/python python3
+      ${CMAKE_SOURCE_DIR}/python/examples/methods.py
     COMMAND ${CMAKE_COMMAND} -E remove -f coverage.info
     COMMAND lcov --directory . --capture --output-file coverage.info
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'
@@ -1073,4 +1088,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
     COMMAND genhtml coverage_filtered.info --output-directory coverage_report
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating code coverage report")
+  # The examples load the shared library through ctypes, so it has to exist
+  # before the target runs rather than being built by whoever remembered.
+  add_dependencies(coverage mqc_shared)
 endif()

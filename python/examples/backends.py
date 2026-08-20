@@ -71,6 +71,29 @@ TOL_XTB = 1.0e-4     # against ourselves; loose on purpose
 TOL_CLOSURE = 1.0e-8 # MBE(2) against the supermolecule; exact, so tight
 
 
+#: What the library says when a backend was left out of the build. Matched on
+#: the message rather than probed for, so it stays in step with the refusals
+#: themselves -- each of which names the CMake option to turn on.
+MISSING_BUILD = ("tblite", "libcint", "libxc", "cuEST", "not built", "build with")
+
+
+def tblite_available():
+    """Whether this build carries tblite, asked of the library itself.
+
+    One cheap xTB single point that either returns or refuses; the refusal
+    names the missing option. There is no feature query in the Python
+    interface to ask instead, which is itself worth noticing.
+    """
+    system = mqc.System(**WATER)
+    system.set_monomers([[0, 1, 2]])
+    try:
+        mqc.MBE(system, level=0, method="gfn2", verbosity="error").run(
+            label="probe_tblite", write_to_file=False)
+    except mqc.MQCError as exc:
+        return "tblite" not in str(exc)
+    return True
+
+
 def standalone_xtb():
     """One molecule through tblite.
 
@@ -187,7 +210,7 @@ def fragmented_hf():
 
 def main(argv):
     pattern = argv[1] if len(argv) > 1 else ""
-    failures = []
+    failures, skipped = [], []
 
     with mqc.session():
         cases = [
@@ -200,7 +223,22 @@ def main(argv):
         for name, fn, expected, tol, source in cases:
             if pattern and pattern not in name:
                 continue
-            energy = fn()
+            try:
+                energy = fn()
+            except mqc.MQCError as exc:
+                # A backend this build does not carry is not a failure: the
+                # library refuses by name, and this script has to be runnable
+                # on a reduced build -- a coverage build, where libxc cannot
+                # configure -- as well as on a full one. Anything else it
+                # refuses is a real failure and is reported as one.
+                message = str(exc)
+                if any(hint in message for hint in MISSING_BUILD):
+                    skipped.append(name)
+                    print(f"  {name:<18} {'skipped':>18}   {message.split('.')[0][:50]}")
+                    continue
+                failures.append(f"{name}: {message}")
+                print(f"  {name:<18} {'RAISED':>18}   {message[:60]}")
+                continue
             if expected is None:
                 # The case returned (fragmented, supermolecule): its reference
                 # is the second, computed in this same run.
@@ -213,6 +251,8 @@ def main(argv):
                 failures.append(f"{name}: {energy} vs {expected}, diff {delta:.2e} > {tol:.1e}")
 
         cpu_norm, cpu_ok, xtb_ok = gradient_support()
+        if not xtb_ok and not tblite_available():
+            skipped.append("gradient xtb")
         shown = f"{cpu_norm:.9f}" if cpu_norm is not None else "none"
         delta = (abs(cpu_norm - HF_WATER_STO3G_GRAD_NORM)
                  if cpu_norm is not None else float("inf"))
@@ -225,8 +265,12 @@ def main(argv):
         elif not cpu_ok:
             failures.append(f"CPU gradient norm {cpu_norm} vs "
                             f"{HF_WATER_STO3G_GRAD_NORM}, diff {delta:.2e} > {TOL_GRAD:.1e}")
-        if not xtb_ok:
+        if not xtb_ok and "gradient xtb" not in skipped:
             failures.append("tblite must still provide gradients")
+
+    if skipped:
+        print(f"\n{len(skipped)} case(s) skipped, this build cannot run them: "
+              + ", ".join(skipped))
 
     if failures:
         print("\nFAILED:")
