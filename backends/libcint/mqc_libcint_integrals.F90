@@ -51,10 +51,24 @@ module mqc_libcint_integrals
                               LIBCINT_CHARGE_OF, LIBCINT_PTR_COORD, &
                               LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
                               LIBCINT_NCTR_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_COEFF, &
-                              LIBCINT_PTR_ENV_START
+                              LIBCINT_PTR_ENV_START, LIBCINT_KAPPA_OF
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
+
+   integer, parameter :: KAPPA_SP_SHELL = 64
+      !! What libfint reads in KAPPA_OF to mean "this shell holds s and p".
+      !!
+      !! A wire-format constant, like the slot indices this file already
+      !! imports, and here for the same reason: it is part of the layout of
+      !! `bas`, not something the module that fills `bas` can ask for. Defined
+      !! at libfint's `src/cint_bas.f90:61`; if that number moves, this is the
+      !! other end of the agreement.
+      !!
+      !! KAPPA_OF is the relativistic kappa, which a non-relativistic shell
+      !! leaves at zero -- which is what frees the slot to carry this, and also
+      !! why it is written only under MQC_WITH_SP_SHELLS. libcint would read a
+      !! 64 there as a real kappa and act on it.
 
    public :: libcint_molecule_t
    public :: build_libcint_molecule
@@ -66,6 +80,14 @@ module mqc_libcint_integrals
    ! mapping, and two copies of it is two chances to route half the calls.
    public :: shell_dim
    public :: pair_index
+   ! The shell set a four-centre integral loop should run over, and the
+   ! Schwarz bounds re-blocked to match it. Exported because the direct Fock
+   ! build runs the same loops over the same choice, and two copies of the
+   ! choice is two chances to hand a fused shell to a driver that cannot
+   ! read one.
+   public :: eri_shell_table_t
+   public :: eri_shell_table
+   public :: eri_schwarz_collapse
    public :: two_electron_block
    public :: two_electron_optimizer
    public :: ket_transformed_pairs
@@ -104,6 +126,23 @@ module mqc_libcint_integrals
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:)
       integer, allocatable :: shell_offset(:)  !! First AO of each shell, 0-based
+      ! The fused-sp view of the same shells: every consecutive s/p pair on
+      ! shared exponents -- an L shell, which is what every Pople basis is
+      ! written in -- collapsed to one `bas` entry that libfint's `int2e`
+      ! evaluates in a single pass over the shared pair data. Built by
+      ! `build_sp_view`, and empty (`nbas_sp` zero) whenever the molecule has
+      ! no L shell or the build is against libcint, which cannot read the
+      ! marker. The AO order of the view is identical to the split order --
+      ! one s function then three p -- so anything indexed by AO needs no map.
+      integer :: nbas_sp = 0
+      integer, allocatable :: bas_sp(:, :)
+      real(dp), allocatable :: env_sp(:)
+         !! The split `env` with the fused coefficient blocks appended, so the
+         !! atom coordinate pointers in `atm` stay valid against either table
+      integer, allocatable :: shell_offset_sp(:)  !! First AO per view shell, 0-based
+      integer, allocatable :: sp_split_first(:)
+         !! First split shell of each view shell, 1-based, with an (nbas_sp+1)
+         !! sentinel -- the map `eri_schwarz_collapse` re-blocks bounds through
       real(dp), allocatable :: charges(:)      !! Nuclear charges, for repulsion
       real(dp), allocatable :: coords(:, :)    !! (3, natm), Bohr
    contains
@@ -117,6 +156,21 @@ module mqc_libcint_integrals
       procedure :: atom_subset => molecule_atom_subset
       procedure :: destroy => molecule_destroy
    end type libcint_molecule_t
+
+   type :: eri_shell_table_t
+      !! The shell table a four-centre integral loop runs over
+      !!
+      !! Either the molecule's own shells or its fused-sp view, chosen once in
+      !! `eri_shell_table` so a loop body cannot mix the two. Widths and
+      !! offsets are carried explicitly: inside the loops a shell's dimension
+      !! is a table lookup, not a `cgto` call per quartet.
+      integer :: nbas = 0
+      integer :: block_max = 1                 !! Largest shell width, for buffers
+      integer, allocatable :: bas(:, :)
+      real(dp), allocatable :: env(:)
+      integer, allocatable :: offs(:)          !! (nbas+1) first AO per shell, 0-based
+      integer, allocatable :: dims(:)          !! (nbas) functions per shell
+   end type eri_shell_table_t
 
 contains
 
@@ -516,8 +570,241 @@ contains
       if (this%nao /= total_shell_dim(this%cartesian, this%bas, this%nbas)) then
          call error%set(ERROR_VALIDATION, "libcint: shell offsets disagree with the "// &
                         "basis function count")
+         return
       end if
+
+      call build_sp_view(this)
    end subroutine molecule_build
+
+#ifdef MQC_WITH_SP_SHELLS
+   subroutine build_sp_view(this)
+      !! Fuse each s/p pair on shared exponents into one L shell, as a view
+      !!
+      !! A 6-31G Fock build spends its time recomputing, for the p half of
+      !! every valence shell, the exponential prefactors, pair data and Rys
+      !! roots it just computed for the s half -- the halves share exponents,
+      !! and splitting them is purely an artefact of `bas` having one ANG_OF
+      !! slot. libfint reads a marker in KAPPA_OF (see `KAPPA_SP_SHELL`) and
+      !! evaluates both halves in one pass, measured at 2-3x on a Pople basis.
+      !!
+      !! A VIEW, not the representation: the split `bas` stays the molecule's
+      !! own, because libfint carries an L shell through the four-centre
+      !! drivers only -- `int2e_sph`/`int2e_cart` and, since it learned to
+      !! stride a derivative's tensor component, `int2e_ip1`. Every other
+      !! driver -- one-electron, three-centre, the higher derivatives --
+      !! deliberately behaves as if L shells did not exist, and would read
+      !! the fused entry as a plain p shell over the s coefficients: not an
+      !! error, a silently wrong overlap. So the fused table is a companion
+      !! that exactly one constructor (`eri_shell_table`) ever hands out, and
+      !! only the four-centre loops consume it.
+      !!
+      !! Fusing was first tried in the packer itself, making the fused form
+      !! primary and teaching every reader of `bas` about it. That founders on
+      !! the paragraph above -- the readers include libfint drivers that
+      !! cannot be taught -- and is why this is a post-pass here instead.
+      type(libcint_molecule_t), intent(inout) :: this
+
+      integer :: ish, iview, nview, nprim, extra, off, ptr_s, ptr_p
+
+      ! Count first. The two passes ask the same question in the same order,
+      ! so they cannot disagree about what a shell is.
+      nview = 0
+      extra = 0
+      ish = 1
+      do while (ish <= this%nbas)
+         nview = nview + 1
+         if (fused_sp_pair(this, ish)) then
+            extra = extra + 2*this%bas(LIBCINT_NPRIM_OF, ish)
+            ish = ish + 2
+         else
+            ish = ish + 1
+         end if
+      end do
+
+      ! No L shell anywhere -- cc-pVDZ, say -- keeps no view: `nbas_sp` stays
+      ! zero and every consumer falls back to the split table it always used.
+      if (nview == this%nbas) return
+
+      this%nbas_sp = nview
+      allocate (this%bas_sp(LIBCINT_BAS_SLOTS, nview))
+      allocate (this%shell_offset_sp(nview + 1))
+      allocate (this%sp_split_first(nview + 1))
+      allocate (this%env_sp(size(this%env) + extra))
+      this%bas_sp = 0
+      this%env_sp(1:size(this%env)) = this%env
+      this%env_sp(size(this%env) + 1:) = 0.0_dp
+
+      off = size(this%env)
+      iview = 0
+      ish = 1
+      do while (ish <= this%nbas)
+         iview = iview + 1
+         this%sp_split_first(iview) = ish
+         ! One s then three p is exactly the split AO order, so the view
+         ! shell starts where its first split shell did.
+         this%shell_offset_sp(iview) = this%shell_offset(ish)
+         if (fused_sp_pair(this, ish)) then
+            nprim = this%bas(LIBCINT_NPRIM_OF, ish)
+            this%bas_sp(LIBCINT_ATOM_OF, iview) = this%bas(LIBCINT_ATOM_OF, ish)
+            ! The higher l present, so every ceiling, stride and Rys order
+            ! libfint derives is the one the p sub-block needs; the s
+            ! sub-block then runs with more roots than it needs, which is
+            ! exact -- Rys is exact to degree 2n-1.
+            this%bas_sp(LIBCINT_ANG_OF, iview) = 1
+            this%bas_sp(LIBCINT_NPRIM_OF, iview) = nprim
+            ! NOT doubled. libfint's convention (src/cint_bas.f90:40) is one
+            ! contraction whose coefficient block is nprim s coefficients then
+            ! nprim p ones -- the block a plain shell with two contractions
+            ! would have, but still one contraction. Writing 2 here gives a
+            ! shell of two p contractions: it runs, and produces 139 basis
+            ! functions where the molecule has 83.
+            this%bas_sp(LIBCINT_NCTR_OF, iview) = 1
+            this%bas_sp(LIBCINT_KAPPA_OF, iview) = KAPPA_SP_SHELL
+            ! One set of exponents: the s shell's, which `fused_sp_pair` has
+            ! checked is bit-for-bit the p shell's too.
+            this%bas_sp(LIBCINT_PTR_EXP, iview) = this%bas(LIBCINT_PTR_EXP, ish)
+            ! Copied, not renormalised. Each split column already carries its
+            ! own l's normalisation -- primitive norm, overlap exponent, and
+            ! the norm divided back out all depend on l -- and that per-column
+            ! form is exactly what the fused convention wants. Recomputing it
+            ! here with the fused shell's ANG_OF would put the s column on a p
+            ! normalisation: a wrong basis that still converges.
+            ptr_s = this%bas(LIBCINT_PTR_COEFF, ish)
+            ptr_p = this%bas(LIBCINT_PTR_COEFF, ish + 1)
+            this%bas_sp(LIBCINT_PTR_COEFF, iview) = off
+            this%env_sp(off + 1:off + nprim) = this%env(ptr_s + 1:ptr_s + nprim)
+            this%env_sp(off + nprim + 1:off + 2*nprim) = this%env(ptr_p + 1:ptr_p + nprim)
+            off = off + 2*nprim
+            ish = ish + 2
+         else
+            this%bas_sp(:, iview) = this%bas(:, ish)
+            ish = ish + 1
+         end if
+      end do
+      this%sp_split_first(nview + 1) = this%nbas + 1
+      this%shell_offset_sp(nview + 1) = this%nao
+   end subroutine build_sp_view
+
+   function fused_sp_pair(this, ish) result(is_sp)
+      !! Whether split shells `ish` and `ish+1` are the s and p of one L shell
+      !!
+      !! The reader emits one shell per angular momentum, so a basis entry
+      !! with `"angular_momentum": [0, 1]` -- every Pople set's valence shells
+      !! -- arrives as an s shell and a p shell, consecutive and sharing one
+      !! set of exponents. That adjacency is what is detected here, on the
+      !! packed table rather than the reader's, so a molecule assembled any
+      !! other way (an atom subset, a test fixture) gets the same answer from
+      !! the same bytes.
+      !!
+      !! Only the k=1 case, one s column and one p column, which is what every
+      !! Pople set is. A generally contracted sp block arrives as an s and a p
+      !! shell of several columns each -- `contraction_group_size` has already
+      !! merged same-l columns -- and is left to the split path rather than
+      !! guessed at.
+      type(libcint_molecule_t), intent(in) :: this
+      integer, intent(in) :: ish
+      logical :: is_sp
+
+      integer :: nprim, ptr_s, ptr_p
+
+      is_sp = .false.
+      if (ish + 1 > this%nbas) return
+      if (this%bas(LIBCINT_ATOM_OF, ish) /= this%bas(LIBCINT_ATOM_OF, ish + 1)) return
+      if (this%bas(LIBCINT_ANG_OF, ish) /= 0) return
+      if (this%bas(LIBCINT_ANG_OF, ish + 1) /= 1) return
+      if (this%bas(LIBCINT_NCTR_OF, ish) /= 1) return
+      if (this%bas(LIBCINT_NCTR_OF, ish + 1) /= 1) return
+      nprim = this%bas(LIBCINT_NPRIM_OF, ish)
+      if (this%bas(LIBCINT_NPRIM_OF, ish + 1) /= nprim) return
+      ptr_s = this%bas(LIBCINT_PTR_EXP, ish)
+      ptr_p = this%bas(LIBCINT_PTR_EXP, ish + 1)
+      ! Bit-for-bit, like the contraction grouping in the packer: both blocks
+      ! were copied from the same parsed strings, so anything short of
+      ! equality means different primitives that must not share a shell.
+      if (any(this%env(ptr_s + 1:ptr_s + nprim) /= this%env(ptr_p + 1:ptr_p + nprim))) return
+      is_sp = .true.
+   end function fused_sp_pair
+#else
+   subroutine build_sp_view(this)
+      !! Without libfint there is nothing to fuse: libcint would read
+      !! `KAPPA_SP_SHELL` as a real relativistic kappa and act on it. The view
+      !! stays empty and every consumer keeps the split table.
+      type(libcint_molecule_t), intent(inout) :: this
+
+      this%nbas_sp = 0
+   end subroutine build_sp_view
+#endif
+
+   subroutine eri_shell_table(mol, tab)
+      !! The shell set to hand libfint's `int2e` or `int2e_ip1`: fused where
+      !! the view exists
+      !!
+      !! Everything else -- one-electron integrals, three-centre fitting
+      !! integrals, AO evaluation on a grid -- keeps reading `mol%bas`,
+      !! because the four-centre drivers are the only ones that understand an
+      !! L shell. Routing the choice through one constructor is what keeps
+      !! that boundary in one place.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(eri_shell_table_t), intent(out) :: tab
+
+      integer :: ish
+
+      if (mol%nbas_sp > 0) then
+         tab%nbas = mol%nbas_sp
+         tab%bas = mol%bas_sp
+         tab%env = mol%env_sp
+         tab%offs = mol%shell_offset_sp
+      else
+         tab%nbas = mol%nbas
+         tab%bas = mol%bas
+         tab%env = mol%env
+         tab%offs = mol%shell_offset
+      end if
+      allocate (tab%dims(tab%nbas))
+      tab%block_max = 1
+      do ish = 1, tab%nbas
+         ! Offset differences, not `cgto` calls: the offsets were built from
+         ! the dimensions, and libfint already answers four for a fused shell,
+         ! so the two agree by construction.
+         tab%dims(ish) = tab%offs(ish + 1) - tab%offs(ish)
+         tab%block_max = max(tab%block_max, tab%dims(ish))
+      end do
+   end subroutine eri_shell_table
+
+   subroutine eri_schwarz_collapse(mol, bounds, collapsed)
+      !! Schwarz bounds re-blocked onto the eri view's shells
+      !!
+      !! `schwarz_bounds` works per split shell and stays that way: loops
+      !! that take the view -- the direct Fock builds and the SCF gradient's
+      !! `int2e_ip1` loop -- collapse its result through here, and loops
+      !! still on split shells (the MP2 gradients) index it directly. A
+      !! fused shell's bound is the largest of its
+      !! sub-shells': the Schwarz inequality only needs the diagonal elements
+      !! (mn|mn), every one of which lives in some split sub-block, so the
+      !! maximum over sub-blocks bounds the fused quartet at least as tightly
+      !! as the split bounds bounded the split ones.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: bounds(:, :)
+      real(dp), allocatable, intent(out) :: collapsed(:, :)
+
+      integer :: i, j, a0, a1, b0, b1
+
+      if (mol%nbas_sp <= 0) then
+         collapsed = bounds
+         return
+      end if
+
+      allocate (collapsed(mol%nbas_sp, mol%nbas_sp))
+      do j = 1, mol%nbas_sp
+         b0 = mol%sp_split_first(j)
+         b1 = mol%sp_split_first(j + 1) - 1
+         do i = 1, mol%nbas_sp
+            a0 = mol%sp_split_first(i)
+            a1 = mol%sp_split_first(i + 1) - 1
+            collapsed(i, j) = maxval(bounds(a0:a1, b0:b1))
+         end do
+      end do
+   end subroutine eri_schwarz_collapse
 
    subroutine molecule_overlap(this, s)
       !! S, shell pair by shell pair
@@ -1188,22 +1475,28 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:)
       real(dp) :: value
       type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
 
       allocate (eri(this%nao, this%nao, this%nao, this%nao))
       eri = 0.0_dp
 
+      ! The fused-sp view where it exists, the split shells otherwise. The
+      ! tensor is AO-indexed and the view's AO order is the split order, so
+      ! nothing past the shell loops changes.
+      call eri_shell_table(this, tab)
+
       opt = c_null_ptr
-      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
-                                  this%nbas, this%env)
+      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, tab%bas, &
+                                  tab%nbas, tab%env)
 
       ! Threaded over bra pairs, exactly as the direct Fock build is, and for
       ! once with nothing to reduce: a canonical quartet owns the eight
       ! positions it scatters into and no other canonical quartet names any of
       ! them, so the threads write disjoint elements of a shared array.
-      npair = this%nbas*(this%nbas + 1)/2
+      npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
-      do ish = 1, this%nbas
+      do ish = 1, tab%nbas
          do jsh = 1, ish
             ipair = ipair + 1
             pair_i(ipair) = ish
@@ -1212,30 +1505,30 @@ contains
       end do
 
       !$omp parallel default(none) &
-      !$omp    shared(this, eri, opt, npair, pair_i, pair_j) &
+      !$omp    shared(this, tab, eri, opt, npair, pair_i, pair_j) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, p, q, r, t, shls, ret, idx, value, buf, ksh_local)
-      allocate (buf(max_block(this)**4))
+      allocate (buf(tab%block_max**4))
       !$omp do schedule(dynamic)
       do ipair = 1, npair
          ish = pair_i(ipair)
          jsh = pair_j(ipair)
-         di = shell_dim(this%cartesian, ish - 1, this%bas)
-         io = this%shell_offset(ish)
-         dj = shell_dim(this%cartesian, jsh - 1, this%bas)
-         jo = this%shell_offset(jsh)
+         di = tab%dims(ish)
+         io = tab%offs(ish)
+         dj = tab%dims(jsh)
+         jo = tab%offs(jsh)
          do ksh_local = 1, ish
             ksh = ksh_local
-            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
-            ko = this%shell_offset(ksh)
+            dk = tab%dims(ksh)
+            ko = tab%offs(ksh)
             lsh_max = ksh
             if (ksh == ish) lsh_max = jsh
             do lsh = 1, lsh_max
-               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
-               lo = this%shell_offset(lsh)
+               dl = tab%dims(lsh)
+               lo = tab%offs(lsh)
                shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
-                                        this%natm, this%bas, this%nbas, this%env, opt)
+                                        this%natm, tab%bas, tab%nbas, tab%env, opt)
                if (ret == 0) cycle
 
                do l = 1, dl
@@ -1304,6 +1597,7 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:)
       real(dp) :: value
       type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
 
       n_ao = this%nao
       n_vir = size(c_vir, 2)
@@ -1311,16 +1605,20 @@ contains
       pair_ov = 0.0_dp
       pair_oo = 0.0_dp
 
-      opt = c_null_ptr
-      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
-                                  this%nbas, this%env)
+      ! The fused-sp view where it exists; AO-indexed output, so only the
+      ! shell loops feel it.
+      call eri_shell_table(this, tab)
 
-      npair = this%nbas*this%nbas
-      nket = this%nbas*(this%nbas + 1)/2
+      opt = c_null_ptr
+      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, tab%bas, &
+                                  tab%nbas, tab%env)
+
+      npair = tab%nbas*tab%nbas
+      nket = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
-      do ish = 1, this%nbas
-         do jsh = 1, this%nbas
+      do ish = 1, tab%nbas
+         do jsh = 1, tab%nbas
             ipair = ipair + 1
             pair_i(ipair) = ish
             pair_j(ipair) = jsh
@@ -1328,34 +1626,34 @@ contains
       end do
 
       !$omp parallel default(none) &
-      !$omp    shared(this, c_vir, c_occ, pair_ov, pair_oo, opt, npair, pair_i, pair_j, &
+      !$omp    shared(this, tab, c_vir, c_occ, pair_ov, pair_oo, opt, npair, pair_i, pair_j, &
       !$omp           n_ao, n_vir, n_occ) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, m, ret, idx, value, buf, ket, tmp, slab, row, iket)
-      allocate (buf(max_block(this)**4))
-      allocate (ket(n_ao, n_ao, max_block(this)**2))
+      allocate (buf(tab%block_max**4))
+      allocate (ket(n_ao, n_ao, tab%block_max**2))
       allocate (tmp(n_ao, max(n_vir, n_occ)), slab(max(n_vir, n_occ), max(n_vir, n_occ)))
       !$omp do schedule(dynamic)
       do ipair = 1, npair
          ish = pair_i(ipair)
          jsh = pair_j(ipair)
-         di = shell_dim(this%cartesian, ish - 1, this%bas)
-         io = this%shell_offset(ish)
-         dj = shell_dim(this%cartesian, jsh - 1, this%bas)
-         jo = this%shell_offset(jsh)
+         di = tab%dims(ish)
+         io = tab%offs(ish)
+         dj = tab%dims(jsh)
+         jo = tab%offs(jsh)
 
          ! Every ket pair against this bra pair, filled both ways round so the
          ! contraction below can be a plain matrix product.
          ket(:, :, 1:di*dj) = 0.0_dp
-         do ksh = 1, this%nbas
-            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
-            ko = this%shell_offset(ksh)
+         do ksh = 1, tab%nbas
+            dk = tab%dims(ksh)
+            ko = tab%offs(ksh)
             do lsh = 1, ksh
-               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
-               lo = this%shell_offset(lsh)
+               dl = tab%dims(lsh)
+               lo = tab%offs(lsh)
                ret = two_electron_block(this%cartesian, buf, &
                                         [ish - 1, jsh - 1, ksh - 1, lsh - 1], this%atm, &
-                                        this%natm, this%bas, this%nbas, this%env, opt)
+                                        this%natm, tab%bas, tab%nbas, tab%env, opt)
                if (ret == 0) cycle
                do l = 1, dl
                   do k = 1, dk
@@ -1425,19 +1723,24 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:)
       real(dp) :: value
       type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
 
       n_pair = this%nao*(this%nao + 1)/2
       allocate (eri(n_pair, n_pair))
       eri = 0.0_dp
 
-      opt = c_null_ptr
-      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
-                                  this%nbas, this%env)
+      ! The fused-sp view where it exists; AO-indexed output, so only the
+      ! shell loops feel it.
+      call eri_shell_table(this, tab)
 
-      npair_sh = this%nbas*(this%nbas + 1)/2
+      opt = c_null_ptr
+      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, tab%bas, &
+                                  tab%nbas, tab%env)
+
+      npair_sh = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair_sh), pair_j(npair_sh))
       ipair = 0
-      do ish = 1, this%nbas
+      do ish = 1, tab%nbas
          do jsh = 1, ish
             ipair = ipair + 1
             pair_i(ipair) = ish
@@ -1446,29 +1749,29 @@ contains
       end do
 
       !$omp parallel default(none) &
-      !$omp    shared(this, eri, opt, npair_sh, pair_i, pair_j) &
+      !$omp    shared(this, tab, eri, opt, npair_sh, pair_i, pair_j) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, p, q, r, t, pq, rt, shls, ret, idx, value, buf)
-      allocate (buf(max_block(this)**4))
+      allocate (buf(tab%block_max**4))
       !$omp do schedule(dynamic)
       do ipair = 1, npair_sh
          ish = pair_i(ipair)
          jsh = pair_j(ipair)
-         di = shell_dim(this%cartesian, ish - 1, this%bas)
-         io = this%shell_offset(ish)
-         dj = shell_dim(this%cartesian, jsh - 1, this%bas)
-         jo = this%shell_offset(jsh)
+         di = tab%dims(ish)
+         io = tab%offs(ish)
+         dj = tab%dims(jsh)
+         jo = tab%offs(jsh)
          do ksh = 1, ish
-            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
-            ko = this%shell_offset(ksh)
+            dk = tab%dims(ksh)
+            ko = tab%offs(ksh)
             lsh_max = ksh
             if (ksh == ish) lsh_max = jsh
             do lsh = 1, lsh_max
-               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
-               lo = this%shell_offset(lsh)
+               dl = tab%dims(lsh)
+               lo = tab%offs(lsh)
                shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
-                                        this%natm, this%bas, this%nbas, this%env, opt)
+                                        this%natm, tab%bas, tab%nbas, tab%env, opt)
                if (ret == 0) cycle
 
                do l = 1, dl
@@ -1729,10 +2032,15 @@ contains
       if (allocated(this%bas)) deallocate (this%bas)
       if (allocated(this%env)) deallocate (this%env)
       if (allocated(this%shell_offset)) deallocate (this%shell_offset)
+      if (allocated(this%bas_sp)) deallocate (this%bas_sp)
+      if (allocated(this%env_sp)) deallocate (this%env_sp)
+      if (allocated(this%shell_offset_sp)) deallocate (this%shell_offset_sp)
+      if (allocated(this%sp_split_first)) deallocate (this%sp_split_first)
       if (allocated(this%charges)) deallocate (this%charges)
       if (allocated(this%coords)) deallocate (this%coords)
       this%natm = 0
       this%nbas = 0
+      this%nbas_sp = 0
       this%nao = 0
       this%cartesian = .false.
    end subroutine molecule_destroy

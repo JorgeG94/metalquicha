@@ -17,7 +17,7 @@ target_sources(
           mqc_libcint_gradient.f90
           mqc_libcint_bridge.f90
           mqc_libcint_direct.f90
-          mqc_libcint_integrals.f90
+          mqc_libcint_integrals.F90
           mqc_libcint_multipole.f90
           mqc_libcint_avas.f90
           mqc_libcint_bonding.f90

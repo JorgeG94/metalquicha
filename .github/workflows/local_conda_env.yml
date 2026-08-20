@@ -19,38 +19,66 @@ jobs:
           # The matrix values below are what the defaults currently *are*, and
           # they only decide which validation steps run. If a default drifts away
           # from them this job fails rather than quietly skipping work.
+          #
+          # Note this job now builds Release, which is the default as of the
+          # commit that changed it, and Release carries -march=native. That is
+          # right here -- one runner builds and runs -- and wrong for anything
+          # built somewhere other than where it runs, which is what
+          # MQC_ARCH_FLAGS is for.
           - name: "default build (no flags)"
             defaults: true
             tblite: true
             legacy_mpi: false
             libcint: true
             libxc: true
-          - name: "with tblite"
+            # libfint is the default backend now, so this job builds it. The
+            # value is here only so the validation steps below gate correctly;
+            # the build itself passes no flags at all.
+            libfint: true
+          # tblite built without libxc or the integrals backend -- a reduced
+          # build, and only a build. The xTB validation is not run here: it
+          # touches neither libxc nor the integrals, so on modern MPI it would
+          # check exactly what the default build already checked. It runs there
+          # and on the legacy-MPI job, which is the one thing this job's
+          # configuration does not cover.
+          - name: "with tblite (build only)"
             tblite: true
             legacy_mpi: false
+            build_only: true
           - name: "no tblite"
             tblite: false
             legacy_mpi: false
           - name: "with tblite + legacy MPI"
             tblite: true
             legacy_mpi: true
-          # libxc is fetched and built from source, and it is large -- several
-          # thousand generated functional files. Nothing here compiles it
-          # otherwise, so a change that breaks the fetch or the linkage would
-          # only surface on someone's machine. tblite is off so this job is
-          # only libxc.
-          - name: "with libxc"
-            tblite: false
-            legacy_mpi: false
-            libxc: true
-          # libcint with libxc explicitly off -- a reduced build now that both are
-          # on by default, and worth keeping: it is what you get asking only for
-          # the integrals, and it is the configuration where the "this build has
-          # no libxc" refusals are the behaviour under test.
-          - name: "with libcint"
+          # Integrals with libxc explicitly off -- a reduced build now that both
+          # are on by default, and worth keeping: it is what you get asking only
+          # for the integrals, and it is the configuration where the "this build
+          # has no libxc" refusals are the behaviour under test. Takes libfint,
+          # like everything else that does not say otherwise.
+          - name: "integrals only (no libxc)"
             tblite: false
             legacy_mpi: false
             libcint: true
+            libfint: true
+          # The other integral backend, now that libfint is the default. This is
+          # the only job that builds libcint, and it is not a formality: the two
+          # are not interchangeable at compile time. libfint carries L (sp)
+          # shells and libcint cannot represent one, so a libfint build defines
+          # MQC_WITH_SP_SHELLS and compiles the fused-sp view in
+          # mqc_libcint_integrals.F90, while this job compiles the split-shell
+          # path instead. Every other job exercises one of those two bodies of
+          # code and this one exercises the other.
+          #
+          # libxc is on so the CPU validation step below runs: twelve of those
+          # cases name a functional, and it is the validation, not the build,
+          # that catches an integral going subtly wrong.
+          - name: "with libcint (instead of libfint)"
+            backend: libcint
+            tblite: false
+            legacy_mpi: false
+            libcint: true
+            libxc: true
           # The Python interface needs every backend in one library. backends.py
           # covers standalone and fragmented, xTB and Hartree-Fock -- three of
           # those four paths can break without the others noticing -- and
@@ -62,6 +90,7 @@ jobs:
             legacy_mpi: false
             libcint: true
             libxc: true
+            libfint: true
             python: true
     steps:
       - uses: actions/checkout@v4
@@ -89,6 +118,7 @@ jobs:
                   -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
+                  -DMQC_USE_LIBFINT=${{ matrix.backend == 'libcint' && 'OFF' || 'ON' }} \
                   -B build
           fi
           cmake --build build --parallel 2
@@ -124,16 +154,22 @@ jobs:
       # Needs libxc as well as libcint: twelve of these cases name a functional
       # and are refused outright without it, which is how this step first went
       # red -- a libcint-only build, not a broken calculation.
-      - name: Run CPU validation tests (libcint)
-        if: matrix.libcint && matrix.libxc
+      # Skipped on the Python job: it runs the same 243 cases on the same
+      # backend as the default build, and what that job is for is the ctypes
+      # boundary, not the physics.
+      - name: Run CPU validation tests (${{ matrix.backend || 'libfint' }})
+        if: matrix.libcint && matrix.libxc && !matrix.python
         shell: bash -el {0}
         run: |
           conda activate mqc
           cd validation
           python3 run_validation.py --manifest validation_tests_cpu.json -v
 
+      # Skipped where it would repeat itself: the Python job and the tblite
+      # build-only job both run this same suite on modern MPI, which the default
+      # build already does. What is left is one modern-MPI run and one legacy.
       - name: Run physics validation tests
-        if: matrix.tblite
+        if: matrix.tblite && !matrix.python && !matrix.build_only
         shell: bash -el {0}
         run: |
           conda activate mqc
@@ -141,7 +177,7 @@ jobs:
           python3 run_validation.py -v
 
       - name: Upload validation outputs on failure
-        if: failure() && matrix.tblite
+        if: failure() && matrix.tblite && !matrix.python && !matrix.build_only
         uses: actions/upload-artifact@v4
         with:
           name: validation-outputs-tblite
