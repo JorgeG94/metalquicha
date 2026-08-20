@@ -536,16 +536,17 @@ contains
       real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), accumulated
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:)
+      real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:), buf_ik2(:)
       real(dp), allocatable :: hloc(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:), sh_dim(:), sh_off(:)
-      integer :: dims(0:3), shls(0:3)
+      integer :: dims(0:3), shls(0:3), dims2(0:3), shls2(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
-      integer :: nao, natm, ia, ja, ka, a, b, c, pair, n_pairs
-      real(dp) :: gam
-      logical :: have_ii, have_ij, have_ik
+      integer :: nao, natm, ia, ja, ka, la, a, b, c, pair, n_pairs
+      real(dp) :: gam, ket_w
+      integer :: idx2
+      logical :: have_ii, have_ij, have_ik, have_ik2
 
       if (error%has_error()) return
 
@@ -582,11 +583,12 @@ contains
       !$omp parallel default(none) &
       !$omp shared(mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
       !$omp        mx, natm, n_pairs, error) &
-      !$omp private(buf_ii, buf_ij, buf_ik, hloc, dims, shls, ish, jsh, ksh, lsh, &
-      !$omp         di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, comp, idx, &
-      !$omp         ia, ja, ka, a, b, gam, pair, have_ii, have_ij, have_ik)
+      !$omp private(buf_ii, buf_ij, buf_ik, buf_ik2, hloc, dims, shls, dims2, shls2, &
+      !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
+      !$omp         comp, idx, idx2, ia, ja, ka, la, a, b, gam, ket_w, pair, &
+      !$omp         have_ii, have_ij, have_ik, have_ik2)
       allocate (buf_ii(mx**4*N_COMPONENTS), buf_ij(mx**4*N_COMPONENTS), &
-                buf_ik(mx**4*N_COMPONENTS))
+                buf_ik(mx**4*N_COMPONENTS), buf_ik2(mx**4*N_COMPONENTS))
       allocate (hloc(3, 3, natm, natm))
       hloc = 0.0_dp
 
@@ -601,24 +603,53 @@ contains
          do ksh = 1, mol%nbas
             dk = sh_dim(ksh)
             ko = sh_off(ksh)
-            do lsh = 1, mol%nbas
+            ! **Only the ket pair is restricted, and only two of the three
+            ! integrals get to use it.** `ipip1` and `ipvip1` leave the ket
+            ! untouched, so `(kl)` and `(lk)` are the same integral; the weight
+            ! is the same too, since the contraction weight is symmetric under
+            ! that swap, and so is the atom pair each deposits into. Those two
+            ! orderings therefore contribute identically and one call covers
+            ! both.
+            !
+            ! `ip1ip2` does not get that. Its second derivative sits on the
+            ! *first* ket index, so swapping `k` and `l` moves the derivative
+            ! to a different atom -- a different integral depositing into a
+            ! different pair. Both orderings are computed.
+            !
+            ! Net: four calls per restricted quartet where the full loop made
+            ! six, and no permutation of the bra is available at all, because
+            ! `ipip1` distinguishes its two bra indices and `ip1ip2`
+            ! distinguishes bra from ket.
+            do lsh = 1, ksh
                dl = sh_dim(lsh)
                lo = sh_off(lsh)
                shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                dims = [di, dj, dk, dl]
+               ket_w = 2.0_dp
+               if (lsh == ksh) ket_w = 1.0_dp
 
                have_ii = drive_2e(mol, HESS_ERI_II, buf_ii, dims, shls, atm_flat, bas_flat)
                have_ij = drive_2e(mol, HESS_ERI_IJ, buf_ij, dims, shls, atm_flat, bas_flat)
                have_ik = drive_2e(mol, HESS_ERI_IK, buf_ik, dims, shls, atm_flat, bas_flat)
-               if (.not. (have_ii .or. have_ij .or. have_ik)) cycle
+               have_ik2 = .false.
+               if (lsh /= ksh) then
+                  shls2 = [ish - 1, jsh - 1, lsh - 1, ksh - 1]
+                  dims2 = [di, dj, dl, dk]
+                  have_ik2 = drive_2e(mol, HESS_ERI_IK, buf_ik2, dims2, shls2, &
+                                      atm_flat, bas_flat)
+               end if
+               if (.not. (have_ii .or. have_ij .or. have_ik .or. have_ik2)) cycle
 
                do l = 1, dl
+                  la = owner(lo + l)
                   do k = 1, dk
                      ka = owner(ko + k)
                      do j = 1, dj
                         ja = owner(jo + j)
                         do i = 1, di
                            ia = owner(io + i)
+                           ! Symmetric under `k <-> l`, which is what lets the
+                           ! swapped ordering reuse it.
                            gam = 0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
                                  - 0.125_dp*(density(io + i, lo + l)*density(ko + k, jo + j) &
                                           + density(io + i, ko + k)*density(jo + j, lo + l))
@@ -627,9 +658,17 @@ contains
                               a = (comp - 1)/3 + 1
                               b = comp - 3*(a - 1)
                               idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
-                              hloc(a, b, ia, ia) = hloc(a, b, ia, ia) + 4.0_dp*gam*buf_ii(idx)
-                              hloc(a, b, ia, ja) = hloc(a, b, ia, ja) + 4.0_dp*gam*buf_ij(idx)
+                              hloc(a, b, ia, ia) = hloc(a, b, ia, ia) &
+                                                   + 4.0_dp*ket_w*gam*buf_ii(idx)
+                              hloc(a, b, ia, ja) = hloc(a, b, ia, ja) &
+                                                   + 4.0_dp*ket_w*gam*buf_ij(idx)
                               hloc(a, b, ia, ka) = hloc(a, b, ia, ka) + 8.0_dp*gam*buf_ik(idx)
+                              if (have_ik2) then
+                                 idx2 = i + di*(j - 1 + dj*(l - 1 + dl*(k - 1 &
+                                                                        + dk*(comp - 1))))
+                                 hloc(a, b, ia, la) = hloc(a, b, ia, la) &
+                                                      + 8.0_dp*gam*buf_ik2(idx2)
+                              end if
                            end do
                         end do
                      end do
@@ -643,7 +682,7 @@ contains
       !$omp critical
       hess = hess + hloc
       !$omp end critical
-      deallocate (buf_ii, buf_ij, buf_ik, hloc)
+      deallocate (buf_ii, buf_ij, buf_ik, buf_ik2, hloc)
       !$omp end parallel
 
       deallocate (atm_flat, bas_flat, owner, offsets, counts, sh_dim, sh_off)
