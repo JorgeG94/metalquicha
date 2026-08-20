@@ -2,6 +2,7 @@ module test_mqc_physical_fragment
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_physical_fragment, only: to_angstrom, to_bohr, initialize_system_geometry, &
                                     build_fragment_from_indices, &
+                                    redistribute_cap_gradients, &
                                     system_geometry_t, physical_fragment_t
    use mqc_config_types, only: bond_t
    use mqc_error, only: error_t
@@ -36,6 +37,8 @@ contains
                   new_unittest("fragment_destroy", test_fragment_destroy_proc), &
                   new_unittest("system_destroy", test_system_destroy_proc), &
                   new_unittest("h_cap_single_broken_bond", test_h_cap_single_broken), &
+                  new_unittest("cap_gradient_default_is_old_rule", test_cap_gradient_unscaled), &
+                  new_unittest("cap_gradient_splits_when_scaled", test_cap_gradient_scaled), &
                   new_unittest("h_cap_no_broken_bonds", test_h_cap_no_broken), &
                   new_unittest("h_cap_dimer_intact_internal", test_h_cap_dimer_intact), &
                   new_unittest("h_cap_positions_and_elements", test_h_cap_positions) &
@@ -291,6 +294,102 @@ contains
    ! ============================================================================
    ! Hydrogen capping tests
    ! ============================================================================
+
+   subroutine cap_test_fragment(sys_geom, fragment, bonds, parse_error, scale)
+      !! One monomer of the trimer, with its bond to the next one cut
+      type(system_geometry_t), intent(out) :: sys_geom
+      type(physical_fragment_t), intent(out) :: fragment
+      type(bond_t), allocatable, intent(out) :: bonds(:)
+      type(error_t), intent(out) :: parse_error
+      real(dp), intent(in), optional :: scale
+
+      call create_test_water_trimer()
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
+                                      sys_geom, parse_error)
+      if (parse_error%has_error()) return
+
+      allocate (bonds(1))
+      bonds(1)%atom_i = 0
+      bonds(1)%atom_j = 3
+      bonds(1)%order = 1
+      bonds(1)%is_broken = .true.
+
+      call build_fragment_from_indices(sys_geom, [1], fragment, parse_error, bonds)
+      if (present(scale)) fragment%cap_scale = scale
+   end subroutine cap_test_fragment
+
+   subroutine test_cap_gradient_unscaled(error)
+      !! At the default scale the cap's gradient lands wholly on the atom it
+      !! replaced, which is the rule this program used before a scale existed.
+      !!
+      !! Pinned rather than assumed. `cap_scale` defaults to 1, and at that value
+      !! the chain rule's second weight is exactly zero -- so this asserts the
+      !! new code path reproduces the old one rather than merely resembling it,
+      !! which is what makes the keyword a no-op for every existing deck.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
+      real(dp), allocatable :: frag_grad(:, :), sys_grad(:, :)
+
+      call cap_test_fragment(sys_geom, fragment, bonds, parse_error)
+      if (parse_error%has_error()) then
+         call check(error, .false., parse_error%get_message()); call cleanup_test_files(); return
+      end if
+
+      allocate (frag_grad(3, fragment%n_atoms), source=0.0_dp)
+      allocate (sys_grad(3, sys_geom%total_atoms), source=0.0_dp)
+      frag_grad(1, fragment%n_atoms) = 1.0_dp      ! a unit force on the cap alone
+
+      call redistribute_cap_gradients(fragment, frag_grad, sys_grad)
+
+      ! atom 3 (0-based) is the one the cap replaced
+      call check(error, abs(sys_grad(1, 4) - 1.0_dp) < tol, &
+                 "the whole cap gradient belongs to the replaced atom at scale 1")
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+      call check(error, abs(sys_grad(1, 1)) < tol, &
+                 "and none of it to the atom it is bonded to")
+      call cleanup_test_files()
+   end subroutine test_cap_gradient_unscaled
+
+   subroutine test_cap_gradient_scaled(error)
+      !! Scaled, the cap's gradient splits `s` / `1 - s` between the two atoms
+      !! that move it, and the total is conserved.
+      !!
+      !! Conservation is the part worth asserting: the cap is not a real atom, so
+      !! whatever force it feels has to end up on real ones. A redistribution
+      !! that lost or invented force would leave a fragmented gradient that no
+      !! longer sums to the system's, and nothing else here would notice.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
+      real(dp), allocatable :: frag_grad(:, :), sys_grad(:, :)
+      real(dp), parameter :: s = 0.71_dp
+
+      call cap_test_fragment(sys_geom, fragment, bonds, parse_error, scale=s)
+      if (parse_error%has_error()) then
+         call check(error, .false., parse_error%get_message()); call cleanup_test_files(); return
+      end if
+
+      allocate (frag_grad(3, fragment%n_atoms), source=0.0_dp)
+      allocate (sys_grad(3, sys_geom%total_atoms), source=0.0_dp)
+      frag_grad(1, fragment%n_atoms) = 1.0_dp
+
+      call redistribute_cap_gradients(fragment, frag_grad, sys_grad)
+
+      call check(error, abs(sys_grad(1, 4) - s) < tol, &
+                 "the removed atom takes s of the cap gradient")
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+      call check(error, abs(sys_grad(1, 1) - (1.0_dp - s)) < tol, &
+                 "the bonded atom takes the rest")
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+      call check(error, abs(sum(sys_grad(1, :)) - 1.0_dp) < tol, &
+                 "and the two together conserve it")
+      call cleanup_test_files()
+   end subroutine test_cap_gradient_scaled
 
    subroutine test_h_cap_single_broken(error)
       !! Test single monomer with one broken bond → should add 1 H-cap
