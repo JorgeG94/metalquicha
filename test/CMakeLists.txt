@@ -46,6 +46,17 @@ addtest(mqc_ecp_reader)
 addtest(mqc_fraglist)
 addtest(mqc_bond_perception)
 addtest(mqc_fingerprint)
+
+# The output document itself: every consumer of this program reads that file,
+# and nothing checked its shape. Reached only by whole calculations before,
+# which assert on energies rather than on which keys exist and what units they
+# are in.
+addtest(mqc_json_writer)
+
+# What every backend is handed. `reset` restates the defaults the type already
+# declares, so the two are a pair that can drift; the solvation summary is the
+# only place a run says which continuum it used.
+addtest(mqc_method_config)
 addtest(mqc_checkpoint)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE

@@ -30,7 +30,9 @@ contains
                   new_unittest("translational_thermo", test_translational_thermo), &
                   new_unittest("vibrational_thermo", test_vibrational_thermo), &
                   new_unittest("electronic_entropy", test_electronic_entropy), &
-                  new_unittest("full_thermochemistry_h2o", test_full_thermochemistry_h2o) &
+                  new_unittest("full_thermochemistry_h2o", test_full_thermochemistry_h2o), &
+                  new_unittest("linear_rotational_thermo", test_linear_rotational), &
+                  new_unittest("imaginary_frequencies_are_skipped", test_imaginary_skipped) &
                   ]
    end subroutine collect_mqc_thermochemistry_tests
 
@@ -312,6 +314,83 @@ contains
                  "Gibbs correction should be < Enthalpy correction")
 
    end subroutine test_full_thermochemistry_h2o
+
+   subroutine test_linear_rotational(error)
+      !! A linear molecule takes the other branch of every rotational formula,
+      !! and it is the branch nothing exercised: two rotational degrees of
+      !! freedom instead of three, one rotational constant instead of three,
+      !! `E = RT` instead of `3RT/2`, and a partition function built from the
+      !! single non-zero moment. A nonlinear formula applied to CO2 gives a
+      !! rotational entropy that is wrong by several cal/mol/K -- small enough
+      !! to look like a temperature difference, large enough to move a free
+      !! energy by a kcal.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: moments(3), rot_const(3)
+      real(dp) :: e_lin, s_lin, cv_lin, e_non, s_non, cv_non
+      real(dp), parameter :: T = 298.15_dp
+
+      ! CO2-like: one vanishing moment about the molecular axis, two equal.
+      moments = [0.0_dp, 43.2_dp, 43.2_dp]
+
+      call compute_rotational_constants(moments, .true., rot_const)
+      call check(error, rot_const(1) > 0.0_dp, &
+                 "a linear molecule got no rotational constant")
+      if (allocated(error)) return
+      call check(error, abs(rot_const(2)) < 1.0e-12_dp .and. abs(rot_const(3)) < 1.0e-12_dp, &
+                 "a linear molecule reported three rotational constants")
+      if (allocated(error)) return
+
+      call compute_rotational_thermo(moments, T, 2, .true., e_lin, s_lin, cv_lin)
+      call compute_rotational_thermo([43.2_dp, 43.2_dp, 43.2_dp], T, 2, .false., &
+                                     e_non, s_non, cv_non)
+
+      ! Two degrees of freedom against three: the energy and the heat capacity
+      ! are in the ratio 2/3 exactly, whatever the moments are.
+      call check(error, abs(e_lin/e_non - 2.0_dp/3.0_dp) < 1.0e-10_dp, &
+                 "the linear rotational energy is not RT")
+      if (allocated(error)) return
+      call check(error, abs(cv_lin/cv_non - 2.0_dp/3.0_dp) < 1.0e-10_dp, &
+                 "the linear rotational heat capacity is not R")
+      if (allocated(error)) return
+      call check(error, s_lin > 0.0_dp, "the linear rotational entropy is not positive")
+      if (allocated(error)) return
+
+      ! A moment small enough to be numerical noise about every axis is not a
+      ! molecule that rotates: the partition function would diverge, and the
+      ! entropy is reported as zero rather than as an enormous number.
+      call compute_rotational_thermo([0.0_dp, 0.0_dp, 0.0_dp], T, 1, .true., &
+                                     e_lin, s_lin, cv_lin)
+      call check(error, abs(s_lin) < 1.0e-12_dp, &
+                 "an atom was given a rotational entropy")
+   end subroutine test_linear_rotational
+
+   subroutine test_imaginary_skipped(error)
+      !! A transition state has one imaginary frequency, and the zero-point
+      !! energy is over the real ones only. Counting it would add an imaginary
+      !! contribution to a real number; taking its magnitude would raise the
+      !! ZPE by half its quantum, which for a typical mode is a kcal/mol and
+      !! looks like a tighter geometry rather than a bug.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: with_imaginary, without, kcal
+      real(dp) :: frequencies(4)
+      integer :: n_real, n_real_without
+
+      frequencies = [-1200.0_dp, 1595.0_dp, 3657.0_dp, 3756.0_dp]
+      call compute_zpe(frequencies, 4, n_real, with_imaginary, kcal)
+      call compute_zpe(frequencies(2:4), 3, n_real_without, without, kcal)
+
+      call check(error, n_real == 3, &
+                 "the imaginary frequency was counted as a real mode")
+      if (allocated(error)) return
+      call check(error, n_real_without == 3, "the real modes were miscounted")
+      if (allocated(error)) return
+      call check(error, abs(with_imaginary - without) < 1.0e-12_dp, &
+                 "the imaginary frequency contributed to the zero-point energy")
+      if (allocated(error)) return
+      call check(error, with_imaginary > 0.0_dp, "the zero-point energy is not positive")
+   end subroutine test_imaginary_skipped
 
 end module test_mqc_thermochemistry
 
