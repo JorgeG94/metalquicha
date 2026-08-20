@@ -118,6 +118,13 @@ module mqc_config_types
       character(len=:), allocatable :: bonding_analysis
          !! From `properties.bonding_analysis.type`. Absent or "none" means no
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
+      character(len=:), allocatable :: fukui_population
+         !! From `properties.fukui.population`. Allocated means the deck asked
+         !! for Fukui indices; "chelpg" or "mulliken" chooses how the density
+         !! difference is condensed onto atoms. Required inside the object
+         !! rather than defaulted, so that asking for the analysis and choosing
+         !! how it is condensed are one decision -- the choice changes the
+         !! numbers enough that it should not be made by omission.
       logical :: bonding_energy = .false.
          !! From `properties.bonding_analysis.energy_decomposition`. Off by
          !! default because the two-electron term needs the dense `n_ao^4`

@@ -197,6 +197,8 @@ contains
       call optional_string(json, "model.functional", config%functional)
 
       ! ---- properties ------------------------------------------------------
+      call optional_string(json, "properties.fukui.population", &
+                           config%fukui_population)
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &

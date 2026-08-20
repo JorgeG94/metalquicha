@@ -841,6 +841,28 @@ contains
       ! energy above is correct and already stored, and an analysis that cannot
       ! run -- an element the minimal basis does not cover, an open shell the
       ! construction is not written for -- is not a reason to throw it away.
+      ! Where the molecule reacts, by difference in the electron count. Two
+      ! further SCFs on the same `mol`, so the ions see the same geometry and
+      ! the same basis functions by construction.
+      if (allocated(settings%fukui_population)) then
+         block
+            use mqc_libcint_fukui, only: fukui_result_t, fukui_indices, print_fukui_report
+            type(fukui_result_t) :: fukui
+            type(error_t) :: fukui_error
+
+            call fukui_indices(mol, fragment%nelec, fragment%multiplicity, scf%density, &
+                               scf%energy, settings%fukui_population, settings%max_iter, &
+                               settings%energy_tol, settings%density_tol, fukui, &
+                               fukui_error)
+            if (fukui_error%has_error()) then
+               call logger%warning("  the Fukui analysis could not run: "// &
+                                   fukui_error%get_message())
+            else
+               call print_fukui_report(fukui, symbols)
+            end if
+         end block
+      end if
+
       if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
          call analysis_error%clear()
          ! Printed whatever the verbosity. Asking for a property *is* the
