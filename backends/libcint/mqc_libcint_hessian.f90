@@ -42,6 +42,7 @@ module mqc_libcint_hessian
    public :: partial_hessian
    public :: response_hessian
    public :: rhf_hessian
+   public :: hessian_to_matrix
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -915,5 +916,39 @@ contains
       hess = hess + part + resp
       deallocate (weighted, part, resp)
    end subroutine rhf_hessian
+
+   subroutine hessian_to_matrix(hess, matrix)
+      !! `(3, 3, natm, natm)` to the `(3N, 3N)` a vibrational analysis reads
+      !!
+      !! Atom slowest, Cartesian fastest -- the order
+      !! `finite_diff_hessian_from_gradients` already builds, so the two
+      !! Hessian paths hand the same layout to the same analysis.
+      !!
+      !! Worth being a routine rather than six lines at the call site, because
+      !! only one of the ways to get it wrong is harmless and it is not the
+      !! obvious one. Swapping **both** index pairs -- `hess(b, a, ja, ia)` --
+      !! is the genuine transpose, and a Hessian is symmetric, so it changes
+      !! nothing; measured, and it passes. Swapping only the atoms is not a
+      !! transpose of anything, and neither is interleaving the two indices
+      !! Cartesian-slowest. Both of those move every frequency and both are
+      !! caught. The rule to keep is the layout, not a symmetry argument about
+      !! it.
+      real(dp), intent(in) :: hess(:, :, :, :)
+      real(dp), allocatable, intent(out) :: matrix(:, :)
+
+      integer :: natm, ia, ja, a, b
+
+      natm = size(hess, 3)
+      allocate (matrix(3*natm, 3*natm))
+      do ja = 1, natm
+         do ia = 1, natm
+            do b = 1, 3
+               do a = 1, 3
+                  matrix(3*(ia - 1) + a, 3*(ja - 1) + b) = hess(a, b, ia, ja)
+               end do
+            end do
+         end do
+      end do
+   end subroutine hessian_to_matrix
 
 end module mqc_libcint_hessian

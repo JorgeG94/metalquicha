@@ -19,7 +19,8 @@ module test_mqc_hess_ints
                                     hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ
    use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
                                   solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian, &
-                                  response_hessian, rhf_hessian
+                                  response_hessian, rhf_hessian, hessian_to_matrix
+   use mqc_vibrational_analysis, only: compute_vibrational_analysis
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_hess_ints, only: eri_ip1_block
@@ -331,9 +332,11 @@ contains
       type(error_t) :: err
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess(:, :, :, :)
+      real(dp), allocatable :: mine(:, :), theirs(:, :)
+      real(dp), allocatable :: f_mine(:), f_theirs(:), rm(:), fc(:), disp(:, :)
       real(dp) :: geo(3, 3), pp, pm, mp_, mm, fd, worst, scale
       real(dp), parameter :: H = 2.0e-3_dp
-      integer :: ia, ja, a, b, nocc
+      integer :: ia, ja, a, b, nocc, k
 
       nocc = 5
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
@@ -349,6 +352,7 @@ contains
          return
       end if
 
+      allocate (theirs(9, 9))
       worst = 0.0_dp
       scale = 0.0_dp
       do ja = 1, 3
@@ -374,6 +378,7 @@ contains
                   if (err%has_error()) exit
 
                   fd = (pp - pm - mp_ + mm)/(4.0_dp*H*H)
+                  theirs(3*(ia - 1) + a, 3*(ja - 1) + b) = fd
                   worst = max(worst, abs(fd - hess(a, b, ia, ja)))
                   scale = max(scale, abs(fd))
                end do
@@ -418,6 +423,57 @@ contains
       end do
       call check(error, worst < 1.0e-8_dp*scale, &
                  "a rigid translation does not leave the Hessian alone")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! ---- and the same comparison in the units anyone actually reads -------
+      !
+      ! The matrix agreeing element by element does not by itself mean the
+      ! frequencies do, because between the two lies `hessian_to_matrix` and
+      ! the mass weighting it feeds. Interleaving the atom and Cartesian
+      ! indices the wrong way round leaves a matrix that is still symmetric,
+      ! still translationally invariant and still agrees with nothing -- it
+      ! only shows up once masses are attached, which is here.
+      !
+      ! Both Hessians go through the same analysis, so what is compared is the
+      ! Hessians and not the analysis.
+      call hessian_to_matrix(hess, mine)
+      call compute_vibrational_analysis(mine, WATER_Z, f_mine, rm, fc, disp, &
+                                        coordinates=WATER, project_trans_rot=.true.)
+      deallocate (rm, fc, disp)
+      call compute_vibrational_analysis(theirs, WATER_Z, f_theirs, rm, fc, disp, &
+                                        coordinates=WATER, project_trans_rot=.true.)
+
+      ! The three real modes, which are the last three after projection.
+      worst = 0.0_dp
+      scale = 0.0_dp
+      do k = 7, 9
+         worst = max(worst, abs(f_mine(k) - f_theirs(k)))
+         scale = max(scale, abs(f_theirs(k)))
+      end do
+      call check(error, scale > 1000.0_dp, "no vibrations came back")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      ! A tenth of a wavenumber on modes of a few thousand. The residual is the
+      ! finite-difference Hessian's, not this one's.
+      call check(error, worst < 0.5_dp, &
+                 "the analytic and finite-difference frequencies disagree")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! Six modes projected out, and they should be gone rather than small.
+      worst = 0.0_dp
+      do k = 1, 6
+         worst = max(worst, abs(f_mine(k)))
+      end do
+      call check(error, worst < 1.0_dp, &
+                 "the translations and rotations did not come out at zero")
       call mol%destroy()
    end subroutine rhf_hessian_fd
 
