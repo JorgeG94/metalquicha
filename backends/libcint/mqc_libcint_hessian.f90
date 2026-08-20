@@ -23,11 +23,12 @@ module mqc_libcint_hessian
    use mqc_libcint_gradient, only: one_electron_deriv, iprinv_deriv_at, &
                                    DERIV_KIN, DERIV_NUC, DERIV_OVLP
    use mqc_libcint_hess_ints, only: eri_ip1_block, hess_1e_block, hess_2e_block, &
-                                    hess_rinv_block, &
+                                    hess_rinv_block, hess_2e_contract, h1_contract, &
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                     HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
                                     HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
-   use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
+   use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
+                                 schwarz_bounds, direct_stats_t
    use mqc_libcint_response, only: response_operator_t, solve_response
    use pic_blas_interfaces, only: pic_gemm
    implicit none
@@ -38,6 +39,7 @@ module mqc_libcint_hessian
    public :: overlap_deriv_atom
    public :: nuclear_response_t
    public :: solve_mo1_atom
+   public :: solve_mo1_batch
    public :: nuclear_repulsion_hessian
    public :: partial_hessian
    public :: response_hessian
@@ -64,6 +66,11 @@ module mqc_libcint_hessian
       real(dp), allocatable :: zero_h(:, :)
       integer :: n_occ = 0
       integer :: n_mo = 0
+      integer :: n_pert = 1
+         !! How many perturbations travel together. The trial vector is
+         !! `n_mo` by `n_occ` by this, and the whole point of it being more
+         !! than one is that a Fock build costs an integral pass whether it
+         !! contracts one density or a dozen.
    contains
       procedure :: apply => nuclear_apply
       procedure :: length => nuclear_length
@@ -298,7 +305,7 @@ contains
       class(nuclear_response_t), intent(in) :: this
       integer :: n
 
-      n = this%n_mo*this%n_occ
+      n = this%n_mo*this%n_occ*this%n_pert
    end function nuclear_length
 
    subroutine nuclear_apply(this, vector, image, error)
@@ -328,50 +335,59 @@ contains
       real(dp), intent(out) :: image(:)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: mo1(:, :), half(:, :), dens(:, :), g(:, :), work(:, :)
-      real(dp), allocatable :: gmo(:, :)
+      real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
+      real(dp), allocatable :: work(:, :), gmo(:, :)
       type(direct_stats_t) :: stats
-      integer :: n_ao, i, a
+      integer :: n_ao, i, a, p
 
       if (error%has_error()) return
 
       n_ao = size(this%orbitals, 1)
-      allocate (mo1(this%n_mo, this%n_occ))
-      mo1 = reshape(vector, [this%n_mo, this%n_occ])
+      allocate (mo1(this%n_mo, this%n_occ, this%n_pert))
+      mo1 = reshape(vector, [this%n_mo, this%n_occ, this%n_pert])
 
-      ! The density this response implies, symmetrised.
-      allocate (half(n_ao, this%n_occ), dens(n_ao, n_ao))
-      ! **Twice, for double occupancy.** The trial vector describes how one
-      ! spatial orbital moves; the density it perturbs holds two electrons in
-      ! that orbital. Leaving the factor out halves the response, which does not
-      ! stop the iteration converging -- it converges to the wrong answer, and
-      ! the first-order density comes out roughly a third too large rather than
-      ! obviously doubled, because the error feeds back through the coupling.
-      call pic_gemm(this%orbitals, mo1, half, alpha=2.0_dp, beta=0.0_dp)
-      call pic_gemm(half, this%c_occ, dens, transb="T")
-      dens = dens + transpose(dens)
+      ! The densities these responses imply, symmetrised, one per perturbation.
+      allocate (half(n_ao, this%n_occ), dens(n_ao, n_ao, this%n_pert))
+      do p = 1, this%n_pert
+         ! **Twice, for double occupancy.** The trial vector describes how one
+         ! spatial orbital moves; the density it perturbs holds two electrons in
+         ! that orbital. Leaving the factor out halves the response, which does not
+         ! stop the iteration converging -- it converges to the wrong answer, and
+         ! the first-order density comes out roughly a third too large rather than
+         ! obviously doubled, because the error feeds back through the coupling.
+         call pic_gemm(this%orbitals, mo1(:, :, p), half, alpha=2.0_dp, beta=0.0_dp)
+         call pic_gemm(half, this%c_occ, dens(:, :, p), transb="T")
+         dens(:, :, p) = dens(:, :, p) + transpose(dens(:, :, p))
+      end do
 
-      allocate (g(n_ao, n_ao))
-      call build_fock_direct(this%mol, this%zero_h, dens, this%bounds, g, stats, &
-                             error, density_screen=.false.)
+      ! **One integral pass for the whole batch.** This is the entire reason the
+      ! perturbations travel together: the quartets do not depend on which
+      ! density is being contracted, and evaluating them is what the build
+      ! costs. `build_fock_direct_many` screens on the Schwarz bound alone, so
+      ! a batch is bit-for-bit what the same densities give one at a time --
+      ! which matters here, because a response density is not a density and
+      ! screening on its magnitude would be wrong.
+      call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error)
       if (error%has_error()) return
 
       ! Back to the molecular basis, occupied columns only.
       allocate (work(n_ao, this%n_occ), gmo(this%n_mo, this%n_occ))
-      call pic_gemm(g, this%c_occ, work)
-      call pic_gemm(this%orbitals, work, gmo, transa="T")
-
-      do i = 1, this%n_occ
-         do a = 1, this%n_mo
-            if (a <= this%n_occ) then
-               gmo(a, i) = 0.0_dp
-            else
-               gmo(a, i) = gmo(a, i)/(this%energies(i) - this%energies(a))
-            end if
+      do p = 1, this%n_pert
+         call pic_gemm(g(:, :, p), this%c_occ, work)
+         call pic_gemm(this%orbitals, work, gmo, transa="T")
+         do i = 1, this%n_occ
+            do a = 1, this%n_mo
+               if (a <= this%n_occ) then
+                  gmo(a, i) = 0.0_dp
+               else
+                  gmo(a, i) = gmo(a, i)/(this%energies(i) - this%energies(a))
+               end if
+            end do
          end do
+         mo1(:, :, p) = gmo
       end do
 
-      image = reshape(gmo, [this%n_mo*this%n_occ])
+      image = reshape(mo1, [this%n_mo*this%n_occ*this%n_pert])
       deallocate (mo1, half, dens, g, work, gmo)
    end subroutine nuclear_apply
 
@@ -574,13 +590,11 @@ contains
       real(dp), allocatable :: h2(:, :, :), hab(:, :, :)
       real(dp), allocatable :: tmp(:, :, :)
       real(dp), allocatable :: r2(:, :, :), rab(:, :, :)
-      real(dp), allocatable :: eri_ii(:, :, :, :, :), eri_ij(:, :, :, :, :), &
-                               eri_ik(:, :, :, :, :)
       integer, allocatable :: owner(:), offsets(:), counts(:)
       real(dp), allocatable :: cross(:, :, :)
       real(dp) :: total(3, 3)
-      real(dp) :: w, gam, zc
-      integer :: nao, natm, iao, jao, kao, lao, ia, ja, ka, a, b, comp, c
+      real(dp) :: w, zc
+      integer :: nao, natm, iao, jao, ia, ja, a, b, comp, c
 
       if (error%has_error()) return
 
@@ -703,37 +717,15 @@ contains
       deallocate (cross)
 
       ! ---- two electron ----------------------------------------------------
-      call hess_2e_block(mol, HESS_ERI_II, eri_ii, error)
-      call hess_2e_block(mol, HESS_ERI_IJ, eri_ij, error)
-      call hess_2e_block(mol, HESS_ERI_IK, eri_ik, error)
+      !
+      ! Driven from shells and contracted on the spot rather than assembled and
+      ! then read back: the three arrays this would otherwise form are `nao^4`
+      ! times nine each. The deposit rules live there with the loop that uses
+      ! them.
+      call hess_2e_contract(mol, density, hess, error)
       if (error%has_error()) return
 
-      do comp = 1, 9
-         a = (comp - 1)/3 + 1
-         b = comp - 3*(a - 1)
-         do lao = 1, nao
-            do kao = 1, nao
-               ka = owner(kao)
-               do jao = 1, nao
-                  ja = owner(jao)
-                  do iao = 1, nao
-                     ia = owner(iao)
-                     gam = 0.5_dp*density(iao, jao)*density(kao, lao) &
-                           - 0.125_dp*(density(iao, lao)*density(kao, jao) &
-                                       + density(iao, kao)*density(jao, lao))
-                     hess(a, b, ia, ia) = hess(a, b, ia, ia) &
-                                          + 4.0_dp*gam*eri_ii(iao, jao, kao, lao, comp)
-                     hess(a, b, ia, ja) = hess(a, b, ia, ja) &
-                                          + 4.0_dp*gam*eri_ij(iao, jao, kao, lao, comp)
-                     hess(a, b, ia, ka) = hess(a, b, ia, ka) &
-                                          + 8.0_dp*gam*eri_ik(iao, jao, kao, lao, comp)
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-      deallocate (eri_ii, eri_ij, eri_ik, owner, offsets, counts)
+      deallocate (owner, offsets, counts)
    end subroutine partial_hessian
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
@@ -772,12 +764,11 @@ contains
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
 
-      real(dp), allocatable :: eri_ip1(:, :, :, :, :)
       real(dp), allocatable :: h1(:, :, :, :), s1(:, :, :, :)
       real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
-      real(dp), allocatable :: mo1(:, :, :), h1a(:, :, :), s1a(:, :, :)
+      real(dp), allocatable :: mo1(:, :, :, :), s1a(:, :, :), hcore_a(:, :, :)
       real(dp), allocatable :: hcore(:, :), fock(:, :), bounds(:, :), zero_h(:, :)
-      real(dp), allocatable :: g1(:, :), f1(:, :), half(:, :), c_occ(:, :)
+      real(dp), allocatable :: g1all(:, :, :), f1(:, :), half(:, :), c_occ(:, :)
       real(dp), allocatable :: tmp(:, :), work(:, :)
       real(dp), allocatable :: outer(:, :), middle(:, :)
       type(direct_stats_t) :: stats
@@ -799,41 +790,58 @@ contains
                              density_screen=.false.)
       if (error%has_error()) return
 
-      call eri_ip1_block(mol, eri_ip1, error)
+      ! Every atom's two-electron perturbation in one pass over the shell
+      ! quartets, rather than `make_h1_atom` per atom over a stored `nao^4`
+      ! array. The core Hamiltonian derivative is per-atom either way and is
+      ! added below.
+      call h1_contract(mol, density, h1, error)
       if (error%has_error()) return
 
-      allocate (h1(nao, nao, 3, natm), s1(nao, nao, 3, natm))
+      allocate (s1(nao, nao, 3, natm))
       allocate (d1(nao, nao, 3, natm), w1(nao, nao, 3, natm))
       allocate (half(nao, n_occ), tmp(nao, nao), work(nao, nao))
-      allocate (g1(nao, nao), f1(nao, nao), outer(nao, nao), middle(nao, nao))
+      allocate (f1(nao, nao), outer(nao, nao), middle(nao, nao))
 
       do ia = 1, natm
-         call make_h1_atom(mol, density, eri_ip1, ia, h1a, error)
+         call hcore_deriv_atom(mol, ia, hcore_a, error)
          call overlap_deriv_atom(mol, ia, s1a, error)
          if (error%has_error()) return
-         h1(:, :, :, ia) = h1a
+         h1(:, :, :, ia) = h1(:, :, :, ia) + hcore_a
          s1(:, :, :, ia) = s1a
+         deallocate (hcore_a, s1a)
+      end do
 
-         call solve_mo1_atom(mol, orbitals, energies, n_occ, h1a, s1a, mo1, error, &
-                             max_iter=max_iter, tol=tol)
-         if (error%has_error()) return
+      ! Every perturbation at once, in chunks, so the Fock builds inside the
+      ! iteration are shared rather than repeated `3 natm` times.
+      call solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                           max_iter=max_iter, tol=tol)
+      if (error%has_error()) return
 
+      do ia = 1, natm
          do a = 1, 3
             ! The first-order density, the same expression the finite-difference
             ! test in `test_mqc_hess_ints` pins directly.
-            call pic_gemm(orbitals, mo1(:, :, a), half, alpha=2.0_dp, beta=0.0_dp)
+            call pic_gemm(orbitals, mo1(:, :, a, ia), half, alpha=2.0_dp, beta=0.0_dp)
             call pic_gemm(half, c_occ, tmp, transb="T")
             tmp = tmp + transpose(tmp)
             d1(:, :, a, ia) = tmp
+         end do
+      end do
 
+      ! Their mean fields in one batch, chunked the same way and for the same
+      ! reason as the solve above: `3 natm` separate builds pay for the same
+      ! integrals `3 natm` times.
+      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error)
+      if (error%has_error()) return
+
+      do ia = 1, natm
+         do a = 1, 3
+            tmp = d1(:, :, a, ia)
             ! `dF/dR` in full: the skeleton derivative plus the mean field of
             ! the relaxed density. Leaving the second term out is the same
             ! mistake as leaving the response out of the Hessian, made one
             ! level down.
-            call build_fock_direct(mol, zero_h, tmp, bounds, g1, stats, error, &
-                                   density_screen=.false.)
-            if (error%has_error()) return
-            f1 = h1a(:, :, a) + g1
+            f1 = h1(:, :, a, ia) + g1all(:, :, 3*(ia - 1) + a)
 
             ! W = D F D / 2, differentiated by the product rule: three terms,
             ! all of which get the half. The first and last are transposes of
@@ -849,7 +857,6 @@ contains
             call pic_gemm(work, density, middle)
             w1(:, :, a, ia) = 0.5_dp*(outer + transpose(outer) + middle)
          end do
-         deallocate (h1a, s1a, mo1)
       end do
 
       allocate (hess(3, 3, natm, natm))
@@ -865,8 +872,8 @@ contains
          end do
       end do
 
-      deallocate (eri_ip1, h1, s1, d1, w1, hcore, fock, bounds, zero_h)
-      deallocate (g1, f1, half, c_occ, tmp, work, outer, middle)
+      deallocate (h1, s1, d1, w1, hcore, fock, bounds, zero_h)
+      deallocate (g1all, f1, half, c_occ, tmp, work, outer, middle)
    end subroutine response_hessian
 
    subroutine rhf_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
@@ -950,5 +957,173 @@ contains
          end do
       end do
    end subroutine hessian_to_matrix
+
+   subroutine solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                              max_iter, tol)
+      !! The first-order orbitals for every atom, a dozen perturbations at a time
+      !!
+      !! Same equations `solve_mo1_atom` solves and the same right-hand side;
+      !! what changes is how many of them are in flight when the Fock build
+      !! runs. A direct build costs an integral pass whichever density it
+      !! contracts, so solving `3 natm` perturbations one at a time pays for
+      !! the integrals `3 natm` times over.
+      !!
+      !! **Chunked at a dozen rather than all at once**, which is
+      !! `build_fock_direct_many`'s own measured advice and worth repeating
+      !! because the shape of it is not obvious: the win saturates near
+      !! fourfold and then *reverses*, since the accumulator that makes the
+      !! reuse possible grows with the batch while the integral it reuses does
+      !! not. Past about a dozen densities it stops fitting in cache and the
+      !! build becomes memory-bound. So this is not "batch everything"; it is
+      !! "batch enough".
+      !!
+      !! The Schwarz bounds are built once here rather than once per atom,
+      !! which is the wart `solve_mo1_atom` documents and could not fix while
+      !! it was the only caller.
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: h1(:, :, :, :)   !! (n_ao, n_ao, 3, natm)
+      real(dp), intent(in) :: s1(:, :, :, :)
+      real(dp), allocatable, intent(out) :: mo1(:, :, :, :)  !! (n_mo, n_occ, 3, natm)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      integer, parameter :: MAX_BATCH = 12
+
+      type(nuclear_response_t) :: operator
+      real(dp), allocatable :: rhs(:), answer(:), h1mo(:, :), s1mo(:, :)
+      real(dp), allocatable :: work(:, :), base(:, :, :)
+      integer :: n_ao, n_mo, natm, n_pert, first, last, wide, p, q, ia, comp, a, i
+      integer :: n_chunks, per_chunk
+
+      if (error%has_error()) return
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      natm = size(h1, 4)
+      n_pert = 3*natm
+
+      operator%mol => mol
+      operator%orbitals = orbitals
+      operator%c_occ = orbitals(:, 1:n_occ)
+      operator%energies = energies
+      operator%n_occ = n_occ
+      operator%n_mo = n_mo
+      allocate (operator%zero_h(n_ao, n_ao))
+      operator%zero_h = 0.0_dp
+      call schwarz_bounds(mol, operator%bounds, error)
+      if (error%has_error()) return
+
+      allocate (mo1(n_mo, n_occ, 3, natm))
+      allocate (h1mo(n_mo, n_occ), s1mo(n_mo, n_occ), work(n_ao, n_occ))
+
+      ! Balanced rather than greedy. Eighteen perturbations taken twelve at a
+      ! time leaves a chunk of six, and the small chunk pays a full integral
+      ! pass for half the reuse; nine and nine costs the same two passes and
+      ! amortises both of them.
+      n_chunks = (n_pert + MAX_BATCH - 1)/MAX_BATCH
+      per_chunk = (n_pert + n_chunks - 1)/n_chunks
+
+      first = 1
+      do while (first <= n_pert)
+         last = min(first + per_chunk - 1, n_pert)
+         wide = last - first + 1
+         allocate (base(n_mo, n_occ, wide))
+
+         do q = 1, wide
+            p = first + q - 1
+            ia = (p - 1)/3 + 1
+            comp = p - 3*(ia - 1)
+
+            call pic_gemm(h1(:, :, comp, ia), operator%c_occ, work)
+            call pic_gemm(orbitals, work, h1mo, transa="T")
+            call pic_gemm(s1(:, :, comp, ia), operator%c_occ, work)
+            call pic_gemm(orbitals, work, s1mo, transa="T")
+
+            do i = 1, n_occ
+               do a = 1, n_mo
+                  if (a <= n_occ) then
+                     ! Fixed by orthonormality, not solved for.
+                     base(a, i, q) = -0.5_dp*s1mo(a, i)
+                  else
+                     base(a, i, q) = -(h1mo(a, i) - s1mo(a, i)*energies(i)) &
+                                     /(energies(a) - energies(i))
+                  end if
+               end do
+            end do
+         end do
+
+         operator%n_pert = wide
+         rhs = reshape(base, [n_mo*n_occ*wide])
+         call solve_response(operator, rhs, rhs, answer, error, &
+                             max_iter=max_iter, tol=tol)
+         if (error%has_error()) return
+
+         base = reshape(answer, [n_mo, n_occ, wide])
+         do q = 1, wide
+            p = first + q - 1
+            ia = (p - 1)/3 + 1
+            comp = p - 3*(ia - 1)
+            mo1(:, :, comp, ia) = base(:, :, q)
+         end do
+         deallocate (answer, base)
+         first = last + 1
+      end do
+
+      deallocate (h1mo, s1mo, work, rhs)
+   end subroutine solve_mo1_batch
+
+   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error)
+      !! `G(D')` for every first-order density, a chunk at a time
+      !!
+      !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands
+      !! it to the many-density build in the same chunks the coupled-perturbed
+      !! solve uses, and for the same reason: past about a dozen the
+      !! accumulator stops fitting in cache and the reuse turns into a loss.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: d1(:, :, :, :)
+      real(dp), intent(in) :: bounds(:, :)
+      real(dp), intent(in) :: zero_h(:, :)
+      real(dp), allocatable, intent(out) :: g1(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: MAX_BATCH = 12
+
+      real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
+      type(direct_stats_t) :: stats
+      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
+      integer :: n_chunks, per_chunk
+
+      if (error%has_error()) return
+
+      nao = size(d1, 1)
+      natm = size(d1, 4)
+      n_pert = 3*natm
+      allocate (g1(nao, nao, n_pert))
+
+      n_chunks = (n_pert + MAX_BATCH - 1)/MAX_BATCH
+      per_chunk = (n_pert + n_chunks - 1)/n_chunks
+
+      first = 1
+      do while (first <= n_pert)
+         last = min(first + per_chunk - 1, n_pert)
+         wide = last - first + 1
+         allocate (chunk(nao, nao, wide))
+         do q = 1, wide
+            p = first + q - 1
+            ia = (p - 1)/3 + 1
+            a = p - 3*(ia - 1)
+            chunk(:, :, q) = d1(:, :, a, ia)
+         end do
+         call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error)
+         if (error%has_error()) return
+         g1(:, :, first:last) = out
+         deallocate (chunk, out)
+         first = last + 1
+      end do
+   end subroutine mean_field_batch
 
 end module mqc_libcint_hessian

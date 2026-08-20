@@ -16,7 +16,8 @@ module test_mqc_hess_ints
    use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK, &
-                                    hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ
+                                    hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ, &
+                                    h1_contract
    use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
                                   solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian, &
                                   response_hessian, rhf_hessian, hessian_to_matrix
@@ -57,7 +58,8 @@ contains
                   new_unittest("rinv_blocks_sum_to_the_nuclear_one", rinv_blocks_sum_to_nuc), &
                   new_unittest("partial_hessian_against_finite_difference", partial_hessian_fd), &
                   new_unittest("partial_hessian_is_translationally_invariant", partial_hessian_translates), &
-                  new_unittest("rhf_hessian_against_finite_difference", rhf_hessian_fd) &
+                  new_unittest("rhf_hessian_against_finite_difference", rhf_hessian_fd), &
+                  new_unittest("one_pass_h1_matches_the_per_atom_one", h1_contract_matches) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -288,6 +290,75 @@ contains
       call check(error, worst < 1.0e-9_dp*scale, "the partial Hessian is not symmetric")
       call mol%destroy()
    end subroutine partial_hessian_translates
+
+   subroutine h1_contract_matches(error)
+      !! The one-pass perturbation against the per-atom one it replaces
+      !!
+      !! `make_h1_atom` is the readable statement of what the skeleton
+      !! derivative Fock is: eight terms, each naming which index carries the
+      !! nabla and permuting it into first place in a stored array.
+      !! `h1_contract` computes the same thing from shell quartets in a single
+      !! pass, which means rewriting all eight in the one index ordering the
+      !! buffer has -- and that rewriting is where it can go wrong, silently,
+      !! in a way no downstream test would attribute back here.
+      !!
+      !! So the slow one stays, and this pins the fast one to it. Machine
+      !! precision is the right tolerance: these are the same integrals summed
+      !! in a different order, not two approximations of one thing.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: ip1(:, :, :, :, :), slow(:, :, :), fast(:, :, :, :)
+      real(dp) :: worst, scale
+      integer :: ia
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call check(error, .not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) return
+
+      call eri_ip1_block(mol, ip1, err)
+      call h1_contract(mol, scf%density, fast, err)
+      call check(error, .not. err%has_error(), "the one-pass perturbation failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      worst = 0.0_dp
+      scale = 0.0_dp
+      do ia = 1, mol%natm
+         call make_h1_atom(mol, scf%density, ip1, ia, slow, err)
+         if (err%has_error()) exit
+         ! `make_h1_atom` folds the core Hamiltonian derivative in and
+         ! `h1_contract` does not, so that part is added here rather than
+         ! being a difference the comparison would report.
+         block
+            real(dp), allocatable :: hcore_a(:, :, :)
+            call hcore_deriv_atom(mol, ia, hcore_a, err)
+            worst = max(worst, maxval(abs(fast(:, :, :, ia) + hcore_a - slow)))
+            scale = max(scale, maxval(abs(slow)))
+            deallocate (hcore_a)
+         end block
+         deallocate (slow)
+      end do
+
+      call check(error, .not. err%has_error(), "the per-atom perturbation failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, scale > 1.0e-2_dp, "the perturbation is empty")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, worst < 1.0e-12_dp*scale, &
+                 "the one-pass perturbation disagrees with the per-atom one")
+      call mol%destroy()
+   end subroutine h1_contract_matches
 
    subroutine scf_energy_at(geo, energy, err)
       !! A converged restricted Hartree-Fock energy at one geometry
