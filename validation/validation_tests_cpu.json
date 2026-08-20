@@ -940,8 +940,20 @@
             "type": "unfragmented"
         },
         {
+            "name": "Quasi-atomic energy decomposition H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_energy.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented"
+        },
+        {
             "name": "RHF with quasi-atomic bonding analysis H2S 6-31g (CPU)",
             "input": "inputs/cpu/mqc/quao/cpu_h2s_6-31g_quao.json",
+            "expected_energy": -398.626664265032,
+            "type": "unfragmented"
+        },
+        {
+            "name": "Quasi-atomic energy decomposition H2S 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_h2s_6-31g_quao_energy.json",
             "expected_energy": -398.626664265032,
             "type": "unfragmented"
         },

@@ -2036,6 +2036,30 @@ def main():
         })
         print(f"{mol.label:6s} {basis:12s} quao E={energy:.12f}", flush=True)
 
+        # The same molecule with the energy decomposition, and for water the
+        # no-sharing analysis on top of it. Same energy -- a property does not
+        # change the wave function, which is the first thing this asserts --
+        # but a different half of the backend: the decomposition builds the
+        # dense two-electron array, regroups it onto atoms and pairs, and
+        # checks that the pieces add back up, and none of that is reached by
+        # the plain analysis above. Half a second each, and the alternative is
+        # several hundred lines of `mqc_libcint_bonding` and
+        # `mqc_libcint_ieda` that only a hand-run deck ever touches.
+        analysis = {"type": "gms_quao", "energy_decomposition": True}
+        if name == "water":
+            analysis["no_sharing"] = True
+        deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao_energy")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, properties={"bonding_analysis": analysis})
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"Quasi-atomic energy decomposition {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+
     for name, basis, aux, functional, mult in GRADIENT_CASES:
         mol = MOLECULES[name]
         energy, gradient, nao = pyscf_gradient(mol.atoms, basis, aux=aux,
