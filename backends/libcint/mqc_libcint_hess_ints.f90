@@ -25,9 +25,20 @@ module mqc_libcint_hess_ints
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
-                                    eri_shell_table_t, eri_shell_table
+                                    eri_shell_table_t, eri_shell_table, eri_schwarz_collapse
+   use mqc_libcint_direct, only: schwarz_bounds
    use cint_workspace, only: cint_ws
    use cint_bas, only: cint_cgto_spheric, cint_cgto_cart
+   ! **From the compatibility layer, and it has to be.** `cint_bas` exports
+   ! constants with these same names and different values -- its slots are
+   ! 0-based as in `cint.h`, mqc's are 1-based because `mol%bas` is an ordinary
+   ! Fortran array. Everything else here takes libfint's native entry points
+   ! and native constants, which is what makes this the exception worth
+   ! spelling out: the native ones describe libfint's view of a flat buffer,
+   ! these describe the shape of the array mqc actually built. Taking the
+   ! native `PTR_EXP` reads `KAPPA_OF`, which is zero for an ordinary shell,
+   ! and the resulting bound is zero or NaN rather than wrong-looking.
+   use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP
    use cint_gen_hess, only: int1e_ipipovlp_sph, int1e_ipipovlp_cart, &
                             int1e_ipovlpip_sph, int1e_ipovlpip_cart, &
                             int1e_ipipkin_sph, int1e_ipipkin_cart, &
@@ -68,6 +79,20 @@ module mqc_libcint_hess_ints
    integer, parameter :: HESS_ERI_II = 1   !! `int2e_ipip1`, both derivatives on centre 1
    integer, parameter :: HESS_ERI_IJ = 2   !! `int2e_ipvip1`, one on centre 1 and one on centre 2
    integer, parameter :: HESS_ERI_IK = 3   !! `int2e_ip1ip2`, one on centre 1 and one on centre 3
+
+   real(dp), parameter :: HESS_SCREEN_TOL = 1.0e-10_dp
+      !! Estimated contribution below which a differentiated quartet is dropped.
+      !!
+      !! The same number the SCF gradient screens its differentiated quartets
+      !! at, and for the same reason it gives: the bound is an *estimate*, not
+      !! a rigorous Cauchy-Schwarz one, because differentiating brings a factor
+      !! of `2 alpha r` down from the exponential and the standard bound says
+      !! nothing about it. What stands in for it is `2 sqrt(alpha_max)` per
+      !! differentiation -- twice over here, since these are second
+      !! derivatives.
+      !!
+      !! Measured on a water dimer in cc-pVDZ against the same Hessian computed
+      !! with no screening at all; see the commit that added this for the table.
 
    integer, parameter :: N_COMPONENTS = 9
       !! Every one of these is a 3x3 Cartesian block per shell pair, laid out by
@@ -515,7 +540,7 @@ contains
       deallocate (buf, atm_flat, bas_flat)
    end subroutine eri_ip1_block
 
-   subroutine hess_2e_contract(mol, density, hess, error)
+   subroutine hess_2e_contract(mol, density, hess, error, screen_tol)
       !! The two-electron second derivatives, contracted as they are computed
       !!
       !! Same numbers `hess_2e_block` produces and never the same array. Each
@@ -535,11 +560,14 @@ contains
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), accumulated
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
 
       real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:), buf_ik2(:)
       real(dp), allocatable :: hloc(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:), sh_dim(:), sh_off(:)
+      real(dp), allocatable :: bounds(:, :), dsh(:, :), sa(:)
+      real(dp) :: qq, wbound, est, tol
       integer :: dims(0:3), shls(0:3), dims2(0:3), shls2(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
@@ -577,16 +605,46 @@ contains
       bas_flat = reshape(mol%bas, [size(mol%bas)])
       n_pairs = mol%nbas*mol%nbas
 
+      ! ---- what a quartet can contribute, before computing it ---------------
+      !
+      ! Two factors, and only one of them is rigorous. `bounds` is the Schwarz
+      ! bound on the undifferentiated quartet, which is exact. `sa` stands in
+      ! for what differentiation does: it brings a factor of `2 alpha r` down
+      ! from the exponential, and with `r` of order `1/sqrt(alpha)` that is
+      ! about `2 sqrt(alpha_max)` per derivative -- an estimate, taken twice
+      ! here because these are second derivatives. That is why the tolerance
+      ! carries margin rather than being set at the accuracy wanted.
+      !
+      ! `dsh` bounds the contraction weight. A quartet whose integrals are
+      ! large contributes nothing if every density element it multiplies is
+      ! negligible, and by the time a Hessian runs the density is converged and
+      ! most of them are.
+      tol = HESS_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+
+      allocate (dsh(mol%nbas, mol%nbas), sa(mol%nbas))
+      do ish = 1, mol%nbas
+         do jsh = 1, mol%nbas
+            dsh(ish, jsh) = maxval(abs(density(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
+                                               sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh))))
+         end do
+         sa(ish) = sqrt(maxval(mol%env(mol%bas(LIBCINT_PTR_EXP, ish) + 1: &
+                                       mol%bas(LIBCINT_PTR_EXP, ish) &
+                                       + mol%bas(LIBCINT_NPRIM_OF, ish))))
+      end do
+
       ! One accumulator per thread, merged once at the end. The Hessian is
       ! `9*natm^2` doubles -- small enough that a private copy costs nothing and
       ! an atomic update per quartet would cost everything.
       !$omp parallel default(none) &
       !$omp shared(mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
-      !$omp        mx, natm, n_pairs, error) &
+      !$omp        mx, natm, n_pairs, error, bounds, dsh, sa, tol) &
       !$omp private(buf_ii, buf_ij, buf_ik, buf_ik2, hloc, dims, shls, dims2, shls2, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
       !$omp         comp, idx, idx2, ia, ja, ka, la, a, b, gam, ket_w, pair, &
-      !$omp         have_ii, have_ij, have_ik, have_ik2)
+      !$omp         have_ii, have_ij, have_ik, have_ik2, qq, wbound, est)
       allocate (buf_ii(mx**4*N_COMPONENTS), buf_ij(mx**4*N_COMPONENTS), &
                 buf_ik(mx**4*N_COMPONENTS), buf_ik2(mx**4*N_COMPONENTS))
       allocate (hloc(3, 3, natm, natm))
@@ -627,6 +685,21 @@ contains
                dims = [di, dj, dk, dl]
                ket_w = 2.0_dp
                if (lsh == ksh) ket_w = 1.0_dp
+
+               ! The largest weight any element of this quartet can carry,
+               ! written the way the contraction weight is: a Coulomb term and
+               ! the two exchange terms the eightfold symmetrisation produces.
+               wbound = 0.5_dp*dsh(ish, jsh)*dsh(ksh, lsh) &
+                        + 0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
+                                    + dsh(ish, ksh)*dsh(jsh, lsh))
+               qq = bounds(ish, jsh)*bounds(ksh, lsh)
+               ! Four times the deposit weights (4, 4 and 8) against the
+               ! per-integral derivative factors, which differ because the two
+               ! derivatives sit on different centres in each.
+               est = 16.0_dp*wbound*qq*(sa(ish)*sa(ish) &
+                                        + sa(ish)*sa(jsh) &
+                                        + 2.0_dp*sa(ish)*sa(ksh))
+               if (est < tol) cycle
 
                have_ii = drive_2e(mol, HESS_ERI_II, buf_ii, dims, shls, atm_flat, bas_flat)
                have_ij = drive_2e(mol, HESS_ERI_IJ, buf_ij, dims, shls, atm_flat, bas_flat)
@@ -686,9 +759,10 @@ contains
       !$omp end parallel
 
       deallocate (atm_flat, bas_flat, owner, offsets, counts, sh_dim, sh_off)
+      deallocate (bounds, dsh, sa)
    end subroutine hess_2e_contract
 
-   subroutine h1_contract(mol, density, h1, error)
+   subroutine h1_contract(mol, density, h1, error, screen_tol)
       !! The skeleton derivative Fock for **every** atom, in one pass
       !!
       !! `make_h1_atom` builds one atom's `dF/dR` from a stored `int2e_ip1`
@@ -711,8 +785,11 @@ contains
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: h1(:, :, :, :)   !! (nao, nao, 3, natm)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
 
       real(dp), allocatable :: buf(:), hloc(:, :, :, :)
+      real(dp), allocatable :: bounds(:, :), bq(:, :), dsh(:, :), sa(:)
+      real(dp) :: wmax, est, tol
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:)
       type(eri_shell_table_t) :: tab
@@ -754,6 +831,27 @@ contains
       bas_flat = reshape(tab%bas, [size(tab%bas)])
       n_pairs = tab%nbas*tab%nbas
 
+      ! Screened the same way `hess_2e_contract` is, with one derivative rather
+      ! than two, so the estimate carries one factor of `2 sqrt(alpha_max)`.
+      ! The bounds come from the split shells and are re-blocked onto the view,
+      ! because that is the table this loop walks.
+      tol = HESS_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      call eri_schwarz_collapse(mol, bounds, bq)
+
+      allocate (dsh(tab%nbas, tab%nbas), sa(tab%nbas))
+      do ish = 1, tab%nbas
+         do jsh = 1, tab%nbas
+            dsh(ish, jsh) = maxval(abs(density(tab%offs(ish) + 1:tab%offs(ish) + tab%dims(ish), &
+                                               tab%offs(jsh) + 1:tab%offs(jsh) + tab%dims(jsh))))
+         end do
+         sa(ish) = sqrt(maxval(tab%env(tab%bas(LIBCINT_PTR_EXP, ish) + 1: &
+                                       tab%bas(LIBCINT_PTR_EXP, ish) &
+                                       + tab%bas(LIBCINT_NPRIM_OF, ish))))
+      end do
+
       allocate (h1(nao, nao, 3, natm))
       h1 = 0.0_dp
 
@@ -764,10 +862,10 @@ contains
       ! element.
       !$omp parallel default(none) &
       !$omp shared(mol, density, h1, owner, tab, atm_flat, bas_flat, &
-      !$omp        mx, nao, natm, n_pairs) &
+      !$omp        mx, nao, natm, n_pairs, bq, dsh, sa, tol) &
       !$omp private(buf, hloc, dims, shls, ish, jsh, ksh, lsh, di, dj, dk, dl, &
       !$omp         io, jo, ko, lo, i, j, k, l, comp, idx, ii, jj, kk, ll, at, b, &
-      !$omp         pair, have)
+      !$omp         pair, have, wmax, est)
       allocate (buf(mx**4*3))
       allocate (hloc(nao, nao, 3, natm))
       hloc = 0.0_dp
@@ -788,6 +886,13 @@ contains
                lo = tab%offs(lsh)
                shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                dims = [di, dj, dk, dl]
+
+               ! The largest density element any of the seven deposits can
+               ! pick up, against the bound on a once-differentiated quartet.
+               wmax = max(dsh(ksh, lsh), dsh(ish, jsh), dsh(jsh, ksh), &
+                          dsh(ish, ksh), dsh(lsh, ish), dsh(lsh, jsh))
+               est = 4.0_dp*sa(ish)*bq(ish, jsh)*bq(ksh, lsh)*wmax
+               if (est < tol) cycle
 
                if (mol%cartesian) then
                   have = int2e_ip1_cart(buf, dims, shls, atm_flat, mol%natm, &
@@ -836,7 +941,7 @@ contains
       deallocate (buf, hloc)
       !$omp end parallel
 
-      deallocate (atm_flat, bas_flat, owner, offsets, counts)
+      deallocate (atm_flat, bas_flat, owner, offsets, counts, bounds, bq, dsh, sa)
    end subroutine h1_contract
 
 end module mqc_libcint_hess_ints
