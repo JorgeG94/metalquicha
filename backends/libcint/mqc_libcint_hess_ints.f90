@@ -33,12 +33,17 @@ module mqc_libcint_hess_ints
                             int1e_ipkinip_sph, int1e_ipkinip_cart, &
                             int1e_ipipnuc_sph, int1e_ipipnuc_cart, &
                             int1e_ipnucip_sph, int1e_ipnucip_cart
+   use cint_gen_hess, only: int2e_ipip1_sph, int2e_ipip1_cart, &
+                            int2e_ipvip1_sph, int2e_ipvip1_cart, &
+                            int2e_ip1ip2_sph, int2e_ip1ip2_cart
    implicit none
    private
 
    public :: HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ
    public :: HESS_NUC_II, HESS_NUC_IJ
    public :: hess_1e_block
+   public :: HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
+   public :: hess_2e_block
 
    integer, parameter :: HESS_OVLP_II = 1   !! `int1e_ipipovlp`, both derivatives on the bra
    integer, parameter :: HESS_OVLP_IJ = 2   !! `int1e_ipovlpip`, one on each centre
@@ -46,6 +51,10 @@ module mqc_libcint_hess_ints
    integer, parameter :: HESS_KIN_IJ = 4
    integer, parameter :: HESS_NUC_II = 5
    integer, parameter :: HESS_NUC_IJ = 6
+
+   integer, parameter :: HESS_ERI_II = 1   !! `int2e_ipip1`, both derivatives on centre 1
+   integer, parameter :: HESS_ERI_IJ = 2   !! `int2e_ipvip1`, one on centre 1 and one on centre 2
+   integer, parameter :: HESS_ERI_IK = 3   !! `int2e_ip1ip2`, one on centre 1 and one on centre 3
 
    integer, parameter :: N_COMPONENTS = 9
       !! Every one of these is a 3x3 Cartesian block per shell pair, laid out by
@@ -180,5 +189,121 @@ contains
          end select
       end if
    end function drive
+
+   subroutine hess_2e_block(mol, which, eri, error)
+      !! One second-derivative two-electron integral over the whole basis
+      !!
+      !! Returns `(n_ao, n_ao, n_ao, n_ao, 9)`, which is `n_ao^4` nine times
+      !! over and is why this exists as a first correct implementation rather
+      !! than a usable one. The Hessian contracts these against densities the
+      !! moment they are built, so nothing needs the whole array at once; a
+      !! shell-driven contraction is the obvious next step and would change
+      !! nothing above it.
+      !!
+      !! **The three selectors are three genuinely different integrals**, not
+      !! one integral indexed three ways. `ipip1` puts both derivatives on the
+      !! first centre, `ipvip1` puts one each on the bra pair, and `ip1ip2`
+      !! puts one on the bra and one on the ket. Translational invariance is
+      !! what relates them, and it relates them only if all three are present.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: which
+      real(dp), allocatable, intent(out) :: eri(:, :, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: buf(:)
+      integer, allocatable :: atm_flat(:), bas_flat(:)
+      integer :: dims(0:3), shls(0:3)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
+      logical :: have
+
+      if (error%has_error()) return
+
+      mx = 0
+      do ish = 1, mol%nbas
+         mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+
+      allocate (buf(mx**4*N_COMPONENTS))
+      allocate (eri(mol%nao, mol%nao, mol%nao, mol%nao, N_COMPONENTS))
+      eri = 0.0_dp
+      atm_flat = reshape(mol%atm, [size(mol%atm)])
+      bas_flat = reshape(mol%bas, [size(mol%bas)])
+
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            do ksh = 1, mol%nbas
+               dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
+               ko = mol%shell_offset(ksh)
+               do lsh = 1, mol%nbas
+                  dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
+                  lo = mol%shell_offset(lsh)
+                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+                  dims = [di, dj, dk, dl]
+
+                  have = drive_2e(mol, which, buf, dims, shls, atm_flat, bas_flat)
+                  if (.not. have) cycle
+
+                  do comp = 1, N_COMPONENTS
+                     do l = 1, dl
+                        do k = 1, dk
+                           do j = 1, dj
+                              do i = 1, di
+                                 idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 &
+                                                                       + dl*(comp - 1))))
+                                 eri(io + i, jo + j, ko + k, lo + l, comp) = buf(idx)
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (buf, atm_flat, bas_flat)
+   end subroutine hess_2e_block
+
+   function drive_2e(mol, which, buf, dims, shls, atm, bas) result(have)
+      !! Dispatch one shell quartet to the right entry point
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: which
+      real(dp), intent(inout) :: buf(0:)
+      integer, intent(in) :: dims(0:), shls(0:)
+      integer, intent(in), target :: atm(0:), bas(0:)
+      logical :: have
+
+      have = .false.
+      if (mol%cartesian) then
+         select case (which)
+         case (HESS_ERI_II)
+            have = int2e_ipip1_cart(buf, dims, shls, atm, mol%natm, &
+                                    bas, mol%nbas, mol%env, ws)
+         case (HESS_ERI_IJ)
+            have = int2e_ipvip1_cart(buf, dims, shls, atm, mol%natm, &
+                                     bas, mol%nbas, mol%env, ws)
+         case default
+            have = int2e_ip1ip2_cart(buf, dims, shls, atm, mol%natm, &
+                                     bas, mol%nbas, mol%env, ws)
+         end select
+      else
+         select case (which)
+         case (HESS_ERI_II)
+            have = int2e_ipip1_sph(buf, dims, shls, atm, mol%natm, &
+                                   bas, mol%nbas, mol%env, ws)
+         case (HESS_ERI_IJ)
+            have = int2e_ipvip1_sph(buf, dims, shls, atm, mol%natm, &
+                                    bas, mol%nbas, mol%env, ws)
+         case default
+            have = int2e_ip1ip2_sph(buf, dims, shls, atm, mol%natm, &
+                                    bas, mol%nbas, mol%env, ws)
+         end select
+      end if
+   end function drive_2e
 
 end module mqc_libcint_hess_ints

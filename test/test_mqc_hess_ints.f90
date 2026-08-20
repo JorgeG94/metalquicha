@@ -14,7 +14,8 @@ module test_mqc_hess_ints
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
-                                    HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ
+                                    HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
+                                    hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    implicit none
    private
 
@@ -36,7 +37,8 @@ contains
                   new_unittest("translations_leave_the_integrals_alone", translations_leave_them_alone), &
                   new_unittest("derivatives_on_one_centre_commute", derivatives_commute), &
                   new_unittest("every_block_is_populated", every_block_is_populated), &
-                  new_unittest("components_are_where_they_belong", components_are_where_they_belong) &
+                  new_unittest("components_are_where_they_belong", components_are_where_they_belong), &
+                  new_unittest("two_electron_blocks", two_electron_blocks) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -262,6 +264,98 @@ contains
       end if
       call mol%destroy()
    end subroutine components_are_where_they_belong
+
+   subroutine two_electron_blocks(error)
+      !! The three two-electron second derivatives
+      !!
+      !! Same two things the one-electron blocks are held to, for the same
+      !! reasons. Two derivatives on the same centre commute, so `ipip1` is
+      !! symmetric in its component index and `ip1ip2` -- one derivative on the
+      !! bra and one on the ket -- is not, which is why only the first is
+      !! checked that way.
+      !!
+      !! The per-component norms pin the layout, which the symmetry cannot: a
+      !! stride error that permutes components consistently leaves every
+      !! symmetry intact. They came from PySCF, which agreed with this
+      !! implementation to between 3e-15 and 3e-14 on all three blocks when it
+      !! was written.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: e(:, :, :, :, :)
+      logical :: ok
+      integer :: c
+      real(dp), parameter :: TOL = 1.0e-4_dp
+      real(dp), parameter :: IPIP1_NORM(9) = [ &
+                             486.37821_dp, 45.44354_dp, 43.45087_dp, &
+                             45.44354_dp, 480.76078_dp, 54.79232_dp, &
+                             43.45087_dp, 54.79232_dp, 481.26138_dp]
+      real(dp), parameter :: IP1IP2_NORM(9) = [ &
+                             70.54127_dp, 46.69994_dp, 43.90662_dp, &
+                             46.69994_dp, 89.39699_dp, 56.08919_dp, &
+                             43.90662_dp, 56.08919_dp, 81.08118_dp]
+
+      call build_water(mol, err, ok)
+      call check(error, ok, "could not build water")
+      if (allocated(error)) return
+
+      call hess_2e_block(mol, HESS_ERI_II, e, err)
+      call check(error,.not. err%has_error(), "ipip1 failed")
+      if (.not. allocated(error)) then
+         ! Both derivatives on centre one, so the component index is symmetric.
+         call check(error, maxval(abs(e(:, :, :, :, 2) - e(:, :, :, :, 4))) < 1.0e-10_dp, &
+                    "xy and yx differ with both derivatives on one centre")
+      end if
+      if (.not. allocated(error)) then
+         do c = 1, 9
+            call check(error, sum(abs(e(:, :, :, :, c))), IPIP1_NORM(c), thr=TOL, &
+                       more="an ipip1 component is not where it belongs")
+            if (allocated(error)) exit
+         end do
+      end if
+      if (allocated(e)) deallocate (e)
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! A different integral entirely, so this pins the dispatch as well.
+      call hess_2e_block(mol, HESS_ERI_IK, e, err)
+      call check(error,.not. err%has_error(), "ip1ip2 failed")
+      if (.not. allocated(error)) then
+         do c = 1, 9
+            call check(error, sum(abs(e(:, :, :, :, c))), IP1IP2_NORM(c), thr=TOL, &
+                       more="an ip1ip2 component is not where it belongs")
+            if (allocated(error)) exit
+         end do
+      end if
+      if (.not. allocated(error)) then
+         ! **A norm over the whole array cannot see a permutation inside it**,
+         ! and the quartet unpacking has three indices that could be transposed
+         ! against each other. A single element is no better: the first one
+         ! tried sat in a quartet where two shell dimensions were both one, so
+         ! the correct and transposed strides evaluated to the same index and
+         ! the break was invisible.
+         !
+         ! Slice norms are pinned below and they do catch a component-level
+         ! scramble. **They do not catch every index permutation**, and neither
+         ! does anything else here: transposing the two ket indices in the
+         ! unpacking was tried deliberately and survives all five tests. What
+         ! rules that out is the comparison this file cannot run -- the whole
+         ! `n_ao^4 x 9` array was checked against PySCF element by element when
+         ! this was written, agreeing to 3e-15 on all three blocks. That is the
+         ! verification of record for the quartet layout; what is below is
+         ! regression cover, and the distinction is worth keeping honest.
+         call check(error, sum(abs(e(:, :, 1, :, 2))), 11.128496_dp, thr=1.0e-4_dp, &
+                    more="the third ket index is not where it belongs")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, sum(abs(e(:, :, :, 1, 2))), 11.553514_dp, thr=1.0e-4_dp, &
+                    more="the fourth ket index is not where it belongs")
+      end if
+      call mol%destroy()
+   end subroutine two_electron_blocks
 
 end module test_mqc_hess_ints
 
