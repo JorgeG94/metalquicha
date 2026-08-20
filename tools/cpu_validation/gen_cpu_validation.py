@@ -306,6 +306,11 @@ HAND_MAINTAINED = {
     # unusable. It is here to be run deliberately, and listed here so a
     # regeneration does not sweep it away.
     "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_quao.json",
+    # The same molecule and basis through an occupation-restricted space, which
+    # is the route the papers point at for anything past ethane: 49,050
+    # determinants of the 11,778,624, recovering 93.6% of the valence
+    # correlation energy. Hand-maintained for the same reason as the case above.
+    "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_ormas.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
     # Fukui indices. PySCF has no Fukui, so this script has no reference to
     # generate: what the manifest checks for these is the ordinary RHF energy,
