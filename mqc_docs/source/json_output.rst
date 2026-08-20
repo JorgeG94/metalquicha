@@ -63,6 +63,48 @@ Several fields appear across multiple output types:
      - object
      - Dipole moment with ``x``, ``y``, ``z`` components (a.u.) and ``magnitude_debye``
 
+Fukui indices
+=============
+
+Written when ``properties.fukui`` asked for them::
+
+    "fukui": {
+      "population_scheme": "chelpg",
+      "ionisation_potential": 0.402050,
+      "electron_affinity": -0.194424,
+      "chemical_potential": -0.103813,
+      "hardness": 0.596473,
+      "electrophilicity": 0.009034,
+      "anion_bound": false,
+      "atoms": [
+        {"atom": 1, "f_plus": -0.1617, "f_minus": 0.7804,
+         "f_zero": 0.3093, "dual": -0.9420},
+        {"atom": 2, "f_plus": 0.5797, "f_minus": 0.1096,
+         "f_zero": 0.3447, "dual": 0.4702}
+      ]
+    }
+
+Per atom rather than reduced to a most-reactive site, because ranking sites is
+what the caller is doing and which index to rank on depends on the reaction:
+``f_plus`` for an incoming nucleophile, ``f_minus`` for an electrophile, and
+``dual`` to tell the two kinds of site apart by sign.
+
+``atom`` is the index in the input geometry, and there is no element symbol
+because the output payload does not carry them -- a consumer that read the
+geometry already knows which atom is which.
+
+**Check ``anion_bound`` before using ``f_plus``.** When it is false the anion
+came out above the neutral, nothing bound the added electron, and that column
+describes whatever orbital the basis had left over. Nothing about the values
+themselves says so, and a script sorting on ``f_plus`` would rank sites
+confidently off a fiction. The same flag makes ``electron_affinity`` and
+anything derived from it -- the chemical potential, the hardness, the
+electrophilicity -- unreliable in the same breath.
+
+Both indices sum to one over the molecule by construction, so a consumer can
+assert it as a cheap check that it read the right section.
+
+
 Unfragmented Calculations
 =========================
 

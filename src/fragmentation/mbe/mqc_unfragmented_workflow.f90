@@ -311,6 +311,23 @@ contains
                json_data%ieda_formation = result%ieda_formation
                json_data%has_ieda = .true.
             end if
+
+            ! Where the molecule reacts, when `properties.fukui` asked. Carried
+            ! per atom rather than reduced to "the most reactive site": ranking
+            ! sites is what the caller is doing, and which index to rank on
+            ! depends on the reaction being asked about.
+            if (result%has_fukui) then
+               json_data%fukui_plus = result%fukui_plus
+               json_data%fukui_minus = result%fukui_minus
+               json_data%fukui_dual = result%fukui_dual
+               json_data%fukui_ip = result%fukui_ip
+               json_data%fukui_ea = result%fukui_ea
+               json_data%fukui_hardness = result%fukui_hardness
+               json_data%fukui_electrophilicity = result%fukui_electrophilicity
+               json_data%fukui_anion_bound = result%fukui_anion_bound
+               json_data%fukui_scheme = result%fukui_scheme
+               json_data%has_fukui = .true.
+            end if
          end if
       end block
       call result%destroy()

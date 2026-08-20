@@ -31,6 +31,7 @@ target_sources(
           mqc_libcint_dma.f90
           mqc_libcint_esp.f90
           mqc_libcint_charges.f90
+          mqc_libcint_fukui.f90
           mqc_libcint_fmo.f90
           mqc_libcint_screening.f90
           mqc_libcint_projection.f90

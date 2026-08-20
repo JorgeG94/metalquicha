@@ -815,6 +815,53 @@ The driver stays ``"energy"``.
   bonded, by sigma or pi, how strongly, and where the lone pairs are. See
   :doc:`bonding_analysis`.
 
+- ``fukui``: Where the molecule reacts.
+
+  .. code-block:: json
+
+     "properties": {
+       "fukui": {"population": "chelpg"}
+     }
+
+  Condensed Fukui indices, by difference in the electron count: the molecule is
+  run again with one electron added and once with one removed, at the same
+  geometry and in the same basis, and the atomic charges are differenced.
+  ``f+`` says where the molecule accepts charge, ``f-`` where it gives charge
+  up, and the dual descriptor ``f+ - f-`` separates electrophilic sites from
+  nucleophilic ones in a single column. The three energies also give the
+  ionisation potential, electron affinity, chemical potential, hardness and
+  electrophilicity index, which cost nothing extra once the ions have been run.
+
+  Computed by difference rather than from the frontier orbitals. Approximating
+  ``f+`` by the shape of the LUMO costs one SCF instead of three and discards
+  the relaxation of every other orbital in response to the added charge -- which
+  on a polar molecule is most of the answer.
+
+  ``population`` is required and chooses how the density difference is
+  condensed onto atoms:
+
+  - ``chelpg`` -- charges fitted to the molecule's own electrostatic potential.
+    The default choice, and the better behaved one.
+  - ``mulliken`` -- **can be poor, and is offered because it is what much of
+    the literature used.** It divides the overlap between two atoms straight
+    down the middle regardless of what the atoms are, so it is sensitive to the
+    basis set in a way that has nothing to do with chemistry, and it produces
+    negative indices more readily. Negative values are reported rather than
+    hidden: they are the population analysis failing to divide the density
+    sensibly, not a site that repels electrons.
+
+  Two limits. Only a closed-shell neutral is accepted, so that both ions are
+  doublets; anything else is refused rather than having its multiplicities
+  guessed. And a warning appears when the anion comes out *above* the neutral,
+  which means nothing bound the added electron -- either the basis has no
+  diffuse functions or the molecule has no bound anion, and the two are
+  indistinguishable from here. Water is the second kind: adding diffuse
+  functions moves its affinity from -0.19 to -0.04 hartree and never makes it
+  positive.
+
+  Unfragmented calculations only. Which fragment of a many-body expansion
+  receives the electron is not a well-posed question.
+
 System Section
 --------------
 

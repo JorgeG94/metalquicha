@@ -236,6 +236,10 @@ contains
          mqc_config%bonding_threshold
       driver_config%method_config%properties%bonding_energy = &
          mqc_config%bonding_energy
+      if (allocated(mqc_config%fukui_population)) then
+         driver_config%method_config%properties%fukui_population = &
+            mqc_config%fukui_population
+      end if
       driver_config%method_config%properties%bonding_no_sharing = &
          mqc_config%bonding_no_sharing
 

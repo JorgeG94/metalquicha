@@ -73,6 +73,7 @@ module mqc_cuest_iface
       ! than field by field: the cavity, the solvent and the charge solve travel
       ! together, and a backend either builds a continuum or does not.
       character(len=32) :: bonding_analysis = "none"
+      character(len=:), allocatable :: fukui_population
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
       real(dp) :: bonding_threshold = 1.0_dp

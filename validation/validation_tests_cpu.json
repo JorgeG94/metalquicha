@@ -946,6 +946,20 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF with Fukui indices (chelpg) H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+        },
+        {
+            "name": "RHF with Fukui indices (mulliken) H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+        },
+        {
             "name": "RHF gradient H2O sto-3g (CPU)",
             "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_grad.json",
             "expected_energy": -74.962005712275,

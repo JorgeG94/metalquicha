@@ -297,6 +297,14 @@ HAND_MAINTAINED = {
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
+    # Fukui indices. PySCF has no Fukui, so this script has no reference to
+    # generate: what the manifest checks for these is the ordinary RHF energy,
+    # and the indices themselves are pinned in test/test_mqc_fukui.f90. The run
+    # is still the assertion -- two SCFs on the ions and a sum rule that aborts
+    # rather than printing something wrong -- so a case that finishes has
+    # exercised the path end to end.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
     # FMO2/FMO3 and EE-MBE. This script generates single-determinant references
     # from PySCF, which has no FMO, so it cannot produce these and would sweep the
     # decks away while leaving their manifest entries pointing at nothing. The two

@@ -90,6 +90,8 @@ contains
       call check_child_object(core, root, "system", system_keys(), error)
 
       call check_child_object(core, root, "properties", properties_keys(), error)
+      call check_grandchild_object(core, root, "properties", "fukui", &
+                                   fukui_keys(), error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
@@ -227,7 +229,20 @@ contains
       !! belongs in the second group, which is why `driver` stays "energy".
       type(key_set_t) :: keys
       call allow(keys, "bonding_analysis")
+      call allow(keys, "fukui")
    end function properties_keys
+
+   function fukui_keys() result(keys)
+      !! Settings for the Fukui index analysis
+      !!
+      !! `population` is required rather than defaulted, because the object
+      !! being present is what asks for the analysis and because the scheme
+      !! changes the numbers: a choice that large should be written down in the
+      !! deck rather than inherited silently.
+      type(key_set_t) :: keys
+      call allow(keys, "population")
+      call require(keys, "population")
+   end function fukui_keys
 
    function bonding_analysis_keys() result(keys)
       !! Settings for the quasi-atomic bonding analysis
