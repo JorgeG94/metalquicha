@@ -298,6 +298,14 @@ HAND_MAINTAINED = {
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
+    # Ethane in the basis the quasi-atomic bonding papers use, which is the case
+    # their published numbers can be checked against: 186 basis functions and a
+    # full valence CAS(14,14) of 11,778,624 determinants. Deliberately absent
+    # from the manifest -- every other CPU case is sub-second and this is
+    # minutes even threaded, so running it in the suite would make the suite
+    # unusable. It is here to be run deliberately, and listed here so a
+    # regeneration does not sweep it away.
+    "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_quao.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
     # Fukui indices. PySCF has no Fukui, so this script has no reference to
     # generate: what the manifest checks for these is the ordinary RHF energy,
