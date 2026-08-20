@@ -145,9 +145,15 @@ endif()
 # =============================================================================
 # Apply flags to CMake variables
 # =============================================================================
-set(CMAKE_Fortran_FLAGS
-    "${CMAKE_Fortran_FLAGS} ${FLAGS_STANDARD}"
-    PARENT_SCOPE)
+#
+# **Everything that adds to CMAKE_Fortran_FLAGS accumulates into this local
+# first, and the parent scope is written exactly once, at the end.** `set(...
+# PARENT_SCOPE)` does not touch the local variable, so two of them in a row
+# means the second reads the *unmodified* local and silently discards whatever
+# the first added. That is not hypothetical: the coverage build lost
+# `-ffree-line-length-none` this way and stopped being able to compile the
+# banner, whose box-drawing characters push those lines past 132 bytes.
+set(MQC_FORTRAN_FLAGS "${CMAKE_Fortran_FLAGS} ${FLAGS_STANDARD}")
 set(CMAKE_Fortran_FLAGS_DEBUG
     "${CMAKE_Fortran_FLAGS_DEBUG} ${FLAGS_DEBUG}"
     PARENT_SCOPE)
@@ -169,19 +175,19 @@ set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO
 option(MQC_ENABLE_WARNINGS "Enable compiler warnings" OFF)
 option(MQC_ENABLE_WERROR "Enable -Werror" OFF)
 if(MQC_ENABLE_WARNINGS)
-  set(CMAKE_Fortran_FLAGS
-      "${CMAKE_Fortran_FLAGS} ${FLAGS_WARNINGS}"
-      PARENT_SCOPE)
+  set(MQC_FORTRAN_FLAGS "${MQC_FORTRAN_FLAGS} ${FLAGS_WARNINGS}")
   if(MQC_ENABLE_WERROR)
-    set(CMAKE_Fortran_FLAGS
-        "${CMAKE_Fortran_FLAGS} -Werror"
-        PARENT_SCOPE)
+    set(MQC_FORTRAN_FLAGS "${MQC_FORTRAN_FLAGS} -Werror")
   endif()
 endif()
 
-# Coverage build type
+# Coverage build type. `Coverage-mqc` is not one of CMake's own build types, so
+# nothing else supplies flags for it -- these are all of them, and they have to
+# sit alongside the standard set rather than replace it.
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
-  set(CMAKE_Fortran_FLAGS
-      "${CMAKE_Fortran_FLAGS} ${FLAGS_COVERAGE}"
-      PARENT_SCOPE)
+  set(MQC_FORTRAN_FLAGS "${MQC_FORTRAN_FLAGS} ${FLAGS_COVERAGE}")
 endif()
+
+set(CMAKE_Fortran_FLAGS
+    "${MQC_FORTRAN_FLAGS}"
+    PARENT_SCOPE)

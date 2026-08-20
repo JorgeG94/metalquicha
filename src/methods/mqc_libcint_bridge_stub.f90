@@ -21,8 +21,16 @@ module mqc_libcint_bridge
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
+   public :: xc_available
 
 contains
+
+   pure function xc_available() result(available)
+      !! No libcint means no `mqc_libcint_xc`, and therefore no functionals --
+      !! whatever libxc itself was configured to do.
+      logical :: available
+      available = .false.
+   end function xc_available
 
    pure function libcint_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU

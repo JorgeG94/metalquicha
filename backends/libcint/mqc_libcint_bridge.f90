@@ -58,6 +58,11 @@ module mqc_libcint_bridge
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
+   public :: xc_available
+      !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
+      !! outside this backend, since the module is not compiled without it --
+      !! can still ask whether a functional can be evaluated. `mqc_version`
+      !! reports it, and `run_validation.py` skips the decks that need it.
 
    real(dp), parameter :: CI_TOLERANCE = 1.0e-11_dp
       !! Residual the CASCI Davidson is driven to on the CASCI-only path.

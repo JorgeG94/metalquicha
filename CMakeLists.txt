@@ -141,18 +141,25 @@ option(MQC_ENABLE_LIBCINT
 option(MQC_ENABLE_LIBXC
        "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
 
-# A coverage build measures this project's own Fortran, not its dependencies.
-# libxc will not even configure under a build type it does not recognise: its
-# autocmake safeguard allows only Debug/Release/RelWithDebInfo and aborts on
-# "Coverage-mqc", so a coverage configure that fetched it dies before a line of
-# mqc is compiled. Drop both CPU backends for coverage -- which is also how
-# coverage ran before they became default-on. A normal (non-cache) set so it
-# shadows the option here and in the subdirectories without rewriting the cache,
-# leaving a later reconfigure of the same tree under another build type intact.
+# A coverage build measures this project's own Fortran, not its dependencies --
+# and `backends/libcint/` is this project's own Fortran. It used to be dropped
+# here alongside libxc, which meant every line of the CPU backend -- the SCF,
+# MP2, coupled cluster, MCSCF, SAPT, EFP, the analyses -- was invisible to
+# coverage rather than uncovered by it. Half the program was not being measured,
+# and a number that does not include it is not this program's coverage.
+#
+# libxc is a different case and stays off: its autocmake safeguard allows only
+# Debug/Release/RelWithDebInfo and aborts on "Coverage-mqc", so a coverage
+# configure that fetched it dies before a line of mqc is compiled. That costs
+# the Kohn-Sham paths, which the build already refuses without libxc anyway.
+#
+# A normal (non-cache) set so it shadows the option here and in the
+# subdirectories without rewriting the cache, leaving a later reconfigure of the
+# same tree under another build type intact.
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   set(MQC_ENABLE_LIBXC OFF)
-  set(MQC_ENABLE_LIBCINT OFF)
-  message(STATUS "Coverage-mqc build: libxc and libcint disabled")
+  message(STATUS "Coverage-mqc build: libxc disabled (it refuses this build "
+                 "type); libcint measured as part of the project")
 endif()
 
 # Off by default: DL-FIND is LGPL-3 and this program is MIT, so linking it is a
