@@ -40,6 +40,8 @@ module mqc_libcint_hessian
    public :: solve_mo1_atom
    public :: nuclear_repulsion_hessian
    public :: partial_hessian
+   public :: response_hessian
+   public :: rhf_hessian
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -732,5 +734,186 @@ contains
 
       deallocate (eri_ii, eri_ij, eri_ik, owner, offsets, counts)
    end subroutine partial_hessian
+
+   subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
+                               max_iter, tol)
+      !! What the Hessian gains from letting the density relax
+      !!
+      !! The gradient needs no density derivative -- that is what makes the
+      !! Hellmann-Feynman-plus-Pulay form exact for a variational wavefunction.
+      !! The Hessian does, because differentiating that gradient a second time
+      !! reaches the density this time:
+      !!
+      !!     dD/dR_B contracted with dF/dR_A, minus dW/dR_B with dS/dR_A
+      !!
+      !! where the derivatives on the right are the skeleton ones -- integrals
+      !! only -- and the ones on the left are total.
+      !!
+      !! **`W` is taken as `D F D / 2` rather than as orbital energies.** The
+      !! two are the same object: `D F D / 2 = 2 C_occ eps C_occ^T`, because
+      !! `C_occ^T F C_occ` is diagonal at convergence. Writing it the first way
+      !! means its derivative needs only `dD/dR` and `dF/dR`, both of which are
+      !! already here, instead of the derivative of the Lagrange multiplier
+      !! matrix -- an occupied-occupied object that stops being diagonal the
+      !! moment the molecule is perturbed, and whose relation to the overlap
+      !! derivative is exactly the kind of factor of a half that this code has
+      !! no independent way to check.
+      !!
+      !! The coupled-perturbed equations are solved once per atom, three
+      !! components at a time, which is where essentially all of the time goes.
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: density(:, :)     !! Closed shell, carrying its factor of two
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      real(dp), allocatable :: eri_ip1(:, :, :, :, :)
+      real(dp), allocatable :: h1(:, :, :, :), s1(:, :, :, :)
+      real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
+      real(dp), allocatable :: mo1(:, :, :), h1a(:, :, :), s1a(:, :, :)
+      real(dp), allocatable :: hcore(:, :), fock(:, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: g1(:, :), f1(:, :), half(:, :), c_occ(:, :)
+      real(dp), allocatable :: tmp(:, :), work(:, :)
+      real(dp), allocatable :: outer(:, :), middle(:, :)
+      type(direct_stats_t) :: stats
+      integer :: nao, natm, ia, ja, a, b
+
+      if (error%has_error()) return
+
+      nao = mol%nao
+      natm = mol%natm
+      allocate (c_occ(nao, n_occ))
+      c_occ = orbitals(:, 1:n_occ)
+
+      call mol%core_hamiltonian(hcore)
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      allocate (fock(nao, nao), zero_h(nao, nao))
+      zero_h = 0.0_dp
+      call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
+                             density_screen=.false.)
+      if (error%has_error()) return
+
+      call eri_ip1_block(mol, eri_ip1, error)
+      if (error%has_error()) return
+
+      allocate (h1(nao, nao, 3, natm), s1(nao, nao, 3, natm))
+      allocate (d1(nao, nao, 3, natm), w1(nao, nao, 3, natm))
+      allocate (half(nao, n_occ), tmp(nao, nao), work(nao, nao))
+      allocate (g1(nao, nao), f1(nao, nao), outer(nao, nao), middle(nao, nao))
+
+      do ia = 1, natm
+         call make_h1_atom(mol, density, eri_ip1, ia, h1a, error)
+         call overlap_deriv_atom(mol, ia, s1a, error)
+         if (error%has_error()) return
+         h1(:, :, :, ia) = h1a
+         s1(:, :, :, ia) = s1a
+
+         call solve_mo1_atom(mol, orbitals, energies, n_occ, h1a, s1a, mo1, error, &
+                             max_iter=max_iter, tol=tol)
+         if (error%has_error()) return
+
+         do a = 1, 3
+            ! The first-order density, the same expression the finite-difference
+            ! test in `test_mqc_hess_ints` pins directly.
+            call pic_gemm(orbitals, mo1(:, :, a), half, alpha=2.0_dp, beta=0.0_dp)
+            call pic_gemm(half, c_occ, tmp, transb="T")
+            tmp = tmp + transpose(tmp)
+            d1(:, :, a, ia) = tmp
+
+            ! `dF/dR` in full: the skeleton derivative plus the mean field of
+            ! the relaxed density. Leaving the second term out is the same
+            ! mistake as leaving the response out of the Hessian, made one
+            ! level down.
+            call build_fock_direct(mol, zero_h, tmp, bounds, g1, stats, error, &
+                                   density_screen=.false.)
+            if (error%has_error()) return
+            f1 = h1a(:, :, a) + g1
+
+            ! W = D F D / 2, differentiated by the product rule: three terms,
+            ! all of which get the half. The first and last are transposes of
+            ! each other and the middle one is already symmetric, which is what
+            ! makes the sum symmetric -- but *only* if the middle one is not
+            ! symmetrised a second time. Adding it before a `(X + X^T)/2` gives
+            ! it twice its weight, which is a wrong `dW/dR` that is still
+            ! symmetric, still translationally invariant, and wrong by tens of
+            ! percent in the Hessian.
+            call pic_gemm(tmp, fock, work)
+            call pic_gemm(work, density, outer)
+            call pic_gemm(density, f1, work)
+            call pic_gemm(work, density, middle)
+            w1(:, :, a, ia) = 0.5_dp*(outer + transpose(outer) + middle)
+         end do
+         deallocate (h1a, s1a, mo1)
+      end do
+
+      allocate (hess(3, 3, natm, natm))
+      hess = 0.0_dp
+      do ja = 1, natm
+         do ia = 1, natm
+            do b = 1, 3
+               do a = 1, 3
+                  hess(a, b, ia, ja) = sum(d1(:, :, b, ja)*h1(:, :, a, ia)) &
+                                       - sum(w1(:, :, b, ja)*s1(:, :, a, ia))
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (eri_ip1, h1, s1, d1, w1, hcore, fock, bounds, zero_h)
+      deallocate (g1, f1, half, c_occ, tmp, work, outer, middle)
+   end subroutine response_hessian
+
+   subroutine rhf_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
+                          hess, error, max_iter, tol)
+      !! The analytic Hessian of a converged restricted Hartree-Fock energy
+      !!
+      !! Three pieces that are checked three different ways and only mean
+      !! anything added together: the nuclear repulsion, which is arithmetic;
+      !! the explicit integral second derivatives against the fixed density;
+      !! and the response.
+      !!
+      !! Returned as `(3, 3, n_atoms, n_atoms)`. A vibrational analysis wants
+      !! `(3*n_atoms, 3*n_atoms)`, which is a reshape the caller can do -- and
+      !! which is deliberately not done here, because the four-index form is
+      !! the one where a wrong atom pair is visible.
+      type(libcint_molecule_t), intent(in), target :: mol
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
+      integer :: i, nao
+
+      if (error%has_error()) return
+
+      nao = mol%nao
+      allocate (weighted(nao, nao))
+      weighted = 0.0_dp
+      do i = 1, n_occ
+         weighted = weighted + 2.0_dp*energies(i) &
+                    *matmul(reshape(orbitals(:, i), [nao, 1]), &
+                            reshape(orbitals(:, i), [1, nao]))
+      end do
+
+      call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
+      call partial_hessian(mol, density, weighted, part, error)
+      call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
+                            max_iter=max_iter, tol=tol)
+      if (error%has_error()) return
+
+      hess = hess + part + resp
+      deallocate (weighted, part, resp)
+   end subroutine rhf_hessian
 
 end module mqc_libcint_hessian

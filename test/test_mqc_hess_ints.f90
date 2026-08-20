@@ -18,7 +18,8 @@ module test_mqc_hess_ints
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK, &
                                     hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ
    use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
-                                  solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian
+                                  solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian, &
+                                  response_hessian, rhf_hessian
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_hess_ints, only: eri_ip1_block
@@ -54,7 +55,8 @@ contains
                   new_unittest("nuclear_repulsion_hessian_is_right", nuclear_repulsion_hessian_ok), &
                   new_unittest("rinv_blocks_sum_to_the_nuclear_one", rinv_blocks_sum_to_nuc), &
                   new_unittest("partial_hessian_against_finite_difference", partial_hessian_fd), &
-                  new_unittest("partial_hessian_is_translationally_invariant", partial_hessian_translates) &
+                  new_unittest("partial_hessian_is_translationally_invariant", partial_hessian_translates), &
+                  new_unittest("rhf_hessian_against_finite_difference", rhf_hessian_fd) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -285,6 +287,139 @@ contains
       call check(error, worst < 1.0e-9_dp*scale, "the partial Hessian is not symmetric")
       call mol%destroy()
    end subroutine partial_hessian_translates
+
+   subroutine scf_energy_at(geo, energy, err)
+      !! A converged restricted Hartree-Fock energy at one geometry
+      real(dp), intent(in) :: geo(3, 3)
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+
+      energy = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      if (err%has_error()) return
+      energy = scf%energy
+      call mol%destroy()
+   end subroutine scf_energy_at
+
+   subroutine rhf_hessian_fd(error)
+      !! The whole thing, against differencing converged energies
+      !!
+      !! **This is the test the rest of the file exists to make debuggable.**
+      !! Everything else checks one piece against an identity or against a
+      !! frozen-density energy; this checks the assembled Hessian against the
+      !! quantity it claims to be -- the curvature of the Hartree-Fock energy
+      !! surface, obtained by converging an SCF at each of four displaced
+      !! geometries per element.
+      !!
+      !! It is also the only check that says anything about the response at
+      !! all, because the response has no meaning on its own: it is the
+      !! difference between the energy of a molecule whose density is allowed
+      !! to follow the nuclei and one whose density is not, and only the first
+      !! of those is an observable.
+      !!
+      !! Note what the response is worth here. It is not a small correction --
+      !! the frozen-density Hessian is off by tens of percent on the diagonal
+      !! and gets some off-diagonal blocks qualitatively wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: hess(:, :, :, :)
+      real(dp) :: geo(3, 3), pp, pm, mp_, mm, fd, worst, scale
+      real(dp), parameter :: H = 2.0e-3_dp
+      integer :: ia, ja, a, b, nocc
+
+      nocc = 5
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call check(error, .not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) return
+
+      call rhf_hessian(mol, WATER_Z, scf%density, scf%orbitals, &
+                       scf%orbital_energies, nocc, hess, err)
+      call check(error, .not. err%has_error(), "the Hessian did not build")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      worst = 0.0_dp
+      scale = 0.0_dp
+      do ja = 1, 3
+         do ia = 1, 3
+            do b = 1, 3
+               do a = 1, 3
+                  geo = WATER
+                  geo(a, ia) = geo(a, ia) + H
+                  geo(b, ja) = geo(b, ja) + H
+                  call scf_energy_at(geo, pp, err)
+                  geo = WATER
+                  geo(a, ia) = geo(a, ia) + H
+                  geo(b, ja) = geo(b, ja) - H
+                  call scf_energy_at(geo, pm, err)
+                  geo = WATER
+                  geo(a, ia) = geo(a, ia) - H
+                  geo(b, ja) = geo(b, ja) + H
+                  call scf_energy_at(geo, mp_, err)
+                  geo = WATER
+                  geo(a, ia) = geo(a, ia) - H
+                  geo(b, ja) = geo(b, ja) - H
+                  call scf_energy_at(geo, mm, err)
+                  if (err%has_error()) exit
+
+                  fd = (pp - pm - mp_ + mm)/(4.0_dp*H*H)
+                  worst = max(worst, abs(fd - hess(a, b, ia, ja)))
+                  scale = max(scale, abs(fd))
+               end do
+            end do
+         end do
+      end do
+
+      call check(error, .not. err%has_error(), "a displaced SCF did not converge")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, scale > 0.1_dp, "the surface barely curves")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      ! Agreement is 4.5e-6 relative, which is the `h^2` term of the
+      ! difference formula rather than anything in the Hessian; the gate is at
+      ! twenty times that.
+      call check(error, worst < 1.0e-4_dp*scale, &
+                 "the analytic Hessian disagrees with finite differences")
+
+      ! Both hold for the assembled Hessian and neither is implied by the
+      ! finite differences, which compare element by element and would pass on
+      ! a Hessian that agreed everywhere and was symmetric nowhere.
+      worst = 0.0_dp
+      do ja = 1, 3
+         do ia = 1, 3
+            worst = max(worst, maxval(abs(hess(:, :, ia, ja) - transpose(hess(:, :, ja, ia)))))
+         end do
+      end do
+      call check(error, worst < 1.0e-8_dp*scale, "the Hessian is not symmetric")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      worst = 0.0_dp
+      do ja = 1, 3
+         worst = max(worst, maxval(abs(hess(:, :, 1, ja) + hess(:, :, 2, ja) + hess(:, :, 3, ja))))
+      end do
+      call check(error, worst < 1.0e-8_dp*scale, &
+                 "a rigid translation does not leave the Hessian alone")
+      call mol%destroy()
+   end subroutine rhf_hessian_fd
 
    subroutine rinv_blocks_sum_to_nuc(error)
       !! `-sum_C Z_C rinv(C)` is the nuclear attraction operator, at any order
