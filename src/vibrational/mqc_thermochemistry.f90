@@ -20,6 +20,7 @@ module mqc_thermochemistry
                                      HARTREE_TO_KCALMOL, HARTREE_TO_JMOL, HARTREE_TO_CALMOL
    use mqc_elements, only: element_mass
    use pic_lapack_interfaces, only: pic_syev
+   use mqc_calculation_defaults, only: DEFAULT_TEMPERATURE, DEFAULT_PRESSURE
    implicit none
    private
 
@@ -33,12 +34,6 @@ module mqc_thermochemistry
    public :: compute_electronic_entropy
    public :: compute_thermochemistry
    public :: print_thermochemistry
-
-   !> Default temperature in Kelvin
-   real(dp), parameter, public :: DEFAULT_TEMPERATURE = 298.15_dp
-
-   !> Default pressure in atm
-   real(dp), parameter, public :: DEFAULT_PRESSURE = 1.0_dp
 
    !> Default symmetry number
    integer, parameter, public :: DEFAULT_SYMMETRY_NUMBER = 1

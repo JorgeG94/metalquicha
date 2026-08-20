@@ -22,6 +22,7 @@ module mqc_scf_common
    public :: build_density_spin
    public :: spin_contamination
    public :: LINEAR_DEPENDENCE_TOL
+   public :: GWH_K
 
    !> Overlap eigenvalues at or below this are dropped as linearly dependent.
    !>
@@ -29,6 +30,12 @@ module mqc_scf_common
    !> libcint side and `LINEAR_DEPENDENCE_TOL` on the cuEST side, both 1.0e-7,
    !> which meant the two paths agreed only by coincidence.
    real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
+
+   !> The empirical scale on the GWH off-diagonal. 1.75 is the value in
+   !> universal use, and both backends have to start from the same matrix or
+   !> comparing their iteration counts means nothing -- which is exactly why it
+   !> is one constant here rather than one in each of them.
+   real(dp), parameter :: GWH_K = 1.75_dp
 
 contains
 

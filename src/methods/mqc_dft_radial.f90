@@ -34,7 +34,7 @@ module mqc_dft_radial
    public :: radial_volume_weights    !! 4*pi*r^2*dr, for a full spherical quadrature
 
    !> Exponent of the M4 mapping
-   real(dp), parameter :: M4_ALPHA = 0.6_dp
+   real(dp), parameter, public :: M4_ALPHA = 0.6_dp
 
    !> Used where an element has no tabulated value. Every element up to Z=103
    !> has one, so this is only reached by superheavy placeholders.

@@ -26,7 +26,8 @@ module mqc_capi_charges
    !! basis-stable one is the only defensible input.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_associated, c_f_pointer
    use pic_types, only: dp
-   use mqc_capi_system, only: system_handle_t, last_message, MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
+   use mqc_capi_system, only: system_handle_t, last_message
+   use mqc_capi_status, only: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    use mqc_error, only: error_t
    use mqc_elements, only: element_number_to_symbol
    use mqc_libcint_bridge, only: run_libcint_charges

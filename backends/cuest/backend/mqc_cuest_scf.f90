@@ -67,7 +67,7 @@ module mqc_cuest_scf
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
-                             spin_contamination
+                             spin_contamination, GWH_K
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis_device, only: diis_device_t
@@ -92,9 +92,6 @@ module mqc_cuest_scf
    integer, parameter, public :: SCF_GUESS_CORE = 0  !! F = H
    integer, parameter, public :: SCF_GUESS_GWH = 1   !! Generalized Wolfsberg-Helmholz
    integer, parameter, public :: SCF_GUESS_SAC = 2   !! Superposition of atomic coefficients
-
-   real(dp), parameter :: GWH_K = 1.75_dp
-      !! The Wolfsberg-Helmholz constant. 1.75 is the value in universal use.
 
       !! Overlap eigenvalues below this are dropped from the orbital space
 

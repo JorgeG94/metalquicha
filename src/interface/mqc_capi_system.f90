@@ -32,10 +32,11 @@ module mqc_capi_system
                                                                              c_f_pointer, c_loc, c_associated
    use pic_types, only: dp
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
-   use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &
+   use mqc_bond_perception, only: monomer_of, perceive_bonds, missing_broken_bonds, &
                                   auto_monomers, DEFAULT_BOND_TOLERANCE
    use mqc_error, only: error_t
    use mqc_string_utils, only: int_to_text
+   use mqc_capi_status, only: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    implicit none
    private
 
@@ -51,16 +52,10 @@ module mqc_capi_system
    ! Shared with mqc_capi_bond_orders, which extends this API over the same
    ! handle and has to answer in the same status codes and through the same
    ! error buffer -- `mqc_system_last_error` is the only reader either has.
-   public :: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    public :: last_message
       !! Exposed for the sibling C-API modules that must open a system handle,
       !! not for general use. Nothing outside `src/interface` should hold one:
       !! the rest of the code works in `system_geometry_t`.
-
-   integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_FAIL = 1
-   integer(c_int), parameter :: MQC_BAD_HANDLE = 2
-
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
 
@@ -406,7 +401,7 @@ contains
       ! one thing here worth failing hard over.
       do ibond = 1, n_bonds
          if (is_broken(ibond) /= 0) cycle
-         if (monomer_of(h%geom, atom_i(ibond)) /= monomer_of(h%geom, atom_j(ibond))) then
+         if (monomer_of(h%geom, int(atom_i(ibond))) /= monomer_of(h%geom, int(atom_j(ibond)))) then
             last_message = "mqc_system_set_bonds: the bond between atoms "// &
                            int_to_text(atom_i(ibond))//" and "//int_to_text(atom_j(ibond))// &
                            " crosses a monomer boundary but is not marked broken; "// &
@@ -589,28 +584,6 @@ contains
                                 missing_i, missing_j, count, tol)
       n_missing = int(count, c_int)
    end function mqc_system_count_missing_bonds
-
-   pure function monomer_of(sys, atom) result(imon)
-      !! Which monomer holds a 0-based atom, or 0 if the partition omits it
-      !!
-      !! Zero for an unpartitioned atom is deliberate: two atoms nobody claimed
-      !! compare equal and their bond is not called a cut, which is the right
-      !! answer for a partition that does not cover the molecule.
-      type(system_geometry_t), intent(in) :: sys
-      integer(c_int), intent(in) :: atom
-      integer :: imon
-
-      integer :: jmon
-
-      imon = 0
-      if (.not. allocated(sys%fragment_atoms)) return
-      do jmon = 1, sys%n_monomers
-         if (any(sys%fragment_atoms(1:sys%fragment_sizes(jmon), jmon) == int(atom))) then
-            imon = jmon
-            return
-         end if
-      end do
-   end function monomer_of
 
    function mqc_system_n_atoms(handle) result(n) bind(C, name="mqc_system_n_atoms")
       !! Atoms in the system, or -1 for a bad handle

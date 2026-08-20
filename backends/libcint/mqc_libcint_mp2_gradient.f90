@@ -41,7 +41,7 @@ module mqc_libcint_mp2_gradient
                                     two_electron_block, three_centre, two_centre, &
                                     metric_inverse_sqrt
    use mqc_libcint_mp2, only: transform_ovov
-   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general
+   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general, IN_CORE_LIMIT
    use mqc_libcint_rhf, only: build_fock
    use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use pic_blas_interfaces, only: pic_gemm
@@ -69,10 +69,6 @@ module mqc_libcint_mp2_gradient
       !! hard limit on the routine -- the half-transformed amplitudes and the
       !! one-particle quantities sit outside it -- but it is what sets the block
       !! size, and it is the number to raise on a machine with room.
-
-   real(dp), parameter, public :: IN_CORE_LIMIT = 4.0e9_dp
-      !! Bytes. The same ceiling `mqc_libcint_cphf` applies to its own stored
-      !! tensor, for the same reason and deliberately not a different number.
 
 contains
 

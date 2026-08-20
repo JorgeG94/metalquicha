@@ -39,6 +39,7 @@ module mqc_ormas_space
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_determinants, only: generate_strings, string_address
+   use mqc_math_utils, only: binomial
    implicit none
    private
 
@@ -144,26 +145,6 @@ module mqc_ormas_space
    end type ormas_closure_t
 
 contains
-
-   pure function binomial(n, k) result(c)
-      !! `C(n, k)`, exactly, in 64-bit integers
-      !!
-      !! One factor at a time, multiplying before dividing, so the running
-      !! value is always the binomial coefficient of a smaller problem and
-      !! never exceeds the answer.
-      integer, intent(in) :: n, k
-      integer(int64) :: c
-
-      integer :: i, kk
-
-      c = 0_int64
-      if (k < 0 .or. k > n .or. n < 0) return
-      kk = min(k, n - k)
-      c = 1_int64
-      do i = 1, kk
-         c = c*int(n - kk + i, int64)/int(i, int64)
-      end do
-   end function binomial
 
    pure function class_size(n_orbitals, occupation) result(count)
       !! Strings realising one occupation vector

@@ -20,7 +20,7 @@ module mqc_libcint_rhf
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
-                             build_density_spin, spin_contamination
+                             build_density_spin, spin_contamination, GWH_K
    use mqc_diis, only: diis_state_t
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                                  direct_stats_t
@@ -59,11 +59,6 @@ module mqc_libcint_rhf
    integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
-
-   !> The empirical scale on the GWH off-diagonal. 1.75 is the usual value and
-   !> the one cuEST uses; the two backends have to start from the same matrix or
-   !> comparing their iteration counts means nothing.
-   real(dp), parameter :: GWH_K = 1.75_dp
 
    !> Buffer length for a formatted table line handed to the logger.
    integer, parameter :: LINE_LEN = 160

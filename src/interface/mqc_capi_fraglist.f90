@@ -36,6 +36,7 @@ module mqc_capi_fraglist
    use pic_types, only: dp, default_int, int64
    use mqc_fraglist, only: fraglist_t
    use mqc_error, only: error_t
+   use mqc_capi_status, only: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    implicit none
    private
 
@@ -43,11 +44,6 @@ module mqc_capi_fraglist
    public :: mqc_fraglist_generate, mqc_fraglist_count, mqc_fraglist_max_level
    public :: mqc_fraglist_get, mqc_fraglist_set, mqc_fraglist_close_subsets
    public :: mqc_fraglist_last_error
-
-   integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_FAIL = 1
-   integer(c_int), parameter :: MQC_BAD_HANDLE = 2
-
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
       !! Most recent failure, for a caller that wants to say why. Process-wide
