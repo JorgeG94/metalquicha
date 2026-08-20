@@ -148,6 +148,8 @@ contains
       settings%bonding_threshold = this%options%properties%bonding_threshold
       settings%bonding_energy = this%options%properties%bonding_energy
       settings%bonding_no_sharing = this%options%properties%bonding_no_sharing
+      settings%bonding_restrict_localization = &
+         this%options%properties%bonding_restrict_localization
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
       settings%basis_set = this%options%basis_set
       settings%spherical = this%options%spherical

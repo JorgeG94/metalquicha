@@ -264,6 +264,7 @@ contains
       call allow(keys, "energy_decomposition")
       call allow(keys, "no_sharing")
       call allow(keys, "no_sharing_ci")
+      call allow(keys, "restrict_localization")
       call require(keys, "type")
    end function bonding_analysis_keys
 

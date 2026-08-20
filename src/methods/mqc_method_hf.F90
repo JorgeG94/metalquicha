@@ -141,6 +141,8 @@ contains
          settings%fukui_population = this%options%properties%fukui_population
       end if
       settings%bonding_no_sharing = this%options%properties%bonding_no_sharing
+      settings%bonding_restrict_localization = &
+         this%options%properties%bonding_restrict_localization
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set

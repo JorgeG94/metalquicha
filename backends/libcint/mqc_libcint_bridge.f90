@@ -942,6 +942,7 @@ contains
                                 energy_decomposition=settings%bonding_energy, &
                                 no_sharing=settings%bonding_no_sharing, &
                                 no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                restrict_localization=settings%bonding_restrict_localization, &
                                 atom_energy=ieda_atom, free_atom_energy=ieda_free, &
                                 pair_energy=ieda_pair, pair_classical=ieda_classical, &
                                 formation_energy=ieda_formation)
@@ -1983,6 +1984,7 @@ contains
                                       energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing, &
                                       no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                      restrict_localization=settings%bonding_restrict_localization, &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
@@ -2002,6 +2004,7 @@ contains
                                       energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing, &
                                       no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                      restrict_localization=settings%bonding_restrict_localization, &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &

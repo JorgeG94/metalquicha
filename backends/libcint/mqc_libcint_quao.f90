@@ -275,7 +275,7 @@ contains
    end subroutine aambs_atom_ranges
 
    subroutine select_atomic_claims(projection, offset, count, natm, first, last, &
-                                   claims, atom_of, subspace_of, error)
+                                   claims, atom_of, subspace_of, error, starved)
       !! Which atom gets which orbital, by competition rather than by decree
       !!
       !! Every atom is offered every subspace. The claims are pooled, ranked by
@@ -311,6 +311,14 @@ contains
       real(dp), allocatable, intent(out) :: claims(:, :)     !! (n_val, n_val)
       integer, allocatable, intent(out) :: atom_of(:), subspace_of(:)
       type(error_t), intent(inout) :: error
+      logical, intent(out), optional :: starved
+         !! Set when the partition leaves some atom with no orbital, instead of
+         !! raising an error. That is a property of the partition rather than a
+         !! fault: quasi-atomic orbitals are atomic and occupation-restricted
+         !! subspaces are usually grouped by orbital energy, so the two need not
+         !! be compatible and one strong atom can win every slot. A caller with
+         !! somewhere else to go wants to go there; GAMESS, having nowhere,
+         !! aborts here instead (`ISVMOR HAS VALUES LESS THAN 1`).
 
       real(dp), allocatable :: pool(:, :), weight(:), sigma(:, :), block(:, :)
       real(dp), allocatable :: piece(:)
@@ -389,8 +397,18 @@ contains
       ! Every atom must end up with something. GAMESS asserts the same and says
       ! what to do about it; an atom with no quasi-atomic orbital has no
       ! population, no bond order and no place in the decomposition.
+      ! Only atoms that had something to claim. This set is built for the core
+      ! orbitals as well as the valence ones, and hydrogen has no core -- so
+      ! "every atom gets one" is false there by construction, and asserting it
+      ! would refuse every molecule containing a hydrogen.
+      if (present(starved)) starved = .false.
       do iatom = 1, natm
+         if (count(iatom) == 0) cycle
          if (share(iatom) < 1) then
+            if (present(starved)) then
+               starved = .true.
+               return
+            end if
             call error%set(ERROR_VALIDATION, "atom "//to_char(iatom)//" was left "// &
                            "with no quasi-atomic orbital, so it has no population "// &
                            "and no place in the analysis. The subspaces are too "// &
@@ -722,7 +740,7 @@ contains
 
    subroutine quasi_atomic_orbitals(atomic_numbers, valence_internal, n_occupied_valence, &
                                     mixed, offset, count, result, error, &
-                                    valence_density, subspaces)
+                                    valence_density, subspaces, starved)
       !! Quasi-atomic orbitals for the valence-internal space
       !!
       !! Each atom claims the combinations of valence-internal orbitals that
@@ -753,6 +771,9 @@ contains
       integer, intent(in) :: offset(:), count(:)   !! Valence AAMBS range per atom
       type(quao_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      logical, intent(out), optional :: starved
+         !! Reports a partition that cannot give every atom an orbital, rather
+         !! than failing on it. Only meaningful beside `subspaces`.
       integer, intent(in), optional :: subspaces(:)
          !! The valence-internal orbital each occupation-restricted subspace
          !! starts at, ascending, as `ormas_space_t%first_orbital` gives them.
@@ -834,8 +855,12 @@ contains
       end if
 
       call select_atomic_claims(projection, offset, count, natm, first, last, &
-                                claims, result%atom_of, result%subspace_of, error)
+                                claims, result%atom_of, result%subspace_of, error, &
+                                starved)
       if (error%has_error()) return
+      if (present(starved)) then
+         if (starved) return
+      end if
 
       ! Orthonormal within an atom, not between atoms. Symmetric
       ! orthogonalization is the choice that moves every orbital as little as

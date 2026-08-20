@@ -423,6 +423,56 @@ determinants converged against 11,778,624 stored, which is ninety-four megabytes
 and the right trade. Past roughly 2.7e8 determinants the expansion is refused
 rather than attempted.
 
+For a wave function too large for that, the localization can be constrained
+instead, which keeps the restricted wave function in its own space and needs no
+expansion::
+
+    "properties": {
+      "bonding_analysis": {
+        "type": "gms_quao",
+        "no_sharing": true,
+        "restrict_localization": true
+      }
+    }
+
+**Off by default, and the default is a measurement rather than a preference.**
+Constraining the rotations means atomic character is maximised only over
+rotations *within* each subspace, and a maximum over a subset of the rotations
+cannot exceed the maximum over all of them. The same water ORMAS wave function,
+analysed both ways -- identical ``E(Psi)``, since it is the same state:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 25 35
+
+   * - Localization
+     - Atomic character
+     - Norm kept by ``Psi-0``
+   * - Unconstrained, wave function expanded
+     - 0.856
+     - 20.11%
+   * - Constrained to the subspaces
+     - 0.730
+     - 0.15%
+
+The constraint costs 0.13 of atomic character and takes the no-sharing wave
+function from a fifth of the norm to essentially none of it. That is the
+expected direction and a larger magnitude than one might guess, and it is why
+this is not the default: the quasi-atomic orbitals are what the analysis is
+*about*, while the occupation restriction is a device for making the solve
+affordable. Spending the former to keep the latter is the wrong way round unless
+the expansion genuinely will not fit.
+
+One more thing can go wrong, and it says something about the method rather than
+the implementation. Quasi-atomic orbitals are atomic; occupation-restricted
+subspaces are usually grouped by orbital energy. The two need not be compatible,
+and when they are not, one strong atom wins every slot -- for water, oxygen
+takes all six and both hydrogens are left with nothing. GAMESS stops there
+(``ISVMOR HAS VALUES LESS THAN 1``, offering a manual override). Here the
+localization falls back to unconstrained and the wave function is expanded
+instead, with a warning saying so, because that route exists and reaches the
+same answer.
+
 The two describe the same wave function, so this chooses how a number is
 computed and not which number it is. Del Angel Cruz, Gordon and Ruedenberg say
 which to prefer (*J. Am. Chem. Soc.* **147**, 42262 (2025), Section 3.3): the

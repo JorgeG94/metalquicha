@@ -242,6 +242,8 @@ contains
       end if
       driver_config%method_config%properties%bonding_no_sharing = &
          mqc_config%bonding_no_sharing
+      driver_config%method_config%properties%bonding_restrict_localization = &
+         mqc_config%bonding_restrict_localization
       if (allocated(mqc_config%bonding_no_sharing_ci)) then
          driver_config%method_config%properties%bonding_no_sharing_ci = &
             mqc_config%bonding_no_sharing_ci

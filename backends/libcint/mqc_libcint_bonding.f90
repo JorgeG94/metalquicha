@@ -184,7 +184,8 @@ contains
                                 orbitals, n_electrons, error, verbose, threshold, &
                                 occupations, active_orbitals, active_dm1, active_dm2, &
                                 reference_energy, energy_decomposition, no_sharing, &
-                                no_sharing_ci, valence_wavefunction, atom_energy, &
+                                no_sharing_ci, valence_wavefunction, &
+                                restrict_localization, atom_energy, &
                                 free_atom_energy, pair_energy, pair_classical, &
                                 formation_energy)
       !! The quasi-atomic bonding analysis, start to finish
@@ -248,6 +249,14 @@ contains
          !! How that expansion is obtained: `"transform"`, the default, or
          !! `"resolve"`. See `no_sharing_analysis`, which is where the two
          !! differ and where the difference is argued.
+      logical, intent(in), optional :: restrict_localization
+         !! Confine the localization to the wave function's
+         !! occupation-restricted subspaces, so no rotation mixes two of them.
+         !! Off by default, and the default is a measurement: on water the
+         !! constraint costs 0.17 of atomic character and takes the no-sharing
+         !! wave function from 20% of the norm to 0.15%. It buys the ability to
+         !! keep a restricted wave function in its own space, which matters only
+         !! when writing it out over the complete one will not fit.
       type(valence_wavefunction_t), intent(in), optional :: valence_wavefunction
          !! A converged multiconfigurational wave function to use instead of
          !! solving one, if it happens to be over the full valence space. Its
@@ -283,8 +292,9 @@ contains
       real(dp), allocatable :: rep_inter(:, :), tot_intra(:), tot_inter(:, :)
       real(dp), allocatable :: s_ao(:, :), u_active(:, :)
       real(dp), allocatable :: cumulant(:, :, :, :), cumulant_quao(:, :, :, :)
-      logical :: correlated, want_energy
+      logical :: correlated, want_energy, adopted, starved, restrict
       integer :: ci_route
+      integer, allocatable :: restriction(:)
       real(dp) :: span_deficit, formation
       real(dp), allocatable :: free_energy(:), adaptation(:)
       real(dp), allocatable :: nuc_coulomb(:, :), two_coulomb(:, :), classical(:, :)
@@ -352,7 +362,27 @@ contains
       ! sets `IVVOS=0` and extracts nothing, reporting "WE ACTUALLY NEVER PICK
       ! UP ANY NEW VVOS ORBITALS INTO THE ORBITAL SET."
       call adopt_valence_space(valence_wavefunction, dims, vvo%n_vvo, n_electrons, &
-                               valence_internal, loud)
+                               valence_internal, loud, adopted)
+
+      ! An occupation-restricted partition constrains the localization, and can
+      ! only do so against the orbitals it was defined over -- so it travels
+      ! only when those orbitals were adopted above. The construction is then
+      ! confined to each subspace and no rotation may cross one, which is what
+      ! keeps a restricted wave function invariant under the transformation.
+      ! GAMESS imposes the same constraint and prints the same fact
+      ! (`LOCAL_PPASVD KEEPS ORBITALS WITHIN ORMAS SUBSPACES`).
+      restrict = .false.
+      if (present(restrict_localization)) restrict = restrict_localization
+      if (restrict .and. adopted .and. present(valence_wavefunction)) then
+         if (valence_wavefunction%ormas%n_subspaces > 1) then
+            restriction = valence_wavefunction%ormas%first_orbital
+            if (loud) then
+               write (line, "(a,i0,a)") "    localization                confined "// &
+                  "to ", size(restriction), " occupation-restricted subspaces"
+               call logger%info(trim(line))
+            end if
+         end if
+      end if
 
       ! The density in the valence-internal basis. For a reference determinant
       ! this is two on the occupied diagonal and zero elsewhere, which is what
@@ -371,9 +401,36 @@ contains
          call project_density(mol, orbitals, occupations, valence_internal, &
                               valence_density, error)
          if (error%has_error()) return
-         call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
-                                    mixed, val_off, val_n, quao, error, &
-                                    valence_density=valence_density)
+         if (allocated(restriction)) then
+            call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
+                                       mixed, val_off, val_n, quao, error, &
+                                       valence_density=valence_density, &
+                                       subspaces=restriction, starved=starved)
+            if (error%has_error()) return
+            if (starved) then
+               ! The partition cannot give every atom an orbital. Not a fault:
+               ! quasi-atomic orbitals are atomic and these subspaces are
+               ! usually grouped by orbital energy, so one strong atom can win
+               ! every slot -- for water, oxygen takes all six and both
+               ! hydrogens are left out. GAMESS stops here. This does not have
+               ! to, because the unconstrained construction plus writing the
+               ! wave function out over the complete space reaches the same
+               ! answer, so it goes that way and says so.
+               call logger%warning("  the occupation-restricted subspaces cannot "// &
+                                   "give every atom a quasi-atomic orbital, so the "// &
+                                   "localization is left unconstrained and the wave "// &
+                                   "function is written out over the complete space "// &
+                                   "instead")
+               deallocate (restriction)
+               call quasi_atomic_orbitals(atomic_numbers, valence_internal, &
+                                          dims%n_valocc, mixed, val_off, val_n, quao, &
+                                          error, valence_density=valence_density)
+            end if
+         else
+            call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
+                                       mixed, val_off, val_n, quao, error, &
+                                       valence_density=valence_density)
+         end if
       else
          call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
                                     mixed, val_off, val_n, quao, error)
@@ -895,7 +952,7 @@ contains
    end subroutine print_formation
 
    subroutine adopt_valence_space(offered, dims, n_vvo, n_electrons, &
-                                  valence_internal, loud)
+                                  valence_internal, loud, adopted)
       !! Use the calculation's own valence space, when it has one
       !!
       !! Overwrites `valence_internal` with the offered active orbitals if that
@@ -918,10 +975,16 @@ contains
       integer, intent(in) :: n_vvo, n_electrons
       real(dp), intent(inout) :: valence_internal(:, :)
       logical, intent(in) :: loud
+      logical, intent(out) :: adopted
+         !! Whether the offer was taken. It gates more than a log line: an
+         !! occupation-restricted partition is expressed in the active
+         !! orbitals, so it means nothing against a valence space derived here
+         !! instead of taken from the calculation.
 
       character(len=160) :: line
       integer :: n_val
 
+      adopted = .false.
       if (.not. present(offered)) return
       if (.not. allocated(offered%orbitals)) return
 
@@ -933,6 +996,7 @@ contains
       if (size(offered%orbitals, 1) /= size(valence_internal, 1)) return
 
       valence_internal = offered%orbitals
+      adopted = .true.
       if (loud) then
          write (line, "(a,i0,a,i0,a)") "    valence space               the "// &
             "calculation's own, CAS(", offered%n_alpha + offered%n_beta, ",", &

@@ -1242,6 +1242,19 @@ contains
                  "the CI route did not survive the parse")
       if (allocated(error)) return
 
+      ! Constraining the localization is a separate opt-in, and off by default,
+      ! because it changes the orbitals rather than only how they are reached.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "no_sharing": true, '// &
+                      '"restrict_localization": true}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_restrict_localization, &
+                 "the deck asked to constrain the localization")
+      if (allocated(error)) return
+
       ! A route nobody implements is refused with both spellings named, rather
       ! than falling back to the default and computing something the deck did
       ! not ask for.

@@ -218,6 +218,8 @@ contains
                             config%bonding_no_sharing)
       call optional_string(json, "properties.bonding_analysis.no_sharing_ci", &
                            config%bonding_no_sharing_ci)
+      call optional_logical(json, "properties.bonding_analysis.restrict_localization", &
+                            config%bonding_restrict_localization)
 
       ! ---- driver ----------------------------------------------------------
       call require_string(json, "driver", text, error)
