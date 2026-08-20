@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/checkpoint_record.html#variable-islot~6">islot</a>
-            <a class="list-group-item" href="../proc/checkpoint_record.html#variable-level~8">level</a>
+            <a class="list-group-item" href="../proc/checkpoint_record.html#variable-level~15">level</a>
             <a class="list-group-item" href="../proc/checkpoint_record.html#variable-natoms_local">natoms_local</a>
             <a class="list-group-item" href="../proc/checkpoint_record.html#variable-orbitals_out">orbitals_out</a>
         </div>
@@ -200,7 +200,7 @@ wants back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~67"></span>
+              <span class="anchor" id="variable-this~88"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -230,7 +230,7 @@ wants back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~5"></span>
+              <span class="anchor" id="variable-energy~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -260,7 +260,7 @@ wants back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~16"></span>
+              <span class="anchor" id="variable-n_atoms~26"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -276,7 +276,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~3"></span>
+              <span class="anchor" id="variable-gradient~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -306,7 +306,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~3"></span>
+              <span class="anchor" id="variable-homo~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -321,7 +321,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~3"></span>
+              <span class="anchor" id="variable-lumo~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -336,7 +336,7 @@ gradient its shape back; ignored by the text backend.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals~3"></span>
+              <span class="anchor" id="variable-has_orbitals~4"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -543,33 +543,33 @@ large graphs.</div>
 <path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M673.16,-12C682.87,-12 692.87,-12 702.73,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="702.93,-15.5 712.93,-12 702.93,-8.5 702.93,-15.5"/>
 </g>
-<!-- proc~handle_local_worker_results~2 -->
+<!-- proc~handle_local_worker_results -->
 <g id="proc~~checkpoint_record~~CalledByGraph_node5" class="node">
-<title>proc~handle_local_worker_results~2</title>
-<g id="a_proc~~checkpoint_record~~CalledByGraph_node5"><a xlink:href="../proc/handle_local_worker_results~2.html" xlink:title="handle_local_worker_results">
+<title>proc~handle_local_worker_results</title>
+<g id="a_proc~~checkpoint_record~~CalledByGraph_node5"><a xlink:href="../proc/handle_local_worker_results.html" xlink:title="handle_local_worker_results">
 <polygon fill="#d9534f" stroke="#d9534f" points="677,-108 515,-108 515,-84 677,-84 677,-108"/>
 <text text-anchor="middle" x="596" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_results</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_local_worker_results~2&#45;&gt;proc~record_task -->
+<!-- proc~handle_local_worker_results&#45;&gt;proc~record_task -->
 <g id="proc~~checkpoint_record~~CalledByGraph_edge3" class="edge">
-<title>proc~handle_local_worker_results~2&#45;&gt;proc~record_task</title>
+<title>proc~handle_local_worker_results&#45;&gt;proc~record_task</title>
 <path fill="none" stroke="#ff0000" d="M652.02,-83.96C680.71,-77.69 715.41,-70.1 742.71,-64.13"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="743.76,-67.48 752.78,-61.92 742.27,-60.64 743.76,-67.48"/>
 </g>
-<!-- proc~handle_node_results~2 -->
+<!-- proc~handle_node_results -->
 <g id="proc~~checkpoint_record~~CalledByGraph_node6" class="node">
-<title>proc~handle_node_results~2</title>
-<g id="a_proc~~checkpoint_record~~CalledByGraph_node6"><a xlink:href="../proc/handle_node_results~2.html" xlink:title="handle_node_results">
+<title>proc~handle_node_results</title>
+<g id="a_proc~~checkpoint_record~~CalledByGraph_node6"><a xlink:href="../proc/handle_node_results.html" xlink:title="handle_node_results">
 <polygon fill="#d9534f" stroke="#d9534f" points="656.5,-66 535.5,-66 535.5,-42 656.5,-42 656.5,-66"/>
 <text text-anchor="middle" x="596" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_node_results</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_node_results~2&#45;&gt;proc~record_task -->
+<!-- proc~handle_node_results&#45;&gt;proc~record_task -->
 <g id="proc~~checkpoint_record~~CalledByGraph_edge4" class="edge">
-<title>proc~handle_node_results~2&#45;&gt;proc~record_task</title>
+<title>proc~handle_node_results&#45;&gt;proc~record_task</title>
 <path fill="none" stroke="#ff0000" d="M656.7,-54C684.37,-54 716.76,-54 742.56,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="742.83,-57.5 752.83,-54 742.83,-50.5 742.83,-57.5"/>
 </g>
@@ -582,15 +582,15 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_results~2 -->
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_results -->
 <g id="proc~~checkpoint_record~~CalledByGraph_edge7" class="edge">
-<title>proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_results~2</title>
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_results</title>
 <path fill="none" stroke="#00ff00" d="M459.65,-82.17C474.1,-83.65 489.52,-85.22 504.57,-86.76"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="504.62,-90.28 514.92,-87.82 505.33,-83.32 504.62,-90.28"/>
 </g>
-<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_node_results~2 -->
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_node_results -->
 <g id="proc~~checkpoint_record~~CalledByGraph_edge8" class="edge">
-<title>proc~global_coordinator_impl&#45;&gt;proc~handle_node_results~2</title>
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_node_results</title>
 <path fill="none" stroke="#0000ff" d="M459.65,-67.83C480.83,-65.67 504.08,-63.29 525.23,-61.13"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="525.84,-64.59 535.44,-60.09 525.13,-57.62 525.84,-64.59"/>
 </g>
@@ -760,7 +760,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~8"></span>
+              <span class="anchor" id="variable-level~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -903,7 +903,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 07:13 +0000             </p>
+ on 2026-08-20 07:46 +0000             </p>
           </div>
         </div>
         <br>
