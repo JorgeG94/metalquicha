@@ -31,6 +31,7 @@ module mqc_mbe
    public :: compute_mbe   !! MBE energy with optional gradient and hessian
    public :: compute_gmbe  !! GMBE energy with optional gradient and hessian
    public :: collect_unconverged
+   public :: score_unconverged
       !! The fragments that failed, with what they were built from
 
 contains
@@ -458,6 +459,96 @@ contains
          monomers(k, :) = polymers(i, :)
       end do
    end subroutine collect_unconverged
+
+   subroutine score_unconverged(ids, monomers, delta_energies, deltas, &
+                                culprits, counts)
+      !! What the failures cost, and which monomers keep turning up in them
+      !!
+      !! Two questions follow "which fragments failed", and neither is
+      !! answerable from a list of identifiers.
+      !!
+      !! **Does it matter.** Each fragment's contribution to the total is
+      !! already known, so gathering it for the failures turns a count into an
+      !! exposure. Screening and cancellation mean most fragments contribute
+      !! almost nothing, and a hundred failures among those is a run to accept
+      !! rather than repeat.
+      !!
+      !! **Why.** A monomer with a wrecked geometry, a mis-assigned charge or an
+      !! accidental radical drags down every fragment it belongs to, so failures
+      !! cluster on their cause. Counting how often each monomer appears turns
+      !! four hundred failures into a short list of suspects, and the ordering
+      !! is what makes it readable at all -- the culprit is otherwise one row
+      !! among four hundred that all look alike.
+      !!
+      !! Sorted by count, descending, by insertion: the list is as long as the
+      !! number of distinct monomers involved, which is small whenever this is
+      !! worth reading.
+      integer(int64), intent(in) :: ids(:)
+      integer, intent(in) :: monomers(:, :)
+      real(dp), intent(in) :: delta_energies(:)
+      real(dp), allocatable, intent(out) :: deltas(:)
+      integer, allocatable, intent(out) :: culprits(:)
+      integer(int64), allocatable, intent(out) :: counts(:)
+
+      integer, allocatable :: seen(:)
+      integer(int64), allocatable :: tally(:)
+      integer :: n_seen, i, j, m, slot, pos
+      integer :: swap_m
+      integer(int64) :: swap_c
+
+      allocate (deltas(size(ids)))
+      do i = 1, size(ids)
+         deltas(i) = delta_energies(ids(i))
+      end do
+
+      ! At most every slot of every failed fragment names a distinct monomer.
+      allocate (seen(size(monomers, 1)*size(monomers, 2)))
+      allocate (tally(size(seen)))
+      n_seen = 0
+      do i = 1, size(ids)
+         do j = 1, size(monomers, 2)
+            m = monomers(i, j)
+            if (m <= 0) cycle
+            slot = 0
+            do pos = 1, n_seen
+               if (seen(pos) == m) then
+                  slot = pos
+                  exit
+               end if
+            end do
+            if (slot == 0) then
+               n_seen = n_seen + 1
+               seen(n_seen) = m
+               tally(n_seen) = 0_int64
+               slot = n_seen
+            end if
+            tally(slot) = tally(slot) + 1_int64
+         end do
+      end do
+
+      allocate (culprits(n_seen), counts(n_seen))
+      culprits = seen(1:n_seen)
+      counts = tally(1:n_seen)
+      deallocate (seen, tally)
+
+      ! Descending by count. Selection sort: `n_seen` is the number of distinct
+      ! monomers caught up in failures, and a run where that is large enough for
+      ! the sort to matter has a problem this report cannot help with.
+      do i = 1, n_seen - 1
+         slot = i
+         do j = i + 1, n_seen
+            if (counts(j) > counts(slot)) slot = j
+         end do
+         if (slot /= i) then
+            swap_c = counts(i)
+            counts(i) = counts(slot)
+            counts(slot) = swap_c
+            swap_m = culprits(i)
+            culprits(i) = culprits(slot)
+            culprits(slot) = swap_m
+         end if
+      end do
+   end subroutine score_unconverged
 
    subroutine report_unconverged(scf_status, fragment_count)
       !! Say how many fragments did not converge, and name the first few
@@ -997,6 +1088,10 @@ contains
                                   polymers(1:fragment_count, 1:max_level), &
                                   fragment_count, json_data%unconverged_ids, &
                                   json_data%unconverged_monomers)
+         call score_unconverged(json_data%unconverged_ids, &
+                                json_data%unconverged_monomers, delta_energies, &
+                                json_data%unconverged_deltas, &
+                                json_data%culprit_monomers, json_data%culprit_counts)
 
          call report_unconverged(json_data%fragment_scf_status, fragment_count)
 

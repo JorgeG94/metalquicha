@@ -14,6 +14,7 @@ module mqc_result_types
    public :: calculation_result_t  !! Main result container type
    public :: SCF_UNKNOWN, SCF_CONVERGED, SCF_NOT_CONVERGED
    public :: frontier_orbitals
+   public :: scf_not_converged_message
    public :: scf_status_label
 
    integer, parameter :: SCF_UNKNOWN = 0
@@ -720,6 +721,38 @@ contains
 
       call recv_error_state(result, comm, source, tag)
    end subroutine result_irecv
+
+   pure function scf_not_converged_message(iterations) result(text)
+      !! What to say when an SCF runs out of cycles and the run must stop
+      !!
+      !! Written once and shared by every backend, because the two that had
+      !! their own said only "SCF not converged in N cycles" and left the reader
+      !! to discover both the escape hatch and what to do afterwards.
+      !!
+      !! **The escape hatch is named, and so is its cost.** A user whose run
+      !! stops on fragment 400,000 of a million needs to know that finishing is
+      !! possible; a user who reaches for it needs to know the total will then
+      !! be built partly from fragments that never converged, and that the
+      !! output says which. Naming the first without the second trades a stopped
+      !! run for a wrong one.
+      integer, intent(in) :: iterations
+      character(len=:), allocatable :: text
+
+      character(len=16) :: cycles
+
+      write (cycles, "(i0)") iterations
+      text = "the SCF did not converge in "//trim(cycles)//" cycles at the "// &
+             "requested threshold. Raise keywords.scf.maxiter, or loosen "// &
+             "keywords.scf.tolerance, or -- in a fragmented run where a few "// &
+             "fragments out of many will not converge whatever you do -- set "// &
+             "keywords.scf.allow_crap_scf to true. That lets the calculation "// &
+             "finish and records every fragment that failed in the output "// &
+             "under 'unconverged', with the monomers each was built from and "// &
+             "how much energy they carry, which is enough for the Python "// &
+             "interface to build a follow-up job over just those. The total "// &
+             "reported by such a run is built partly from unconverged "// &
+             "fragments, so it is a result to follow up rather than to trust."
+   end function scf_not_converged_message
 
    pure function scf_status_label(status) result(text)
       !! One word for a status, for a table column or a log line

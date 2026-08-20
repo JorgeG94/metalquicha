@@ -377,7 +377,39 @@ contains
          level = size(members)
          call json%add(entry, "level", level)
          call json%add(entry, "monomers", members)
+         if (allocated(data%unconverged_deltas)) then
+            call json%add(entry, "delta_energy", data%unconverged_deltas(i))
+         end if
       end do
+
+      ! How much of the total rests on fragments that never converged. A count
+      ! says how many are suspect; this says whether to care, and most of the
+      ! time the answer is that screening already made them negligible.
+      if (size(data%unconverged_ids) > 0 .and. allocated(data%unconverged_deltas)) then
+         ! Signed, because the failures are a subset of a sum with cancellation
+         ! in it and their net effect is what a total is exposed to. The largest
+         ! single one is given beside it, since a net near zero can still be two
+         ! large terms that happen to oppose.
+         call json%add(section, "energy_at_stake", sum(data%unconverged_deltas))
+         call json%add(section, "largest_contribution", &
+                       maxval(abs(data%unconverged_deltas)))
+      end if
+
+      ! Failures cluster on their cause, so the monomers that keep appearing are
+      ! the short list worth looking at. Four hundred failed dimers sharing one
+      ! monomer is one bad monomer.
+      if (allocated(data%culprit_monomers)) then
+         if (size(data%culprit_monomers) > 0) then
+            call json%create_array(arr, "monomers_involved")
+            call json%add(section, arr)
+            do i = 1_int64, int(size(data%culprit_monomers), int64)
+               call json%create_object(entry, "")
+               call json%add(arr, entry)
+               call json%add(entry, "monomer", data%culprit_monomers(i))
+               call json%add(entry, "fragments", int(data%culprit_counts(i)))
+            end do
+         end if
+      end if
    end subroutine write_unconverged_section
 
    subroutine write_gmbe_pie_json_impl(data)

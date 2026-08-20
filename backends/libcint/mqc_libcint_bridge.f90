@@ -18,7 +18,8 @@ module mqc_libcint_bridge
    use pic_types, only: dp
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
-   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
+   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
+                               scf_not_converged_message
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
@@ -903,8 +904,8 @@ contains
       end if
       result%scf_iterations = scf%iterations
       if (.not. scf%converged .and. .not. settings%allow_crap_scf) then
-         call result%error%set(ERROR_VALIDATION, "SCF not converged in "// &
-                               int_to_text(scf%iterations)//" cycles")
+         call result%error%set(ERROR_VALIDATION, &
+                               scf_not_converged_message(scf%iterations))
          result%has_error = .true.
          call aux%destroy()
          call mol%destroy()

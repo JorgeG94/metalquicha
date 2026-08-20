@@ -1,6 +1,6 @@
 module test_mqc_mbe
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_mbe, only: compute_mbe, collect_unconverged
+   use mqc_mbe, only: compute_mbe, collect_unconverged, score_unconverged
    use mqc_result_types, only: SCF_CONVERGED, SCF_NOT_CONVERGED, SCF_UNKNOWN
    use mqc_result_types, only: calculation_result_t, mbe_result_t
    use pic_types, only: dp, int64
@@ -22,7 +22,8 @@ contains
                   new_unittest("mbe_reverse_order", test_mbe_reverse_order), &
                   new_unittest("mbe_random_order", test_mbe_random_order), &
                   new_unittest("unconverged_carry_their_monomers", test_unconverged_carry_their_monomers), &
-                  new_unittest("unconverged_ignores_silent_methods", test_unconverged_ignores_silent_methods) &
+                  new_unittest("unconverged_ignores_silent_methods", test_unconverged_ignores_silent_methods), &
+                  new_unittest("failures_name_their_culprit", test_failures_name_their_culprit) &
                   ]
    end subroutine collect_mqc_mbe_tests
 
@@ -369,6 +370,57 @@ contains
       if (allocated(error)) return
       call check(error, size(ids), 0, "a silent method has not failed everywhere")
    end subroutine test_unconverged_ignores_silent_methods
+
+   subroutine test_failures_name_their_culprit(error)
+      !! The monomer that keeps turning up, and what the failures cost
+      !!
+      !! One bad monomer drags down every fragment it belongs to, so failures
+      !! cluster on their cause. Here monomer 2 is in all three failed
+      !! fragments and monomers 3 and 4 in one each -- which is one problem
+      !! wearing three disguises, and the ordering is what says so. A list in
+      !! fragment order would put monomer 2 first by accident, so the fixture
+      !! deliberately does not: the failures are ordered such that monomer 5
+      !! is seen first and must still come last.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer(int64) :: ids(3)
+      integer :: monomers(3, 2)
+      real(dp) :: delta_energies(8)
+      real(dp), allocatable :: deltas(:)
+      integer, allocatable :: culprits(:)
+      integer(int64), allocatable :: counts(:)
+      integer :: i
+
+      ids = [3_int64, 5_int64, 8_int64]
+      monomers(1, :) = [5, 2]     ! monomer 5 appears first...
+      monomers(2, :) = [2, 3]
+      monomers(3, :) = [2, 4]
+
+      do i = 1, 8
+         delta_energies(i) = -0.001_dp*real(i, dp)
+      end do
+
+      call score_unconverged(ids, monomers, delta_energies, deltas, culprits, counts)
+
+      ! The contributions are gathered by fragment index, not by position.
+      call check(error, deltas(1), -0.003_dp, thr=1.0e-12_dp, &
+                 more="the first failure's contribution came from the wrong fragment")
+      if (allocated(error)) return
+      call check(error, deltas(3), -0.008_dp, thr=1.0e-12_dp, &
+                 more="the last failure's contribution came from the wrong fragment")
+      if (allocated(error)) return
+
+      call check(error, size(culprits), 4, "four distinct monomers are involved")
+      if (allocated(error)) return
+      call check(error, culprits(1), 2, &
+                 "the monomer in every failure should be named first")
+      if (allocated(error)) return
+      call check(error, int(counts(1)), 3, "and it is in three of them")
+      if (allocated(error)) return
+      ! ...but must not be ranked first merely for having been seen first.
+      call check(error, int(counts(size(counts))), 1, &
+                 "the monomers in one failure each should rank last")
+   end subroutine test_failures_name_their_culprit
 
 end module test_mqc_mbe
 
