@@ -538,6 +538,13 @@ contains
          end if
       end if
 
+      ! Set after both branches so it survives either path. A capping convention
+      ! belongs to the run rather than to a fragment, and every fragment built
+      ! from this geometry inherits it -- which is what keeps a cut bond capped
+      ! the same way in a monomer and in the dimer that contains it, and so keeps
+      ! the cap contributions cancelling through the expansion.
+      sys_geom%cap_scale = mqc_config%cap_scale
+
    end subroutine config_to_system_geometry
 
    subroutine geometry_to_system_unfragmented(geom, sys_geom, use_angstrom)

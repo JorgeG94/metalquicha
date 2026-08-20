@@ -116,6 +116,12 @@ module mqc_physical_fragment
 
       ! Connectivity information for hydrogen capping
       type(bond_t), allocatable :: bonds(:)  !! Bond connectivity (for H-capping broken bonds)
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a cap sits along the bond it closes, carried here for the same
+         !! reason `bonds` is: every fragment built from this geometry has to cap
+         !! the same way, and the builders already take the geometry. Threading
+         !! it as an argument instead would touch every call site to say the same
+         !! thing.
 
       ! 256 characters a path, matching `driver_config_t%fragment_potentials`,
       ! which is where these are copied to.
@@ -353,6 +359,7 @@ contains
       ! Allocate arrays with space for original atoms + caps
       fragment%n_atoms = n_atoms_no_caps + n_caps
       fragment%n_caps = n_caps
+      fragment%cap_scale = sys_geom%cap_scale
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
       if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
@@ -555,6 +562,7 @@ contains
       ! Allocate arrays with space for original atoms + caps
       fragment%n_atoms = n_atoms + n_caps
       fragment%n_caps = n_caps
+      fragment%cap_scale = sys_geom%cap_scale
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
       if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
