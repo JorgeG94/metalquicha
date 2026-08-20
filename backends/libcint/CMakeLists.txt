@@ -16,8 +16,6 @@ target_sources(
   PRIVATE mqc_libcint_atomic_guess.f90
           mqc_libcint_gradient.f90
           mqc_libcint_response.f90
-          mqc_libcint_hess_ints.f90
-          mqc_libcint_hessian.f90
           mqc_libcint_bridge.f90
           mqc_libcint_direct.f90
           mqc_libcint_integrals.F90
@@ -54,3 +52,19 @@ target_sources(
           mqc_efp_rotate.f90
           mqc_efp_energy.f90
           mqc_sapt.f90)
+
+# The analytic Hessian is libfint's or it is nothing. Its second derivatives
+# come from `cint_gen_hess` and the workspace type beside it, which a libcint
+# build has no module files for -- so that build compiles a stub that reports
+# the absence, and `mqc_method_hf` falls back to finite differences exactly as
+# it does for an unrestricted or density-fitted reference.
+#
+# Split at the file rather than with `#ifdef` because the whole of both modules
+# is libfint-only: preprocessing them would leave two files that are one guard
+# and nothing else in half the configurations.
+if(MQC_USE_LIBFINT)
+  target_sources(${main_lib} PRIVATE mqc_libcint_hess_ints.f90
+                                     mqc_libcint_hessian.f90)
+else()
+  target_sources(${main_lib} PRIVATE mqc_libcint_hessian_stub.f90)
+endif()
