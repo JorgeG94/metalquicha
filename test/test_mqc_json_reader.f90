@@ -48,6 +48,7 @@ contains
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
+                  new_unittest("bond_breaking_defaults", test_bond_breaking_defaults), &
                   new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
                   new_unittest("df_without_aux_fails", test_df_without_aux), &
                   new_unittest("fragmentation_cutoffs", test_cutoffs), &
@@ -401,6 +402,7 @@ contains
                       '"fragmentation": {"method": "MBE", "level": 3, '// &
                       '"allow_overlapping_fragments": true, '// &
                       '"max_intersection_level": 5, "embedding": "none", '// &
+                      '"bond_breaking": "caps", "cap_scale": 0.71, '// &
                       '"cutoff_method": "distance", "distance_metric": "min"}', &
                       "", two_atoms())
       call read_deck(config, parse_error)
@@ -417,10 +419,42 @@ contains
       if (allocated(error)) return
       call check(error, config%embedding, "none")
       if (allocated(error)) return
+      call check(error, config%bond_breaking, "caps")
+      if (allocated(error)) return
+      call check(error, abs(config%cap_scale - 0.71_dp) < 1.0e-12_dp, &
+                 "cap_scale should read back as given")
+      if (allocated(error)) return
       call check(error, config%cutoff_method, "distance")
       if (allocated(error)) return
       call check(error, config%distance_metric, "min")
    end subroutine test_fragmentation
+
+   subroutine test_bond_breaking_defaults(error)
+      !! A deck that names neither key keeps the behaviour this program had
+      !! before they existed: cut bonds refused, and a cap -- when some other
+      !! path places one -- exactly where the removed atom was.
+      !!
+      !! Worth a case of its own rather than trusting the declaration. These two
+      !! defaults are what makes adding the keys a no-op for every deck already
+      !! written, and `cap_scale` in particular is the difference between the
+      !! cap gradient being the whole chain rule and being an approximation.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE", "level": 2}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%bond_breaking), &
+                 "bond_breaking should be unset when the deck is silent")
+      if (allocated(error)) return
+      call check(error, abs(config%cap_scale - 1.0_dp) < 1.0e-12_dp, &
+                 "cap_scale should default to placing the cap at the removed atom")
+   end subroutine test_bond_breaking_defaults
 
    subroutine test_df_without_aux(error)
       !! A density-fitted SCF with no auxiliary basis is refused, not defaulted

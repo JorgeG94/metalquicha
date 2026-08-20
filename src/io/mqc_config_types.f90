@@ -374,6 +374,29 @@ module mqc_config_types
          !! outer loop above, and of a top-level `keywords.scf`, so a fragment run
          !! can be converged more loosely than a whole-system one would be.
       integer :: max_intersection_level = DEFAULT_MAX_INTERSECTION  !! Maximum k-way intersection depth for GMBE
+      character(len=:), allocatable :: bond_breaking
+         !! How a fragment represents a covalent bond the partition cut.
+         !!
+         !! `"none"` refuses a partition that cuts one, which is the only honest
+         !! answer for a method with no way to represent the dangling valence.
+         !! `"caps"` closes it with a hydrogen. `"afo"` is the adaptive frozen
+         !! orbital, and is not built yet.
+         !!
+         !! Separate from `embedding` on purpose: what closes a cut bond and what
+         !! field a fragment sits in are independent choices, and only some of
+         !! their pairings are sound -- a cap puts an electron where an exact
+         !! embedding already supplies the neighbour's density, so the two
+         !! double-count and the combination is refused rather than approximated.
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where the cap goes along the cut bond: `R_H = R_kept + s (R_gone - R_kept)`.
+         !!
+         !! `1.0` puts it exactly where the removed atom was, which is what this
+         !! program has always done, and is why redistributing the cap's gradient
+         !! onto that atom is the whole chain rule rather than an approximation.
+         !! A physical C-H wants roughly `0.71` of a C-C, and the gradient then
+         !! splits `s` and `1 - s` between the two atoms -- still exact, one term
+         !! longer. The default keeps existing numbers reproducible; it is not a
+         !! recommendation.
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method
       character(len=:), allocatable :: distance_metric
@@ -444,6 +467,7 @@ contains
       if (allocated(this%fragment_breakdown)) deallocate (this%fragment_breakdown)
       if (allocated(this%frag_method)) deallocate (this%frag_method)
       if (allocated(this%embedding)) deallocate (this%embedding)
+      if (allocated(this%bond_breaking)) deallocate (this%bond_breaking)
       if (allocated(this%cutoff_method)) deallocate (this%cutoff_method)
       if (allocated(this%distance_metric)) deallocate (this%distance_metric)
       if (allocated(this%fragment_cutoffs)) deallocate (this%fragment_cutoffs)

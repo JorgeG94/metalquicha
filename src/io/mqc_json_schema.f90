@@ -35,10 +35,16 @@ module mqc_json_schema
 
    public :: ensure_valid_json  !! Reject a deck the schema does not describe
 
-   integer, parameter :: MAX_KEYS = 20
+   integer, parameter :: MAX_KEYS = 24
       !! Widest allow-list below; raising it is the only cost of a new key.
-      !! fragmentation_keys is the widest at 18 (its FMO inner-SCF controls
-      !! pushed it past 16), so this keeps a little headroom above that.
+      !! fragmentation_keys is the widest at 21 (its FMO inner-SCF controls
+      !! pushed it past 16, and bond_breaking/cap_scale past 18), so this keeps
+      !! a little headroom above that.
+      !!
+      !! `allow` checks this rather than trusting the comment. It used not to,
+      !! and going one over wrote past `allowed` and corrupted whatever followed
+      !! -- which showed up as a segfault in an unrelated test four cases later,
+      !! not as anything pointing at the key that overflowed.
 
    type :: key_set_t
       !! The keys one object may contain, and which of them it must
@@ -479,6 +485,8 @@ contains
       call allow(keys, "scf_max_iter")
       call allow(keys, "scf_energy_tolerance")
       call allow(keys, "scf_density_tolerance")
+      call allow(keys, "bond_breaking")
+      call allow(keys, "cap_scale")
       call allow(keys, "embedding")
       call allow(keys, "cutoff_method")
       call allow(keys, "distance_metric")
@@ -990,9 +998,18 @@ contains
 
    pure subroutine allow(keys, name)
       !! Record a key an object may contain
+      !!
+      !! Stops rather than overflowing. These sets are built from literals at
+      !! startup, so going over MAX_KEYS is a programming error fixed by raising
+      !! it -- never something a deck can provoke -- and failing here names the
+      !! key that did it instead of corrupting memory for a later test to trip
+      !! over.
       type(key_set_t), intent(inout) :: keys
       character(len=*), intent(in) :: name
 
+      if (keys%n_allowed >= MAX_KEYS) then
+         error stop "mqc_json_schema: allow-list is full; raise MAX_KEYS"
+      end if
       keys%n_allowed = keys%n_allowed + 1
       keys%allowed(keys%n_allowed) = name
    end subroutine allow
@@ -1006,6 +1023,9 @@ contains
       type(key_set_t), intent(inout) :: keys
       character(len=*), intent(in) :: name
 
+      if (keys%n_required >= MAX_KEYS) then
+         error stop "mqc_json_schema: required-list is full; raise MAX_KEYS"
+      end if
       keys%n_required = keys%n_required + 1
       keys%required(keys%n_required) = name
    end subroutine require
