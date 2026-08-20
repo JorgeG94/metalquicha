@@ -7,7 +7,9 @@ Writes, under ``validation/``:
 * ``inputs/cpu_<molecule>_<basis>.json`` -- one metalquicha deck per case
 * ``validation_tests_cpu.json``          -- the manifest, with PySCF energies
 
-Nothing here is hand-maintained: edit ``MOLECULES`` or ``SWEEPS`` and rerun.
+Almost nothing here is hand-maintained: edit ``MOLECULES`` or ``SWEEPS`` and
+rerun. The exceptions are ``MANUAL_CASES`` and ``PRESERVED_TESTS``, for decks
+whose reference comes from GAMESS rather than PySCF.
 See README.md for how and why.
 
 The reference energies are PySCF RHF driven with the *same* basis JSON that
@@ -1800,6 +1802,40 @@ def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
 # reference aborted it -- so nobody had regenerated to find out. Holding them
 # here keeps the generator the single source of the manifest, which is the
 # property everything else in this file assumes.
+# Manifest entries for decks this script cannot generate *and* does not write.
+#
+# HAND_MAINTAINED already spares these decks from the sweep, and the read-back
+# below re-emits any entry a previous manifest carried for them. Neither recovers
+# an entry once it has been lost: the sweep keeps the deck, and the read-back can
+# only return what is already there. The two EFP2 cases show what that costs --
+# they were dropped from the manifest between 279e9cf74 and 98877bcbb, the decks
+# stayed on disk, and the suite has not run them since. Coverage that looks
+# present and does not run.
+#
+# Declaring them here makes them reproducible from this script alone, the same
+# property MANUAL_CASES has, rather than from whatever the manifest happened to
+# hold. The reference is GAMESS: EFP2 is a sum of five terms against a fragment
+# potential, and PySCF has no EFP to generate one.
+#
+# The two differ only in the orientation of the dimer, and share an energy
+# because that is the assertion -- an EFP2 interaction must not depend on how the
+# fragments are placed.
+PRESERVED_TESTS = [
+    {
+        "name": "EFP2 water dimer 6-31G* (CPU)",
+        "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
+        "expected_energy": 0.0030795778,
+        "type": "unfragmented",
+    },
+    {
+        "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
+        "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
+        "expected_energy": 0.0030795778,
+        "type": "unfragmented",
+    },
+]
+
+
 MANUAL_CASES = [
     {
         "stem": "cpu_h2o_3-21g_ormas_cisd",
@@ -2526,6 +2562,16 @@ def main():
         tests.append(entry)
         print(f"{case['name']}: transcribed reference "
               f"E={case['expected_energy']:.12f}", flush=True)
+
+    # The entries for hand-maintained decks this script neither generates nor
+    # writes. Emitted before the read-back further up would have had a chance to
+    # supply them, so a declared entry is what lands even if the old manifest
+    # still carried a stale copy.
+    for entry in PRESERVED_TESTS:
+        if entry["input"] not in {t["input"] for t in tests}:
+            tests.append(dict(entry))
+            print(f"{entry['name']}: transcribed reference "
+                  f"E={entry['expected_energy']:.10f}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:
