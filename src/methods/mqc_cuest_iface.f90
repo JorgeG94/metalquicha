@@ -76,6 +76,7 @@ module mqc_cuest_iface
       character(len=:), allocatable :: fukui_population
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
+      character(len=32) :: bonding_no_sharing_ci = "transform"
       real(dp) :: bonding_threshold = 1.0_dp
          !! kcal/mol; pairs weaker than this are counted rather than printed.
          !! A post-SCF analysis to run once the orbitals are converged, from

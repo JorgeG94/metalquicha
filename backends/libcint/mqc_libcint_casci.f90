@@ -63,6 +63,11 @@ module mqc_libcint_casci
          !! `ci_flat` carries it there instead.
       real(dp), allocatable :: ci_flat(:)
          !! (n_determinants), the ground root of a restricted space
+      type(ormas_space_t) :: ormas
+         !! The partition `ci_flat` is addressed by, kept because a flat list of
+         !! coefficients means nothing without it. Populated only by a
+         !! restricted solve; `ormas%n_determinants` is zero otherwise, which is
+         !! how a caller tells.
       real(dp), allocatable :: vectors(:, :, :)   !! All roots
       real(dp), allocatable :: dm1(:, :)
          !! (n_active, n_active) one-particle density of the ground root, in the
@@ -362,6 +367,11 @@ contains
          result%energies(i) = result%core_energy + energies(i)
       end do
       result%ci_flat = vectors(:, 1)
+      ! Deep-copied rather than referenced, then destroyed below as before: the
+      ! flat coefficients are unreadable without the addressing that produced
+      ! them, and anything wanting to re-express this wave function in another
+      ! orbital basis needs both.
+      result%ormas = space
 
       call ormas_density_matrices(space, result%ci_flat, result%dm1, result%dm2, error)
       if (error%has_error()) return

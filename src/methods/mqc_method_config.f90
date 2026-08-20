@@ -170,6 +170,7 @@ module mqc_method_config
       character(len=:), allocatable :: fukui_population
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
+      character(len=32) :: bonding_no_sharing_ci = "transform"
       real(dp) :: bonding_threshold = 1.0_dp
    end type properties_config_t
 

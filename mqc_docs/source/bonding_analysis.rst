@@ -290,6 +290,8 @@ and what remains is renormalised::
 
     no-sharing analysis
        full valence CAS(8,6) over the quasi-atomic orbitals
+       CI solved in the molecular orbital basis and transformed (15 x 15 string rotation)
+       CI iterations        11 (11 sigma products)
        neutral determinants 44 of 225, holding    31.52% of the squared norm
                         E(Psi)  -75.011224995270 hartree
                       E(Psi-0)  -73.342868821289 hartree
@@ -305,12 +307,161 @@ constrained *state*, not a variational minimum, and it must come out above
 E(Psi) -- which is asserted.
 
 **It needs the quasi-atomic basis.** "How many electrons are on this atom" is a
-question only an atomic basis can answer, so the CI is solved with the
-quasi-atomic orbitals as the active space. That is legitimate because a full
-valence CI is invariant under rotation of its active orbitals, and the printed
-E(Psi) is the check: water in STO-3G gives -75.011224995270 here and
--75.011224995270 from an ordinary ``casci`` deck with ``n_active_electrons: 8``
-and ``n_active_orbitals: 6``.
+question only an atomic basis can answer, so the CI has to be *expanded* over
+the quasi-atomic orbitals. That is legitimate because a full valence CI is
+invariant under rotation of its active orbitals, and the printed E(Psi) is the
+check: water in STO-3G gives -75.011224995270 here and -75.011224995270 from an
+ordinary ``casci`` deck with ``n_active_electrons: 8`` and
+``n_active_orbitals: 6``.
+
+
+Choosing how the quasi-atomic expansion is obtained
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Needing the expansion in that basis does not mean *solving* in it, and the
+difference is most of the cost::
+
+    "properties": {
+      "bonding_analysis": {
+        "type": "gms_quao",
+        "no_sharing": true,
+        "no_sharing_ci": "transform"
+      }
+    }
+
+``transform`` (the default)
+    Solve the valence CI in the molecular orbital basis, where the reference
+    determinant dominates, and carry the vector into the quasi-atomic basis with
+    the orbital transformation. The re-expansion is a pair of matrix products
+    over a string-rotation matrix built from minor determinants of that
+    transformation.
+
+``resolve``
+    Solve a second CI, in the quasi-atomic basis directly. This was the original
+    behaviour and is kept because it is an independent route to the same number.
+
+Under ``transform``, if the calculation has *already* converged a wave function
+over this same full valence space -- which a ``casscf`` or ``casci`` deck may
+have -- it is transformed and no CI is solved here at all. That is not assumed:
+the offered wave function has to have the same inactive, active and electron
+counts, and its active orbitals have to span the same space as the valence one,
+which is tested by whether ``<active|S|valence>`` comes out orthogonal. When it
+does not, the analysis says so with the size of the miss and solves its own::
+
+    the converged wave function is not over this space (its active orbitals span
+    a different space from the valence one, by .301253054160), so one is solved here
+
+The magnitude is the diagnosis. A deck naming its own ``n_active_orbitals``
+gives something of order 0.1 -- a genuinely different subspace of the same
+dimension. Anything of order 1e-6 is the same space reached by a different
+route. Close is not the same, and the energy check downstream would reject it,
+so it is declined.
+
+When the offered active space *is* the full valence shell -- right dimension,
+right electron count, right inactive count -- the analysis goes further and uses
+those orbitals **as** the valence space, rather than deriving one of its own.
+That is not an optimisation, it is the definition. The valence-virtual
+construction is the recipe for a wave function that does not span the valence
+shell; the paper introduces it as the route by which "good approximations to the
+QUAOs can even be obtained from a wave function ... e.g., from a Hartree--Fock
+wave function", recovering the missing part by projecting the atomic minimal
+basis onto the virtual orbitals. A full-valence MCSCF has no missing part, and
+re-deriving one would produce a different subspace of the same dimension --
+necessarily, because orbital optimisation moves the active space against the
+inactive and virtual ones, and those are precisely the rotations a CASSCF exists
+to perform. The analysis would then decompose a wave function the calculation
+never computed. GAMESS branches the same way, at ``vvos.src:540``.
+
+The visible effect is that ``E(Psi)`` becomes the energy the calculation
+reported, to every figure, instead of sitting some millihartree away from it.
+
+When the active space is *not* the valence shell, the analysis says so and
+carries on with its own::
+
+    the converged wave function is not over the full valence space (it has 4
+    active orbitals in 3 inactive, against 6 in 1), so the no-sharing analysis
+    solves its own and decomposes that one instead
+    decomposing E =   -76.027496661520 rather than the calculation's   -76.037524986844
+
+GAMESS refuses outright at that point (``quao_eda4.src:145``). It can, because
+its analysis reads the wave function from the run; this one builds its own, so
+the result is still meaningful and the caller is told rather than stopped.
+
+
+Occupation-restricted wave functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An ORMAS wave function can be inherited too, and needs one extra step::
+
+    restricted wave function written out over the complete space (93 of 225
+    determinants carried amplitude)
+
+A restricted space is **not closed under rotation of its active orbitals**:
+mixing two active orbitals stops being redundant the moment the space is
+incomplete. So rotating such a wave function into the quasi-atomic basis puts
+amplitude on determinants the restriction excluded, and there is nowhere in the
+restricted space to put them. The complete space is where the answer lives, and
+the coefficients are written out over it first. Nothing is approximated -- the
+same state, in a basis large enough to hold it -- and the invariance check
+confirms it: ``E(Psi)`` comes back at the value the restricted CI converged to.
+
+This is the opposite trade from the reference implementation, and the choice is
+worth stating. GAMESS constrains the localization to be block-diagonal over the
+ORMAS subspaces (``LOCAL_PPASVD`` builds it that way; ``LOCAL_BLOCK_ORMAS``
+asserts it), which keeps the wave function an ORMAS wave function at the cost of
+the orbitals: atomic character is then maximised only over rotations *within*
+each subspace, and a maximum over a subset of the rotations cannot exceed the
+maximum over all of them. Here the orbitals are localized freely and it is the
+*labelling* that is given up -- the state, its energy and ``Psi-0`` are exact.
+Since the quasi-atomic orbitals are what the analysis is about, and the
+restriction is a device for making the solve affordable, that is the way round
+this code chooses.
+
+The cost is real and bounded. The restriction buys a cheap solve and the
+expansion spends the complete space to store the result: for ethane, 16,500
+determinants converged against 11,778,624 stored, which is ninety-four megabytes
+and the right trade. Past roughly 2.7e8 determinants the expansion is refused
+rather than attempted.
+
+The two describe the same wave function, so this chooses how a number is
+computed and not which number it is. Del Angel Cruz, Gordon and Ruedenberg say
+which to prefer (*J. Am. Chem. Soc.* **147**, 42262 (2025), Section 3.3): the
+re-solve "is laborious in the QUAO basis because of the lack of a small dominant
+configurational part."
+
+That is a statement about the Davidson rather than about the Hamiltonian. The
+orbital transformation is orthogonal, so the CI matrix in the two bases is the
+same matrix up to a similarity and has the same spectrum and the same gap. What
+degrades is the starting vector -- the solver begins from the lowest-diagonal
+determinant, which carries nearly the whole wave function in the molecular
+orbital basis and a fraction of it in the quasi-atomic one -- and the diagonal
+preconditioner, which assumes a diagonal dominance the quasi-atomic basis does
+not have.
+
+The ``CI iterations`` line reports the difference. A water dimer in 6-31G,
+CAS(16,12) and 245,025 determinants:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 20 40
+
+   * - Route
+     - Sigma products
+     - Wall clock
+     - E(Psi-0)
+   * - ``transform``
+     - 24
+     - 26.9 s
+     - -148.748256988193
+   * - ``resolve``
+     - 71
+     - 88.8 s
+     - -148.748256988193
+
+The transform route asserts at runtime that the vector it produced has the
+energy it was solved at, and refuses otherwise. A complete active space is
+invariant under rotation of its active orbitals, so any disagreement there is a
+defect in the transformation rather than a tolerance to widen.
 
 The percentage is a squared norm and not an overlap. A polar molecule keeps
 little of itself in the neutral space -- water's oxygen genuinely carries about

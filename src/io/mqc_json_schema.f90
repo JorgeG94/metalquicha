@@ -263,6 +263,7 @@ contains
       call allow(keys, "energy_threshold")
       call allow(keys, "energy_decomposition")
       call allow(keys, "no_sharing")
+      call allow(keys, "no_sharing_ci")
       call require(keys, "type")
    end function bonding_analysis_keys
 
@@ -755,6 +756,22 @@ contains
                         trim(name)//"'. Known analyses: none, gms_quao (the "// &
                         "Ruedenberg quasi-atomic bonding picture, spelled as "// &
                         "GAMESS implements it; 'quao' is accepted for it too).")
+         return
+      end select
+
+      call core%get(analysis, "no_sharing_ci", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+      call core%get(analysis, "no_sharing_ci", name)
+      select case (trim(adjustl(name)))
+      case ("transform", "resolve")
+      case default
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.no_sharing_ci "// &
+                        "is '"//trim(name)//"'. It chooses how the CI expansion over "// &
+                        "quasi-atomic orbitals is obtained: 'transform' solves in the "// &
+                        "molecular orbital basis and carries the vector across with "// &
+                        "the orbital transformation, 'resolve' runs a second Davidson "// &
+                        "in the quasi-atomic basis. Both describe the same wave "// &
+                        "function.")
       end select
    end subroutine check_bonding_analysis
 

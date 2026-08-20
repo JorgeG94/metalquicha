@@ -1221,6 +1221,38 @@ contains
       call check(error, config%bonding_no_sharing, &
                  "the deck asked for the no-sharing analysis")
       if (allocated(error)) return
+      call check(error,.not. allocated(config%bonding_no_sharing_ci), &
+                 "an unmentioned CI route should be left for the default to fill")
+      if (allocated(error)) return
+
+      ! How that CI is obtained is a separate choice from whether to run it. The
+      ! two routes describe the same wave function, so this picks how a number
+      ! is computed rather than which number it is.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "no_sharing": true, '// &
+                      '"no_sharing_ci": "resolve"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%bonding_no_sharing_ci), &
+                 "the deck named a CI route")
+      if (allocated(error)) return
+      call check(error, trim(config%bonding_no_sharing_ci), "resolve", &
+                 "the CI route did not survive the parse")
+      if (allocated(error)) return
+
+      ! A route nobody implements is refused with both spellings named, rather
+      ! than falling back to the default and computing something the deck did
+      ! not ask for.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "no_sharing": true, '// &
+                      '"no_sharing_ci": "davidson"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown no-sharing CI route should be refused")
+      if (allocated(error)) return
 
       ! Naming the analysis and nothing else keeps the default threshold.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &

@@ -216,6 +216,8 @@ contains
                             config%bonding_energy)
       call optional_logical(json, "properties.bonding_analysis.no_sharing", &
                             config%bonding_no_sharing)
+      call optional_string(json, "properties.bonding_analysis.no_sharing_ci", &
+                           config%bonding_no_sharing_ci)
 
       ! ---- driver ----------------------------------------------------------
       call require_string(json, "driver", text, error)
