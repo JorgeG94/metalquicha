@@ -72,6 +72,7 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
+                  new_unittest("subspace_blocks", test_subspace_blocks), &
                   new_unittest("orbitals_are_orthonormal", test_orthonormal), &
                   new_unittest("population_counts_the_electrons", test_populations), &
                   new_unittest("orbitals_are_actually_atomic", test_atomic_character), &
@@ -88,7 +89,7 @@ contains
    end subroutine collect_mqc_quao_tests
 
    subroutine water_quaos(basis_name, quao, overlap, dims, err, ok, vi_out, density, &
-                          mixed_out, voff_out, vcount_out)
+                          mixed_out, voff_out, vcount_out, subspaces)
       !! Everything from an SCF through to the quasi-atomic orbitals
       character(len=*), intent(in) :: basis_name
       type(quao_result_t), intent(out) :: quao
@@ -101,6 +102,9 @@ contains
          !! Passed straight through to `quasi_atomic_orbitals`. Absent leaves it
          !! to build the closed-shell density itself, which is the path every
          !! other test in this file takes.
+      integer, intent(in), optional :: subspaces(:)
+         !! Partition the valence space, so the assignment competes within each
+         !! and no rotation may cross one.
       real(dp), allocatable, intent(out), optional :: mixed_out(:, :)
       integer, allocatable, intent(out), optional :: voff_out(:), vcount_out(:)
          !! Enough to call `quasi_atomic_orbitals` again on the same inputs.
@@ -150,6 +154,9 @@ contains
       if (present(density)) then
          call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
                                     val_off, val_n, quao, err, valence_density=density)
+      else if (present(subspaces)) then
+         call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
+                                    val_off, val_n, quao, err, subspaces=subspaces)
       else
          call quasi_atomic_orbitals(WATER_Z, valence_internal, n_valocc, mixed, &
                                     val_off, val_n, quao, err)
@@ -163,6 +170,67 @@ contains
       call mol%destroy()
       call aambs%destroy()
    end subroutine water_quaos
+
+   subroutine test_subspace_blocks(error)
+      !! Restricting the assignment keeps the transformation block-diagonal
+      !!
+      !! This is the property the whole occupation-restricted route rests on. A
+      !! restricted wave function is not invariant under a rotation that mixes
+      !! two of its subspaces, so if the quasi-atomic transformation did mix
+      !! them the wave function could not be carried across at all. Splitting
+      !! water's six valence orbitals into two groups of three and checking that
+      !! nothing off the diagonal blocks survives is the direct test of it.
+      !!
+      !! **The blocks are exactly zero, not small.** Each atom's claim on a
+      !! subspace is built with coefficients confined to that subspace's rows,
+      !! so claims from different subspaces have disjoint support and are
+      !! orthogonal before anything is orthogonalized. The Loewdin step is
+      !! global and cannot break that, and both Jacobi sweeps skip pairs that
+      !! straddle two subspaces. So the structure is a construction guarantee
+      !! and the tolerance here is rounding, not physics.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(quao_result_t) :: quao
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :)
+      logical :: ok
+      integer :: i, j, n
+      real(dp) :: leak
+
+      call water_quaos("6-31g", quao, overlap, dims, err, ok, subspaces=[1, 4])
+      call check(error, ok, "the constrained construction was refused: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      n = quao%n_quao
+      call check(error, n, 6, "water's valence space is six orbitals")
+      if (allocated(error)) return
+      call check(error, allocated(quao%subspace_of), "the subspace labels are missing")
+      if (allocated(error)) return
+      call check(error, count(quao%subspace_of == 1), 3, &
+                 "the first subspace should hold three orbitals")
+      if (allocated(error)) return
+
+      ! Every atom still has to get something -- an atom with no quasi-atomic
+      ! orbital has no population and no place in the analysis.
+      do i = 1, 3
+         call check(error, count(quao%atom_of == i) >= 1, &
+                    "an atom was left with no quasi-atomic orbital")
+         if (allocated(error)) return
+      end do
+
+      leak = 0.0_dp
+      do j = 1, n
+         do i = 1, n
+            if (quao%subspace_of(i) == quao%subspace_of(j)) cycle
+            leak = max(leak, abs(quao%to_valence_internal(i, j)))
+         end do
+      end do
+      call check(error, leak < 1.0e-12_dp, &
+                 "the transformation mixes two subspaces, so a restricted wave "// &
+                 "function could not be carried through it")
+   end subroutine test_subspace_blocks
 
    subroutine test_orthonormal(error)
       !! Orthonormal, and there is one per valence minimal-basis orbital

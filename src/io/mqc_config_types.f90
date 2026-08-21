@@ -136,6 +136,20 @@ module mqc_config_types
          !! no-sharing wave function, which needs a full valence CI over the
          !! quasi-atomic orbitals and is therefore far too expensive to do by
          !! default.
+      logical :: bonding_restrict_localization = .false.
+         !! From `properties.bonding_analysis.restrict_localization`. Confine
+         !! the quasi-atomic localization to the wave function's
+         !! occupation-restricted subspaces, so that no rotation mixes two of
+         !! them and the wave function stays invariant under the
+         !! transformation. Off by default, and that is a measurement rather
+         !! than a preference -- see `mqc_docs/source/bonding_analysis.rst`.
+      character(len=:), allocatable :: bonding_no_sharing_ci
+         !! From `properties.bonding_analysis.no_sharing_ci`. How the CI
+         !! expansion over quasi-atomic orbitals is obtained: `"transform"`
+         !! solves in the molecular orbital basis and carries the vector across
+         !! with the orbital transformation, `"resolve"` runs a second Davidson
+         !! in the quasi-atomic basis. The two give the same wave function and
+         !! this chooses how it is computed, not which one it is.
       real(dp) :: bonding_threshold = 1.0_dp
          !! From `properties.bonding_analysis.energy_threshold`, in kcal/mol.
          !! Orbital pairs whose kinetic bond order is weaker than this are

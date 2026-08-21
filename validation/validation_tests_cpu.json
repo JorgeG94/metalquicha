@@ -946,6 +946,26 @@
             "type": "unfragmented"
         },
         {
+            "name": "No-sharing analysis, CI re-solved H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_resolve.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented"
+        },
+        {
+            "name": "No-sharing analysis, CI inherited H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_inherit.json",
+            "expected_energy": -76.027033805985,
+            "type": "unfragmented",
+            "reference_note": "Reference from this program, not PySCF. The active space is chosen by this code's own valence-virtual selection, which PySCF has no equivalent of, so there is no independent route to the number. It is a regression guard: it catches a change, it does not prove the physics. The physics these cases exercise is checked instead by the invariance assertion inside the analysis, which rebuilds the energy from the transformed CI vector against the quasi-atomic Hamiltonian and refuses if it differs from the value the CI converged to."
+        },
+        {
+            "name": "No-sharing analysis, ORMAS wave function H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_ormas.json",
+            "expected_energy": -75.9955599512,
+            "type": "unfragmented",
+            "reference_note": "Reference from this program, not PySCF. The active space is chosen by this code's own valence-virtual selection, which PySCF has no equivalent of, so there is no independent route to the number. It is a regression guard: it catches a change, it does not prove the physics. The physics these cases exercise is checked instead by the invariance assertion inside the analysis, which rebuilds the energy from the transformed CI vector against the quasi-atomic Hamiltonian and refuses if it differs from the value the CI converged to."
+        },
+        {
             "name": "RHF with quasi-atomic bonding analysis H2S 6-31g (CPU)",
             "input": "inputs/cpu/mqc/quao/cpu_h2s_6-31g_quao.json",
             "expected_energy": -398.626664265032,

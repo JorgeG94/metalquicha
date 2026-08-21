@@ -27,6 +27,9 @@ module mqc_davidson
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_determinants, only: link_table_t
    use mqc_ci, only: sigma_vector
+   use, intrinsic :: iso_fortran_env, only: output_unit, int64
+   use pic_logger, only: logger => global_logger
+   use mqc_convergence_report, only: convergence_header, convergence_footer
    implicit none
    private
 
@@ -119,7 +122,7 @@ contains
    end subroutine cas_apply
 
    subroutine davidson_lowest(folded, diagonal, alpha, beta, n_roots, result, error, &
-                              tolerance, max_iterations, max_subspace, guess)
+                              tolerance, max_iterations, max_subspace, guess, verbose, energy_offset)
       !! The `n_roots` lowest eigenpairs of the CI Hamiltonian
       !!
       !! The complete-space spelling of `davidson_flat`: the same method, with
@@ -136,6 +139,19 @@ contains
       integer, intent(in), optional :: max_subspace
       real(dp), intent(in), optional :: guess(:, :, :)
          !! (n_alpha, n_beta, n_roots) starting vectors
+      logical, intent(in), optional :: verbose
+         !! Print a line per iteration. Off by default, and worth having at all
+         !! because a large CI is silent for a long time: ethane's full valence
+         !! CAS(14,14) is eleven million determinants and takes twenty minutes,
+         !! during which a run that is converging and a run that is stuck look
+         !! exactly alike.
+      real(dp), intent(in), optional :: energy_offset
+         !! Added to the eigenvalue before printing, and to nothing else. The
+         !! Davidson solves the active-space problem, so its eigenvalue is the
+         !! active energy alone -- for ethane that is -40.87 against a total of
+         !! -79.34, which in a column headed "energy" reads as the wrong
+         !! molecule. The caller knows the inactive-plus-nuclear constant; this
+         !! lets the table show the number the run is actually converging to.
 
       type(cas_operator_t) :: operator
       real(dp), allocatable :: vectors(:, :), flat_guess(:, :)
@@ -161,13 +177,14 @@ contains
                             result%values, vectors, result%residuals, &
                             result%iterations, result%sigma_products, &
                             result%converged, error, tolerance, max_iterations, &
-                            max_subspace, flat_guess)
+                            max_subspace, flat_guess, verbose, energy_offset)
       else
          call davidson_flat(operator, reshape(diagonal, [ndet]), n_roots, &
                             result%values, vectors, result%residuals, &
                             result%iterations, result%sigma_products, &
                             result%converged, error, tolerance, max_iterations, &
-                            max_subspace)
+                            max_subspace, verbose=verbose, &
+                            energy_offset=energy_offset)
       end if
       if (error%has_error()) return
 
@@ -179,7 +196,7 @@ contains
 
    subroutine davidson_flat(operator, diagonal, n_roots, values, vectors, residuals, &
                             iterations_taken, sigma_products, converged, error, &
-                            tolerance, max_iterations, max_subspace, guess)
+                            tolerance, max_iterations, max_subspace, guess, verbose, energy_offset)
       !! The `n_roots` lowest eigenpairs of anything that can multiply a vector
       !!
       !! The method itself, over a flat vector. Everything that knows what a
@@ -198,11 +215,28 @@ contains
          !! vectors. Defaults to `max(2*n_roots + 8, 16)`, bounded by the size of
          !! the determinant space.
       real(dp), intent(in), optional :: guess(:, :)
+      logical, intent(in), optional :: verbose
+         !! Print a line per iteration. Off by default, and worth having at all
+         !! because a large CI is silent for a long time: ethane's full valence
+         !! CAS(14,14) is eleven million determinants and takes twenty minutes,
+         !! during which a run that is converging and a run that is stuck look
+         !! exactly alike.
+      real(dp), intent(in), optional :: energy_offset
+         !! Added to the eigenvalue before printing, and to nothing else. The
+         !! Davidson solves the active-space problem, so its eigenvalue is the
+         !! active energy alone -- for ethane that is -40.87 against a total of
+         !! -79.34, which in a column headed "energy" reads as the wrong
+         !! molecule. The caller knows the inactive-plus-nuclear constant; this
+         !! lets the table show the number the run is actually converging to.
          !! (n_determinants, n_roots) starting vectors. Absent takes unit vectors
          !! on the lowest diagonal elements, which for a CI is the reference
          !! determinant and its nearest neighbours in energy.
 
       real(dp), allocatable :: basis(:, :), sigma(:, :), small(:, :), small_values(:)
+      character(len=128) :: line
+      integer(int64) :: tick, last, rate
+      real(dp) :: shift
+      logical :: loud
       real(dp), allocatable :: ritz(:, :), hritz(:, :), residual(:), correction(:)
       real(dp) :: tol, norm, denominator, overlap
       integer :: ndet, nsub, nmax, iterations, iroot, i, j, info, added
@@ -243,6 +277,15 @@ contains
       allocate (values(n_roots), residuals(n_roots))
       allocate (vectors(ndet, n_roots))
 
+      loud = .false.
+      if (present(verbose)) loud = verbose
+      shift = 0.0_dp
+      if (present(energy_offset)) shift = energy_offset
+      call convergence_header(loud, "CI iterations", &
+                              "    iter                 energy    residual   subspace"// &
+                              "     sigma       time", 74)
+
+      call system_clock(last, rate)
       call initial_basis(diagonal, n_roots, ndet, basis, guess)
       nsub = n_roots
 
@@ -280,6 +323,26 @@ contains
             residuals(iroot) = sqrt(dot_product(residual, residual))
             root_converged(iroot) = residuals(iroot) < tol
          end do
+
+         ! Per iteration rather than a total, for the same reason the SCF does
+         ! it: what a long CI is doing is only visible from whether the residual
+         ! is still falling, and the time per iteration says whether the cost is
+         ! in the sigma products or somewhere else.
+         if (loud) then
+            call system_clock(tick)
+            write (line, "(i8,f23.12,es12.3,i11,i10,f10.2,a)") &
+               iteration, values(1) + shift, maxval(residuals), nsub, sigma_products, &
+               real(tick - last, dp)/real(rate, dp), " s"
+            call logger%info(trim(line))
+            ! Flushed, or the table is pointless. Redirected output is block
+            ! buffered, so without this the rows sit in a 4 kB buffer and
+            ! arrive in lumps -- which for a twenty-minute CI means the log
+            ! still shows nothing for minutes at a time, which is the whole
+            ! complaint this table exists to answer. One syscall against a
+            ! sigma product costing tens of seconds is not a cost.
+            flush (output_unit)
+            last = tick
+         end if
 
          if (all(root_converged)) then
             converged = .true.
@@ -348,6 +411,7 @@ contains
          nsub = nsub + added
       end do
 
+      call convergence_footer(loud, converged, iterations_taken, "iterations", 74)
       if (.not. converged) vectors = ritz
 
       deallocate (basis, sigma, ritz, hritz, residual, correction)

@@ -298,6 +298,19 @@ HAND_MAINTAINED = {
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
+    # Ethane in the basis the quasi-atomic bonding papers use, which is the case
+    # their published numbers can be checked against: 186 basis functions and a
+    # full valence CAS(14,14) of 11,778,624 determinants. Deliberately absent
+    # from the manifest -- every other CPU case is sub-second and this is
+    # minutes even threaded, so running it in the suite would make the suite
+    # unusable. It is here to be run deliberately, and listed here so a
+    # regeneration does not sweep it away.
+    "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_quao.json",
+    # The same molecule and basis through an occupation-restricted space, which
+    # is the route the papers point at for anything past ethane: 49,050
+    # determinants of the 11,778,624, recovering 93.6% of the valence
+    # correlation energy. Hand-maintained for the same reason as the case above.
+    "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_ormas.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
     # Fukui indices. PySCF has no Fukui, so this script has no reference to
     # generate: what the manifest checks for these is the ordinary RHF energy,
@@ -2059,6 +2072,88 @@ def main():
             "expected_energy": round(energy, 12),
             "type": "unfragmented",
         })
+
+        # The no-sharing analysis has two routes to the same wave function, and
+        # the deck above takes the default one -- the CI is solved in the
+        # molecular orbital basis and the vector carried into the quasi-atomic
+        # one. This runs the other, which solves a second Davidson in the
+        # quasi-atomic basis directly.
+        #
+        # Both are covered because each is the only check on the other. The
+        # transform route asserts at runtime that the vector it produced has the
+        # energy it was solved at, which catches the string minors and their
+        # signs; but an error in the *quasi-atomic Hamiltonian* would move both
+        # sides of that comparison together. Two independent routes agreeing on
+        # E(Psi-0) is what closes it.
+        if name == "water":
+            analysis_ns = {"type": "gms_quao", "energy_decomposition": True,
+                           "no_sharing": True}
+            resolve = dict(analysis_ns, no_sharing_ci="resolve")
+            deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao_resolve")
+            written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+            if not args.dry_run:
+                d = deck_json(xyz_for(mol), basis,
+                              properties={"bonding_analysis": resolve})
+                _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+            tests.append({
+                "name": f"No-sharing analysis, CI re-solved {mol.label} {basis} (CPU)",
+                "input": deck,
+                "expected_energy": round(energy, 12),
+                "type": "unfragmented",
+            })
+
+            # The two routes by which the analysis gets its CI vector from the
+            # *calculation* rather than solving one: a full-valence CASCI, whose
+            # active orbitals are adopted as the valence space outright, and an
+            # ORMAS wave function, which additionally has to be written out over
+            # the complete determinant space before it can be rotated at all.
+            #
+            # These two carry OUR OWN energies rather than PySCF's, which is a
+            # weaker reference and deliberate. The active space here is chosen
+            # by this code's valence-virtual selection; PySCF has no equivalent,
+            # so there is no independent route to the number and inventing one
+            # would mean reimplementing the selection in the reference. What
+            # makes that acceptable is that the physics is asserted elsewhere:
+            # the analysis rebuilds the energy from the transformed CI vector
+            # against the quasi-atomic Hamiltonian and refuses if it differs
+            # from what the CI converged to, so a broken transformation fails
+            # the run rather than quietly matching a recorded number.
+            note = (
+                "Reference from this program, not PySCF. The active space is "
+                "chosen by this code's own valence-virtual selection, which "
+                "PySCF has no equivalent of, so there is no independent route "
+                "to the number. It is a regression guard: it catches a change, "
+                "it does not prove the physics. The physics these cases "
+                "exercise is checked instead by the invariance assertion "
+                "inside the analysis, which rebuilds the energy from the "
+                "transformed CI vector against the quasi-atomic Hamiltonian "
+                "and refuses if it differs from the value the CI converged to."
+            )
+            for suffix, label, mcscf_keys, own_energy in (
+                ("inherit", "CI inherited",
+                 {"full_valence": True, "optimize_orbitals": False},
+                 -76.027033805985),
+                ("ormas", "ORMAS wave function",
+                 {"n_active_electrons": 8, "n_active_orbitals": 6,
+                  "n_inactive_orbitals": 1, "optimize_orbitals": False,
+                  "ormas": {"subspaces": [1, 5], "min_electrons": [6, 0],
+                            "max_electrons": [8, 2]}},
+                 -75.995559951200),
+            ):
+                deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao_{suffix}")
+                written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+                if not args.dry_run:
+                    d = deck_json(xyz_for(mol), basis, method="casci",
+                                  properties={"bonding_analysis": analysis_ns})
+                    d["keywords"]["mcscf"] = mcscf_keys
+                    _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+                tests.append({
+                    "name": f"No-sharing analysis, {label} {mol.label} {basis} (CPU)",
+                    "input": deck,
+                    "expected_energy": own_energy,
+                    "type": "unfragmented",
+                    "reference_note": note,
+                })
 
     for name, basis, aux, functional, mult in GRADIENT_CASES:
         mol = MOLECULES[name]

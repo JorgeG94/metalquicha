@@ -39,7 +39,8 @@ module mqc_libcint_bridge
                               run_libcint_ump2, run_libcint_uri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd
-   use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
+   use mqc_libcint_bonding, only: valence_wavefunction_t, &
+                                  run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
    use mqc_libcint_casci, only: casci_result_t, run_libcint_casci, &
                                 run_libcint_ormas_ci
@@ -940,6 +941,8 @@ contains
                                 analysis_error, threshold=settings%bonding_threshold, &
                                 energy_decomposition=settings%bonding_energy, &
                                 no_sharing=settings%bonding_no_sharing, &
+                                no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                restrict_localization=settings%bonding_restrict_localization, &
                                 atom_energy=ieda_atom, free_atom_energy=ieda_free, &
                                 pair_energy=ieda_pair, pair_classical=ieda_classical, &
                                 formation_energy=ieda_formation)
@@ -1688,6 +1691,11 @@ contains
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: casscf
       type(casci_result_t) :: casci
+      type(valence_wavefunction_t) :: converged
+         !! Offered to the bonding analysis, which takes it up only if it is
+         !! over the full valence space. Filled unconditionally because filling
+         !! it is four assignments and deciding whether it qualifies is not this
+         !! layer's job.
       type(error_t) :: error
       type(error_t) :: analysis_error
       real(dp), allocatable :: ieda_atom(:), ieda_free(:)
@@ -1932,12 +1940,30 @@ contains
       ! in which the density is diagonal and told what the diagonal is.
       if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
          call analysis_error%clear()
+         converged%n_inactive = space(1)
+         converged%n_active = space(2)
+         converged%n_alpha = space(3)
+         converged%n_beta = space(4)
          if (settings%mcscf%optimize_orbitals) then
             call natural_orbitals(casscf%orbitals, space(1), space(2), casscf%dm1, &
                                   natural, occupations, analysis_error)
+            if (allocated(casscf%ci_vector)) converged%ci = casscf%ci_vector
+            converged%orbitals = casscf%orbitals(:, space(1) + 1:space(1) + space(2))
+            converged%energy = casscf%energy
          else
             call natural_orbitals(reference, space(1), space(2), casci%dm1, &
                                   natural, occupations, analysis_error)
+            ! A restricted space leaves `ci_vector` unallocated and carries
+            ! its coefficients in `ci_flat`, addressed by a partition that is
+            ! meaningless without it -- so both go over, and the analysis writes
+            ! them out over the complete space before rotating.
+            if (allocated(casci%ci_vector)) converged%ci = casci%ci_vector
+            if (allocated(casci%ci_flat)) then
+               converged%ci_flat = casci%ci_flat
+               converged%ormas = casci%ormas
+            end if
+            converged%orbitals = reference(:, space(1) + 1:space(1) + space(2))
+            converged%energy = casci%energy
          end if
          if (.not. analysis_error%has_error()) then
             ! The two-particle density goes over in the orbitals it was computed
@@ -1957,6 +1983,9 @@ contains
                                       reference_energy=casscf%energy, &
                                       energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing, &
+                                      no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                      restrict_localization=settings%bonding_restrict_localization, &
+                                      valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
                                       pair_energy=ieda_pair, &
@@ -1974,6 +2003,9 @@ contains
                                       reference_energy=casci%energy, &
                                       energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing, &
+                                      no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                      restrict_localization=settings%bonding_restrict_localization, &
+                                      valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
                                       pair_energy=ieda_pair, &

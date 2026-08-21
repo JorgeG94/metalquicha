@@ -43,6 +43,7 @@ module mqc_libcint_casci
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space
    use mqc_ormas_ci, only: ormas_solve, ormas_density_matrices
    use mqc_davidson, only: davidson_lowest, davidson_result_t
+   use mqc_timing, only: timing_report_t
    implicit none
    private
 
@@ -63,6 +64,11 @@ module mqc_libcint_casci
          !! `ci_flat` carries it there instead.
       real(dp), allocatable :: ci_flat(:)
          !! (n_determinants), the ground root of a restricted space
+      type(ormas_space_t) :: ormas
+         !! The partition `ci_flat` is addressed by, kept because a flat list of
+         !! coefficients means nothing without it. Populated only by a
+         !! restricted solve; `ormas%n_determinants` is zero otherwise, which is
+         !! how a caller tells.
       real(dp), allocatable :: vectors(:, :, :)   !! All roots
       real(dp), allocatable :: dm1(:, :)
          !! (n_active, n_active) one-particle density of the ground root, in the
@@ -193,6 +199,7 @@ contains
       real(dp), allocatable :: folded(:, :), diagonal(:, :)
       type(link_table_t) :: alpha, beta
       type(davidson_result_t) :: davidson
+      type(timing_report_t) :: clk
       character(len=128) :: line
       integer :: roots, i
       logical :: loud
@@ -210,13 +217,21 @@ contains
          return
       end if
 
+      ! Timed from here, because everything between the reference energy and
+      ! the first CI iteration is silent and some of it is slow. A caller
+      ! watching a full valence run has no way to tell an integral transform
+      ! from a hang, and the answer should not require a rebuild to get.
+      call clk%start()
+
       call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
                                   eri_act, result%core_energy, error)
       if (error%has_error()) return
+      call clk%lap("active space integrals")
 
       call build_link_table(n_active, n_alpha, alpha, error)
       call build_link_table(n_active, n_beta, beta, error)
       if (error%has_error()) return
+      call clk%lap("excitation tables")
       result%n_determinants = alpha%n_strings*beta%n_strings
 
       if (n_alpha + n_beta == 0) then
@@ -236,10 +251,30 @@ contains
       call absorb_one_electron(h_eff, eri_act, n_alpha + n_beta, folded, error)
       call ci_diagonal(h_eff, eri_act, alpha, beta, diagonal, error)
       if (error%has_error()) return
+      call clk%lap("CI diagonal")
+
+      ! Announced before the solve rather than after it. A full valence CI is
+      ! silent for as long as it takes -- ethane's CAS(14,14) is eleven million
+      ! determinants and twenty minutes -- and a caller staring at the last line
+      ! of the SCF has no way to tell what is being attempted, or whether
+      ! anything is.
+      if (loud) then
+         call logger%info("")
+         call logger%info("  complete active space CI")
+         write (line, "(a,i0,a,i0,a)") "    active space                CAS(", &
+            n_alpha + n_beta, ",", n_active, ")"
+         call logger%info(trim(line))
+         write (line, "(a,i0)") "    inactive orbitals           ", n_inactive
+         call logger%info(trim(line))
+         write (line, "(a,i0)") "    determinants                ", result%n_determinants
+         call logger%info(trim(line))
+      end if
 
       call davidson_lowest(folded, diagonal, alpha, beta, roots, davidson, error, &
-                           tolerance=tolerance, guess=guess)
+                           tolerance=tolerance, guess=guess, verbose=loud, &
+                           energy_offset=result%core_energy)
       if (error%has_error()) return
+      call clk%lap("Davidson")
 
       result%converged = davidson%converged
       result%iterations = davidson%iterations
@@ -255,17 +290,10 @@ contains
       result%ci_vector = result%vectors(:, :, 1)
       call active_space_rdms(result%ci_vector, alpha, beta, result%dm1, result%dm2, error)
       if (error%has_error()) return
+      call clk%lap("density matrices")
+      call clk%finish()
 
       if (loud) then
-         call logger%info("")
-         call logger%info("  complete active space CI")
-         write (line, "(a,i0,a,i0,a)") "    active space                CAS(", &
-            n_alpha + n_beta, ",", n_active, ")"
-         call logger%info(trim(line))
-         write (line, "(a,i0)") "    inactive orbitals           ", n_inactive
-         call logger%info(trim(line))
-         write (line, "(a,i0)") "    determinants                ", result%n_determinants
-         call logger%info(trim(line))
          write (line, "(a,i0,a,i0,a)") "    iterations                  ", &
             davidson%iterations, " (", davidson%sigma_products, " sigma products)"
          call logger%info(trim(line))
@@ -280,6 +308,7 @@ contains
             call logger%warning("    the CI did not converge to the requested residual")
          end if
       end if
+      call clk%report("CASCI", loud)
 
       call alpha%destroy()
       call beta%destroy()
@@ -316,6 +345,7 @@ contains
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: energies(:), vectors(:, :)
       type(ormas_space_t) :: space
+      type(timing_report_t) :: clk
       character(len=128) :: line
       integer :: roots, i
       logical :: loud
@@ -326,13 +356,16 @@ contains
       loud = .false.
       if (present(verbose)) loud = verbose
 
+      call clk%start()
       call build_ormas_space(subspaces, n_active, n_alpha, n_beta, min_electrons, &
                              max_electrons, space, error)
       if (error%has_error()) return
 
+      call clk%lap("restricted space")
       call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
                                   eri_act, result%core_energy, error)
       if (error%has_error()) return
+      call clk%lap("active space integrals")
 
       result%n_determinants = int(space%n_determinants)
       if (n_alpha + n_beta == 0) then
@@ -347,12 +380,15 @@ contains
 
       if (present(guess)) then
          call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
-                          tolerance=tolerance, guess=guess)
+                          tolerance=tolerance, guess=guess, verbose=loud, &
+                          energy_offset=result%core_energy)
       else
          call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
-                          tolerance=tolerance)
+                          tolerance=tolerance, verbose=loud, &
+                          energy_offset=result%core_energy)
       end if
       if (error%has_error()) return
+      call clk%lap("Davidson")
 
       result%converged = .true.
       result%active_energy = energies(1)
@@ -362,9 +398,16 @@ contains
          result%energies(i) = result%core_energy + energies(i)
       end do
       result%ci_flat = vectors(:, 1)
+      ! Deep-copied rather than referenced, then destroyed below as before: the
+      ! flat coefficients are unreadable without the addressing that produced
+      ! them, and anything wanting to re-express this wave function in another
+      ! orbital basis needs both.
+      result%ormas = space
 
       call ormas_density_matrices(space, result%ci_flat, result%dm1, result%dm2, error)
       if (error%has_error()) return
+      call clk%lap("density matrices")
+      call clk%finish()
 
       if (loud) then
          call logger%info("")
@@ -392,6 +435,8 @@ contains
          write (line, "(a,f22.10)") "    total                       ", result%energy
          call logger%info(trim(line))
       end if
+
+      call clk%report("ORMAS-CI", loud)
 
       call space%destroy()
       deallocate (h_eff, eri_act)
