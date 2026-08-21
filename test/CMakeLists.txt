@@ -77,12 +77,10 @@ if(MQC_ENABLE_LIBCINT)
   # The quasi-atomic orbitals themselves, and the density in their basis.
   addtest(mqc_quao)
   target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
-  # Second derivatives, the response solve and the assembled Hessian. Only where
-  # there is one: the integrals behind it are libfint's.
-  if(MQC_USE_LIBFINT)
-    addtest(mqc_hess_ints)
-    target_link_libraries(test_mqc_hess_ints PRIVATE cint_fortran cint)
-  endif()
+  # Second derivatives, the response solve and the assembled Hessian. Runs on
+  # either backend now that the entry points are reached through the C ABI.
+  addtest(mqc_hess_ints)
+  target_link_libraries(test_mqc_hess_ints PRIVATE cint_fortran cint)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)

@@ -22,36 +22,20 @@ module mqc_libcint_hess_ints
    !! slightly worse Hessian, it is one that violates translational invariance,
    !! which shows up as translations that are no longer zero-frequency modes.
    use, intrinsic :: iso_fortran_env, only: real64
+   use, intrinsic :: iso_c_binding, only: c_null_ptr
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
                                     eri_shell_table_t, eri_shell_table, eri_schwarz_collapse
    use mqc_libcint_direct, only: schwarz_bounds
-   use cint_workspace, only: cint_ws
-   use cint_bas, only: cint_cgto_spheric, cint_cgto_cart
-   ! **From the compatibility layer, and it has to be.** `cint_bas` exports
-   ! constants with these same names and different values -- its slots are
-   ! 0-based as in `cint.h`, mqc's are 1-based because `mol%bas` is an ordinary
-   ! Fortran array. Everything else here takes libfint's native entry points
-   ! and native constants, which is what makes this the exception worth
-   ! spelling out: the native ones describe libfint's view of a flat buffer,
-   ! these describe the shape of the array mqc actually built. Taking the
-   ! native `PTR_EXP` reads `KAPPA_OF`, which is zero for an ordinary shell,
-   ! and the resulting bound is zero or NaN rather than wrong-looking.
-   use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP
-   use cint_gen_hess, only: int1e_ipipovlp_sph, int1e_ipipovlp_cart, &
-                            int1e_ipovlpip_sph, int1e_ipovlpip_cart, &
-                            int1e_ipipkin_sph, int1e_ipipkin_cart, &
-                            int1e_ipkinip_sph, int1e_ipkinip_cart, &
-                            int1e_ipipnuc_sph, int1e_ipipnuc_cart, &
-                            int1e_ipnucip_sph, int1e_ipnucip_cart
-   use cint_gen_hess, only: int1e_ipiprinv_sph, int1e_ipiprinv_cart, &
-                            int1e_iprinvip_sph, int1e_iprinvip_cart
-   use cint_envs, only: PTR_RINV_ORIG
-   use cint_gen_grad2, only: int2e_ip1_sph, int2e_ip1_cart
-   use cint_gen_hess, only: int2e_ipip1_sph, int2e_ipip1_cart, &
-                            int2e_ipvip1_sph, int2e_ipvip1_cart, &
-                            int2e_ip1ip2_sph, int2e_ip1ip2_cart
+   use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG
+   use mqc_libcint_hess_abi, only: &
+      cint1e_ipipovlp_sph, cint1e_ipipovlp_cart, cint1e_ipovlpip_sph, cint1e_ipovlpip_cart, &
+      cint1e_ipipkin_sph, cint1e_ipipkin_cart, cint1e_ipkinip_sph, cint1e_ipkinip_cart, &
+      cint1e_ipipnuc_sph, cint1e_ipipnuc_cart, cint1e_ipnucip_sph, cint1e_ipnucip_cart, &
+      cint1e_ipiprinv_sph, cint1e_ipiprinv_cart, cint1e_iprinvip_sph, cint1e_iprinvip_cart, &
+      cint2e_ipip1_sph, cint2e_ipip1_cart, cint2e_ipvip1_sph, cint2e_ipvip1_cart, &
+      cint2e_ip1ip2_sph, cint2e_ip1ip2_cart, cint2e_ip1_sph, cint2e_ip1_cart
    implicit none
    private
 
@@ -97,13 +81,6 @@ module mqc_libcint_hess_ints
    integer, parameter :: N_COMPONENTS = 9
       !! Every one of these is a 3x3 Cartesian block per shell pair, laid out by
       !! libcint as `xx xy xz yx yy yz zx zy zz` in the slowest index.
-
-   !> One workspace per thread. **`threadprivate` is not optional** -- libfint's
-   !> own C layer says so and says how it was found: a shared workspace means
-   !> every thread writing over every other one's scratch, and it does not fail
-   !> cleanly but segfaults somewhere unrelated.
-   type(cint_ws), save :: ws
-   !$omp threadprivate(ws)
 
 contains
 
@@ -196,44 +173,44 @@ contains
       if (mol%cartesian) then
          select case (which)
          case (HESS_OVLP_II)
-            have = int1e_ipipovlp_cart(buf, dims, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipipovlp_cart(buf, shls, atm, mol%natm, &
+                                        bas, mol%nbas, mol%env) /= 0
          case (HESS_OVLP_IJ)
-            have = int1e_ipovlpip_cart(buf, dims, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipovlpip_cart(buf, shls, atm, mol%natm, &
+                                        bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_II)
-            have = int1e_ipipkin_cart(buf, dims, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipipkin_cart(buf, shls, atm, mol%natm, &
+                                       bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_IJ)
-            have = int1e_ipkinip_cart(buf, dims, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipkinip_cart(buf, shls, atm, mol%natm, &
+                                       bas, mol%nbas, mol%env) /= 0
          case (HESS_NUC_II)
-            have = int1e_ipipnuc_cart(buf, dims, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipipnuc_cart(buf, shls, atm, mol%natm, &
+                                       bas, mol%nbas, mol%env) /= 0
          case default
-            have = int1e_ipnucip_cart(buf, dims, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipnucip_cart(buf, shls, atm, mol%natm, &
+                                       bas, mol%nbas, mol%env) /= 0
          end select
       else
          select case (which)
          case (HESS_OVLP_II)
-            have = int1e_ipipovlp_sph(buf, dims, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipipovlp_sph(buf, shls, atm, mol%natm, &
+                                       bas, mol%nbas, mol%env) /= 0
          case (HESS_OVLP_IJ)
-            have = int1e_ipovlpip_sph(buf, dims, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipovlpip_sph(buf, shls, atm, mol%natm, &
+                                       bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_II)
-            have = int1e_ipipkin_sph(buf, dims, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipipkin_sph(buf, shls, atm, mol%natm, &
+                                      bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_IJ)
-            have = int1e_ipkinip_sph(buf, dims, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipkinip_sph(buf, shls, atm, mol%natm, &
+                                      bas, mol%nbas, mol%env) /= 0
          case (HESS_NUC_II)
-            have = int1e_ipipnuc_sph(buf, dims, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipipnuc_sph(buf, shls, atm, mol%natm, &
+                                      bas, mol%nbas, mol%env) /= 0
          case default
-            have = int1e_ipnucip_sph(buf, dims, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, ws)
+            have = cint1e_ipnucip_sph(buf, shls, atm, mol%natm, &
+                                      bas, mol%nbas, mol%env) /= 0
          end select
       end if
    end function drive
@@ -291,7 +268,7 @@ contains
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(mol%bas, [size(mol%bas)])
       allocate (env(size(mol%env)), source=mol%env)
-      env(PTR_RINV_ORIG + 1:PTR_RINV_ORIG + 3) = mol%coords(:, iatom)
+      env(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = mol%coords(:, iatom)
 
       do ish = 1, mol%nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
@@ -304,19 +281,19 @@ contains
 
             if (mol%cartesian) then
                if (which == HESS_RINV_II) then
-                  have = int1e_ipiprinv_cart(buf, dims, shls, atm_flat, mol%natm, &
-                                             bas_flat, mol%nbas, env, ws)
+                  have = cint1e_ipiprinv_cart(buf, shls, atm_flat, mol%natm, &
+                                              bas_flat, mol%nbas, env) /= 0
                else
-                  have = int1e_iprinvip_cart(buf, dims, shls, atm_flat, mol%natm, &
-                                             bas_flat, mol%nbas, env, ws)
+                  have = cint1e_iprinvip_cart(buf, shls, atm_flat, mol%natm, &
+                                              bas_flat, mol%nbas, env) /= 0
                end if
             else
                if (which == HESS_RINV_II) then
-                  have = int1e_ipiprinv_sph(buf, dims, shls, atm_flat, mol%natm, &
-                                            bas_flat, mol%nbas, env, ws)
+                  have = cint1e_ipiprinv_sph(buf, shls, atm_flat, mol%natm, &
+                                             bas_flat, mol%nbas, env) /= 0
                else
-                  have = int1e_iprinvip_sph(buf, dims, shls, atm_flat, mol%natm, &
-                                            bas_flat, mol%nbas, env, ws)
+                  have = cint1e_iprinvip_sph(buf, shls, atm_flat, mol%natm, &
+                                             bas_flat, mol%nbas, env) /= 0
                end if
             end if
             if (.not. have) cycle
@@ -436,26 +413,26 @@ contains
       if (mol%cartesian) then
          select case (which)
          case (HESS_ERI_II)
-            have = int2e_ipip1_cart(buf, dims, shls, atm, mol%natm, &
-                                    bas, mol%nbas, mol%env, ws)
+            have = cint2e_ipip1_cart(buf, shls, atm, mol%natm, &
+                                     bas, mol%nbas, mol%env, c_null_ptr) /= 0
          case (HESS_ERI_IJ)
-            have = int2e_ipvip1_cart(buf, dims, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, ws)
+            have = cint2e_ipvip1_cart(buf, shls, atm, mol%natm, &
+                                      bas, mol%nbas, mol%env, c_null_ptr) /= 0
          case default
-            have = int2e_ip1ip2_cart(buf, dims, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, ws)
+            have = cint2e_ip1ip2_cart(buf, shls, atm, mol%natm, &
+                                      bas, mol%nbas, mol%env, c_null_ptr) /= 0
          end select
       else
          select case (which)
          case (HESS_ERI_II)
-            have = int2e_ipip1_sph(buf, dims, shls, atm, mol%natm, &
-                                   bas, mol%nbas, mol%env, ws)
+            have = cint2e_ipip1_sph(buf, shls, atm, mol%natm, &
+                                    bas, mol%nbas, mol%env, c_null_ptr) /= 0
          case (HESS_ERI_IJ)
-            have = int2e_ipvip1_sph(buf, dims, shls, atm, mol%natm, &
-                                    bas, mol%nbas, mol%env, ws)
+            have = cint2e_ipvip1_sph(buf, shls, atm, mol%natm, &
+                                     bas, mol%nbas, mol%env, c_null_ptr) /= 0
          case default
-            have = int2e_ip1ip2_sph(buf, dims, shls, atm, mol%natm, &
-                                    bas, mol%nbas, mol%env, ws)
+            have = cint2e_ip1ip2_sph(buf, shls, atm, mol%natm, &
+                                     bas, mol%nbas, mol%env, c_null_ptr) /= 0
          end select
       end if
    end function drive_2e
@@ -511,11 +488,11 @@ contains
                   dims = [di, dj, dk, dl]
 
                   if (mol%cartesian) then
-                     have = int2e_ip1_cart(buf, dims, shls, atm_flat, mol%natm, &
-                                           bas_flat, mol%nbas, mol%env, ws)
+                     have = cint2e_ip1_cart(buf, shls, atm_flat, mol%natm, &
+                                            bas_flat, mol%nbas, mol%env, c_null_ptr) /= 0
                   else
-                     have = int2e_ip1_sph(buf, dims, shls, atm_flat, mol%natm, &
-                                          bas_flat, mol%nbas, mol%env, ws)
+                     have = cint2e_ip1_sph(buf, shls, atm_flat, mol%natm, &
+                                           bas_flat, mol%nbas, mol%env, c_null_ptr) /= 0
                   end if
                   if (.not. have) cycle
 
@@ -895,11 +872,11 @@ contains
                if (est < tol) cycle
 
                if (mol%cartesian) then
-                  have = int2e_ip1_cart(buf, dims, shls, atm_flat, mol%natm, &
-                                        bas_flat, tab%nbas, tab%env, ws)
+                  have = cint2e_ip1_cart(buf, shls, atm_flat, mol%natm, &
+                                         bas_flat, tab%nbas, tab%env, c_null_ptr) /= 0
                else
-                  have = int2e_ip1_sph(buf, dims, shls, atm_flat, mol%natm, &
-                                       bas_flat, tab%nbas, tab%env, ws)
+                  have = cint2e_ip1_sph(buf, shls, atm_flat, mol%natm, &
+                                        bas_flat, tab%nbas, tab%env, c_null_ptr) /= 0
                end if
                if (.not. have) cycle
 

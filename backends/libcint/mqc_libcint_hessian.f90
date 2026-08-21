@@ -45,7 +45,6 @@ module mqc_libcint_hessian
    public :: response_hessian
    public :: rhf_hessian
    public :: hessian_to_matrix
-   public :: analytic_hessian_available
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -1126,19 +1125,5 @@ contains
          first = last + 1
       end do
    end subroutine mean_field_batch
-
-   pure function analytic_hessian_available() result(available)
-      !! Whether this build has an analytic Hessian at all
-      !!
-      !! True here and false in the stub beside this file. The second
-      !! derivatives come from libfint's native modules, which a libcint build
-      !! does not have and cannot reach without a `bind(C)` declaration per
-      !! integral -- so that build compiles the stub, this returns false, and
-      !! every Hessian request falls through to finite differences exactly as
-      !! an unrestricted or density-fitted one already does.
-      logical :: available
-
-      available = .true.
-   end function analytic_hessian_available
 
 end module mqc_libcint_hessian

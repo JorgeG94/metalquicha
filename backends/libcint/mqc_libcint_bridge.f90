@@ -32,8 +32,7 @@ module mqc_libcint_bridge
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix, &
-                                  analytic_hessian_available
+   use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
@@ -1027,17 +1026,12 @@ contains
       ! plausible, converged, wrong matrix -- so the guard is a list of
       ! positives rather than a list of refusals.
       !
-      ! A libcint build has no analytic Hessian at all -- the second-derivative
-      ! integrals are libfint's -- so it declines here for the same reason and
-      ! by the same route as everything else in this list.
-      !
       ! Hydrogen caps are excluded for a different reason: the shapes match and
       ! the numbers would be right, but a capped fragment's second derivatives
       ! have to be redistributed onto the heavy atoms the caps replaced, and
       ! that is checked for the finite-difference path and not for this one.
       ! Falling back leaves a fragmented Hessian exactly as it was.
-      if (do_hessian .and. analytic_hessian_available() &
-          .and. .not. unrestricted .and. .not. kohn_sham &
+      if (do_hessian .and. .not. unrestricted .and. .not. kohn_sham &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. fragment%n_caps == 0) then
          block
