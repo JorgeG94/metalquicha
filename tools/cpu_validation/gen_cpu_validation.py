@@ -307,6 +307,14 @@ HAND_MAINTAINED = {
     # exercised the path end to end.
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+    # The same analysis on Kohn-Sham ions. Here for a reason the other two do
+    # not cover: the ions are doublets, so they need a spin-POLARISED
+    # functional, while the closed-shell neutral's context is unpolarised.
+    # Handing the wrong one across is refused rather than misread, which turns
+    # into a skipped analysis and a run that still exits zero -- so a deck that
+    # completes with a Fukui table is the assertion. It also omits
+    # `population`, which pins the CHELPG default.
+    "cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
     # FMO2/FMO3 and EE-MBE. This script generates single-determinant references
     # from PySCF, which has no FMO, so it cannot produce these and would sweep the
     # decks away while leaving their manifest entries pointing at nothing. The two

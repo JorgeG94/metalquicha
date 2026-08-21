@@ -31,6 +31,7 @@ module mqc_libcint_fukui
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    implicit none
    private
 
@@ -50,6 +51,15 @@ module mqc_libcint_fukui
       real(dp), allocatable :: f_plus(:)    !! Nucleophilic attack: where charge arrives
       real(dp), allocatable :: f_minus(:)   !! Electrophilic attack: where charge leaves
       real(dp), allocatable :: f_zero(:)    !! Radical attack, the average of the two
+         !! **A NEGATIVE ENTRY IN ANY OF THESE IS SPURIOUS.** The exact Fukui
+         !! function is a derivative of the density with respect to electron
+         !! count and cannot be negative -- no site gives up charge because the
+         !! molecule gained an electron. Negative condensed values come from
+         !! partitioning a continuous density onto atoms, where two states are
+         !! fitted independently and disagree by more than the one electron
+         !! that moved between them. Rank sites by these; do not quote the
+         !! numbers, and treat a small negative as "not reactive in this
+         !! channel" rather than as anything about repulsion.
       real(dp), allocatable :: dual(:)
          !! `f+ - f-`. Positive where a site prefers to accept and negative
          !! where it prefers to donate, so one column separates electrophilic
@@ -73,16 +83,35 @@ module mqc_libcint_fukui
          !! diffuse functions moves its affinity from -0.19 to -0.04 hartree
          !! and never makes it positive, because H2O- does not exist.
       character(len=16) :: scheme = "chelpg"
+      character(len=:), allocatable :: functional
+         !! The functional the three states were computed with, empty for
+         !! Hartree-Fock. Recorded because an IP of 0.4 hartree means nothing
+         !! without it: the number is a difference of total energies and those
+         !! are not comparable across methods.
    end type fukui_result_t
 
 contains
 
    subroutine fukui_indices(mol, nelec, multiplicity, neutral_density, neutral_energy, &
-                            scheme, max_iter, energy_tol, density_tol, res, error)
+                            scheme, max_iter, energy_tol, density_tol, res, error, &
+                            functional, grid_level)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
       !! caller has just converged it.
+      !!
+      !! KOHN-SHAM IONS NEED THEIR OWN CONTEXT, which is why this takes a
+      !! functional NAME and not the caller's `xc_context_t`. libxc fixes the
+      !! spin channel when a functional is initialised, and the caller's
+      !! context was built for the closed-shell neutral, so it is
+      !! spin-unpolarised. Handing it to the unrestricted ions does not
+      !! misread it -- `xc_add_potential` refuses it outright -- but the
+      !! refusal would arrive as a failed analysis rather than as a design.
+      !! One polarised context is built here and shared by both doublets,
+      !! which see the same grid as each other by construction.
+      !!
+      !! Absent or empty `functional` is Hartree-Fock, which is what this
+      !! routine did before it could do anything else.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: multiplicity
@@ -93,10 +122,15 @@ contains
       real(dp), intent(in) :: energy_tol, density_tol
       type(fukui_result_t), intent(out) :: res
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: functional
+      integer, intent(in), optional :: grid_level
 
       type(rhf_result_t) :: anion, cation
       real(dp), allocatable :: overlap(:, :), total(:, :)
       integer :: natm
+      type(xc_context_t), target :: xc_ions
+      type(xc_context_t), pointer :: xc_arg
+      logical :: kohn_sham
 
       if (error%has_error()) return
 
@@ -114,6 +148,44 @@ contains
          return
       end if
 
+      kohn_sham = .false.
+      if (present(functional)) kohn_sham = len_trim(functional) > 0
+      res%functional = ""
+      xc_arg => null()
+
+      if (kohn_sham) then
+         if (.not. xc_available()) then
+            call error%set(ERROR_VALIDATION, "the Fukui ions were asked for with '"// &
+                           trim(functional)//"' but this build has no libxc.")
+            return
+         end if
+         ! Spin-polarised, because both ions are doublets. See the note on this
+         ! routine: this is the whole reason the functional arrives by name.
+         call xc_context_create(mol, trim(functional), xc_ions, error, &
+                                level=grid_level, polarized=.true.)
+         if (error%has_error()) then
+            call error%add_context("Fukui indices: the ions' functional")
+            return
+         end if
+         ! A double hybrid's perturbative term needs an unrestricted MP2, which
+         ! the CPU path does not have. Refused rather than run, because running
+         ! it would not fail: the Kohn-Sham half is correct and unrestricted, so
+         ! the ions would come back converged and short by the PT2 term. IP and
+         ! EA are differences of total energies, so a term missing from two of
+         ! the three states lands directly in every descriptor here.
+         if (xc_ions%pt2_fraction /= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "'"//trim(functional)//"' is a double "// &
+                           "hybrid, and the Fukui ions are open shell. Its perturbative "// &
+                           "term needs an unrestricted MP2 the CPU path does not have, "// &
+                           "so the ions would converge with the Kohn-Sham part alone and "// &
+                           "the IP and EA would be wrong by that term. Use a functional "// &
+                           "without a perturbative term.")
+            return
+         end if
+         xc_arg => xc_ions
+         res%functional = trim(functional)
+      end if
+
       natm = mol%natm
       res%scheme = scheme
       res%energy_neutral = neutral_energy
@@ -125,7 +197,7 @@ contains
       ! The anion. One more electron, and a doublet because the neutral was
       ! closed shell.
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
-                           .false., anion, error)
+                           .false., anion, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -145,7 +217,7 @@ contains
 
       ! The cation.
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
-                           .false., cation, error)
+                           .false., cation, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
@@ -246,6 +318,18 @@ contains
 
       natm = size(res%f_plus)
       call logger%info("")
+      ! The method belongs in the header for the same reason the scheme does:
+      ! IP, EA and hardness are differences of total energies, so they are not
+      ! comparable across methods and a table that does not say which one it
+      ! used invites exactly that comparison.
+      if (allocated(res%functional)) then
+         if (len_trim(res%functional) > 0) then
+            call logger%info("  Fukui ions: unrestricted Kohn-Sham, "// &
+                             trim(res%functional))
+         else
+            call logger%info("  Fukui ions: unrestricted Hartree-Fock")
+         end if
+      end if
       call logger%info("  ==== Fukui indices ("//trim(res%scheme)//") "// &
                        "=================================")
       call logger%info("")
@@ -291,13 +375,43 @@ contains
       ! diffuse functions -- a function centred on one atom reaching over
       ! another gets charged to the wrong one.
       if (any_negative) then
-         call logger%warning("  some indices came out negative, which is the "// &
-                             "population analysis struggling rather than a site that "// &
-                             "repels charge")
+         call logger%warning("")
+         call logger%warning("  NEGATIVE INDICES ABOVE ARE SPURIOUS -- take them with a "// &
+                             "grain of salt.")
+         call logger%warning("")
+         call logger%warning("  f+ and f- are derivatives of a density with respect to "// &
+                             "electron count, so")
+         call logger%warning("  the exact quantities cannot be negative: no site "// &
+                             "releases charge when the")
+         call logger%warning("  molecule gains an electron. A negative value is an "// &
+                             "artefact of dividing a")
+         call logger%warning("  continuous density among atoms, not a chemical "// &
+                             "finding, and it appears")
+         call logger%warning("  where two states' charges are fitted independently and "// &
+                             "disagree by more")
+         call logger%warning("  than the electron being moved.")
+         call logger%warning("")
+         call logger%warning("  Read the RANKING, not the number: a site with a small "// &
+                             "negative index is")
+         call logger%warning("  unreactive in that channel, not anti-reactive. Do not "// &
+                             "quote the value,")
+         call logger%warning("  and do not build a further descriptor on it -- f0 and "// &
+                             "dual inherit the")
+         call logger%warning("  artefact from whichever index carried it.")
          if (trim(res%scheme) == "mulliken") then
-            call logger%warning("  Mulliken is especially prone to this; chelpg is "// &
-                                "the default for that reason")
+            call logger%warning("")
+            call logger%warning("  Mulliken is especially prone to this, being basis-set "// &
+                                "dependent; chelpg")
+            call logger%warning("  is the default for that reason and is worth rerunning "// &
+                                "with before")
+            call logger%warning("  concluding anything from this table.")
+         else
+            call logger%warning("")
+            call logger%warning("  A larger basis usually shrinks it. If it survives "// &
+                                "that, the atom")
+            call logger%warning("  simply carries little of this channel.")
          end if
+         call logger%warning("")
       end if
 
       ! The direct test rather than a guess from the basis-set name: if the

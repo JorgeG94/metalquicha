@@ -820,7 +820,7 @@ The driver stays ``"energy"``.
   .. code-block:: json
 
      "properties": {
-       "fukui": {"population": "chelpg"}
+       "fukui": {}
      }
 
   Condensed Fukui indices, by difference in the electron count: the molecule is
@@ -837,8 +837,15 @@ The driver stays ``"energy"``.
   the relaxation of every other orbital in response to the added charge -- which
   on a polar molecule is most of the answer.
 
-  ``population`` is required and chooses how the density difference is
-  condensed onto atoms:
+  Works with ``hf`` and with ``dft``. Under DFT the two ions are run as
+  unrestricted Kohn-Sham with the same functional as the neutral, so the three
+  energies are comparable and the ionisation potential and electron affinity
+  mean what they say. Double hybrids are refused: their perturbative term needs
+  an unrestricted MP2 the CPU path does not have, and running anyway would
+  return converged ions that are short by exactly that term.
+
+  ``population`` is optional and defaults to ``chelpg``. It chooses how the
+  density difference is condensed onto atoms:
 
   - ``chelpg`` -- charges fitted to the molecule's own electrostatic potential.
     The default choice, and the better behaved one.
@@ -846,9 +853,48 @@ The driver stays ``"energy"``.
     the literature used.** It divides the overlap between two atoms straight
     down the middle regardless of what the atoms are, so it is sensitive to the
     basis set in a way that has nothing to do with chemistry, and it produces
-    negative indices more readily. Negative values are reported rather than
-    hidden: they are the population analysis failing to divide the density
-    sensibly, not a site that repels electrons.
+    negative indices more readily. On formaldehyde it spreads ``f+`` as
+    0.27/0.28/0.23/0.23 over the four atoms, ranking nothing, where CHELPG puts
+    0.59 on the carbonyl carbon.
+
+  .. warning::
+
+     **Negative indices are spurious. Take them with a grain of salt.**
+
+     The exact Fukui function is a derivative of the density with respect to
+     electron count, so ``f+`` and ``f-`` cannot be negative: no site gives up
+     charge because the molecule gained an electron. A negative condensed value
+     is an artefact of dividing a continuous density among atoms -- the two
+     states are fitted independently, and they can disagree by more than the
+     one electron that moved between them.
+
+     They are printed rather than hidden, with a warning, because silently
+     clamping them would hide the fact that the partitioning struggled. Read
+     the *ranking* and not the number: a small negative index means the site is
+     unreactive in that channel, not that it repels charge. Do not quote the
+     value, and do not build anything further on it -- ``f0`` and the dual
+     descriptor inherit the artefact from whichever index carried it.
+
+     A larger basis usually shrinks it. If it survives that, the atom simply
+     carries very little of that channel. If you saw it under ``mulliken``,
+     rerun with ``chelpg`` before concluding anything. The CHELPG fitting grid
+     is not exposed as a deck setting, so it is not a knob available here.
+
+  **Use a finer integration grid than you would for the energy.** ``grid_level``
+  defaults to 3, which is right for a total energy but marginal here: the Fukui
+  descriptors are *differences* between three separately converged states, so
+  the quadrature error does not cancel the way it does within one SCF. On
+  formaldehyde in 6-31G, ``m06-l`` at level 3 gives an ionisation potential
+  2.7e-5 hartree away from the converged value; level 4 brings that to 4e-6 and
+  level 5 reaches it, with level 6 no different. **Level 4 or 5 is the
+  recommendation**, and it costs three grids rather than one because all three
+  states are integrated.
+
+  How much this matters depends on the functional rather than on its cost. The
+  LDA, GGA and hybrid functionals are already within about 1e-6 at level 3;
+  what moves are the meta-GGAs, which sample the kinetic-energy density and are
+  steeper on the grid -- ``m06-l`` is the most sensitive of the set -- and
+  ``wb97x``, whose range separation adds its own grid dependence.
 
   Two limits. Only a closed-shell neutral is accepted, so that both ions are
   doublets; anything else is refused rather than having its multiplicities

@@ -861,10 +861,14 @@ contains
             type(fukui_result_t) :: fukui
             type(error_t) :: fukui_error
 
+            ! The functional by NAME, not this routine's `xc`: that context
+            ! was built spin-unpolarised for the closed-shell neutral and the
+            ! ions are doublets. fukui_indices builds its own polarised one.
             call fukui_indices(mol, fragment%nelec, fragment%multiplicity, scf%density, &
                                scf%energy, settings%fukui_population, settings%max_iter, &
                                settings%energy_tol, settings%density_tol, fukui, &
-                               fukui_error)
+                               fukui_error, functional=trim(settings%functional), &
+                               grid_level=settings%grid_level)
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &
                                    fukui_error%get_message())

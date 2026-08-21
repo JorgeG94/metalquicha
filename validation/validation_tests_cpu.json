@@ -2077,6 +2077,14 @@
             "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
         },
         {
+            "name": "KS PBE with Fukui indices (chelpg default) H2O 6-31g grid 4 (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
+            "expected_energy": -76.298635406403,
+            "tolerance": 1e-07,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the CHELPG default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested."
+        },
+        {
             "name": "FMO2 water trimer 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
             "expected_energy": -227.9705411684,

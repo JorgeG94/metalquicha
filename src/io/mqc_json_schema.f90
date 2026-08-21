@@ -236,13 +236,17 @@ contains
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis
       !!
-      !! `population` is required rather than defaulted, because the object
-      !! being present is what asks for the analysis and because the scheme
-      !! changes the numbers: a choice that large should be written down in the
-      !! deck rather than inherited silently.
+      !! `population` defaults to CHELPG. It was required rather than
+      !! defaulted, on the argument that a choice which changes the numbers
+      !! should be written down rather than inherited -- but the two schemes
+      !! are not equal candidates. CHELPG fits the electrostatic potential and
+      !! is what a condensed Fukui index is normally reported from; Mulliken is
+      !! basis-set dependent to the point of changing which site ranks first.
+      !! Defaulting to the better one and naming the other is more useful than
+      !! refusing to choose, and the scheme is echoed in the report and the
+      !! JSON either way, so nothing is inherited silently.
       type(key_set_t) :: keys
       call allow(keys, "population")
-      call require(keys, "population")
    end function fukui_keys
 
    function bonding_analysis_keys() result(keys)
