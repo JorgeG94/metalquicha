@@ -1671,6 +1671,18 @@ contains
             " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
             " pairs, matrix free"
          call logger%info(trim(line))
+         ! What it is about to spend, before it spends any of it. At this size a
+         ! single iteration is minutes of integral passes, so a run that printed
+         ! only on completion would look indistinguishable from a hang.
+         write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
+            " systems in flight, ", 4*((n_sys + 11)/12), &
+            " integral passes per iteration, ", &
+            11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
+         call logger%info(trim(line))
+         write (line, "(A,ES8.1,A,I0,A)") "          beginning, residual target ", &
+            threshold, ", at most ", cycles, " iterations"
+         call logger%info(trim(line))
+         flush (output_unit)
          call clock%start()
       end if
 
@@ -1733,11 +1745,20 @@ contains
             rho_old(k) = rho(k)
          end do
 
-         if (talk .and. mod(it, 5) == 0) then
-            write (line, "(A,I0,A,I0,A,ES9.2)") "          iteration ", it, ", ", &
-               count(.not. done), " systems live, worst residual ", &
-               maxval(rnorm, mask=.not. done)
+         ! Every iteration, not every fifth: one of these is minutes at the
+         ! sizes this route exists for, and the useful thing to watch is whether
+         ! the residual is still falling. The estimate assumes the iterations
+         ! left cost what the ones behind cost, which is optimistic -- systems
+         ! drop out as they converge, so each pass gets cheaper -- and is
+         ! labelled as an estimate for that reason.
+         if (talk) then
+            worst = 0.0_dp
+            if (any(.not. done)) worst = maxval(rnorm, mask=.not. done)
+            write (line, "(A,I4,A,F9.1,A,I4,A,ES9.2)") "          iteration ", it, &
+               "   ", clock%get_elapsed_time(), " s in, ", count(.not. done), &
+               " systems live, worst residual ", worst
             call logger%info(trim(line))
+            flush (output_unit)
          end if
       end do
 
