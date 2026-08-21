@@ -2181,6 +2181,7 @@
             "input": "inputs/cpu/mqc/pcm/cpu_water_6-31g_pbe0_cpcm.json",
             "expected_energy": -76.313799988684,
             "tolerance": 1e-07,
+            "requires": "libxc",
             "type": "unfragmented",
             "reference_note": "PySCF RKS/PBE0 with pyscf.solvent.pcm C-PCM, same cavity as the Hartree-Fock cases, grid level 3 on both sides. Here for the combination rather than for either half: the solvent operator enters the Fock matrix alongside the exchange-correlation potential, and nothing else in the suite exercises both at once. The tolerance is 1e-7 rather than the global 1e-9, and the reason is measured rather than assumed: this same molecule, functional and basis WITHOUT any continuum differs from PySCF by 6.92e-9, and with the continuum by 6.96e-9. The continuum contributes 3.7e-11 of that. The residual is the quadrature grid -- both codes build a level-3 grid from the same tables and prune it differently -- so a tolerance tight enough to catch a PCM fault here would be reporting on the grid instead."
         },
