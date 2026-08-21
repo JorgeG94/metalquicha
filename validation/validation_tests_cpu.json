@@ -2170,6 +2170,21 @@
             "reference_note": "PySCF RHF with pyscf.solvent.pcm IEF-PCM, same cavity settings as the C-PCM case above. An anion on purpose: its dielectric energy is -0.1483 Hartree against water's -0.0057, and the D-matrix terms that separate IEF-PCM from C-PCM are worth 5.1e-5 Hartree here -- far above tolerance, so solving the wrong model cannot pass. mqc reproduces the reference to 5e-12; the global 1e-9 applies."
         },
         {
+            "name": "UHF IEF-PCM water cation 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/pcm/cpu_water_cation_6-31g_uhf_iefpcm.json",
+            "expected_energy": -75.727163666228,
+            "type": "unfragmented",
+            "reference_note": "PySCF UHF with pyscf.solvent.pcm IEF-PCM, same cavity as the restricted cases. The water cation doublet, because the two restricted cases above leave the unrestricted continuum untested: the solvent operator is built from the TOTAL density and added to both spin Fock matrices, so a version that fed it one spin or double-counted it would still converge and would still look ordinary. A non-degenerate open shell on purpose -- the OH radical's half-filled pi orients against the Lebedev grid and lands at 5e-7, which is the cavity discretisation rather than the SCF and would need a tolerance loose enough to hide real faults. mqc reproduces this to 1.3e-12; the global 1e-9 applies."
+        },
+        {
+            "name": "KS PBE0 C-PCM water 6-31g grid 3 (CPU)",
+            "input": "inputs/cpu/mqc/pcm/cpu_water_6-31g_pbe0_cpcm.json",
+            "expected_energy": -76.313799988684,
+            "tolerance": 1e-07,
+            "type": "unfragmented",
+            "reference_note": "PySCF RKS/PBE0 with pyscf.solvent.pcm C-PCM, same cavity as the Hartree-Fock cases, grid level 3 on both sides. Here for the combination rather than for either half: the solvent operator enters the Fock matrix alongside the exchange-correlation potential, and nothing else in the suite exercises both at once. The tolerance is 1e-7 rather than the global 1e-9, and the reason is measured rather than assumed: this same molecule, functional and basis WITHOUT any continuum differs from PySCF by 6.92e-9, and with the continuum by 6.96e-9. The continuum contributes 3.7e-11 of that. The residual is the quadrature grid -- both codes build a level-3 grid from the same tables and prune it differently -- so a tolerance tight enough to catch a PCM fault here would be reporting on the grid instead."
+        },
+        {
             "name": "FMO2 water trimer 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
             "expected_energy": -227.9705411684,

@@ -348,6 +348,14 @@ HAND_MAINTAINED = {
     # through bse_to_pyscf like every reference here.
     "cpu/mqc/pcm/cpu_water_sto-3g_cpcm.json",
     "cpu/mqc/pcm/cpu_hydroxide_6-31g_iefpcm.json",
+    # The unrestricted and Kohn-Sham continuum. The two restricted cases above
+    # do not cover them, and both are combinations rather than features: the
+    # solvent operator is built from the total density and added to BOTH spin
+    # Fock matrices, and it sits in the Fock matrix beside the
+    # exchange-correlation potential. Either could be wired wrong and still
+    # converge to a plausible number.
+    "cpu/mqc/pcm/cpu_water_cation_6-31g_uhf_iefpcm.json",
+    "cpu/mqc/pcm/cpu_water_6-31g_pbe0_cpcm.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
