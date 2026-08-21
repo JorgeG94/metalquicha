@@ -78,12 +78,23 @@ set(MQC_ARCH_FLAGS
     "DEFAULT"
     CACHE STRING "Architecture flags for Release builds; empty for portable")
 
+# The optimisation level a coverage build compiles at. -O0 is the safe default
+# -- every statement keeps its own line and gcov's attribution is exact -- and
+# it is also brutally slow on the numerics here: `mqc_quao` takes 12 s in a
+# release build and 704 s under -O0 coverage, which is most of a CI budget for
+# one test. -O1 keeps line attribution usable (gfortran does not yet fuse
+# statements across lines at that level) and is the setting to reach for when
+# the coverage job is timing out rather than dropping half the program from it.
+set(MQC_COVERAGE_OPT
+    "-O0"
+    CACHE STRING "Optimisation level for Coverage-mqc builds")
+
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(FLAGS_STANDARD "-ffree-line-length-none -fbacktrace")
   set(FLAGS_DEBUG "-ffpe-trap=invalid,zero,overflow -fcheck=all")
   set(FLAGS_RELEASE "-march=native")
   set(FLAGS_WARNINGS "-Wall -Wextra -Wpedantic")
-  set(FLAGS_COVERAGE "-O0 -g --coverage")
+  set(FLAGS_COVERAGE "${MQC_COVERAGE_OPT} -g --coverage")
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
   set(FLAGS_STANDARD "-traceback")
@@ -145,9 +156,15 @@ endif()
 # =============================================================================
 # Apply flags to CMake variables
 # =============================================================================
-set(CMAKE_Fortran_FLAGS
-    "${CMAKE_Fortran_FLAGS} ${FLAGS_STANDARD}"
-    PARENT_SCOPE)
+#
+# **Everything that adds to CMAKE_Fortran_FLAGS accumulates into this local
+# first, and the parent scope is written exactly once, at the end.** `set(...
+# PARENT_SCOPE)` does not touch the local variable, so two of them in a row
+# means the second reads the *unmodified* local and silently discards whatever
+# the first added. That is not hypothetical: the coverage build lost
+# `-ffree-line-length-none` this way and stopped being able to compile the
+# banner, whose box-drawing characters push those lines past 132 bytes.
+set(MQC_FORTRAN_FLAGS "${CMAKE_Fortran_FLAGS} ${FLAGS_STANDARD}")
 set(CMAKE_Fortran_FLAGS_DEBUG
     "${CMAKE_Fortran_FLAGS_DEBUG} ${FLAGS_DEBUG}"
     PARENT_SCOPE)
@@ -169,19 +186,19 @@ set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO
 option(MQC_ENABLE_WARNINGS "Enable compiler warnings" OFF)
 option(MQC_ENABLE_WERROR "Enable -Werror" OFF)
 if(MQC_ENABLE_WARNINGS)
-  set(CMAKE_Fortran_FLAGS
-      "${CMAKE_Fortran_FLAGS} ${FLAGS_WARNINGS}"
-      PARENT_SCOPE)
+  set(MQC_FORTRAN_FLAGS "${MQC_FORTRAN_FLAGS} ${FLAGS_WARNINGS}")
   if(MQC_ENABLE_WERROR)
-    set(CMAKE_Fortran_FLAGS
-        "${CMAKE_Fortran_FLAGS} -Werror"
-        PARENT_SCOPE)
+    set(MQC_FORTRAN_FLAGS "${MQC_FORTRAN_FLAGS} -Werror")
   endif()
 endif()
 
-# Coverage build type
+# Coverage build type. `Coverage-mqc` is not one of CMake's own build types, so
+# nothing else supplies flags for it -- these are all of them, and they have to
+# sit alongside the standard set rather than replace it.
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
-  set(CMAKE_Fortran_FLAGS
-      "${CMAKE_Fortran_FLAGS} ${FLAGS_COVERAGE}"
-      PARENT_SCOPE)
+  set(MQC_FORTRAN_FLAGS "${MQC_FORTRAN_FLAGS} ${FLAGS_COVERAGE}")
 endif()
+
+set(CMAKE_Fortran_FLAGS
+    "${MQC_FORTRAN_FLAGS}"
+    PARENT_SCOPE)

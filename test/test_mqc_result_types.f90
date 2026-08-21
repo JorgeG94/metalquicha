@@ -1,6 +1,7 @@
 module test_mqc_result_types
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_result_types, only: mp2_energy_t, cc_energy_t, energy_t, calculation_result_t
+   use mqc_result_types, only: mp2_energy_t, cc_energy_t, energy_t, calculation_result_t, &
+                               mbe_result_t
    use pic_types, only: dp
    use pic_test_helpers, only: is_equal
    implicit none
@@ -24,7 +25,10 @@ contains
                   new_unittest("energy_reset", test_energy_reset), &
                   new_unittest("result_initialization", test_result_init), &
                   new_unittest("result_destroy", test_result_destroy), &
-                  new_unittest("result_reset", test_result_reset) &
+                  new_unittest("result_reset", test_result_reset), &
+                  new_unittest("mp2_stability_warns_on_positive", test_mp2_stability), &
+                  new_unittest("cc_stability_warns_on_positive", test_cc_stability), &
+                  new_unittest("mbe_result_allocates_derivatives", test_mbe_allocate) &
                   ]
    end subroutine collect_mqc_result_types_tests
 
@@ -256,6 +260,102 @@ contains
       call check(error, is_equal(result%energy%total(), 0.0_dp), &
                  "Total energy should be zero after reset")
    end subroutine test_result_reset
+
+   subroutine test_mp2_stability(error)
+      !! A positive MP2 correlation component means something has gone wrong --
+      !! the second-order correction is negative-definite for a closed-shell
+      !! reference -- so the components are checked and the run warns. What is
+      !! asserted here is that asking does not disturb them: a check that
+      !! silently corrected the sign would hide the very thing it exists to
+      !! report.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mp2_energy_t) :: energy
+
+      energy%ss = 0.01_dp      ! both wrong on purpose
+      energy%os = 0.02_dp
+      call energy%check_stability()
+      call check(error, abs(energy%ss - 0.01_dp) < 1.0e-14_dp, &
+                 "the stability check changed the same-spin component")
+      if (allocated(error)) return
+      call check(error, abs(energy%os - 0.02_dp) < 1.0e-14_dp, &
+                 "the stability check changed the opposite-spin component")
+      if (allocated(error)) return
+
+      ! And the ordinary case runs clean.
+      energy%ss = -0.01_dp
+      energy%os = -0.03_dp
+      call energy%check_stability()
+      call check(error, abs(energy%total() + 0.04_dp) < 1.0e-14_dp, &
+                 "a healthy MP2 energy did not survive its own check")
+   end subroutine test_mp2_stability
+
+   subroutine test_cc_stability(error)
+      !! The same for coupled cluster, where all three components are checked
+      !! and the triples are the one that most often comes back positive when
+      !! an index is wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(cc_energy_t) :: energy
+
+      energy%singles = 0.001_dp
+      energy%doubles = 0.002_dp
+      energy%triples = 0.003_dp
+      call energy%check_stability()
+      call check(error, abs(energy%singles - 0.001_dp) < 1.0e-14_dp .and. &
+                 abs(energy%doubles - 0.002_dp) < 1.0e-14_dp .and. &
+                 abs(energy%triples - 0.003_dp) < 1.0e-14_dp, &
+                 "the stability check altered the coupled-cluster components")
+      if (allocated(error)) return
+
+      energy%singles = 0.0_dp
+      energy%doubles = -0.05_dp
+      energy%triples = -0.001_dp
+      call energy%check_stability()
+      call check(error, abs(energy%total() + 0.051_dp) < 1.0e-14_dp, &
+                 "a healthy coupled-cluster energy did not survive its own check")
+   end subroutine test_cc_stability
+
+   subroutine test_mbe_allocate(error)
+      !! The expansion's own result allocates its derivatives by atom count,
+      !! and both are shaped from the same number: a gradient is (3, N) and a
+      !! Hessian (3N, 3N). Allocating twice must not leave the first size
+      !! behind, which is what the deallocate inside each is for -- a
+      !! reallocation onto a different molecule is exactly what a fragmented
+      !! run does, once per fragment.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mbe_result_t) :: result
+
+      call result%allocate_gradient(3)
+      call check(error, allocated(result%gradient), "no gradient was allocated")
+      if (allocated(error)) return
+      call check(error, size(result%gradient, 1) == 3 .and. size(result%gradient, 2) == 3, &
+                 "the gradient is not (3, natoms)")
+      if (allocated(error)) return
+      call check(error, all(abs(result%gradient) < 1.0e-14_dp), &
+                 "the gradient was not zeroed")
+      if (allocated(error)) return
+
+      call result%allocate_hessian(3)
+      call check(error, allocated(result%hessian), "no Hessian was allocated")
+      if (allocated(error)) return
+      call check(error, size(result%hessian, 1) == 9 .and. size(result%hessian, 2) == 9, &
+                 "the Hessian is not (3N, 3N)")
+      if (allocated(error)) return
+
+      ! Reallocate smaller: the previous shape must be gone, not merely unused.
+      call result%allocate_gradient(2)
+      call result%allocate_hessian(2)
+      call check(error, size(result%gradient, 2) == 2, "the gradient kept its old size")
+      if (allocated(error)) return
+      call check(error, size(result%hessian, 1) == 6, "the Hessian kept its old size")
+      if (allocated(error)) return
+
+      call result%destroy()
+      call check(error,.not. allocated(result%gradient) .and. &
+                 .not. allocated(result%hessian), "destroy left arrays behind")
+   end subroutine test_mbe_allocate
 
 end module test_mqc_result_types
 

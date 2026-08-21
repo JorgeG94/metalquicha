@@ -141,18 +141,25 @@ option(MQC_ENABLE_LIBCINT
 option(MQC_ENABLE_LIBXC
        "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
 
-# A coverage build measures this project's own Fortran, not its dependencies.
-# libxc will not even configure under a build type it does not recognise: its
-# autocmake safeguard allows only Debug/Release/RelWithDebInfo and aborts on
-# "Coverage-mqc", so a coverage configure that fetched it dies before a line of
-# mqc is compiled. Drop both CPU backends for coverage -- which is also how
-# coverage ran before they became default-on. A normal (non-cache) set so it
-# shadows the option here and in the subdirectories without rewriting the cache,
-# leaving a later reconfigure of the same tree under another build type intact.
+# A coverage build measures this project's own Fortran, not its dependencies --
+# and `backends/libcint/` is this project's own Fortran. It used to be dropped
+# here alongside libxc, which meant every line of the CPU backend -- the SCF,
+# MP2, coupled cluster, MCSCF, SAPT, EFP, the analyses -- was invisible to
+# coverage rather than uncovered by it. Half the program was not being measured,
+# and a number that does not include it is not this program's coverage.
+#
+# libxc is a different case and stays off: its autocmake safeguard allows only
+# Debug/Release/RelWithDebInfo and aborts on "Coverage-mqc", so a coverage
+# configure that fetched it dies before a line of mqc is compiled. That costs
+# the Kohn-Sham paths, which the build already refuses without libxc anyway.
+#
+# A normal (non-cache) set so it shadows the option here and in the
+# subdirectories without rewriting the cache, leaving a later reconfigure of the
+# same tree under another build type intact.
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   set(MQC_ENABLE_LIBXC OFF)
-  set(MQC_ENABLE_LIBCINT OFF)
-  message(STATUS "Coverage-mqc build: libxc and libcint disabled")
+  message(STATUS "Coverage-mqc build: libxc disabled (it refuses this build "
+                 "type); libcint measured as part of the project")
 endif()
 
 # Off by default: DL-FIND is LGPL-3 and this program is MIT, so linking it is a
@@ -1039,6 +1046,17 @@ install(
 print_summary()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
+  # Both manifests, every time. A case naming a backend this build does not have
+  # is skipped by the runner rather than failed -- that is what the `requires`
+  # markers are for -- so the xTB manifest costs nothing without tblite and the
+  # CPU one costs nothing without libcint. Running only the manifest someone
+  # remembered to enable is how half the program stopped being measured in the
+  # first place.
+  #
+  # The CPU manifest is where the driver, the fragmentation schemes and the JSON
+  # writer get exercised: those are reached by *running* the program rather than
+  # by calling into it, so no unit test touches them, and the coverage report
+  # showed them near zero until this ran.
   add_custom_target(
     coverage
     COMMAND ${CMAKE_CTEST_COMMAND} -R "mqc" --output-on-failure
@@ -1046,11 +1064,40 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
             run_validation.py
     COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
             run_validation.py --mpi --np 2
+    COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
+            run_validation.py --manifest validation_tests_cpu.json
+    # And the Python interface, which is the only thing that drives the
+    # program through its C entry points. `src/parallel` is 0% without this
+    # and it is not untested code: `mqc_bcast` and `mqc_bcast_system` are used
+    # by `mqc_session` and by nothing else, so no deck reaches them however
+    # many ranks it runs on. The examples assert against PySCF references and
+    # skip whatever this build cannot do, so they are a test rather than a
+    # warm-up lap.
+    COMMAND
+      ${CMAKE_COMMAND} -E env MQC_LIBRARY=$<TARGET_FILE:mqc_shared>
+      PYTHONPATH=${CMAKE_SOURCE_DIR}/python python3
+      ${CMAKE_SOURCE_DIR}/python/examples/backends.py
+    COMMAND
+      ${CMAKE_COMMAND} -E env MQC_LIBRARY=$<TARGET_FILE:mqc_shared>
+      PYTHONPATH=${CMAKE_SOURCE_DIR}/python python3
+      ${CMAKE_SOURCE_DIR}/python/examples/methods.py
     COMMAND ${CMAKE_COMMAND} -E remove -f coverage.info
-    COMMAND lcov --directory . --capture --output-file coverage.info
+    # `negative` because gcov's counters are not atomic and this program is
+    # threaded: two threads incrementing the same counter can leave it below
+    # zero, which lcov 1.x warned about and lcov 2.x -- what the runner
+    # installs -- refuses outright, failing the whole target over a count
+    # rather than over coverage. The alternative is -fprofile-update=atomic,
+    # which costs time in a build that is already fifty times slower than
+    # release. A raced line was still executed, so the report is not the
+    # thing in doubt here.
+    COMMAND lcov --directory . --capture --ignore-errors negative --output-file
+            coverage.info
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'
             '*/build/*' '*/validation/*' --output-file coverage_filtered.info
     COMMAND genhtml coverage_filtered.info --output-directory coverage_report
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating code coverage report")
+  # The examples load the shared library through ctypes, so it has to exist
+  # before the target runs rather than being built by whoever remembered.
+  add_dependencies(coverage mqc_shared)
 endif()

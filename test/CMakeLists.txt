@@ -46,6 +46,22 @@ addtest(mqc_ecp_reader)
 addtest(mqc_fraglist)
 addtest(mqc_bond_perception)
 addtest(mqc_fingerprint)
+
+# The output document itself: every consumer of this program reads that file,
+# and nothing checked its shape. Reached only by whole calculations before,
+# which assert on energies rather than on which keys exist and what units they
+# are in.
+addtest(mqc_json_writer)
+
+# What every backend is handed. `reset` restates the defaults the type already
+# declares, so the two are a pair that can drift; the solvation summary is the
+# only place a run says which continuum it used.
+addtest(mqc_method_config)
+
+# What each expansion context refuses to run without. A refusal is not a number,
+# so no validation deck can express one: the case guarded against is a caller
+# assembling a context and missing a field, not a deck missing a geometry.
+addtest(mqc_mbe_contexts)
 addtest(mqc_checkpoint)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
@@ -229,6 +245,43 @@ if(MQC_ENABLE_LIBCINT)
   # stops the general build being deleted as redundant.
   addtest(mqc_libcint_direct)
   target_link_libraries(test_mqc_libcint_direct PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Atomic charges, against the arithmetic every population analysis owes: both
+  # schemes sum to the molecular charge, every basis function belongs to exactly
+  # one atom, and the CHELPG grid stays outside the molecule it fits. The
+  # numbers themselves are compared against other programs in validation/; none
+  # of that catches a constraint row assembled wrongly, which still fits.
+  addtest(mqc_libcint_charges)
+  target_link_libraries(test_mqc_libcint_charges PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The multipole matrices every distributed multipole and every localization
+  # centroid is built from. Origin shifts, symmetry, and the redundancy in the
+  # full Cartesian tensor -- the three things a transposed component breaks
+  # while leaving the reported dipole intact.
+  addtest(mqc_libcint_multipole)
+  target_link_libraries(test_mqc_libcint_multipole
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Foster-Boys localization, against what a rotation among occupied orbitals
+  # cannot change: the density, orthonormality, and the direction its own
+  # functional moves.
+  addtest(mqc_libcint_localize)
+  target_link_libraries(test_mqc_libcint_localize PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Distributed multipoles, against the molecular moments they are a
+  # redistribution of: the site charges must account for every electron, and the
+  # site charges and dipoles together must reproduce the molecular dipole.
+  # Everything an effective fragment potential's electrostatics rests on.
+  addtest(mqc_libcint_dma)
+  target_link_libraries(test_mqc_libcint_dma PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Carrying a density between basis sets, which is what the projection guess
+  # does one rung at a time. Checked against the properties that make the result
+  # a density rather than a matrix of the right shape -- idempotency, the
+  # electron count, and the identity when both bases are the same.
+  addtest(mqc_libcint_projection)
+  target_link_libraries(test_mqc_libcint_projection
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 endif()
 
 # Only meaningful with the cuEST backend compiled in.

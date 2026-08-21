@@ -416,8 +416,13 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
     # test would drop both when only one was gated.
     runnable, skipped_tests = [], []
     for t in tests:
+        # One name or several: a DL-FIND optimization of an xTB molecule needs
+        # both backends, and gating it on either one alone runs it on a build
+        # that cannot finish it. Written as a list in the manifest and read as
+        # one here, with a bare string still meaning what it always did.
         needs = t.get("requires")
-        if needs and not features.get(needs, False):
+        needed = [needs] if isinstance(needs, str) else list(needs or [])
+        if any(not features.get(name, False) for name in needed):
             skipped_tests.append(t)
         else:
             runnable.append(t)
@@ -428,8 +433,10 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
     errors = []
 
     for test in skipped_tests:
+        needs = test["requires"]
+        names = needs if isinstance(needs, str) else ", ".join(needs)
         print(f"{Colors.YELLOW}skipped{Colors.RESET}: {test['name']} "
-              f"(needs {test['requires']}, this build has none)")
+              f"(needs {names}, this build does not have it)")
     if skipped_tests:
         print()
 
