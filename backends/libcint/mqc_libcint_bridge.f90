@@ -348,7 +348,7 @@ contains
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
-                                 aux_basis, guess)
+                                 aux_basis, guess, energy_tol, density_tol)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of whether
@@ -372,18 +372,21 @@ contains
       character(len=*), intent(in), optional :: guess
          !! Initial-guess name from the deck, forwarded to the SCF. Absent leaves
          !! `make_efp_potential` on its "auto" (SAD) default.
+      real(dp), intent(in), optional :: energy_tol, density_tol
+         !! SCF thresholds, present only when the deck named them. Absent leaves
+         !! `make_efp_potential` on the tighter pair a fragment potential needs.
 
       type(efp_potential_t) :: pot
 
-      if (present(aux_basis)) then
-         call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, pot, error, charge=charge, &
-                                 verbose=verbose, aux_basis=aux_basis, guess=guess)
-      else
-         call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, pot, error, charge=charge, &
-                                 verbose=verbose, guess=guess)
-      end if
+      ! One call, not one per combination of present arguments. An absent optional
+      ! dummy passed on as an actual argument arrives absent at the other end, which
+      ! is what `charge`, `verbose` and `guess` were already relying on; `aux_basis`
+      ! was branched around for no reason it needed, and four optionals would have
+      ! meant sixteen branches to keep saying the same thing.
+      call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
+                              basis_name, name, pot, error, charge=charge, &
+                              verbose=verbose, aux_basis=aux_basis, guess=guess, &
+                              energy_tol=energy_tol, density_tol=density_tol)
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
       call pot%destroy()

@@ -300,6 +300,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "maxiter")
       call allow(keys, "tolerance")
+      call allow(keys, "density_tolerance")
       call allow(keys, "unrestricted")
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")

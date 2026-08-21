@@ -18,7 +18,8 @@ module test_mqc_json_reader
                                METHOD_TYPE_MCSCF
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
-                                       DEFAULT_PRESSURE
+                                       DEFAULT_PRESSURE, DEFAULT_SCF_CONV, &
+                                       DEFAULT_SCF_DENSITY_CONV
    use mqc_error, only: error_t
    use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
                               BACKEND_LIBCINT, method_runs_on_cuest
@@ -45,6 +46,7 @@ contains
                   new_unittest("logger_level", test_log_level), &
                   new_unittest("hessian_settings", test_hessian), &
                   new_unittest("allow_crap_scf", test_allow_crap_scf), &
+                  new_unittest("scf_tolerances_record_being_named", test_scf_tolerances), &
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
@@ -330,6 +332,73 @@ contains
       if (allocated(error)) return
       call check(error, config%allow_crap_scf, "allow_crap_scf was not read")
    end subroutine test_allow_crap_scf
+
+   subroutine test_scf_tolerances(error)
+      !! Both SCF thresholds, and whether the deck named them
+      !!
+      !! The values alone are not enough here, which is why the flags exist. A
+      !! caller with a stricter default of its own -- MAKEFP converges to
+      !! 1e-10/1e-8 because the multipoles and the response come off that
+      !! density -- has to be able to tell "the deck asked for 1e-6" from "the
+      !! deck said nothing and 1e-6 is what the field was initialised to". Both
+      !! arrive as 1e-6. If these flags ever come back true for a silent deck,
+      !! MAKEFP quietly loses three digits of density; if they stay false for a
+      !! deck that named a tolerance, the user is ignored, which is the bug this
+      !! replaced -- a deck asking for 1e-6 watched the SCF grind past 37 steps.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 40}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_tolerance_set, &
+                 "a deck that never mentions scf.tolerance must not look like it did")
+      if (allocated(error)) return
+      call check(error,.not. config%scf_density_tolerance_set, &
+                 "a deck that never mentions scf.density_tolerance must not look like it did")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_tolerance, DEFAULT_SCF_CONV), &
+                 "the silent deck must still carry the shared default")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_density_tolerance, DEFAULT_SCF_DENSITY_CONV), &
+                 "the silent deck must still carry the shared density default")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"tolerance": 1.0e-8, "density_tolerance": 1.0e-7}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_tolerance, 1.0e-8_dp), &
+                 "scf.tolerance was not read")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_density_tolerance, 1.0e-7_dp), &
+                 "scf.density_tolerance was not read")
+      if (allocated(error)) return
+      call check(error, config%scf_tolerance_set, &
+                 "scf.tolerance was read but not recorded as named")
+      if (allocated(error)) return
+      call check(error, config%scf_density_tolerance_set, &
+                 "scf.density_tolerance was read but not recorded as named")
+      if (allocated(error)) return
+
+      ! Naming the default is not the same request as saying nothing, and this
+      ! is the case that a bare `optional_real` cannot tell apart.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"tolerance": 1.0e-6}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_tolerance_set, &
+                 "asking for exactly the default is still asking")
+      if (allocated(error)) return
+      call check(error,.not. config%scf_density_tolerance_set, &
+                 "one key named must not set the other's flag")
+   end subroutine test_scf_tolerances
 
    subroutine test_hessian(error)
       type(error_type), allocatable, intent(out) :: error
