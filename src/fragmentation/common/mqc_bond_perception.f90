@@ -33,7 +33,22 @@ module mqc_bond_perception
    public :: auto_monomers         !! Partition into covalently connected molecules
    public :: connected_components  !! Which covalently connected group each atom is in
    public :: monomer_of            !! Which monomer holds a 0-based atom
+   public :: find_severed_bonds    !! Every bond a given partition cuts
+   public :: severed_bond_t
    public :: DEFAULT_BOND_TOLERANCE
+
+   !> One bond that a partition cuts, and enough about it to decide what to do
+   type :: severed_bond_t
+      !! Atom indices are 1-based here, unlike `bond_t`, because the callers
+      !! that want this -- fragment assembly and the frozen-orbital schemes --
+      !! index the system directly rather than through a deck.
+      integer :: atom_a = 0, atom_b = 0
+      integer :: frag_a = 0, frag_b = 0
+      logical :: in_ring = .false.
+         !! The two atoms are still connected with this bond removed, so the
+         !! partition cuts the same ring at least twice. Recorded rather than
+         !! refused here: whether that is fatal belongs to whoever asked.
+   end type severed_bond_t
 
    real(dp), parameter :: DEFAULT_BOND_TOLERANCE = 1.2_dp
       !! Slack on the radius sum. 1.2 is the common choice: loose enough for a
@@ -179,6 +194,107 @@ contains
          end if
       end do
    end function is_declared
+
+   subroutine find_severed_bonds(sys_geom, owner, cuts, n_cuts, tolerance)
+      !! Every bond whose two atoms were put in different fragments
+      !!
+      !! `refuse_severed_bonds` in the FMO backend asks a coarser question --
+      !! does any covalent molecule span two fragments -- and answers it with
+      !! one example, which is what a refusal needs. This is for the caller that
+      !! is going to *do* something about each cut and therefore needs all of
+      !! them, with the fragments named.
+      !!
+      !! The partition comes in as `owner` rather than being read off the
+      !! geometry, because the caller doing the fragmenting is not always the
+      !! one that built `sys_geom%monomers`.
+      !!
+      !! **Bond order is not reported and cannot be.** Perception here is
+      !! distance-based and calls everything single; a cut double bond looks
+      !! exactly like a cut short single one. That question is answerable, but
+      !! only with a wave function -- localize the bond region and count the
+      !! orbitals sitting on it -- so it belongs where that calculation happens
+      !! and not here, where the only honest answer would be a guess.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: owner(:)
+      type(severed_bond_t), allocatable, intent(out) :: cuts(:)
+      integer, intent(out) :: n_cuts
+      real(dp), intent(in), optional :: tolerance
+
+      real(dp) :: tol
+      integer :: iatom, jatom, count
+
+      tol = DEFAULT_BOND_TOLERANCE
+      if (present(tolerance)) tol = tolerance
+
+      ! Counted before allocating, for the reason `perceive_bonds` gives.
+      count = 0
+      do iatom = 1, sys_geom%total_atoms
+         do jatom = iatom + 1, sys_geom%total_atoms
+            if (owner(iatom) == owner(jatom)) cycle
+            if (bonded(sys_geom, iatom, jatom, tol)) count = count + 1
+         end do
+      end do
+
+      n_cuts = count
+      allocate (cuts(max(count, 1)))
+      count = 0
+      do iatom = 1, sys_geom%total_atoms
+         do jatom = iatom + 1, sys_geom%total_atoms
+            if (owner(iatom) == owner(jatom)) cycle
+            if (.not. bonded(sys_geom, iatom, jatom, tol)) cycle
+            count = count + 1
+            cuts(count)%atom_a = iatom
+            cuts(count)%atom_b = jatom
+            cuts(count)%frag_a = owner(iatom)
+            cuts(count)%frag_b = owner(jatom)
+            cuts(count)%in_ring = still_connected(sys_geom, tol, iatom, jatom)
+         end do
+      end do
+   end subroutine find_severed_bonds
+
+   function still_connected(sys_geom, tol, a, b) result(reachable)
+      !! Is there a path from `a` to `b` that does not use the bond `a`-`b`?
+      !!
+      !! Which is what makes that bond part of a ring. Breadth-first over the
+      !! perceived bonds, recomputing `bonded` rather than materialising the
+      !! graph: this runs once per cut and a cut count in the tens is already a
+      !! strange partition, so the graph would cost more to build than to walk.
+      type(system_geometry_t), intent(in) :: sys_geom
+      real(dp), intent(in) :: tol
+      integer, intent(in) :: a, b
+      logical :: reachable
+
+      logical, allocatable :: seen(:)
+      integer, allocatable :: queue(:)
+      integer :: head, tail, here, next
+
+      reachable = .false.
+      allocate (seen(sys_geom%total_atoms), source=.false.)
+      allocate (queue(sys_geom%total_atoms))
+
+      seen(a) = .true.
+      queue(1) = a
+      head = 1
+      tail = 1
+
+      do while (head <= tail)
+         here = queue(head)
+         head = head + 1
+         do next = 1, sys_geom%total_atoms
+            if (seen(next)) cycle
+            if (.not. bonded(sys_geom, here, next, tol)) cycle
+            ! The bond under test is the one edge the walk may not use.
+            if ((here == a .and. next == b) .or. (here == b .and. next == a)) cycle
+            if (next == b) then
+               reachable = .true.
+               return
+            end if
+            seen(next) = .true.
+            tail = tail + 1
+            queue(tail) = next
+         end do
+      end do
+   end function still_connected
 
    subroutine connected_components(sys_geom, component, n_components, tolerance)
       !! Label each atom with the covalently connected group it belongs to

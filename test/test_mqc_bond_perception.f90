@@ -9,7 +9,8 @@ module test_mqc_bond_perception
    !! the carbon chain the second.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &
-                                  auto_monomers, DEFAULT_BOND_TOLERANCE
+                                  auto_monomers, DEFAULT_BOND_TOLERANCE, &
+                                  find_severed_bonds, severed_bond_t
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
    use pic_types, only: dp
@@ -31,7 +32,10 @@ contains
                   new_unittest("declared_either_way_round_counts", test_audit_order), &
                   new_unittest("element_without_a_radius_bonds_to_nothing", test_no_radius), &
                   new_unittest("auto_monomers_splits_a_cluster", test_auto_cluster), &
-                  new_unittest("auto_monomers_refuses_one_molecule", test_auto_refuses) &
+                  new_unittest("auto_monomers_refuses_one_molecule", test_auto_refuses), &
+                  new_unittest("severed_finds_the_one_bond_ethane_cuts", test_severed_ethane), &
+                  new_unittest("severed_marks_a_ring_cut_as_a_ring", test_severed_ring), &
+                  new_unittest("severed_ignores_a_hydrogen_bond", test_severed_dimer) &
                   ]
    end subroutine collect_mqc_bond_perception_tests
 
@@ -253,6 +257,107 @@ contains
    end subroutine test_auto_refuses
 
    ! ---- geometries ----------------------------------------------------------
+
+   subroutine test_severed_ethane(error)
+      !! One bond, named, and not in a ring
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer :: n_cuts
+
+      call ethane(sys)
+      call find_severed_bonds(sys, [1, 1, 1, 1, 2, 2, 2, 2], cuts, n_cuts)
+
+      call check(error, n_cuts, 1, "ethane split at the C-C cuts exactly one bond")
+      if (allocated(error)) return
+      call check(error, cuts(1)%atom_a == 1 .and. cuts(1)%atom_b == 5, &
+                 "the cut was not reported between the two carbons")
+      if (allocated(error)) return
+      call check(error, cuts(1)%frag_a == 1 .and. cuts(1)%frag_b == 2, &
+                 "the fragments either side of the cut are wrong")
+      if (allocated(error)) return
+      call check(error,.not. cuts(1)%in_ring, "an acyclic bond was called a ring bond")
+   end subroutine test_severed_ethane
+
+   subroutine test_severed_ring(error)
+      !! Cyclopropane into three CH2: three cuts, and every one of them cyclic
+      !!
+      !! This is the partition the electron-count check cannot see, and the
+      !! reason the finder reports `in_ring` at all -- the caller needs to
+      !! refuse it for a reason it can name, rather than discovering later that
+      !! two fragments are joined in two places.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer :: n_cuts
+
+      call cyclopropane(sys)
+      call find_severed_bonds(sys, [1, 1, 1, 2, 2, 2, 3, 3, 3], cuts, n_cuts)
+
+      call check(error, n_cuts, 3, "a three-way ring split cuts three bonds")
+      if (allocated(error)) return
+      call check(error, all(cuts(1:n_cuts)%in_ring), &
+                 "a bond in a three-membered ring was not recognised as cyclic")
+   end subroutine test_severed_ring
+
+   subroutine test_severed_dimer(error)
+      !! Partitioning a cluster on molecules cuts nothing
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer :: n_cuts
+
+      call water_dimer(sys)
+      call find_severed_bonds(sys, [1, 1, 1, 2, 2, 2], cuts, n_cuts)
+
+      call check(error, n_cuts, 0, &
+                 "a hydrogen bond between the monomers was reported as a cut bond")
+   end subroutine test_severed_dimer
+
+   subroutine ethane(sys)
+      !! Staggered ethane, the C-C along z
+      type(system_geometry_t), intent(out) :: sys
+      real(dp) :: xyz(3, 8)
+
+      xyz = reshape([0.000_dp, 0.000_dp, 0.768_dp, &
+                     -1.019_dp, 0.000_dp, 1.157_dp, &
+                     0.510_dp, 0.883_dp, 1.157_dp, &
+                     0.510_dp, -0.883_dp, 1.157_dp, &
+                     0.000_dp, 0.000_dp, -0.768_dp, &
+                     1.019_dp, 0.000_dp, -1.157_dp, &
+                     -0.510_dp, -0.883_dp, -1.157_dp, &
+                     -0.510_dp, 0.883_dp, -1.157_dp], [3, 8])
+
+      sys%total_atoms = 8
+      sys%n_monomers = 0
+      allocate (sys%element_numbers(8))
+      sys%element_numbers = [6, 1, 1, 1, 6, 1, 1, 1]
+      allocate (sys%coordinates(3, 8))
+      sys%coordinates = to_bohr(xyz)
+   end subroutine ethane
+
+   subroutine cyclopropane(sys)
+      !! Three CH2 groups on a ring in the xy plane
+      type(system_geometry_t), intent(out) :: sys
+      real(dp) :: xyz(3, 9)
+
+      xyz = reshape([0.8718_dp, 0.0000_dp, 0.0000_dp, &
+                     1.3818_dp, 0.0000_dp, 0.9500_dp, &
+                     1.3818_dp, 0.0000_dp, -0.9500_dp, &
+                     -0.4359_dp, 0.7550_dp, 0.0000_dp, &
+                     -0.6909_dp, 1.1967_dp, 0.9500_dp, &
+                     -0.6909_dp, 1.1967_dp, -0.9500_dp, &
+                     -0.4359_dp, -0.7550_dp, 0.0000_dp, &
+                     -0.6909_dp, -1.1967_dp, 0.9500_dp, &
+                     -0.6909_dp, -1.1967_dp, -0.9500_dp], [3, 9])
+
+      sys%total_atoms = 9
+      sys%n_monomers = 0
+      allocate (sys%element_numbers(9))
+      sys%element_numbers = [6, 1, 1, 6, 1, 1, 6, 1, 1]
+      allocate (sys%coordinates(3, 9))
+      sys%coordinates = to_bohr(xyz)
+   end subroutine cyclopropane
 
    subroutine water_dimer(sys)
       !! A near-linear dimer: O-H ~0.96, and the O...H contact ~1.9 Angstrom
