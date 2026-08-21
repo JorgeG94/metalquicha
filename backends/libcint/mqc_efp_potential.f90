@@ -293,8 +293,21 @@ contains
          return
       end if
 
+      ! **Cartesian, because a `.efp` is a GAMESS file.** The Basis Set Exchange
+      ! is not consistent about Pople sets -- 6-31G* declares its d Cartesian
+      ! while 6-311++G(3df,3pd) declares its d and f spherical -- and
+      ! `build_libcint_molecule` follows the declaration unless told otherwise.
+      ! For every other driver that is the right default and the caller decides.
+      ! Here there is nothing to decide: the potential this writes is read back
+      ! by GAMESS, whose ISPHER default is -1, and the AO ordering map in
+      ! `from_gamess_ao_order` is a Cartesian map. Reading the basis spherically
+      ! would emit a potential whose function count the reader disagrees with.
+      !
+      ! This is also what lets an f basis work at all. The ordering map handles
+      ! Cartesian s, p, d and f and refuses g; declared spherically, a set with
+      ! f shells was refused by `check_angular_form` before it got that far.
       call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
-                                  basis_name, mol, error)
+                                  basis_name, mol, error, force_cartesian=.true.)
       if (error%has_error()) return
       pot%nao = mol%nao
 
