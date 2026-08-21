@@ -22,6 +22,7 @@ module mqc_libcint_rhf
    use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
                              build_density_spin, spin_contamination, GWH_K
    use mqc_diis, only: diis_state_t
+   use mqc_fock_projector, only: fock_projector_t
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                                  direct_stats_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
@@ -319,7 +320,7 @@ contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
-                              guess, guess_density, xc, h_extra, pcm)
+                              guess, guess_density, xc, h_extra, pcm, projector)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -395,6 +396,21 @@ contains
          !! into the Fock matrix; `result%energy` then includes the dielectric
          !! energy. Present-but-disabled is the same as absent, so a caller can
          !! pass its context unconditionally.
+      type(fock_projector_t), intent(in), optional :: projector
+         !! A constraint on the Fock matrix, applied after every build.
+         !!
+         !! Unlike `h_extra` this is not an operator added to `H`: it is a
+         !! linear map on `F` that forces it block diagonal in a basis the
+         !! caller chose, so it cannot be folded into the core Hamiltonian and
+         !! has to be reapplied each iteration. What it is for is freezing
+         !! orbitals -- see `mqc_fock_projector` -- and this routine is
+         !! deliberately told only that its Fock matrix is constrained, not why.
+         !!
+         !! Applied before the DIIS error and extrapolation, so that everything
+         !! downstream sees the constrained matrix and not two different ones.
+         !! Not applied to the final build below, which is the energy's Fock:
+         !! the constraint decides which determinant comes out, and the energy
+         !! of that determinant is an expectation value of the real Hamiltonian.
 
       integer :: diis_size, guess_kind
       logical :: use_in_core
@@ -582,6 +598,11 @@ contains
             call clk%lap(STAGE_PCM)
          end if
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
+
+         if (present(projector)) then
+            call projector%apply(fock, error)
+            if (error%has_error()) return
+         end if
 
          ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
          ! when F and D commute, which is what convergence means, so it is the
