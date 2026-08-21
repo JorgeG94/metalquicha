@@ -202,14 +202,14 @@ has no CI at all, so there is nothing to choose between.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
@@ -1373,17 +1373,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_energy~2'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_gradient~2'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_hessian~2'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1416,7 +1416,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_orbitals"></span>
+              <span class="anchor" id="variable-avas_orbitals~2"></span>
               character(len=MAX_ORBITAL_LABEL_LEN),
             </td>
               <td>public,</td>
@@ -1433,7 +1433,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_threshold"></span>
+              <span class="anchor" id="variable-avas_threshold~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1450,7 +1450,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~2"></span>
+              <span class="anchor" id="variable-basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1502,7 +1502,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~2"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1519,7 +1519,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~2"></span>
+              <span class="anchor" id="variable-diis_size~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1536,7 +1536,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1553,7 +1553,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_valence"></span>
+              <span class="anchor" id="variable-full_valence~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1570,7 +1570,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imaginary_shift"></span>
+              <span class="anchor" id="variable-imaginary_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1587,7 +1587,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ipea_shift"></span>
+              <span class="anchor" id="variable-ipea_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1604,7 +1604,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -1621,7 +1621,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_macro_iter"></span>
+              <span class="anchor" id="variable-max_macro_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1638,7 +1638,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_micro_iter"></span>
+              <span class="anchor" id="variable-max_micro_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1656,7 +1656,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_electrons"></span>
+              <span class="anchor" id="variable-n_active_electrons~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1673,7 +1673,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals"></span>
+              <span class="anchor" id="variable-n_active_orbitals~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1690,7 +1690,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_inactive_orbitals"></span>
+              <span class="anchor" id="variable-n_inactive_orbitals~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1708,7 +1708,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states"></span>
+              <span class="anchor" id="variable-n_states~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1725,7 +1725,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-optimize_orbitals"></span>
+              <span class="anchor" id="variable-optimize_orbitals~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1777,7 +1777,7 @@ exact orbital Hessian, and there is nothing to select between.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_max_electrons"></span>
+              <span class="anchor" id="variable-ormas_max_electrons~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1794,7 +1794,7 @@ exact orbital Hessian, and there is nothing to select between.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_min_electrons"></span>
+              <span class="anchor" id="variable-ormas_min_electrons~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1811,7 +1811,7 @@ exact orbital Hessian, and there is nothing to select between.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_subspaces"></span>
+              <span class="anchor" id="variable-ormas_subspaces~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1829,7 +1829,7 @@ active space.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~2"></span>
+              <span class="anchor" id="variable-pcm~4"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -1847,7 +1847,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~2"></span>
+              <span class="anchor" id="variable-properties~4"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -1864,7 +1864,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pt2_type"></span>
+              <span class="anchor" id="variable-pt2_type~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1881,7 +1881,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~2"></span>
+              <span class="anchor" id="variable-spherical~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1898,7 +1898,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-state_weights"></span>
+              <span class="anchor" id="variable-state_weights~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1910,12 +1910,12 @@ request arrives; the CPU path has no cavity.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>Weights for state averaging (must sum to 1)</p><a href="../type/mcscf_options_t.html#variable-state_weights" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Weights for state averaging (must sum to 1)</p><a href="../type/mcscf_options_t.html#variable-state_weights~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -1932,7 +1932,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_pt2"></span>
+              <span class="anchor" id="variable-use_pt2~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1950,7 +1950,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose~7"></span>
               logical,
             </td>
               <td>public</td>
@@ -2000,7 +2000,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~54"></span>
+              <span class="anchor" id="variable-this~98"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2015,7 +2015,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~17"></span>
+              <span class="anchor" id="variable-fragment~15"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2030,7 +2030,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~25"></span>
+              <span class="anchor" id="variable-result~33"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2076,7 +2076,7 @@ say which displacement had wandered. Better to refuse.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~55"></span>
+              <span class="anchor" id="variable-this~99"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2091,7 +2091,7 @@ say which displacement had wandered. Better to refuse.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~18"></span>
+              <span class="anchor" id="variable-fragment~16"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2106,7 +2106,7 @@ say which displacement had wandered. Better to refuse.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~26"></span>
+              <span class="anchor" id="variable-result~34"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2146,7 +2146,7 @@ say which displacement had wandered. Better to refuse.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~56"></span>
+              <span class="anchor" id="variable-this~100"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2161,7 +2161,7 @@ say which displacement had wandered. Better to refuse.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~19"></span>
+              <span class="anchor" id="variable-fragment~17"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2176,7 +2176,7 @@ say which displacement had wandered. Better to refuse.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~27"></span>
+              <span class="anchor" id="variable-result~35"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2216,7 +2216,7 @@ say which displacement had wandered. Better to refuse.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~20"></span>
+              <span class="anchor" id="variable-fragment~18"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2231,7 +2231,7 @@ say which displacement had wandered. Better to refuse.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~28"></span>
+              <span class="anchor" id="variable-result~36"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2289,7 +2289,7 @@ say which displacement had wandered. Better to refuse.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-20 07:46 +0000             </p>
+ on 2026-08-21 08:30 +0000             </p>
           </div>
         </div>
         <br>
