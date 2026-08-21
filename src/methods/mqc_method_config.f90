@@ -7,12 +7,15 @@ module mqc_method_config
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_config_types, only: guess_step_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
+   use mqc_calculation_defaults, only: DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
+                                       DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO
    implicit none
    private
 
    public :: method_config_t
    public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
    public :: correlation_config_t, cc_config_t, f12_config_t
+   public :: efp_config_t
    public :: pcm_config_t
    public :: properties_config_t
 
@@ -79,6 +82,34 @@ module mqc_method_config
          !! from an auxiliary basis being present -- that name carries a
          !! default, so inferring would mean every calculation silently fitted.
    end type scf_config_t
+
+   !============================================================================
+   ! EFP Configuration (MAKEFP)
+   !============================================================================
+   type :: efp_config_t
+      !! What `keywords.efp` carries into a MAKEFP run
+      !!
+      !! Its own group rather than more keys under `scf` because none of it is an
+      !! SCF setting: the SCF a potential runs is already configured by
+      !! `keywords.scf.tolerance` and `keywords.scf.density_tolerance`, which reach
+      !! it and must keep meaning only that. What is here belongs to the stages
+      !! after the SCF -- the response solve and the screening fit -- and those are
+      !! where a MAKEFP run spends its time.
+      real(dp) :: dynamic_tolerance = DEFAULT_DYNAMIC_TOL
+         !! Residual target for the frequency-dependent response solve.
+         !!
+         !! The one setting in this group that changes the numbers written rather
+         !! than the route taken to them. The dynamic polarizabilities, and every
+         !! dispersion energy computed from them downstream, are converged to
+         !! whatever this says and no further.
+      integer :: dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
+         !! Iterations that solve gets per system before it declines to converge.
+      integer :: response = EFP_RESPONSE_AUTO
+         !! Build the response operator, never build it, or decide on size.
+      real(dp) :: vdw_scale = DEFAULT_VDW_SCALE
+         !! Innermost layer of the charge-penetration screening grid, as a
+         !! fraction of a van der Waals radius. GAMESS's `VDWSCL`.
+   end type efp_config_t
 
    !============================================================================
    ! XTB Configuration (GFN1, GFN2)
@@ -386,6 +417,8 @@ module mqc_method_config
          !! Coupled-cluster specific settings (CCSD, CCSD(T), etc.)
       type(f12_config_t) :: f12
          !! F12 explicitly correlated settings
+      type(efp_config_t) :: efp
+         !! MAKEFP settings: the response solve and the screening grid
 
    contains
       procedure :: reset => config_reset

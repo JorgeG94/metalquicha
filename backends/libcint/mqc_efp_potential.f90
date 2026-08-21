@@ -134,7 +134,10 @@ module mqc_efp_potential
       integer :: n_occ = 0        !! Including the core, which `CTFOK` needs
       integer :: n_lmo = 0        !! Valence localized orbitals
       integer :: multiplicity = 1
-      real(dp) :: vdwscl = DEFAULT_VDW_SCALE  !! The screening grid's van der Waals scale
+      real(dp) :: vdwscl = DEFAULT_VDW_SCALE
+         !! The screening grid's van der Waals scale, and now the grid's as well
+         !! as the header's -- `fit_screening` is handed this rather than reading
+         !! the default for itself.
       character(len=8), allocatable :: labels(:)      !! `A01O`, `BO21`, ...
       real(dp), allocatable :: points(:, :)           !! (3, n_points), Bohr
       real(dp), allocatable :: mass(:)                !! amu, zero at a midpoint
@@ -211,7 +214,8 @@ contains
    subroutine make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge, n_core, &
                                  vdwscl, verbose, aux_basis, guess, &
-                                 energy_tol, density_tol)
+                                 energy_tol, density_tol, dynamic_tol, &
+                                 dynamic_maxiter, response)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what. The SCF gives the density
@@ -236,6 +240,12 @@ contains
          !! frozen core, which is what MAKEFP uses: its polarizable points and
          !! its exchange-repulsion orbitals are valence only.
       real(dp), intent(in), optional :: vdwscl
+         !! `keywords.efp.vdw_scale`. Where the innermost layer of the screening
+         !! grid sits, as a fraction of a van der Waals radius, and what the
+         !! written `SCREEN`/`SCREEN2` headers report having used. Those were two
+         !! separate numbers that happened to be equal until this could be set:
+         !! the header took this and the grid took the module default, so a
+         !! potential built with any other value described a grid it had not used.
       logical, intent(in), optional :: verbose
       character(len=*), intent(in), optional :: guess
          !! Initial-guess name from the deck (`keywords.guess.type`). Default is
@@ -258,6 +268,19 @@ contains
          !! `keywords.scf.tolerance` / `keywords.scf.density_tolerance`; absent,
          !! the defaults just below stand. See the comment at the SCF call for why
          !! they are not the shared 1e-6.
+      real(dp), intent(in), optional :: dynamic_tol
+         !! `keywords.efp.dynamic_tolerance`. What the frequency-dependent response
+         !! solve converges its residual to. Alone among the EFP keys this one moves
+         !! the numbers in the file rather than the route to them: the dynamic
+         !! polarizabilities, and every dispersion energy taken from them, are only
+         !! as converged as this says.
+      integer, intent(in), optional :: dynamic_maxiter
+         !! `keywords.efp.dynamic_maxiter`. Iterations that solve gets before it
+         !! reports a failure to converge.
+      integer, intent(in), optional :: response
+         !! `keywords.efp.response`, as one of the `EFP_RESPONSE_*` codes: build the
+         !! response operator, never build it, or let the size rule decide. Passed
+         !! through to `dynamic_polarizability`, which is where the choice is made.
 
       type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
@@ -495,10 +518,14 @@ contains
       ! thirteen digits.
       if (present(aux_basis)) then
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
-                                      shared_hessian, error, progress=talk, aux=aux)
+                                      shared_hessian, error, progress=talk, aux=aux, &
+                                      max_iter=dynamic_maxiter, tol=dynamic_tol, &
+                                      route=response)
       else
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
-                                      shared_hessian, error, progress=talk)
+                                      shared_hessian, error, progress=talk, &
+                                      max_iter=dynamic_maxiter, tol=dynamic_tol, &
+                                      route=response)
       end if
       if (error%has_error()) then
          call mol%destroy()
@@ -574,7 +601,8 @@ contains
       ! an identical one. Building it is nearly the whole cost: the grid runs to
       ! tens of thousands of points and each needs an integral over every shell pair.
       call fit_screening(mol, scf%density, dma, atomic_numbers, SCREEN_EXPONENTIAL, &
-                         alpha, error, target=screen_target, residual=rms_exp)
+                         alpha, error, target=screen_target, residual=rms_exp, &
+                         vdw_scale=pot%vdwscl)
       if (error%has_error()) then
          call screen_target%destroy()
          call mol%destroy()
@@ -584,7 +612,8 @@ contains
       pot%screen2 = alpha
       deallocate (alpha)
       call fit_screening(mol, scf%density, dma, atomic_numbers, SCREEN_GAUSSIAN, &
-                         alpha, error, target=screen_target, residual=rms_gauss)
+                         alpha, error, target=screen_target, residual=rms_gauss, &
+                         vdw_scale=pot%vdwscl)
       call screen_target%destroy()
       if (error%has_error()) then
          call mol%destroy()
@@ -606,7 +635,8 @@ contains
    end subroutine make_efp_potential
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
-                                      pot, hessian, error, progress, aux)
+                                      pot, hessian, error, progress, aux, &
+                                      max_iter, tol, route)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -639,6 +669,13 @@ contains
       logical, intent(in), optional :: progress
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Fit the Hessian rather than build it exactly; passed straight through.
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+      integer, intent(in), optional :: route
+         !! The three `keywords.efp` settings the response solve reads, passed
+         !! straight through. Absent here means absent there, which leaves the
+         !! solver on its own defaults -- so a deck with no `efp` block reaches it
+         !! exactly as it did before there was one.
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
       real(dp), allocatable :: both(:, :, :), all_blocks(:, :, :, :)
@@ -698,17 +735,16 @@ contains
       both(:, :, 1:3) = dip
       both(:, :, 4:n_both) = buck
 
-      if (present(aux)) then
-         call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
-                                        pot%n_occ, pot%frequencies, both, both, &
-                                        all_blocks, centroids, error, n_core=core, &
-                                        hessian=hessian, progress=progress, aux=aux)
-      else
-         call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
-                                        pot%n_occ, pot%frequencies, both, both, &
-                                        all_blocks, centroids, error, n_core=core, &
-                                        hessian=hessian, progress=progress)
-      end if
+      ! One call rather than one per combination of present arguments: `aux` here is
+      ! an optional dummy, not a local, and an absent one passed on as an actual
+      ! argument arrives absent at the other end -- which is what `n_core` and
+      ! `progress` in this same call were already relying on. The branch was never
+      ! needed, and with four optionals it would have been sixteen of them.
+      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
+                                     pot%n_occ, pot%frequencies, both, both, &
+                                     all_blocks, centroids, error, n_core=core, &
+                                     hessian=hessian, progress=progress, aux=aux, &
+                                     max_iter=max_iter, tol=tol, route=route)
       if (error%has_error()) return
       deallocate (both)
 

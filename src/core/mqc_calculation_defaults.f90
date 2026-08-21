@@ -53,18 +53,63 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_OPT_PRINT_LEVEL = -1
 
    ! =========================================================================
-   ! XTB
+   ! EFP / MAKEFP
    ! =========================================================================
    !> Innermost layer of the EFP screening grid, as a fraction of a van der
    !> Waals radius. GAMESS's `VDWSCL`.
    !>
    !> One name for what used to be `VDW_SCALE` in the screening grid and
-   !> `vdwscl` on the potential writer. Note that they are still only *equal*,
-   !> not connected: the writer reports its own copy in the output header and
-   !> the grid uses this default regardless, so overriding the writer's value
-   !> changes the header without changing the grid.
+   !> `vdwscl` on the potential writer, and now one number as well: the grid
+   !> takes the scale the potential was built with, so the `VDWSCL` the SCREEN
+   !> header reports is the one the fit was made against. They were only
+   !> *equal* before, which was fine while nobody could change either -- and
+   !> not fine the moment `keywords.efp.vdw_scale` existed, because it would
+   !> have moved the header and left the grid where it was.
    real(dp), parameter, public :: DEFAULT_VDW_SCALE = 0.7_dp
 
+   !> What the frequency-dependent response solve converges its residual to,
+   !> relative to the right-hand side, when a deck does not name a tolerance.
+   !>
+   !> **The largest cheap lever on that solve.** Every iteration is four passes
+   !> over the integrals, so the iteration count is the cost and this sets the
+   !> count. The EFMO literature runs the equivalent CPHF and TDHF solves at
+   !> `5e-5` and reports the resulting error in the total interaction energy at
+   !> about `3e-6` Hartree -- Sattasathuchana et al., JCTC 20, 2445 (2024),
+   !> Tables 2 and 3, where loosening from `1e-7` to `5e-5` cut their adenine
+   !> wall time from 39.1 to 17.2 minutes.
+   !>
+   !> Left at `1e-7` all the same. That measurement is of their code and their
+   !> accumulation, and what a potential built here does to an interaction
+   !> energy still has not been measured. `keywords.efp.dynamic_tolerance` is
+   !> how that measurement gets made without a rebuild, and it is the one EFP
+   !> key that changes the numbers a potential reports rather than only how
+   !> they are arrived at.
+   !>
+   !> Here rather than beside the solver so that the default a deck inherits
+   !> and the default the solver falls back on are the same constant.
+   real(dp), parameter, public :: DEFAULT_DYNAMIC_TOL = 1.0e-7_dp
+
+   !> Iterations that solve gets before it gives up, per system.
+   integer, parameter, public :: DEFAULT_DYNAMIC_MAXITER = 200
+
+   !> How the frequency-dependent response is obtained: `keywords.efp.response`.
+   !>
+   !> `auto` is the rule the code followed before there was a keyword -- build
+   !> `(A+B)` and `(A-B)` and factorise them, unless three `n_ov^2` matrices
+   !> would pass `DENSE_OPERATOR_LIMIT`, and iterate matrix-free when they
+   !> would. The two forcing values exist because that crossover is a statement
+   !> about memory and not about wall clock, and the two routes could not be
+   !> compared from a deck at all: `dense` builds the operator however large it
+   !> is, `matrix_free` never builds it however small. They solve the same
+   !> equations, so a small molecule run both ways prices the iterative route
+   !> against an exact reference.
+   integer, parameter, public :: EFP_RESPONSE_AUTO = 0
+   integer, parameter, public :: EFP_RESPONSE_DENSE = 1
+   integer, parameter, public :: EFP_RESPONSE_MATRIX_FREE = 2
+
+   ! =========================================================================
+   ! XTB
+   ! =========================================================================
    real(dp), parameter, public :: DEFAULT_XTB_ACCURACY = 0.01_dp
    integer, parameter, public :: DEFAULT_CPCM_NANG = 110
    real(dp), parameter, public :: DEFAULT_CPCM_RSCALE = 1.0_dp

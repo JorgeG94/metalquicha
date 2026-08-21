@@ -19,7 +19,10 @@ module test_mqc_json_reader
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_PRESSURE, DEFAULT_SCF_CONV, &
-                                       DEFAULT_SCF_DENSITY_CONV
+                                       DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
+                                       DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
+                                       EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
+                                       EFP_RESPONSE_MATRIX_FREE
    use mqc_error, only: error_t
    use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
                               BACKEND_LIBCINT, method_runs_on_cuest
@@ -47,6 +50,7 @@ contains
                   new_unittest("hessian_settings", test_hessian), &
                   new_unittest("allow_crap_scf", test_allow_crap_scf), &
                   new_unittest("scf_tolerances_record_being_named", test_scf_tolerances), &
+                  new_unittest("efp_keywords", test_efp_keywords), &
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
@@ -400,6 +404,84 @@ contains
       call check(error,.not. config%scf_density_tolerance_set, &
                  "one key named must not set the other's flag")
    end subroutine test_scf_tolerances
+
+   subroutine test_efp_keywords(error)
+      !! `keywords.efp`: the silent deck, the deck that names all four, the typo
+      !!
+      !! The first case is the one that matters. Everything in this group is a
+      !! number the MAKEFP path used to hold as a literal, and the whole of the
+      !! change is that a deck can now name it -- so a deck that names none of
+      !! them has to arrive carrying exactly what the solver would have used on
+      !! its own. That is why these defaults are the constants themselves and not
+      !! copies of their values: a copy stays right until someone moves the
+      !! original, and then a silent deck starts overriding it with the old
+      !! number, which is invisible from anywhere.
+      !!
+      !! The third case pins a refusal. `response` picks between two routes to the
+      !! same equations, and a deck asking for one is usually about to time it; a
+      !! misspelling that fell back to "auto" would produce a number the user
+      !! would read as belonging to the route they asked for.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "MakeFP", &
+                      '"scf": {"maxiter": 40}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, close_enough(config%efp_dynamic_tolerance, DEFAULT_DYNAMIC_TOL), &
+                 "a deck with no efp block must carry the solver's own tolerance")
+      if (allocated(error)) return
+      call check(error, config%efp_dynamic_maxiter == DEFAULT_DYNAMIC_MAXITER, &
+                 "a deck with no efp block must carry the solver's own iteration cap")
+      if (allocated(error)) return
+      call check(error, config%efp_response == EFP_RESPONSE_AUTO, &
+                 "a deck with no efp block must leave the route to the size rule")
+      if (allocated(error)) return
+      call check(error, close_enough(config%efp_vdw_scale, DEFAULT_VDW_SCALE), &
+                 "a deck with no efp block must carry the screening grid's own scale")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "MakeFP", &
+                      '"efp": {"dynamic_tolerance": 5.0e-5, "dynamic_maxiter": 40, '// &
+                      '"response": "matrix_free", "vdw_scale": 0.8}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, close_enough(config%efp_dynamic_tolerance, 5.0e-5_dp), &
+                 "efp.dynamic_tolerance was not read")
+      if (allocated(error)) return
+      call check(error, config%efp_dynamic_maxiter == 40, &
+                 "efp.dynamic_maxiter was not read")
+      if (allocated(error)) return
+      call check(error, config%efp_response == EFP_RESPONSE_MATRIX_FREE, &
+                 "efp.response was not read")
+      if (allocated(error)) return
+      call check(error, close_enough(config%efp_vdw_scale, 0.8_dp), &
+                 "efp.vdw_scale was not read")
+      if (allocated(error)) return
+
+      ! The other two spellings, since only one of the three can be the default.
+      call write_deck('"method": "hf", "basis": "6-31g"', "MakeFP", &
+                      '"efp": {"response": "Dense"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%efp_response == EFP_RESPONSE_DENSE, &
+                 "efp.response 'Dense' was not read, or was read case-sensitively")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "MakeFP", &
+                      '"efp": {"response": "matrix-free"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown efp.response must be refused, not resolved to auto")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "matrix_free") > 0, &
+                 "the refusal must name the spellings that would have worked: "// &
+                 parse_error%get_message())
+   end subroutine test_efp_keywords
 
    subroutine test_hessian(error)
       type(error_type), allocatable, intent(out) :: error
