@@ -32,6 +32,7 @@ module mqc_libcint_bridge
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
@@ -448,12 +449,18 @@ contains
       energy = res%energy
    end subroutine run_libcint_fmo
 
-   subroutine run_libcint_hf(settings, fragment, result, want_gradient)
+   subroutine run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       !! Closed-shell HF for one fragment, on the CPU
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in), optional :: want_gradient
+      logical, intent(in), optional :: want_hessian
+         !! Ask for the analytic Hessian. **Not a promise that one comes back.**
+         !! The conditions it needs are known here and not by the caller, so a
+         !! request this routine cannot honour leaves `result%has_hessian`
+         !! false and sets no error -- the caller is expected to fall back to
+         !! finite differences, which is a correct answer rather than a failure.
 
       ! `aux` and `xc` are targets because the gradient takes both as optional
       ! arguments, and a disassociated pointer is how "this SCF fitted nothing"
@@ -466,7 +473,7 @@ contains
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size, guess_kind
-      logical :: unrestricted, do_gradient
+      logical :: unrestricted, do_gradient, do_hessian
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
       ! argument, so the SCF calls below need no branching on which guess ran.
@@ -485,6 +492,8 @@ contains
 
       do_gradient = .false.
       if (present(want_gradient)) do_gradient = want_gradient
+      do_hessian = .false.
+      if (present(want_hessian)) do_hessian = want_hessian
 
       ! Coupled cluster stops here: its gradient needs the Lambda equations,
       ! which do not exist on this side at all. MP2's does exist, and is taken
@@ -1003,6 +1012,52 @@ contains
             call logger%info(trim(line))
          end if
       end if
+
+      ! ---- the analytic Hessian, where it applies ---------------------------
+      !
+      ! Restricted Hartree-Fock over exact integrals and nothing else. Every
+      ! other case here reaches this same line and every one of them must fall
+      ! through: an unrestricted reference has two densities where `rhf_hessian`
+      ! assumes one carrying its factor of two; a fitted SCF converged a
+      ! different energy from the one these derivatives belong to; a functional
+      ! adds an exchange-correlation second derivative that does not exist on
+      ! this side; and a correlated method's Hessian needs its own response
+      ! entirely. None of those would fail loudly -- each would return a
+      ! plausible, converged, wrong matrix -- so the guard is a list of
+      ! positives rather than a list of refusals.
+      !
+      ! Hydrogen caps are excluded for a different reason: the shapes match and
+      ! the numbers would be right, but a capped fragment's second derivatives
+      ! have to be redistributed onto the heavy atoms the caps replaced, and
+      ! that is checked for the finite-difference path and not for this one.
+      ! Falling back leaves a fragmented Hessian exactly as it was.
+      if (do_hessian .and. .not. unrestricted .and. .not. kohn_sham &
+          .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
+          .and. .not. settings%run_cc .and. fragment%n_caps == 0) then
+         block
+            real(dp), allocatable :: hess4(:, :, :, :)
+            type(timer_type) :: hess_clock
+
+            call logger%info("  computing the analytic Hessian")
+            call hess_clock%start()
+            call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
+                             scf%orbital_energies, scf%n_occupied, hess4, error)
+            if (error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
+               result%has_error = .true.
+               call aux%destroy()
+               call mol%destroy()
+               return
+            end if
+
+            call hessian_to_matrix(hess4, result%hessian)
+            result%has_hessian = .true.
+            deallocate (hess4)
+            write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
+            call logger%info(trim(line))
+         end block
+      end if
+
       call aux%destroy()
 
       if (settings%run_mp2) then

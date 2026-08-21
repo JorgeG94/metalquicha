@@ -119,12 +119,16 @@ contains
       call hf_run(this, fragment, result, want_gradient=.false.)
    end subroutine hf_calc_energy
 
-   subroutine hf_run(this, fragment, result, want_gradient)
+   subroutine hf_run(this, fragment, result, want_gradient, want_hessian)
       !! Run a density-fitted RHF calculation through cuEST
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in) :: want_gradient
+      logical, intent(in), optional :: want_hessian
+         !! Only the CPU backend has an analytic Hessian, and only for some of
+         !! what reaches it. Passed along rather than decided here: which cases
+         !! qualify is a fact about that backend.
 
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
@@ -199,12 +203,12 @@ contains
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
       case (BACKEND_LIBCINT)
-         call run_libcint_hf(settings, fragment, result, want_gradient)
+         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
 #ifdef MQC_WITH_CUEST
          call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
-         call run_libcint_hf(settings, fragment, result, want_gradient)
+         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
 #endif
       end select
    end subroutine hf_run
@@ -219,11 +223,33 @@ contains
    end subroutine hf_calc_gradient
 
    subroutine hf_calc_hessian(this, fragment, result)
-      !! Hessian by central differences of the analytic gradients
+      !! The analytic Hessian where there is one, central differences otherwise
+      !!
+      !! **The backend decides, not this routine.** Whether an analytic Hessian
+      !! applies depends on things the backend knows and this does not -- what
+      !! the SCF actually fitted, whether it converged restricted, whether a
+      !! functional was built. So the request goes down and the answer comes
+      !! back as `has_hessian`: true means it was computed, false with no error
+      !! means it was declined, and finite differences take over.
+      !!
+      !! That is deliberately not the pattern the rest of this file uses. A
+      !! backend that cannot honour a *gradient* request refuses loudly,
+      !! because there is no other way to get one and a silent substitution
+      !! would report a provenance that was not true. A Hessian has a second
+      !! way to get one that is correct and merely slower, so declining is not
+      !! a failure and should not read as one.
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
+      call hf_run(this, fragment, result, want_gradient=.true., want_hessian=.true.)
+      if (result%has_error) return
+      if (result%has_hessian) return
+
+      ! Declined. Nothing computed above is reusable -- the finite-difference
+      ! path runs its own reference point -- so this starts over rather than
+      ! trying to keep the SCF that just ran.
+      call result%destroy()
       call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose)
    end subroutine hf_calc_hessian
 
