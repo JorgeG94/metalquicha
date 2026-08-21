@@ -21,7 +21,7 @@
             "tolerance": 1e-10
         },
         "dft": {
-            "grid_level": 3
+            "grid_level": 4
         }
     },
     "system": {

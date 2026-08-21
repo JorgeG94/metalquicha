@@ -407,10 +407,9 @@ contains
             call logger%warning("  concluding anything from this table.")
          else
             call logger%warning("")
-            call logger%warning("  A larger basis, or a finer CHELPG grid, usually "// &
-                                "shrinks it. If it")
-            call logger%warning("  survives both, the atom simply carries little of "// &
-                                "this channel.")
+            call logger%warning("  A larger basis usually shrinks it. If it survives "// &
+                                "that, the atom")
+            call logger%warning("  simply carries little of this channel.")
          end if
          call logger%warning("")
       end if
