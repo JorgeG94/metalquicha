@@ -6,8 +6,11 @@ module test_mqc_afo_orbital
    use mqc_physical_fragment, only: system_geometry_t, to_bohr, to_angstrom
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
    use mqc_libcint_afo, only: afo_model_t, afo_options_t, build_afo_model, &
-                              bond_hybrid, BOND_ORBITAL_REACH
+                              bond_hybrid, BOND_ORBITAL_REACH, &
+                              afo_hybrid_t, build_group_frozen
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, atom_ao_blocks
+   use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
+   use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    implicit none
 
    !> The model SCF converges to 1e-10 and the localization to its own sweep
@@ -32,7 +35,11 @@ contains
                   new_unittest("cores_sit_at_half_the_bond_and_are_excluded", test_cores), &
                   new_unittest("hybrid_is_normalised_on_its_own_atom", test_normalised), &
                   new_unittest("hybrid_points_along_the_bond", test_points), &
-                  new_unittest("hybrid_rotates_with_the_system", test_rotates) &
+                  new_unittest("hybrid_rotates_with_the_system", test_rotates), &
+                  new_unittest("frozen_columns_land_on_their_own_atom", test_place), &
+                  new_unittest("frozen_puts_the_occupied_columns_first", test_order), &
+                  new_unittest("frozen_refuses_a_hybrid_from_another_basis", test_wrong_basis), &
+                  new_unittest("a_frozen_hybrid_comes_out_of_the_scf_empty", test_end_to_end) &
                   ]
    end subroutine collect_mqc_afo_orbital
 
@@ -212,6 +219,171 @@ contains
       call check(error, maxval(abs(h1(:P_FIRST - 1) - phase*h0(:P_FIRST - 1))) < TOL, &
                  "the hybrid's s coefficients changed under a rotation")
    end subroutine test_rotates
+
+   subroutine test_end_to_end(error)
+      !! Model system to hybrid to constrained SCF, and the orbital is empty
+      !!
+      !! Everything built for AFO, composed: solve a model, take the orbital on
+      !! the cut bond, place it in another molecule's basis, orthonormalise it
+      !! into a frozen basis, constrain a Fock matrix with it and solve. The
+      !! assertion is physical rather than structural -- an orbital frozen as
+      !! virtual has to come back with no electrons in it.
+      !!
+      !! Ethane stands in for a fragment here, so the hybrid is frozen in the
+      !! molecule it came from. That makes the check sharp: the C-C hybrid is a
+      !! large part of an occupied bond, so it is well populated unless the
+      !! constraint actually removed it. The unconstrained population is
+      !! measured in the same test rather than assumed, so the comparison is
+      !! against this molecule and not against a remembered number.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(afo_model_t) :: model
+      type(libcint_molecule_t) :: mol
+      type(afo_hybrid_t) :: hybrids(1)
+      type(fock_projector_t) :: proj
+      type(rhf_result_t) :: bare, held
+      real(dp), allocatable :: h0(:), d0(:), frozen(:, :), basis(:, :), s(:, :), sh(:)
+      integer :: n_occ, n_mo
+
+      call hybrid_of(identity(), h0, d0, model, error, err)
+      if (allocated(error)) return
+
+      call ethane_molecule(mol, err)
+      hybrids(1)%coeff = h0
+      call build_group_frozen(mol, [model%bda_local], [.false.], hybrids, frozen, n_occ, err)
+      call check(error,.not. err%has_error(), "placing the hybrid failed")
+      if (allocated(error)) return
+
+      call mol%overlap(s)
+      call build_frozen_basis(frozen, 0, s, basis, n_mo, err)
+      call check(error,.not. err%has_error(), "building the frozen basis failed")
+      if (allocated(error)) return
+
+      call proj%init(basis, s, 0, 1, 1.0e3_dp, err)
+      call check(error,.not. err%has_error(), "the projector rejected the basis")
+      if (allocated(error)) return
+
+      call run_libcint_rhf(mol, 18, 100, 1.0e-10_dp, 1.0e-8_dp, .false., bare, err)
+      call run_libcint_rhf(mol, 18, 100, 1.0e-10_dp, 1.0e-8_dp, .false., held, err, &
+                           projector=proj)
+      call check(error,.not. err%has_error(), "the constrained SCF failed")
+      if (allocated(error)) return
+      call check(error, held%converged, "the constrained SCF did not converge")
+      if (allocated(error)) return
+
+      ! `n = h^T S D S h` is the number of electrons in `h`, which is two for an
+      ! occupied orbital and zero for an empty one.
+      sh = matmul(s, frozen(:, 1))
+      call check(error, dot_product(sh, matmul(bare%density, sh)) > 1.0_dp, &
+                 "the hybrid is not populated even without the constraint, so this "// &
+                 "test would pass for the wrong reason")
+      if (allocated(error)) return
+      call check(error, dot_product(sh, matmul(held%density, sh)) < 1.0e-8_dp, &
+                 "the frozen virtual still holds electrons")
+   end subroutine test_end_to_end
+
+   subroutine ethane_molecule(mol, err)
+      !! Ethane in STO-3G: five functions on each carbon, one on each hydrogen
+      type(libcint_molecule_t), intent(out) :: mol
+      type(error_t), intent(inout) :: err
+      type(system_geometry_t) :: sys
+      character(len=2) :: sym(8)
+      integer :: i
+
+      call ethane(sys)
+      do i = 1, 8
+         if (sys%element_numbers(i) == 6) then
+            sym(i) = "C "
+         else
+            sym(i) = "H "
+         end if
+      end do
+      call build_libcint_molecule(sys%element_numbers, sym, sys%coordinates, "sto-3g", &
+                                  mol, err)
+   end subroutine ethane_molecule
+
+   subroutine test_place(error)
+      !! A hybrid writes into its own atom's block and nowhere else
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(afo_hybrid_t) :: hybrids(1)
+      real(dp), allocatable :: frozen(:, :)
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: n_occ, first, last
+
+      call ethane_molecule(mol, err)
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      ! The second carbon, so a wrong offset shows up as a wrong block rather
+      ! than as the first one by luck.
+      hybrids(1)%coeff = [0.1_dp, 0.2_dp, 0.3_dp, 0.4_dp, 0.5_dp]
+      call build_group_frozen(mol, [5], [.false.], hybrids, frozen, n_occ, err)
+      call check(error,.not. err%has_error(), "placing the hybrid failed")
+      if (allocated(error)) return
+
+      first = offsets(5) + 1
+      last = first + counts(5) - 1
+      call check(error, maxval(abs(frozen(first:last, 1) - hybrids(1)%coeff)) < TOL, &
+                 "the hybrid did not land on the atom it belongs to")
+      if (allocated(error)) return
+      call check(error, sum(abs(frozen(:first - 1, 1))) + sum(abs(frozen(last + 1:, 1))) < TOL, &
+                 "the hybrid left weight outside its own atom's block")
+      if (allocated(error)) return
+      call check(error, n_occ, 0, "a virtual boundary was counted as occupied")
+   end subroutine test_place
+
+   subroutine test_order(error)
+      !! Occupied boundaries come first, whatever order they arrived in
+      !!
+      !! The constraint names its blocks by index range, so an occupied orbital
+      !! placed after a virtual one would be held at the level shift -- the bond
+      !! pair pushed out of the fragment that is supposed to hold it.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(afo_hybrid_t) :: hybrids(2)
+      real(dp), allocatable :: frozen(:, :)
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: n_occ
+
+      call ethane_molecule(mol, err)
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      ! Virtual on carbon 1 given first, occupied on carbon 5 given second.
+      hybrids(1)%coeff = [1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp]
+      hybrids(2)%coeff = [0.0_dp, 1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp]
+      call build_group_frozen(mol, [1, 5], [.false., .true.], hybrids, frozen, n_occ, err)
+      call check(error,.not. err%has_error(), "placing the hybrids failed")
+      if (allocated(error)) return
+      call check(error, n_occ, 1, "the occupied boundary was not counted")
+      if (allocated(error)) return
+
+      ! Column 1 must be the occupied one -- carbon 5's second function.
+      call check(error, abs(frozen(offsets(5) + 2, 1) - 1.0_dp) < TOL, &
+                 "the occupied boundary is not in the leading column")
+      if (allocated(error)) return
+      call check(error, abs(frozen(offsets(1) + 1, 2) - 1.0_dp) < TOL, &
+                 "the virtual boundary is not after the occupied one")
+   end subroutine test_order
+
+   subroutine test_wrong_basis(error)
+      !! A hybrid of the wrong length was built against a different basis
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(afo_hybrid_t) :: hybrids(1)
+      real(dp), allocatable :: frozen(:, :)
+      integer :: n_occ
+
+      call ethane_molecule(mol, err)
+      hybrids(1)%coeff = [0.1_dp, 0.2_dp, 0.3_dp]
+      call build_group_frozen(mol, [1], [.true.], hybrids, frozen, n_occ, err)
+      call check(error, err%has_error(), &
+                 "a hybrid with the wrong number of coefficients was accepted")
+   end subroutine test_wrong_basis
 
    subroutine ethane(sys)
 

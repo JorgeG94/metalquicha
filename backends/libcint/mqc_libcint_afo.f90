@@ -37,6 +37,8 @@ module mqc_libcint_afo
    public :: afo_options_t
    public :: build_afo_model
    public :: bond_hybrid
+   public :: afo_hybrid_t
+   public :: build_group_frozen
    public :: cuts_outside_group
    public :: group_electron_shift
    public :: DEFAULT_MODEL_RADIUS
@@ -75,6 +77,14 @@ module mqc_libcint_afo
       real(dp) :: scf_energy_tol = 1.0e-10_dp
       real(dp) :: scf_density_tol = 1.0e-8_dp
    end type afo_options_t
+
+   !> One cut bond's frozen orbital, over its bond-detached atom's functions
+   type :: afo_hybrid_t
+      !! Held one per cut bond rather than in a rectangular array, because two
+      !! bonds can be detached at atoms of different elements and their hybrids
+      !! are then different lengths.
+      real(dp), allocatable :: coeff(:)
+   end type afo_hybrid_t
 
    !> The small molecule a frozen orbital is derived from
    type :: afo_model_t
@@ -215,6 +225,101 @@ contains
 
       deallocate (chosen, order)
    end subroutine build_afo_model
+
+   subroutine build_group_frozen(mol, bda_slot, occupied, hybrids, frozen, n_frozen_occ, error)
+      !! Place each boundary's hybrid into this group's own basis
+      !!
+      !! A hybrid is stored over its bond-detached atom's functions alone, which
+      !! is what makes it transferable. Putting it to work means writing it into
+      !! that atom's block of whichever molecule is being solved and leaving the
+      !! rest zero -- an index map, because the atom's functions are the same
+      !! functions wherever it appears.
+      !!
+      !! **Occupied first, and that is not a formatting choice.** The constraint
+      !! names its blocks by index range and `build_frozen_basis` orthonormalises
+      !! them separately, so an occupied orbital sitting after a virtual one
+      !! would be held at the level shift. Which of the two a boundary is comes
+      !! from the assignment `$FMOBND` states: the fragment that gets all of the
+      !! bond holds its hybrid occupied, the one that gets nothing of it holds
+      !! the same hybrid empty.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: bda_slot(:)
+         !! Where each boundary's bond-detached atom sits in `mol`, 1-based. It
+         !! may be a ghost: a group holding the attached end carries the
+         !! detached atom's functions without its nucleus.
+      logical, intent(in) :: occupied(:)
+      type(afo_hybrid_t), intent(in) :: hybrids(:)
+      real(dp), allocatable, intent(out) :: frozen(:, :)
+      integer, intent(out) :: n_frozen_occ
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: n, i, col
+
+      if (error%has_error()) return
+      n = size(bda_slot)
+      if (size(occupied) /= n .or. size(hybrids) /= n) then
+         call error%set(ERROR_VALIDATION, "afo: the boundaries of this group are "// &
+                        "described by lists of different lengths")
+         return
+      end if
+
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+      allocate (frozen(mol%nao, max(n, 1)), source=0.0_dp)
+      n_frozen_occ = count(occupied)
+
+      col = 0
+      do i = 1, n
+         if (.not. occupied(i)) cycle
+         col = col + 1
+         call place_hybrid(mol, offsets, counts, bda_slot(i), hybrids(i), &
+                           frozen(:, col), error)
+         if (error%has_error()) return
+      end do
+      do i = 1, n
+         if (occupied(i)) cycle
+         col = col + 1
+         call place_hybrid(mol, offsets, counts, bda_slot(i), hybrids(i), &
+                           frozen(:, col), error)
+         if (error%has_error()) return
+      end do
+   end subroutine build_group_frozen
+
+   subroutine place_hybrid(mol, offsets, counts, slot, hybrid, column, error)
+      !! Write one hybrid into one atom's block of a group's basis
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(in) :: offsets(:), counts(:)
+      integer, intent(in) :: slot
+      type(afo_hybrid_t), intent(in) :: hybrid
+      real(dp), intent(out) :: column(:)
+      type(error_t), intent(inout) :: error
+
+      integer :: first, last
+
+      if (slot < 1 .or. slot > mol%natm) then
+         call error%set(ERROR_VALIDATION, "afo: a boundary names an atom this group "// &
+                        "does not contain")
+         return
+      end if
+      if (.not. allocated(hybrid%coeff)) then
+         call error%set(ERROR_VALIDATION, "afo: a boundary has no hybrid orbital to "// &
+                        "freeze")
+         return
+      end if
+      if (size(hybrid%coeff) /= counts(slot)) then
+         call error%set(ERROR_VALIDATION, "afo: a hybrid has "// &
+                        to_char(size(hybrid%coeff))//" coefficients but the atom it "// &
+                        "belongs to has "//to_char(counts(slot))//" basis functions, "// &
+                        "so it was built against a different basis set")
+         return
+      end if
+
+      first = offsets(slot) + 1
+      last = first + counts(slot) - 1
+      column = 0.0_dp
+      column(first:last) = hybrid%coeff
+   end subroutine place_hybrid
 
    subroutine cuts_outside_group(cuts, n_cuts, members, outside, n_outside)
       !! Which cut bonds this n-mer is still cut across
