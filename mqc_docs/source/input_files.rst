@@ -354,80 +354,66 @@ Laplacian -- on libxc's own say-so rather than a guess about which ones are safe
 Continuum Solvation
 ^^^^^^^^^^^^^^^^^^^
 
-A polarizable continuum, on the **cuEST (GPU) backend only**:
+A polarizable continuum, on both ab initio backends. See
+:doc:`continuum_solvation` for what the model is, the worked example, and the
+cavity conventions that decide whether a comparison against another code can
+succeed. This section is the keyword reference.
 
 .. code-block:: json
 
    "keywords": {
      "pcm": {
-       "dielectric": 78.39,
+       "method": "cpcm",
+       "dielectric": 78.3553,
        "angular_points": 302,
-       "radii_scale": 1.2,
-       "zeta": 2.0,
-       "tolerance": 1e-8,
-       "max_iter": 100
+       "radii_scale": 1.2
      }
    }
 
 Naming the block is what turns solvation on -- there is no separate flag, because
 a deck that states a dielectric wants solvent and two switches could disagree.
 
+- ``method``: which continuum model the surface charges solve. ``"cpcm"``
+  (conductor-like, the default) or ``"iefpcm"`` (the integral equation
+  formalism) on the CPU backend. They are different models with different
+  energies -- on the hydroxide anion in water they differ by 5.1e-5 Hartree --
+  so the choice is named rather than implied. The cuEST backend's solver is
+  fixed and accepts only the default; asking it for ``"iefpcm"`` is refused
+  rather than substituted.
 - ``dielectric``: the solvent's dielectric constant. **Required.** There is no
   solvent-name table on this path: tblite has one for its own CPCM, and a second
   table here that disagreed with it would make the same word mean two things.
 - ``angular_points``: Lebedev points per atom on the cavity surface. 302 by
   default, and not a knob to economise on: 110 was the default until it was
   measured, and it gave a dielectric energy 21% short of the converged one. The
-  surface integrand has cusps where the atomic spheres intersect.
+  surface integrand has cusps where the atomic spheres intersect. On the CPU
+  backend the order must also carry a fitted SWIG exponent -- 6, 14, 26, 38,
+  50, 86, 110, 146, 170, 194, 302, 350, 434, 590 or denser; the odd orders
+  74, 230 and 266 exist in the grid tables but are refused, because the
+  exponent table [J. Chem. Phys. 122, 194110 (2005)] does not cover them.
 - ``radii_scale``: multiplies the van der Waals radii in ``mqc_pcm_radii``, which
-  are Bondi's filled in from Mantina's. 1.2 is the usual convention.
-- ``zeta``: the Gaussian switching prefactor for the smooth cavity surface, used
-  as :math:`\zeta_i = \zeta \sqrt{n_{ang}} / R_i`. Its default is calibrated
-  against the reference below rather than derived -- cuEST's own convention for
-  these exponents is not documented -- so treat it as an empirical constant of
-  this interface.
-- ``tolerance``, ``max_iter``: the surface-charge solve. A final solve that did
-  not converge is refused rather than reported, because the SCF's own convergence
-  test cannot see the cavity.
+  are Bondi's filled in from Mantina's. 1.2 is the usual convention. **The radii
+  are the cavity and the cavity is most of the answer** -- see
+  :doc:`continuum_solvation` before comparing against another code's defaults.
+- ``zeta``: **cuEST only** -- the Gaussian switching prefactor for its smooth
+  cavity surface, used as :math:`\zeta_i = \zeta \sqrt{n_{ang}} / R_i`, an
+  empirical constant of that interface. The CPU backend refuses a deck that
+  sets it: its exponents are the fitted per-point SWIG values and have no free
+  prefactor, so the keyword would be silently ignored -- which is exactly what
+  this program does not do.
+- ``tolerance``, ``max_iter``: bounds on cuEST's iterative (conjugate gradient)
+  surface-charge solve; a final solve that did not converge is refused rather
+  than reported. The CPU backend factorizes the charge equations once and
+  solves directly, which meets any tolerance these could ask for -- the keys
+  are accepted and moot there.
 
 This is **not** ``keywords.xtb.solvation_model: cpcm``. That configures tblite's
 continuum, which builds its own cavity with its own defaults, and the two are
 separate models rather than one keyword with two backends.
 
-**Validated against PySCF's C-PCM**, on water in water at PBE0/def2-SVP and
-:math:`\varepsilon` = 78.39, at the defaults above:
+What each backend supports, refuses, and how each was validated is on
+:doc:`continuum_solvation`.
 
-.. list-table::
-   :header-rows: 1
-
-   * -
-     - metalquicha
-     - PySCF C-PCM
-   * - dielectric energy
-     - -10.2104 mHartree
-     - -10.3625 mHartree
-   * - solvation energy
-     - -5.804 kcal/mol
-     - -5.904 kcal/mol
-   * - solvated dipole
-     - 2.21754 D
-     - 2.2162 D
-
-The dipole is the sharp one: agreeing to 0.0013 D means the potential reaching the
-Fock matrix is right, not merely that an energy came out plausible. The residual
-1.5% on the dielectric energy is the difference between two independently
-discretised cavities and is not expected to close.
-
-Two limits were checked as well, and both are worth knowing because they need no
-external reference. At :math:`\varepsilon` = 1.0001 the dielectric energy falls
-to -7e-7 Hartree and the total returns to the gas-phase energy, which agrees with
-PySCF's to 5.5 microhartree -- so the continuum contributes nothing when it should
-contribute nothing. And the surface resolution matters more than it looks: at 110
-angular points the dielectric energy was 21% short.
-
-``zeta`` remains the one parameter whose convention is not confirmed against
-cuEST's own definition, and its default was set by matching the reference above
-rather than derived. It is a keyword so it can be checked.
 
 DFT Options
 ^^^^^^^^^^^
