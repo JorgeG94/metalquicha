@@ -185,25 +185,109 @@ and four ranks.
 
 Example decks are in ``validation/inputs/cpu/mqc/fmo/``.
 
+Cutting a covalent bond
+-----------------------
+
+``bond_breaking`` (default ``"none"``)
+   ``"none"`` refuses a partition that severs a covalent bond, naming the two
+   atoms and the two fragments they were put in. ``"afo"`` detaches the bond with
+   an **adjusted frozen orbital** instead.
+
+The refusal is not a formality, and it is still the default. Cutting a single
+bond leaves both fragments with an odd electron count, which the closed-shell
+check catches on its own; but cutting an even number per fragment -- a ring, a
+double bond -- leaves every count even. Cyclopropane split into three CH2 groups
+used to come back 0.28 Hartree low, which is 176 kcal/mol in the shape of an
+answer.
+
+A hydrogen bond is not a covalent one, so clusters are unaffected: two waters
+2.5 A apart, closer than anything in the validation set, pass through and never
+reach any of this.
+
+How a bond is detached
+~~~~~~~~~~~~~~~~~~~~~~
+
+Each cut bond gets a small **model system** -- both its atoms, everything within
+a radius of either, every hydrogen hanging off what that took, and a hydrogen cap
+for each bond leaving the set at the standard length for the atom it hangs off.
+That is solved, localized, and the orbital sitting on the bond is kept, reduced
+to the coefficients on the bond-detached atom. Expressing it there is what makes
+it transferable: those functions exist unchanged in any fragment containing that
+atom, so putting it to work is an index map.
+
+The two fragments then split the bond, following the assignment FMO uses. Of the
+pair, one atom is the *detached* end and one the *attached* end:
+
+============================  =========================  =========================
+                              fragment of the detached   fragment of the attached
+============================  =========================  =========================
+nucleus                       owns it                    not owned
+its basis functions           owns them                  carries them, ghosted
+the bond's electron pair      none of it                 all of it
+the hybrid on that atom       frozen empty               frozen occupied
+electron count                ``sum(Z) - 1``             ``sum(Z) + 1``
+============================  =========================  =========================
+
+Frozen means the Fock matrix is forced block diagonal in a basis holding those
+orbitals: the couplings between them and the variational space are zeroed and the
+frozen virtuals held at a level shift. Zeroed rather than penalised, because a
+penalty raises an orbital's energy without decoupling it and the two spaces go on
+mixing however large the penalty is.
+
+**The boundary set belongs to the n-mer, not to the fragment.** A bond cut
+between two monomers is whole again inside the dimer holding both ends, so that
+dimer carries no ghost, no frozen orbital and no electron shift there, while
+still being cut against everything outside itself. This is worked out from each
+group's own members every time.
+
+What it costs
+~~~~~~~~~~~~~
+
+Propane in STO-3G, split at both C-C bonds into three fragments, against
+ordinary RHF on the whole molecule:
+
+=================================  ==================
+Expansion                          Error, Hartree
+=================================  ==================
+Two fragments, one bond, MBE(2)    exact
+Three fragments, MBE(3)            1.3e-13
+Three fragments, MBE(2)            0.180
+=================================  ==================
+
+The middle row is the statement worth reading. An expansion carried to the
+fragment count is exact by inclusion and exclusion whatever the partition did, so
+landing on the whole molecule to 1e-13 says the bookkeeping is right across every
+group -- three monomers with boundaries, three dimers, and one of those dimers
+the pair of end fragments, which are not bonded to each other and whose group
+carries a ghost of a carbon belonging to neither.
+
+The last row is the three-body term, and across covalent bonds it is large.
+Expect that: the same quantity is a rounding error for a water cluster and
+110 kcal/mol here. Truncating at pairs is not advisable across detached bonds.
+
+Restrictions
+~~~~~~~~~~~~
+
+``bond_breaking = "afo"`` requires ``embedding = "none"``. A frozen orbital and
+an embedding field both describe the bond region -- the field already supplies
+the neighbour's nucleus and density where the frozen orbital supplies the bond --
+so the detached atom's share has to be removed from the field before the two can
+be used together. That is clean for point charges and not defined for an exact
+density, and neither is built yet. Asking for both is refused with that reason.
+
+Refused by name, rather than answered badly:
+
+* a cut through a ring, where two fragments meet in more than one place
+* a bond detached at a hydrogen, which has nothing left to hybridise
+* a bond carrying more than one localized orbital, which is not a single bond
+
 Limits
 ------
 
-**Non-covalent fragments only, and this is enforced.** There is no capping here --
-no adjusted fragment orbitals, no hybrid orbital projection, no hydrogen caps --
-so a partition that severs a covalent bond is refused rather than answered, with
-a message naming the two atoms and the two fragments they were put in.
-
-The check is not a formality. Cutting a single bond leaves both fragments with an
-odd electron count, which the closed-shell check catches on its own; but cutting
-an even number per fragment -- a ring, a double bond -- leaves every count even.
-Cyclopropane split into three CH2 groups used to come back 0.28 Hartree low,
-which is 176 kcal/mol in the shape of an answer.
-
-A hydrogen bond is not a covalent one, so clusters are unaffected: two waters
-2.5 A apart, closer than anything in the validation set, pass through.
-
 **Closed shell only.** A fragment with an odd electron count is refused rather
-than quietly paired up.
+than quietly paired up. A detached bond moves an electron between the two
+fragments it joins, and the count checked here is the one after that move: ethane
+split into two methyls is 9 and 9 before it and 8 and 10 after.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.
