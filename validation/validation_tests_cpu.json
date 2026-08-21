@@ -2210,6 +2210,12 @@
             "type": "fragmented"
         },
         {
+            "name": "AFO propane 6-31g cut at both C-C, exact at full level (CPU)",
+            "input": "inputs/cpu/mqc/fmo/afo3_propane.json",
+            "expected_energy": -118.1449897714,
+            "type": "fragmented"
+        },
+        {
             "name": "ORMAS CI-SD H2O 3-21G against GAMESS (CPU)",
             "input": "inputs/cpu/mqc/mcscf/cpu_h2o_3-21g_ormas_cisd.json",
             "expected_energy": -75.7103507602,

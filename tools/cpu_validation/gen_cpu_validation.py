@@ -356,6 +356,10 @@ HAND_MAINTAINED = {
     # converge to a plausible number.
     "cpu/mqc/pcm/cpu_water_cation_6-31g_uhf_iefpcm.json",
     "cpu/mqc/pcm/cpu_water_6-31g_pbe0_cpcm.json",
+    # Same reasoning, and the identity is the whole point here: propane cut at
+    # both C-C bonds, expanded to its fragment count, has to reproduce the
+    # unfragmented energy however the bonds were detached. It does, to 1.2e-12.
+    "cpu/mqc/fmo/afo3_propane.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
