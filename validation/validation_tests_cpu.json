@@ -2156,6 +2156,20 @@
             "requires": "libxc"
         },
         {
+            "name": "RHF C-PCM water sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/pcm/cpu_water_sto-3g_cpcm.json",
+            "expected_energy": -74.967441478848,
+            "type": "unfragmented",
+            "reference_note": "PySCF RHF with pyscf.solvent.pcm C-PCM at eps 78.3553, lebedev_order 29 (302 points per sphere) and radii_table = 1.2 * Bondi (pyscf.data.radii.VDW), which is mqc's own cavity -- PySCF's *default* cavity is modified Bondi with H at 1.1 Angstrom and does not match. Basis read from basis_sets/ like every other reference here; with PySCF's internal sto-3g table instead, this same comparison misses by 2.5e-8, which is the manifest's standing warning about basis digits playing out. mqc reproduces this number to 3e-12, so the case runs at the global 1e-9: a change in the cavity radii, the switching function, the surface-charge solve or the attenuated integrals misses by orders of magnitude more."
+        },
+        {
+            "name": "RHF IEF-PCM hydroxide anion 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/pcm/cpu_hydroxide_6-31g_iefpcm.json",
+            "expected_energy": -75.458124582308,
+            "type": "unfragmented",
+            "reference_note": "PySCF RHF with pyscf.solvent.pcm IEF-PCM, same cavity settings as the C-PCM case above. An anion on purpose: its dielectric energy is -0.1483 Hartree against water's -0.0057, and the D-matrix terms that separate IEF-PCM from C-PCM are worth 5.1e-5 Hartree here -- far above tolerance, so solving the wrong model cannot pass. mqc reproduces the reference to 5e-12; the global 1e-9 applies."
+        },
+        {
             "name": "FMO2 water trimer 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
             "expected_energy": -227.9705411684,

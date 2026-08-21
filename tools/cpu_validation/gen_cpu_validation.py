@@ -338,6 +338,16 @@ HAND_MAINTAINED = {
     "cpu/mqc/fmo/eembe_water3.json",
     "cpu/mqc/fmo/fmo3_water3.json",
     "cpu/mqc/fmo/eembe3_water3.json",
+    # Continuum solvation. PySCF *can* produce these references -- they were --
+    # but this script has no PCM support, so a regeneration would sweep the
+    # decks while their manifest entries stayed behind. The recipe, should they
+    # ever need regenerating: pyscf.solvent.pcm with the deck's method and
+    # dielectric, lebedev_order 29 (302 points), and radii_table = 1.2 * Bondi
+    # (pyscf.data.radii.VDW) -- NOT PySCF's default modified-Bondi cavity, whose
+    # hydrogen is 1.1 Angstrom against Bondi's 1.20 -- with the basis read
+    # through bse_to_pyscf like every reference here.
+    "cpu/mqc/pcm/cpu_water_sto-3g_cpcm.json",
+    "cpu/mqc/pcm/cpu_hydroxide_6-31g_iefpcm.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
