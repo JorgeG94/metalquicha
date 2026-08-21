@@ -1082,7 +1082,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
       PYTHONPATH=${CMAKE_SOURCE_DIR}/python python3
       ${CMAKE_SOURCE_DIR}/python/examples/methods.py
     COMMAND ${CMAKE_COMMAND} -E remove -f coverage.info
-    COMMAND lcov --directory . --capture --output-file coverage.info
+    # `negative` because gcov's counters are not atomic and this program is
+    # threaded: two threads incrementing the same counter can leave it below
+    # zero, which lcov 1.x warned about and lcov 2.x -- what the runner
+    # installs -- refuses outright, failing the whole target over a count
+    # rather than over coverage. The alternative is -fprofile-update=atomic,
+    # which costs time in a build that is already fifty times slower than
+    # release. A raced line was still executed, so the report is not the
+    # thing in doubt here.
+    COMMAND lcov --directory . --capture --ignore-errors negative --output-file
+            coverage.info
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'
             '*/build/*' '*/validation/*' --output-file coverage_filtered.info
     COMMAND genhtml coverage_filtered.info --output-directory coverage_report
