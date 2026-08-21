@@ -138,19 +138,19 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-compute_grad~2">compute_grad</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-compute_hess~2">compute_hess</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-current_log_level~6">current_log_level</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-error~133">error</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-fragment~32">fragment</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-has_intersections~2">has_intersections</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-hess_dim~5">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-i~142">i</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-k~41">k</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_counts~2">level_counts</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_energies~2">level_energies</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-max_level~23">max_level</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_energy~2">monomer_energy</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-current_log_level~4">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-error~6">error</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-fragment~12">fragment</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-has_intersections">has_intersections</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-hess_dim~2">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-i~21">i</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-k~3">k</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_counts">level_counts</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_energies">level_energies</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-max_level~5">max_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_energy">monomer_energy</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_idx">monomer_idx</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-sign_factor~3">sign_factor</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-sign_factor">sign_factor</a>
         </div>
       </div>
     </div>
@@ -194,10 +194,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
@@ -825,7 +825,7 @@ Optional arguments control what derivatives are computed:
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~11"></span>
+              <span class="anchor" id="variable-monomers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -840,7 +840,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~11"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -870,7 +870,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~5"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -885,7 +885,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~2"></span>
+              <span class="anchor" id="variable-intersection_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -900,7 +900,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~5"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -915,7 +915,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~5"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -930,7 +930,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~8"></span>
+              <span class="anchor" id="variable-total_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -945,7 +945,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~69"></span>
+              <span class="anchor" id="variable-sys_geom~15"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -960,7 +960,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -975,7 +975,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~3"></span>
+              <span class="anchor" id="variable-total_hessian"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -990,7 +990,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~18"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1005,7 +1005,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~18"></span>
+              <span class="anchor" id="variable-world_comm~9"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2331,7 +2331,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~6"></span>
+              <span class="anchor" id="variable-current_log_level~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -2348,7 +2348,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~133"></span>
+              <span class="anchor" id="variable-error~6"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2365,7 +2365,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~32"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2382,7 +2382,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_intersections~2"></span>
+              <span class="anchor" id="variable-has_intersections"></span>
               logical,
             </td>
               <td>private</td>
@@ -2399,7 +2399,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~5"></span>
+              <span class="anchor" id="variable-hess_dim~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -2416,7 +2416,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~142"></span>
+              <span class="anchor" id="variable-i~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -2433,7 +2433,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~41"></span>
+              <span class="anchor" id="variable-k~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2450,7 +2450,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_counts~2"></span>
+              <span class="anchor" id="variable-level_counts"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2467,7 +2467,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_energies~2"></span>
+              <span class="anchor" id="variable-level_energies"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2484,7 +2484,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~23"></span>
+              <span class="anchor" id="variable-max_level~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -2501,7 +2501,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_energy~2"></span>
+              <span class="anchor" id="variable-monomer_energy"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2535,7 +2535,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sign_factor~3"></span>
+              <span class="anchor" id="variable-sign_factor"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2768,7 +2768,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 08:30 +0000             </p>
+ on 2026-08-21 10:02 +0000             </p>
           </div>
         </div>
         <br>

@@ -900,20 +900,20 @@ large graphs.</div>
 <path fill="none" stroke="#7fff00" d="M227.67,-195.05C244.79,-201.61 263.55,-211.26 277,-225 305.41,-254.03 279.09,-286.64 313,-309 374.53,-349.57 592.38,-328.21 697.68,-314.95"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="698.33,-318.4 707.81,-313.66 697.45,-311.45 698.33,-318.4"/>
 </g>
-<!-- proc~worker_loop~2 -->
-<g id="interface~~binomial~~CalledByGraph_node37" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_interface~~binomial~~CalledByGraph_node37"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<!-- proc~worker_loop -->
+<g id="interface~~binomial~~CalledByGraph_node36" class="node">
+<title>proc~worker_loop</title>
+<g id="a_interface~~binomial~~CalledByGraph_node36"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="428,-174 350,-174 350,-150 428,-150 428,-174"/>
 <text text-anchor="middle" x="389" y="-159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="interface~~binomial~~CalledByGraph_edge49" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0000ff" d="M263.18,-174.88C288.98,-172.22 316.87,-169.34 339.73,-166.98"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="340.26,-170.45 349.85,-165.94 339.54,-163.48 340.26,-170.45"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="interface~~binomial~~CalledByGraph_edge48" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ffff" d="M263.18,-174.88C288.98,-172.22 316.87,-169.34 339.73,-166.98"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="340.26,-170.45 349.85,-165.94 339.54,-163.48 340.26,-170.45"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="interface~~binomial~~CalledByGraph_node38" class="node">
@@ -930,26 +930,26 @@ large graphs.</div>
 <path fill="none" stroke="#ff00ff" d="M263.18,-191.12C278.78,-192.73 295.14,-194.42 310.69,-196.02"/>
 <polygon fill="#ff00ff" stroke="#ff00ff" points="310.47,-199.52 320.77,-197.06 311.19,-192.55 310.47,-199.52"/>
 </g>
-<!-- proc~worker_loop -->
-<g id="interface~~binomial~~CalledByGraph_node36" class="node">
-<title>proc~worker_loop</title>
-<g id="a_interface~~binomial~~CalledByGraph_node36"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="interface~~binomial~~CalledByGraph_edge42" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#0000ff" d="M428.13,-167.14C461.98,-171.7 511.18,-178.32 544.99,-182.88"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="544.58,-186.36 554.96,-184.22 545.51,-179.42 544.58,-186.36"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="interface~~binomial~~CalledByGraph_node37" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_interface~~binomial~~CalledByGraph_node37"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="428,-24 350,-24 350,0 428,0 428,-24"/>
 <text text-anchor="middle" x="389" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="interface~~binomial~~CalledByGraph_edge45" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#ff00ff" d="M428.13,-12C459.36,-12 503.64,-12 536.86,-12"/>
 <polygon fill="#ff00ff" stroke="#ff00ff" points="537.23,-15.5 547.23,-12 537.23,-8.5 537.23,-15.5"/>
-</g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
-<g id="interface~~binomial~~CalledByGraph_edge42" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#0000ff" d="M428.13,-167.14C461.98,-171.7 511.18,-178.32 544.99,-182.88"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="544.58,-186.36 554.96,-184.22 545.51,-179.42 544.58,-186.36"/>
 </g>
 <!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
 <g id="interface~~binomial~~CalledByGraph_edge43" class="edge">
@@ -981,11 +981,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="interface~~binomial~~CalledByGraph_edge48" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ffff" d="M270.21,-12C294,-12 318.99,-12 339.8,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="339.96,-15.5 349.96,-12 339.96,-8.5 339.96,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="interface~~binomial~~CalledByGraph_edge49" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0000ff" d="M270.21,-12C294,-12 318.99,-12 339.8,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="339.96,-15.5 349.96,-12 339.96,-8.5 339.96,-15.5"/>
 </g>
 </g>
 </svg>
@@ -1098,7 +1098,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n"></span>
+              <span class="anchor" id="variable-n~35"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1113,7 +1113,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~2"></span>
+              <span class="anchor" id="variable-k~46"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1158,7 +1158,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~2"></span>
+              <span class="anchor" id="variable-n~36"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1173,7 +1173,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~3"></span>
+              <span class="anchor" id="variable-k~47"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1215,7 +1215,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 08:30 +0000             </p>
+ on 2026-08-21 10:02 +0000             </p>
           </div>
         </div>
         <br>

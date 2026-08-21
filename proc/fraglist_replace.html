@@ -186,7 +186,7 @@ as though it did.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~135"></span>
+              <span class="anchor" id="variable-this~64"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -201,7 +201,7 @@ as though it did.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~16"></span>
+              <span class="anchor" id="variable-terms~6"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -216,7 +216,7 @@ as though it did.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~7"></span>
+              <span class="anchor" id="variable-n_terms~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -231,7 +231,7 @@ as though it did.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~29"></span>
+              <span class="anchor" id="variable-max_level~16"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -246,7 +246,7 @@ as though it did.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~158"></span>
+              <span class="anchor" id="variable-error~63"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -616,31 +616,31 @@ large graphs.</div>
 <g id="proc~~fraglist_replace~~CalledByGraph_node14" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~fraglist_replace~~CalledByGraph_node14"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-66 246,-66 246,-42 324,-42 324,-66"/>
-<text text-anchor="middle" x="285" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~fraglist_replace~~CalledByGraph_edge17" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M324.28,-61.9C358.12,-68.89 407.57,-79.09 443.55,-86.52"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="443.28,-90.03 453.78,-88.63 444.7,-83.18 443.28,-90.03"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~fraglist_replace~~CalledByGraph_node15" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~fraglist_replace~~CalledByGraph_node15"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-150 246,-150 246,-126 324,-126 324,-150"/>
 <text text-anchor="middle" x="285" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~fraglist_replace~~CalledByGraph_edge15" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ffff" d="M324.28,-138C360.53,-138 414.7,-138 451.02,-138"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="451.22,-141.5 461.22,-138 451.22,-134.5 451.22,-141.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~fraglist_replace~~CalledByGraph_node15" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~fraglist_replace~~CalledByGraph_node15"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-66 246,-66 246,-42 324,-42 324,-66"/>
+<text text-anchor="middle" x="285" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~fraglist_replace~~CalledByGraph_edge17" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M324.28,-61.9C358.12,-68.89 407.57,-79.09 443.55,-86.52"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="443.28,-90.03 453.78,-88.63 444.7,-83.18 443.28,-90.03"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~fraglist_replace~~CalledByGraph_node16" class="node">
@@ -681,11 +681,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~fraglist_replace~~CalledByGraph_edge20" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#00ffff" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~fraglist_replace~~CalledByGraph_edge19" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#7fff00" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~fraglist_replace~~CalledByGraph_edge21" class="edge">
@@ -702,11 +702,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~fraglist_replace~~CalledByGraph_edge19" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#7fff00" d="M173.12,-54C194.58,-54 216.87,-54 235.78,-54"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="235.91,-57.5 245.91,-54 235.91,-50.5 235.91,-57.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~fraglist_replace~~CalledByGraph_edge20" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#00ffff" d="M173.12,-54C194.58,-54 216.87,-54 235.78,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="235.91,-57.5 245.91,-54 235.91,-50.5 235.91,-57.5"/>
 </g>
 </g>
 </svg>
@@ -865,7 +865,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 08:30 +0000             </p>
+ on 2026-08-21 10:02 +0000             </p>
           </div>
         </div>
         <br>

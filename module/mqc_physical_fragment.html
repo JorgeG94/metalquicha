@@ -226,14 +226,14 @@ Calculate minimal distance between monomers in a fragment</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
                   <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2601,18 +2601,18 @@ large graphs.</div>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M2080.14,-827.23C2034.48,-819.99 1944.25,-805.69 1889.36,-796.99"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1889.63,-793.49 1879.2,-795.38 1888.53,-800.4 1889.63,-793.49"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_physical_fragment~~UsedByGraph_node95" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_physical_fragment~~UsedByGraph_node95"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_physical_fragment~~UsedByGraph_node95"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="2148.5,-801.72 2070.5,-801.72 2070.5,-777.72 2148.5,-777.72 2148.5,-801.72"/>
 <text text-anchor="middle" x="2109.5" y="-787.32" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_physical_fragment~~UsedByGraph_edge91" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M2070.25,-789.72C2022.38,-789.72 1940.47,-789.72 1889.31,-789.72"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1889.19,-786.22 1879.19,-789.72 1889.19,-793.22 1889.19,-786.22"/>
 </g>
@@ -2763,7 +2763,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i~3"></span>
+              <span class="anchor" id="variable-atom_i~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2780,7 +2780,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_j~3"></span>
+              <span class="anchor" id="variable-atom_j~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2863,7 +2863,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~5"></span>
+              <span class="anchor" id="variable-basis~7"></span>
               type(<a href='../type/molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
               <td>public,</td>
@@ -2897,7 +2897,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -2914,7 +2914,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~6"></span>
+              <span class="anchor" id="variable-coordinates~16"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2948,7 +2948,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~2"></span>
+              <span class="anchor" id="variable-element_numbers~10"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3001,7 +3001,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~4"></span>
+              <span class="anchor" id="variable-multiplicity~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -3018,7 +3018,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~30"></span>
+              <span class="anchor" id="variable-n_atoms~45"></span>
               integer,
             </td>
               <td>public</td>
@@ -3083,7 +3083,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/physical_fragment_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a></td>
+  <strong><a href='../type/physical_fragment_t.html#boundprocedure-destroy~26'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a></td>
                   <td><p>Memory cleanup</p></td>
               </tr>
               <tr>
@@ -3138,7 +3138,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~8"></span>
+              <span class="anchor" id="variable-bonds~16"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -3155,7 +3155,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~5"></span>
+              <span class="anchor" id="variable-charge~10"></span>
               integer,
             </td>
               <td>public</td>
@@ -3172,7 +3172,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~7"></span>
+              <span class="anchor" id="variable-coordinates~17"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3189,7 +3189,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~3"></span>
+              <span class="anchor" id="variable-element_numbers~11"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3206,7 +3206,7 @@ plain expansion builds.</p><a href="../type/physical_fragment_t.html#variable-is
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_atoms"></span>
+              <span class="anchor" id="variable-fragment_atoms~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3275,7 +3275,7 @@ order, or unallocated when this is an ordinary quantum system.</p><a href="../ty
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_sizes~2"></span>
+              <span class="anchor" id="variable-fragment_sizes~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3292,7 +3292,7 @@ order, or unallocated when this is an ordinary quantum system.</p><a href="../ty
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~5"></span>
+              <span class="anchor" id="variable-multiplicity~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -3309,7 +3309,7 @@ order, or unallocated when this is an ordinary quantum system.</p><a href="../ty
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~3"></span>
+              <span class="anchor" id="variable-n_monomers~11"></span>
               integer,
             </td>
               <td>public</td>
@@ -3352,7 +3352,7 @@ order, or unallocated when this is an ordinary quantum system.</p><a href="../ty
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/system_geometry_t.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/system_destroy.html'>system_destroy</a></td>
+  <strong><a href='../type/system_geometry_t.html#boundprocedure-destroy~27'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/system_destroy.html'>system_destroy</a></td>
                   <td><p>Memory cleanup</p></td>
               </tr>
           </tbody>
@@ -3388,7 +3388,7 @@ Result is in Angstrom</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~48"></span>
+              <span class="anchor" id="variable-sys_geom~83"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3543,7 +3543,7 @@ Result is in Angstrom</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~47"></span>
+              <span class="anchor" id="variable-sys_geom~82"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3573,7 +3573,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~31"></span>
+              <span class="anchor" id="variable-n_atoms~46"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3588,7 +3588,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~22"></span>
+              <span class="anchor" id="variable-fragment~32"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3603,7 +3603,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~159"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3618,7 +3618,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~13"></span>
+              <span class="anchor" id="variable-bonds~21"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3658,7 +3658,7 @@ Result is in Angstrom</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~45"></span>
+              <span class="anchor" id="variable-sys_geom~80"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3688,7 +3688,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~21"></span>
+              <span class="anchor" id="variable-fragment~31"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3703,7 +3703,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~94"></span>
+              <span class="anchor" id="variable-error~158"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3718,7 +3718,7 @@ Result is in Angstrom</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds~20"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3760,7 +3760,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~26"></span>
+              <span class="anchor" id="variable-fragment~36"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3775,7 +3775,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~96"></span>
+              <span class="anchor" id="variable-error~160"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3815,7 +3815,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~46"></span>
+              <span class="anchor" id="variable-sys_geom~81"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3845,7 +3845,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~6"></span>
+              <span class="anchor" id="variable-charge~11"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3860,7 +3860,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~6"></span>
+              <span class="anchor" id="variable-multiplicity~10"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3930,7 +3930,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~42"></span>
+              <span class="anchor" id="variable-sys_geom~77"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3945,7 +3945,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~92"></span>
+              <span class="anchor" id="variable-error~156"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3985,7 +3985,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~25"></span>
+              <span class="anchor" id="variable-fragment~35"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4030,7 +4030,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scale~5"></span>
+              <span class="anchor" id="variable-scale~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -4070,7 +4070,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~23"></span>
+              <span class="anchor" id="variable-fragment~33"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4115,7 +4115,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scale~3"></span>
+              <span class="anchor" id="variable-scale~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -4155,7 +4155,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~24"></span>
+              <span class="anchor" id="variable-fragment~34"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4200,7 +4200,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scale~4"></span>
+              <span class="anchor" id="variable-scale~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -4256,7 +4256,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~10"></span>
+              <span class="anchor" id="variable-bonds~18"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4271,7 +4271,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~43"></span>
+              <span class="anchor" id="variable-sys_geom~78"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4286,7 +4286,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~19"></span>
+              <span class="anchor" id="variable-fragment~29"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4341,7 +4341,7 @@ Caps are placed at the position of the atom outside the fragment</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~44"></span>
+              <span class="anchor" id="variable-sys_geom~79"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4371,7 +4371,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~20"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4386,7 +4386,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~93"></span>
+              <span class="anchor" id="variable-error~157"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4401,7 +4401,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~11"></span>
+              <span class="anchor" id="variable-bonds~19"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -4457,7 +4457,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~17"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -4512,7 +4512,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~110"></span>
+              <span class="anchor" id="variable-this~133"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4552,7 +4552,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~109"></span>
+              <span class="anchor" id="variable-this~132"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4592,7 +4592,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~111"></span>
+              <span class="anchor" id="variable-this~134"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4607,7 +4607,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~6"></span>
+              <span class="anchor" id="variable-basis~8"></span>
               type(<a href='../type/molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
 <td>intent(in)</td>
@@ -4647,7 +4647,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~112"></span>
+              <span class="anchor" id="variable-this~135"></span>
               class(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4690,7 +4690,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 08:30 +0000             </p>
+ on 2026-08-21 10:02 +0000             </p>
           </div>
         </div>
         <br>
