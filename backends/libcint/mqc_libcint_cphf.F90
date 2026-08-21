@@ -179,6 +179,21 @@ module mqc_libcint_cphf
    !> a comparison needs.
    real(dp), parameter :: DEFAULT_DYNAMIC_TOL = 1.0e-7_dp
 
+   !> Where a matrix-free pass actually spends itself, accumulated across a
+   !> whole solve and reported once at the end.
+   !>
+   !> A pass is three things and only one of them is integrals: the trial
+   !> vectors become atomic-orbital densities, those densities are contracted,
+   !> and the result comes back to the molecular basis. The middle one is
+   !> assumed to dominate and had never been measured, which matters because
+   !> the batch width is tuned against that assumption -- if the transforms
+   !> were significant, widening the batch would be trading the wrong thing.
+   !>
+   !> Not threadsafe and does not need to be: `response_batch` is called from
+   !> serial code and does its own threading inside the build.
+   real(dp) :: prof_dens = 0.0_dp, prof_fock = 0.0_dp, prof_back = 0.0_dp
+   integer :: prof_calls = 0
+
    !> Casimir-Polder quadrature points, which is how many imaginary frequencies a
    !> potential is tabulated at.
    integer, parameter, public :: N_CASIMIR_POLDER = 12
@@ -1646,6 +1661,10 @@ contains
             nonzero(nnz) = m
          end if
       end do
+      prof_dens = 0.0_dp
+      prof_fock = 0.0_dp
+      prof_back = 0.0_dp
+      prof_calls = 0
       if (talk) then
          write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
             " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
@@ -1800,6 +1819,17 @@ contains
          return
       end if
 
+      if (talk) then
+         write (line, "(A,I0,A)") "          where the passes went (", prof_calls, &
+            " of them, CPU seconds):"
+         call logger%info(trim(line))
+         write (line, "(A,F10.1,A,F10.1,A,F10.1)") &
+            "            densities ", prof_dens, "   Fock ", prof_fock, &
+            "   back-transform ", prof_back
+         call logger%info(trim(line))
+         flush (output_unit)
+      end if
+
       allocate (alpha(n_pert, n_pert, n_freq))
       if (present(response)) allocate (response(n_vir, n_occ, n_pert, n_freq))
       do m = 1, n_sys
@@ -1939,6 +1969,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), work(:, :)
+      real(dp) :: t0, t1
       type(direct_stats_t) :: stats
       integer :: n_ao, n_occ, m, j
 
@@ -1946,6 +1977,7 @@ contains
       n_ao = size(c_occ, 1)
       n_occ = size(c_occ, 2)
       allocate (dens(n_ao, n_ao, nact), half(n_ao, n_occ), work(n_ao, n_occ))
+      call cpu_time(t0)
 
       do m = 1, nact
          j = idx(m)
@@ -1959,6 +1991,9 @@ contains
       end do
 
       if (direct) then
+         call cpu_time(t1)
+         prof_dens = prof_dens + (t1 - t0)
+         t0 = t1
          if (minus) then
             call build_fock_direct_nosym(mol, zero_h, dens, bounds, g, stats, error)
          else
@@ -1972,6 +2007,9 @@ contains
          end do
       end if
 
+      call cpu_time(t1)
+      prof_fock = prof_fock + (t1 - t0)
+      t0 = t1
       do m = 1, nact
          j = idx(m)
          call pic_gemm(g(:, :, m), c_occ, work)
@@ -1979,6 +2017,9 @@ contains
          au(:, :, j) = gaps*u(:, :, j) + 2.0_dp*au(:, :, j)
       end do
 
+      call cpu_time(t1)
+      prof_back = prof_back + (t1 - t0)
+      prof_calls = prof_calls + 1
       deallocate (dens, g, half, work)
    end subroutine response_batch
 
