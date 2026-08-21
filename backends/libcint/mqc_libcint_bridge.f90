@@ -31,6 +31,7 @@ module mqc_libcint_bridge
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
@@ -477,6 +478,7 @@ contains
       type(libcint_molecule_t), target :: aux
       type(libcint_molecule_t), pointer :: aux_arg
       type(rhf_result_t) :: scf
+      type(pcm_context_t) :: pcm_ctx
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size, guess_kind
@@ -546,19 +548,53 @@ contains
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
 
-      ! Continuum solvation belongs to cuEST on this side: the CPU path has no
-      ! cavity, no surface charges and no attenuated one-electron integrals over
-      ! them. Refused rather than ignored, because ignoring it returns a
-      ! gas-phase energy for a deck that asked for solvent -- of the right
-      ! magnitude, converged, and with nothing in the output to say the solvent
-      ! was dropped.
+      ! Continuum solvation on this backend is an *energy*: the surface
+      ! charges enter every SCF iteration and the total. What does not exist is
+      ! their derivative -- the cavity moves with the nuclei and the charges
+      ! respond -- so an analytic gradient would come back converged, plausible
+      ! and missing the solvent's pull on every atom. And anything that runs
+      ! further calculations on top of the solvated reference -- correlation,
+      ! the Fukui ions -- needs its own decision about the continuum, which
+      ! none of them has yet. Each combination is refused by name rather than
+      ! run in a quietly mixed phase.
       if (settings%pcm%enabled) then
-         call result%error%set(ERROR_VALIDATION, "continuum solvation (keywords.pcm) is "// &
-                               "implemented on the cuEST backend only; the CPU path has "// &
-                               "no cavity. Refused rather than run in the gas phase, "// &
-                               "which is what ignoring it would silently give you.")
-         result%has_error = .true.
-         return
+         if (do_gradient) then
+            call result%error%set(ERROR_VALIDATION, "the PCM nuclear gradient is not "// &
+                                  "implemented on the CPU backend -- the energy is, but "// &
+                                  "its cavity and charge-response derivative terms are "// &
+                                  "not built. Run the energy here, or the gradient on "// &
+                                  "the cuEST backend, which has them.")
+            result%has_error = .true.
+            return
+         end if
+         if (settings%run_mp2 .or. settings%run_cc) then
+            call result%error%set(ERROR_VALIDATION, "correlation on top of a solvated "// &
+                                  "reference is not implemented on the CPU backend: the "// &
+                                  "orbitals would carry the continuum while the "// &
+                                  "correlation treatment ignored it, and which scheme "// &
+                                  "that amounts to should be chosen, not implied. Run "// &
+                                  "the SCF with keywords.pcm, or the correlation "// &
+                                  "without it.")
+            result%has_error = .true.
+            return
+         end if
+         if (allocated(settings%fukui_population)) then
+            call result%error%set(ERROR_VALIDATION, "the Fukui analysis runs two more "// &
+                                  "SCFs for the ions, and those would run in the gas "// &
+                                  "phase against a solvated neutral -- an IP computed "// &
+                                  "across two different physics. Not wired up; run the "// &
+                                  "analysis without keywords.pcm.")
+            result%has_error = .true.
+            return
+         end if
+         if (settings%bonding_energy) then
+            call result%error%set(ERROR_VALIDATION, "the bonding energy decomposition "// &
+                                  "rebuilds its atom energies from gas-phase operators "// &
+                                  "and would drop the dielectric term without saying "// &
+                                  "so. Not wired up; run it without keywords.pcm.")
+            result%has_error = .true.
+            return
+         end if
       end if
 
       if (unrestricted .and. settings%density_fitting) then
@@ -670,6 +706,21 @@ contains
             write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), ", grid level ", settings%grid_level
             call logger%info(trim(line))
          end if
+         ! A double hybrid's perturbative term is an MP2 on top of the
+         ! reference, and correlation over a solvated reference is refused
+         ! above by name. This is the same refusal for the case where the deck
+         ! spells MP2 as part of the functional.
+         if (settings%pcm%enabled .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "a double hybrid under continuum "// &
+                                  "solvation is correlation on a solvated reference, "// &
+                                  "which is not implemented on the CPU backend -- see "// &
+                                  "the MP2 refusal. Use a hybrid or GGA functional "// &
+                                  "with keywords.pcm.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
       end if
 
       ! ---- which initial guess? ---------------------------------------------
@@ -733,6 +784,29 @@ contains
       ! and after a fallback it is the only place the substitution is visible.
       call logger%verbose("initial guess: "//guess_display_name(guess_kind))
 
+      ! ---- the continuum, once per geometry ---------------------------------
+      !
+      ! Built here because this is the first point where the molecule exists;
+      ! the SCF then solves the surface charges against each iteration's
+      ! density. The banner mirrors the cuEST driver's, so a run reads the same
+      ! on either backend.
+      if (settings%pcm%enabled) then
+         call pcm_ctx%build(mol, fragment%element_numbers, settings%pcm, error)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         write (line, "(a,f10.4,a,i0,a,f6.3,a,a)") "    continuum: eps = ", &
+            settings%pcm%dielectric, "   angular points ", settings%pcm%angular_points, &
+            "   radii x ", settings%pcm%radii_scale, "   model ", trim(settings%pcm%method)
+         call logger%info(trim(line))
+         write (line, "(a,i0,a,i0,a)") "    continuum: ", pcm_ctx%surface%n_points, &
+            " surface points kept, ", pcm_ctx%surface%n_discarded, " buried"
+         call logger%info(trim(line))
+      end if
+
       ! Density fitting is asked for, not inferred. aux_basis_set carries a
       ! default, so treating its presence as the request would mean every
       ! calculation quietly fitted -- and the difference is 5e-5 Hartree, large
@@ -773,14 +847,15 @@ contains
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               aux=aux, diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density=guess_total, xc=xc)
+                              guess_density=guess_total, xc=xc, pcm=pcm_ctx)
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
       else if (unrestricted) then
          call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
                               settings%energy_tol, settings%density_tol, settings%verbose, &
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc)
+                              guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc, &
+                              pcm=pcm_ctx)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration.
@@ -807,7 +882,7 @@ contains
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density=guess_total, xc=xc, &
+                              guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                               in_core=eri_fits_in_core(mol%nao) .and. .not. xc%range_separated)
       end if
       if (error%has_error()) then
@@ -838,6 +913,11 @@ contains
 
       result%energy%scf = scf%energy
       result%has_energy = .true.
+      if (settings%pcm%enabled) then
+         write (line, "(a,f18.10,a,f9.4)") "    continuum: E_diel = ", scf%pcm_energy, &
+            "   total surface charge ", scf%pcm_charge
+         call logger%info(trim(line))
+      end if
 
       ! ---- analyses asked for alongside the energy ---------------------------
       !
@@ -1079,9 +1159,13 @@ contains
       ! have to be redistributed onto the heavy atoms the caps replaced, and
       ! that is checked for the finite-difference path and not for this one.
       ! Falling back leaves a fragmented Hessian exactly as it was.
+      ! A solvated SCF also falls through: these second derivatives are the
+      ! gas-phase operator's, and the finite-difference fallback is *correct*
+      ! for the continuum -- each displaced energy rebuilds its own cavity.
       if (do_hessian .and. .not. unrestricted .and. .not. kohn_sham &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
-          .and. .not. settings%run_cc .and. fragment%n_caps == 0) then
+          .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
+          .and. fragment%n_caps == 0) then
          block
             real(dp), allocatable :: hess4(:, :, :, :)
             type(timer_type) :: hess_clock

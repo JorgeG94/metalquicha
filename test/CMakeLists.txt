@@ -193,6 +193,10 @@ if(MQC_ENABLE_LIBCINT)
   # dipole rank being the first.
   addtest(mqc_libcint_esp)
   target_link_libraries(test_mqc_libcint_esp PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The continuum: cavity geometry, the Born ion in closed form, and one
+  # solvated SCF pinned against PySCF.
+  addtest(mqc_pcm)
+  target_link_libraries(test_mqc_pcm PRIVATE ${MQC_INTEGRALS_LIBS})
   # SAPT0's molecules: ghosts in the dimer basis. Everything checkable before a
   # term is computed -- that ghosts keep their basis and lose their charge, and
   # that a monomer's AO ordering is the dimer's, which Tr(D S) catches.
