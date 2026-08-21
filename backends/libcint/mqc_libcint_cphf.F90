@@ -1627,9 +1627,31 @@ contains
             nonzero(nnz) = m
          end if
       end do
+      if (talk) then
+         write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
+            " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
+            " pairs, matrix free"
+         call logger%info(trim(line))
+         write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
+            " systems in flight, ", 4*((n_sys + 11)/12), &
+            " integral passes per iteration, ", &
+            11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
+         call logger%info(trim(line))
+         write (line, "(A,I0,A)") "          building the right-hand side, ", &
+            (nnz + 11)/12, " integral passes"
+         call logger%info(trim(line))
+         flush (output_unit)
+         call clock%start()
+      end if
+
+      ! **Chunked like every other pass, and for the same reason.** This was the
+      ! one call that was not, and at 841 basis functions with 132 systems it is
+      ! a 747 MB density block and an `n_ao^2` by 132 accumulator *per thread* --
+      ! tens of gigabytes of scattered writes before the solver has printed a
+      ! single line, which reads exactly like a hang.
       if (nnz > 0) then
-         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             rhs, nonzero, nnz, .true., t, error)
+         call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                                rhs, nonzero, nnz, .true., t, error)
          if (error%has_error()) return
          do m = 1, nnz
             rhs(:, :, nonzero(m)) = t(:, :, nonzero(m))
@@ -1667,20 +1689,9 @@ contains
       end do
 
       if (talk) then
-         write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
-            " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
-            " pairs, matrix free"
-         call logger%info(trim(line))
-         ! What it is about to spend, before it spends any of it. At this size a
-         ! single iteration is minutes of integral passes, so a run that printed
-         ! only on completion would look indistinguishable from a hang.
-         write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
-            " systems in flight, ", 4*((n_sys + 11)/12), &
-            " integral passes per iteration, ", &
-            11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
-         call logger%info(trim(line))
-         write (line, "(A,ES8.1,A,I0,A)") "          beginning, residual target ", &
-            threshold, ", at most ", cycles, " iterations"
+         write (line, "(A,F0.1,A,ES8.1,A,I0,A)") "          right-hand side done in ", &
+            clock%get_elapsed_time(), " s; iterating to ", threshold, &
+            ", at most ", cycles, " iterations"
          call logger%info(trim(line))
          flush (output_unit)
          call clock%start()
