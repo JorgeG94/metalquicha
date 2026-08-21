@@ -77,6 +77,47 @@ CH3_ATOMS = [("C", (0.0, 0.0, 0.0)),
 CH3_SPIN = 1   # PySCF counts unpaired electrons, not 2S+1
 KS_TOL = 1e-9   # measured 2e-11; the SCF thresholds set the floor
 
+
+def check_pyscf_grid_convention():
+    """Refuse a PySCF whose radial grid is not the one we integrate on.
+
+    PySCF changed its default. From roughly 2.7 it applies the per-element xi
+    scale factors of the Treutler-Ahlrichs mesh (JCP 102, 346), gated on
+    `pyscf.dft.radi.ATOM_SPECIFIC_TREUTLER_GRIDS`; 2.6.2 and earlier use xi = 1
+    for every element. We apply them -- src/methods/mqc_dft_radial.f90 -- so
+    against an older PySCF the two codes integrate on different grids.
+
+    That failure is silent and convincing. Every Kohn-Sham case misses by 1e-8
+    to 1e-6 while the two checks above still pass, because those are the ones
+    where the grid cancels; the size ordering follows grid sensitivity, worst
+    for M06-L and the B97 series. It reads as a regression in the
+    exchange-correlation code and is not one. It cost an afternoon once.
+
+    The usual cause is the interpreter rather than the install: `python3.10`
+    picks up ~/.local packages, which are visible to any Python 3.10 whether or
+    not a venv is active. Use the venv's `python3`.
+    """
+    import pyscf
+    from pyscf.dft import radi
+
+    on = getattr(radi, "ATOM_SPECIFIC_TREUTLER_GRIDS", False)
+    if not on:
+        raise SystemExit(
+            f"[dft] refusing to compare against PySCF {pyscf.__version__} at "
+            f"{pyscf.__file__}\n"
+            "      Its Treutler-Ahlrichs radial mesh has no per-element xi scale "
+            "factors\n"
+            "      (pyscf.dft.radi.ATOM_SPECIFIC_TREUTLER_GRIDS is absent or "
+            "false), so it\n"
+            "      integrates on a different grid than we do and every "
+            "Kohn-Sham case would\n"
+            "      appear to fail by 1e-8 to 1e-6. Use the project venv's "
+            "python3 (PySCF\n"
+            "      >= 2.7), not python3.10. See mqc_docs/source/validation.rst, "
+            "'Density\n"
+            "      Functional Energies'."
+        )
+
 # Double hybrids, against pyscf-forge's DFDH on the same geometry and basis.
 #
 # The tolerance is 5e-5 and that is not slack -- it is DFDH's own error. Its SCF is
@@ -110,6 +151,7 @@ def read_dump(path):
 
 
 def main():
+    check_pyscf_grid_convention()
     from pyscf import gto, scf
     from pyscf.dft import libxc, numint
 
