@@ -13,7 +13,8 @@
 # ON.
 target_sources(
   ${main_lib}
-  PRIVATE mqc_libcint_atomic_guess.f90
+  PRIVATE mqc_libcint_afo.f90
+          mqc_libcint_atomic_guess.f90
           mqc_libcint_gradient.f90
           mqc_libcint_response.f90
           mqc_libcint_hess_abi.f90
