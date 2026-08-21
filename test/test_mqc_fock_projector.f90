@@ -5,7 +5,7 @@ module test_mqc_fock_projector
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    use mqc_scf_common, only: build_orthogonalizer
-   use mqc_fock_projector, only: fock_projector_t
+   use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    implicit none
 
    !> The constraint is four GEMMs and an exact inverse, so what is left is
@@ -41,7 +41,12 @@ contains
                   new_unittest("projector_frozen_virtuals_are_degenerate", test_degenerate), &
                   new_unittest("projector_leaves_the_unfrozen_block_alone", test_unfrozen_intact), &
                   new_unittest("projector_shift_sets_the_precision_floor", test_shift_floor), &
-                  new_unittest("projector_refuses_blocks_that_do_not_nest", test_bad_blocks) &
+                  new_unittest("projector_refuses_blocks_that_do_not_nest", test_bad_blocks), &
+                  new_unittest("frozen_basis_is_orthonormal_in_the_metric", test_basis_orthonormal), &
+                  new_unittest("frozen_basis_spans_what_was_frozen", test_basis_spans), &
+                  new_unittest("frozen_basis_keeps_the_blocks_apart", test_basis_blocks), &
+                  new_unittest("frozen_basis_refuses_a_repeated_orbital", test_basis_repeat), &
+                  new_unittest("frozen_basis_feeds_the_projector", test_basis_end_to_end) &
                   ]
    end subroutine collect_mqc_fock_projector
 
@@ -252,6 +257,147 @@ contains
       after = to_mo(c, f)
       leak = maxval(abs(after(nfr + 1:, nfr + 1:) - before(nfr + 1:, nfr + 1:)))
    end subroutine unfrozen_leak
+
+   subroutine raw_frozen(c, raw)
+      !! Three orbitals to freeze, deliberately neither orthogonal nor normalised
+      !!
+      !! Built from an orthonormal basis and then mixed, which is what arrives
+      !! from a localization: recognisable orbitals with no orthogonality left
+      !! between them. The third overlaps the first, so the block projection has
+      !! something to do.
+      real(dp), intent(in) :: c(:, :)
+      real(dp), allocatable, intent(out) :: raw(:, :)
+
+      allocate (raw(size(c, 1), 3))
+      raw(:, 1) = c(:, 1) + 0.4_dp*c(:, 2)
+      raw(:, 2) = c(:, 2) - 0.3_dp*c(:, 3)
+      raw(:, 3) = c(:, 4) + 0.2_dp*c(:, 1)
+      raw = 1.7_dp*raw
+   end subroutine raw_frozen
+
+   function metric_residual(s, span, v) result(left)
+      !! How much of `v` lies outside the columns of `span`, measured in `S`
+      real(dp), intent(in) :: s(:, :), span(:, :), v(:)
+      real(dp) :: left
+      real(dp), allocatable :: sv(:), coeff(:), r(:), sr(:)
+      integer :: n_ao, k, i
+
+      n_ao = size(v)
+      k = size(span, 2)
+      allocate (sv(n_ao), coeff(k), r(n_ao), sr(n_ao))
+      sv = matmul(s, v)
+      do i = 1, k
+         coeff(i) = dot_product(span(:, i), sv)
+      end do
+      r = v - matmul(span, coeff)
+      sr = matmul(s, r)
+      left = sqrt(abs(dot_product(r, sr)))
+   end function metric_residual
+
+   subroutine test_basis_orthonormal(error)
+      !! `C^T S C = I` -- the property `apply` is built on
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), f(:, :), c(:, :), raw(:, :), basis(:, :), gram(:, :)
+      integer :: n_mo, n_basis, i
+
+      call model_problem(s, f, c, n_mo, err)
+      call raw_frozen(c, raw)
+      call build_frozen_basis(raw, 2, s, basis, n_basis, err)
+      call check(error,.not. err%has_error(), "building the frozen basis failed")
+      if (allocated(error)) return
+      call check(error, n_basis, n_mo, "the frozen basis lost part of the space")
+      if (allocated(error)) return
+
+      gram = matmul(transpose(basis), matmul(s, basis))
+      do i = 1, n_basis
+         gram(i, i) = gram(i, i) - 1.0_dp
+      end do
+      call check(error, maxval(abs(gram)) < TOL, &
+                 "the frozen basis is not orthonormal in the overlap metric")
+   end subroutine test_basis_orthonormal
+
+   subroutine test_basis_spans(error)
+      !! Every orbital handed in still lies in the leading columns
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), f(:, :), c(:, :), raw(:, :), basis(:, :)
+      integer :: n_mo, n_basis, i
+
+      call model_problem(s, f, c, n_mo, err)
+      call raw_frozen(c, raw)
+      call build_frozen_basis(raw, 2, s, basis, n_basis, err)
+
+      do i = 1, 3
+         call check(error, metric_residual(s, basis(:, :3), raw(:, i)) < TOL, &
+                    "a frozen orbital is not spanned by the frozen block")
+         if (allocated(error)) return
+      end do
+   end subroutine test_basis_spans
+
+   subroutine test_basis_blocks(error)
+      !! The occupied orbitals stay inside the occupied block
+      !!
+      !! This is the one that fails if the frozen set is orthonormalised in a
+      !! single pass: the blocks come out mixed, and then `apply` holds part of
+      !! an occupied orbital at the level shift.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), f(:, :), c(:, :), raw(:, :), basis(:, :)
+      integer :: n_mo, n_basis, i
+
+      call model_problem(s, f, c, n_mo, err)
+      call raw_frozen(c, raw)
+      call build_frozen_basis(raw, 2, s, basis, n_basis, err)
+
+      do i = 1, 2
+         call check(error, metric_residual(s, basis(:, :2), raw(:, i)) < TOL, &
+                    "a frozen occupied orbital leaked into the virtual block")
+         if (allocated(error)) return
+      end do
+   end subroutine test_basis_blocks
+
+   subroutine test_basis_repeat(error)
+      !! The same orbital frozen twice is a caller's bug, not something to absorb
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), f(:, :), c(:, :), raw(:, :), basis(:, :)
+      integer :: n_mo, n_basis
+
+      call model_problem(s, f, c, n_mo, err)
+      allocate (raw(N, 2))
+      raw(:, 1) = c(:, 1)
+      raw(:, 2) = c(:, 1)
+      call build_frozen_basis(raw, 2, s, basis, n_basis, err)
+      call check(error, err%has_error(), "a repeated frozen orbital was accepted")
+   end subroutine test_basis_repeat
+
+   subroutine test_basis_end_to_end(error)
+      !! Localization output in, constrained Fock out
+      type(error_type), allocatable, intent(out) :: error
+      type(fock_projector_t) :: proj
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), f(:, :), c(:, :), raw(:, :), basis(:, :), f_mo(:, :)
+      integer :: n_mo, n_basis
+
+      call model_problem(s, f, c, n_mo, err)
+      call raw_frozen(c, raw)
+      call build_frozen_basis(raw, 2, s, basis, n_basis, err)
+      call proj%init(basis, s, 2, 3, SHIFT, err)
+      call proj%apply(f, err)
+      call check(error,.not. err%has_error(), "the projector rejected a basis built for it")
+      if (allocated(error)) return
+
+      f_mo = to_mo(basis, f)
+      call check(error, maxval(abs(f_mo(3:, :2))) < ATOL, &
+                 "the frozen occupied block is still coupled")
+      if (allocated(error)) return
+      call check(error, abs(f_mo(3, 3) - SHIFT) < ATOL, &
+                 "the frozen virtual is not held at the shift")
+      if (allocated(error)) return
+      call check(error, maxval(abs(f_mo(4:, 3))) < ATOL, &
+                 "the frozen virtual is still coupled to the unfrozen space")
+   end subroutine test_basis_end_to_end
 
    subroutine test_bad_blocks(error)
       !! The blocks have to nest, and being told otherwise is a caller's bug

@@ -57,11 +57,14 @@ module mqc_fock_projector
    !! after DIIS, the error vector measures a matrix nobody diagonalizes.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_syev
+   use mqc_scf_common, only: build_orthogonalizer, LINEAR_DEPENDENCE_TOL
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
    public :: fock_projector_t
+   public :: build_frozen_basis
 
    !> A frozen-orbital partition, and the constraint it implies
    type :: fock_projector_t
@@ -86,6 +89,166 @@ module mqc_fock_projector
    end type fock_projector_t
 
 contains
+
+   subroutine build_frozen_basis(frozen, n_frozen_occ, overlap, basis, n_mo, error)
+      !! Turn a set of chosen orbitals into a basis `init` will accept
+      !!
+      !! The constraint names its blocks by index range, so the orbitals to be
+      !! frozen have to sit in the leading columns of an orthonormal basis, in
+      !! block order, with the rest of the space after them. What arrives from a
+      !! localization is none of those things: the chosen orbitals are neither
+      !! mutually orthogonal nor normalised, and they span a few dimensions of
+      !! many.
+      !!
+      !! **Block by block, and that is the whole subtlety.** Orthonormalising
+      !! the frozen set in one pass -- the obvious thing -- mixes the frozen
+      !! occupied orbitals with the frozen virtual ones, and then the block
+      !! boundary means nothing: `apply` would leave part of a virtual untouched
+      !! and hold part of an occupied at the level shift. Mixing *within* a
+      !! block is harmless, because the occupied block is left alone by the
+      !! constraint and the virtual block is made degenerate, and both are
+      !! invariant under a rotation among their own members. So each block is
+      !! projected against everything already placed and then orthonormalised
+      !! among itself, which mixes only where mixing costs nothing.
+      !!
+      !! Canonical rather than symmetric orthonormalisation, for the reason
+      !! `build_orthogonalizer` gives and one more: the completion step is
+      !! deliberately rank deficient -- it starts from a basis for the whole
+      !! space and must come back with the part not already spanned -- so the
+      !! same routine has to drop null directions rather than amplify them.
+      !!
+      !! Near-dependence among the frozen orbitals themselves is a caller's bug
+      !! rather than something to quietly absorb: two localized orbitals that
+      !! are the same orbital means the bond was assigned twice, and freezing it
+      !! twice would be silent. It is refused.
+      real(dp), intent(in) :: frozen(:, :)
+         !! `n_ao` by `n_frozen`, occupied first, in the order the blocks want
+      integer, intent(in) :: n_frozen_occ
+      real(dp), intent(in) :: overlap(:, :)
+      real(dp), allocatable, intent(out) :: basis(:, :)
+      integer, intent(out) :: n_mo
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: x(:, :), piece(:, :)
+      integer :: n_ao, n_frozen, n_virt
+
+      if (error%has_error()) return
+      n_ao = size(frozen, 1)
+      n_frozen = size(frozen, 2)
+      n_virt = n_frozen - n_frozen_occ
+
+      if (n_frozen_occ < 0 .or. n_virt < 0) then
+         call error%set(ERROR_VALIDATION, "frozen basis: the occupied block cannot be "// &
+                        "negative or larger than the frozen set")
+         return
+      end if
+      if (size(overlap, 1) /= n_ao .or. size(overlap, 2) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "frozen basis: the overlap is not square in "// &
+                        "the basis the orbitals are expressed in")
+         return
+      end if
+
+      call build_orthogonalizer(overlap, x, n_mo, error)
+      if (error%has_error()) return
+      if (n_frozen > n_mo) then
+         call error%set(ERROR_VALIDATION, "frozen basis: more orbitals were frozen than "// &
+                        "the basis can hold once near-dependent combinations are dropped")
+         return
+      end if
+
+      allocate (basis(n_ao, n_mo), source=0.0_dp)
+
+      if (n_frozen_occ > 0) then
+         piece = frozen(:, :n_frozen_occ)
+         call orthonormalize_against(overlap, basis, 0, piece, error)
+         if (error%has_error()) return
+         if (size(piece, 2) /= n_frozen_occ) then
+            call error%set(ERROR_VALIDATION, "frozen basis: the frozen occupied orbitals "// &
+                           "are linearly dependent, so one of them is already frozen")
+            return
+         end if
+         basis(:, :n_frozen_occ) = piece
+      end if
+
+      if (n_virt > 0) then
+         piece = frozen(:, n_frozen_occ + 1:)
+         call orthonormalize_against(overlap, basis, n_frozen_occ, piece, error)
+         if (error%has_error()) return
+         if (size(piece, 2) /= n_virt) then
+            call error%set(ERROR_VALIDATION, "frozen basis: a frozen virtual orbital is "// &
+                           "already spanned by the frozen occupied ones")
+            return
+         end if
+         basis(:, n_frozen_occ + 1:n_frozen) = piece
+      end if
+
+      ! Whatever is left of the space. Starting from a basis for all of it and
+      ! projecting out what is placed leaves exactly `n_mo - n_frozen`
+      ! directions, and the count coming back is the check that it did.
+      piece = x
+      call orthonormalize_against(overlap, basis, n_frozen, piece, error)
+      if (error%has_error()) return
+      if (size(piece, 2) /= n_mo - n_frozen) then
+         call error%set(ERROR_VALIDATION, "frozen basis: the complement of the frozen "// &
+                        "orbitals did not come back with the dimension it must have")
+         return
+      end if
+      if (n_mo > n_frozen) basis(:, n_frozen + 1:) = piece
+   end subroutine build_frozen_basis
+
+   subroutine orthonormalize_against(overlap, prior, n_prior, vecs, error)
+      !! Project `vecs` off the first `n_prior` columns of `prior`, then
+      !! orthonormalise what is left among itself in the metric `overlap`
+      !!
+      !! `vecs` comes back with however many independent directions survived,
+      !! which may be fewer columns than it went in with. The caller decides
+      !! whether losing one was expected.
+      real(dp), intent(in) :: overlap(:, :)
+      real(dp), intent(in) :: prior(:, :)
+      integer, intent(in) :: n_prior
+      real(dp), allocatable, intent(inout) :: vecs(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: sv(:, :), gram(:, :), coeff(:, :), kept(:, :), evals(:)
+      integer :: n_ao, n_v, n_keep, i, first, info
+
+      if (error%has_error()) return
+      n_ao = size(vecs, 1)
+      n_v = size(vecs, 2)
+
+      if (n_prior > 0) then
+         allocate (sv(n_ao, n_v), coeff(n_prior, n_v))
+         call pic_gemm(overlap, vecs, sv)
+         call pic_gemm(prior(:, :n_prior), sv, coeff, transa="T")
+         call pic_gemm(prior(:, :n_prior), coeff, vecs, alpha=-1.0_dp, beta=1.0_dp)
+         deallocate (sv, coeff)
+      end if
+
+      allocate (sv(n_ao, n_v), gram(n_v, n_v), evals(n_v))
+      call pic_gemm(overlap, vecs, sv)
+      call pic_gemm(vecs, sv, gram, transa="T")
+      call pic_syev(gram, evals, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "frozen basis: orthonormalisation failed")
+         return
+      end if
+
+      ! Ascending, so the directions already spanned lead and are dropped.
+      n_keep = count(evals > LINEAR_DEPENDENCE_TOL)
+      first = n_v - n_keep + 1
+
+      allocate (kept(n_ao, max(n_keep, 1)))
+      if (n_keep > 0) then
+         call pic_gemm(vecs, gram(:, first:), kept)
+         do i = 1, n_keep
+            kept(:, i) = kept(:, i)/sqrt(evals(first + i - 1))
+         end do
+      end if
+
+      deallocate (vecs)
+      allocate (vecs(n_ao, n_keep))
+      if (n_keep > 0) vecs = kept(:, :n_keep)
+   end subroutine orthonormalize_against
 
    subroutine init(this, basis, overlap, n_frozen_occ, n_frozen, shift, error)
       !! Take the basis and partition, and form the back transform
