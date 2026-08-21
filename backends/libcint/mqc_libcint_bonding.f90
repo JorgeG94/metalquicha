@@ -30,6 +30,7 @@ module mqc_libcint_bonding
                                quao_result_t, orient_quasi_atomic_orbitals, &
                                kinetic_bond_orders
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
+   use mqc_timing, only: timing_report_t
    use mqc_libcint_atomic_guess, only: free_atom_energies
    use mqc_libcint_casci, only: active_space_integrals, run_libcint_casci, casci_result_t
    use mqc_rdm, only: active_space_rdms, rdm_energy
@@ -293,6 +294,7 @@ contains
       real(dp), allocatable :: s_ao(:, :), u_active(:, :)
       real(dp), allocatable :: cumulant(:, :, :, :), cumulant_quao(:, :, :, :)
       logical :: correlated, want_energy, adopted, starved, restrict
+      type(timing_report_t) :: clk
       integer :: ci_route
       integer, allocatable :: restriction(:)
       real(dp) :: span_deficit, formation
@@ -300,6 +302,7 @@ contains
       real(dp), allocatable :: nuc_coulomb(:, :), two_coulomb(:, :), classical(:, :)
       real(dp), allocatable :: nuc_core(:), nuc_val(:)
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
+      integer, allocatable :: order(:)
       character(len=160) :: line
       character(len=8) :: label
       integer :: natm, iatom, i, core, valence
@@ -318,6 +321,7 @@ contains
       ! The dimensions first: they are pure counting and they refuse the cases
       ! this cannot handle -- an element past xenon, an odd electron count --
       ! before any integral is built.
+      call clk%start()
       call aambs_dimensions(atomic_numbers, n_electrons, dims, error)
       if (error%has_error()) return
 
@@ -435,8 +439,10 @@ contains
          call quasi_atomic_orbitals(atomic_numbers, valence_internal, dims%n_valocc, &
                                     mixed, val_off, val_n, quao, error)
       end if
+      call clk%lap("quasi-atomic orbitals")
       call orient_quasi_atomic_orbitals(quao, error)
       if (error%has_error()) return
+      call clk%lap("orientation")
 
       call mol%kinetic(kinetic)
       call kinetic_bond_orders(quao, kinetic, kbo, error, interference)
@@ -708,11 +714,13 @@ contains
          ! a rearrangement of this one.
          if (present(no_sharing)) then
             if (no_sharing) then
+               call clk%lap("energy decomposition")
                call no_sharing_analysis(mol, full_quao, quao, dims%n_core, &
                                         atomic_numbers, natm, &
                                         orbitals(:, 1:dims%n_core), valence_internal, &
                                         ci_route, error, valence_wavefunction)
                if (error%has_error()) return
+               call clk%lap("no-sharing wave function")
             end if
          end if
 
@@ -798,9 +806,33 @@ contains
          write (line, "(a,f8.4,a,f8.4)") "    valence gap        ", &
             vvo%smallest_retained, "   against rejected ", vvo%largest_rejected
          call logger%info(trim(line))
+
+         ! Per orbital as well as averaged, because the average cannot tell
+         ! every orbital being mediocre from a few being poor. The papers quote
+         ! these one at a time -- 0.978 to 0.9999 across ethane's sixteen -- so
+         ! this is the form in which our numbers can be set beside theirs.
+         if (allocated(quao%character_of)) then
+            call logger%info("")
+            call logger%info("    atomic character per orbital, worst first")
+            call sort_ascending(quao%character_of, order)
+            do i = 1, min(size(order), 12)
+               write (line, "(a,i4,a,a,i0,a,f9.4)") "      orbital ", order(i), &
+                  "  on ", trim(adjustl(element_symbols(quao%atom_of(order(i))))), &
+                  quao%atom_of(order(i)), "   ", quao%character_of(order(i))
+               call logger%info(trim(line))
+            end do
+            if (size(order) > 12) then
+               write (line, "(a,i0,a)") "      (", size(order) - 12, " better ones not shown)"
+               call logger%info(trim(line))
+            end if
+            deallocate (order)
+         end if
          call logger%info("")
          deallocate (populations)
       end if
+
+      call clk%finish()
+      call clk%report("quasi-atomic analysis", loud)
 
       call aambs%destroy()
       deallocate (s_mbs, mixed, projection, valence_internal, kinetic, kbo)
@@ -1092,6 +1124,33 @@ contains
       deallocate (to_valence)
    end subroutine inherit_valence_ci
 
+   pure subroutine sort_ascending(values, order)
+      !! Index permutation putting `values` in ascending order
+      !!
+      !! Ascending because the interesting end is the low one: a single orbital
+      !! that failed to become atomic says more about a molecule than the
+      !! dozen that succeeded.
+      real(dp), intent(in) :: values(:)
+      integer, allocatable, intent(out) :: order(:)
+
+      integer :: n, i, j, pick, hold
+
+      n = size(values)
+      allocate (order(n))
+      do i = 1, n
+         order(i) = i
+      end do
+      do i = 1, n - 1
+         pick = i
+         do j = i + 1, n
+            if (values(order(j)) < values(order(pick))) pick = j
+         end do
+         hold = order(i)
+         order(i) = order(pick)
+         order(pick) = hold
+      end do
+   end subroutine sort_ascending
+
    subroutine no_sharing_analysis(mol, full_quao, valence_quao, n_core, &
                                   atomic_numbers, natm, core_orbitals, &
                                   valence_internal, ci_route, error, offered)
@@ -1160,6 +1219,7 @@ contains
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :), ci(:, :)
       real(dp), allocatable :: mo_basis(:, :), string_rotation(:, :)
+      type(timing_report_t) :: ns
       real(dp), allocatable :: to_quao(:, :), spread_ci(:, :)
       type(casci_result_t) :: cas
       type(link_table_t) :: alpha, beta
@@ -1200,9 +1260,11 @@ contains
       ! The active-space Hamiltonian in the quasi-atomic basis. Needed on both
       ! routes -- the projected wave function's energy is built against it --
       ! and on the resolve route it is what the CI is solved in as well.
+      call ns%start()
       call active_space_integrals(mol, full_quao%orbitals, n_core, n_active, &
                                   h_eff, eri_act, core_energy, error)
       if (error%has_error()) return
+      call ns%lap("active space integrals")
 
       inherited = .false.
       if (ci_route == NO_SHARING_CI_RESOLVE) then
@@ -1278,6 +1340,7 @@ contains
 
          call string_rotation_matrix(to_quao, na, string_rotation, error)
          if (error%has_error()) return
+         call ns%lap("string rotation")
          if (inherited .and. allocated(spread_ci)) then
             call transform_ci_vector(string_rotation, string_rotation, spread_ci, &
                                      ci, error)
@@ -1289,6 +1352,7 @@ contains
                                      ci, error)
          end if
          if (error%has_error()) return
+         call ns%lap("transform")
          if (inherited) then
             write (line, "(a,i0,a,i0,a)") "     the converged wave function "// &
                "transformed, no CI solved here (", size(string_rotation, 1), " x ", &
@@ -1311,6 +1375,7 @@ contains
          call active_space_rdms(ci, alpha, beta, dm1, dm2, error)
          if (error%has_error()) return
          e_check = rdm_energy(h_eff, eri_act, dm1, dm2) + core_energy
+         call ns%lap("invariance check (density matrices)")
          call alpha%destroy()
          call beta%destroy()
          deallocate (dm1, dm2)
@@ -1350,6 +1415,7 @@ contains
       call project_no_sharing(valence_quao%atom_of, natm, neutral, na, nb, ci, &
                               recovered, n_kept, error)
       if (error%has_error()) return
+      call ns%lap("neutral projection")
 
       ! The energy of the projection, from its own density matrices against the
       ! same active-space Hamiltonian the CI used.
@@ -1359,6 +1425,9 @@ contains
       call active_space_rdms(ci, alpha, beta, dm1, dm2, error)
       if (error%has_error()) return
       e_zero = rdm_energy(h_eff, eri_act, dm1, dm2) + core_energy
+      call ns%lap("projected density matrices")
+      call ns%finish()
+      call ns%report("no-sharing", .true.)
 
       write (line, "(a,i0,a,i0,a,f8.2,a)") "     neutral determinants ", n_kept, &
          " of ", n_total, ", holding ", 100.0_dp*recovered, "% of the squared norm"

@@ -109,6 +109,13 @@ module mqc_libcint_quao
       logical :: oriented = .false.
       real(dp) :: orientation_sum = 0.0_dp
          !! Paper I eq (5.5) after orientation
+      real(dp), allocatable :: character_of(:)
+         !! (n_quao) how much of each orbital lies inside its own atom's
+         !! free-atom space, as a norm rather than a square, so it is on the
+         !! scale the papers quote overlaps on. `atomic_character` is the mean
+         !! of the squares of these. Kept per orbital because the mean cannot
+         !! distinguish every orbital being mediocre from a few being poor, and
+         !! those say different things about a molecule.
       real(dp) :: atomic_character = 0.0_dp
          !! The maximized functional, Paper II eq (A.5), divided by the number of
          !! orbitals. One means every orbital lies entirely within its own atom's
@@ -518,7 +525,8 @@ contains
    end subroutine atom_adapted_block
 
    subroutine refine_atomic_character(coefficients, projection, atom_of, subspace_of, &
-                                      offset, count, sweeps, functional, error)
+                                      offset, count, sweeps, functional, error, &
+                                      character_of)
       !! Rotate between atoms so each orbital sits as fully as possible on its own
       !!
       !! Paper II's Appendix, eqs (A.1)-(A.11), which replaces the plain
@@ -554,6 +562,9 @@ contains
       integer, intent(in) :: offset(:), count(:)      !! AAMBS range per atom
       integer, intent(out) :: sweeps
       real(dp), intent(out) :: functional
+      real(dp), allocatable, intent(out), optional :: character_of(:)
+         !! Per orbital, the norm of its projection onto its own atom's
+         !! free-atom space -- the quantity the papers quote per QUAO
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: amb(:, :), ci(:), cj(:)
@@ -636,10 +647,13 @@ contains
 
       call pic_gemm(coefficients, projection, amb, transa="T")
       functional = 0.0_dp
+      if (allocated(character_of)) deallocate (character_of)
+      allocate (character_of(n))
       do i = 1, n
          k = atom_of(i)
          lo = offset(k) + 1
          hi = offset(k) + count(k)
+         character_of(i) = sqrt(sum(amb(i, lo:hi)**2))
          functional = functional + sum(amb(i, lo:hi)**2)
       end do
       functional = functional/real(n, dp)
@@ -873,7 +887,8 @@ contains
 
       call refine_atomic_character(orthogonal, projection, result%atom_of, &
                                    result%subspace_of, offset, count, result%sweeps, &
-                                   result%atomic_character, error)
+                                   result%atomic_character, error, &
+                                   character_of=result%character_of)
       if (error%has_error()) return
 
       allocate (result%orbitals(n_ao, n_val))

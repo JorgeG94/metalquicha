@@ -792,7 +792,7 @@ contains
    end subroutine ormas_apply
 
    subroutine ormas_solve(space, h1e, eri, n_roots, energies, vectors, error, &
-                          tolerance, max_iterations, guess)
+                          tolerance, max_iterations, guess, verbose, energy_offset)
       !! The lowest states of a restricted active space, iteratively
       !!
       !! Everything from the partition and the integrals: the strings, the
@@ -812,6 +812,13 @@ contains
       real(dp), intent(in), optional :: tolerance
       integer, intent(in), optional :: max_iterations
       real(dp), intent(in), optional :: guess(:, :)
+      logical, intent(in), optional :: verbose
+         !! Print a line per iteration, as the complete-space solver does. A
+         !! restricted space is smaller but not necessarily quick, and it was
+         !! the one path still finishing without ever having said it started.
+      real(dp), intent(in), optional :: energy_offset
+         !! Added to the eigenvalue before printing, so the table shows the
+         !! total rather than the active-space energy alone.
          !! (n_determinants, n_roots) starting vectors. An orbital optimiser
          !! hands back the previous macro-iteration's answer, which after the
          !! first few is nearly this one already.
@@ -844,11 +851,13 @@ contains
       if (present(guess)) then
          call davidson_flat(operator, diagonal, n_roots, energies, vectors, residuals, &
                             iterations_taken, sigma_products, converged, error, &
-                            tolerance, max_iterations, guess=guess)
+                            tolerance, max_iterations, guess=guess, &
+                            verbose=verbose, energy_offset=energy_offset)
       else
          call davidson_flat(operator, diagonal, n_roots, energies, vectors, residuals, &
                             iterations_taken, sigma_products, converged, error, &
-                            tolerance, max_iterations)
+                            tolerance, max_iterations, verbose=verbose, &
+                            energy_offset=energy_offset)
       end if
       if (error%has_error()) return
 

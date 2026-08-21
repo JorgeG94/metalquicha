@@ -345,6 +345,7 @@ contains
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: energies(:), vectors(:, :)
       type(ormas_space_t) :: space
+      type(timing_report_t) :: clk
       character(len=128) :: line
       integer :: roots, i
       logical :: loud
@@ -355,13 +356,16 @@ contains
       loud = .false.
       if (present(verbose)) loud = verbose
 
+      call clk%start()
       call build_ormas_space(subspaces, n_active, n_alpha, n_beta, min_electrons, &
                              max_electrons, space, error)
       if (error%has_error()) return
 
+      call clk%lap("restricted space")
       call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
                                   eri_act, result%core_energy, error)
       if (error%has_error()) return
+      call clk%lap("active space integrals")
 
       result%n_determinants = int(space%n_determinants)
       if (n_alpha + n_beta == 0) then
@@ -376,12 +380,15 @@ contains
 
       if (present(guess)) then
          call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
-                          tolerance=tolerance, guess=guess)
+                          tolerance=tolerance, guess=guess, verbose=loud, &
+                          energy_offset=result%core_energy)
       else
          call ormas_solve(space, h_eff, eri_act, roots, energies, vectors, error, &
-                          tolerance=tolerance)
+                          tolerance=tolerance, verbose=loud, &
+                          energy_offset=result%core_energy)
       end if
       if (error%has_error()) return
+      call clk%lap("Davidson")
 
       result%converged = .true.
       result%active_energy = energies(1)
@@ -399,6 +406,8 @@ contains
 
       call ormas_density_matrices(space, result%ci_flat, result%dm1, result%dm2, error)
       if (error%has_error()) return
+      call clk%lap("density matrices")
+      call clk%finish()
 
       if (loud) then
          call logger%info("")
@@ -426,6 +435,8 @@ contains
          write (line, "(a,f22.10)") "    total                       ", result%energy
          call logger%info(trim(line))
       end if
+
+      call clk%report("ORMAS-CI", loud)
 
       call space%destroy()
       deallocate (h_eff, eri_act)
