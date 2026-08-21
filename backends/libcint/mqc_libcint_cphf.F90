@@ -75,6 +75,7 @@ module mqc_libcint_cphf
    public :: casimir_polder_frequencies
    !> Exposed side by side so a check can hold both builds of the same matrices.
    public :: build_hessian, build_hessian_df, build_hessian_mo
+   public :: dynamic_response_iterative
    public :: static_response_dense
    public :: fitted_potential_general
 
@@ -123,6 +124,16 @@ module mqc_libcint_cphf
    !> times `n_ov`, which is hours. A fragment big enough to exceed this has no
    !> good exact route at all.
    real(dp), parameter :: MO_TRANSFORM_LIMIT = 16.0e9_dp
+
+   !> Above this the operator is never formed at all, whatever route would fill
+   !> it. `(A+B)`, `(A-B)` and their product are three `n_ov^2` matrices, and
+   !> `n_ov` is the *product* of the occupied and virtual counts -- 2275 pairs
+   !> for adenine in 6-31G, where the three come to 124 MB and the dense route
+   !> is plainly right, but 175698 for a silica nanoparticle slice in the same
+   !> basis, where they are 740 GB and each frequency wants an `n_ov^3`
+   !> factorisation on top. Past this, `dynamic_response_iterative` never builds
+   !> them.
+   real(dp), parameter :: DENSE_OPERATOR_LIMIT = 8.0e9_dp
 
    !> Above this many orbitals, recompute the integrals rather than store them.
    !>
@@ -883,23 +894,39 @@ contains
                            "is the wrong size for this reference")
             return
          end if
-      else
-         if (present(aux)) then
-            call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
-                                  progress=talk)
-            if (present(hessian)) hessian%fitted = .true.
-         else if (mo_transform_fits(mol%nao, n_occ, n_vir, direct)) then
-            ! Exact integrals, but assembled the way the fitted build assembles
-            ! them. The column build below is what this replaces, and it stays for
-            ! the systems whose AO tensor will not fit.
-            call build_hessian_mo(mol, eri0, c_occ, c_vir, gaps, aplus, aminus, error, &
-                                  progress=talk)
-         else
-            call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
-                               aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
-         end if
-         if (error%has_error()) return
+      else if (.not. present(aux) .and. &
+               3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT) then
+         ! **Too big to build, so it is never built.** Three `n_ov^2` matrices
+         ! and a factorisation per frequency is the fast route right up until it
+         ! is no route at all, and the crossover is not gentle: the matrices grow
+         ! as the fourth power of the basis while the matrix-free cost grows as
+         ! the number of iterations, which does not grow at all.
+         !
+         ! Fitted responses are excluded because `build_hessian_df` is already
+         ! cheap in exactly this regime -- the auxiliary basis is what bounds it,
+         ! not `n_ov` -- so there is nothing here for them to escape.
+         call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
+                                         c_vir, gaps, h, frequencies, alpha, error, &
+                                         max_iter=max_iter, tol=tol, &
+                                         response=response, progress=talk)
+         return
       end if
+
+      if (present(aux)) then
+         call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
+                               progress=talk)
+         if (present(hessian)) hessian%fitted = .true.
+      else if (mo_transform_fits(mol%nao, n_occ, n_vir, direct)) then
+         ! Exact integrals, but assembled the way the fitted build assembles
+         ! them. The column build below is what this replaces, and it stays for
+         ! the systems whose AO tensor will not fit.
+         call build_hessian_mo(mol, eri0, c_occ, c_vir, gaps, aplus, aminus, error, &
+                               progress=talk)
+      else
+         call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
+                            aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
+      end if
+      if (error%has_error()) return
 
       allocate (lu(n_ov, n_ov), ipiv(n_ov))
       allocate (rhs_flat(n_ov, n_pert), h_flat(n_ov, n_pert))
@@ -1478,6 +1505,359 @@ contains
       call logger%info(trim(line))
       flush (output_unit)
    end subroutine tick
+
+   subroutine dynamic_response_iterative(mol, direct, eri, bounds, zero_h, c_occ, &
+                                         c_vir, gaps, h, frequencies, alpha, error, &
+                                         max_iter, tol, response, progress)
+      !! The frequency-dependent response without ever forming its operator
+      !!
+      !! **Why this exists beside the dense build.** Materialising `(A+B)` and
+      !! `(A-B)` costs `n_ov` Fock builds and `2 n_ov^2` of storage, and after
+      !! that every frequency and perturbation is free. That is the right trade
+      !! while `n_ov` is small: adenine in 6-31G has 2275 pairs, so the matrices
+      !! are 83 MB and the build is seconds. It stops being the right trade
+      !! quickly. A slice of a mesoporous silica nanoparticle in the same basis
+      !! has 175698 pairs, where the two matrices alone are 494 GB, the
+      !! transform that fills them is two terabytes, and each of the twelve
+      !! frequencies wants an `n_ov^3` factorisation on top. There is no machine
+      !! that runs that.
+      !!
+      !! Matrix-free the cost stops depending on `n_ov` squared at all. Each
+      !! iteration is two passes over the integrals no matter how many pairs
+      !! there are, and the storage is a handful of vectors per system.
+      !!
+      !! **Every system iterates together, which is the whole economy.** The
+      !! integrals a direct build recomputes do not depend on which density is
+      !! being contracted, so one pass serves every frequency and perturbation
+      !! at once -- `response_batch` is built for exactly that, down to the
+      !! index mask that drops a system out of the pass when it converges. With
+      !! twelve frequencies and twelve perturbations that is 144 systems sharing
+      !! two passes per iteration, against 14641 passes for the column build.
+      !!
+      !! **Bi-conjugate gradient stabilised, because the operator is not
+      !! symmetric.** Eliminating `D'` from the coupled pair leaves
+      !!
+      !!     [ (A-B)(A+B) + nu^2 ] S = -2 (A-B) h
+      !!
+      !! and a product of two symmetric matrices is not symmetric, so conjugate
+      !! gradients does not apply however positive definite both factors are.
+      !! The alternative form `[(A+B) + nu^2 (A-B)^-1] S = -2h` *is* symmetric
+      !! and would take CG, but every operator application would need an inner
+      !! solve against `A - B`, and inner iterations converge at different rates
+      !! per system, which is precisely what stops the batch sharing one pass.
+      !! BiCGSTAB keeps the outer batch in lockstep at the cost of two operator
+      !! applications per iteration rather than one.
+      !!
+      !! **Zero frequency is a different equation and is solved as one.** At
+      !! `nu = 0` the coupling vanishes and the equation is `(A+B) S = -2h`;
+      !! going through the product would square the condition number to no
+      !! purpose. Those systems skip the `(A-B)` application, which the index
+      !! mask expresses without a second code path.
+      use pic_blas_interfaces, only: pic_gemm
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), intent(in) :: h(:, :, :)              !! (n_vir, n_occ, n_pert)
+      real(dp), intent(in) :: frequencies(:)
+      real(dp), allocatable, intent(out) :: alpha(:, :, :)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: response(:, :, :, :)
+      logical, intent(in), optional :: progress
+
+      real(dp), allocatable :: x(:, :, :), r(:, :, :), r0(:, :, :), p(:, :, :)
+      real(dp), allocatable :: v(:, :, :), s(:, :, :), t(:, :, :), rhs(:, :, :)
+      real(dp), allocatable :: ph(:, :, :), sh(:, :, :), precon(:, :, :)
+      real(dp), allocatable :: rho(:), rho_old(:), omega(:), alpha_bi(:), beta(:)
+      real(dp), allocatable :: nu2(:), rnorm(:), bnorm(:)
+      integer, allocatable :: pert_of(:), freq_of(:), live(:), nonzero(:)
+      logical, allocatable :: done(:)
+      integer :: n_vir, n_occ, n_pert, n_freq, n_sys, m, k, l, it, cycles
+      integer :: nlive, nnz
+      real(dp) :: threshold, worst
+      logical :: talk
+      type(timer_type) :: clock
+      character(len=MAX_LINE_LENGTH) :: line
+
+      talk = .false.
+      if (present(progress)) talk = progress
+      n_vir = size(gaps, 1)
+      n_occ = size(gaps, 2)
+      n_pert = size(h, 3)
+      n_freq = size(frequencies)
+      n_sys = n_freq*n_pert
+      cycles = 200
+      if (present(max_iter)) cycles = max_iter
+      threshold = 1.0e-7_dp
+      if (present(tol)) threshold = tol
+
+      allocate (x(n_vir, n_occ, n_sys), r(n_vir, n_occ, n_sys))
+      allocate (r0(n_vir, n_occ, n_sys), p(n_vir, n_occ, n_sys))
+      allocate (v(n_vir, n_occ, n_sys), s(n_vir, n_occ, n_sys))
+      allocate (t(n_vir, n_occ, n_sys), rhs(n_vir, n_occ, n_sys))
+      allocate (ph(n_vir, n_occ, n_sys), sh(n_vir, n_occ, n_sys))
+      allocate (precon(n_vir, n_occ, n_sys))
+      allocate (rho(n_sys), rho_old(n_sys), omega(n_sys), alpha_bi(n_sys), beta(n_sys))
+      allocate (nu2(n_sys), rnorm(n_sys), bnorm(n_sys), done(n_sys))
+      allocate (pert_of(n_sys), freq_of(n_sys), live(n_sys), nonzero(n_sys))
+
+      m = 0
+      do k = 1, n_freq
+         do l = 1, n_pert
+            m = m + 1
+            freq_of(m) = k
+            pert_of(m) = l
+            nu2(m) = frequencies(k)**2
+         end do
+      end do
+
+      ! The right-hand side. `-2 (A-B) h` at every nonzero frequency, `-2 h` at
+      ! zero -- one batched application of `(A-B)` covers all of them, because
+      ! the zero-frequency systems simply are not in the mask.
+      do m = 1, n_sys
+         rhs(:, :, m) = h(:, :, pert_of(m))
+      end do
+      nnz = 0
+      do m = 1, n_sys
+         if (nu2(m) /= 0.0_dp) then
+            nnz = nnz + 1
+            nonzero(nnz) = m
+         end if
+      end do
+      if (nnz > 0) then
+         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             rhs, nonzero, nnz, .true., t, error)
+         if (error%has_error()) return
+         do m = 1, nnz
+            rhs(:, :, nonzero(m)) = t(:, :, nonzero(m))
+         end do
+      end if
+      rhs = -2.0_dp*rhs
+
+      ! Jacobi, on what the operator's diagonal actually is: `(A-B)(A+B)` is
+      ! dominated by the square of the orbital energy gap, and the shift adds to
+      ! it. This is the same preconditioner the static solve uses, squared,
+      ! which is the difference between the two equations in one line.
+      do m = 1, n_sys
+         if (nu2(m) == 0.0_dp) then
+            precon(:, :, m) = 1.0_dp/gaps
+         else
+            precon(:, :, m) = 1.0_dp/(gaps**2 + nu2(m))
+         end if
+      end do
+
+      x = 0.0_dp
+      r = rhs
+      r0 = r
+      p = 0.0_dp
+      v = 0.0_dp
+      rho_old = 1.0_dp
+      alpha_bi = 1.0_dp
+      omega = 1.0_dp
+      done = .false.
+      do m = 1, n_sys
+         bnorm(m) = sqrt(sum(rhs(:, :, m)**2))
+         if (bnorm(m) <= 0.0_dp) then
+            bnorm(m) = 1.0_dp
+            done(m) = .true.
+         end if
+      end do
+
+      if (talk) then
+         write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
+            " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
+            " pairs, matrix free"
+         call logger%info(trim(line))
+         call clock%start()
+      end if
+
+      do it = 1, cycles
+         nlive = 0
+         do m = 1, n_sys
+            if (.not. done(m)) then
+               nlive = nlive + 1
+               live(nlive) = m
+            end if
+         end do
+         if (nlive == 0) exit
+
+         do m = 1, nlive
+            k = live(m)
+            rho(k) = sum(r0(:, :, k)*r(:, :, k))
+            if (it == 1) then
+               p(:, :, k) = r(:, :, k)
+            else
+               beta(k) = (rho(k)/rho_old(k))*(alpha_bi(k)/omega(k))
+               p(:, :, k) = r(:, :, k) + beta(k)*(p(:, :, k) - omega(k)*v(:, :, k))
+            end if
+            ph(:, :, k) = precon(:, :, k)*p(:, :, k)
+         end do
+
+         call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                            ph, live, nlive, nu2, v, error)
+         if (error%has_error()) return
+
+         do m = 1, nlive
+            k = live(m)
+            worst = sum(r0(:, :, k)*v(:, :, k))
+            if (worst == 0.0_dp) then
+               done(k) = .true.
+               cycle
+            end if
+            alpha_bi(k) = rho(k)/worst
+            s(:, :, k) = r(:, :, k) - alpha_bi(k)*v(:, :, k)
+            sh(:, :, k) = precon(:, :, k)*s(:, :, k)
+         end do
+
+         call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                            sh, live, nlive, nu2, t, error)
+         if (error%has_error()) return
+
+         do m = 1, nlive
+            k = live(m)
+            if (done(k)) cycle
+            worst = sum(t(:, :, k)**2)
+            if (worst == 0.0_dp) then
+               omega(k) = 0.0_dp
+            else
+               omega(k) = sum(t(:, :, k)*s(:, :, k))/worst
+            end if
+            x(:, :, k) = x(:, :, k) + alpha_bi(k)*ph(:, :, k) + omega(k)*sh(:, :, k)
+            r(:, :, k) = s(:, :, k) - omega(k)*t(:, :, k)
+            rnorm(k) = sqrt(sum(r(:, :, k)**2))/bnorm(k)
+            if (rnorm(k) < threshold) done(k) = .true.
+            if (omega(k) == 0.0_dp) done(k) = .true.
+            rho_old(k) = rho(k)
+         end do
+
+         if (talk .and. mod(it, 5) == 0) then
+            write (line, "(A,I0,A,I0,A,ES9.2)") "          iteration ", it, ", ", &
+               count(.not. done), " systems live, worst residual ", &
+               maxval(rnorm, mask=.not. done)
+            call logger%info(trim(line))
+         end if
+      end do
+
+      if (any(.not. done)) then
+         call error%set(ERROR_VALIDATION, "the frequency-dependent response did not "// &
+                        "converge. The operator is positive definite when the "// &
+                        "reference is a minimum, so a reference that is not one is "// &
+                        "the first thing to check.")
+         return
+      end if
+
+      allocate (alpha(n_pert, n_pert, n_freq))
+      if (present(response)) allocate (response(n_vir, n_occ, n_pert, n_freq))
+      do m = 1, n_sys
+         k = freq_of(m)
+         l = pert_of(m)
+         do it = 1, n_pert
+            alpha(it, l, k) = -2.0_dp*sum(h(:, :, it)*x(:, :, m))
+         end do
+         if (present(response)) response(:, :, l, k) = x(:, :, m)
+      end do
+   end subroutine dynamic_response_iterative
+
+   subroutine apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                            u, live, nlive, nu2, au, error)
+      !! `[(A-B)(A+B) + nu^2] u`, or `(A+B) u` where the frequency is zero
+      !!
+      !! Two passes over the integrals for the whole batch, which is the point.
+      !! The second serves only the systems at nonzero frequency; the rest have
+      !! their answer after the first, because at `nu = 0` the equation never had
+      !! the `(A-B)` factor in it.
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), intent(in) :: u(:, :, :)
+      integer, intent(in) :: live(:)
+      integer, intent(in) :: nlive
+      real(dp), intent(in) :: nu2(:)
+      real(dp), intent(inout) :: au(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: q1(:, :, :)
+      integer, allocatable :: shifted(:)
+      integer :: m, k, nshift
+
+      if (nlive <= 0) return
+      allocate (q1(size(u, 1), size(u, 2), size(u, 3)))
+      q1 = 0.0_dp
+
+      call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             u, live, nlive, .false., q1, error)
+      if (error%has_error()) return
+
+      allocate (shifted(nlive))
+      nshift = 0
+      do m = 1, nlive
+         k = live(m)
+         if (nu2(k) /= 0.0_dp) then
+            nshift = nshift + 1
+            shifted(nshift) = k
+         else
+            au(:, :, k) = q1(:, :, k)
+         end if
+      end do
+
+      if (nshift > 0) then
+         call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                                q1, shifted, nshift, .true., au, error)
+         if (error%has_error()) return
+         do m = 1, nshift
+            k = shifted(m)
+            au(:, :, k) = au(:, :, k) + nu2(k)*u(:, :, k)
+         end do
+      end if
+   end subroutine apply_dynamic
+
+   subroutine batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                                u, idx, nact, minus, au, error)
+      !! `response_batch`, a dozen densities at a time rather than all of them
+      !!
+      !! **More is not better past about twelve, and it is worse.** The batched
+      !! Fock build shares one pass over the quartets across every density it is
+      !! given, which is the whole reason the matrix-free route is affordable --
+      !! but each thread scatters into an accumulator sized `n_ao^2` by the batch
+      !! width, and that grows with the batch while the integral it is amortising
+      !! does not. `build_fock_direct_many` measured the win saturating near
+      !! fourfold at a dozen densities and *reversing* by twenty-four.
+      !!
+      !! With twelve frequencies and twelve perturbations there are 144 systems
+      !! in flight, and handing all 144 to one call cost 235 seconds on adenine
+      !! where twelve at a time costs a small fraction of that. The batch that
+      !! makes this method possible is the same batch that ruins it if taken
+      !! literally.
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct
+      real(dp), intent(in) :: eri(:, :, :, :)
+      real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), intent(in) :: u(:, :, :)
+      integer, intent(in) :: idx(:)
+      integer, intent(in) :: nact
+      logical, intent(in) :: minus
+      real(dp), intent(inout) :: au(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: MAX_BATCH = 12
+
+      integer :: first, last
+
+      first = 1
+      do while (first <= nact)
+         last = min(first + MAX_BATCH - 1, nact)
+         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                             u, idx(first:last), last - first + 1, minus, au, error)
+         if (error%has_error()) return
+         first = last + 1
+      end do
+   end subroutine batched_in_chunks
 
    subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, idx, nact, minus, au, error)
