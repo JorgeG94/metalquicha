@@ -84,6 +84,9 @@ if(MQC_ENABLE_LIBCINT)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)
+  # Unrestricted MP2, whose closed-shell limit is the restricted one.
+  addtest(mqc_ump2)
+  target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
   target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)

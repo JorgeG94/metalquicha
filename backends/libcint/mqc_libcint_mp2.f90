@@ -41,6 +41,8 @@ module mqc_libcint_mp2
 
    public :: run_libcint_mp2
    public :: run_libcint_ri_mp2
+   public :: run_libcint_ump2
+   public :: run_libcint_uri_mp2
    public :: mp2_result_t
    ! Exported for coupled cluster, which needs every MO block rather than just
    ! (ia|jb). Lives here because this is where the two-half transform is, and a
@@ -266,6 +268,307 @@ contains
       result%n_occupied = n_o
       result%n_virtual = n_v
    end subroutine run_libcint_ri_mp2
+
+   !
+   ! THE UNRESTRICTED PAIR. Both routines below compute
+   !
+   !     E(2) = 1/4 sum_(ijab in a) |<ij||ab>|^2 / D
+   !          + 1/4 sum_(ijab in b) |<ij||ab>|^2 / D
+   !          +     sum_(ia in a, jb in b) (ia|jb)^2 / D
+   !
+   ! with D = e_i + e_j - e_a - e_b, and store the two like-spin terms together
+   ! in `same_spin` and the mixed one in `opposite_spin`, which is what those
+   ! fields already mean in the restricted result.
+   !
+   ! The like-spin terms are written as 1/2 sum (ia|jb)[(ia|jb) - (ib|ja)]/D
+   ! rather than 1/4 sum [(ia|jb) - (ib|ja)]^2/D. They are equal -- expanding
+   ! the square gives x^2 - 2xy + y^2, and relabelling a with b turns sum y^2/D
+   ! into sum x^2/D because D is symmetric in a and b -- and the first form is
+   ! half the arithmetic and the same shape as the restricted loop above it, so
+   ! the two can be read against each other.
+   !
+   ! THE CLOSED-SHELL LIMIT IS THE TEST that says the factors are right. With
+   ! alpha and beta identical the two like-spin terms sum to
+   ! sum x(x - y)/D, which is exactly `e_ss` in the restricted routines, and
+   ! the mixed term is `e_os`. check_ump2_matches_rmp2 asserts it.
+   !
+   ! Frozen orbitals are counted per spin, the same number from each. For a
+   ! doublet that leaves one more correlated beta hole than alpha, which is
+   ! what freezing a core rather than an electron count means.
+   !
+   subroutine run_libcint_ump2(mol, coeff_a, coeff_b, eps_a, eps_b, &
+                               n_occ_a, n_occ_b, scf_energy, result, error, n_frozen)
+      !! E(2) for an unrestricted reference, from the four-index transform
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :)   !! (n_ao, n_mo) per spin
+      real(dp), intent(in) :: eps_a(:), eps_b(:)
+      integer, intent(in) :: n_occ_a, n_occ_b
+      real(dp), intent(in) :: scf_energy
+      type(mp2_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_frozen
+
+      real(dp), allocatable :: ao_eri(:, :)
+      real(dp), allocatable :: ovov_aa(:, :, :, :), ovov_bb(:, :, :, :), ovov_ab(:, :, :, :)
+      real(dp), allocatable :: ca_o(:, :), ca_v(:, :), cb_o(:, :), cb_v(:, :)
+      integer :: n_ao, n_mo, frozen, n_oa, n_ob, n_va, n_vb
+      real(dp) :: e_aa, e_bb, e_ab
+      type(timing_report_t) :: clk
+
+      call ump2_dimensions(mol, coeff_a, coeff_b, eps_a, eps_b, n_occ_a, n_occ_b, &
+                           n_frozen, n_ao, n_mo, frozen, n_oa, n_ob, n_va, n_vb, error)
+      if (error%has_error()) return
+
+      ca_o = coeff_a(:, frozen + 1:n_occ_a)
+      ca_v = coeff_a(:, n_occ_a + 1:n_mo)
+      cb_o = coeff_b(:, frozen + 1:n_occ_b)
+      cb_v = coeff_b(:, n_occ_b + 1:n_mo)
+
+      call clk%start()
+      call mol%eris_packed(ao_eri)
+      call clk%lap("AO integrals")
+
+      ! Three blocks, not one. The like-spin pair needs its own coefficients on
+      ! both electrons; the mixed block needs alpha on one and beta on the
+      ! other and is NOT antisymmetrised -- two electrons of different spin are
+      ! already distinguishable, so there is no exchange term to subtract.
+      call transform_block(ao_eri, ca_o, ca_v, ca_o, ca_v, ovov_aa)
+      call transform_block(ao_eri, cb_o, cb_v, cb_o, cb_v, ovov_bb)
+      call transform_block(ao_eri, ca_o, ca_v, cb_o, cb_v, ovov_ab)
+      deallocate (ao_eri, ca_o, ca_v, cb_o, cb_v)
+      call clk%lap("AO->MO transform (3 blocks)")
+
+      e_aa = like_spin_energy(ovov_aa, eps_a, frozen, n_occ_a, n_oa, n_va)
+      e_bb = like_spin_energy(ovov_bb, eps_b, frozen, n_occ_b, n_ob, n_vb)
+      e_ab = mixed_spin_energy(ovov_ab, eps_a, eps_b, frozen, n_occ_a, n_occ_b, &
+                               n_oa, n_ob, n_va, n_vb)
+      deallocate (ovov_aa, ovov_bb, ovov_ab)
+      call clk%lap("energy denominators")
+      call clk%finish()
+      call clk%report("UMP2")
+
+      call fill_ump2_result(result, e_aa + e_bb, e_ab, scf_energy, frozen, &
+                            n_oa + n_ob, n_va + n_vb)
+   end subroutine run_libcint_ump2
+
+   subroutine run_libcint_uri_mp2(mol, aux, coeff_a, coeff_b, eps_a, eps_b, &
+                                  n_occ_a, n_occ_b, scf_energy, result, error, n_frozen)
+      !! E(2) for an unrestricted reference, from a fitted (ia|jb)
+      !!
+      !! One B tensor per spin, both fitted against the same auxiliary basis so
+      !! the mixed block is a gemm between them rather than anything new:
+      !!
+      !!     (ia|JB) = sum_P B(a)^P_ia B(b)^P_JB
+      !!
+      !! The like-spin blocks reuse the occupied-pair weighting of the
+      !! restricted routine -- exchanging i with j and a with b leaves the term
+      !! unchanged, so the lower triangle is enough. **The mixed block gets no
+      !! such weighting**: i is alpha and j is beta, so (i,j) and (j,i) are
+      !! different pairs of different spins and the full rectangle is the sum.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(libcint_molecule_t), intent(in) :: aux
+      real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :)
+      real(dp), intent(in) :: eps_a(:), eps_b(:)
+      integer, intent(in) :: n_occ_a, n_occ_b
+      real(dp), intent(in) :: scf_energy
+      type(mp2_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_frozen
+
+      real(dp), allocatable :: b_a(:, :, :), b_b(:, :, :), g(:, :)
+      real(dp), allocatable :: ca_o(:, :), ca_v(:, :), cb_o(:, :), cb_v(:, :)
+      integer :: n_ao, n_mo, frozen, n_oa, n_ob, n_va, n_vb
+      integer :: i, j, a, b
+      real(dp) :: e_aa, e_bb, e_ab, iajb, denom
+      type(timing_report_t) :: clk
+
+      call ump2_dimensions(mol, coeff_a, coeff_b, eps_a, eps_b, n_occ_a, n_occ_b, &
+                           n_frozen, n_ao, n_mo, frozen, n_oa, n_ob, n_va, n_vb, error)
+      if (error%has_error()) return
+
+      ca_o = coeff_a(:, frozen + 1:n_occ_a)
+      ca_v = coeff_a(:, n_occ_a + 1:n_mo)
+      cb_o = coeff_b(:, frozen + 1:n_occ_b)
+      cb_v = coeff_b(:, n_occ_b + 1:n_mo)
+
+      call clk%start()
+      call build_df_mo_tensor(mol, aux, ca_o, ca_v, b_a, error)
+      if (error%has_error()) return
+      call build_df_mo_tensor(mol, aux, cb_o, cb_v, b_b, error)
+      if (error%has_error()) return
+      deallocate (ca_o, ca_v, cb_o, cb_v)
+      call clk%lap("B tensors (3c/2c fit, both spins)")
+
+      e_aa = ri_like_spin_energy(b_a, eps_a, frozen, n_occ_a, n_oa, n_va)
+      e_bb = ri_like_spin_energy(b_b, eps_b, frozen, n_occ_b, n_ob, n_vb)
+
+      allocate (g(n_va, n_vb))
+      e_ab = 0.0_dp
+      do i = 1, n_oa
+         do j = 1, n_ob
+            call pic_gemm(b_a(:, :, i), b_b(:, :, j), g, transb="T")
+            do b = 1, n_vb
+               do a = 1, n_va
+                  iajb = g(a, b)
+                  denom = eps_a(frozen + i) + eps_b(frozen + j) &
+                          - eps_a(n_occ_a + a) - eps_b(n_occ_b + b)
+                  e_ab = e_ab + iajb*iajb/denom
+               end do
+            end do
+         end do
+      end do
+      deallocate (g, b_a, b_b)
+      call clk%lap("gemm + denominators")
+      call clk%finish()
+      call clk%report("URI-MP2")
+
+      call fill_ump2_result(result, e_aa + e_bb, e_ab, scf_energy, frozen, &
+                            n_oa + n_ob, n_va + n_vb)
+   end subroutine run_libcint_uri_mp2
+
+   subroutine ump2_dimensions(mol, coeff_a, coeff_b, eps_a, eps_b, n_occ_a, n_occ_b, &
+                              n_frozen, n_ao, n_mo, frozen, n_oa, n_ob, n_va, n_vb, error)
+      !! The shape checks both unrestricted routines need, in one place
+      !!
+      !! Checked per spin rather than once: a doublet has a different occupied
+      !! count in each, so "at least one occupied left after freezing" and "at
+      !! least one virtual" are two questions, and the beta channel is the one
+      !! that runs out first.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :)
+      real(dp), intent(in) :: eps_a(:), eps_b(:)
+      integer, intent(in) :: n_occ_a, n_occ_b
+      integer, intent(in), optional :: n_frozen
+      integer, intent(out) :: n_ao, n_mo, frozen, n_oa, n_ob, n_va, n_vb
+      type(error_t), intent(inout) :: error
+
+      n_ao = mol%nao
+      n_mo = size(coeff_a, 2)
+      frozen = 0
+      if (present(n_frozen)) frozen = n_frozen
+
+      if (size(coeff_b, 2) /= n_mo) then
+         call error%set(ERROR_VALIDATION, "UMP2: the alpha and beta coefficient "// &
+                        "matrices have different numbers of orbitals")
+         return
+      end if
+      if (size(eps_a) /= n_mo .or. size(eps_b) /= n_mo) then
+         call error%set(ERROR_VALIDATION, "UMP2: orbital energies do not match the "// &
+                        "coefficient matrices")
+         return
+      end if
+      if (frozen < 0 .or. frozen >= n_occ_a .or. frozen >= n_occ_b) then
+         call error%set(ERROR_VALIDATION, "UMP2: the frozen core must leave at least "// &
+                        "one occupied orbital in each spin to correlate")
+         return
+      end if
+
+      n_oa = n_occ_a - frozen
+      n_ob = n_occ_b - frozen
+      n_va = n_mo - n_occ_a
+      n_vb = n_mo - n_occ_b
+      if (n_va < 1 .or. n_vb < 1) then
+         call error%set(ERROR_VALIDATION, "UMP2: no virtual orbitals in one spin; "// &
+                        "the basis is saturated by the occupied space")
+         return
+      end if
+   end subroutine ump2_dimensions
+
+   subroutine fill_ump2_result(result, same, opposite, scf_energy, frozen, n_o, n_v)
+      !! One place that decides what the result fields mean for an open shell
+      type(mp2_result_t), intent(out) :: result
+      real(dp), intent(in) :: same, opposite, scf_energy
+      integer, intent(in) :: frozen, n_o, n_v
+      result%same_spin = same
+      result%opposite_spin = opposite
+      result%correlation = same + opposite
+      result%scf_energy = scf_energy
+      result%total = scf_energy + result%correlation
+      result%n_frozen = frozen
+      !! Summed over spins, so these count spin orbitals where the restricted
+      !! routines count spatial ones. There is no single number that means the
+      !! same thing in both cases and the totals are what a report shows.
+      result%n_occupied = n_o
+      result%n_virtual = n_v
+   end subroutine fill_ump2_result
+
+   pure function like_spin_energy(ovov, eps, frozen, n_occ, n_o, n_v) result(e)
+      !! 1/2 sum (ia|jb)[(ia|jb) - (ib|ja)] / D, one spin against itself
+      real(dp), intent(in) :: ovov(:, :, :, :)
+      real(dp), intent(in) :: eps(:)
+      integer, intent(in) :: frozen, n_occ, n_o, n_v
+      real(dp) :: e
+      integer :: i, j, a, b
+      real(dp) :: iajb, ibja, denom
+      e = 0.0_dp
+      do i = 1, n_o
+         do j = 1, n_o
+            do a = 1, n_v
+               do b = 1, n_v
+                  iajb = ovov(i, a, j, b)
+                  ibja = ovov(i, b, j, a)
+                  denom = eps(frozen + i) + eps(frozen + j) &
+                          - eps(n_occ + a) - eps(n_occ + b)
+                  e = e + 0.5_dp*iajb*(iajb - ibja)/denom
+               end do
+            end do
+         end do
+      end do
+   end function like_spin_energy
+
+   pure function mixed_spin_energy(ovov, eps_a, eps_b, frozen, n_occ_a, n_occ_b, &
+                                   n_oa, n_ob, n_va, n_vb) result(e)
+      !! sum (ia|JB)^2 / D, alpha on one electron and beta on the other
+      real(dp), intent(in) :: ovov(:, :, :, :)
+      real(dp), intent(in) :: eps_a(:), eps_b(:)
+      integer, intent(in) :: frozen, n_occ_a, n_occ_b, n_oa, n_ob, n_va, n_vb
+      real(dp) :: e
+      integer :: i, j, a, b
+      real(dp) :: iajb, denom
+      e = 0.0_dp
+      do i = 1, n_oa
+         do j = 1, n_ob
+            do a = 1, n_va
+               do b = 1, n_vb
+                  iajb = ovov(i, a, j, b)
+                  denom = eps_a(frozen + i) + eps_b(frozen + j) &
+                          - eps_a(n_occ_a + a) - eps_b(n_occ_b + b)
+                  e = e + iajb*iajb/denom
+               end do
+            end do
+         end do
+      end do
+   end function mixed_spin_energy
+
+   function ri_like_spin_energy(bia, eps, frozen, n_occ, n_o, n_v) result(e)
+      !! The like-spin term from a fitted B, lower occupied triangle only
+      real(dp), intent(in) :: bia(:, :, :)
+      real(dp), intent(in) :: eps(:)
+      integer, intent(in) :: frozen, n_occ, n_o, n_v
+      real(dp) :: e
+      real(dp), allocatable :: g(:, :)
+      integer :: i, j, a, b
+      real(dp) :: iajb, ibja, denom, weight
+      allocate (g(n_v, n_v))
+      e = 0.0_dp
+      do i = 1, n_o
+         do j = 1, i
+            call pic_gemm(bia(:, :, i), bia(:, :, j), g, transb="T")
+            weight = 2.0_dp
+            if (i == j) weight = 1.0_dp
+            do b = 1, n_v
+               do a = 1, n_v
+                  iajb = g(a, b)
+                  ibja = g(b, a)
+                  denom = eps(frozen + i) + eps(frozen + j) &
+                          - eps(n_occ + a) - eps(n_occ + b)
+                  e = e + 0.5_dp*weight*iajb*(iajb - ibja)/denom
+               end do
+            end do
+         end do
+      end do
+      deallocate (g)
+   end function ri_like_spin_energy
 
    subroutine transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       !! (pq|rs) over packed AO pairs -> (ia|jb)

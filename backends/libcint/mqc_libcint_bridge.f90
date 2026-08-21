@@ -35,7 +35,8 @@ module mqc_libcint_bridge
    use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
+   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2, &
+                              run_libcint_ump2, run_libcint_uri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd
    use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
@@ -659,19 +660,6 @@ contains
          ! themselves and return a plausible number. The Kohn-Sham half of the
          ! functional is unrestricted and correct, which is exactly what makes the
          ! total convincing.
-         if (unrestricted .and. xc%pt2_fraction /= 0.0_dp) then
-            call result%error%set(ERROR_VALIDATION, "'"//trim(settings%functional)// &
-                                  "' is a double hybrid and its perturbative term needs "// &
-                                  "an unrestricted MP2, which the CPU path does not have. "// &
-                                  "The Kohn-Sham part alone would be ~65 mHartree short, "// &
-                                  "so this is refused rather than reported. Run a "// &
-                                  "closed-shell system, or a functional without a "// &
-                                  "perturbative term.")
-            result%has_error = .true.
-            call xc%destroy()
-            call mol%destroy()
-            return
-         end if
          if (settings%verbose) then
             write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), ", grid level ", settings%grid_level
             call logger%info(trim(line))
@@ -860,15 +848,63 @@ contains
             use mqc_libcint_fukui, only: fukui_result_t, fukui_indices, print_fukui_report
             type(fukui_result_t) :: fukui
             type(error_t) :: fukui_error
+            integer :: fukui_frozen
+            real(dp) :: fukui_pt2
+            type(libcint_molecule_t), target :: fukui_aux
+            type(libcint_molecule_t), pointer :: fukui_aux_arg
+            logical :: fukui_fitted
+
+            ! Zero unless this is a Kohn-Sham run with a perturbative term.
+            ! `xc` is only built when kohn_sham, so reading its fraction
+            ! unconditionally would read an uninitialised context on a
+            ! Hartree-Fock run.
+            fukui_pt2 = 0.0_dp
+            if (kohn_sham) fukui_pt2 = xc%pt2_fraction
+
+            ! Fitted exactly when the energy's own PT2 term is fitted. The
+            ! alternative -- Fukui always exact, the energy fitted when asked --
+            ! would print an IP beside a total energy that used a different
+            ! correlation treatment, and the difference between them would look
+            ! like a property of the molecule.
+            fukui_fitted = fukui_pt2 /= 0.0_dp .and. settings%aux_basis_named
+            if (fukui_fitted) then
+               call correlation_aux_basis(settings, fragment, symbols, fukui_aux, fukui_error)
+               if (fukui_error%has_error()) then
+                  call logger%warning("  the Fukui analysis could not build its "// &
+                                      "auxiliary basis: "//fukui_error%get_message())
+                  fukui_fitted = .false.
+                  call fukui_error%clear()
+               end if
+            end if
+            ! Absent rather than empty when unfitted. A disassociated pointer
+            ! passed to an optional dummy is not present, which is the same
+            ! idiom `xc_arg` uses a few hundred lines up.
+            fukui_aux_arg => null()
+            if (fukui_fitted) fukui_aux_arg => fukui_aux
 
             ! The functional by NAME, not this routine's `xc`: that context
             ! was built spin-unpolarised for the closed-shell neutral and the
             ! ions are doublets. fukui_indices builds its own polarised one.
+            ! A double hybrid needs the orbitals as well as the density: its
+            ! perturbative term is evaluated for all three states inside, so
+            ! that the neutral's comes from the same code path the ions' do.
+            ! `dh_frozen` is resolved the same way the energy's PT2 resolves
+            ! it, a few hundred lines below -- a Fukui run that froze a
+            ! different core than the energy would report an IP that did not
+            ! match the numbers beside it.
+            fukui_frozen = settings%n_frozen_core
+            if (fukui_frozen < 0) fukui_frozen = core_orbital_count(fragment%element_numbers)
+            if (.not. settings%freeze_core) fukui_frozen = 0
             call fukui_indices(mol, fragment%nelec, fragment%multiplicity, scf%density, &
                                scf%energy, settings%fukui_population, settings%max_iter, &
                                settings%energy_tol, settings%density_tol, fukui, &
                                fukui_error, functional=trim(settings%functional), &
-                               grid_level=settings%grid_level)
+                               grid_level=settings%grid_level, &
+                               pt2_fraction=fukui_pt2, &
+                               neutral_orbitals=scf%orbitals, &
+                               neutral_orbital_energies=scf%orbital_energies, &
+                               n_frozen=fukui_frozen, aux=fukui_aux_arg)
+            if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &
                                    fukui_error%get_message())
@@ -1362,6 +1398,11 @@ contains
                ! an `Energy` run and a `Gradient` run of one deck reporting
                ! different energies, and left the expensive `n^4` two-particle
                ! density in the one place fitting was supposed to remove it.
+               ! Four routines rather than two, because the reference decides
+               ! the correlation treatment as much as the auxiliary basis does.
+               ! `fragment%nelec/2` is not an occupied count for an open shell,
+               ! so the unrestricted calls take the SCF's own per-spin counts
+               ! rather than deriving one.
                if (settings%aux_basis_named) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (error%has_error()) then
@@ -1371,14 +1412,28 @@ contains
                      call mol%destroy()
                      return
                   end if
-                  call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, &
-                                          scf%orbital_energies, fragment%nelec/2, &
-                                          scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  if (unrestricted) then
+                     call run_libcint_uri_mp2(mol, corr_aux, scf%orbitals, scf%orbitals_beta, &
+                                              scf%orbital_energies, scf%orbital_energies_beta, &
+                                              scf%n_occupied, scf%n_occupied_beta, &
+                                              scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  else
+                     call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, &
+                                             scf%orbital_energies, fragment%nelec/2, &
+                                             scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  end if
                   call corr_aux%destroy()
                else
-                  call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
-                                       fragment%nelec/2, scf%energy, dh_mp2, error, &
-                                       n_frozen=dh_frozen)
+                  if (unrestricted) then
+                     call run_libcint_ump2(mol, scf%orbitals, scf%orbitals_beta, &
+                                           scf%orbital_energies, scf%orbital_energies_beta, &
+                                           scf%n_occupied, scf%n_occupied_beta, &
+                                           scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  else
+                     call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
+                                          fragment%nelec/2, scf%energy, dh_mp2, error, &
+                                          n_frozen=dh_frozen)
+                  end if
                end if
                if (error%has_error()) then
                   call result%error%set(ERROR_VALIDATION, "double hybrid: "// &
