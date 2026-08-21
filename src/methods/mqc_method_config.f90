@@ -27,6 +27,11 @@ module mqc_method_config
          !! Energy convergence threshold (Hartree)
       real(dp) :: density_convergence = 1.0e-6_dp
          !! Density matrix convergence threshold
+      logical :: energy_convergence_set = .false.
+      logical :: density_convergence_set = .false.
+         !! Whether the deck named these, as opposed to inheriting them. A
+         !! caller with a stricter default of its own -- MAKEFP -- keeps that
+         !! default when they are false and honours the deck when they are true.
       logical :: use_diis = .true.
          !! Use DIIS acceleration
       integer :: diis_size = 8

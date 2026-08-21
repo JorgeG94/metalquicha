@@ -22,6 +22,7 @@ module mqc_config_types
                                        DEFAULT_PRESSURE, DEFAULT_AIMD_DT, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
+                                       DEFAULT_SCF_DENSITY_CONV, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
                                        DEFAULT_OPT_LBFGS_MEMORY, DEFAULT_OPT_PRINT_LEVEL, &
@@ -320,6 +321,14 @@ module mqc_config_types
       ! SCF settings
       integer :: scf_maxiter = 300              !! Using 300 (parser-specific, different from DEFAULT_SCF_MAXITER)
       real(dp) :: scf_tolerance = DEFAULT_SCF_CONV
+      logical :: scf_tolerance_set = .false.
+         !! Whether the deck named it. Needed because "the default" and "the
+         !! user asked for the default" are different requests to a caller that
+         !! has a stricter default of its own -- MAKEFP converges to 1e-10/1e-8
+         !! because the multipoles are taken from that density, and must keep
+         !! doing so unless a deck says otherwise.
+      real(dp) :: scf_density_tolerance = DEFAULT_SCF_DENSITY_CONV
+      logical :: scf_density_tolerance_set = .false.
 
       ! Hessian settings
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)

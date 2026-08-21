@@ -25,7 +25,10 @@ module test_mqc_libcint_cphf
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
    use mqc_libcint_cphf, only: cphf_solve, static_polarizability, distributed_polarizability, &
-                               build_hessian, build_hessian_mo, static_response_dense
+                               build_hessian, build_hessian_mo, static_response_dense, &
+                               dynamic_polarizability, dynamic_response_iterative, &
+                               casimir_polder_frequencies
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    implicit none
    private
@@ -69,7 +72,9 @@ contains
                   new_unittest("the_transformed_hessian_equals_the_probed_one", &
                                test_hessian_transform), &
                   new_unittest("the_dense_static_solve_equals_the_iterative_one", &
-                               test_static_dense) &
+                               test_static_dense), &
+                  new_unittest("the_dense_dynamic_solve_equals_the_matrix_free_one", &
+                               test_dynamic_matrix_free) &
                   ]
    end subroutine collect_mqc_libcint_cphf_tests
 
@@ -858,6 +863,88 @@ contains
 
       call mol%destroy()
    end subroutine test_hessian_transform
+
+   subroutine test_dynamic_matrix_free(error)
+      !! The frequency-dependent response, built two ways that share no code
+      !!
+      !! `dynamic_polarizability` materialises `(A+B)` and `(A-B)`, forms their
+      !! product and factorises it once per frequency.
+      !! `dynamic_response_iterative` never forms any of the three and reaches
+      !! the same solution by BiCGSTAB against Fock builds. The only thing they
+      !! have in common is the physics, which is what makes the comparison
+      !! worth anything: an error in the operator, the right-hand side, the
+      !! shift or the zero-frequency special case moves one and not the other.
+      !!
+      !! **Both are exercised at every Casimir-Polder frequency**, including
+      !! the zero one, which the two paths reach by different equations -- the
+      !! dense route special-cases it out of the product form and the iterative
+      !! route drops it out of the `(A-B)` mask. That is precisely the kind of
+      !! agreement-by-construction that is not construction at all, so it is
+      !! checked rather than assumed.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: dip(:, :, :), alpha_dense(:, :, :), alpha_free(:, :, :)
+      real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable :: h(:, :, :), work(:, :), zero_h(:, :), bounds(:, :)
+      real(dp), allocatable :: nu(:)
+      integer :: n_ao, n_mo, n_occ, n_vir, a, i, k
+      real(dp) :: worst, scale
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+      nu = casimir_polder_frequencies()
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, err)
+      call check(error,.not. err%has_error(), "the dipole matrices failed")
+      if (allocated(error)) return
+
+      call dynamic_polarizability(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                  nu, alpha_dense, err, perturbations=dip, in_core=.true.)
+      call check(error,.not. err%has_error(), "the dense solve failed: "//err%get_message())
+      if (allocated(error)) return
+
+      ! The matrix-free route wants the pieces the dense one assembles for
+      ! itself, so they are built here rather than reached through it.
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      allocate (zero_h(n_ao, n_ao), work(n_ao, n_occ), h(n_vir, n_occ, size(dip, 3)))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      zero_h = 0.0_dp
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+      do k = 1, size(dip, 3)
+         call pic_gemm(dip(:, :, k), c_occ, work)
+         call pic_gemm(c_vir, work, h(:, :, k), transa="T")
+      end do
+      call mol%eris(eri)
+      allocate (bounds(0, 0))
+
+      call dynamic_response_iterative(mol, .false., eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, h, nu, alpha_free, err, tol=1.0e-11_dp)
+      call check(error,.not. err%has_error(), "the matrix-free solve failed: "//err%get_message())
+      if (allocated(error)) return
+
+      worst = maxval(abs(alpha_dense - alpha_free))
+      scale = maxval(abs(alpha_dense))
+      call check(error, scale > 1.0_dp, "the polarizability is empty")
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-7_dp*scale, &
+                 "the matrix-free response disagrees with the dense one")
+      call mol%destroy()
+   end subroutine test_dynamic_matrix_free
 
    subroutine test_static_dense(error)
       !! Factorizing (A+B) gives what iterating against it gives

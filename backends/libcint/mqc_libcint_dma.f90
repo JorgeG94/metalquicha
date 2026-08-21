@@ -294,7 +294,9 @@ contains
       integer :: ou, oq, i, j
       real(dp) :: centre(3)
       real(dp) :: best, d2, weight, pop
-      real(dp), allocatable :: mono(:)
+      real(dp), allocatable :: mono(:), mono_local(:)
+      logical, allocatable :: point_failed(:)
+      type(error_t) :: point_error
 
       call expansion_points(atomic_numbers, mol%coords, result%points, result%labels, &
                             result%nuclear, error)
@@ -318,6 +320,13 @@ contains
       allocate (owner(n_unc*n_unc, n_points))
       owner = 0
       n_owner = 0
+      ! Every pair writes its own row of `owner` and its own element of
+      ! `n_owner`, so there is nothing to reduce and nothing to guard -- the
+      ! only shared thing this touches is the geometry it reads.
+      !$omp parallel do collapse(2) default(none) schedule(static) &
+      !$omp    shared(n_unc, n_points, shell_exponent, shell_atom, mol, result, &
+      !$omp           owner, n_owner) &
+      !$omp    private(iq, ip, centre, best, d2, k, kk)
       do iq = 1, n_unc
          do ip = 1, n_unc
             centre = (shell_exponent(ip)*mol%coords(:, shell_atom(ip)) &
@@ -339,6 +348,7 @@ contains
             n_owner(ip, iq) = kk
          end do
       end do
+      !$omp end parallel do
 
       allocate (mono(n_points))
       allocate (result%electronic(n_points), result%dipole(3, n_points))
@@ -351,6 +361,18 @@ contains
       call unc%overlap(ovl)
 
       ! The monopole needs no origin, so it is done once outside the point loop.
+      !
+      ! `mono` is one number per expansion point and every pair may hit any of
+      ! them, so this is the one loop here that genuinely reduces. A private
+      ! copy per thread merged once is the house pattern and costs `n_points`
+      ! doubles per thread, which is nothing -- an atomic per pair would cost
+      ! more than the pair.
+      !$omp parallel default(none) &
+      !$omp    shared(n_unc, n_points, unc, n_owner, owner, d_prim, ovl, mono) &
+      !$omp    private(iq, ip, dq, oq, du, ou, weight, pop, i, j, kk, k, mono_local)
+      allocate (mono_local(n_points))
+      mono_local = 0.0_dp
+      !$omp do schedule(static)
       do iq = 1, n_unc
          dq = shell_dim(unc%cartesian, iq - 1, unc%bas)
          oq = unc%shell_offset(iq)
@@ -367,27 +389,60 @@ contains
             end do
             do kk = 1, n_owner(ip, iq)
                k = owner((iq - 1)*n_unc + ip, kk)
-               mono(k) = mono(k) + weight*pop
+               mono_local(k) = mono_local(k) + weight*pop
             end do
          end do
       end do
+      !$omp end do
+      !$omp critical
+      mono = mono + mono_local
+      !$omp end critical
+      deallocate (mono_local)
+      !$omp end parallel
       ! Electrons are negative; the nuclear column is separate, as a `.efp` has it.
       result%electronic = -mono
 
       ! Dipole and above are expanded about each point in turn, so the integrals
       ! are recomputed per point rather than translated. n_points is a handful and
       ! a translation is one more place to get a binomial wrong.
+      !
+      ! **One point per thread, and nothing to reduce.** Each iteration writes
+      ! only column `k` of the four result arrays, so the accumulation that
+      ! makes the monopole loop above need a private copy simply does not arise
+      ! here. What is private is the integral storage: `multipole_matrices`
+      ! allocates dipole, quadrupole and octopole blocks over the *uncontracted*
+      ! basis for every point, and those are the largest thing in the routine.
+      !
+      ! `error` is shared and cannot be written from a thread, so each records
+      ! its own failure and the report is assembled afterwards -- a failure
+      ! here means a basis the multipole code cannot integrate, which is the
+      ! same for every point, but reporting it once is still the caller's
+      ! contract.
+      allocate (point_failed(n_points))
+      point_failed = .false.
+      !$omp parallel do default(none) schedule(dynamic) &
+      !$omp    shared(n_points, n_unc, unc, result, n_owner, owner, d_prim, point_failed) &
+      !$omp    private(k, dip, quad, oct, point_error, iq, ip, dq, oq, du, ou, &
+      !$omp            weight, kk, i, j, mu, nu, c)
       do k = 1, n_points
-         call multipole_matrices(unc, result%points(:, k), 1, dip, error)
-         if (.not. error%has_error()) then
-            call multipole_matrices(unc, result%points(:, k), 2, quad, error)
+         ! **Cleared explicitly, not left to `private`.** A private copy of a
+         ! derived type is default-initialised in principle, but this one is
+         ! reused across the iterations a thread runs and every routine it is
+         ! handed to opens with `if (error%has_error()) return`. One failure
+         ! would silently condemn every later point on the same thread, and an
+         ! uninitialised copy condemns all of them -- which is exactly what a
+         ! thread-count-dependent failure looked like before this line existed.
+         call point_error%clear()
+         call multipole_matrices(unc, result%points(:, k), 1, dip, point_error)
+         if (.not. point_error%has_error()) then
+            call multipole_matrices(unc, result%points(:, k), 2, quad, point_error)
          end if
-         if (.not. error%has_error()) then
-            call multipole_matrices(unc, result%points(:, k), 3, oct, error)
+         if (.not. point_error%has_error()) then
+            call multipole_matrices(unc, result%points(:, k), 3, oct, point_error)
          end if
-         if (error%has_error()) then
-            call unc%destroy()
-            return
+         if (point_error%has_error()) then
+            point_failed(k) = .true.
+            cycle
          end if
 
          do iq = 1, n_unc
@@ -428,6 +483,16 @@ contains
 
          deallocate (dip, quad, oct)
       end do
+      !$omp end parallel do
+
+      if (any(point_failed)) then
+         call error%set(ERROR_VALIDATION, "distributed multipoles: the multipole "// &
+                        "integrals failed at one or more expansion points.")
+         deallocate (point_failed)
+         call unc%destroy()
+         return
+      end if
+      deallocate (point_failed)
 
       call unc%destroy()
       deallocate (transform, shell_atom, shell_exponent, d_prim, work, ovl)

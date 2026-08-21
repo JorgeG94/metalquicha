@@ -198,9 +198,14 @@ set(MQC_BASIS_BUNDLE
 set(MQC_BASIS_SETS
     # Pople, Dunning, and the auxiliaries the validation inputs name
     "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;cc-pvqz;6-31g(2df,p);aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
-    # the basis the quasi-atomic bonding papers use, so their numbers can be
-    # reproduced rather than approached in a smaller one
-    "6-311++g(3df,3pd)"
+    # The 6-311 family. Two things want it. MAKEFP, because an effective
+    # fragment potential wants a large Pople set with diffuse functions and the
+    # f shells in (3df,3pd) are what the polarizability and dispersion tensors
+    # are built from; note the bundle has no 6-311++G(3df,2p), the set the EFMO
+    # literature names, so (3df,3pd) is the nearest thing it carries. And the
+    # quasi-atomic bonding papers, whose numbers are quoted in that same set and
+    # so can be reproduced rather than approached in a smaller one.
+    "6-311g;6-311g_st_;6-311g_st__st_;6-311++g;6-311++g_st__st_;6-311++g(2d,2p);6-311++g(3df,3pd)"
     # every def2 the bundle carries: orbital, diffuse, RI/JK auxiliaries, ECP
     "def2-sv(p);def2-sv(p)-jkfit;def2-sv(p)-rifit;def2-svp;def2-svp-rifit;def2-svpd;def2-svpd-rifit"
     "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"

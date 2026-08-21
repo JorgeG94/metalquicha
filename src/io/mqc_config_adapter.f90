@@ -214,6 +214,14 @@ contains
       ! no complaint. Two structures named scf, one of them wired up.
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
+      driver_config%method_config%scf%density_convergence = mqc_config%scf_density_tolerance
+      ! Carry across whether the deck actually named them, not just what they
+      ! came out as. A caller whose own default is stricter than the shared one
+      ! -- MAKEFP -- cannot otherwise tell "the user wants 1e-6" from "nobody
+      ! said anything", because both arrive here as 1e-6.
+      driver_config%method_config%scf%energy_convergence_set = mqc_config%scf_tolerance_set
+      driver_config%method_config%scf%density_convergence_set = &
+         mqc_config%scf_density_tolerance_set
       if (allocated(mqc_config%checkpoint_file)) then
          driver_config%checkpoint_file = mqc_config%checkpoint_file
       end if

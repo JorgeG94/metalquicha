@@ -246,6 +246,9 @@ contains
       ! ---- keywords --------------------------------------------------------
       call optional_int(json, "keywords.scf.maxiter", config%scf_maxiter)
       call optional_real(json, "keywords.scf.tolerance", config%scf_tolerance)
+      call named(json, "keywords.scf.tolerance", config%scf_tolerance_set)
+      call optional_real(json, "keywords.scf.density_tolerance", config%scf_density_tolerance)
+      call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
       call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
       call optional_string(json, "keywords.guess.type", config%guess_type)
@@ -1072,6 +1075,24 @@ contains
       call json%get(path, found_value, found)
       if (found) value = found_value
    end subroutine optional_int
+
+   subroutine named(json, path, was_named)
+      !! Whether the deck mentioned a key at all
+      !!
+      !! `optional_real` leaves a default in place when a key is absent, which
+      !! loses the difference between "the user did not say" and "the user asked
+      !! for exactly the default". Most callers do not care. One does: MAKEFP
+      !! converges its SCF harder than the shared default because the multipoles
+      !! and the response are taken from that density, and it has to keep doing
+      !! that unless a deck actually asks otherwise.
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: path
+      logical, intent(out) :: was_named
+
+      real(dp) :: ignored
+
+      call json%get(path, ignored, was_named)
+   end subroutine named
 
    subroutine optional_real(json, path, value)
       !! Fetch a real if present, leaving `value` at its default otherwise

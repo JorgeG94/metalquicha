@@ -1213,6 +1213,11 @@ contains
       character(len=8), allocatable :: symbols(:)
       character(len=:), allocatable :: path, name
       integer :: i
+      real(dp), allocatable :: e_tol, d_tol
+         !! Left unallocated when the deck did not name a tolerance, which makes
+         !! the corresponding argument absent at the call below and leaves MAKEFP
+         !! on its own tighter default. Allocating on assignment is the only way
+         !! to pass "nothing" without branching on each flag separately.
 
       if (rank /= 0) return
 
@@ -1231,17 +1236,31 @@ contains
       ! existed for the SCF, and mean here what they mean there: fit the two-electron
       ! integrals against that auxiliary basis. What they reach in a MAKEFP run is the
       ! response Hessian, which is where the time goes.
+      !
+      ! `keywords.scf.tolerance` and `keywords.scf.density_tolerance` reach the SCF
+      ! here only if the deck named them. MAKEFP's own 1e-10/1e-8 is deliberate --
+      ! the multipoles and the response come off that density -- so it is not the
+      ! shared 1e-6 default's to loosen. A deck that asks outright still wins: a
+      ! user who set 1e-6 and watched this iterate past 37 steps was being ignored.
+      if (config%method_config%scf%energy_convergence_set) then
+         e_tol = config%method_config%scf%energy_convergence
+      end if
+      if (config%method_config%scf%density_convergence_set) then
+         d_tol = config%method_config%scf%density_convergence
+      end if
       if (config%method_config%scf%density_fitting) then
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &
                                  aux_basis=trim(config%method_config%scf%aux_basis_set), &
-                                 guess=trim(config%method_config%scf%guess))
+                                 guess=trim(config%method_config%scf%guess), &
+                                 energy_tol=e_tol, density_tol=d_tol)
       else
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &
-                                 guess=trim(config%method_config%scf%guess))
+                                 guess=trim(config%method_config%scf%guess), &
+                                 energy_tol=e_tol, density_tol=d_tol)
       end if
       if (err%has_error()) then
          call refuse(result_out, "MAKEFP failed: "//err%get_message())
