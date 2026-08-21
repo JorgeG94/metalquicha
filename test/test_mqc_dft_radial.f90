@@ -76,7 +76,7 @@ contains
 
       n = 40
       call treutler_ahlrichs_radial(n, 8, r, dr, err)
-      call check(error,.not. err%has_error(), "mesh must build")
+      call check(error,.not. err%has_error(), "mesh must build: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, size(r), n)
       if (allocated(error)) return

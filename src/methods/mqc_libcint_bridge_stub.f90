@@ -21,8 +21,16 @@ module mqc_libcint_bridge
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
+   public :: xc_available
 
 contains
+
+   pure function xc_available() result(available)
+      !! No libcint means no `mqc_libcint_xc`, and therefore no functionals --
+      !! whatever libxc itself was configured to do.
+      logical :: available
+      available = .false.
+   end function xc_available
 
    pure function libcint_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU
@@ -172,12 +180,13 @@ contains
       if (present(aux_basis) .or. present(guess)) return
    end subroutine run_libcint_makefp
 
-   subroutine run_libcint_hf(settings, fragment, result, want_gradient)
+   subroutine run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       !! No-op stand-in: report the missing backend, compute nothing
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in), optional :: want_gradient
+      logical, intent(in), optional :: want_hessian
 
       call result%error%set(ERROR_VALIDATION, &
                             "This calculation needs an integral backend; build with "// &
@@ -187,6 +196,7 @@ contains
       result%has_energy = .false.
       if (len_trim(settings%basis_set) == 0 .or. fragment%n_atoms < 0) return
       if (present(want_gradient)) return
+      if (present(want_hessian)) return
    end subroutine run_libcint_hf
 
    subroutine run_libcint_mcscf(settings, fragment, result)

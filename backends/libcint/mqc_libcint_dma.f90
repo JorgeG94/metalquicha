@@ -44,6 +44,9 @@ module mqc_libcint_dma
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_atomic_radii, only: covalent_radius_emsley, MAX_Z_EMSLEY
+   use mqc_physical_constants, only: BOHR_TO_ANGSTROM
+   use mqc_elements, only: element_number_to_symbol
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
    use mqc_libcint_multipole, only: multipole_matrices
    use libcint_fortran, only: LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
@@ -61,29 +64,9 @@ module mqc_libcint_dma
    !> product centre agree to this, in Bohr^2. GAMESS's own tolerance.
    real(dp), parameter :: TIE_TOLERANCE = 1.0e-6_dp
 
-   !> Highest element with a covalent radius here, so a bond can be decided.
-   integer, parameter :: MAX_ELEMENT = 36
-
    !> Unique components of a Cartesian quadrupole and octopole.
    integer, parameter :: N_QUAD = 6
    integer, parameter :: N_OCT = 10
-
-   !> Covalent radii in Angstrom, Emsley's table as GAMESS uses it, indexed by Z.
-   !>
-   !> A bond is `|Ri - Rj| <= rad_i + rad_j`, evaluated in Angstrom, which is what
-   !> decides where the bond midpoints go and therefore how many expansion points
-   !> there are. Only through the first two rows plus the common heavier atoms --
-   !> anything beyond returns a default and is flagged, because silently inventing
-   !> a radius would silently invent or drop a bond.
-   real(dp), parameter :: COVALENT_RADII(MAX_ELEMENT) = [ &
-                          0.32_dp, 0.93_dp, &                                     ! H  He
-                          1.23_dp, 0.90_dp, 0.82_dp, 0.77_dp, 0.75_dp, 0.73_dp, 0.72_dp, 0.71_dp, &  ! Li..Ne
-                          1.54_dp, 1.36_dp, 1.18_dp, 1.11_dp, 1.06_dp, 1.02_dp, 0.99_dp, 0.98_dp, &  ! Na..Ar
-                          2.03_dp, 1.74_dp, 1.44_dp, 1.32_dp, 1.22_dp, 1.18_dp, 1.17_dp, 1.17_dp, &  ! K..Fe
-                          1.16_dp, 1.15_dp, 1.17_dp, 1.25_dp, 1.26_dp, 1.22_dp, 1.20_dp, 1.16_dp, &  ! Co..Se
-                          1.14_dp, 1.12_dp]                                       ! Br Kr
-
-   real(dp), parameter :: BOHR_PER_ANGSTROM = 1.8897261254578281_dp
 
    !> Component order for the packed quadrupole, as offsets into libcint's full
    !> 3x3: `XX YY ZZ XY XZ YZ`, which is what a `.efp` carries.
@@ -126,7 +109,7 @@ contains
 
       natm = size(atomic_numbers)
       do i = 1, natm
-         if (atomic_numbers(i) < 1 .or. atomic_numbers(i) > size(COVALENT_RADII)) then
+         if (atomic_numbers(i) < 1 .or. atomic_numbers(i) > MAX_Z_EMSLEY) then
             write (text, "(i0)") atomic_numbers(i)
             call error%set(ERROR_VALIDATION, "distributed multipoles: no covalent "// &
                            "radius for element "//trim(text)//", so its bonds -- and "// &
@@ -140,8 +123,9 @@ contains
       n_bond = 0
       do i = 2, natm
          do j = 1, i - 1
-            r = norm2(coords(:, i) - coords(:, j))/BOHR_PER_ANGSTROM
-            limit = COVALENT_RADII(atomic_numbers(i)) + COVALENT_RADII(atomic_numbers(j))
+            r = norm2(coords(:, i) - coords(:, j))*BOHR_TO_ANGSTROM
+            limit = covalent_radius_emsley(atomic_numbers(i)) &
+                    + covalent_radius_emsley(atomic_numbers(j))
             if (r <= limit) then
                n_bond = n_bond + 1
                bond_i(n_bond) = i
@@ -155,7 +139,7 @@ contains
       do i = 1, natm
          points(:, i) = coords(:, i)
          nuclear(i) = real(atomic_numbers(i), dp)
-         write (labels(i), "(a,i2.2,a)") "A", i, trim(element_symbol(atomic_numbers(i)))
+         write (labels(i), "(a,i2.2,a)") "A", i, trim(element_number_to_symbol(atomic_numbers(i)))
       end do
       do k = 1, n_bond
          i = bond_i(k)
@@ -169,22 +153,6 @@ contains
 
       deallocate (bond_i, bond_j)
    end subroutine expansion_points
-
-   function element_symbol(z) result(symbol)
-      !! Enough of a symbol table to label an expansion point
-      integer, intent(in) :: z
-      character(len=2) :: symbol
-      character(len=2), parameter :: table(MAX_ELEMENT) = [ &
-                                     "H ", "He", "Li", "Be", "B ", "C ", "N ", "O ", "F ", "Ne", &
-                                     "Na", "Mg", "Al", "Si", "P ", "S ", "Cl", "Ar", "K ", "Ca", &
-                                     "Sc", "Ti", "V ", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
-                                     "Ga", "Ge", "As", "Se", "Br", "Kr"]
-      if (z >= 1 .and. z <= size(table)) then
-         symbol = table(z)
-      else
-         symbol = "X "
-      end if
-   end function element_symbol
 
    subroutine uncontract(mol, unc, transform, shell_atom, shell_exponent, error)
       !! An uncontracted copy of the basis, and the map onto the contracted one

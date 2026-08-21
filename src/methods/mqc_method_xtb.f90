@@ -27,6 +27,7 @@ module mqc_method_xtb
    use pic_io, only: to_char
    use tblite_post_processing_list, only: post_processing_list, add_post_processing
    use tblite_results, only: results_type
+   use mqc_physical_constants, only: AU_TO_DEBYE
 
    implicit none
    private
@@ -214,7 +215,7 @@ contains
       if (this%verbose) then
          call logger%info("XTB: Energy ="//" "//to_char(result%energy%total()))
          call logger%info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
-         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*2.541746_dp))
+         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*AU_TO_DEBYE))
       end if
 
       deallocate (num, xyz)
@@ -368,7 +369,7 @@ contains
          call logger%info("XTB: Energy ="//" "//to_char(result%energy%total()))
          call logger%info("XTB: Gradient norm ="//" "//to_char(sqrt(sum(result%gradient**2))))
          call logger%info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
-         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*2.541746_dp))
+         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*AU_TO_DEBYE))
          call logger%info("XTB: Gradient calculation complete")
       end if
 

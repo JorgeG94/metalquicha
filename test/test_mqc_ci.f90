@@ -23,7 +23,8 @@ module test_mqc_ci
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t
    use mqc_determinants, only: link_table_t, build_link_table
-   use mqc_ci, only: absorb_one_electron, sigma_vector, ci_hamiltonian, ci_diagonal
+   use mqc_ci, only: absorb_one_electron, sigma_vector, ci_hamiltonian, ci_diagonal, &
+                     apply_excitations, excitations_block, beta_strings_per_block
    implicit none
    private
 
@@ -43,6 +44,7 @@ contains
                   new_unittest("open_shell_against_pyscf", test_open_shell), &
                   new_unittest("sigma_matches_dense_product", test_sigma_consistency), &
                   new_unittest("diagonal_matches_the_matrix", test_diagonal), &
+                  new_unittest("blocking_is_exact", test_blocking), &
                   new_unittest("refusals", test_refusals) &
                   ]
    end subroutine collect_mqc_ci_tests
@@ -372,6 +374,85 @@ contains
          deallocate (h1e, eri, folded, matrix, diagonal)
       end do
    end subroutine test_diagonal
+
+   subroutine test_blocking(error)
+      !! Assembling the intermediate a block at a time is the same intermediate
+      !!
+      !! `sigma_vector` and the density matrices no longer build the whole
+      !! `(norb^2, n_determinants)` array -- for a full valence CAS(14,14) that
+      !! is 18.5 GB, and two of them are needed at once -- so they walk it a
+      !! range of beta strings at a time instead. That is only sound if the
+      !! blocks partition it exactly, which is what this checks: every block
+      !! width from one beta string up to all of them must reassemble into the
+      !! array `apply_excitations` returns whole.
+      !!
+      !! **The narrow width is the one that matters.** The two spins block
+      !! differently -- an alpha excitation leaves the beta string alone, while
+      !! a beta excitation moves it, so contributions can arrive from source
+      !! strings outside the block being filled. A blocking that forgot the
+      !! second case would still be right at full width and wrong at every
+      !! other, which is exactly the error this shape of test exists to catch.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(link_table_t) :: alpha, beta
+      type(error_t) :: err
+      real(dp), allocatable :: ci(:, :), whole(:, :), piece(:, :), rebuilt(:, :)
+      integer, parameter :: NORB = 6, NA_ELEC = 3, NB_ELEC = 2
+      integer :: na, nb, npair, ia, ib, wide, first, last, width
+
+      call build_link_table(NORB, NA_ELEC, alpha, err)
+      call build_link_table(NORB, NB_ELEC, beta, err)
+      call check(error,.not. err%has_error(), "the tables were refused")
+      if (allocated(error)) return
+
+      na = alpha%n_strings
+      nb = beta%n_strings
+      npair = NORB*NORB
+
+      allocate (ci(na, nb))
+      do ib = 1, nb
+         do ia = 1, na
+            ci(ia, ib) = sin(real(3*ia + 5*ib, dp))
+         end do
+      end do
+      ci = ci/sqrt(sum(ci**2))
+
+      call apply_excitations(ci, alpha, beta, whole)
+      call check(error, size(whole, 2), na*nb, "the whole intermediate is one "// &
+                 "column per determinant")
+      if (allocated(error)) return
+
+      allocate (rebuilt(npair, na*nb), piece(npair, na*nb))
+      do wide = 1, nb
+         rebuilt = 0.0_dp
+         do first = 1, nb, wide
+            last = min(first + wide - 1, nb)
+            width = na*(last - first + 1)
+            call excitations_block(ci, alpha, beta, first, last, piece(:, 1:width))
+            rebuilt(:, (first - 1)*na + 1:last*na) = piece(:, 1:width)
+         end do
+         call check(error, maxval(abs(rebuilt - whole)), 0.0_dp, thr=1.0e-13_dp, &
+                    more="blocks of this width do not reassemble into the whole "// &
+                    "intermediate")
+         if (allocated(error)) return
+      end do
+
+      ! And the chooser stays inside its own contract: at least one string,
+      ! never more than there are.
+      call check(error, beta_strings_per_block(npair, na, nb) >= 1, &
+                 "a block must cover at least one beta string")
+      if (allocated(error)) return
+      call check(error, beta_strings_per_block(npair, na, nb) <= nb, &
+                 "a block cannot cover more beta strings than exist")
+      if (allocated(error)) return
+      ! A space large enough to exceed the budget must actually be split, or
+      ! the blocking is dead code on the only cases that need it.
+      call check(error, beta_strings_per_block(196, 3432, 3432) < 3432, &
+                 "a full valence CAS(14,14) must be blocked, not built whole")
+
+      call alpha%destroy()
+      call beta%destroy()
+   end subroutine test_blocking
 
    subroutine test_refusals(error)
       !! Shapes that do not describe one active space

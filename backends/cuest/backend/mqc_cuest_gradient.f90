@@ -30,6 +30,7 @@ module mqc_cuest_gradient
    !! central finite differences to 3e-8 Ha/Bohr for PBE0, the same noise
    !! floor as Hartree-Fock, which a missing weight term would not do.
    use pic_types, only: dp
+   use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    use mqc_cuest_integrals, only: cuest_system_t
@@ -43,25 +44,16 @@ contains
 
    subroutine nuclear_repulsion_gradient(atomic_numbers, coordinates, gradient)
       !! Gradient of the point-charge nuclear repulsion, Hartree/Bohr
+      !!
+      !! Overwrites, where the shared routine accumulates -- this caller wants
+      !! the nuclear term on its own, so the zeroing is done here rather than
+      !! hidden in a shared routine every other caller would have to undo.
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)  !! (3, n_atoms), Bohr
       real(dp), intent(out) :: gradient(:, :)    !! (3, n_atoms)
 
-      integer :: iatom, jatom
-      real(dp) ::  distance, factor
-      real(dp) :: separation(3)
-
       gradient = 0.0_dp
-      do iatom = 1, size(atomic_numbers)
-         do jatom = 1, size(atomic_numbers)
-            if (iatom == jatom) cycle
-            separation = coordinates(:, iatom) - coordinates(:, jatom)
-            distance = norm2(separation)
-            factor = -real(atomic_numbers(iatom), dp)*real(atomic_numbers(jatom), dp) &
-                     /(distance**3)
-            gradient(:, iatom) = gradient(:, iatom) + factor*separation
-         end do
-      end do
+      call add_nuclear_repulsion_gradient(real(atomic_numbers, dp), coordinates, gradient)
    end subroutine nuclear_repulsion_gradient
 
    subroutine energy_weighted_density(occupied, orbital_energies, n_occ, weighted, occupancy)

@@ -37,6 +37,9 @@ module mqc_libcint_screening
    !! of what is in a reference is search history. What matches is the objective.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_atomic_radii, only: vdw_radius_geodesic
+   use mqc_calculation_defaults, only: VDW_SCALE => DEFAULT_VDW_SCALE
+   use mqc_physical_constants, only: ANGSTROM_TO_BOHR, HARTREE_TO_KCALMOL, PI
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_esp, only: esp_contract
    use mqc_libcint_dma, only: dma_result_t, N_QUAD
@@ -68,7 +71,6 @@ module mqc_libcint_screening
    integer, parameter :: SCREEN_GAUSSIAN = 2      !! `1 - exp(-alpha r^2)`, the SCREEN block
 
    !> Layer schedule: `VDWSCL`, `VDWINC` and the layer count.
-   real(dp), parameter :: VDW_SCALE = 0.7_dp
    real(dp), parameter :: VDW_STEP = 0.1_dp
    integer, parameter :: N_LAYER = 25
 
@@ -81,20 +83,6 @@ module mqc_libcint_screening
    real(dp), parameter :: ALPHA_MAX = 10.0_dp
    real(dp), parameter :: ALPHA_ATOM = 2.0_dp
    real(dp), parameter :: ALPHA_MIDPOINT = 4.0_dp
-
-   !> Highest element the geodesic radii table covers.
-   integer, parameter :: MAX_RADIUS_ELEMENT = 17
-
-   !> Geodesic van der Waals radii, Angstrom, indexed by Z. Zero means absent, and
-   !> an absent element takes `RADIUS_DEFAULT`, as GAMESS does.
-   real(dp), parameter :: GEODESIC_RADII(MAX_RADIUS_ELEMENT) = [ &
-                          1.20_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.85_dp, 1.50_dp, 1.50_dp, &
-                          1.40_dp, 1.35_dp, 0.0_dp, 0.0_dp, 0.0_dp, 2.07_dp, 2.05_dp, &
-                          1.96_dp, 1.89_dp, 1.80_dp]
-   real(dp), parameter :: RADIUS_DEFAULT = 1.8_dp
-
-   real(dp), parameter :: BOHR_PER_ANGSTROM = 1.0_dp/0.52917724924_dp
-   real(dp), parameter :: KCAL_PER_HARTREE = 627.5094740631_dp
 
    !> Sweeps of the minimizer, and the bracket it stops refining at.
    integer, parameter :: MAX_SWEEPS = 12
@@ -121,10 +109,10 @@ contains
             ! A midpoint takes the mean of the two atoms its label names.
             read (dma%labels(i) (3:3), *) j
             read (dma%labels(i) (4:4), *) k
-            radii(i) = 0.5_dp*(element_radius(atomic_numbers(j)) &
-                               + element_radius(atomic_numbers(k)))
+            radii(i) = 0.5_dp*(vdw_radius_geodesic(atomic_numbers(j)) &
+                               + vdw_radius_geodesic(atomic_numbers(k)))
          else
-            radii(i) = element_radius(atomic_numbers(i))
+            radii(i) = vdw_radius_geodesic(atomic_numbers(i))
          end if
       end do
 
@@ -148,9 +136,9 @@ contains
                do k = 1, n_centre
                   if (k == i) cycle
                   distance = norm2(dma%points(:, i) &
-                                   + radii(i)*BOHR_PER_ANGSTROM*scale*unit(:, j) &
+                                   + radii(i)*ANGSTROM_TO_BOHR*scale*unit(:, j) &
                                    - dma%points(:, k))
-                  if (distance <= radii(k)*BOHR_PER_ANGSTROM*scale) then
+                  if (distance <= radii(k)*ANGSTROM_TO_BOHR*scale) then
                      inside = .true.
                      exit
                   end if
@@ -158,7 +146,7 @@ contains
                if (inside) cycle
                n_point = n_point + 1
                kept(:, n_point) = dma%points(:, i) &
-                                  + radii(i)*BOHR_PER_ANGSTROM*scale*unit(:, j)
+                                  + radii(i)*ANGSTROM_TO_BOHR*scale*unit(:, j)
             end do
          end do
          deallocate (unit)
@@ -174,15 +162,6 @@ contains
       deallocate (kept, radii)
    end subroutine screening_grid
 
-   function element_radius(z) result(radius)
-      integer, intent(in) :: z
-      real(dp) :: radius
-      radius = RADIUS_DEFAULT
-      if (z >= 1 .and. z <= size(GEODESIC_RADII)) then
-         if (GEODESIC_RADII(z) > 0.0_dp) radius = GEODESIC_RADII(z)
-      end if
-   end function element_radius
-
    subroutine fibonacci_sphere(n, points)
       !! `n` roughly equal-area points on the unit sphere
       !!
@@ -192,7 +171,6 @@ contains
       !! in the last digit or two between the two constructions.
       integer, intent(in) :: n
       real(dp), allocatable, intent(out) :: points(:, :)
-      real(dp), parameter :: PI = 3.14159265358979323846_dp
       real(dp) :: polar, azimuth, offset
       integer :: i
       allocate (points(3, n))
@@ -269,7 +247,7 @@ contains
          do k = 1, size(alpha)
             total = total + monopole(g, k)*(1.0_dp - exp(-alpha(k)*argument(g, k)))
          end do
-         residual = total*KCAL_PER_HARTREE
+         residual = total*HARTREE_TO_KCALMOL
          rms = rms + residual*residual
       end do
       !$omp end parallel do
@@ -324,7 +302,7 @@ contains
       !$omp parallel do default(shared) private(g, residual) reduction(+:rms)
       do g = 1, size(rest)
          residual = (rest(g) + monopole(g)*(1.0_dp - exp(-alpha*argument(g)))) &
-                    *KCAL_PER_HARTREE
+                    *HARTREE_TO_KCALMOL
          rms = rms + residual*residual
       end do
       !$omp end parallel do

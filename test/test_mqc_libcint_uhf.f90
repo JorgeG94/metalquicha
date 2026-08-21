@@ -78,7 +78,7 @@ contains
       type(rhf_result_t) :: r, u
 
       call dihydrogen(mol, err)
-      call check(error,.not. err%has_error(), "H2 must build")
+      call check(error,.not. err%has_error(), "H2 must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call run_libcint_rhf(mol, 2, 100, E_TOL, D_TOL, .false., r, err)
@@ -111,7 +111,7 @@ contains
       type(rhf_result_t) :: direct, in_core
 
       call hydrogen(mol, err)
-      call check(error,.not. err%has_error(), "H must build")
+      call check(error,.not. err%has_error(), "H must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call run_libcint_uhf(mol, 1, 2, 100, E_TOL, D_TOL, .false., direct, err)
@@ -183,7 +183,7 @@ contains
 
       call err%clear()
       call run_libcint_uhf(mol, 1, 2, 100, E_TOL, D_TOL, .false., u, err)
-      call check(error,.not. err%has_error(), "UHF must accept one electron")
+      call check(error,.not. err%has_error(), "UHF must accept one electron: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, u%converged, "and converge")
    end subroutine test_odd_allowed
@@ -227,7 +227,7 @@ contains
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                    0.0_dp, 0.0_dp, 0.9697_dp*ANG], [3, 2])
       call build_libcint_molecule([8, 1], ["O ", "H "], c, "def2-svp", mol, err)
-      call check(error,.not. err%has_error(), "OH must build")
+      call check(error,.not. err%has_error(), "OH must build: "//err%get_full_trace())
       if (allocated(error)) return
 
       call run_libcint_uhf(mol, 9, 2, 400, E_TOL, D_TOL, .false., good, err)

@@ -5,6 +5,7 @@ module mqc_xyz_reader
    use pic_types, only: dp
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -106,8 +107,8 @@ contains
       ! Check we have enough lines
       if (nlines < 2 + geom%natoms) then
          call error%set(ERROR_PARSE, "XYZ file has insufficient lines: expected "// &
-                        trim(int_to_string(2 + geom%natoms))//", got "// &
-                        trim(int_to_string(nlines)))
+                        trim(int_to_text(2 + geom%natoms))//", got "// &
+                        trim(int_to_text(nlines)))
          return
       end if
 
@@ -120,7 +121,7 @@ contains
          read (lines(2 + iatom), *, iostat=io_stat) element, x, y, z
          if (io_stat /= 0) then
             call error%set(ERROR_PARSE, "Failed to parse atom data on line "// &
-                           trim(int_to_string(2 + iatom))//": '"// &
+                           trim(int_to_text(2 + iatom))//": '"// &
                            trim(lines(2 + iatom))//"'")
             return
          end if
@@ -132,16 +133,6 @@ contains
       end do
 
    end subroutine read_xyz_string
-
-   pure function int_to_string(i) result(str)
-      !! Convert integer to string
-      integer, intent(in) :: i
-      character(len=:), allocatable :: str
-      character(len=20) :: buffer
-
-      write (buffer, "(I0)") i
-      str = trim(adjustl(buffer))
-   end function int_to_string
 
    pure subroutine split_lines(text, lines, nlines)
       !! Split input text into lines based on CR, LF, or CRLF line endings

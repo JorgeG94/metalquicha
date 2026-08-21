@@ -28,6 +28,7 @@ module mqc_libcint_charges
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_vdw_radius
+   use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
    use mqc_libcint_esp, only: esp_contract
    use libcint_fortran, only: LIBCINT_BAS_SLOTS, LIBCINT_ATOM_OF
@@ -48,7 +49,6 @@ module mqc_libcint_charges
    !> shell that survives is where a neighbouring molecule's electrons would
    !> actually sit, which is the region the charges have to get right.
    real(dp), parameter :: CHELPG_HEAD_SPACE = 2.8_dp
-   real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
 
 contains
 

@@ -37,7 +37,7 @@ The water dimer ``validation/inputs/sample_inputs/w2_dimer.xyz`` at
 Hartree-Fock/6-31G, a basis small enough that the borrowing is large:
 
 ============================  =================  ==================
-                              Hartree            kcal/mol
+Quantity                      Hartree            kcal/mol
 ============================  =================  ==================
 Binding energy, uncorrected   -0.0102112369      -6.408
 Binding energy, VMFC          -0.0080445970      -5.048

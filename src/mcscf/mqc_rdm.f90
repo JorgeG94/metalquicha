@@ -31,12 +31,17 @@ module mqc_rdm
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_determinants, only: link_table_t
-   use mqc_ci, only: apply_excitations
+   use mqc_ci, only: excitations_block, beta_strings_per_block
    implicit none
    private
 
    public :: active_space_rdms
    public :: rdm_energy
+
+   integer, parameter :: COLUMN_CHUNK = 2048
+      !! Determinant columns per thread-local contraction. Large enough that
+      !! each chunk is still a respectable GEMM rather than a rank update, small
+      !! enough that a few dozen chunks exist to balance across threads.
 
 contains
 
@@ -49,8 +54,10 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: gathered(:, :), paired(:, :)
-      real(dp), allocatable :: flat(:)
+      real(dp), allocatable :: flat(:, :), pair_column(:, :)
       integer :: norb, na, nb, npair, ndet, p, q, r, s, pq, qp, rs
+      integer :: per_block, first, last, width, c0, c1
+      real(dp), allocatable :: mine(:, :), chunk_product(:, :)
 
       if (error%has_error()) return
       norb = alpha%n_orbitals
@@ -72,22 +79,78 @@ contains
          return
       end if
 
-      call apply_excitations(ci, alpha, beta, gathered)
+      ! Blocked over beta strings, for the reason `beta_strings_per_block`
+      ! gives: the intermediate is `norb^2` by the determinant count, which for
+      ! a large active space is tens of gigabytes. Both contractions below sum
+      ! over determinants, so a block contributes a partial sum and the totals
+      ! accumulate -- exactly, not approximately.
+      per_block = beta_strings_per_block(npair, na, nb)
+      allocate (gathered(npair, na*per_block))
+      allocate (dm1(norb, norb), paired(npair, npair))
+      allocate (flat(na*per_block, 1), pair_column(npair, 1))
+      pair_column = 0.0_dp
+      dm1 = 0.0_dp
+      paired = 0.0_dp
 
-      ! D_pq = <Psi| E_pq |Psi>
-      allocate (dm1(norb, norb), flat(ndet))
-      flat = reshape(ci, [ndet])
-      do q = 1, norb
-         do p = 1, norb
-            pq = p + (q - 1)*norb
-            dm1(p, q) = dot_product(gathered(pq, :), flat)
+      do first = 1, nb, per_block
+         last = min(first + per_block - 1, nb)
+         width = na*(last - first + 1)
+
+         call excitations_block(ci, alpha, beta, first, last, gathered(:, 1:width))
+         flat(1:width, 1) = reshape(ci(:, first:last), [width])
+
+         ! D_pq = <Psi| E_pq |Psi>, as one matrix-vector product.
+         !
+         ! **Not a loop of dot products.** `gathered(pq, :)` walks a *row* of an
+         ! array whose leading dimension is the pair count, so consecutive
+         ! elements sit a couple of kilobytes apart: one cache line fetched per
+         ! element, nothing reused, and `npair` such walks per block. On C2F2
+         ! that was three quarters of the density-matrix time and did not show
+         ! up in any flop count, because the cost was latency rather than
+         ! arithmetic. As a GEMV the same numbers come out of a routine that
+         ! knows how the array is laid out.
+         call pic_gemm(gathered(:, 1:width), flat(1:width, 1:1), pair_column, &
+                       alpha=1.0_dp, beta=1.0_dp)
+
+         ! <Psi| E_pq E_rs |Psi> = <E_qp Psi | E_rs Psi>, every pair against
+         ! every other.
+         !
+         ! **Threaded here rather than left to the BLAS, because of the shape.**
+         ! This is `(npair, width) x (width, npair)` with `width` in the tens of
+         ! thousands and `npair` a few hundred: an enormous inner dimension
+         ! against a tiny output. A BLAS will not split the inner dimension,
+         ! since doing so needs a reduction, so the whole contraction runs on
+         ! one core -- 1.25e12 flops at 19 GFlop/s for C2F2, which was 98% of
+         ! the analysis.
+         !
+         ! Splitting it is cheap because the thing being reduced is small: each
+         ! thread accumulates its own `npair` by `npair` block, half a megabyte,
+         ! and they are added at the end. The per-thread GEMMs are still GEMMs,
+         ! so the flop rate within a chunk is unchanged.
+         !$omp parallel default(shared) private(c0, c1, mine, chunk_product)
+         allocate (mine(npair, npair), chunk_product(npair, npair))
+         mine = 0.0_dp
+         !$omp do schedule(dynamic)
+         do c0 = 1, width, COLUMN_CHUNK
+            c1 = min(c0 + COLUMN_CHUNK - 1, width)
+            call pic_gemm(gathered(:, c0:c1), gathered(:, c0:c1), chunk_product, &
+                          transb="T")
+            mine = mine + chunk_product
          end do
+         !$omp end do
+         !$omp critical
+         paired = paired + mine
+         !$omp end critical
+         deallocate (mine, chunk_product)
+         !$omp end parallel
       end do
 
-      ! <Psi| E_pq E_rs |Psi> = <E_qp Psi | E_rs Psi>, every pair against every
-      ! other, in one multiply.
-      allocate (paired(npair, npair))
-      call pic_gemm(gathered, gathered, paired, transb="T")
+      ! The pair-indexed column back into the square one-particle matrix.
+      do q = 1, norb
+         do p = 1, norb
+            dm1(p, q) = pair_column(p + (q - 1)*norb, 1)
+         end do
+      end do
 
       allocate (dm2(norb, norb, norb, norb))
       do s = 1, norb
@@ -111,7 +174,7 @@ contains
          end do
       end do
 
-      deallocate (gathered, paired, flat)
+      deallocate (gathered, paired, flat, pair_column)
    end subroutine active_space_rdms
 
    pure function rdm_energy(h1e, eri, dm1, dm2) result(energy)

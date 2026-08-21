@@ -58,7 +58,7 @@ contains
                    0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
                    0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
       call build_libcint_molecule(z, symbols, c, "6-31g*", mol, err)
-      call check(error,.not. err%has_error(), "building the molecule failed")
+      call check(error,.not. err%has_error(), "building the molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! Two centres off the nuclei: on an atom the integral is still finite but its
@@ -68,7 +68,7 @@ contains
                        -1.1_dp, 0.9_dp, -0.6_dp], [3, 2])
 
       call drinv_matrices(mol, probe, grad, err)
-      call check(error,.not. err%has_error(), "drinv failed")
+      call check(error,.not. err%has_error(), "drinv failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       worst = 0.0_dp
@@ -80,7 +80,7 @@ contains
             call esp_matrices(mol, shifted, plus, err)
             shifted(x, p) = probe(x, p) - H
             call esp_matrices(mol, shifted, minus, err)
-            call check(error,.not. err%has_error(), "esp failed")
+            call check(error,.not. err%has_error(), "esp failed: "//err%get_full_trace())
             if (allocated(error)) return
             do j = 1, mol%nao
                do i = 1, mol%nao
@@ -137,7 +137,7 @@ contains
                    0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
                    0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
       call build_libcint_molecule(z, symbols, c, "6-31g*", mol, err)
-      call check(error,.not. err%has_error(), "building the molecule failed")
+      call check(error,.not. err%has_error(), "building the molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! **On a nucleus, deliberately.** Every centre an EFP potential supplies is one of
@@ -147,7 +147,7 @@ contains
       ! space tests a regime no caller is in.
       probe = reshape(c(:, 1), [3, 1])
       call ddrinv_matrices(mol, probe, second, err)
-      call check(error,.not. err%has_error(), "ddrinv failed")
+      call check(error,.not. err%has_error(), "ddrinv failed: "//err%get_full_trace())
       if (allocated(error)) return
 
       worst = 0.0_dp
@@ -159,7 +159,7 @@ contains
          call drinv_matrices(mol, shifted, plus, err)
          shifted(b, 1) = probe(b, 1) - H
          call drinv_matrices(mol, shifted, minus, err)
-         call check(error,.not. err%has_error(), "drinv failed")
+         call check(error,.not. err%has_error(), "drinv failed: "//err%get_full_trace())
          if (allocated(error)) return
          do a = 1, 3
             do j = 1, mol%nao

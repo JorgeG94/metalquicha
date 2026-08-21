@@ -33,6 +33,8 @@ module mqc_efp_potential
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_mass
+   use mqc_physical_constants, only: PI
+   use mqc_calculation_defaults, only: DEFAULT_VDW_SCALE
    use mqc_cgto, only: molecular_basis_type
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
@@ -132,7 +134,7 @@ module mqc_efp_potential
       integer :: n_occ = 0        !! Including the core, which `CTFOK` needs
       integer :: n_lmo = 0        !! Valence localized orbitals
       integer :: multiplicity = 1
-      real(dp) :: vdwscl = 0.7_dp  !! The screening grid's van der Waals scale
+      real(dp) :: vdwscl = DEFAULT_VDW_SCALE  !! The screening grid's van der Waals scale
       character(len=8), allocatable :: labels(:)      !! `A01O`, `BO21`, ...
       real(dp), allocatable :: points(:, :)           !! (3, n_points), Bohr
       real(dp), allocatable :: mass(:)                !! amu, zero at a midpoint
@@ -1101,7 +1103,6 @@ contains
       integer, intent(in) :: l
       real(dp), intent(in) :: exponent
       real(dp) :: factor
-      real(dp), parameter :: PI = 3.141592653589793_dp
       real(dp) :: double_factorial
       integer :: n
 

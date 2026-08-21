@@ -10,6 +10,7 @@ module mqc_cuest_basis
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int32_t, &
                                                                              c_int64_t, c_double, c_loc, c_associated
    use pic_types, only: dp
+   use mqc_string_utils, only: int_to_text
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_basis_normalization, only: normalized_coefficients
@@ -70,7 +71,7 @@ contains
       shell_set%n_shells_total = 0
       do iatom = 1, mol_basis%nelements
          if (mol_basis%elements(iatom)%nshells <= 0) then
-            call error%set(ERROR_VALIDATION, "cuEST basis build: atom "//atom_text(iatom)// &
+            call error%set(ERROR_VALIDATION, "cuEST basis build: atom "//int_to_text(iatom)// &
                            " ("//element_label(mol_basis%elements(iatom))//") has no basis functions")
             call shell_set%destroy()
             return
@@ -157,16 +158,6 @@ contains
          label = "unknown element"
       end if
    end function element_label
-
-   pure function atom_text(value) result(text)
-      !! An atom index as a trimmed string, for error messages
-      integer, intent(in) :: value
-      character(len=:), allocatable :: text
-      character(len=12) :: buffer
-
-      write (buffer, "(I0)") value
-      text = trim(buffer)
-   end function atom_text
 
    subroutine shell_set_destroy(this)
       !! Release every AO shell handle held by the set

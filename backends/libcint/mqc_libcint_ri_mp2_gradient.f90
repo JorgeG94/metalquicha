@@ -40,7 +40,7 @@ module mqc_libcint_ri_mp2_gradient
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks, &
                                     build_df_mo_tensor, three_centre, two_centre, &
                                     metric_inverse_sqrt
-   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general
+   use mqc_libcint_cphf, only: cphf_solve, fitted_potential_general, IN_CORE_LIMIT
    use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply
    use mqc_libcint_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                    iprinv_deriv_at, three_centre_deriv, &
@@ -49,7 +49,7 @@ module mqc_libcint_ri_mp2_gradient
                                    DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_libcint_direct, only: schwarz_bounds
    use mqc_libcint_mp2_gradient, only: gamma1_intermediates, two_electron_potential, &
-                                       two_electron_mp2_terms, IN_CORE_LIMIT
+                                       two_electron_mp2_terms
    implicit none
    private
 

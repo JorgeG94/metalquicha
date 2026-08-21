@@ -29,6 +29,7 @@ module mqc_json_schema
    !! give two places to update and two chances to disagree.
    use mqc_error, only: error_t, ERROR_VALIDATION
    use json_module, only: json_file, json_core, json_value
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -235,13 +236,17 @@ contains
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis
       !!
-      !! `population` is required rather than defaulted, because the object
-      !! being present is what asks for the analysis and because the scheme
-      !! changes the numbers: a choice that large should be written down in the
-      !! deck rather than inherited silently.
+      !! `population` defaults to CHELPG. It was required rather than
+      !! defaulted, on the argument that a choice which changes the numbers
+      !! should be written down rather than inherited -- but the two schemes
+      !! are not equal candidates. CHELPG fits the electrostatic potential and
+      !! is what a condensed Fukui index is normally reported from; Mulliken is
+      !! basis-set dependent to the point of changing which site ranks first.
+      !! Defaulting to the better one and naming the other is more useful than
+      !! refusing to choose, and the scheme is echoed in the report and the
+      !! JSON either way, so nothing is inherited silently.
       type(key_set_t) :: keys
       call allow(keys, "population")
-      call require(keys, "population")
    end function fukui_keys
 
    function bonding_analysis_keys() result(keys)
@@ -258,6 +263,8 @@ contains
       call allow(keys, "energy_threshold")
       call allow(keys, "energy_decomposition")
       call allow(keys, "no_sharing")
+      call allow(keys, "no_sharing_ci")
+      call allow(keys, "restrict_localization")
       call require(keys, "type")
    end function bonding_analysis_keys
 
@@ -711,8 +718,8 @@ contains
       end if
       if (n_min /= n_spaces .or. n_max /= n_spaces) then
          call error%set(ERROR_VALIDATION, "keywords.mcscf.ormas names "// &
-                        int_text(n_spaces)//" subspaces but gives "// &
-                        int_text(n_min)//" minima and "//int_text(n_max)// &
+                        int_to_text(n_spaces)//" subspaces but gives "// &
+                        int_to_text(n_min)//" minima and "//int_to_text(n_max)// &
                         " maxima. All three lists describe the same subspaces and "// &
                         "have to be the same length.")
          return
@@ -750,6 +757,22 @@ contains
                         trim(name)//"'. Known analyses: none, gms_quao (the "// &
                         "Ruedenberg quasi-atomic bonding picture, spelled as "// &
                         "GAMESS implements it; 'quao' is accepted for it too).")
+         return
+      end select
+
+      call core%get(analysis, "no_sharing_ci", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+      call core%get(analysis, "no_sharing_ci", name)
+      select case (trim(adjustl(name)))
+      case ("transform", "resolve")
+      case default
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.no_sharing_ci "// &
+                        "is '"//trim(name)//"'. It chooses how the CI expansion over "// &
+                        "quasi-atomic orbitals is obtained: 'transform' solves in the "// &
+                        "molecular orbital basis and carries the vector across with "// &
+                        "the orbital transformation, 'resolve' runs a second Davidson "// &
+                        "in the quasi-atomic basis. Both describe the same wave "// &
+                        "function.")
       end select
    end subroutine check_bonding_analysis
 
@@ -955,16 +978,16 @@ contains
       n_charges = child_count(core, molecule, "fragment_charges")
       if (n_charges > 0 .and. n_charges /= n_fragments) then
          call error%set(ERROR_VALIDATION, molecule_path(imol)// &
-                        ": 'fragment_charges' has "//int_text(n_charges)// &
-                        " entries for "//int_text(n_fragments)//" fragments")
+                        ": 'fragment_charges' has "//int_to_text(n_charges)// &
+                        " entries for "//int_to_text(n_fragments)//" fragments")
          return
       end if
 
       n_mults = child_count(core, molecule, "fragment_multiplicities")
       if (n_mults > 0 .and. n_mults /= n_fragments) then
          call error%set(ERROR_VALIDATION, molecule_path(imol)// &
-                        ": 'fragment_multiplicities' has "//int_text(n_mults)// &
-                        " entries for "//int_text(n_fragments)//" fragments")
+                        ": 'fragment_multiplicities' has "//int_to_text(n_mults)// &
+                        " entries for "//int_to_text(n_fragments)//" fragments")
          return
       end if
 
@@ -977,8 +1000,8 @@ contains
       if (.not. found) return
       if (total /= molecular_charge) then
          call error%set(ERROR_VALIDATION, molecule_path(imol)// &
-                        ": fragment charges sum to "//int_text(total)// &
-                        " but the molecular charge is "//int_text(molecular_charge)// &
+                        ": fragment charges sum to "//int_to_text(total)// &
+                        " but the molecular charge is "//int_to_text(molecular_charge)// &
                         "; these must agree")
       end if
    end subroutine check_molecule_fragments
@@ -1055,7 +1078,7 @@ contains
       character(len=:), allocatable :: text
 
       ! Written 0-based to match how a user counts entries in the array.
-      text = PREFIX//int_text(imol - 1)//"]"
+      text = PREFIX//int_to_text(imol - 1)//"]"
    end function molecule_path
 
    function has_key(core, object, name) result(present_key)
@@ -1132,14 +1155,5 @@ contains
          if (status /= 0 .or. level < 2) level = 0
       end select
    end function nmer_level
-
-   pure function int_text(value) result(text)
-      integer, intent(in) :: value
-      character(len=:), allocatable :: text
-      character(len=16) :: buffer
-
-      write (buffer, "(I0)") value
-      text = trim(adjustl(buffer))
-   end function int_text
 
 end module mqc_json_schema

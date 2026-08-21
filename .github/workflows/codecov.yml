@@ -10,7 +10,15 @@ on:
 jobs:
   codecov:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Sixty rather than thirty, because the CPU backend is now compiled into
+    # the coverage build and measured. The run that first did so took 30.1
+    # minutes -- 4.0 building and 23.9 in `make coverage` -- which passed by
+    # nine seconds and is not a margin. The cost is the gcov instrumentation
+    # rather than the work: `mqc_quao` is 12 s in a release build and 704 s
+    # under coverage, and -O1 only brings it to 498 s, so this cannot be
+    # optimised away. The alternative is dropping tests from the coverage run,
+    # which is how half the program stopped being measured in the first place.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 

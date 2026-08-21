@@ -940,24 +940,42 @@
             "type": "unfragmented"
         },
         {
+            "name": "Quasi-atomic energy decomposition H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_energy.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented"
+        },
+        {
+            "name": "No-sharing analysis, CI re-solved H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_resolve.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented"
+        },
+        {
+            "name": "No-sharing analysis, CI inherited H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_inherit.json",
+            "expected_energy": -76.027033805985,
+            "type": "unfragmented",
+            "reference_note": "Reference from this program, not PySCF. The active space is chosen by this code's own valence-virtual selection, which PySCF has no equivalent of, so there is no independent route to the number. It is a regression guard: it catches a change, it does not prove the physics. The physics these cases exercise is checked instead by the invariance assertion inside the analysis, which rebuilds the energy from the transformed CI vector against the quasi-atomic Hamiltonian and refuses if it differs from the value the CI converged to."
+        },
+        {
+            "name": "No-sharing analysis, ORMAS wave function H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao_ormas.json",
+            "expected_energy": -75.9955599512,
+            "type": "unfragmented",
+            "reference_note": "Reference from this program, not PySCF. The active space is chosen by this code's own valence-virtual selection, which PySCF has no equivalent of, so there is no independent route to the number. It is a regression guard: it catches a change, it does not prove the physics. The physics these cases exercise is checked instead by the invariance assertion inside the analysis, which rebuilds the energy from the transformed CI vector against the quasi-atomic Hamiltonian and refuses if it differs from the value the CI converged to."
+        },
+        {
             "name": "RHF with quasi-atomic bonding analysis H2S 6-31g (CPU)",
             "input": "inputs/cpu/mqc/quao/cpu_h2s_6-31g_quao.json",
             "expected_energy": -398.626664265032,
             "type": "unfragmented"
         },
         {
-            "name": "RHF with Fukui indices (chelpg) H2O 6-31g (CPU)",
-            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
-            "expected_energy": -75.984779843967,
-            "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
-        },
-        {
-            "name": "RHF with Fukui indices (mulliken) H2O 6-31g (CPU)",
-            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
-            "expected_energy": -75.984779843967,
-            "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+            "name": "Quasi-atomic energy decomposition H2S 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/quao/cpu_h2s_6-31g_quao_energy.json",
+            "expected_energy": -398.626664265032,
+            "type": "unfragmented"
         },
         {
             "name": "RHF gradient H2O sto-3g (CPU)",
@@ -1127,7 +1145,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "PBE gradient H2O cc-pvdz (CPU)",
@@ -1152,7 +1171,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "B3LYP gradient H2O cc-pvdz (CPU)",
@@ -1177,7 +1197,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "PBE gradient CH3 cc-pvdz (CPU)",
@@ -1207,7 +1228,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "TPSS gradient H2O cc-pvdz (CPU)",
@@ -1232,7 +1254,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "M06L gradient H2O cc-pvdz (CPU)",
@@ -1257,7 +1280,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "PBE gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1282,7 +1306,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1307,7 +1332,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "TPSS gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1332,7 +1358,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "WB97X gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1358,7 +1385,8 @@
             "gradient_tolerance": 5e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "tolerance": 1e-08
+            "tolerance": 1e-08,
+            "requires": "libxc"
         },
         {
             "name": "CAM-B3LYP gradient H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
@@ -1384,7 +1412,8 @@
             "gradient_tolerance": 5e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "tolerance": 1e-08
+            "tolerance": 1e-08,
+            "requires": "libxc"
         },
         {
             "name": "MP2 gradient H2O sto-3g (CPU)",
@@ -1649,7 +1678,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "DH B2PLYP gradient H2O sto-3g (CPU)",
@@ -1674,7 +1704,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "DH B2GP-PLYP gradient H2O cc-pvdz (CPU)",
@@ -1699,7 +1730,8 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "DH MPW2PLYP gradient NH3 sto-3g (CPU)",
@@ -1729,39 +1761,45 @@
             ],
             "gradient_tolerance": 1e-07,
             "check_translation": true,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "PBE H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_pbe_df.json",
             "expected_energy": -76.335467103918,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_b3lyp_df.json",
             "expected_energy": -76.422171387807,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "TPSS H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_tpss_df.json",
             "expected_energy": -76.4251513078,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "WB97X H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_wb97x_df.json",
             "expected_energy": -76.402216052144,
             "type": "unfragmented",
-            "tolerance": 1e-08
+            "tolerance": 1e-08,
+            "requires": "libxc"
         },
         {
             "name": "CAM-B3LYP H2O cc-pvdz density fitted with cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/df-dft/cpu_water_cc-pvdz_cam-b3lyp_df.json",
             "expected_energy": -76.393652022904,
             "type": "unfragmented",
-            "tolerance": 1e-08
+            "tolerance": 1e-08,
+            "requires": "libxc"
         },
         {
             "name": "MBE(2) RHF gradient (H2O)2 cc-pvdz (CPU)",
@@ -1910,111 +1948,129 @@
             "input": "inputs/cpu/mqc/dh/cpu_water_cc-pvdz_b2plyp.json",
             "expected_energy": -76.353392173249,
             "tolerance": 5e-05,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "DH B2GP-PLYP H2O cc-pvdz/cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/dh/cpu_water_cc-pvdz_b2gpplyp.json",
             "expected_energy": -76.336977629198,
             "tolerance": 5e-05,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "DH MPW2PLYP H2O cc-pvdz/cc-pvdz-rifit (CPU)",
             "input": "inputs/cpu/mqc/dh/cpu_water_cc-pvdz_mpw2plyp.json",
             "expected_energy": -76.35287249257,
             "tolerance": 5e-05,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS SVWN H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_svwn.json",
             "expected_energy": -75.854445341479,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS PBE H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_pbe.json",
             "expected_energy": -76.33306566891,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS B3LYP H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_b3lyp.json",
             "expected_energy": -76.420035465696,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS PBE0 H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_pbe0.json",
             "expected_energy": -76.338452163786,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS TPSS H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_tpss.json",
             "expected_energy": -76.422747225964,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS M06-L H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_m06l.json",
             "expected_energy": -76.413432743074,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS PBE CH4 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_ch4_cc-pvdz_pbe.json",
             "expected_energy": -40.442813478982,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS WB97X H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_wb97x.json",
             "expected_energy": -76.400024619839,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "KS CAM-B3LYP H2O cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/dft/cpu_water_cc-pvdz_camb3lyp.json",
             "expected_energy": -76.391504007376,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "UKS SVWN CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_svwn.json",
             "expected_energy": -39.421122039737,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "UKS PBE CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_pbe.json",
             "expected_energy": -39.769139688915,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "UKS B3LYP CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_b3lyp.json",
             "expected_energy": -39.838786859584,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "UKS TPSS CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_tpss.json",
             "expected_energy": -39.846631370639,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "UKS WB97X CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_wb97x.json",
             "expected_energy": -39.820521613415,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "UKS PBE O2 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_o2_cc-pvdz_pbe.json",
             "expected_energy": -150.19325937787,
-            "type": "unfragmented"
+            "type": "unfragmented",
+            "requires": "libxc"
         },
         {
             "name": "RI-CCSD H2O sto-3g/cc-pvdz-rifit frozen 0 (CPU)",
@@ -2077,6 +2133,29 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF with Fukui indices (chelpg) H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+        },
+        {
+            "name": "RHF with Fukui indices (mulliken) H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+        },
+        {
+            "name": "KS PBE with Fukui indices (chelpg default) H2O 6-31g grid 4 (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
+            "expected_energy": -76.298635406403,
+            "tolerance": 1e-07,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the CHELPG default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
+            "requires": "libxc"
+        },
+        {
             "name": "FMO2 water trimer 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
             "expected_energy": -227.9705411684,
@@ -2113,6 +2192,18 @@
             "expected_energy": -109.019592219941,
             "type": "unfragmented",
             "tolerance": 1e-08
+        },
+        {
+            "name": "EFP2 water dimer 6-31G* (CPU)",
+            "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
+            "expected_energy": 0.0030795778,
+            "type": "unfragmented"
+        },
+        {
+            "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
+            "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
+            "expected_energy": 0.0030795778,
+            "type": "unfragmented"
         }
     ]
 }

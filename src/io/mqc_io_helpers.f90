@@ -1,6 +1,7 @@
 !! IO helper utilities for file naming and string operations
 !! Provides utilities for output filename management and string parsing
 module mqc_io_helpers
+   use pic_ascii, only: to_lower
    implicit none
    private
 
@@ -102,21 +103,24 @@ contains
       end if
    end function get_molecule_name
 
-   function ends_with(str, suffix) result(matches)
-      !! Check if string ends with suffix
-      character(len=*), intent(in) :: str, suffix
+   pure function ends_with(text, suffix) result(matches)
+      !! Case-insensitive suffix test, for choosing a format by filename
+      !!
+      !! Insensitive because every caller is matching a file extension, and an
+      !! extension's case is the user's typing rather than a fact about the
+      !! file: `WATER.JSON` is a JSON deck. This used to exist twice, sensitive
+      !! here and insensitive in the checkpoint reader, so the same name meant
+      !! two things depending on which module you were in.
+      character(len=*), intent(in) :: text, suffix
       logical :: matches
-      integer :: str_len, suffix_len
 
-      str_len = len_trim(str)
-      suffix_len = len_trim(suffix)
+      integer :: n, m
 
-      if (suffix_len > str_len) then
-         matches = .false.
-         return
-      end if
-
-      matches = (str(str_len - suffix_len + 1:str_len) == suffix)
+      n = len_trim(text)
+      m = len_trim(suffix)
+      matches = .false.
+      if (m > n .or. m < 1) return
+      matches = (to_lower(text(n - m + 1:n)) == to_lower(suffix(1:m)))
    end function ends_with
 
 end module mqc_io_helpers

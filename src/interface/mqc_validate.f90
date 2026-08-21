@@ -22,6 +22,7 @@ module mqc_validate
    !! by a tool that does not. It reports rather than refusing; it does not
    !! stop checking.
    use pic_types, only: dp, default_int, int64
+   use mqc_string_utils, only: int_to_text
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_fraglist, only: fraglist_t
    use mqc_bond_perception, only: missing_broken_bonds
@@ -72,8 +73,8 @@ contains
          do islot = 1, sys_geom%fragment_sizes(imon)
             atom = sys_geom%fragment_atoms(islot, imon)
             if (atom < 0 .or. atom >= sys_geom%total_atoms) then
-               call complain(strict, error, "monomer "//text(imon)// &
-                             " names atom "//text(atom)//", which does not exist "// &
+               call complain(strict, error, "monomer "//int_to_text(imon)// &
+                             " names atom "//int_to_text(atom)//", which does not exist "// &
                              "(atom indices are 0-based)")
                if (strict) return
                cycle
@@ -86,7 +87,7 @@ contains
       ! nothing and its electrons are simply absent from the expansion.
       do iatom = 1, sys_geom%total_atoms
          if (owner_count(iatom) == 0) then
-            call complain(strict, error, "atom "//text(iatom - 1)// &
+            call complain(strict, error, "atom "//int_to_text(iatom - 1)// &
                           " belongs to no monomer, so no fragment will ever contain it")
             if (strict) return
             exit
@@ -99,8 +100,8 @@ contains
       if (allocated(sys_geom%fragment_charges) .and. all(owner_count == 1)) then
          total_charge = sum(sys_geom%fragment_charges(1:sys_geom%n_monomers))
          if (total_charge /= sys_geom%charge) then
-            call complain(strict, error, "monomer charges sum to "//text(total_charge)// &
-                          " but the system charge is "//text(sys_geom%charge)// &
+            call complain(strict, error, "monomer charges sum to "//int_to_text(total_charge)// &
+                          " but the system charge is "//int_to_text(sys_geom%charge)// &
                           "; the fragments describe a different number of electrons "// &
                           "than the molecule")
             if (strict) return
@@ -114,10 +115,10 @@ contains
          call missing_broken_bonds(sys_geom, sys_geom%bonds, size(sys_geom%bonds), &
                                    missing_i, missing_j, n_missing)
          if (n_missing > 0) then
-            call complain(strict, error, "the geometry implies "//text(n_missing)// &
+            call complain(strict, error, "the geometry implies "//int_to_text(n_missing)// &
                           " bond(s) crossing monomer boundaries that were never "// &
-                          "declared, starting with atoms "//text(missing_i(1))//" and "// &
-                          text(missing_j(1))//"; those fragments would have uncapped "// &
+                          "declared, starting with atoms "//int_to_text(missing_i(1))//" and "// &
+                          int_to_text(missing_j(1))//"; those fragments would have uncapped "// &
                           "valences")
             if (strict) return
          end if
@@ -158,15 +159,15 @@ contains
             if (terms%terms(iterm, islot) < 1 .or. &
                 terms%terms(iterm, islot) > sys_geom%n_monomers) then
                call complain(strict, error, "term "//text64(iterm)//" names monomer "// &
-                             text(int(terms%terms(iterm, islot)))//", but the system has "// &
-                             text(sys_geom%n_monomers)//" (monomer indices are 1-based)")
+                             int_to_text(int(terms%terms(iterm, islot)))//", but the system has "// &
+                             int_to_text(sys_geom%n_monomers)//" (monomer indices are 1-based)")
                if (strict) return
                exit
             end if
             do jslot = islot + 1, level
                if (terms%terms(iterm, islot) == terms%terms(iterm, jslot)) then
                   call complain(strict, error, "term "//text64(iterm)// &
-                                " names monomer "//text(int(terms%terms(iterm, islot)))// &
+                                " names monomer "//int_to_text(int(terms%terms(iterm, islot)))// &
                                 " twice")
                   if (strict) return
                   exit
@@ -205,7 +206,7 @@ contains
          if (missing_slot > 0) then
             call complain(strict, error, "term "//text64(iterm)// &
                           " is present but the subset without its monomer "// &
-                          text(int(terms%terms(iterm, missing_slot)))//" is not; "// &
+                          int_to_text(int(terms%terms(iterm, missing_slot)))//" is not; "// &
                           "the expansion cannot be assembled from this list "// &
                           "(see close_subsets)")
             if (strict) return
@@ -274,14 +275,6 @@ contains
          call logger%warning("unchecked input: "//message)
       end if
    end subroutine complain
-
-   pure function text(value) result(out)
-      integer, intent(in) :: value
-      character(len=:), allocatable :: out
-      character(len=16) :: buffer
-      write (buffer, "(I0)") value
-      out = trim(adjustl(buffer))
-   end function text
 
    pure function text64(value) result(out)
       integer(int64), intent(in) :: value

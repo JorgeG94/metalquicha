@@ -7,7 +7,9 @@ Writes, under ``validation/``:
 * ``inputs/cpu_<molecule>_<basis>.json`` -- one metalquicha deck per case
 * ``validation_tests_cpu.json``          -- the manifest, with PySCF energies
 
-Nothing here is hand-maintained: edit ``MOLECULES`` or ``SWEEPS`` and rerun.
+Almost nothing here is hand-maintained: edit ``MOLECULES`` or ``SWEEPS`` and
+rerun. The exceptions are ``MANUAL_CASES`` and ``PRESERVED_TESTS``, for decks
+whose reference comes from GAMESS rather than PySCF.
 See README.md for how and why.
 
 The reference energies are PySCF RHF driven with the *same* basis JSON that
@@ -296,6 +298,19 @@ HAND_MAINTAINED = {
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
+    # Ethane in the basis the quasi-atomic bonding papers use, which is the case
+    # their published numbers can be checked against: 186 basis functions and a
+    # full valence CAS(14,14) of 11,778,624 determinants. Deliberately absent
+    # from the manifest -- every other CPU case is sub-second and this is
+    # minutes even threaded, so running it in the suite would make the suite
+    # unusable. It is here to be run deliberately, and listed here so a
+    # regeneration does not sweep it away.
+    "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_quao.json",
+    # The same molecule and basis through an occupation-restricted space, which
+    # is the route the papers point at for anything past ethane: 49,050
+    # determinants of the 11,778,624, recovering 93.6% of the valence
+    # correlation energy. Hand-maintained for the same reason as the case above.
+    "cpu/mqc/quao/cpu_ethane_6-311++g(3df,3pd)_ormas.json",
     "cpu/mqc/efp/water_dimer_efp_turned.json",
     # Fukui indices. PySCF has no Fukui, so this script has no reference to
     # generate: what the manifest checks for these is the ordinary RHF energy,
@@ -305,6 +320,14 @@ HAND_MAINTAINED = {
     # exercised the path end to end.
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+    # The same analysis on Kohn-Sham ions. Here for a reason the other two do
+    # not cover: the ions are doublets, so they need a spin-POLARISED
+    # functional, while the closed-shell neutral's context is unpolarised.
+    # Handing the wrong one across is refused rather than misread, which turns
+    # into a skipped analysis and a run that still exits zero -- so a deck that
+    # completes with a Fukui table is the assertion. It also omits
+    # `population`, which pins the CHELPG default.
+    "cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
     # FMO2/FMO3 and EE-MBE. This script generates single-determinant references
     # from PySCF, which has no FMO, so it cannot produce these and would sweep the
     # decks away while leaving their manifest entries pointing at nothing. The two
@@ -1800,6 +1823,40 @@ def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
 # reference aborted it -- so nobody had regenerated to find out. Holding them
 # here keeps the generator the single source of the manifest, which is the
 # property everything else in this file assumes.
+# Manifest entries for decks this script cannot generate *and* does not write.
+#
+# HAND_MAINTAINED already spares these decks from the sweep, and the read-back
+# below re-emits any entry a previous manifest carried for them. Neither recovers
+# an entry once it has been lost: the sweep keeps the deck, and the read-back can
+# only return what is already there. The two EFP2 cases show what that costs --
+# they were dropped from the manifest between 279e9cf74 and 98877bcbb, the decks
+# stayed on disk, and the suite has not run them since. Coverage that looks
+# present and does not run.
+#
+# Declaring them here makes them reproducible from this script alone, the same
+# property MANUAL_CASES has, rather than from whatever the manifest happened to
+# hold. The reference is GAMESS: EFP2 is a sum of five terms against a fragment
+# potential, and PySCF has no EFP to generate one.
+#
+# The two differ only in the orientation of the dimer, and share an energy
+# because that is the assertion -- an EFP2 interaction must not depend on how the
+# fragments are placed.
+PRESERVED_TESTS = [
+    {
+        "name": "EFP2 water dimer 6-31G* (CPU)",
+        "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
+        "expected_energy": 0.0030795778,
+        "type": "unfragmented",
+    },
+    {
+        "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
+        "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
+        "expected_energy": 0.0030795778,
+        "type": "unfragmented",
+    },
+]
+
+
 MANUAL_CASES = [
     {
         "stem": "cpu_h2o_3-21g_ormas_cisd",
@@ -1991,6 +2048,112 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} quao E={energy:.12f}", flush=True)
+
+        # The same molecule with the energy decomposition, and for water the
+        # no-sharing analysis on top of it. Same energy -- a property does not
+        # change the wave function, which is the first thing this asserts --
+        # but a different half of the backend: the decomposition builds the
+        # dense two-electron array, regroups it onto atoms and pairs, and
+        # checks that the pieces add back up, and none of that is reached by
+        # the plain analysis above. Half a second each, and the alternative is
+        # several hundred lines of `mqc_libcint_bonding` and
+        # `mqc_libcint_ieda` that only a hand-run deck ever touches.
+        analysis = {"type": "gms_quao", "energy_decomposition": True}
+        if name == "water":
+            analysis["no_sharing"] = True
+        deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao_energy")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, properties={"bonding_analysis": analysis})
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"Quasi-atomic energy decomposition {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+
+        # The no-sharing analysis has two routes to the same wave function, and
+        # the deck above takes the default one -- the CI is solved in the
+        # molecular orbital basis and the vector carried into the quasi-atomic
+        # one. This runs the other, which solves a second Davidson in the
+        # quasi-atomic basis directly.
+        #
+        # Both are covered because each is the only check on the other. The
+        # transform route asserts at runtime that the vector it produced has the
+        # energy it was solved at, which catches the string minors and their
+        # signs; but an error in the *quasi-atomic Hamiltonian* would move both
+        # sides of that comparison together. Two independent routes agreeing on
+        # E(Psi-0) is what closes it.
+        if name == "water":
+            analysis_ns = {"type": "gms_quao", "energy_decomposition": True,
+                           "no_sharing": True}
+            resolve = dict(analysis_ns, no_sharing_ci="resolve")
+            deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao_resolve")
+            written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+            if not args.dry_run:
+                d = deck_json(xyz_for(mol), basis,
+                              properties={"bonding_analysis": resolve})
+                _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+            tests.append({
+                "name": f"No-sharing analysis, CI re-solved {mol.label} {basis} (CPU)",
+                "input": deck,
+                "expected_energy": round(energy, 12),
+                "type": "unfragmented",
+            })
+
+            # The two routes by which the analysis gets its CI vector from the
+            # *calculation* rather than solving one: a full-valence CASCI, whose
+            # active orbitals are adopted as the valence space outright, and an
+            # ORMAS wave function, which additionally has to be written out over
+            # the complete determinant space before it can be rotated at all.
+            #
+            # These two carry OUR OWN energies rather than PySCF's, which is a
+            # weaker reference and deliberate. The active space here is chosen
+            # by this code's valence-virtual selection; PySCF has no equivalent,
+            # so there is no independent route to the number and inventing one
+            # would mean reimplementing the selection in the reference. What
+            # makes that acceptable is that the physics is asserted elsewhere:
+            # the analysis rebuilds the energy from the transformed CI vector
+            # against the quasi-atomic Hamiltonian and refuses if it differs
+            # from what the CI converged to, so a broken transformation fails
+            # the run rather than quietly matching a recorded number.
+            note = (
+                "Reference from this program, not PySCF. The active space is "
+                "chosen by this code's own valence-virtual selection, which "
+                "PySCF has no equivalent of, so there is no independent route "
+                "to the number. It is a regression guard: it catches a change, "
+                "it does not prove the physics. The physics these cases "
+                "exercise is checked instead by the invariance assertion "
+                "inside the analysis, which rebuilds the energy from the "
+                "transformed CI vector against the quasi-atomic Hamiltonian "
+                "and refuses if it differs from the value the CI converged to."
+            )
+            for suffix, label, mcscf_keys, own_energy in (
+                ("inherit", "CI inherited",
+                 {"full_valence": True, "optimize_orbitals": False},
+                 -76.027033805985),
+                ("ormas", "ORMAS wave function",
+                 {"n_active_electrons": 8, "n_active_orbitals": 6,
+                  "n_inactive_orbitals": 1, "optimize_orbitals": False,
+                  "ormas": {"subspaces": [1, 5], "min_electrons": [6, 0],
+                            "max_electrons": [8, 2]}},
+                 -75.995559951200),
+            ):
+                deck = deck_for(f"{CPU_MQC}/quao", f"cpu_{name}_{tag}_quao_{suffix}")
+                written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+                if not args.dry_run:
+                    d = deck_json(xyz_for(mol), basis, method="casci",
+                                  properties={"bonding_analysis": analysis_ns})
+                    d["keywords"]["mcscf"] = mcscf_keys
+                    _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+                tests.append({
+                    "name": f"No-sharing analysis, {label} {mol.label} {basis} (CPU)",
+                    "input": deck,
+                    "expected_energy": own_energy,
+                    "type": "unfragmented",
+                    "reference_note": note,
+                })
 
     for name, basis, aux, functional, mult in GRADIENT_CASES:
         mol = MOLECULES[name]
@@ -2527,6 +2690,16 @@ def main():
         print(f"{case['name']}: transcribed reference "
               f"E={case['expected_energy']:.12f}", flush=True)
 
+    # The entries for hand-maintained decks this script neither generates nor
+    # writes. Emitted before the read-back further up would have had a chance to
+    # supply them, so a declared entry is what lands even if the old manifest
+    # still carried a stale copy.
+    for entry in PRESERVED_TESTS:
+        if entry["input"] not in {t["input"] for t in tests}:
+            tests.append(dict(entry))
+            print(f"{entry['name']}: transcribed reference "
+                  f"E={entry['expected_energy']:.10f}", flush=True)
+
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:
         print(f"\n{len(tests)} cases (dry run, nothing written)")
@@ -2548,6 +2721,20 @@ def main():
         if d.is_dir() and not any(d.iterdir()):
             d.rmdir()
             print(f"removed empty {d.relative_to(INPUTS)}")
+
+    # Every case that names a functional needs libxc, and a build without it
+    # refuses the deck rather than computing something else. Marked here, in
+    # one place, rather than at each of the six sites that emit a Kohn-Sham
+    # case: `run_validation.py` skips a case whose `requires` the binary does not
+    # report, so a libcint-only build -- which is what a coverage build is --
+    # runs the rest of this manifest instead of failing two dozen cases it was
+    # never going to be able to run.
+    for entry in tests:
+        deck = VALIDATION / entry["input"]
+        if not deck.exists():
+            continue
+        if "functional" in json.loads(deck.read_text()).get("model", {}):
+            entry["requires"] = "libxc"
 
     MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
     print(f"\nwrote {MANIFEST} with {len(tests)} cases")

@@ -63,8 +63,11 @@ module mqc_cuest_scf
    !! XC contribution.
    use, intrinsic :: iso_c_binding, only: c_int, c_int64_t, c_ptr
    use pic_types, only: dp
+   use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
+   use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
+                             spin_contamination, GWH_K
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis_device, only: diis_device_t
@@ -90,10 +93,6 @@ module mqc_cuest_scf
    integer, parameter, public :: SCF_GUESS_GWH = 1   !! Generalized Wolfsberg-Helmholz
    integer, parameter, public :: SCF_GUESS_SAC = 2   !! Superposition of atomic coefficients
 
-   real(dp), parameter :: GWH_K = 1.75_dp
-      !! The Wolfsberg-Helmholz constant. 1.75 is the value in universal use.
-
-   real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
       !! Overlap eigenvalues below this are dropped from the orbital space
 
    type :: scf_result_t
@@ -133,17 +132,7 @@ contains
       real(dp), intent(in) :: coordinates(:, :)  !! (3, n_atoms)
       real(dp) :: energy
 
-      integer :: iatom, jatom
-      real(dp) :: distance
-
-      energy = 0.0_dp
-      do iatom = 1, size(atomic_numbers)
-         do jatom = iatom + 1, size(atomic_numbers)
-            distance = norm2(coordinates(:, iatom) - coordinates(:, jatom))
-            energy = energy + real(atomic_numbers(iatom), dp) &
-                     *real(atomic_numbers(jatom), dp)/distance
-         end do
-      end do
+      energy = nuclear_repulsion(real(atomic_numbers, dp), coordinates)
    end function nuclear_repulsion_energy
 
    subroutine build_guess_fock(guess, core_hamiltonian, overlap, guess_fock)
@@ -259,46 +248,6 @@ contains
       deallocate (density_a, density_b, density_total, coulomb, exch_a, exch_b, vxc_a, vxc_b)
    end subroutine sac_guess_fock
 
-   subroutine build_orthogonalizer(overlap, transform, n_mo, error)
-      !! Canonical orthogonalizer X = U s^(-1/2), with near-null modes dropped
-      !!
-      !! Canonical rather than symmetric orthogonalization so that a basis with
-      !! near-linear dependence -- diffuse functions, or two fragments close
-      !! together -- loses the offending modes instead of producing garbage.
-      real(dp), intent(in) :: overlap(:, :)                  !! S, (n_ao, n_ao)
-      real(dp), allocatable, intent(out) :: transform(:, :)  !! X, (n_ao, n_mo)
-      integer, intent(out) :: n_mo                           !! Surviving orbitals
-      type(error_t), intent(inout) :: error
-
-      real(dp), allocatable :: eigenvectors(:, :), eigenvalues(:)
-      integer :: n_ao, i, kept, info
-
-      n_ao = size(overlap, 1)
-      allocate (eigenvectors(n_ao, n_ao), eigenvalues(n_ao))
-      eigenvectors = overlap
-
-      call pic_syev(eigenvectors, eigenvalues, jobz="V", uplo="U", info=info)
-      if (info /= 0) then
-         call error%set(ERROR_VALIDATION, "SCF: overlap matrix diagonalization failed")
-         return
-      end if
-
-      ! pic_syev returns eigenvalues ascending, so the discarded ones lead.
-      n_mo = count(eigenvalues > LINEAR_DEPENDENCE_TOL)
-      if (n_mo == 0) then
-         call error%set(ERROR_VALIDATION, "SCF: overlap matrix is singular")
-         return
-      end if
-
-      allocate (transform(n_ao, n_mo))
-      kept = 0
-      do i = 1, n_ao
-         if (eigenvalues(i) <= LINEAR_DEPENDENCE_TOL) cycle
-         kept = kept + 1
-         transform(:, kept) = eigenvectors(:, i)/sqrt(eigenvalues(i))
-      end do
-   end subroutine build_orthogonalizer
-
    subroutine diagonalize_fock(fock, transform, orbitals, energies, error)
       !! Solve FC = SCe in the orthogonal basis and back-transform
       real(dp), intent(in) :: fock(:, :)                    !! F, (n_ao, n_ao)
@@ -328,14 +277,6 @@ contains
       allocate (orbitals(n_ao, n_mo))
       call pic_gemm(transform, fock_ortho, orbitals)
    end subroutine diagonalize_fock
-
-   subroutine build_density(occupied, density)
-      !! Total closed-shell density D = 2 C_occ C_occ^T
-      real(dp), intent(in) :: occupied(:, :)     !! C_occ, (n_ao, n_occ)
-      real(dp), intent(inout) :: density(:, :)   !! D, (n_ao, n_ao)
-
-      call pic_gemm(occupied, occupied, density, transb="T", alpha=2.0_dp, beta=0.0_dp)
-   end subroutine build_density
 
    subroutine run_rhf_scf(system, context, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
@@ -433,7 +374,7 @@ contains
 
       allocate (occupied(n_ao, max(n_occ, 1)), density(n_ao, n_ao))
       occupied(:, 1:n_occ) = orbitals(:, 1:n_occ)
-      call build_density(occupied(:, 1:n_occ), density)
+      call build_density_closed_shell(occupied, n_occ, density)
 
       xc_energy = 0.0_dp
       pcm_energy = 0.0_dp
@@ -692,32 +633,6 @@ contains
       n_beta = (n_electrons - unpaired)/2
       n_alpha = n_beta + unpaired
    end subroutine spin_occupations
-
-   function spin_contamination(occ_alpha, occ_beta, overlap, n_alpha, n_beta) result(s_squared)
-      !! <S^2> for a UHF/UKS determinant
-      !!
-      !!   <S^2> = S_z(S_z+1) + n_beta - sum_ij |<phi_i^a|phi_j^b>|^2
-      !!
-      !! The exact value for a pure spin state is S_z(S_z+1); the excess is
-      !! spin contamination, and reporting it is the cheapest way to notice
-      !! that an open-shell answer is not describing the state intended.
-      real(dp), intent(in) :: occ_alpha(:, :), occ_beta(:, :), overlap(:, :)
-      integer, intent(in) :: n_alpha, n_beta
-      real(dp) :: s_squared
-
-      real(dp), allocatable :: scratch(:, :), mo_overlap(:, :)
-      real(dp) :: sz
-
-      sz = 0.5_dp*real(n_alpha - n_beta, dp)
-      s_squared = sz*(sz + 1.0_dp) + real(n_beta, dp)
-      if (n_alpha == 0 .or. n_beta == 0) return
-
-      allocate (scratch(size(overlap, 1), n_beta), mo_overlap(n_alpha, n_beta))
-      call pic_gemm(overlap, occ_beta(:, 1:n_beta), scratch)
-      call pic_gemm(occ_alpha(:, 1:n_alpha), scratch, mo_overlap, transa="T")
-      s_squared = s_squared - sum(mo_overlap**2)
-      deallocate (scratch, mo_overlap)
-   end function spin_contamination
 
    subroutine run_uks_scf(system, context, atomic_numbers, coordinates, n_electrons, multiplicity, &
                           max_iterations, energy_tolerance, density_tolerance, &

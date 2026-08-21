@@ -93,6 +93,25 @@ what the caller is doing and which index to rank on depends on the reaction:
 because the output payload does not carry them -- a consumer that read the
 geometry already knows which atom is which.
 
+The ions are run with the deck's own method: Hartree-Fock for ``hf``, and
+unrestricted Kohn-Sham with the neutral's functional for ``dft``. The energies
+here are therefore differences of that method's total energies and are not
+comparable with a run that used another one -- nothing in this payload records
+which, because the deck that produced it does.
+
+.. warning::
+
+   **A negative ``f_plus`` or ``f_minus`` is spurious** -- the example above
+   has one. The exact Fukui function cannot be negative, so a negative
+   condensed value is an artefact of partitioning a continuous density onto
+   atoms, not a site that repels charge.
+
+   A consumer should rank on these, not quote them, and should treat a small
+   negative as "unreactive in that channel". ``f_zero`` and ``dual`` are
+   derived, so they inherit the artefact from whichever index carried it. A
+   script that sorts ascending on ``f_minus`` to find the least reactive site
+   will find the most artefactual one instead.
+
 **Check ``anion_bound`` before using ``f_plus``.** When it is false the anion
 came out above the neutral, nothing bound the added electron, and that column
 describes whatever orbital the basis had left over. Nothing about the values

@@ -14,6 +14,7 @@ module mqc_libcint_bridge
    !! the redistribution of forces back onto the heavy atoms happens later and
    !! elsewhere.
    use pic_logger, only: logger => global_logger
+   use mqc_string_utils, only: int_to_text
    use pic_types, only: dp
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
@@ -22,7 +23,8 @@ module mqc_libcint_bridge
    use mqc_elements, only: element_number_to_symbol
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
    use mqc_cuest_iface, only: cuest_scf_settings_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
+                                    angular_form_name
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
    use mqc_libcint_projection, only: climb_basis_ladder
@@ -30,12 +32,15 @@ module mqc_libcint_bridge
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
+   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2, &
+                              run_libcint_ump2, run_libcint_uri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    use mqc_libcint_rcc, only: rcc_result_t, run_libcint_rccsd
-   use mqc_libcint_bonding, only: run_quao_analysis, bonding_analysis_kind, &
+   use mqc_libcint_bonding, only: valence_wavefunction_t, &
+                                  run_quao_analysis, bonding_analysis_kind, &
                                   BONDING_GMS_QUAO
    use mqc_libcint_casci, only: casci_result_t, run_libcint_casci, &
                                 run_libcint_ormas_ci
@@ -54,6 +59,11 @@ module mqc_libcint_bridge
    public :: run_libcint_efp
    public :: run_libcint_sapt0
    public :: libcint_backend_available
+   public :: xc_available
+      !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
+      !! outside this backend, since the module is not compiled without it --
+      !! can still ask whether a functional can be evaluated. `mqc_version`
+      !! reports it, and `run_validation.py` skips the decks that need it.
 
    real(dp), parameter :: CI_TOLERANCE = 1.0e-11_dp
       !! Residual the CASCI Davidson is driven to on the CASCI-only path.
@@ -446,12 +456,18 @@ contains
       energy = res%energy
    end subroutine run_libcint_fmo
 
-   subroutine run_libcint_hf(settings, fragment, result, want_gradient)
+   subroutine run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       !! Closed-shell HF for one fragment, on the CPU
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in), optional :: want_gradient
+      logical, intent(in), optional :: want_hessian
+         !! Ask for the analytic Hessian. **Not a promise that one comes back.**
+         !! The conditions it needs are known here and not by the caller, so a
+         !! request this routine cannot honour leaves `result%has_hessian`
+         !! false and sets no error -- the caller is expected to fall back to
+         !! finite differences, which is a correct answer rather than a failure.
 
       ! `aux` and `xc` are targets because the gradient takes both as optional
       ! arguments, and a disassociated pointer is how "this SCF fitted nothing"
@@ -464,7 +480,7 @@ contains
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size, guess_kind
-      logical :: unrestricted, do_gradient
+      logical :: unrestricted, do_gradient, do_hessian
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
       ! argument, so the SCF calls below need no branching on which guess ran.
@@ -483,6 +499,8 @@ contains
 
       do_gradient = .false.
       if (present(want_gradient)) do_gradient = want_gradient
+      do_hessian = .false.
+      if (present(want_hessian)) do_hessian = want_hessian
 
       ! Coupled cluster stops here: its gradient needs the Lambda equations,
       ! which do not exist on this side at all. MP2's does exist, and is taken
@@ -607,9 +625,9 @@ contains
       ! a charged or open-shell fragment reads identically to a neutral one
       ! without this, which is exactly the case a fragmented run most needs to
       ! see. Same integers the breakdown CSV carries.
-      call logger%verbose("charge "//to_text(fragment%charge)// &
-                          ", multiplicity "//to_text(fragment%multiplicity)// &
-                          ", electrons "//to_text(fragment%nelec))
+      call logger%verbose("charge "//int_to_text(fragment%charge)// &
+                          ", multiplicity "//int_to_text(fragment%multiplicity)// &
+                          ", electrons "//int_to_text(fragment%nelec))
 
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
@@ -648,19 +666,6 @@ contains
          ! themselves and return a plausible number. The Kohn-Sham half of the
          ! functional is unrestricted and correct, which is exactly what makes the
          ! total convincing.
-         if (unrestricted .and. xc%pt2_fraction /= 0.0_dp) then
-            call result%error%set(ERROR_VALIDATION, "'"//trim(settings%functional)// &
-                                  "' is a double hybrid and its perturbative term needs "// &
-                                  "an unrestricted MP2, which the CPU path does not have. "// &
-                                  "The Kohn-Sham part alone would be ~65 mHartree short, "// &
-                                  "so this is refused rather than reported. Run a "// &
-                                  "closed-shell system, or a functional without a "// &
-                                  "perturbative term.")
-            result%has_error = .true.
-            call xc%destroy()
-            call mol%destroy()
-            return
-         end if
          if (settings%verbose) then
             write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), ", grid level ", settings%grid_level
             call logger%info(trim(line))
@@ -824,7 +829,7 @@ contains
       result%scf_iterations = scf%iterations
       if (.not. scf%converged .and. .not. settings%allow_crap_scf) then
          call result%error%set(ERROR_VALIDATION, "SCF not converged in "// &
-                               to_text(scf%iterations)//" cycles")
+                               int_to_text(scf%iterations)//" cycles")
          result%has_error = .true.
          call aux%destroy()
          call mol%destroy()
@@ -849,11 +854,63 @@ contains
             use mqc_libcint_fukui, only: fukui_result_t, fukui_indices, print_fukui_report
             type(fukui_result_t) :: fukui
             type(error_t) :: fukui_error
+            integer :: fukui_frozen
+            real(dp) :: fukui_pt2
+            type(libcint_molecule_t), target :: fukui_aux
+            type(libcint_molecule_t), pointer :: fukui_aux_arg
+            logical :: fukui_fitted
 
+            ! Zero unless this is a Kohn-Sham run with a perturbative term.
+            ! `xc` is only built when kohn_sham, so reading its fraction
+            ! unconditionally would read an uninitialised context on a
+            ! Hartree-Fock run.
+            fukui_pt2 = 0.0_dp
+            if (kohn_sham) fukui_pt2 = xc%pt2_fraction
+
+            ! Fitted exactly when the energy's own PT2 term is fitted. The
+            ! alternative -- Fukui always exact, the energy fitted when asked --
+            ! would print an IP beside a total energy that used a different
+            ! correlation treatment, and the difference between them would look
+            ! like a property of the molecule.
+            fukui_fitted = fukui_pt2 /= 0.0_dp .and. settings%aux_basis_named
+            if (fukui_fitted) then
+               call correlation_aux_basis(settings, fragment, symbols, fukui_aux, fukui_error)
+               if (fukui_error%has_error()) then
+                  call logger%warning("  the Fukui analysis could not build its "// &
+                                      "auxiliary basis: "//fukui_error%get_message())
+                  fukui_fitted = .false.
+                  call fukui_error%clear()
+               end if
+            end if
+            ! Absent rather than empty when unfitted. A disassociated pointer
+            ! passed to an optional dummy is not present, which is the same
+            ! idiom `xc_arg` uses a few hundred lines up.
+            fukui_aux_arg => null()
+            if (fukui_fitted) fukui_aux_arg => fukui_aux
+
+            ! The functional by NAME, not this routine's `xc`: that context
+            ! was built spin-unpolarised for the closed-shell neutral and the
+            ! ions are doublets. fukui_indices builds its own polarised one.
+            ! A double hybrid needs the orbitals as well as the density: its
+            ! perturbative term is evaluated for all three states inside, so
+            ! that the neutral's comes from the same code path the ions' do.
+            ! `dh_frozen` is resolved the same way the energy's PT2 resolves
+            ! it, a few hundred lines below -- a Fukui run that froze a
+            ! different core than the energy would report an IP that did not
+            ! match the numbers beside it.
+            fukui_frozen = settings%n_frozen_core
+            if (fukui_frozen < 0) fukui_frozen = core_orbital_count(fragment%element_numbers)
+            if (.not. settings%freeze_core) fukui_frozen = 0
             call fukui_indices(mol, fragment%nelec, fragment%multiplicity, scf%density, &
                                scf%energy, settings%fukui_population, settings%max_iter, &
                                settings%energy_tol, settings%density_tol, fukui, &
-                               fukui_error)
+                               fukui_error, functional=trim(settings%functional), &
+                               grid_level=settings%grid_level, &
+                               pt2_fraction=fukui_pt2, &
+                               neutral_orbitals=scf%orbitals, &
+                               neutral_orbital_energies=scf%orbital_energies, &
+                               n_frozen=fukui_frozen, aux=fukui_aux_arg)
+            if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &
                                    fukui_error%get_message())
@@ -884,6 +941,8 @@ contains
                                 analysis_error, threshold=settings%bonding_threshold, &
                                 energy_decomposition=settings%bonding_energy, &
                                 no_sharing=settings%bonding_no_sharing, &
+                                no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                restrict_localization=settings%bonding_restrict_localization, &
                                 atom_energy=ieda_atom, free_atom_energy=ieda_free, &
                                 pair_energy=ieda_pair, pair_classical=ieda_classical, &
                                 formation_energy=ieda_formation)
@@ -1001,6 +1060,52 @@ contains
             call logger%info(trim(line))
          end if
       end if
+
+      ! ---- the analytic Hessian, where it applies ---------------------------
+      !
+      ! Restricted Hartree-Fock over exact integrals and nothing else. Every
+      ! other case here reaches this same line and every one of them must fall
+      ! through: an unrestricted reference has two densities where `rhf_hessian`
+      ! assumes one carrying its factor of two; a fitted SCF converged a
+      ! different energy from the one these derivatives belong to; a functional
+      ! adds an exchange-correlation second derivative that does not exist on
+      ! this side; and a correlated method's Hessian needs its own response
+      ! entirely. None of those would fail loudly -- each would return a
+      ! plausible, converged, wrong matrix -- so the guard is a list of
+      ! positives rather than a list of refusals.
+      !
+      ! Hydrogen caps are excluded for a different reason: the shapes match and
+      ! the numbers would be right, but a capped fragment's second derivatives
+      ! have to be redistributed onto the heavy atoms the caps replaced, and
+      ! that is checked for the finite-difference path and not for this one.
+      ! Falling back leaves a fragmented Hessian exactly as it was.
+      if (do_hessian .and. .not. unrestricted .and. .not. kohn_sham &
+          .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
+          .and. .not. settings%run_cc .and. fragment%n_caps == 0) then
+         block
+            real(dp), allocatable :: hess4(:, :, :, :)
+            type(timer_type) :: hess_clock
+
+            call logger%info("  computing the analytic Hessian")
+            call hess_clock%start()
+            call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
+                             scf%orbital_energies, scf%n_occupied, hess4, error)
+            if (error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
+               result%has_error = .true.
+               call aux%destroy()
+               call mol%destroy()
+               return
+            end if
+
+            call hessian_to_matrix(hess4, result%hessian)
+            result%has_hessian = .true.
+            deallocate (hess4)
+            write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
+            call logger%info(trim(line))
+         end block
+      end if
+
       call aux%destroy()
 
       if (settings%run_mp2) then
@@ -1301,6 +1406,11 @@ contains
                ! an `Energy` run and a `Gradient` run of one deck reporting
                ! different energies, and left the expensive `n^4` two-particle
                ! density in the one place fitting was supposed to remove it.
+               ! Four routines rather than two, because the reference decides
+               ! the correlation treatment as much as the auxiliary basis does.
+               ! `fragment%nelec/2` is not an occupied count for an open shell,
+               ! so the unrestricted calls take the SCF's own per-spin counts
+               ! rather than deriving one.
                if (settings%aux_basis_named) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (error%has_error()) then
@@ -1310,14 +1420,28 @@ contains
                      call mol%destroy()
                      return
                   end if
-                  call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, &
-                                          scf%orbital_energies, fragment%nelec/2, &
-                                          scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  if (unrestricted) then
+                     call run_libcint_uri_mp2(mol, corr_aux, scf%orbitals, scf%orbitals_beta, &
+                                              scf%orbital_energies, scf%orbital_energies_beta, &
+                                              scf%n_occupied, scf%n_occupied_beta, &
+                                              scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  else
+                     call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, &
+                                             scf%orbital_energies, fragment%nelec/2, &
+                                             scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  end if
                   call corr_aux%destroy()
                else
-                  call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
-                                       fragment%nelec/2, scf%energy, dh_mp2, error, &
-                                       n_frozen=dh_frozen)
+                  if (unrestricted) then
+                     call run_libcint_ump2(mol, scf%orbitals, scf%orbitals_beta, &
+                                           scf%orbital_energies, scf%orbital_energies_beta, &
+                                           scf%n_occupied, scf%n_occupied_beta, &
+                                           scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  else
+                     call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
+                                          fragment%nelec/2, scf%energy, dh_mp2, error, &
+                                          n_frozen=dh_frozen)
+                  end if
                end if
                if (error%has_error()) then
                   call result%error%set(ERROR_VALIDATION, "double hybrid: "// &
@@ -1428,18 +1552,6 @@ contains
       call mol%destroy()
    end subroutine run_libcint_hf
 
-   pure function angular_form_name(cartesian) result(name)
-      !! "Cartesian" or "spherical", so an error can say which basis is which
-      logical, intent(in) :: cartesian
-      character(len=:), allocatable :: name
-
-      if (cartesian) then
-         name = "Cartesian"
-      else
-         name = "spherical"
-      end if
-   end function angular_form_name
-
    subroutine resolve_active_space(settings, fragment, n_ao, space, error)
       !! Turn the deck's active space into the four integers the CI needs
       !!
@@ -1491,8 +1603,8 @@ contains
       unpaired = fragment%multiplicity - 1
       if (mod(n_active_electrons - unpaired, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "an active space of "// &
-                        to_text(n_active_electrons)//" electrons cannot have "// &
-                        "multiplicity "//to_text(fragment%multiplicity)//": the two "// &
+                        int_to_text(n_active_electrons)//" electrons cannot have "// &
+                        "multiplicity "//int_to_text(fragment%multiplicity)//": the two "// &
                         "differ in parity, so there is no way to split the electrons "// &
                         "into alpha and beta counts. Change either the electron count "// &
                         "or the multiplicity by one.")
@@ -1502,10 +1614,10 @@ contains
       n_beta = (n_active_electrons - unpaired)/2
 
       if (n_beta < 0 .or. n_alpha > n_active) then
-         call error%set(ERROR_VALIDATION, "an active space of "//to_text(n_active)// &
-                        " orbitals cannot hold "//to_text(n_alpha)//" alpha and "// &
-                        to_text(n_beta)//" beta electrons at multiplicity "// &
-                        to_text(fragment%multiplicity)//". Widen the active space or "// &
+         call error%set(ERROR_VALIDATION, "an active space of "//int_to_text(n_active)// &
+                        " orbitals cannot hold "//int_to_text(n_alpha)//" alpha and "// &
+                        int_to_text(n_beta)//" beta electrons at multiplicity "// &
+                        int_to_text(fragment%multiplicity)//". Widen the active space or "// &
                         "put fewer electrons in it.")
          return
       end if
@@ -1519,9 +1631,9 @@ contains
       if (settings%mcscf%n_inactive_orbitals < 0) then
          if (closed_shell_electrons < 0 .or. mod(closed_shell_electrons, 2) /= 0) then
             call error%set(ERROR_VALIDATION, "cannot derive the inactive orbitals: "// &
-                           to_text(fragment%nelec)//" electrons less an active space "// &
-                           "of "//to_text(n_active_electrons)//" leaves "// &
-                           to_text(closed_shell_electrons)//", which is not a "// &
+                           int_to_text(fragment%nelec)//" electrons less an active space "// &
+                           "of "//int_to_text(n_active_electrons)//" leaves "// &
+                           int_to_text(closed_shell_electrons)//", which is not a "// &
                            "non-negative even number of doubly occupied electrons. "// &
                            "Set keywords.mcscf.n_inactive_orbitals if the partition is "// &
                            "meant to be something other than the obvious one.")
@@ -1532,11 +1644,11 @@ contains
          n_inactive = settings%mcscf%n_inactive_orbitals
          if (2*n_inactive + n_active_electrons /= fragment%nelec) then
             call error%set(ERROR_VALIDATION, "the orbital partition does not account "// &
-                           "for every electron: "//to_text(n_inactive)//" inactive "// &
-                           "orbitals hold "//to_text(2*n_inactive)//" electrons and "// &
-                           "the active space "//to_text(n_active_electrons)//", which "// &
-                           "is "//to_text(2*n_inactive + n_active_electrons)//" against "// &
-                           "the molecule's "//to_text(fragment%nelec)//".")
+                           "for every electron: "//int_to_text(n_inactive)//" inactive "// &
+                           "orbitals hold "//int_to_text(2*n_inactive)//" electrons and "// &
+                           "the active space "//int_to_text(n_active_electrons)//", which "// &
+                           "is "//int_to_text(2*n_inactive + n_active_electrons)//" against "// &
+                           "the molecule's "//int_to_text(fragment%nelec)//".")
             return
          end if
       end if
@@ -1544,9 +1656,9 @@ contains
       ! The virtual space may be empty -- a CAS in a minimal basis legitimately
       ! uses every orbital -- but it may not be negative.
       if (n_inactive + n_active > n_ao) then
-         call error%set(ERROR_VALIDATION, to_text(n_inactive)//" inactive plus "// &
-                        to_text(n_active)//" active orbitals is more than the "// &
-                        to_text(n_ao)//" the basis '"//trim(settings%basis_set)// &
+         call error%set(ERROR_VALIDATION, int_to_text(n_inactive)//" inactive plus "// &
+                        int_to_text(n_active)//" active orbitals is more than the "// &
+                        int_to_text(n_ao)//" the basis '"//trim(settings%basis_set)// &
                         "' provides. Use a larger basis or a smaller active space.")
          return
       end if
@@ -1579,6 +1691,11 @@ contains
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: casscf
       type(casci_result_t) :: casci
+      type(valence_wavefunction_t) :: converged
+         !! Offered to the bonding analysis, which takes it up only if it is
+         !! over the full valence space. Filled unconditionally because filling
+         !! it is four assignments and deciding whether it qualifies is not this
+         !! layer's job.
       type(error_t) :: error
       type(error_t) :: analysis_error
       real(dp), allocatable :: ieda_atom(:), ieda_free(:)
@@ -1603,7 +1720,7 @@ contains
       if (mod(fragment%nelec, 2) /= 0) then
          call result%error%set(ERROR_VALIDATION, "a multiconfigurational calculation "// &
                                "here starts from a closed-shell SCF, and "// &
-                               to_text(fragment%nelec)//" electrons have no restricted "// &
+                               int_to_text(fragment%nelec)//" electrons have no restricted "// &
                                "solution. An open-shell reference would need separate "// &
                                "alpha and beta transforms into the active space, which "// &
                                "are not implemented. An open-shell *state* on an "// &
@@ -1667,7 +1784,7 @@ contains
       ! nothing downstream of this one would say it had happened.
       if (.not. scf%converged) then
          call result%error%set(ERROR_VALIDATION, "the reference SCF did not converge in "// &
-                               to_text(settings%max_iter)//" iterations, so there are no "// &
+                               int_to_text(settings%max_iter)//" iterations, so there are no "// &
                                "orbitals to build an active space from")
          result%has_error = .true.
          call mol%destroy()
@@ -1750,7 +1867,7 @@ contains
                               "improving at a gradient of "// &
                               to_real_text(casscf%gradient_norm)//", short of the "// &
                               to_real_text(settings%mcscf%orbital_convergence)// &
-                              " asked for, after "//to_text(casscf%iterations)// &
+                              " asked for, after "//int_to_text(casscf%iterations)// &
                               " macro-iterations. More iterations will not help -- "// &
                               "no step downhill could be found. Ask for a looser "// &
                               "keywords.mcscf.orbital_convergence; on a flat surface "// &
@@ -1759,7 +1876,7 @@ contains
                call error%set(ERROR_VALIDATION, "the orbital optimisation did not reach an "// &
                               "orbital gradient of "// &
                               to_real_text(settings%mcscf%orbital_convergence)//" in "// &
-                              to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
+                              int_to_text(settings%mcscf%max_macro_iter)//" macro-iterations "// &
                               "(it stopped at "//to_real_text(casscf%gradient_norm)// &
                               "). Raise keywords.mcscf.max_macro_iter.")
             end if
@@ -1823,12 +1940,30 @@ contains
       ! in which the density is diagonal and told what the diagonal is.
       if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
          call analysis_error%clear()
+         converged%n_inactive = space(1)
+         converged%n_active = space(2)
+         converged%n_alpha = space(3)
+         converged%n_beta = space(4)
          if (settings%mcscf%optimize_orbitals) then
             call natural_orbitals(casscf%orbitals, space(1), space(2), casscf%dm1, &
                                   natural, occupations, analysis_error)
+            if (allocated(casscf%ci_vector)) converged%ci = casscf%ci_vector
+            converged%orbitals = casscf%orbitals(:, space(1) + 1:space(1) + space(2))
+            converged%energy = casscf%energy
          else
             call natural_orbitals(reference, space(1), space(2), casci%dm1, &
                                   natural, occupations, analysis_error)
+            ! A restricted space leaves `ci_vector` unallocated and carries
+            ! its coefficients in `ci_flat`, addressed by a partition that is
+            ! meaningless without it -- so both go over, and the analysis writes
+            ! them out over the complete space before rotating.
+            if (allocated(casci%ci_vector)) converged%ci = casci%ci_vector
+            if (allocated(casci%ci_flat)) then
+               converged%ci_flat = casci%ci_flat
+               converged%ormas = casci%ormas
+            end if
+            converged%orbitals = reference(:, space(1) + 1:space(1) + space(2))
+            converged%energy = casci%energy
          end if
          if (.not. analysis_error%has_error()) then
             ! The two-particle density goes over in the orbitals it was computed
@@ -1848,6 +1983,9 @@ contains
                                       reference_energy=casscf%energy, &
                                       energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing, &
+                                      no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                      restrict_localization=settings%bonding_restrict_localization, &
+                                      valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
                                       pair_energy=ieda_pair, &
@@ -1865,6 +2003,9 @@ contains
                                       reference_energy=casci%energy, &
                                       energy_decomposition=settings%bonding_energy, &
                                       no_sharing=settings%bonding_no_sharing, &
+                                      no_sharing_ci=settings%bonding_no_sharing_ci, &
+                                      restrict_localization=settings%bonding_restrict_localization, &
+                                      valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
                                       pair_energy=ieda_pair, &
@@ -1916,14 +2057,6 @@ contains
       write (buffer, "(es9.2)") value
       out = trim(adjustl(buffer))
    end function to_real_text
-
-   pure function to_text(value) result(out)
-      integer, intent(in) :: value
-      character(len=:), allocatable :: out
-      character(len=16) :: buffer
-      write (buffer, "(i0)") value
-      out = trim(adjustl(buffer))
-   end function to_text
 
    subroutine correlation_aux_basis(settings, fragment, symbols, aux, error)
       !! Build the auxiliary basis the correlation step will fit with

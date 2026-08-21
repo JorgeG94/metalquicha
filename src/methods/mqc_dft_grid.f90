@@ -24,6 +24,7 @@ module mqc_dft_grid
    use mqc_dft_radial, only: treutler_ahlrichs_radial
    use mqc_dft_partition, only: becke_partition_weights, PARTITION_BECKE, ADJUST_TREUTLER
    use mqc_dft_prune, only: prune_angular_orders, PRUNE_NONE, PRUNE_NWCHEM
+   use mqc_physical_constants, only: PI
    implicit none
    private
 
@@ -78,8 +79,6 @@ module mqc_dft_grid
                                            1202, 1202, 1202, 1202, 1202, 1202, 1202, &
                                            1454, 1454, 1454, 1454, 1454, 1454, 1454], &
                                            [N_PERIODS, MAX_GRID_LEVEL + 1]))
-
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
 
    type :: dft_grid_t
       !! A molecular quadrature: points, weights, and which atom made each point

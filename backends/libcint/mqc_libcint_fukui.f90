@@ -31,6 +31,9 @@ module mqc_libcint_fukui
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2, &
+                              run_libcint_ump2, run_libcint_uri_mp2
    implicit none
    private
 
@@ -50,6 +53,15 @@ module mqc_libcint_fukui
       real(dp), allocatable :: f_plus(:)    !! Nucleophilic attack: where charge arrives
       real(dp), allocatable :: f_minus(:)   !! Electrophilic attack: where charge leaves
       real(dp), allocatable :: f_zero(:)    !! Radical attack, the average of the two
+         !! **A NEGATIVE ENTRY IN ANY OF THESE IS SPURIOUS.** The exact Fukui
+         !! function is a derivative of the density with respect to electron
+         !! count and cannot be negative -- no site gives up charge because the
+         !! molecule gained an electron. Negative condensed values come from
+         !! partitioning a continuous density onto atoms, where two states are
+         !! fitted independently and disagree by more than the one electron
+         !! that moved between them. Rank sites by these; do not quote the
+         !! numbers, and treat a small negative as "not reactive in this
+         !! channel" rather than as anything about repulsion.
       real(dp), allocatable :: dual(:)
          !! `f+ - f-`. Positive where a site prefers to accept and negative
          !! where it prefers to donate, so one column separates electrophilic
@@ -73,16 +85,54 @@ module mqc_libcint_fukui
          !! diffuse functions moves its affinity from -0.19 to -0.04 hartree
          !! and never makes it positive, because H2O- does not exist.
       character(len=16) :: scheme = "chelpg"
+      character(len=:), allocatable :: functional
+         !! The functional the three states were computed with, empty for
+         !! Hartree-Fock. Recorded because an IP of 0.4 hartree means nothing
+         !! without it: the number is a difference of total energies and those
+         !! are not comparable across methods.
    end type fukui_result_t
 
 contains
 
    subroutine fukui_indices(mol, nelec, multiplicity, neutral_density, neutral_energy, &
-                            scheme, max_iter, energy_tol, density_tol, res, error)
+                            scheme, max_iter, energy_tol, density_tol, res, error, &
+                            functional, grid_level, pt2_fraction, neutral_orbitals, &
+                            neutral_orbital_energies, aux, n_frozen)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
       !! caller has just converged it.
+      !!
+      !! KOHN-SHAM IONS NEED THEIR OWN CONTEXT, which is why this takes a
+      !! functional NAME and not the caller's `xc_context_t`. libxc fixes the
+      !! spin channel when a functional is initialised, and the caller's
+      !! context was built for the closed-shell neutral, so it is
+      !! spin-unpolarised. Handing it to the unrestricted ions does not
+      !! misread it -- `xc_add_potential` refuses it outright -- but the
+      !! refusal would arrive as a failed analysis rather than as a design.
+      !! One polarised context is built here and shared by both doublets,
+      !! which see the same grid as each other by construction.
+      !!
+      !! Absent or empty `functional` is Hartree-Fock, which is what this
+      !! routine did before it could do anything else.
+      !!
+      !! DOUBLE HYBRIDS ARE COMPUTED HERE, ALL THREE OF THEM. `pt2_fraction`
+      !! non-zero means the functional carries a perturbative term, and this
+      !! routine evaluates it for the neutral as well as for the two ions --
+      !! even though the caller computes the neutral's separately for the
+      !! energy it reports.
+      !!
+      !! Recomputing it is the point rather than the cost. IP and EA are
+      !! differences of total energies, so the term has to be present in all
+      !! three or in none; taking the neutral's from the caller and the ions'
+      !! from here would make the three states depend on two code paths
+      !! agreeing about frozen cores and auxiliary bases. One restricted MP2 on
+      !! a closed shell is small beside the two unrestricted ones the ions
+      !! need, and it buys identical treatment by construction -- the same
+      !! argument that has the three states share one `libcint_molecule_t`.
+      !!
+      !! `aux` present fits the correlation, absent computes it exactly, which
+      !! is the choice the caller already made for its own PT2 term.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: multiplicity
@@ -93,10 +143,22 @@ contains
       real(dp), intent(in) :: energy_tol, density_tol
       type(fukui_result_t), intent(out) :: res
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: functional
+      integer, intent(in), optional :: grid_level
+      real(dp), intent(in), optional :: pt2_fraction
+      real(dp), intent(in), optional :: neutral_orbitals(:, :)
+      real(dp), intent(in), optional :: neutral_orbital_energies(:)
+      type(libcint_molecule_t), intent(in), optional :: aux
+      integer, intent(in), optional :: n_frozen
 
       type(rhf_result_t) :: anion, cation
       real(dp), allocatable :: overlap(:, :), total(:, :)
       integer :: natm
+      type(xc_context_t), target :: xc_ions
+      type(xc_context_t), pointer :: xc_arg
+      logical :: kohn_sham, double_hybrid
+      real(dp) :: pt2, e_pt2_neutral, e_pt2_anion, e_pt2_cation
+      integer :: frozen
 
       if (error%has_error()) return
 
@@ -114,9 +176,69 @@ contains
          return
       end if
 
+      kohn_sham = .false.
+      if (present(functional)) kohn_sham = len_trim(functional) > 0
+      pt2 = 0.0_dp
+      if (present(pt2_fraction)) pt2 = pt2_fraction
+      double_hybrid = kohn_sham .and. pt2 /= 0.0_dp
+      frozen = 0
+      if (present(n_frozen)) frozen = n_frozen
+      e_pt2_neutral = 0.0_dp
+      e_pt2_anion = 0.0_dp
+      e_pt2_cation = 0.0_dp
+      res%functional = ""
+      xc_arg => null()
+
+      if (kohn_sham) then
+         if (.not. xc_available()) then
+            call error%set(ERROR_VALIDATION, "the Fukui ions were asked for with '"// &
+                           trim(functional)//"' but this build has no libxc.")
+            return
+         end if
+         ! Spin-polarised, because both ions are doublets. See the note on this
+         ! routine: this is the whole reason the functional arrives by name.
+         call xc_context_create(mol, trim(functional), xc_ions, error, &
+                                level=grid_level, polarized=.true.)
+         if (error%has_error()) then
+            call error%add_context("Fukui indices: the ions' functional")
+            return
+         end if
+         ! A double hybrid's perturbative term is evaluated below for all
+         ! three states. What cannot be done is evaluating it for some of them:
+         ! the Kohn-Sham half converges perfectly well on its own, so leaving
+         ! the term out of the ions would return descriptors that look fine and
+         ! are short by it. The orbitals the neutral's term needs are not
+         ! derivable from the density this routine was handed, so they are
+         ! required rather than assumed.
+         if (double_hybrid) then
+            if (.not. (present(neutral_orbitals) .and. present(neutral_orbital_energies))) then
+               call error%set(ERROR_VALIDATION, "'"//trim(functional)//"' is a double "// &
+                              "hybrid, so the Fukui analysis needs the neutral's orbitals "// &
+                              "to evaluate its perturbative term on the same footing as "// &
+                              "the ions. The caller passed a density only.")
+               return
+            end if
+         end if
+         xc_arg => xc_ions
+         res%functional = trim(functional)
+      end if
+
       natm = mol%natm
       res%scheme = scheme
-      res%energy_neutral = neutral_energy
+      ! The neutral's perturbative term, on a closed shell and so restricted.
+      ! Computed before the ions so that a failure here -- a saturated basis,
+      ! an auxiliary set that will not fit -- is reported before two
+      ! unrestricted SCFs have been paid for.
+      if (double_hybrid) then
+         call state_pt2(mol, aux, neutral_orbitals, neutral_orbital_energies, &
+                        nelec/2, frozen, e_pt2_neutral, error)
+         if (error%has_error()) then
+            call error%add_context("Fukui indices: the neutral's PT2 term")
+            return
+         end if
+         e_pt2_neutral = pt2*e_pt2_neutral
+      end if
+      res%energy_neutral = neutral_energy + e_pt2_neutral
 
       call mol%overlap(overlap)
       call condense(mol, neutral_density, overlap, scheme, 0.0_dp, res%q_neutral, error)
@@ -125,7 +247,7 @@ contains
       ! The anion. One more electron, and a doublet because the neutral was
       ! closed shell.
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
-                           .false., anion, error)
+                           .false., anion, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -140,12 +262,20 @@ contains
       total = anion%density + anion%density_beta
       call condense(mol, total, overlap, scheme, -1.0_dp, res%q_anion, error)
       if (error%has_error()) return
-      res%energy_anion = anion%energy
+      if (double_hybrid) then
+         call state_pt2_open(mol, aux, anion, frozen, e_pt2_anion, error)
+         if (error%has_error()) then
+            call error%add_context("Fukui indices: the anion's PT2 term")
+            return
+         end if
+         e_pt2_anion = pt2*e_pt2_anion
+      end if
+      res%energy_anion = anion%energy + e_pt2_anion
       deallocate (total)
 
       ! The cation.
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
-                           .false., cation, error)
+                           .false., cation, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
@@ -159,7 +289,15 @@ contains
       total = cation%density + cation%density_beta
       call condense(mol, total, overlap, scheme, 1.0_dp, res%q_cation, error)
       if (error%has_error()) return
-      res%energy_cation = cation%energy
+      if (double_hybrid) then
+         call state_pt2_open(mol, aux, cation, frozen, e_pt2_cation, error)
+         if (error%has_error()) then
+            call error%add_context("Fukui indices: the cation's PT2 term")
+            return
+         end if
+         e_pt2_cation = pt2*e_pt2_cation
+      end if
+      res%energy_cation = cation%energy + e_pt2_cation
       deallocate (total, overlap)
 
       allocate (res%f_plus(natm), res%f_minus(natm), res%f_zero(natm), res%dual(natm))
@@ -179,6 +317,62 @@ contains
 
       call check_sum_rule(res, error)
    end subroutine fukui_indices
+
+   subroutine state_pt2(mol, aux, coeff, eps, n_occ, frozen, e_corr, error)
+      !! The UNSCALED MP2 correlation for the closed-shell neutral
+      !!
+      !! Unscaled, and the caller multiplies by the functional's fraction. Two
+      !! routines that each scale would be one place too many for a factor that
+      !! belongs to the functional rather than to the correlation treatment.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(libcint_molecule_t), intent(in), optional :: aux
+      real(dp), intent(in) :: coeff(:, :), eps(:)
+      integer, intent(in) :: n_occ, frozen
+      real(dp), intent(out) :: e_corr
+      type(error_t), intent(inout) :: error
+
+      type(mp2_result_t) :: m
+      e_corr = 0.0_dp
+      if (present(aux)) then
+         call run_libcint_ri_mp2(mol, aux, coeff, eps, n_occ, 0.0_dp, m, error, &
+                                 n_frozen=frozen)
+      else
+         call run_libcint_mp2(mol, coeff, eps, n_occ, 0.0_dp, m, error, n_frozen=frozen)
+      end if
+      if (error%has_error()) return
+      e_corr = m%correlation
+   end subroutine state_pt2
+
+   subroutine state_pt2_open(mol, aux, scf, frozen, e_corr, error)
+      !! The same for one of the doublet ions
+      !!
+      !! Takes the whole SCF result rather than its pieces because the per-spin
+      !! occupied counts have to come from the same place the orbitals did.
+      !! Deriving them from a charge and a multiplicity is how an alpha count
+      !! ends up paired with a beta coefficient matrix.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(libcint_molecule_t), intent(in), optional :: aux
+      type(rhf_result_t), intent(in) :: scf
+      integer, intent(in) :: frozen
+      real(dp), intent(out) :: e_corr
+      type(error_t), intent(inout) :: error
+
+      type(mp2_result_t) :: m
+      e_corr = 0.0_dp
+      if (present(aux)) then
+         call run_libcint_uri_mp2(mol, aux, scf%orbitals, scf%orbitals_beta, &
+                                  scf%orbital_energies, scf%orbital_energies_beta, &
+                                  scf%n_occupied, scf%n_occupied_beta, 0.0_dp, m, error, &
+                                  n_frozen=frozen)
+      else
+         call run_libcint_ump2(mol, scf%orbitals, scf%orbitals_beta, &
+                               scf%orbital_energies, scf%orbital_energies_beta, &
+                               scf%n_occupied, scf%n_occupied_beta, 0.0_dp, m, error, &
+                               n_frozen=frozen)
+      end if
+      if (error%has_error()) return
+      e_corr = m%correlation
+   end subroutine state_pt2_open
 
    subroutine condense(mol, density, overlap, scheme, total_charge, charges, error)
       !! Atomic charges for one of the three states
@@ -246,6 +440,18 @@ contains
 
       natm = size(res%f_plus)
       call logger%info("")
+      ! The method belongs in the header for the same reason the scheme does:
+      ! IP, EA and hardness are differences of total energies, so they are not
+      ! comparable across methods and a table that does not say which one it
+      ! used invites exactly that comparison.
+      if (allocated(res%functional)) then
+         if (len_trim(res%functional) > 0) then
+            call logger%info("  Fukui ions: unrestricted Kohn-Sham, "// &
+                             trim(res%functional))
+         else
+            call logger%info("  Fukui ions: unrestricted Hartree-Fock")
+         end if
+      end if
       call logger%info("  ==== Fukui indices ("//trim(res%scheme)//") "// &
                        "=================================")
       call logger%info("")
@@ -291,13 +497,43 @@ contains
       ! diffuse functions -- a function centred on one atom reaching over
       ! another gets charged to the wrong one.
       if (any_negative) then
-         call logger%warning("  some indices came out negative, which is the "// &
-                             "population analysis struggling rather than a site that "// &
-                             "repels charge")
+         call logger%warning("")
+         call logger%warning("  NEGATIVE INDICES ABOVE ARE SPURIOUS -- take them with a "// &
+                             "grain of salt.")
+         call logger%warning("")
+         call logger%warning("  f+ and f- are derivatives of a density with respect to "// &
+                             "electron count, so")
+         call logger%warning("  the exact quantities cannot be negative: no site "// &
+                             "releases charge when the")
+         call logger%warning("  molecule gains an electron. A negative value is an "// &
+                             "artefact of dividing a")
+         call logger%warning("  continuous density among atoms, not a chemical "// &
+                             "finding, and it appears")
+         call logger%warning("  where two states' charges are fitted independently and "// &
+                             "disagree by more")
+         call logger%warning("  than the electron being moved.")
+         call logger%warning("")
+         call logger%warning("  Read the RANKING, not the number: a site with a small "// &
+                             "negative index is")
+         call logger%warning("  unreactive in that channel, not anti-reactive. Do not "// &
+                             "quote the value,")
+         call logger%warning("  and do not build a further descriptor on it -- f0 and "// &
+                             "dual inherit the")
+         call logger%warning("  artefact from whichever index carried it.")
          if (trim(res%scheme) == "mulliken") then
-            call logger%warning("  Mulliken is especially prone to this; chelpg is "// &
-                                "the default for that reason")
+            call logger%warning("")
+            call logger%warning("  Mulliken is especially prone to this, being basis-set "// &
+                                "dependent; chelpg")
+            call logger%warning("  is the default for that reason and is worth rerunning "// &
+                                "with before")
+            call logger%warning("  concluding anything from this table.")
+         else
+            call logger%warning("")
+            call logger%warning("  A larger basis usually shrinks it. If it survives "// &
+                                "that, the atom")
+            call logger%warning("  simply carries little of this channel.")
          end if
+         call logger%warning("")
       end if
 
       ! The direct test rather than a guess from the basis-set name: if the

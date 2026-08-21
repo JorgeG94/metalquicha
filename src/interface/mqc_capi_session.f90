@@ -26,6 +26,7 @@ module mqc_capi_session
    use pic_types, only: int32
    use mqc_session, only: mqc_session_t
    use mqc_error, only: error_t
+   use mqc_capi_status, only: MQC_OK, MQC_FAIL
    implicit none
    private
 
@@ -33,10 +34,6 @@ module mqc_capi_session
    public :: mqc_session_rank, mqc_session_size, mqc_session_is_root
    public :: mqc_session_active, mqc_session_last_error
    public :: current_session
-
-   integer(c_int), parameter :: MQC_OK = 0
-   integer(c_int), parameter :: MQC_FAIL = 1
-
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
 

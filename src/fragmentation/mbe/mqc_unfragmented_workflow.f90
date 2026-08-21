@@ -6,7 +6,7 @@ contains
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
       !! If json_data is present, populates it for centralized JSON output
-      use mqc_physical_constants, only: HARTREE_TO_EV
+      use mqc_physical_constants, only: HARTREE_TO_EV, AU_TO_DEBYE
       use mqc_error, only: error_t
       use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
                                           compute_vibrational_analysis, print_vibrational_analysis
@@ -80,7 +80,7 @@ contains
          if (result%has_dipole) then
             write (result_line, "(a,3f15.8)") "  Dipole (e*Bohr): ", result%dipole
             call logger%info(trim(result_line))
-            write (result_line, "(a,f15.8)") "  Dipole magnitude (Debye): ", norm2(result%dipole)*2.541746_dp
+            write (result_line, "(a,f15.8)") "  Dipole magnitude (Debye): ", norm2(result%dipole)*AU_TO_DEBYE
             call logger%info(trim(result_line))
          end if
 

@@ -25,10 +25,12 @@ module mqc_cuest_atomic_guess
    use, intrinsic :: iso_c_binding, only: c_int64_t
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_atomic_guess_common, only: hund_multiplicity
    use mqc_cgto, only: molecular_basis_type
    use mqc_cuest_context, only: cuest_context_t
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_scf, only: scf_result_t, run_uks_scf, SCF_GUESS_GWH
+   use mqc_string_utils, only: int_to_text
    implicit none
    private
 
@@ -55,40 +57,6 @@ module mqc_cuest_atomic_guess
    logical, save :: cache_spherical = .true.
 
 contains
-
-   pure function hund_multiplicity(atomic_number) result(multiplicity)
-      !! Ground-state spin multiplicity of a neutral free atom
-      !!
-      !! Aufbau filling in Madelung order, with Hund's first rule inside each
-      !! subshell: electrons occupy distinct orbitals with parallel spin before
-      !! pairing. Good enough for a guess; it gets the transition metals
-      !! nominally wrong where the real ground state defies Madelung (Cr, Cu),
-      !! which costs iterations rather than correctness.
-      integer, intent(in) :: atomic_number
-      integer :: multiplicity
-
-      ! Subshell capacities in Madelung (n+l, then n) order: 1s 2s 2p 3s 3p 4s
-      ! 3d 4p 5s 4d 5p 6s 4f 5d 6p 7s
-      integer, parameter :: N_SUBSHELLS = 16
-      integer, parameter :: CAPACITY(N_SUBSHELLS) = [2, 2, 6, 2, 6, 2, 10, 6, 2, 10, 6, 2, 14, 10, 6, 2]
-      integer :: remaining, i, in_shell, degeneracy, unpaired
-
-      remaining = atomic_number
-      unpaired = 0
-      do i = 1, size(CAPACITY)
-         if (remaining <= 0) exit
-         degeneracy = CAPACITY(i)/2
-         in_shell = min(remaining, CAPACITY(i))
-         remaining = remaining - in_shell
-         ! Hund: singly occupy all orbitals first, then pair up.
-         if (in_shell <= degeneracy) then
-            unpaired = in_shell
-         else
-            unpaired = 2*degeneracy - in_shell
-         end if
-      end do
-      multiplicity = unpaired + 1
-   end function hund_multiplicity
 
    pure subroutine atom_ao_counts(mol_basis, use_spherical, counts)
       !! Number of AO basis functions contributed by each atom
@@ -196,7 +164,7 @@ contains
       call system%destroy()
 
       if (error%has_error()) then
-         call error%add_context("atomic guess: free atom Z="//trim(int_to_string(atomic_number)))
+         call error%add_context("atomic guess: free atom Z="//trim(int_to_text(atomic_number)))
          return
       end if
 
@@ -208,14 +176,6 @@ contains
       solution%c_beta = scf%occupied_beta
       solution%valid = .true.
    end subroutine solve_free_atom
-
-   pure function int_to_string(value) result(text)
-      !! Minimal integer formatting, to keep error messages readable
-      integer, intent(in) :: value
-      character(len=12) :: text
-
-      write (text, "(I0)") value
-   end function int_to_string
 
    subroutine build_sac_guess(context, atomic_numbers, mol_basis, aux_basis, use_spherical, &
                               functional_id, n_radial, n_angular, atom_bases, atom_aux_bases, &
