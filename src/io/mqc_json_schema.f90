@@ -107,6 +107,8 @@ contains
       call check_grandchild_object(core, root, "keywords", "correlation", &
                                    correlation_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "efp", efp_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "dft", dft_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "pcm", pcm_keys(), error)
@@ -214,6 +216,7 @@ contains
       call allow(keys, "xtb")
       call allow(keys, "correlation")
       call allow(keys, "cc")
+      call allow(keys, "efp")
       call allow(keys, "mcscf")
       call allow(keys, "dft")
       call allow(keys, "pcm")
@@ -312,6 +315,21 @@ contains
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
    end function scf_keys
+
+   function efp_keys() result(keys)
+      !! MAKEFP settings, deliberately not under "scf"
+      !!
+      !! The SCF a potential runs already reads `keywords.scf.tolerance` and
+      !! `keywords.scf.density_tolerance`. Spelling either of them again here would
+      !! give a deck two ways to set one number and this validator no way to object,
+      !! since both would be keys it knows -- the trap `correlation_keys` records
+      !! for `aux_basis`. Everything here belongs to a stage after the SCF.
+      type(key_set_t) :: keys
+      call allow(keys, "dynamic_tolerance")
+      call allow(keys, "dynamic_maxiter")
+      call allow(keys, "response")
+      call allow(keys, "vdw_scale")
+   end function efp_keys
 
    function correlation_keys() result(keys)
       !! Post-Hartree-Fock settings, deliberately not under "scf"

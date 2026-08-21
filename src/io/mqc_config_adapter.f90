@@ -222,6 +222,16 @@ contains
       driver_config%method_config%scf%energy_convergence_set = mqc_config%scf_tolerance_set
       driver_config%method_config%scf%density_convergence_set = &
          mqc_config%scf_density_tolerance_set
+      ! The MAKEFP group. No presence flags here, unlike the two SCF tolerances
+      ! above: those exist because MAKEFP holds a stricter default of its own and
+      ! has to tell "the deck asked for the shared default" from "the deck said
+      ! nothing". These four have one default each, named once in
+      ! `mqc_calculation_defaults` and read by both the deck and the solver, so a
+      ! silent deck carries the solver's own number back to it.
+      driver_config%method_config%efp%dynamic_tolerance = mqc_config%efp_dynamic_tolerance
+      driver_config%method_config%efp%dynamic_maxiter = mqc_config%efp_dynamic_maxiter
+      driver_config%method_config%efp%response = mqc_config%efp_response
+      driver_config%method_config%efp%vdw_scale = mqc_config%efp_vdw_scale
       if (allocated(mqc_config%checkpoint_file)) then
          driver_config%checkpoint_file = mqc_config%checkpoint_file
       end if

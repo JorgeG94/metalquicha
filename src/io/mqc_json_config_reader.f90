@@ -40,6 +40,8 @@ module mqc_json_config_reader
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_UNKNOWN
+   use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
+                                       EFP_RESPONSE_MATRIX_FREE
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
                                method_wants_density_fitting, method_type_to_string, &
                                method_is_casci, METHOD_TYPE_UNKNOWN, &
@@ -257,6 +259,15 @@ contains
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
+      ! MAKEFP's own group. Nothing here is an SCF setting -- the SCF is already
+      ! configured by `keywords.scf` and reads it -- these are the response solve
+      ! and the screening fit, which is where a potential's wall clock goes.
+      call optional_real(json, "keywords.efp.dynamic_tolerance", &
+                         config%efp_dynamic_tolerance)
+      call optional_int(json, "keywords.efp.dynamic_maxiter", config%efp_dynamic_maxiter)
+      call optional_real(json, "keywords.efp.vdw_scale", config%efp_vdw_scale)
+      call read_efp_response(json, config, error)
+      if (error%has_error()) return
       call optional_logical(json, "keywords.correlation.freeze_core", &
                             config%corr_freeze_core)
       call optional_int(json, "keywords.correlation.n_frozen_core", &
@@ -606,6 +617,46 @@ contains
          ! `mqc_session`, for the callers that cannot survive an `ERROR STOP`.
       end select
    end subroutine check_method_supported
+
+   subroutine read_efp_response(json, config, error)
+      !! `keywords.efp.response`, as a code, or a refusal
+      !!
+      !! Refused here rather than where the choice is acted on, which is an SCF, a
+      !! localization and a multipole expansion later: a misspelling is a property
+      !! of the deck and there is nothing to learn from running first. And refused
+      !! rather than quietly resolved -- a deck that asked for `matrix-free` and
+      !! got the size rule instead would report a timing for a route it did not
+      !! pick, which is the measurement the key exists to make.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      character(len=:), allocatable :: lowered
+      integer :: i
+
+      call optional_string(json, "keywords.efp.response", text)
+      if (.not. allocated(text)) return
+
+      lowered = trim(adjustl(text))
+      do i = 1, len(lowered)
+         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
+            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
+         end if
+      end do
+
+      select case (lowered)
+      case ("auto")
+         config%efp_response = EFP_RESPONSE_AUTO
+      case ("dense")
+         config%efp_response = EFP_RESPONSE_DENSE
+      case ("matrix_free")
+         config%efp_response = EFP_RESPONSE_MATRIX_FREE
+      case default
+         call error%set(ERROR_VALIDATION, "unknown keywords.efp.response '"//trim(text)// &
+                        "'. Accepted: auto, dense, matrix_free")
+      end select
+   end subroutine read_efp_response
 
    subroutine read_guess_steps(json, config, error)
       !! The basis-set-projection ladder, one entry per preliminary SCF

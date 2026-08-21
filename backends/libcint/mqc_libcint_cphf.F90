@@ -62,6 +62,9 @@ module mqc_libcint_cphf
                                  schwarz_bounds, direct_stats_t
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
+   use mqc_calculation_defaults, only: DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
+                                       EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
+                                       EFP_RESPONSE_MATRIX_FREE
    implicit none
    private
 
@@ -160,24 +163,12 @@ module mqc_libcint_cphf
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
 
-   !> The same, for the matrix-free frequency-dependent solve.
-   !>
-   !> **Named because it is the largest cheap lever on that solve and it was a
-   !> literal.** Every iteration is four passes over the integrals, so the
-   !> iteration count is the cost, and the count is set by this. The EFMO
-   !> literature runs the equivalent CPHF and TDHF solves at `5e-5` and reports
-   !> the resulting error in the total interaction energy at about `3e-6`
-   !> Hartree -- Sattasathuchana et al., JCTC 20, 2445 (2024), Tables 2 and 3,
-   !> where loosening from `1e-7` to `5e-5` cut their adenine wall time from
-   !> 39.1 to 17.2 minutes.
-   !>
-   !> Left at `1e-7` all the same. That measurement is of their code and their
-   !> accumulation, and what a potential built here does to an interaction
-   !> energy has not been measured. Moving it is a one-line change and wants a
-   !> comparison against a dense reference first -- `dynamic_polarizability`
-   !> still builds one for any system small enough, which is exactly what such
-   !> a comparison needs.
-   real(dp), parameter :: DEFAULT_DYNAMIC_TOL = 1.0e-7_dp
+   !> The same for the matrix-free frequency-dependent solve, and the iteration
+   !> cap on it, are `DEFAULT_DYNAMIC_TOL` and `DEFAULT_DYNAMIC_MAXITER` in
+   !> `mqc_calculation_defaults`. They sit there rather than here because
+   !> `keywords.efp.dynamic_tolerance` and `keywords.efp.dynamic_maxiter` name
+   !> them from a deck, and a deck's default and a solver's default that are the
+   !> same number written in two files stay equal only until one of them moves.
 
    !> Where a matrix-free pass actually spends itself, accumulated across a
    !> whole solve and reported once at the end.
@@ -748,7 +739,7 @@ contains
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
                                      response, perturbations, in_core, hessian, &
-                                     progress, aux)
+                                     progress, aux, route)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -817,6 +808,11 @@ contains
          !! potential -- see `build_hessian_df`, and `validation/check_df_hessian`
          !! for what the approximation costs in accuracy. Absent, the build is
          !! exact. Nothing downstream of the build changes either way.
+      integer, intent(in), optional :: route
+         !! `EFP_RESPONSE_AUTO`, `_DENSE` or `_MATRIX_FREE`, which is what
+         !! `keywords.efp.response` carries. Absent means `auto`, and `auto` is the
+         !! size rule below and nothing besides -- so a caller that says nothing
+         !! gets the choice this routine has always made for it.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
@@ -824,7 +820,8 @@ contains
       logical :: direct
       ! Every system's vectors carry a batch index: all frequencies and all
       ! perturbations are in flight together.
-      logical :: reuse
+      logical :: reuse, iterate
+      integer :: take
       real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
       real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
       integer, allocatable :: ipiv(:), infos(:)
@@ -922,28 +919,73 @@ contains
       n_ov = n_vir*n_occ
       reuse = .false.
       if (present(hessian)) reuse = hessian%ready
+      take = EFP_RESPONSE_AUTO
+      if (present(route)) take = route
+
+      ! **Too big to build, so it is never built.** Three `n_ov^2` matrices and a
+      ! factorisation per frequency is the fast route right up until it is no route
+      ! at all, and the crossover is not gentle: the matrices grow as the fourth
+      ! power of the basis while the matrix-free cost grows as the number of
+      ! iterations, which does not grow at all.
+      !
+      ! Fitted responses are excluded because `build_hessian_df` is already cheap in
+      ! exactly this regime -- the auxiliary basis is what bounds it, not `n_ov` --
+      ! so there is nothing here for them to escape. A Hessian already built is
+      ! excluded for a plainer reason: the expensive part of the dense route is
+      ! behind it.
+      !
+      ! All of that is `auto`, and `auto` is what it was. What is new is that a deck
+      ! can overrule it, because it is a judgement about memory and the question
+      ! anyone actually has -- which route is faster on this molecule -- could not be
+      ! asked without a recompile. `dense` builds the operator whatever the size rule
+      ! makes of it; `matrix_free` declines to build it even where it would fit, and
+      ! declines the auxiliary basis and any Hessian on hand along with it, neither
+      ! of which means anything to a solve that forms no matrix.
+      iterate = .false.
+      if (.not. reuse) then
+         iterate = .not. present(aux) .and. &
+                   3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT
+      end if
+      select case (take)
+      case (EFP_RESPONSE_AUTO)
+      case (EFP_RESPONSE_DENSE)
+         iterate = .false.
+      case (EFP_RESPONSE_MATRIX_FREE)
+         iterate = .true.
+      case default
+         call error%set(ERROR_VALIDATION, "dynamic response: unknown response route. "// &
+                        "Accepted: auto, dense, matrix_free")
+         return
+      end select
+
+      ! Said out loud only where a deck overruled the size rule. Which route ran is
+      ! visible either way -- one prints a Hessian build and the other prints its
+      ! iterations -- but that a keyword is the reason, and what the keyword turned
+      ! down, is not visible anywhere else.
+      if (talk .and. take /= EFP_RESPONSE_AUTO) then
+         if (iterate) then
+            call logger%info("        response route: matrix free, by keywords.efp.response")
+            if (present(aux)) call logger%info("          the auxiliary basis fits a Hessian "// &
+                                               "this route never builds, so it goes unused")
+            if (reuse) call logger%info("          a built Hessian was on hand and goes unused too")
+         else
+            call logger%info("        response route: dense, by keywords.efp.response")
+         end if
+      end if
+
+      if (iterate) then
+         call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
+                                         c_vir, gaps, h, frequencies, alpha, error, &
+                                         max_iter=max_iter, tol=tol, &
+                                         response=response, progress=talk)
+         return
+      end if
       if (reuse) then
          if (size(hessian%product, 1) /= n_ov) then
             call error%set(ERROR_VALIDATION, "dynamic response: the supplied Hessian "// &
                            "is the wrong size for this reference")
             return
          end if
-      else if (.not. present(aux) .and. &
-               3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT) then
-         ! **Too big to build, so it is never built.** Three `n_ov^2` matrices
-         ! and a factorisation per frequency is the fast route right up until it
-         ! is no route at all, and the crossover is not gentle: the matrices grow
-         ! as the fourth power of the basis while the matrix-free cost grows as
-         ! the number of iterations, which does not grow at all.
-         !
-         ! Fitted responses are excluded because `build_hessian_df` is already
-         ! cheap in exactly this regime -- the auxiliary basis is what bounds it,
-         ! not `n_ov` -- so there is nothing here for them to escape.
-         call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
-                                         c_vir, gaps, h, frequencies, alpha, error, &
-                                         max_iter=max_iter, tol=tol, &
-                                         response=response, progress=talk)
-         return
       end if
 
       if (present(aux)) then
@@ -1623,7 +1665,7 @@ contains
       n_pert = size(h, 3)
       n_freq = size(frequencies)
       n_sys = n_freq*n_pert
-      cycles = 200
+      cycles = DEFAULT_DYNAMIC_MAXITER
       if (present(max_iter)) cycles = max_iter
       threshold = DEFAULT_DYNAMIC_TOL
       if (present(tol)) threshold = tol
@@ -2026,7 +2068,7 @@ contains
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
                                         centroids, error, n_core, max_iter, tol, hessian, &
-                                        progress, aux)
+                                        progress, aux, route)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -2078,6 +2120,9 @@ contains
          !! Passed straight through as well: the solver is where the time goes.
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Passed straight through: fit the Hessian rather than build it exactly.
+      integer, intent(in), optional :: route
+         !! Passed straight through as well: whether the response operator is built
+         !! at all. `keywords.efp.response`.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
@@ -2102,7 +2147,8 @@ contains
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, perturbations=respond, &
-                                  hessian=hessian, progress=progress, aux=aux)
+                                  hessian=hessian, progress=progress, aux=aux, &
+                                  route=route)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
