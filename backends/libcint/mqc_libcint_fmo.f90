@@ -457,7 +457,7 @@ contains
       end if
 
       call build_fragments(atomic_numbers, symbols, coordinates, owner, opts, &
-                           frag, n_frag, afo, error)
+                           frag, n_frag, afo, error, comm)
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
@@ -527,7 +527,7 @@ contains
       call schwarz_bounds(mol, bounds, error)
    end subroutine open_fragment
 
-   subroutine build_fragments(z, symbols, coords, owner, opts, frag, n_frag, afo, error)
+   subroutine build_fragments(z, symbols, coords, owner, opts, frag, n_frag, afo, error, comm)
       !! Each fragment, and which of the others it needs the exact term for
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
@@ -538,6 +538,7 @@ contains
       integer, intent(out) :: n_frag
       type(afo_context_t), intent(out) :: afo
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
       integer, allocatable :: count_per(:)
       integer :: n_atoms, i, f
@@ -584,7 +585,7 @@ contains
                            "density. Set keywords.fragmentation.embedding to 'none'")
             return
          end if
-         call build_afo_context(z, symbols, coords, owner, opts, afo, error)
+         call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
          if (error%has_error()) return
       else
          call error%set(ERROR_VALIDATION, "fmo: bond_breaking='"// &
@@ -641,12 +642,35 @@ contains
                           " of "//to_char(n_frag - 1)//" neighbours exactly")
    end subroutine build_fragments
 
-   subroutine build_afo_context(z, symbols, coords, owner, opts, afo, error)
+   subroutine build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
       !! Every cut bond's frozen orbital, worked out once for the system
       !!
       !! A hybrid belongs to a bond and its surroundings, not to whoever is being
       !! solved, so this runs before any fragment does and costs one small SCF
       !! per cut bond however many fragments and n-mers there turn out to be.
+      !!
+      !! **Solved on one rank and shared, rather than everywhere.** The cost is
+      !! not the reason -- a model system is a dozen atoms and its SCF is
+      !! milliseconds, so recomputing it per rank wastes nothing anybody misses.
+      !! The reason is that every rank has to end up with *bit-identical*
+      !! hybrids. Each rank freezes orbitals in the fragments it owns and the
+      !! energies are summed by an allreduce, so ranks that froze subtly
+      !! different orbitals contribute from subtly different methods and the sum
+      !! is quietly wrong -- no crash, nothing in the log.
+      !!
+      !! Recomputing would very probably agree, and "very probably" is the
+      !! problem. Two things could separate ranks: unequal `OMP_NUM_THREADS`
+      !! reassociates the BLAS reductions under the SCF, and the localization is
+      !! a *discrete* choice on top of continuous data -- Jacobi sweeps take the
+      !! largest pair gain, and near-degenerate gains on the symmetric little
+      !! molecules model systems tend to be can flip on a rounding difference
+      !! and give a different localized set rather than a perturbed one.
+      !!
+      !! **The failure path has to go through the collectives, not around
+      !! them.** A leader that hits an error and returns leaves every other rank
+      !! blocked forever at a reduction nobody reaches. So the leader records
+      !! what went wrong as integers, every rank reduces them, and every rank
+      !! reconstructs the same message from the result.
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
@@ -654,12 +678,16 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(out) :: afo
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
       type(system_geometry_t) :: geom
       type(afo_model_t) :: model
       type(afo_options_t) :: afo_opts
-      real(dp), allocatable :: hyb(:)
-      integer :: i, n_on_bond
+      type(error_t) :: local
+      real(dp), allocatable :: hyb(:), flat(:)
+      integer, allocatable :: lengths(:)
+      integer :: status(3)
+      integer :: i, n_on_bond, at, total
 
       afo%active = .false.
       if (error%has_error()) return
@@ -694,28 +722,101 @@ contains
       afo_opts%basis = opts%basis
       allocate (afo%hybrid(afo%n_cuts))
       allocate (afo%sym(size(symbols)), source=symbols)
+      allocate (lengths(afo%n_cuts), source=0)
+      status = 0
 
-      do i = 1, afo%n_cuts
-         call build_afo_model(z, coords, afo%cuts(i), model, error)
-         if (error%has_error()) return
-         call bond_hybrid(model, afo_opts, hyb, n_on_bond, error)
-         if (error%has_error()) return
-         if (n_on_bond /= 1) then
-            call error%set(ERROR_VALIDATION, "fmo: "//to_char(n_on_bond)//" localized "// &
-                           "orbitals sit on the bond between atoms "// &
-                           to_char(afo%cuts(i)%atom_a)//" and "// &
-                           to_char(afo%cuts(i)%atom_b)//", so it is not a single bond. "// &
-                           "One frozen orbital stands in for one electron pair; cut at "// &
-                           "a single bond")
-            return
+      ! `status` is [what went wrong, which bond, how many orbitals were on it],
+      ! filled only by the rank that does the work and reduced below, so the
+      ! message every rank raises is the same one.
+      if (is_leader(comm)) then
+         do i = 1, afo%n_cuts
+            call build_afo_model(z, coords, afo%cuts(i), model, local)
+            if (local%has_error()) then
+               status = [1, i, 0]
+               exit
+            end if
+            call bond_hybrid(model, afo_opts, hyb, n_on_bond, local)
+            if (local%has_error()) then
+               status = [2, i, 0]
+               exit
+            end if
+            if (n_on_bond /= 1) then
+               status = [3, i, n_on_bond]
+               exit
+            end if
+            afo%hybrid(i)%coeff = hyb
+            lengths(i) = size(hyb)
+         end do
+      end if
+
+      if (spread_over(comm)) call allreduce(comm, status, 3, MPI_SUM)
+      if (status(1) /= 0) then
+         call afo_failure(afo%cuts(status(2)), status(1), status(3), local, error)
+         return
+      end if
+
+      if (spread_over(comm)) then
+         call allreduce(comm, lengths, afo%n_cuts, MPI_SUM)
+         total = sum(lengths)
+         allocate (flat(total), source=0.0_dp)
+         if (is_leader(comm)) then
+            at = 0
+            do i = 1, afo%n_cuts
+               flat(at + 1:at + lengths(i)) = afo%hybrid(i)%coeff
+               at = at + lengths(i)
+            end do
          end if
-         afo%hybrid(i)%coeff = hyb
-      end do
+         call allreduce(comm, flat, total, MPI_SUM)
+         at = 0
+         do i = 1, afo%n_cuts
+            if (allocated(afo%hybrid(i)%coeff)) deallocate (afo%hybrid(i)%coeff)
+            allocate (afo%hybrid(i)%coeff(lengths(i)))
+            afo%hybrid(i)%coeff = flat(at + 1:at + lengths(i))
+            at = at + lengths(i)
+         end do
+         deallocate (flat)
+      end if
 
       afo%active = .true.
       call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s), one "// &
                           "frozen orbital each")
    end subroutine build_afo_context
+
+   subroutine afo_failure(cut, kind, n_on_bond, local, error)
+      !! The same message on every rank, rebuilt from the reduced status
+      !!
+      !! `local` carries the lead rank's own error text and is the better
+      !! message where it exists, but it exists only on that rank. So the text
+      !! is reconstructed from integers that every rank has, and the leader's
+      !! own message is appended where it has one -- identical failures
+      !! everywhere, with detail where detail is available.
+      type(severed_bond_t), intent(in) :: cut
+      integer, intent(in) :: kind, n_on_bond
+      type(error_t), intent(inout) :: local
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: bond
+
+      bond = "the bond between atoms "//to_char(cut%atom_a)//" and "// &
+             to_char(cut%atom_b)
+
+      select case (kind)
+      case (1)
+         call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
+                        " could not be built")
+      case (2)
+         call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
+                        " could not be solved, so there is no orbital to freeze")
+      case default
+         call error%set(ERROR_VALIDATION, "fmo: "//to_char(n_on_bond)//" localized "// &
+                        "orbitals sit on "//bond//", so it is not a single bond. One "// &
+                        "frozen orbital stands in for one electron pair; cut at a "// &
+                        "single bond")
+      end select
+      if (local%has_error()) then
+         call logger%verbose("  fmo: "//trim(local%get_message()))
+      end if
+   end subroutine afo_failure
 
    subroutine assemble_group(frag, members, afo, z, coords, group, error)
       !! One n-mer's geometry, electron count and boundaries
