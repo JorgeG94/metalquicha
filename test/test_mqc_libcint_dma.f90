@@ -1,4 +1,4 @@
-!! Distributed multipoles, against the molecular moments they must reproduce
+!! Distributed multipoles: the moments they must reproduce, and thread safety
 module test_mqc_libcint_dma
    !! A distributed multipole analysis spreads one molecule's charge
    !! distribution over many expansion points -- every atom and every bond
@@ -27,6 +27,7 @@ module test_mqc_libcint_dma
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_dma, only: dma_result_t, distributed_multipoles, expansion_points
    use mqc_error, only: error_t
+!$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    implicit none
    private
 
@@ -34,6 +35,22 @@ module test_mqc_libcint_dma
 
    real(dp), parameter :: ANG = 1.8897261254578281_dp
    integer, parameter :: Z(3) = [8, 1, 1]
+
+   !> A water dimer for the threading test, where the water above will not do.
+   !>
+   !> Two molecules give bond midpoints that several primitive pairs can claim,
+   !> and a partition with something to partition -- which is where a missing
+   !> reduction shows. One water is small enough that a broken thread split can
+   !> still look right.
+   integer, parameter :: Z_DIMER(6) = [8, 1, 1, 8, 1, 1]
+   character(len=2), parameter :: SYM_DIMER(6) = ["O ", "H ", "H ", "O ", "H ", "H "]
+   real(dp), parameter :: GEO_DIMER(3, 6) = reshape( &
+                          [0.0_dp, 0.0_dp, 0.0_dp, &
+                           0.0_dp, 1.4308_dp, 1.1078_dp, &
+                           0.0_dp, -1.4308_dp, 1.1078_dp, &
+                           0.0_dp, 0.0_dp, 5.6_dp, &
+                           0.0_dp, 1.4308_dp, 6.7078_dp, &
+                           0.0_dp, -1.4308_dp, 6.7078_dp], [3, 6])
 
 contains
 
@@ -43,7 +60,9 @@ contains
       testsuite = [ &
                   new_unittest("expansion_points_are_atoms_and_midpoints", test_points), &
                   new_unittest("site_charges_sum_to_the_molecular_charge", test_charge_sum), &
-                  new_unittest("sites_reproduce_the_molecular_dipole", test_dipole_sum) &
+                  new_unittest("sites_reproduce_the_molecular_dipole", test_dipole_sum), &
+                  new_unittest("thread_count_does_not_change_the_multipoles", &
+                               test_thread_invariance) &
                   ]
    end subroutine collect_mqc_libcint_dma_tests
 
@@ -195,6 +214,76 @@ contains
       call check(error, maxval(abs(from_sites - direct)) < 1.0e-8_dp, &
                  "the distributed multipoles do not reproduce the molecular dipole")
    end subroutine test_dipole_sum
+
+   subroutine dimer_multipoles(dma, nelec, err, ok)
+      type(dma_result_t), intent(out) :: dma
+      integer, intent(out) :: nelec
+      type(error_t), intent(inout) :: err
+      logical, intent(out) :: ok
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+
+      ok = .false.
+      nelec = sum(Z_DIMER)
+      call build_libcint_molecule(Z_DIMER, SYM_DIMER, GEO_DIMER, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, nelec, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      if (err%has_error() .or. .not. scf%converged) return
+      call distributed_multipoles(mol, scf%density, Z_DIMER, dma, err)
+      ok = .not. err%has_error()
+      call mol%destroy()
+   end subroutine dimer_multipoles
+
+   subroutine test_thread_invariance(error)
+      !! One thread and many must give the same multipoles
+      !!
+      !! The reduction in the monopole loop is the part that can go wrong: every
+      !! primitive pair may contribute to any expansion point, so a missing
+      !! private copy shows up as a thread-count-dependent answer rather than as
+      !! a crash. The dipole and above accumulate into one column per point and
+      !! cannot race at all, which is worth stating because it is why only one
+      !! of the three loops needed a reduction.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(dma_result_t) :: one, many
+      type(error_t) :: err
+      integer :: nelec, saved
+      logical :: ok
+      real(dp) :: worst
+
+      saved = omp_get_max_threads()
+      if (saved < 2) then
+         ! Nothing to compare against; not a failure, just no information.
+         return
+      end if
+
+      call omp_set_num_threads(1)
+      call dimer_multipoles(one, nelec, err, ok)
+      call check(error, ok, "the single-threaded reference failed")
+      if (allocated(error)) then
+         call omp_set_num_threads(saved)
+         return
+      end if
+
+      call omp_set_num_threads(saved)
+      call dimer_multipoles(many, nelec, err, ok)
+      call check(error, ok, "the threaded run failed: "//err%get_message())
+      if (allocated(error)) return
+
+      worst = max(maxval(abs(one%electronic - many%electronic)), &
+                  maxval(abs(one%dipole - many%dipole)))
+      worst = max(worst, maxval(abs(one%quadrupole - many%quadrupole)))
+      worst = max(worst, maxval(abs(one%octopole - many%octopole)))
+
+      call check(error, maxval(abs(one%electronic)) > 0.1_dp, &
+                 "the multipoles are empty, so this compares nothing")
+      if (allocated(error)) return
+      ! Summation order differs between one thread and many, so this is a
+      ! rounding-level bound rather than bit equality.
+      call check(error, worst < 1.0e-12_dp, &
+                 "the multipoles depend on the thread count")
+   end subroutine test_thread_invariance
 
 end module test_mqc_libcint_dma
 
