@@ -210,7 +210,8 @@ contains
 
    subroutine make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge, n_core, &
-                                 vdwscl, verbose, aux_basis, guess)
+                                 vdwscl, verbose, aux_basis, guess, &
+                                 energy_tol, density_tol)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what. The SCF gives the density
@@ -252,6 +253,11 @@ contains
          !! `build_df_mo_block` checks: libcint builds all three centres of a fitting
          !! integral in one form. In practice that means a Cartesian Pople orbital
          !! basis has no usable fitting set here, since the ones on hand are spherical.
+      real(dp), intent(in), optional :: energy_tol, density_tol
+         !! SCF convergence thresholds. Present only when a deck named
+         !! `keywords.scf.tolerance` / `keywords.scf.density_tolerance`; absent,
+         !! the defaults just below stand. See the comment at the SCF call for why
+         !! they are not the shared 1e-6.
 
       type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
@@ -263,6 +269,7 @@ contains
       real(dp) :: rms_exp, rms_gauss
       integer :: natm, core, i, j, k, n_valence, n_electrons
       integer :: guess_kind
+      real(dp) :: e_tol, d_tol
       real(dp), allocatable :: guess_total(:, :)
       character(len=:), allocatable :: guess_name
       type(timer_type) :: stage
@@ -354,23 +361,34 @@ contains
       ! computation here, so its iteration table belongs alongside the stage
       ! timings this routine already prints, not hidden a level down.
       !
-      ! 1e-10 energy / 1e-8 density: the density is what the multipoles and the
-      ! response are taken from, and 1e-8 is tight enough that the potential does
-      ! not move in any digit it reports. The energy keeps the 100:1 ratio the
-      ! rest of the code uses (SCF_ENERGY_TOL / SCF_DENSITY_TOL), so the density is
-      ! the binding criterion -- by the time it reaches 1e-8 the energy is already
-      ! past 1e-12. The old 1e-12 / 1e-10 chased digits below what a fragment
-      ! potential can carry and cost several iterations doing it.
+      ! 1e-10 energy / 1e-8 density *when the deck does not say otherwise*: the
+      ! density is what the multipoles and the response are taken from, and 1e-8 is
+      ! tight enough that the potential does not move in any digit it reports. The
+      ! energy keeps the 100:1 ratio the rest of the code uses (SCF_ENERGY_TOL /
+      ! SCF_DENSITY_TOL), so the density is the binding criterion -- by the time it
+      ! reaches 1e-8 the energy is already past 1e-12. The old 1e-12 / 1e-10 chased
+      ! digits below what a fragment potential can carry and cost several iterations
+      ! doing it.
+      !
+      ! These were literals here, which meant a deck's `keywords.scf.tolerance` was
+      ! read, validated, carried through the adapter and then silently dropped on
+      ! this one path while working everywhere else. A default worth keeping is not
+      ! a reason to ignore an instruction: name the key and it is honoured, leave it
+      ! alone and the tight pair stands.
       !
       ! `aux` present means density-fit the SCF too, not just the response: the
       ! `scf.density_fitting` flag now fits both stages against the one auxiliary
       ! basis, the same as the key does on the Energy path. Absent, the SCF is
       ! exact.
+      e_tol = 1.0e-10_dp
+      d_tol = 1.0e-8_dp
+      if (present(energy_tol)) e_tol = energy_tol
+      if (present(density_tol)) d_tol = density_tol
       if (present(aux_basis)) then
-         call run_libcint_rhf(mol, n_electrons, 200, 1.0e-10_dp, 1.0e-8_dp, &
+         call run_libcint_rhf(mol, n_electrons, 200, e_tol, d_tol, &
                               talk, scf, error, guess=guess_kind, guess_density=guess_total, aux=aux)
       else
-         call run_libcint_rhf(mol, n_electrons, 200, 1.0e-10_dp, 1.0e-8_dp, &
+         call run_libcint_rhf(mol, n_electrons, 200, e_tol, d_tol, &
                               talk, scf, error, guess=guess_kind, guess_density=guess_total)
       end if
       if (error%has_error()) then
