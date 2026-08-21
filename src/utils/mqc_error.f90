@@ -20,6 +20,21 @@ module mqc_error
    integer, parameter :: MAX_LOCATION_LEN = 128
 
    !! Unified error type with stack trace support
+   !!
+   !! **Inside an OpenMP region, clear it explicitly.** Every routine in this
+   !! project opens with `if (error%has_error()) return`, which is a fine
+   !! convention serially and a trap in a parallel one. A `private` copy of an
+   !! `error_t` is reused across the iterations one thread runs, so a single
+   !! failure disables every later iteration on that thread; and a copy whose
+   !! default initialisation the compiler has not applied disables all of them
+   !! from the start. Neither crashes. Both look like work that quietly did not
+   !! happen -- which, when it happened in `distributed_multipoles`, showed up
+   !! as a threaded run failing where the serial one passed, and nowhere else.
+   !!
+   !! So: `call err%clear()` at the top of the loop body, not once before the
+   !! region. There is exactly one such region in the tree today and it does
+   !! this; the note is here because the next one will be written by someone
+   !! who did not debug the first.
    type :: error_t
       integer :: code = SUCCESS  !! Error code (0 = no error)
       character(len=:), allocatable :: message  !! Error message
