@@ -533,12 +533,16 @@ contains
          ! The energy belongs to the Fock built from this density, so both come
          ! back together and before extrapolation. A DIIS-mixed Fock is a
          ! convergence device, not a state anything is the energy of.
+         ! Read the bucket BEFORE the build. `assemble_fock` closes the Fock
+         ! stage itself, so by the time it returns the time is already charged
+         ! and a read here would difference against itself -- which is what the
+         ! per-iteration Fock column was doing when it printed 0.00 s beside a
+         ! Kohn-Sham run that plainly took seconds.
+         t_fock_iter = clk%seconds_of(STAGE_FOCK)
          call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                             fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
                             bmat_lr=bmat_lr)
          if (error%has_error()) return
-         t_fock_iter = clk%seconds_of(STAGE_FOCK)
-         call clk%lap(STAGE_FOCK)
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
 
          ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
@@ -591,9 +595,11 @@ contains
       call move_alloc(density, result%density)
       call diis%destroy()
 
-      ! The final rebuild above is a Fock build like any other, so it lands in the
-      ! same bucket; `wall` closes over everything including it.
-      call clk%lap(STAGE_FOCK)
+      ! The final rebuild above is a Fock build like any other and lands in the
+      ! same bucket -- charged by `assemble_fock` itself, so no lap here. One
+      ! used to be, and once the routine started closing its own stage that
+      ! second lap only inflated the call count: 24 builds reported for a
+      ! 12-iteration SCF.
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
       call energy_components(verbose, mol, result%density, result%electronic, &
@@ -1101,6 +1107,20 @@ contains
 
       ! Taken here, from the Fock matrix that is still a mean field.
       e_elec = electronic_energy(h, fock, density)
+
+      ! CLOSE THE FOCK BUCKET BEFORE THE QUADRATURE OPENS.
+      !
+      ! `lap` charges everything since the previous lap to the stage it names,
+      ! and the previous lap is in the caller, before this routine was entered.
+      ! So a single `lap(STAGE_XC)` after the quadrature charged the two-electron
+      ! build to the quadrature as well, and the caller's `lap(STAGE_FOCK)`
+      ! immediately afterwards found nothing left to charge.
+      !
+      ! The report said so plainly and was read as a result rather than as a
+      ! bug: 14 Fock builds at 0.00 s beside 81.57 s of "XC quadrature" on a
+      ! 518-function PBE0 run. A Kohn-Sham profile that shows no Fock time at
+      ! all is reporting on its own instrumentation.
+      if (present(clk)) call clk%lap(STAGE_FOCK)
 
       if (kohn_sham) then
          allocate (v_xc(size(h, 1), size(h, 2)))
