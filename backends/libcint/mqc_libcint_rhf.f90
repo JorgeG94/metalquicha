@@ -631,6 +631,11 @@ contains
          result%electronic = result%electronic + e_pcm
          result%pcm_energy = e_pcm
          result%pcm_charge = pcm%q_total
+         ! Lapped like the iterations' operators, so the stage counts one per
+         ! Fock build rather than one fewer. The final rebuild is a solvated
+         ! build like any other -- it has to be, or the energy reported would
+         ! be the gas-phase one.
+         call clk%lap(STAGE_PCM)
       end if
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
