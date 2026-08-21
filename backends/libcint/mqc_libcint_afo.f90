@@ -27,12 +27,18 @@ module mqc_libcint_afo
    use mqc_elements, only: element_covalent_radius, element_number_to_symbol
    use mqc_physical_fragment, only: to_bohr
    use mqc_bond_perception, only: severed_bond_t, perceive_bonds, DEFAULT_BOND_TOLERANCE
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, atom_ao_blocks
+   use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
+   use mqc_libcint_localize, only: boys_localize
    implicit none
    private
 
    public :: afo_model_t
+   public :: afo_options_t
    public :: build_afo_model
+   public :: bond_hybrid
    public :: DEFAULT_MODEL_RADIUS
+   public :: BOND_ORBITAL_REACH
 
    !> How far from either end of the cut bond the model reaches, in Angstrom.
    !>
@@ -42,6 +48,31 @@ module mqc_libcint_afo
    !> that has stopped moving. GAMESS calls this RAFO and defaults it to a
    !> similar distance.
    real(dp), parameter :: DEFAULT_MODEL_RADIUS = 2.5_dp
+
+   !> How close to the bond midpoint a localized orbital's centroid must sit to
+   !> count as being *on* that bond, as a fraction of the bond length.
+   !>
+   !> **It must be well under a half, and that is structural rather than
+   !> empirical.** Anything atom-centred -- a core orbital, a lone pair -- has
+   !> its centroid on a nucleus, which is at exactly half the bond length from
+   !> the midpoint. So a half admits every core on both atoms: measured on
+   !> ethane the two carbon 1s orbitals come in at 1.4513013 Bohr against a
+   !> half-bond of 1.4513096, inside it by eight decimal places, and a single
+   !> sigma bond reports three orbitals on it and looks like a triple one.
+   !>
+   !> The measured spectrum for ethane, in Bohr: the C-C orbital at 8e-11, the
+   !> two cores at 1.4513, the six C-H orbitals at 2.3546. A third of the bond
+   !> length sits in the wide gap between the first two, with room for a polar
+   !> bond whose orbital leans towards the electronegative end.
+   real(dp), parameter :: BOND_ORBITAL_REACH = 0.35_dp
+
+   !> What to solve the model system with
+   type :: afo_options_t
+      character(len=64) :: basis = "6-31g"
+      integer :: scf_max_iter = 100
+      real(dp) :: scf_energy_tol = 1.0e-10_dp
+      real(dp) :: scf_density_tol = 1.0e-8_dp
+   end type afo_options_t
 
    !> The small molecule a frozen orbital is derived from
    type :: afo_model_t
@@ -182,6 +213,112 @@ contains
 
       deallocate (chosen, order)
    end subroutine build_afo_model
+
+   subroutine bond_hybrid(model, opts, hybrid, n_on_bond, error, centroid_distance)
+      !! The orbital on the cut bond, expressed over the BDA's own basis functions
+      !!
+      !! Solve the model, localize its occupied orbitals, take the one sitting on
+      !! the cut bond, and keep the part of it that lives on the atom the
+      !! fragment will own.
+      !!
+      !! **Why only that atom's coefficients.** The frozen orbital has to be
+      !! transferable into a fragment that does not contain the model system, and
+      !! the one thing the two certainly share is the bond-detached atom and its
+      !! basis functions. Restricting to that block turns the transfer into an
+      !! index map rather than a projection between different molecules.
+      !!
+      !! **Normalisation carries across for free.** An atom's diagonal block of
+      !! `S` is an integral over that atom's own functions and does not know what
+      !! else is in the molecule, so it is bit-identical in the model and in the
+      !! fragment. Normalising here is therefore normalising there, and nothing
+      !! has to be renormalised on arrival.
+      !!
+      !! `n_on_bond` is the multiplicity question that geometry could not answer.
+      !! A single sigma bond puts one localized orbital on the midpoint; a double
+      !! bond puts two. Returned rather than acted on, because what to do about
+      !! it -- refuse, or freeze both -- belongs to the caller. GAMESS makes the
+      !! same choice available as `MODAFO`.
+      type(afo_model_t), intent(in) :: model
+      type(afo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: hybrid(:)
+      integer, intent(out) :: n_on_bond
+      type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: centroid_distance(:)
+         !! Every localized orbital's distance from the bond midpoint, in Bohr,
+         !! so the cut between "on this bond" and "not" can be looked at rather
+         !! than trusted.
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: localized(:, :), centroids(:, :), s(:, :), distance(:)
+      integer, allocatable :: offsets(:), counts(:)
+      real(dp) :: midpoint(3)
+      real(dp) :: reach, bond_length, norm
+      integer :: n_occ, i, best, first, last, n_bda
+
+      if (error%has_error()) return
+      if (model%bda_local < 1 .or. model%baa_local < 1) then
+         call error%set(ERROR_VALIDATION, "afo: the model does not say where the cut "// &
+                        "bond sits in it")
+         return
+      end if
+
+      call build_libcint_molecule(model%z, model%sym, model%xyz, trim(opts%basis), &
+                                  mol, error)
+      if (error%has_error()) return
+
+      call run_libcint_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                           opts%scf_density_tol, .false., scf, error)
+      if (error%has_error()) return
+      if (.not. scf%converged) then
+         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &
+                        "so there is no orbital to freeze")
+         return
+      end if
+
+      n_occ = scf%n_occupied
+      call boys_localize(mol, scf%orbitals, n_occ, localized, centroids, error)
+      if (error%has_error()) return
+
+      midpoint = 0.5_dp*(model%xyz(:, model%bda_local) + model%xyz(:, model%baa_local))
+      bond_length = sqrt(sum((model%xyz(:, model%bda_local) &
+                              - model%xyz(:, model%baa_local))**2))
+      reach = BOND_ORBITAL_REACH*bond_length
+
+      allocate (distance(n_occ))
+      do i = 1, n_occ
+         distance(i) = sqrt(sum((centroids(:, i) - midpoint)**2))
+      end do
+
+      best = minloc(distance, dim=1)
+      n_on_bond = count(distance < reach)
+      if (n_on_bond == 0) then
+         call error%set(ERROR_VALIDATION, "afo: no localized orbital sits on the cut "// &
+                        "bond, so the model system is not describing the bond it was "// &
+                        "built for")
+         return
+      end if
+
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+      first = offsets(model%bda_local) + 1
+      n_bda = counts(model%bda_local)
+      last = first + n_bda - 1
+
+      call mol%overlap(s)
+      allocate (hybrid(n_bda))
+      hybrid = localized(first:last, best)
+
+      norm = dot_product(hybrid, matmul(s(first:last, first:last), hybrid))
+      if (norm <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "afo: the bond orbital has no weight on the "// &
+                        "bond-detached atom, so there is no hybrid to take from it")
+         return
+      end if
+      hybrid = hybrid/sqrt(norm)
+
+      if (present(centroid_distance)) centroid_distance = distance
+   end subroutine bond_hybrid
 
    pure function cap_position(z, coords, kept, gone) result(r)
       !! `R_H = R_kept + s (R_gone - R_kept)`, with `s` the standard bond length
