@@ -37,6 +37,8 @@ module mqc_libcint_afo
    public :: afo_options_t
    public :: build_afo_model
    public :: bond_hybrid
+   public :: cuts_outside_group
+   public :: group_electron_shift
    public :: DEFAULT_MODEL_RADIUS
    public :: BOND_ORBITAL_REACH
 
@@ -213,6 +215,87 @@ contains
 
       deallocate (chosen, order)
    end subroutine build_afo_model
+
+   subroutine cuts_outside_group(cuts, n_cuts, members, outside, n_outside)
+      !! Which cut bonds this n-mer is still cut across
+      !!
+      !! **The rule that the hydrogen caps got wrong.** A cut belongs to a
+      !! *group*, not to a fragment. A bond severed between monomers I and J is
+      !! whole again inside the dimer IJ, so that dimer must carry nothing
+      !! standing in for it -- no cap, and no frozen orbital -- while still
+      !! being cut against every fragment outside itself. Decide this per
+      !! fragment and inherit it, and an n-mer arrives holding a stand-in for a
+      !! bond it contains: 11.25 Hartree on a tripeptide, which is what
+      !! `a605ee50d` withdrew.
+      !!
+      !! So it is computed from the group's own member list, every time, and
+      !! never passed down from the members.
+      type(severed_bond_t), intent(in) :: cuts(:)
+      integer, intent(in) :: n_cuts
+      integer, intent(in) :: members(:)   !! Fragment indices making up this n-mer
+      integer, allocatable, intent(out) :: outside(:)  !! Indices into `cuts`
+      integer, intent(out) :: n_outside
+
+      integer :: i, count
+      logical :: has_a, has_b
+
+      count = 0
+      do i = 1, n_cuts
+         if (spans(cuts(i), members)) count = count + 1
+      end do
+
+      n_outside = count
+      allocate (outside(max(count, 1)))
+      count = 0
+      do i = 1, n_cuts
+         if (.not. spans(cuts(i), members)) cycle
+         count = count + 1
+         outside(count) = i
+      end do
+   end subroutine cuts_outside_group
+
+   pure function spans(cut, members) result(crosses)
+      !! Does this bond have exactly one end inside the group?
+      !!
+      !! Both ends inside means the group restored it. Neither means it is
+      !! somebody else's boundary. Only one means the group's own edge.
+      type(severed_bond_t), intent(in) :: cut
+      integer, intent(in) :: members(:)
+      logical :: crosses
+
+      crosses = any(members == cut%frag_a) .neqv. any(members == cut%frag_b)
+   end function spans
+
+   pure function group_electron_shift(cuts, n_cuts, members) result(shift)
+      !! How many electrons this group gains or loses at its boundaries
+      !!
+      !! GAMESS's `$FMOBND` documentation states the convention outright: of the
+      !! pair `I J`, "the I-atom will get nothing of it, effectively remove one
+      !! electron (1/2 of a single covalent bond) from its fragment. The J-atom
+      !! will get all of the bond and thus adds one electron to its fragment".
+      !!
+      !! So a group holding the bond-detached end of a bond it does not contain
+      !! is one electron short of the naive sum over its atoms, and one holding
+      !! the attached end is one electron over. Summed over every fragment the
+      !! shifts cancel, which is the check worth writing down: the electrons
+      !! are moved between fragments, never created.
+      type(severed_bond_t), intent(in) :: cuts(:)
+      integer, intent(in) :: n_cuts
+      integer, intent(in) :: members(:)
+      integer :: shift
+
+      integer :: i
+
+      shift = 0
+      do i = 1, n_cuts
+         if (.not. spans(cuts(i), members)) cycle
+         if (any(members == cuts(i)%frag_a)) then
+            shift = shift - 1     ! the detached end gets nothing of the bond
+         else
+            shift = shift + 1     ! the attached end gets all of it
+         end if
+      end do
+   end function group_electron_shift
 
    subroutine bond_hybrid(model, opts, hybrid, n_on_bond, error, centroid_distance)
       !! The orbital on the cut bond, expressed over the BDA's own basis functions

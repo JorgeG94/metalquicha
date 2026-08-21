@@ -5,7 +5,8 @@ module test_mqc_afo_model
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr, to_angstrom
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
-   use mqc_libcint_afo, only: afo_model_t, build_afo_model
+   use mqc_libcint_afo, only: afo_model_t, build_afo_model, cuts_outside_group, &
+                              group_electron_shift
    implicit none
 
    !> Geometries are quoted to four decimals in Angstrom, so a distance
@@ -25,7 +26,11 @@ contains
                   new_unittest("model_caps_every_bond_it_leaves", test_propane_capped), &
                   new_unittest("model_cap_sits_at_a_standard_bond_length", test_cap_length), &
                   new_unittest("model_keeps_the_hydrogens_of_what_it_took", test_hydrogens), &
-                  new_unittest("model_moves_rigidly_with_the_system", test_rotation) &
+                  new_unittest("model_moves_rigidly_with_the_system", test_rotation), &
+                  new_unittest("a_monomer_sees_only_its_own_boundaries", test_group_monomer), &
+                  new_unittest("a_dimer_restores_the_bond_between_its_members", test_group_dimer), &
+                  new_unittest("the_whole_system_has_no_boundaries_left", test_group_whole), &
+                  new_unittest("electron_shifts_cancel_over_the_fragments", test_group_electrons) &
                   ]
    end subroutine collect_mqc_afo_model
 
@@ -200,6 +205,120 @@ contains
       call check(error, worst < 1.0e-10_dp, &
                  "the model is not the same molecule after the system was rotated")
    end subroutine test_rotation
+
+   subroutine chain(cuts)
+      !! Three fragments in a row, cut twice: 1-2 and 2-3
+      !!
+      !! Written down rather than perceived from a geometry, because what is
+      !! under test is the bookkeeping over a partition and not the chemistry
+      !! that produced it.
+      type(severed_bond_t), allocatable, intent(out) :: cuts(:)
+
+      allocate (cuts(2))
+      cuts(1)%atom_a = 1
+      cuts(1)%atom_b = 2
+      cuts(1)%frag_a = 1
+      cuts(1)%frag_b = 2
+      cuts(2)%atom_a = 3
+      cuts(2)%atom_b = 4
+      cuts(2)%frag_a = 2
+      cuts(2)%frag_b = 3
+   end subroutine chain
+
+   subroutine test_group_monomer(error)
+      !! The middle fragment is cut on both sides, the ends on one
+      type(error_type), allocatable, intent(out) :: error
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer, allocatable :: outside(:)
+      integer :: n
+
+      call chain(cuts)
+
+      call cuts_outside_group(cuts, 2, [1], outside, n)
+      call check(error, n, 1, "the first fragment should be cut on one side only")
+      if (allocated(error)) return
+
+      call cuts_outside_group(cuts, 2, [2], outside, n)
+      call check(error, n, 2, "the middle fragment should be cut on both sides")
+      if (allocated(error)) return
+
+      call cuts_outside_group(cuts, 2, [3], outside, n)
+      call check(error, n, 1, "the last fragment should be cut on one side only")
+   end subroutine test_group_monomer
+
+   subroutine test_group_dimer(error)
+      !! The rule the hydrogen caps got wrong
+      !!
+      !! A dimer holding both ends of a bond has restored it and must carry
+      !! nothing standing in for it, while still being cut against whatever is
+      !! outside. Decide this per fragment and inherit it, and the dimer arrives
+      !! holding a stand-in for a bond it contains.
+      type(error_type), allocatable, intent(out) :: error
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer, allocatable :: outside(:)
+      integer :: n
+
+      call chain(cuts)
+
+      call cuts_outside_group(cuts, 2, [1, 2], outside, n)
+      call check(error, n, 1, &
+                 "the dimer 1-2 should have restored its own bond and kept the other")
+      if (allocated(error)) return
+      call check(error, outside(1), 2, "the dimer kept the wrong one of the two cuts")
+      if (allocated(error)) return
+
+      ! Two fragments that are not neighbours restore nothing.
+      call cuts_outside_group(cuts, 2, [1, 3], outside, n)
+      call check(error, n, 2, &
+                 "a dimer of two non-adjacent fragments restored a bond it does not hold")
+   end subroutine test_group_dimer
+
+   subroutine test_group_whole(error)
+      !! Every fragment together is the molecule, with no boundary anywhere
+      !!
+      !! The property the two-fragment exactness test rests on: an n-mer holding
+      !! everything has nothing frozen and no electrons moved, so it is an
+      !! ordinary calculation on the whole system.
+      type(error_type), allocatable, intent(out) :: error
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer, allocatable :: outside(:)
+      integer :: n
+
+      call chain(cuts)
+      call cuts_outside_group(cuts, 2, [1, 2, 3], outside, n)
+      call check(error, n, 0, "the whole system still has a boundary")
+      if (allocated(error)) return
+      call check(error, group_electron_shift(cuts, 2, [1, 2, 3]), 0, &
+                 "the whole system gained or lost electrons")
+   end subroutine test_group_whole
+
+   subroutine test_group_electrons(error)
+      !! Electrons are moved between fragments, never created
+      !!
+      !! Of the pair, the detached end gets nothing of the bond and is an
+      !! electron short; the attached end gets all of it and is one over. Summed
+      !! over every fragment those cancel, and that is the check -- an
+      !! assignment that did not cancel would be losing electrons somewhere.
+      type(error_type), allocatable, intent(out) :: error
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer :: total
+
+      call chain(cuts)
+
+      call check(error, group_electron_shift(cuts, 2, [1]), -1, &
+                 "the detached end of the first bond did not give up its electron")
+      if (allocated(error)) return
+      call check(error, group_electron_shift(cuts, 2, [2]), 0, &
+                 "the middle fragment takes one bond and gives up another, so nets zero")
+      if (allocated(error)) return
+      call check(error, group_electron_shift(cuts, 2, [3]), 1, &
+                 "the attached end of the second bond did not take its electron")
+      if (allocated(error)) return
+
+      total = group_electron_shift(cuts, 2, [1]) + group_electron_shift(cuts, 2, [2]) &
+              + group_electron_shift(cuts, 2, [3])
+      call check(error, total, 0, "the electron shifts do not cancel over the fragments")
+   end subroutine test_group_electrons
 
    subroutine ethane(sys)
       type(system_geometry_t), intent(out) :: sys
