@@ -1608,6 +1608,22 @@ contains
       !! iteration is two passes over the integrals no matter how many pairs
       !! there are, and the storage is a handful of vectors per system.
       !!
+      !! **Density screening was tried here and it loses.** The literature this
+      !! method follows calls effective screening the difference between `N^4`
+      !! and `N^3` for an AO-driven response -- Sattasathuchana et al., JCTC 20,
+      !! 2445 (2024), section III. Weighting the Schwarz bound by the largest
+      !! density element a quartet can multiply, batched so no set is screened
+      !! on another's magnitude, was measured at 12 percent *slower* on a water
+      !! 20-mer in 6-31G and 4 percent slower on adenine: identical pass counts
+      !! and iteration counts, more cost per pass.
+      !!
+      !! The reason it does not transfer is what the sets are. An SCF density is
+      !! local and screens well; a trial vector here is `C_vir U C_occ^T`, an
+      !! outer product over the virtual and occupied spaces, and it is
+      !! delocalised even when the density that generated it is not. There is
+      !! nothing negligible to find, so the test only costs. The claim in that
+      !! paper is about their algorithm in general and not about this operator.
+      !!
       !! **Every system iterates together, which is the whole economy.** The
       !! integrals a direct build recomputes do not depend on which density is
       !! being contracted, so one pass serves every frequency and perturbation
