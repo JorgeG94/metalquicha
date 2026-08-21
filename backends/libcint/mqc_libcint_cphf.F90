@@ -160,6 +160,25 @@ module mqc_libcint_cphf
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
 
+   !> The same, for the matrix-free frequency-dependent solve.
+   !>
+   !> **Named because it is the largest cheap lever on that solve and it was a
+   !> literal.** Every iteration is four passes over the integrals, so the
+   !> iteration count is the cost, and the count is set by this. The EFMO
+   !> literature runs the equivalent CPHF and TDHF solves at `5e-5` and reports
+   !> the resulting error in the total interaction energy at about `3e-6`
+   !> Hartree -- Sattasathuchana et al., JCTC 20, 2445 (2024), Tables 2 and 3,
+   !> where loosening from `1e-7` to `5e-5` cut their adenine wall time from
+   !> 39.1 to 17.2 minutes.
+   !>
+   !> Left at `1e-7` all the same. That measurement is of their code and their
+   !> accumulation, and what a potential built here does to an interaction
+   !> energy has not been measured. Moving it is a one-line change and wants a
+   !> comparison against a dense reference first -- `dynamic_polarizability`
+   !> still builds one for any system small enough, which is exactly what such
+   !> a comparison needs.
+   real(dp), parameter :: DEFAULT_DYNAMIC_TOL = 1.0e-7_dp
+
    !> Casimir-Polder quadrature points, which is how many imaginary frequencies a
    !> potential is tabulated at.
    integer, parameter, public :: N_CASIMIR_POLDER = 12
@@ -1591,7 +1610,7 @@ contains
       n_sys = n_freq*n_pert
       cycles = 200
       if (present(max_iter)) cycles = max_iter
-      threshold = 1.0e-7_dp
+      threshold = DEFAULT_DYNAMIC_TOL
       if (present(tol)) threshold = tol
 
       allocate (x(n_vir, n_occ, n_sys), r(n_vir, n_occ, n_sys))
