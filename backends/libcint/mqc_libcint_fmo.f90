@@ -1,4 +1,4 @@
-!! The fragment molecular orbital method, to any order, for non-covalent fragments
+!! The fragment molecular orbital method, to any order
 module mqc_libcint_fmo
    !! FMO_n: two nested self-consistencies, then a pass over every n-mer.
    !!
@@ -71,18 +71,27 @@ module mqc_libcint_fmo
    !! wrong one still looks plausible at level two and cannot survive being
    !! asked to cancel exactly.
    !!
-   !! **Non-covalent fragments only, and this is enforced.** Every fragment must
-   !! be a whole molecule. None of the machinery for cutting a bond -- adjusted
-   !! fragment orbitals, hybrid orbital projection, hydrogen caps -- is present,
-   !! so a partition that severs one is refused rather than answered.
+   !! **Whole molecules by default, and a covalent cut has to be asked for.**
+   !! `bond_breaking = "none"` refuses a partition that severs a bond rather
+   !! than answering it; `"afo"` detaches the bond with an adjusted frozen
+   !! orbital instead, and is restricted to `esp = "none"` for now.
    !!
-   !! The check is not a formality. Cutting a single bond leaves both fragments
-   !! with an odd electron count, which the closed-shell check would catch on
-   !! its own; but cut an even number per fragment -- a ring, a double bond --
-   !! and every count stays even. Cyclopropane split into three CH2 used to come
-   !! back 0.28 Hartree low, which is 176 kcal/mol in the shape of an answer.
-   !! Connectivity is therefore checked directly, with the criterion
-   !! [[mqc_bond_perception]] uses everywhere else.
+   !! The refusal is not a formality, which is why it stayed the default.
+   !! Cutting a single bond leaves both fragments with an odd electron count,
+   !! which the closed-shell check would catch on its own; but cut an even
+   !! number per fragment -- a ring, a double bond -- and every count stays
+   !! even. Cyclopropane split into three CH2 used to come back 0.28 Hartree
+   !! low, which is 176 kcal/mol in the shape of an answer. Connectivity is
+   !! therefore checked directly, with the criterion [[mqc_bond_perception]]
+   !! uses everywhere else.
+   !!
+   !! When a bond *is* detached, the orbital that stands in for it comes from
+   !! [[mqc_libcint_afo]] and is held by [[mqc_fock_projector]]. What belongs
+   !! here is only the assembly: `assemble_group` decides a group's boundaries
+   !! from its own members, every time, because a bond cut between two monomers
+   !! is whole again inside the dimer holding both ends. Inheriting that
+   !! decision from the members instead is what made an earlier capped version
+   !! 11 Hartree wrong.
    !!
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
    !! 1140 SCFs against 190 for level two. Nothing here refuses a high level --
@@ -119,19 +128,6 @@ module mqc_libcint_fmo
       !! What to run, and how hard
       character(len=64) :: basis = "6-31g"
       character(len=16) :: esp = "exact"
-      character(len=16) :: bond_breaking = "none"
-         !! How a cut covalent bond is represented. `"none"` refuses a partition
-         !! that cuts one. `"caps"` closes it with a hydrogen.
-         !!
-         !! Only sound without an embedding field so far. A cap puts an electron
-         !! in the bond region while `u^X` already supplies the neighbour's
-         !! nucleus and density there, so the two double-count -- which is why
-         !! `caps` with `esp` other than `"none"` is refused rather than
-         !! approximated. Removing the host atom's contribution is clean for
-         !! point charges and not for an exact density, and that is the whole
-         !! reason FMO proper uses a frozen orbital instead of a cap.
-      real(dp) :: cap_scale = 1.0_dp
-         !! Where a cap sits along the bond it closes; see mqc_physical_fragment.
          !! How a fragment's neighbours are represented to it.
          !!
          !! `"exact"` builds the embedding from the neighbours' actual
@@ -175,6 +171,35 @@ module mqc_libcint_fmo
          !! cancellation flatters it. That is luck, not accuracy -- and it is
          !! not something to rely on, because the two errors have no reason to
          !! stay matched for a different system.
+      character(len=16) :: bond_breaking = "none"
+         !! How a cut covalent bond is represented.
+         !!
+         !! `"none"` refuses a partition that cuts one, naming the two atoms
+         !! and the two fragments they were put in. That is the default and
+         !! it is not a formality: cutting an even number of bonds per
+         !! fragment leaves every electron count even, so nothing else
+         !! objects, and cyclopropane split into three CH2 used to come back
+         !! 0.28 Hartree low.
+         !!
+         !! `"afo"` detaches the bond with an adjusted frozen orbital. A model
+         !! system around the bond is solved and localized, the orbital on the
+         !! bond is reduced to the detached atom's own functions, and that
+         !! hybrid is then frozen -- empty in the fragment that gets nothing of
+         !! the bond, occupied in the one that gets all of it. See
+         !! [[mqc_libcint_afo]].
+         !!
+         !! Only sound without an embedding field so far, so `"afo"` requires
+         !! `esp = "none"` and says so. A frozen orbital and a field both
+         !! describe the bond region -- the field already supplies the
+         !! neighbour's nucleus and density where the orbital supplies the
+         !! bond -- so the detached atom's share has to come out of the field
+         !! first. That is clean for point charges and not defined for an
+         !! exact density.
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a hydrogen cap sits along the bond it closes, for the
+         !! many-body path; see [[mqc_physical_fragment]]. Not used by
+         !! `"afo"`, which caps only the model systems it builds and derives
+         !! their scale from covalent radii rather than from a deck.
       character(len=16) :: far_field = "mulliken"
          !! What a distant fragment contributes to the embedding: the level of
          !! theory the long-range part is evaluated at.
@@ -714,6 +739,7 @@ contains
       type(error_t), intent(inout) :: error
 
       integer, allocatable :: outside(:), slot_of(:)
+      logical, allocatable :: ghosted(:)
       integer :: n_outside, n_ghost, n_atoms, m, at, n_here, i, c, bda, slot
 
       if (error%has_error()) return
@@ -725,14 +751,27 @@ contains
 
       n_outside = 0
       n_ghost = 0
+      allocate (ghosted(size(z)), source=.false.)
       if (afo%active) then
          call cuts_outside_group(afo%cuts, afo%n_cuts, members, outside, n_outside)
          do i = 1, n_outside
             c = outside(i)
             ! Holding the attached end means the detached atom is somebody
             ! else's, so its functions have to be brought in without its nucleus.
-            if (.not. any(members == afo%cuts(c)%frag_a)) n_ghost = n_ghost + 1
+            if (any(members == afo%cuts(c)%frag_a)) cycle
+            ! Counted once per *atom*, not once per boundary. One atom can be
+            ! the detached end of two bonds -- a middle carbon numbered below
+            ! both its neighbours -- and a group holding the far end of both
+            ! would otherwise bring it in twice. Two copies of one atom's
+            ! functions make the overlap exactly singular; the canonical
+            ! orthogonalisation absorbs that, so the answer survives, but it
+            ! survives by leaning on a linear-dependence threshold instead of
+            ! by being right.
+            if (ghosted(afo%cuts(c)%atom_a)) cycle
+            ghosted(afo%cuts(c)%atom_a) = .true.
+            n_ghost = n_ghost + 1
          end do
+         ghosted = .false.
       end if
 
       n_atoms = group%n_real + n_ghost
@@ -775,13 +814,22 @@ contains
          else
             ! We own the attached end and get all of the bond: bring the
             ! detached atom's functions in as a ghost and hold its hybrid full.
+            ! One copy per atom -- a second boundary on the same detached atom
+            ! puts its hybrid on the copy already there, where the two are
+            ! different orbitals of one atom and independent for that reason.
             group%occupied(i) = .true.
-            at = at + 1
-            slot = at
-            group%z(slot) = z(bda)
-            group%sym(slot) = afo%sym(bda)
-            group%xyz(:, slot) = coords(:, bda)
-            group%ghost(slot) = .true.
+            if (ghosted(bda)) then
+               slot = slot_of(bda)
+            else
+               at = at + 1
+               slot = at
+               group%z(slot) = z(bda)
+               group%sym(slot) = afo%sym(bda)
+               group%xyz(:, slot) = coords(:, bda)
+               group%ghost(slot) = .true.
+               ghosted(bda) = .true.
+               slot_of(bda) = slot
+            end if
          end if
          group%bda_slot(i) = slot
       end do
@@ -790,7 +838,7 @@ contains
          group%nelec = group%nelec + group_electron_shift(afo%cuts, afo%n_cuts, members)
       end if
 
-      deallocate (slot_of)
+      deallocate (slot_of, ghosted)
    end subroutine assemble_group
 
    subroutine group_projector(group, mol, afo, proj, active, error)
@@ -1768,7 +1816,15 @@ contains
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
             if (allocated(frag(f)%charges)) then
-               buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = frag(f)%charges
+               ! Sliced, as `all_charges` slices. A fragment solved with ghosts
+               ! has a charge per atom of the molecule it saw, which is more
+               ! than the atoms it owns, and the buffer is laid out by the
+               ! latter. Unreachable while a detached bond forces `esp="none"`
+               ! and no charges are computed at all, and left defensive because
+               ! the assignment would otherwise be a shape mismatch the moment
+               ! that restriction lifts.
+               buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = &
+                  frag(f)%charges(1:size(frag(f)%atoms))
             end if
          end if
          at = at + n + 2 + size(frag(f)%atoms)
@@ -1784,7 +1840,8 @@ contains
          frag(f)%energy = buf(at + n + 1)
          frag(f)%energy_total = buf(at + n + 2)
          if (.not. allocated(frag(f)%charges)) allocate (frag(f)%charges(size(frag(f)%atoms)))
-         frag(f)%charges = buf(at + n + 3:at + n + 2 + size(frag(f)%atoms))
+         frag(f)%charges(1:size(frag(f)%atoms)) = &
+            buf(at + n + 3:at + n + 2 + size(frag(f)%atoms))
          at = at + n + 2 + size(frag(f)%atoms)
       end do
    end subroutine exchange_monomers

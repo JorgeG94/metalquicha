@@ -43,7 +43,8 @@ contains
                   new_unittest("afo_is_refused_with_an_embedding_field", test_refuse_esp), &
                   new_unittest("a_ring_cut_is_refused_by_name", test_refuse_ring), &
                   new_unittest("three_fragments_at_full_order_are_exact", test_three_exact), &
-                  new_unittest("truncating_at_pairs_costs_the_three_body_term", test_three_pairs) &
+                  new_unittest("truncating_at_pairs_costs_the_three_body_term", test_three_pairs), &
+                  new_unittest("one_atom_detached_from_two_bonds_is_ghosted_once", test_shared_bda) &
                   ]
    end subroutine collect_mqc_afo_fmo
 
@@ -173,6 +174,89 @@ contains
       write (*, *) "   level", level, " error (hartree) =", res%energy - whole%energy
       call check(error, abs(res%energy - whole%energy) < tol, what)
    end subroutine three_fragment_error
+
+   subroutine test_shared_bda(error)
+      !! The same atom detached from two bonds at once
+      !!
+      !! Number propane with its middle carbon first and that carbon is the
+      !! detached end of *both* C-C bonds. The dimer of the two end methyls then
+      !! holds the attached end of both, and has to bring the middle carbon in
+      !! as a ghost twice over -- or rather must not: two copies of one atom's
+      !! functions make the overlap exactly singular, and while the canonical
+      !! orthogonalisation absorbs that and the answer survives, it survives by
+      !! leaning on a linear-dependence threshold rather than by being right.
+      !! One copy carries both hybrids, which are different orbitals of one atom
+      !! and independent for that reason.
+      !!
+      !! Whether the situation arises at all depends on the order atoms were
+      !! written down in, which is why it is worth a test of its own: the same
+      !! molecule numbered the other way never reaches this path.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: whole
+      integer :: z(11)
+      character(len=2) :: sym(11)
+      real(dp) :: xyz(3, 11)
+
+      call propane_middle_first(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%level = 3
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+
+      call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "the expansion failed")
+      if (allocated(error)) then
+         if (err%has_error()) write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      call build_libcint_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
+      call check(error,.not. err%has_error(), "the reference calculation failed")
+      if (allocated(error)) return
+
+      write (*, *) "   shared-detached-atom error (hartree) =", res%energy - whole%energy
+      call check(error, abs(res%energy - whole%energy) < 1.0e-9_dp, &
+                 "a group ghosting one atom for two boundaries did not reproduce the "// &
+                 "whole molecule at full order")
+   end subroutine test_shared_bda
+
+   subroutine propane_middle_first(z, sym, xyz)
+      !! The same propane, with the middle carbon numbered first
+      integer, intent(out) :: z(11)
+      character(len=2), intent(out) :: sym(11)
+      real(dp), intent(out) :: xyz(3, 11)
+      real(dp) :: ang(3, 11)
+      integer :: i
+
+      z = [6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1]
+      do i = 1, 11
+         if (z(i) == 6) then
+            sym(i) = "C "
+         else
+            sym(i) = "H "
+         end if
+      end do
+      ang = reshape([0.0000_dp, 0.0000_dp, 0.0000_dp, &     ! C middle
+                     1.5260_dp, 0.0000_dp, 0.0000_dp, &     ! C end
+                     -0.5716_dp, 1.4149_dp, 0.0000_dp, &    ! C end
+                     -0.3519_dp, -0.5217_dp, 0.8900_dp, &   ! H on the middle
+                     -0.3519_dp, -0.5217_dp, -0.8900_dp, &  ! H on the middle
+                     2.1553_dp, -0.8900_dp, 0.0000_dp, &
+                     2.1553_dp, 0.4450_dp, -0.7707_dp, &
+                     2.1553_dp, 0.4450_dp, 0.7707_dp, &
+                     0.0178_dp, 2.3318_dp, 0.0000_dp, &
+                     -1.2200_dp, 1.8317_dp, -0.7707_dp, &
+                     -1.2200_dp, 1.8317_dp, 0.7707_dp], [3, 11])
+      xyz = to_bohr(ang)
+   end subroutine propane_middle_first
 
    subroutine test_refuse_esp(error)
       !! A frozen orbital and an embedding field both describe the bond
