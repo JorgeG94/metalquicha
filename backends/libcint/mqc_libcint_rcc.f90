@@ -144,7 +144,7 @@ contains
       mb = elements*8.0_dp/1.0e6_dp
    end function rcc_megabytes
 
-   subroutine build_rcc_eris_conventional(mol, c_occ, c_vir, eris)
+   subroutine build_rcc_eris_conventional(mol, c_occ, c_vir, eris, clk)
       !! The five occupied-bearing blocks and (vv|vv), by direct transform
       !!
       !! Six calls to `transform_block` rather than one whole-active-space
@@ -156,16 +156,22 @@ contains
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
       type(rcc_eris_t), intent(out) :: eris
+      type(timing_report_t), intent(inout), optional :: clk
+         !! Lapped here rather than around the call, because the AO build and
+         !! the transform are separate costs with separate fixes and a single
+         !! lap around both cannot tell you which one you are paying for.
 
       real(dp), allocatable :: eri(:, :)
 
       call mol%eris_packed(eri)
+      if (present(clk)) call clk%lap("AO integrals")
       call transform_block(eri, c_occ, c_occ, c_occ, c_occ, eris%oooo)
       call transform_block(eri, c_occ, c_occ, c_occ, c_vir, eris%ooov)
       call transform_block(eri, c_occ, c_occ, c_vir, c_vir, eris%oovv)
       call transform_block(eri, c_occ, c_vir, c_occ, c_vir, eris%ovov)
       call transform_block(eri, c_occ, c_vir, c_vir, c_vir, eris%ovvv)
       call transform_block(eri, c_vir, c_vir, c_vir, c_vir, eris%vvvv)
+      if (present(clk)) call clk%lap("AO->MO transform")
       deallocate (eri)
    end subroutine build_rcc_eris_conventional
 
@@ -1684,11 +1690,14 @@ contains
          call build_rcc_eris_fitted(mol, aux, c_act(:, 1:no), c_act(:, no + 1:n_act), &
                                     eris, error)
          if (error%has_error()) return
+         ! One stage: the fitted path never forms an AO tensor to separate out.
+         call clk%lap("B tensor (3c/2c fit)")
       else
-         call build_rcc_eris_conventional(mol, c_act(:, 1:no), c_act(:, no + 1:n_act), eris)
+         ! Two stages, lapped inside: the AO build and the transform.
+         call build_rcc_eris_conventional(mol, c_act(:, 1:no), c_act(:, no + 1:n_act), &
+                                          eris, clk)
       end if
       deallocate (c_act)
-      call clk%lap("AO->MO integrals")
 
       allocate (eps_o(no), eps_v(nv))
       do i = 1, no
@@ -1774,7 +1783,7 @@ contains
       ! Same breakdown the spin-orbital driver prints, and under the same stage
       ! names, so the two can be laid side by side without translating.
       call clk%finish()
-      call clk%report("RCCSD", verbose)
+      call clk%report("RCCSD")
    end subroutine run_libcint_rccsd
 
    pure function int_text(n) result(text)

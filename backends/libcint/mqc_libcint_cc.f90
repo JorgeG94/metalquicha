@@ -761,7 +761,7 @@ contains
       end if
 
       call clk%finish()
-      call clk%report("CCSD", verbose)
+      call clk%report("CCSD")
 
       result%e_correlation = result%e_singles + result%e_doubles + result%e_triples
    end subroutine run_libcint_ccsd
