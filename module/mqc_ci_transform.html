@@ -1,0 +1,1051 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_ci_transform &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_ci_transform
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.9% of total for modules and submodules.">203 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ci_transform.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ci_transform.f90.html'>mqc_ci_transform.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_ci_transform</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#variable-max_rectangle">MAX_RECTANGLE</a>
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#variable-tol_norm">TOL_NORM</a>
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#variable-tol_orthogonal">TOL_ORTHOGONAL</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#proc-orthogonality_defect">orthogonality_defect</a>
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#proc-rotation_is_orthogonal">rotation_is_orthogonal</a>
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#proc-determinant">determinant</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#proc-scatter_restricted_ci">scatter_restricted_ci</a>
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#proc-string_rotation_matrix">string_rotation_matrix</a>
+            <a class="list-group-item" href="../module/mqc_ci_transform.html#proc-transform_ci_vector">transform_ci_vector</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>A complete active space is invariant under rotation of its active
+orbitals: the same wave function, expanded in a different set of
+determinants. This module performs that re-expansion, so that a CI which
+has been solved in one basis need not be solved again in the other.</p>
+<p>The identity is the one every textbook derives and nobody writes down.
+With orbitals related by an orthogonal <code>T</code>,</p>
+<div class="codehilite"><pre><span></span><code>|q&gt; = sum_p |p&gt; T(p,q)
+</code></pre></div>
+
+<p>a string of creation operators factorizes into a sum over strings of the
+other basis with a <strong>minor determinant</strong> as its coefficient:</p>
+<div class="codehilite"><pre><span></span><code>M(I,J) = det( T[ occ(I), occ(J) ] )
+</code></pre></div>
+
+<p>&ndash; rows the orbitals occupied in <code>I</code>, columns those occupied in <code>J</code>, both
+in ascending order. Alpha and beta factorize independently, so the whole
+transformation of a rectangular CI vector is two matrix products:</p>
+<div class="codehilite"><pre><span></span><code>C' = M_alpha^T C M_beta
+</code></pre></div>
+
+<p><strong><code>M</code> is exactly the size of the CI vector, and the transformation costs
+one dimension more.</strong> For a CAS(14,14) the vector is 3432 x 3432 and the
+products are 3432^3, which is dense BLAS and a few seconds. Compare that
+with re-solving: a Davidson in a basis with no dominant determinant starts
+from a guess with negligible overlap and preconditions on a diagonal that
+no longer approximates the spectrum, and may take hundreds of iterations
+or none that converge.</p>
+<p><strong><code>M</code> inherits <code>T</code>&rsquo;s orthogonality</strong>, which is the check worth making and
+<code>rotation_is_orthogonal</code> makes it. If <code>T</code> is orthogonal then so is <code>M</code>,
+for every electron count at once, and a violation means the rotation
+handed in was not what it claimed to be rather than that this arithmetic
+is wrong.</p>
+<p>The asymptotically better route is Malmqvist&rsquo;s: factorize <code>T</code> into
+elementary one-orbital operations and apply each straight to the vector,
+<code>O(n_str^2 n_orb^2)</code> and no <code>M</code> stored. It is considerably more code, and
+the active spaces a full CI can be solved in at all are small enough that
+the matrix form is not the constraint.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_ormas_space.html'>mqc_ormas_space</a></li>
+                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_ci_transform~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_ci_transformUsesGraph" width="641pt" height="271pt"
+ viewBox="0.00 0.00 641.00 270.73" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_ci_transform~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 268)">
+<title>module~~mqc_ci_transform~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-268 640,-268 640,4 -4,4"/>
+<!-- module~mqc_ci_transform -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node1" class="node">
+<title>module~mqc_ci_transform</title>
+<polygon fill="none" stroke="black" points="636,-184 528,-184 528,-160 636,-160 636,-184"/>
+<text text-anchor="middle" x="582" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_ci_transform</text>
+</g>
+<!-- iso_fortran_env -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node2" class="node">
+<title>iso_fortran_env</title>
+<g id="a_module~~mqc_ci_transform~~UsesGraph_node2"><a xlink:href="http://fortranwiki.org/fortran/show/iso_fortran_env" xlink:title="iso_fortran_env">
+<polygon fill="#337ab7" stroke="#337ab7" points="482,-264 388,-264 388,-240 482,-240 482,-264"/>
+<text text-anchor="middle" x="435" y="-249.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iso_fortran_env</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;iso_fortran_env -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge1" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;iso_fortran_env</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M562.26,-184.21C544.48,-195.58 516.88,-212.73 492,-226 485.9,-229.25 479.32,-232.52 472.89,-235.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="471.22,-232.5 463.64,-239.9 474.18,-238.84 471.22,-232.5"/>
+</g>
+<!-- module~mqc_determinants -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node3" class="node">
+<title>module~mqc_determinants</title>
+<g id="a_module~~mqc_ci_transform~~UsesGraph_node3"><a xlink:href="../module/mqc_determinants.html" xlink:title="mqc_determinants">
+<polygon fill="#337ab7" stroke="#337ab7" points="342,-143 230,-143 230,-119 342,-119 342,-143"/>
+<text text-anchor="middle" x="286" y="-128.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_determinants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;module~mqc_determinants -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge2" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;module~mqc_determinants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M554.08,-184.11C525.42,-195.88 478.44,-211.99 436,-212"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M434,-212C383.03,-212.01 333.09,-174.19 306.56,-150.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="308.82,-147.55 299.11,-143.3 304.05,-152.68 308.82,-147.55"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node4" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_ci_transform~~UsesGraph_node4"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="179.5,-184 112.5,-184 112.5,-160 179.5,-160 179.5,-184"/>
+<text text-anchor="middle" x="146" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge3" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M434,-212C368.67,-212.01 352.17,-216.63 287,-212"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M285,-212C250.21,-209.53 212.25,-197.82 184.97,-187.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="186.02,-184.36 175.43,-184.07 183.53,-190.9 186.02,-184.36"/>
+</g>
+<!-- module~mqc_ormas_space -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node5" class="node">
+<title>module~mqc_ormas_space</title>
+<g id="a_module~~mqc_ci_transform~~UsesGraph_node5"><a xlink:href="../module/mqc_ormas_space.html" xlink:title="mqc_ormas_space">
+<polygon fill="#337ab7" stroke="#337ab7" points="491,-142 379,-142 379,-118 491,-118 491,-142"/>
+<text text-anchor="middle" x="435" y="-127.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ormas_space</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;module~mqc_ormas_space -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge4" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;module~mqc_ormas_space</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M539.45,-159.96C523.22,-155.26 504.44,-149.82 487.38,-144.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="488.14,-141.46 477.56,-142.04 486.19,-148.18 488.14,-141.46"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node6" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="492,-184 378,-184 378,-160 492,-160 492,-184"/>
+<text text-anchor="middle" x="435" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge5" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M527.83,-172C519.47,-172 510.73,-172 502.11,-172"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="502.09,-168.5 492.09,-172 502.09,-175.5 502.09,-168.5"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node7" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173,-24 119,-24 119,0 173,0 173,-24"/>
+<text text-anchor="middle" x="146" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;pic_io -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge6" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M565.79,-160C548.5,-146.64 519.13,-124.86 492,-109 428.33,-71.77 412.73,-58.9 342,-38 288.03,-22.05 222.75,-15.86 183.08,-13.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="183.26,-9.98 173.08,-12.92 182.87,-16.97 183.26,-9.98"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node8" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-124 0,-124 0,-100 62,-100 62,-124"/>
+<text text-anchor="middle" x="31" y="-109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_ci_transform&#45;&gt;pic_types -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge7" class="edge">
+<title>module~mqc_ci_transform&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M285,-212C201.67,-206.08 171.54,-232.62 98,-193 73,-179.53 53.89,-152.24 42.82,-133.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.8,-131.23 37.91,-124.16 39.67,-134.61 45.8,-131.23"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge8" class="edge">
+<title>module~mqc_determinants&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M244.34,-143.08C227.06,-148.21 206.91,-154.2 189.44,-159.39"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="188.1,-156.14 179.51,-162.34 190.09,-162.85 188.1,-156.14"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;pic_io -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge10" class="edge">
+<title>module~mqc_determinants&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M271.01,-118.93C246.93,-98.18 197.51,-55.56 168.86,-30.85"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="170.89,-27.98 161.03,-24.1 166.32,-33.28 170.89,-27.98"/>
+</g>
+<!-- module~mqc_determinants&#45;&gt;pic_types -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge11" class="edge">
+<title>module~mqc_determinants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M229.79,-126.85C182.24,-123.28 114.74,-118.21 72.17,-115.02"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="72.41,-111.53 62.18,-114.27 71.89,-118.51 72.41,-111.53"/>
+</g>
+<!-- module~mqc_math_utils -->
+<g id="module~~mqc_ci_transform~~UsesGraph_node9" class="node">
+<title>module~mqc_math_utils</title>
+<g id="a_module~~mqc_ci_transform~~UsesGraph_node9"><a xlink:href="../module/mqc_math_utils.html" xlink:title="mqc_math_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="194,-104 98,-104 98,-80 194,-80 194,-104"/>
+<text text-anchor="middle" x="146" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_math_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_determinants&#45;&gt;module~mqc_math_utils -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge9" class="edge">
+<title>module~mqc_determinants&#45;&gt;module~mqc_math_utils</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M242.47,-118.98C228.83,-115.13 213.56,-110.81 199.3,-106.78"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="200.2,-103.4 189.63,-104.05 198.3,-110.13 200.2,-103.4"/>
+</g>
+<!-- module~mqc_ormas_space&#45;&gt;module~mqc_determinants -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge12" class="edge">
+<title>module~mqc_ormas_space&#45;&gt;module~mqc_determinants</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M378.84,-130.38C370.3,-130.43 361.39,-130.49 352.64,-130.55"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="352.44,-127.05 342.46,-130.62 352.49,-134.05 352.44,-127.05"/>
+</g>
+<!-- module~mqc_ormas_space&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge13" class="edge">
+<title>module~mqc_ormas_space&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M388.86,-142.06C374.02,-145.68 357.38,-149.38 342,-152 289.95,-160.85 229.37,-166.32 189.72,-169.25"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="189.33,-165.77 179.61,-169.98 189.84,-172.76 189.33,-165.77"/>
+</g>
+<!-- module~mqc_ormas_space&#45;&gt;pic_io -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge15" class="edge">
+<title>module~mqc_ormas_space&#45;&gt;pic_io</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M417.91,-117.97C391.98,-99.44 338.62,-64.69 287,-52"/>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M285,-52C249.94,-43.38 210.42,-31.72 182.68,-23.22"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="183.61,-19.84 173.03,-20.24 181.55,-26.53 183.61,-19.84"/>
+</g>
+<!-- module~mqc_ormas_space&#45;&gt;pic_types -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge16" class="edge">
+<title>module~mqc_ormas_space&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M285,-52C203.88,-32.05 177.07,-44.04 98,-71 82.69,-76.22 67.25,-85.54 55.15,-93.98"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="53.03,-91.2 46.98,-99.9 57.13,-96.87 53.03,-91.2"/>
+</g>
+<!-- module~mqc_ormas_space&#45;&gt;module~mqc_math_utils -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge14" class="edge">
+<title>module~mqc_ormas_space&#45;&gt;module~mqc_math_utils</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M285,-52C266.21,-47.38 219.49,-63.06 185.61,-76.12"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="184.02,-72.99 175.99,-79.9 186.58,-79.5 184.02,-72.99"/>
+</g>
+<!-- module~mqc_math_utils&#45;&gt;pic_types -->
+<g id="module~~mqc_ci_transform~~UsesGraph_edge17" class="edge">
+<title>module~mqc_math_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M97.73,-100.37C89.13,-101.89 80.24,-103.46 71.88,-104.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="71.24,-101.5 62,-106.69 72.46,-108.39 71.24,-101.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_ci_transformUsesGraph = svgPanZoom('#modulemqc_ci_transformUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_rectangle"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MAX_RECTANGLE</strong></td>
+<td> =</td>
+                <td>2_int64**28</td>
+            <td>
+                <p>Determinants, about 2.1 GB of coefficients. The ceiling on
+<code>scatter_restricted_ci</code>, and it is a real one: a restricted space is
+chosen precisely because the complete space is unaffordable, and this
+routine spends the complete space anyway. Ethane&rsquo;s full valence
+CAS(14,14) is 11,778,624 determinants &ndash; ninety-four megabytes, and
+twenty times inside this &ndash; so the molecules the analysis can reach at
+all are reachable. Benzene&rsquo;s is 2.4e16 and is not, by this route or any
+other.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tol_norm"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>TOL_NORM</strong></td>
+<td> =</td>
+                <td>1.0e-8_dp</td>
+            <td>
+                <p>How far the transformed vector&rsquo;s norm may drift from the original&rsquo;s.
+An orthogonal transformation preserves it exactly, so this tolerates
+the accumulated rounding of two matrix products and no more.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tol_orthogonal"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>TOL_ORTHOGONAL</strong></td>
+<td> =</td>
+                <td>1.0e-10_dp</td>
+            <td>
+                <p>How far <code>T^T T</code> may sit from the identity, per element. The
+transformations this is fed are built from a symmetric
+orthogonalization followed by Jacobi rotations, so they are orthogonal
+to rounding and nothing else is expected to reach here.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-orthogonality_defect"></span> <h3>public pure function <a href='../proc/orthogonality_defect.html'>orthogonality_defect</a>(rotation) result(defect)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The largest element of <code>T^T T - I</code>, or <code>huge</code> if <code>T</code> is not square</p><a href="../proc/orthogonality_defect.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rotation~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rotation</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-rotation_is_orthogonal"></span> <h3>public pure function <a href='../proc/rotation_is_orthogonal.html'>rotation_is_orthogonal</a>(rotation) result(orthogonal)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Whether <code>T^T T</code> is the identity to <code>TOL_ORTHOGONAL</code></p><a href="../proc/rotation_is_orthogonal.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rotation"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rotation</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-determinant"></span> <h3>private pure function <a href='../proc/determinant.html'>determinant</a>(a) result(value)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Gaussian elimination with partial pivoting, on a copy</p><a href="../proc/determinant.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-scatter_restricted_ci"></span> <h3>public  subroutine <a href='../proc/scatter_restricted_ci.html'>scatter_restricted_ci</a>(space, flat, ci, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Lay a restricted-space CI vector out over the complete space</p><a href="../proc/scatter_restricted_ci.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-space~14"></span>
+              type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>space</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-flat~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>flat</strong>(:)</td>
+            <td>
+<p>(space%n_determinants)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ci</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~73"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-string_rotation_matrix"></span> <h3>public  subroutine <a href='../proc/string_rotation_matrix.html'>string_rotation_matrix</a>(rotation, n_electrons, matrix, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The determinant-basis image of an orbital rotation, for one spin</p><a href="../proc/string_rotation_matrix.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rotation~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rotation</strong>(:,:)</td>
+            <td>
+<p>(n_orbitals, n_orbitals) orthogonal. Column <code>q</code> expands target
+orbital <code>q</code> in the source orbitals, which is the direction
+<code>|q&gt; = sum_p |p&gt; T(p,q)</code> is written in.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_electrons~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_electrons</strong></td>
+            <td>
+<p>Of one spin. The two spins of a CI vector need one call each unless
+their counts agree, in which case one matrix serves both.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-matrix~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>matrix</strong>(:,:)</td>
+            <td>
+<p>(n_strings, n_strings)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~72"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-transform_ci_vector"></span> <h3>public  subroutine <a href='../proc/transform_ci_vector.html'>transform_ci_vector</a>(m_alpha, m_beta, ci, transformed, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Re-expand a CI vector in the target basis: <code>C' = M_alpha^T C M_beta</code></p><a href="../proc/transform_ci_vector.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-m_alpha"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>m_alpha</strong>(:,:)</td>
+            <td>
+<p>From <code>string_rotation_matrix</code>, alpha</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-m_beta"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>m_beta</strong>(:,:)</td>
+            <td>
+<p>The same for beta</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci~7"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ci</strong>(:,:)</td>
+            <td>
+<p>(n_alpha_strings, n_beta_strings)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-transformed"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>transformed</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~74"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-21 19:25 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

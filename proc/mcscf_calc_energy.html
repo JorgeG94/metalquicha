@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">37 statements</a>
+                 title=" 0.2% of total for procedures.">39 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mcscf_calc_energy.html#variable-settings~4">settings</a>
+            <a class="list-group-item" href="../proc/mcscf_calc_energy.html#variable-settings">settings</a>
         </div>
       </div>
     </div>
@@ -194,7 +194,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~63"></span>
+              <span class="anchor" id="variable-this~7"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -209,7 +209,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~12"></span>
+              <span class="anchor" id="variable-fragment~9"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -224,7 +224,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~14"></span>
+              <span class="anchor" id="variable-result"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -393,7 +393,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~4"></span>
+              <span class="anchor" id="variable-settings"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -440,6 +440,9 @@ large graphs.</div>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_threshold</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_energy</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_no_sharing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_no_sharing</span>
+<span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_restrict_localization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_restrict_localization</span>
+<span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">bonding_no_sharing_ci</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_no_sharing_ci</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">basis_set</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">spherical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">spherical</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">verbose</span>
@@ -492,7 +495,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 18:27 +0000             </p>
+ on 2026-08-21 19:25 +0000             </p>
           </div>
         </div>
         <br>

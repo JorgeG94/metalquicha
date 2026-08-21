@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for modules and submodules.">88 statements</a>
+                 title=" 0.4% of total for modules and submodules.">90 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1341,18 +1341,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1328.14,-364.39C1282.48,-371.45 1192.25,-385.41 1137.36,-393.91"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.55,-390.49 1127.2,-395.48 1137.62,-397.41 1136.55,-390.49"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_node37" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node37"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node37"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1396.5,-330 1318.5,-330 1318.5,-306 1396.5,-306 1396.5,-330"/>
 <text text-anchor="middle" x="1357.5" y="-315.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_edge50" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1318.31,-319.13C1295.98,-321.23 1267.96,-326.46 1246,-339 1224.94,-351.03 1231.13,-368.1 1210,-380 1187.98,-392.4 1160.31,-397.77 1137.24,-399.99"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.7,-396.52 1127.01,-400.8 1137.25,-403.5 1136.7,-396.52"/>
 </g>
@@ -1561,7 +1561,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -1632,7 +1632,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~6"></span>
+              <span class="anchor" id="variable-backend~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -1666,7 +1666,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_analysis~2"></span>
+              <span class="anchor" id="variable-bonding_analysis~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1683,7 +1683,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_energy~2"></span>
+              <span class="anchor" id="variable-bonding_energy~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1700,7 +1700,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing~2"></span>
+              <span class="anchor" id="variable-bonding_no_sharing~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1717,7 +1717,41 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_threshold~2"></span>
+              <span class="anchor" id="variable-bonding_no_sharing_ci~3"></span>
+              character(len=32),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonding_no_sharing_ci</strong></td>
+<td> =</td>
+                <td>&#34;transform&#34;</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonding_restrict_localization~3"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonding_restrict_localization</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonding_threshold~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1739,7 +1773,7 @@ statement about the wave function this object describes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size~2"></span>
+              <span class="anchor" id="variable-cc_diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1773,7 +1807,7 @@ statement about the wave function this object describes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted~2"></span>
+              <span class="anchor" id="variable-cc_spin_adapted~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1791,7 +1825,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance~2"></span>
+              <span class="anchor" id="variable-cc_tolerance~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1808,7 +1842,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples~2"></span>
+              <span class="anchor" id="variable-cc_triples~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1825,7 +1859,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting~2"></span>
+              <span class="anchor" id="variable-corr_density_fitting~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1944,7 +1978,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_population~2"></span>
+              <span class="anchor" id="variable-fukui_population~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1961,7 +1995,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1995,7 +2029,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~10"></span>
+              <span class="anchor" id="variable-guess~8"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2013,7 +2047,7 @@ or &lsquo;auto&rsquo;</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~5"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -2027,12 +2061,12 @@ or &lsquo;auto&rsquo;</p>
             <td>
 <p>The basis ladder for &lsquo;basis_set_projection&rsquo;, one entry per
 preliminary SCF in order. The target basis is <code>basis_set</code> and is not
-repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cuest_scf_settings_t.html#variable-guess_steps~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cuest_scf_settings_t.html#variable-guess_steps~5" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~8"></span>
+              <span class="anchor" id="variable-max_iter~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -2049,7 +2083,7 @@ repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mcscf~5"></span>
+              <span class="anchor" id="variable-mcscf~2"></span>
               type(<a href='../type/mcscf_config_t.html'>mcscf_config_t</a>),
             </td>
               <td>public</td>
@@ -2237,7 +2271,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~10"></span>
+              <span class="anchor" id="variable-verbose~8"></span>
               logical,
             </td>
               <td>public</td>
@@ -2286,7 +2320,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~10"></span>
+              <span class="anchor" id="variable-method_type~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2336,7 +2370,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~27"></span>
+              <span class="anchor" id="variable-name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2366,7 +2400,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~160"></span>
+              <span class="anchor" id="variable-error~98"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2409,7 +2443,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 18:27 +0000             </p>
+ on 2026-08-21 19:25 +0000             </p>
           </div>
         </div>
         <br>

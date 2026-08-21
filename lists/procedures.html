@@ -446,6 +446,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Put this optimization where the evaluator can reach it</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/beta_strings_per_block.html'>beta_strings_per_block</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Function</td>
+                 <td><p>How many beta strings one working block may cover</p><a href="../proc/beta_strings_per_block.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/binomial.html'>binomial</a></td>
                  <td><a href='../module/mqc_math_utils.html'>mqc_math_utils</a></td>
                  <td>Interface</td>
@@ -1263,6 +1269,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>Whether this partition restricts anything at all</p><a href="../proc/describes_a_cas.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/determinant.html'>determinant</a></td>
+                 <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
+                 <td>Function</td>
+                 <td><p>Gaussian elimination with partial pivoting, on a copy</p><a href="../proc/determinant.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/determinant_address.html'>determinant_address</a></td>
                  <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Function</td>
@@ -1563,6 +1575,12 @@ Resets the stack trace</p></td>
                  <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
                  <td>Function</td>
                  <td><p>The sign of <code>a^dagger_create a_destroy |string&gt;</code>, or zero</p><a href="../proc/excitation_phase.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/excitations_block.html'>excitations_block</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>E_pq |c&gt;</code> for every orbital pair, over one range of beta strings</p><a href="../proc/excitations_block.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/expand_orbit.html'>expand_orbit</a></td>
@@ -3218,6 +3236,12 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
                  <td><p>Every alpha and beta string of the space, in global index order</p><a href="../proc/ormas_strings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/orthogonality_defect.html'>orthogonality_defect</a></td>
+                 <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
+                 <td>Function</td>
+                 <td><p>The largest element of <code>T^T T - I</code>, or <code>huge</code> if <code>T</code> is not square</p><a href="../proc/orthogonality_defect.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/pad_name.html'>pad_name</a></td>
                  <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
                  <td>Function</td>
@@ -3784,6 +3808,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/rotation_is_orthogonal.html'>rotation_is_orthogonal</a></td>
+                 <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
+                 <td>Function</td>
+                 <td><p>Whether <code>T^T T</code> is the identity to <code>TOL_ORTHOGONAL</code></p><a href="../proc/rotation_is_orthogonal.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_calculation.html'>run_calculation</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -3885,6 +3915,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle unfragmented calculation (nlevel=0)</p><a href="../proc/run_unfragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/scatter_restricted_ci.html'>scatter_restricted_ci</a></td>
+                 <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Lay a restricted-space CI vector out over the complete space</p><a href="../proc/scatter_restricted_ci.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/scf_keys.html'>scf_keys</a></td>
@@ -4125,6 +4161,12 @@ Trailing newlines do not create empty lines</p></td>
                  <td><p>Where a string sits in the list, 1-based</p><a href="../proc/string_address.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/string_rotation_matrix.html'>string_rotation_matrix</a></td>
+                 <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The determinant-basis image of an orbital rotation, for one spin</p><a href="../proc/string_rotation_matrix.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
                  <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
@@ -4224,6 +4266,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>Convert coordinate from Angstrom to Bohr</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/transform_ci_vector.html'>transform_ci_vector</a></td>
+                 <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Re-expand a CI vector in the target basis: <code>C' = M_alpha^T C M_beta</code></p><a href="../proc/transform_ci_vector.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/treutler_ahlrichs_radial.html'>treutler_ahlrichs_radial</a></td>
                  <td><a href='../module/mqc_dft_radial.html'>mqc_dft_radial</a></td>
                  <td>Subroutine</td>
@@ -4303,15 +4351,15 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -4483,7 +4531,7 @@ whatever libxc itself was configured to do.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 18:27 +0000             </p>
+ on 2026-08-21 19:25 +0000             </p>
           </div>
         </div>
         <br>

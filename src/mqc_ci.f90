@@ -27,6 +27,7 @@ module mqc_ci
    !! 51 MB at CAS(10,10), 983 MB at CAS(12,12), and past that it has to be
    !! blocked over beta strings. Blocking changes nothing structurally and is
    !! deliberately not done yet.
+   use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
@@ -40,6 +41,16 @@ module mqc_ci
    public :: ci_hamiltonian
    public :: ci_diagonal
    public :: apply_excitations
+   public :: excitations_block
+   public :: beta_strings_per_block
+
+   integer(int64), parameter :: BLOCK_BYTES = 256_int64*1024_int64*1024_int64
+      !! Working-set target for one block of the CI intermediate, per buffer
+      !! pair. Not a hard limit on the routine -- the vector, the diagonal and
+      !! the Davidson subspace sit outside it -- but the one allocation that
+      !! grows with the determinant count *and* the orbital count, so it is the
+      !! one worth bounding. At this size ethane's CAS(14,14) blocks into 23
+      !! beta strings at a time, against the 18.5 GB it would take whole.
 
 contains
 
@@ -137,6 +148,133 @@ contains
       deallocate (f1e)
    end subroutine absorb_one_electron
 
+   pure function beta_strings_per_block(npair, na, nb) result(width)
+      !! How many beta strings one working block may cover
+      !!
+      !! The intermediate is `(n_orbitals^2, n_determinants)` and the
+      !! determinant count is the product of the two string counts, so building
+      !! it whole costs `norb^2 * na * nb * 8` bytes -- which is nothing for a
+      !! small active space and ruinous for a large one. Ethane's full valence
+      !! CAS(14,14) is 196 by 11,778,624, or **18.5 GB**, and the sigma build
+      !! needs two of them. Water's CAS(8,6) is 350 kB.
+      !!
+      !! So the determinant axis is blocked, and this says how finely.
+      !! Determinants are laid out alpha-major within a beta string, which makes
+      !! a range of beta strings a contiguous range of columns and the beta
+      !! string the natural unit to block on.
+      !!
+      !! Deliberately a memory budget rather than a fixed count: a fixed count
+      !! would be far too small for a tiny space -- where the whole intermediate
+      !! is cheaper than the bookkeeping -- and still too large for a big one,
+      !! since the cost per beta string grows with both the orbital count and
+      !! the alpha string count. Below the budget nothing blocks at all, so
+      !! small spaces are untouched and take the same path they always did.
+      integer, intent(in) :: npair, na, nb
+      integer :: width
+
+      integer(int64) :: per_string
+
+      ! Two buffers of `npair * na` doubles for each beta string covered: the
+      ! gathered intermediate and the contracted one.
+      per_string = 2_int64*int(npair, int64)*int(na, int64)*8_int64
+      width = int(min(int(nb, int64), max(1_int64, BLOCK_BYTES/per_string)))
+   end function beta_strings_per_block
+
+   subroutine excitations_block(ci, alpha, beta, first_beta, last_beta, gathered)
+      !! `E_pq |c>` for every orbital pair, over one range of beta strings
+      !!
+      !! Fills `gathered(npair, na*(last_beta - first_beta + 1))` with the
+      !! columns of the full intermediate whose beta index lies in the range.
+      !! `apply_excitations` is this over every beta string at once.
+      !!
+      !! **The two spins block differently, and that is the whole subtlety.**
+      !! An alpha excitation leaves the beta string alone, so it only ever
+      !! writes columns whose beta index is already in the block -- the loop is
+      !! the original one with its beta range narrowed. A beta excitation
+      !! *moves* the beta string, so a contribution landing in this block can
+      !! come from any source string anywhere, and the whole table has to be
+      !! walked with the ones that miss skipped. That walk repeats per block;
+      !! the arithmetic inside it does not, because the inner loop over alpha
+      !! strings only runs for the rows that land.
+      real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
+      type(link_table_t), intent(in) :: alpha, beta
+      integer, intent(in) :: first_beta, last_beta
+      real(dp), intent(out) :: gathered(:, :)
+
+      integer :: norb, na, source, target_string, row, pair, ia, ib, column
+      integer :: hit, n_hits
+      integer, allocatable :: hit_source(:), hit_row(:), hit_target(:)
+
+      norb = alpha%n_orbitals
+      na = alpha%n_strings
+      gathered = 0.0_dp
+
+      ! **Both loops are accumulations, so the parallel axis has to own its
+      ! output columns outright.** Reductions are not an option: the array is
+      ! the largest thing here and a per-thread copy of it is the memory the
+      ! blocking exists to avoid.
+      !
+      ! An alpha excitation cannot change the beta string, so a column's beta
+      ! index is fixed and `ib` owns a whole `na`-wide slice of the output. Two
+      ! iterations never touch the same column.
+      !$omp parallel do default(shared) schedule(static) &
+      !$omp   private(ib, source, row, pair, target_string, column)
+      do ib = first_beta, last_beta
+         do source = 1, na
+            do row = 1, alpha%n_rows
+               pair = alpha%cre(row, source) + (alpha%des(row, source) - 1)*norb
+               target_string = alpha%dest(row, source)
+               column = target_string + (ib - first_beta)*na
+               gathered(pair, column) = gathered(pair, column) &
+                                        + real(alpha%phase(row, source), dp)*ci(source, ib)
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      ! A beta excitation *moves* the beta string, so the destination is what
+      ! picks the column and several sources can land on one. `ib` is therefore
+      ! not safe to split on -- but `ia` is, because the column is
+      ! `ia + (target - first)*na` and distinct `ia` are distinct columns
+      ! whatever the target.
+      !
+      ! Which sources land inside this block is found once rather than
+      ! rediscovered by every `ia`: without this the membership test would run
+      ! `na` times over, and for ethane that is six hundred million branches
+      ! bought for nothing.
+      allocate (hit_source(beta%n_strings*beta%n_rows))
+      allocate (hit_row(beta%n_strings*beta%n_rows))
+      allocate (hit_target(beta%n_strings*beta%n_rows))
+      n_hits = 0
+      do source = 1, beta%n_strings
+         do row = 1, beta%n_rows
+            target_string = beta%dest(row, source)
+            if (target_string < first_beta .or. target_string > last_beta) cycle
+            n_hits = n_hits + 1
+            hit_source(n_hits) = source
+            hit_row(n_hits) = row
+            hit_target(n_hits) = target_string
+         end do
+      end do
+
+      !$omp parallel do default(shared) schedule(static) &
+      !$omp   private(ia, hit, source, row, pair, target_string, column)
+      do ia = 1, na
+         do hit = 1, n_hits
+            source = hit_source(hit)
+            row = hit_row(hit)
+            target_string = hit_target(hit)
+            pair = beta%cre(row, source) + (beta%des(row, source) - 1)*norb
+            column = ia + (target_string - first_beta)*na
+            gathered(pair, column) = gathered(pair, column) &
+                                     + real(beta%phase(row, source), dp)*ci(ia, source)
+         end do
+      end do
+      !$omp end parallel do
+
+      deallocate (hit_source, hit_row, hit_target)
+   end subroutine excitations_block
+
    subroutine apply_excitations(ci, alpha, beta, gathered)
       !! `E_pq |c>` for every orbital pair at once
       !!
@@ -167,31 +305,7 @@ contains
       ndet = na*nb
 
       allocate (gathered(npair, ndet))
-      gathered = 0.0_dp
-
-      do source = 1, na
-         do row = 1, alpha%n_rows
-            pair = alpha%cre(row, source) + (alpha%des(row, source) - 1)*norb
-            target_string = alpha%dest(row, source)
-            weight = real(alpha%phase(row, source), dp)
-            do ib = 1, nb
-               gathered(pair, target_string + (ib - 1)*na) = &
-                  gathered(pair, target_string + (ib - 1)*na) + weight*ci(source, ib)
-            end do
-         end do
-      end do
-
-      do source = 1, nb
-         do row = 1, beta%n_rows
-            pair = beta%cre(row, source) + (beta%des(row, source) - 1)*norb
-            target_string = beta%dest(row, source)
-            weight = real(beta%phase(row, source), dp)
-            do ia = 1, na
-               gathered(pair, ia + (target_string - 1)*na) = &
-                  gathered(pair, ia + (target_string - 1)*na) + weight*ci(ia, source)
-            end do
-         end do
-      end do
+      call excitations_block(ci, alpha, beta, 1, nb, gathered)
    end subroutine apply_excitations
 
    subroutine sigma_vector(folded, ci, alpha, beta, sigma, error)
@@ -218,6 +332,7 @@ contains
       real(dp), allocatable :: gathered(:, :), contracted(:, :)
       integer :: norb, na, nb, npair, ndet
       integer :: source, target_string, row, pair, ia, ib
+      integer :: per_block, first, last, width
       real(dp) :: weight
 
       if (error%has_error()) return
@@ -248,35 +363,59 @@ contains
          return
       end if
 
-      call apply_excitations(ci, alpha, beta, gathered)
-
-      ! The whole two-electron contraction, as one matrix multiply.
-      allocate (contracted(npair, ndet))
-      call pic_gemm(folded, gathered, contracted)
+      ! Blocked over beta strings. The contraction below is column-wise, so it
+      ! splits exactly; the scatters accumulate into `sigma`, which is the size
+      ! of the vector rather than of the intermediate and stays whole.
+      per_block = beta_strings_per_block(npair, na, nb)
+      allocate (gathered(npair, na*per_block), contracted(npair, na*per_block))
 
       sigma = 0.0_dp
-      do source = 1, na
-         do row = 1, alpha%n_rows
-            pair = alpha%cre(row, source) + (alpha%des(row, source) - 1)*norb
-            target_string = alpha%dest(row, source)
-            weight = real(alpha%phase(row, source), dp)
-            do ib = 1, nb
-               sigma(target_string, ib) = sigma(target_string, ib) &
-                                          + weight*contracted(pair, source + (ib - 1)*na)
-            end do
-         end do
-      end do
+      do first = 1, nb, per_block
+         last = min(first + per_block - 1, nb)
+         width = na*(last - first + 1)
 
-      do source = 1, nb
-         do row = 1, beta%n_rows
-            pair = beta%cre(row, source) + (beta%des(row, source) - 1)*norb
-            target_string = beta%dest(row, source)
-            weight = real(beta%phase(row, source), dp)
-            do ia = 1, na
-               sigma(ia, target_string) = sigma(ia, target_string) &
-                                          + weight*contracted(pair, ia + (source - 1)*na)
+         call excitations_block(ci, alpha, beta, first, last, gathered(:, 1:width))
+         call pic_gemm(folded, gathered(:, 1:width), contracted(:, 1:width))
+
+         ! Alpha excitations leave the beta string alone, so the columns read
+         ! are those of this block and the range is simply narrowed. Split on
+         ! `ib`, which indexes a whole column of `sigma` that the iteration then
+         ! owns outright, so the accumulation cannot collide.
+         !$omp parallel do default(shared) schedule(static) &
+         !$omp   private(ib, source, row, pair, target_string, weight)
+         do ib = first, last
+            do source = 1, na
+               do row = 1, alpha%n_rows
+                  pair = alpha%cre(row, source) + (alpha%des(row, source) - 1)*norb
+                  target_string = alpha%dest(row, source)
+                  weight = real(alpha%phase(row, source), dp)
+                  sigma(target_string, ib) = sigma(target_string, ib) &
+                                             + weight*contracted(pair, source + (ib - first)*na)
+               end do
             end do
          end do
+         !$omp end parallel do
+
+         ! A beta excitation reads the column of its *source* string and writes
+         ! wherever that string lands -- possibly outside the block, which is
+         ! why `sigma` accumulates across blocks rather than being filled one
+         ! block at a time. Splitting on the source would race, since several
+         ! sources can land on one target. Splitting on `ia` cannot: it fixes
+         ! the row of `sigma` written, and distinct rows are disjoint.
+         !$omp parallel do default(shared) schedule(static) &
+         !$omp   private(ia, source, row, pair, target_string, weight)
+         do ia = 1, na
+            do source = first, last
+               do row = 1, beta%n_rows
+                  pair = beta%cre(row, source) + (beta%des(row, source) - 1)*norb
+                  target_string = beta%dest(row, source)
+                  weight = real(beta%phase(row, source), dp)
+                  sigma(ia, target_string) = sigma(ia, target_string) &
+                                             + weight*contracted(pair, ia + (source - first)*na)
+               end do
+            end do
+         end do
+         !$omp end parallel do
       end do
 
       deallocate (gathered, contracted)

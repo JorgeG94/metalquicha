@@ -1,0 +1,1058 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>scatter_restricted_ci &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>scatter_restricted_ci
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">44 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ci_transform.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ci_transform.f90.html'>mqc_ci_transform.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></li>
+            <li class="breadcrumb-item active" aria-current="page">scatter_restricted_ci</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-address">address</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-after">after</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-alpha~8">alpha</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-before">before</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-beta~8">beta</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-fa">fa</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-fb">fb</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ga~7">ga</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-gb~7">gb</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ia~7">ia</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ib~6">ib</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-n_full_alpha">n_full_alpha</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-n_full_beta">n_full_beta</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-n_orb~2">n_orb</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/scatter_restricted_ci.html#src">scatter_restricted_ci</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine scatter_restricted_ci(space, flat, ci, error)  
+</h2>
+    
+
+    <p>Lay a restricted-space CI vector out over the complete space</p>
+<p>An occupation-restricted space (ORMAS) keeps a chosen subset of the
+determinants, so its coefficients arrive as a flat list rather than an
+alpha-by-beta rectangle. This writes them into the rectangle, zero
+everywhere the restriction excluded, which is the same wave function
+written in the complete basis.</p>
+<p><strong>This exists so that a restricted wave function can be rotated at
+all.</strong> A restricted space is not closed under rotation of its active
+orbitals &ndash; mixing two active orbitals stops being redundant the moment
+the space is incomplete &ndash; so a rotation carries such a wave function
+out of its own space and there is nowhere in that space to put the
+answer. The complete space is where the answer lives, for the same
+reason that a subspace rotated inside a larger space lands on a
+different subspace of it.</p>
+<p>GAMESS solves the same problem the other way, by <em>forbidding</em> the
+rotation to leave the space: <code>LOCAL_PPASVD</code> builds the quasi-atomic
+transformation block-diagonal over the subspaces and
+<code>LOCAL_BLOCK_ORMAS</code> asserts it six times over. The expansion done here
+is named there as <code>MALMQ_CIDRIV</code> option 2, &ldquo;expands ORMAS CI vector
+from NSPACE&gt;1 to NSPACE=1 form&rdquo;, and declined &ndash; &ldquo;THIS OPTION IS NOT
+YET IMPLEMENTED AND MIGHT NOT BE&rdquo;. That is a reasonable decision for
+Malmqvist&rsquo;s algorithm, which acts on the vector in its own space and
+would lose its whole advantage by expanding; it is not one for a
+transformation that is already dense matrix products over the complete
+rectangle.</p>
+<p>The cost is honest and is the reason for <code>MAX_RECTANGLE</code>: the
+restriction buys a cheap <em>solve</em> and this spends the complete space to
+store the result. For ethane that is 16,500 determinants converged and
+11.7 million stored, which is the right trade; past a point it is not
+available at all.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-space~14"></span>
+              type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>space</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-flat~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>flat</strong>(:)</td>
+            <td>
+                <p>(space%n_determinants)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ci</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~73"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~scatter_restricted_ci~~CallsGraph Pages: 1 -->
+<svg id="procscatter_restricted_ciCallsGraph" width="641pt" height="249pt"
+ viewBox="0.00 0.00 641.00 249.27" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~scatter_restricted_ci~~CallsGraph" class="graph" transform="scale(0.58 0.58) rotate(0) translate(4 425.32)">
+<title>proc~~scatter_restricted_ci~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-425.32 1100,-425.32 1100,4 -4,4"/>
+<!-- proc~scatter_restricted_ci -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node1" class="node">
+<title>proc~scatter_restricted_ci</title>
+<polygon fill="none" stroke="black" points="119,-265.32 0,-265.32 0,-241.32 119,-241.32 119,-265.32"/>
+<text text-anchor="middle" x="59.5" y="-250.92" font-family="Helvetica,sans-Serif" font-size="10.50">scatter_restricted_ci</text>
+</g>
+<!-- proc~determinant_address -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node2" class="node">
+<title>proc~determinant_address</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node2"><a xlink:href="../proc/determinant_address.html" xlink:title="determinant_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="280,-421.32 155,-421.32 155,-397.32 280,-397.32 280,-421.32"/>
+<text text-anchor="middle" x="217.5" y="-406.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">determinant_address</text>
+</a>
+</g>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;proc~determinant_address -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge1" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;proc~determinant_address</title>
+<path fill="none" stroke="#ff0000" d="M66.39,-265.41C79.2,-290.58 111.95,-349.14 155,-383.32 159.43,-386.84 164.4,-389.95 169.54,-392.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="168.39,-396.03 178.92,-397.25 171.45,-389.73 168.39,-396.03"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node3" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node3"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="862,-267.32 723,-267.32 723,-243.32 862,-243.32 862,-267.32"/>
+<text text-anchor="middle" x="792.5" y="-252.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;proc~error_has_error -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge2" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M88.77,-265.34C142.9,-287.22 265.36,-331.32 373,-331.32 373,-331.32 373,-331.32 520,-331.32 608.06,-331.32 706.43,-293.79 757.14,-271.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="758.63,-274.64 766.33,-267.36 755.77,-268.25 758.63,-274.64"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node4" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node4"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="845,-345.32 740,-345.32 740,-321.32 845,-321.32 845,-345.32"/>
+<text text-anchor="middle" x="792.5" y="-330.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;proc~error_set -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge3" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M74.18,-265.47C91.69,-280.37 123.54,-305.36 155,-319.32 245.86,-359.63 273.6,-369.32 373,-369.32 373,-369.32 373,-369.32 520,-369.32 592.63,-369.32 675.24,-356.51 730.07,-346.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="730.81,-349.59 739.97,-344.27 729.49,-342.71 730.81,-349.59"/>
+</g>
+<!-- proc~n_strings -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node5" class="node">
+<title>proc~n_strings</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node5"><a xlink:href="../proc/n_strings.html" xlink:title="n_strings">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="404,-73.32 344,-73.32 344,-49.32 404,-49.32 404,-73.32"/>
+<text text-anchor="middle" x="374" y="-58.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">n_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;proc~n_strings -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge4" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;proc~n_strings</title>
+<path fill="none" stroke="#ff0000" d="M63.39,-241.12C71.58,-209.57 98.08,-125.1 155,-87.32 208.88,-51.56 287.1,-51.78 333.73,-56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="333.44,-59.48 343.74,-57.01 334.14,-52.52 333.44,-59.48"/>
+</g>
+<!-- proc~ormas_strings -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node6" class="node">
+<title>proc~ormas_strings</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node6"><a xlink:href="../proc/ormas_strings.html" xlink:title="ormas_strings">
+<polygon fill="#d9534f" stroke="#d9534f" points="261,-265.32 174,-265.32 174,-241.32 261,-241.32 261,-265.32"/>
+<text text-anchor="middle" x="217.5" y="-250.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;proc~ormas_strings -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge5" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;proc~ormas_strings</title>
+<path fill="none" stroke="#ff0000" d="M119.03,-253.32C133.64,-253.32 149.23,-253.32 163.55,-253.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="163.72,-256.82 173.72,-253.32 163.72,-249.82 163.72,-256.82"/>
+</g>
+<!-- proc~string_address -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node7" class="node">
+<title>proc~string_address</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node7"><a xlink:href="../proc/string_address.html" xlink:title="string_address">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="563.5,-33.32 474.5,-33.32 474.5,-9.32 563.5,-9.32 563.5,-33.32"/>
+<text text-anchor="middle" x="519" y="-18.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">string_address</text>
+</a>
+</g>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;proc~string_address -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge6" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;proc~string_address</title>
+<path fill="none" stroke="#ff0000" d="M61.95,-241.31C67.03,-205.2 87.49,-97.25 155,-50.32 247.72,14.12 387.74,2.76 463.94,-10"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="463.81,-13.53 474.26,-11.8 465.01,-6.63 463.81,-13.53"/>
+</g>
+<!-- to_char -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node8" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="819.5,-170.32 765.5,-170.32 765.5,-146.32 819.5,-146.32 819.5,-170.32"/>
+<text text-anchor="middle" x="792.5" y="-155.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~scatter_restricted_ci&#45;&gt;to_char -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge7" class="edge">
+<title>proc~scatter_restricted_ci&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M110.11,-241.31C205.46,-218.95 421.24,-171.78 606,-156.32 657.56,-152.01 717.45,-153.89 754.92,-155.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="755.15,-159.42 765.33,-156.49 755.55,-152.43 755.15,-159.42"/>
+</g>
+<!-- interface~binomial -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node9" class="node">
+<title>interface~binomial</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node9"><a xlink:href="../interface/binomial.html" xlink:title="binomial">
+<polygon fill="#a7506f" stroke="#a7506f" points="822,-91.32 763,-91.32 763,-67.32 822,-67.32 822,-91.32"/>
+<text text-anchor="middle" x="792.5" y="-76.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- proc~n_strings&#45;&gt;interface~binomial -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge8" class="edge">
+<title>proc~n_strings&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#00ff91" d="M404.29,-62.59C477.73,-65.76 669.74,-74.06 752.56,-77.64"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="752.66,-81.15 762.8,-78.08 752.96,-74.15 752.66,-81.15"/>
+</g>
+<!-- proc~ormas_strings&#45;&gt;proc~error_has_error -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge9" class="edge">
+<title>proc~ormas_strings&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0091ff" d="M261.14,-255.35C343.47,-258.99 530.06,-265.82 687,-261.32 695.36,-261.08 704.08,-260.73 712.78,-260.33"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="713.13,-263.81 722.95,-259.82 712.78,-256.82 713.13,-263.81"/>
+</g>
+<!-- proc~strings_of_one_spin -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node10" class="node">
+<title>proc~strings_of_one_spin</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node10"><a xlink:href="../proc/strings_of_one_spin.html" xlink:title="strings_of_one_spin">
+<polygon fill="#d9534f" stroke="#d9534f" points="432,-246.32 316,-246.32 316,-222.32 432,-222.32 432,-246.32"/>
+<text text-anchor="middle" x="374" y="-231.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">strings_of_one_spin</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_strings&#45;&gt;proc~strings_of_one_spin -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge10" class="edge">
+<title>proc~ormas_strings&#45;&gt;proc~strings_of_one_spin</title>
+<path fill="none" stroke="#0091ff" d="M261.13,-248.08C274.84,-246.39 290.39,-244.48 305.45,-242.63"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="306.26,-246.05 315.76,-241.36 305.41,-239.11 306.26,-246.05"/>
+</g>
+<!-- proc~string_address&#45;&gt;interface~binomial -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge11" class="edge">
+<title>proc~string_address&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#4800ff" d="M563.58,-26.37C597.46,-30.72 645.53,-37.8 687,-47.32 709.31,-52.45 733.79,-59.84 753.45,-66.24"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="752.37,-69.57 762.97,-69.38 754.57,-62.92 752.37,-69.57"/>
+</g>
+<!-- proc~binomial_i32 -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node11" class="node">
+<title>proc~binomial_i32</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node11"><a xlink:href="../proc/binomial_i32.html" xlink:title="binomial_i32">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="979,-111.32 898,-111.32 898,-87.32 979,-87.32 979,-111.32"/>
+<text text-anchor="middle" x="938.5" y="-96.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial_i32</text>
+</a>
+</g>
+</g>
+<!-- interface~binomial&#45;&gt;proc~binomial_i32 -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge12" class="edge">
+<title>interface~binomial&#45;&gt;proc~binomial_i32</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M822.29,-83.32C841,-85.92 865.88,-89.37 887.73,-92.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="887.46,-95.9 897.85,-93.81 888.42,-88.97 887.46,-95.9"/>
+</g>
+<!-- proc~binomial_i64 -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node12" class="node">
+<title>proc~binomial_i64</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node12"><a xlink:href="../proc/binomial_i64.html" xlink:title="binomial_i64">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1096,-91.32 1015,-91.32 1015,-67.32 1096,-67.32 1096,-91.32"/>
+<text text-anchor="middle" x="1055.5" y="-76.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial_i64</text>
+</a>
+</g>
+</g>
+<!-- interface~binomial&#45;&gt;proc~binomial_i64 -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge13" class="edge">
+<title>interface~binomial&#45;&gt;proc~binomial_i64</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M822.1,-78.95C858.54,-78.54 923.45,-77.95 979,-78.32 987.29,-78.38 996.1,-78.46 1004.66,-78.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1004.88,-82.07 1014.93,-78.7 1004.97,-75.07 1004.88,-82.07"/>
+</g>
+<!-- proc~strings_of_one_spin&#45;&gt;proc~error_has_error -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge15" class="edge">
+<title>proc~strings_of_one_spin&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ffff" d="M432.04,-237.2C504.76,-240.86 630.84,-247.22 712.7,-251.35"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="712.54,-254.84 722.7,-251.85 712.89,-247.85 712.54,-254.84"/>
+</g>
+<!-- proc~strings_of_one_spin&#45;&gt;interface~binomial -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge14" class="edge">
+<title>proc~strings_of_one_spin&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#00ffff" d="M401.67,-222.31C420.16,-214.11 445.42,-203.18 468,-194.32 569.97,-154.32 692.24,-112.49 753.13,-92.07"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="754.34,-95.35 762.71,-88.86 752.11,-88.71 754.34,-95.35"/>
+</g>
+<!-- proc~generate_strings -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node13" class="node">
+<title>proc~generate_strings</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node13"><a xlink:href="../proc/generate_strings.html" xlink:title="generate_strings">
+<polygon fill="#d9534f" stroke="#d9534f" points="570,-227.32 468,-227.32 468,-203.32 570,-203.32 570,-227.32"/>
+<text text-anchor="middle" x="519" y="-212.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_strings</text>
+</a>
+</g>
+</g>
+<!-- proc~strings_of_one_spin&#45;&gt;proc~generate_strings -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge16" class="edge">
+<title>proc~strings_of_one_spin&#45;&gt;proc~generate_strings</title>
+<path fill="none" stroke="#00ffff" d="M432.34,-226.7C440.63,-225.6 449.18,-224.47 457.52,-223.36"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="458.12,-226.81 467.57,-222.02 457.19,-219.87 458.12,-226.81"/>
+</g>
+<!-- proc~binomial_i32&#45;&gt;proc~binomial_i64 -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge17" class="edge">
+<title>proc~binomial_i32&#45;&gt;proc~binomial_i64</title>
+<path fill="none" stroke="#ff0000" d="M979.08,-92.44C987.39,-90.99 996.26,-89.45 1004.88,-87.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1005.6,-91.38 1014.85,-86.22 1004.4,-84.48 1005.6,-91.38"/>
+</g>
+<!-- proc~generate_strings&#45;&gt;proc~error_has_error -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge19" class="edge">
+<title>proc~generate_strings&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0000ff" d="M570.11,-222.7C610.08,-228.59 666.79,-236.95 712.81,-243.73"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="712.35,-247.2 722.75,-245.19 713.37,-240.27 712.35,-247.2"/>
+</g>
+<!-- proc~check_space -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_node14" class="node">
+<title>proc~check_space</title>
+<g id="a_proc~~scatter_restricted_ci~~CallsGraph_node14"><a xlink:href="../proc/check_space.html" xlink:title="check_space">
+<polygon fill="#d9534f" stroke="#d9534f" points="687,-189.32 606,-189.32 606,-165.32 687,-165.32 687,-189.32"/>
+<text text-anchor="middle" x="646.5" y="-174.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_space</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_strings&#45;&gt;proc~check_space -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge18" class="edge">
+<title>proc~generate_strings&#45;&gt;proc~check_space</title>
+<path fill="none" stroke="#0000ff" d="M559.71,-203.3C571.15,-199.83 583.79,-196.01 595.76,-192.38"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="597.06,-195.64 605.62,-189.4 595.03,-188.94 597.06,-195.64"/>
+</g>
+<!-- proc~check_space&#45;&gt;proc~error_has_error -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge21" class="edge">
+<title>proc~check_space&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M669.68,-189.34C693.82,-202.41 732.6,-223.42 759.91,-238.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="758.59,-241.48 769.05,-243.16 761.93,-235.32 758.59,-241.48"/>
+</g>
+<!-- proc~check_space&#45;&gt;proc~error_set -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge22" class="edge">
+<title>proc~check_space&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M655.53,-189.6C668.52,-209.03 695.48,-247.61 723,-276.32 736.47,-290.38 753.26,-304.4 766.84,-315.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="764.77,-317.83 774.83,-321.15 769.03,-312.28 764.77,-317.83"/>
+</g>
+<!-- proc~check_space&#45;&gt;to_char -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge23" class="edge">
+<title>proc~check_space&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M687.23,-172.08C708.45,-169.28 734.39,-165.86 755.09,-163.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="755.63,-166.58 765.08,-161.81 754.71,-159.65 755.63,-166.58"/>
+</g>
+<!-- proc~check_space&#45;&gt;interface~binomial -->
+<g id="proc~~scatter_restricted_ci~~CallsGraph_edge20" class="edge">
+<title>proc~check_space&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#ff0000" d="M666.04,-165.23C672.67,-160.88 680.19,-155.91 687,-151.32 714.02,-133.12 744.69,-111.92 765.78,-97.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="767.99,-99.99 774.2,-91.41 763.99,-94.25 767.99,-99.99"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocscatter_restricted_ciCallsGraph = svgPanZoom('#procscatter_restricted_ciCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-address"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>address</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-after"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>after</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha~8"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>alpha</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-before"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>before</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta~8"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>beta</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fa"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fa</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fb"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ga~7"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ga</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gb~7"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ia~7"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ia</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ib~6"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ib</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_full_alpha"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_full_alpha</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_full_beta"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_full_beta</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_orb~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_orb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">scatter_restricted_ci</span><span class="p">(</span><span class="n">space</span><span class="p">,</span><span class="w"> </span><span class="n">flat</span><span class="p">,</span><span class="w"> </span><span class="n">ci</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Lay a restricted-space CI vector out over the complete space</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! An occupation-restricted space (ORMAS) keeps a chosen subset of the</span>
+<span class="w">      </span><span class="c">!! determinants, so its coefficients arrive as a flat list rather than an</span>
+<span class="w">      </span><span class="c">!! alpha-by-beta rectangle. This writes them into the rectangle, zero</span>
+<span class="w">      </span><span class="c">!! everywhere the restriction excluded, which is the same wave function</span>
+<span class="w">      </span><span class="c">!! written in the complete basis.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **This exists so that a restricted wave function can be rotated at</span>
+<span class="w">      </span><span class="c">!! all.** A restricted space is not closed under rotation of its active</span>
+<span class="w">      </span><span class="c">!! orbitals -- mixing two active orbitals stops being redundant the moment</span>
+<span class="w">      </span><span class="c">!! the space is incomplete -- so a rotation carries such a wave function</span>
+<span class="w">      </span><span class="c">!! out of its own space and there is nowhere in that space to put the</span>
+<span class="w">      </span><span class="c">!! answer. The complete space is where the answer lives, for the same</span>
+<span class="w">      </span><span class="c">!! reason that a subspace rotated inside a larger space lands on a</span>
+<span class="w">      </span><span class="c">!! different subspace of it.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! GAMESS solves the same problem the other way, by *forbidding* the</span>
+<span class="w">      </span><span class="c">!! rotation to leave the space: `LOCAL_PPASVD` builds the quasi-atomic</span>
+<span class="w">      </span><span class="c">!! transformation block-diagonal over the subspaces and</span>
+<span class="w">      </span><span class="c">!! `LOCAL_BLOCK_ORMAS` asserts it six times over. The expansion done here</span>
+<span class="w">      </span><span class="c">!! is named there as `MALMQ_CIDRIV` option 2, "expands ORMAS CI vector</span>
+<span class="w">      </span><span class="c">!! from NSPACE&gt;1 to NSPACE=1 form", and declined -- "THIS OPTION IS NOT</span>
+<span class="w">      </span><span class="c">!! YET IMPLEMENTED AND MIGHT NOT BE". That is a reasonable decision for</span>
+<span class="w">      </span><span class="c">!! Malmqvist's algorithm, which acts on the vector in its own space and</span>
+<span class="w">      </span><span class="c">!! would lose its whole advantage by expanding; it is not one for a</span>
+<span class="w">      </span><span class="c">!! transformation that is already dense matrix products over the complete</span>
+<span class="w">      </span><span class="c">!! rectangle.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The cost is honest and is the reason for `MAX_RECTANGLE`: the</span>
+<span class="w">      </span><span class="c">!! restriction buys a cheap *solve* and this spends the complete space to</span>
+<span class="w">      </span><span class="c">!! store the result. For ethane that is 16,500 determinants converged and</span>
+<span class="w">      </span><span class="c">!! 11.7 million stored, which is the right trade; past a point it is not</span>
+<span class="w">      </span><span class="c">!! available at all.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">flat</span><span class="p">(:)</span><span class="w">          </span><span class="c">!! (space%n_determinants)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha</span><span class="p">(:),</span><span class="w"> </span><span class="n">beta</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_full_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">n_full_beta</span><span class="p">,</span><span class="w"> </span><span class="n">address</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_orb</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">,</span><span class="w"> </span><span class="n">fa</span><span class="p">,</span><span class="w"> </span><span class="n">fb</span><span class="p">,</span><span class="w"> </span><span class="n">ga</span><span class="p">,</span><span class="w"> </span><span class="n">gb</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">before</span><span class="p">,</span><span class="w"> </span><span class="n">after</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      </span><span class="n">n_orb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">n_active_orbitals</span>
+<span class="w">      </span><span class="n">n_full_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_strings</span><span class="p">(</span><span class="n">n_orb</span><span class="p">,</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">n_alpha</span><span class="p">)</span>
+<span class="w">      </span><span class="n">n_full_beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_strings</span><span class="p">(</span><span class="n">n_orb</span><span class="p">,</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">n_beta</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_full_alpha</span><span class="o">*</span><span class="n">n_full_beta</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">MAX_RECTANGLE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the restricted space holds "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="n">to_char</span><span class="p">(</span><span class="n">space</span><span class="p">%</span><span class="n">n_determinants</span><span class="p">)</span><span class="o">//</span><span class="s2">" determinants, but the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"complete space it would have to be written out over holds "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="n">to_char</span><span class="p">(</span><span class="n">n_full_alpha</span><span class="o">*</span><span class="n">n_full_beta</span><span class="p">)</span><span class="o">//</span><span class="s2">", which is past what this "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"can allocate. The restriction makes the wave function "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"affordable to solve for and not to rotate."</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">flat</span><span class="p">),</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">n_determinants</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the coefficient list holds "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="n">to_char</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">flat</span><span class="p">))</span><span class="o">//</span><span class="s2">" values and the restricted space has "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="n">to_char</span><span class="p">(</span><span class="n">space</span><span class="p">%</span><span class="n">n_determinants</span><span class="p">)</span><span class="o">//</span><span class="s2">" determinants."</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">ormas_strings</span><span class="p">(</span><span class="n">space</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">ci</span><span class="p">(</span><span class="n">n_full_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">n_full_beta</span><span class="p">))</span>
+<span class="w">      </span><span class="n">ci</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">do </span><span class="n">ia</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+<span class="w">         </span><span class="n">ga</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">alpha_string_class</span><span class="p">(</span><span class="n">ia</span><span class="p">)</span>
+<span class="w">         </span><span class="n">fa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">string_address</span><span class="p">(</span><span class="n">n_orb</span><span class="p">,</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">n_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">(</span><span class="n">ia</span><span class="p">))</span>
+<span class="w">         </span><span class="k">do </span><span class="n">ib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span>
+<span class="w">            </span><span class="n">gb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">beta_string_class</span><span class="p">(</span><span class="n">ib</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! `determinant_address` returns a plausible number for an</span>
+<span class="w">            </span><span class="c">! incompatible pair rather than a signal, so the gate is here.</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">compatible</span><span class="p">(</span><span class="n">gb</span><span class="p">,</span><span class="w"> </span><span class="n">ga</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">            </span><span class="n">fb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">string_address</span><span class="p">(</span><span class="n">n_orb</span><span class="p">,</span><span class="w"> </span><span class="n">space</span><span class="p">%</span><span class="n">n_beta</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">(</span><span class="n">ib</span><span class="p">))</span>
+<span class="w">            </span><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">determinant_address</span><span class="p">(</span><span class="n">space</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">)</span>
+<span class="w">            </span><span class="n">ci</span><span class="p">(</span><span class="n">fa</span><span class="p">,</span><span class="w"> </span><span class="n">fb</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flat</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">      end do</span>
+
+<span class="w">      </span><span class="c">! Every coefficient placed exactly once, nothing dropped and nothing</span>
+<span class="w">      </span><span class="c">! written twice. A collision in the addressing would show up here and</span>
+<span class="w">      </span><span class="c">! nowhere else downstream.</span>
+<span class="w">      </span><span class="n">before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">flat</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">      </span><span class="n">after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">ci</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">after</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">before</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">TOL_NORM</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="n">before</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the restricted coefficients did not "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"survive being written out over the complete space, so two "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">"determinants were given the same address or one was missed."</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">scatter_restricted_ci</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-21 19:25 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

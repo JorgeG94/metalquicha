@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">54 statements</a>
+                 title=" 0.3% of total for procedures.">60 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,19 +137,23 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/sigma_vector.html#variable-contracted~2">contracted</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-gathered~6">gathered</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ia~7">ia</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ib~7">ib</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-na~4">na</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-nb~4">nb</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ndet~4">ndet</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-norb~11">norb</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-npair~5">npair</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-pair~4">pair</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-row~5">row</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-source~3">source</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-target_string~2">target_string</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-first~3">first</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-gathered~7">gathered</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ia~10">ia</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ib~9">ib</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-last~4">last</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-na~12">na</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-nb~9">nb</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ndet~7">ndet</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-norb~12">norb</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-npair~6">npair</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-pair~5">pair</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-per_block~2">per_block</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-row~10">row</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-source~7">source</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-target_string~3">target_string</a>
             <a class="list-group-item" href="../proc/sigma_vector.html#variable-weight~5">weight</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-width~5">width</a>
         </div>
       </div>
     </div>
@@ -216,7 +220,7 @@ differ.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~7"></span>
+              <span class="anchor" id="variable-folded~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -231,7 +235,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~7"></span>
+              <span class="anchor" id="variable-ci~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -246,7 +250,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~8"></span>
+              <span class="anchor" id="variable-alpha~11"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -261,7 +265,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~8"></span>
+              <span class="anchor" id="variable-beta~11"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -276,7 +280,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~6"></span>
+              <span class="anchor" id="variable-sigma~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -291,7 +295,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~38"></span>
+              <span class="anchor" id="variable-error~76"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -319,85 +323,100 @@ differ.</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~sigma_vector~~CallsGraph Pages: 1 -->
-<svg id="procsigma_vectorCallsGraph" width="267pt" height="200pt"
- viewBox="0.00 0.00 267.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~sigma_vector~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+<svg id="procsigma_vectorCallsGraph" width="267pt" height="242pt"
+ viewBox="0.00 0.00 267.00 242.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~sigma_vector~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 238)">
 <title>proc~~sigma_vector~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 263,-196 263,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-238 263,-238 263,4 -4,4"/>
 <!-- proc~sigma_vector -->
 <g id="proc~~sigma_vector~~CallsGraph_node1" class="node">
 <title>proc~sigma_vector</title>
-<polygon fill="none" stroke="black" points="84,-108 0,-108 0,-84 84,-84 84,-108"/>
-<text text-anchor="middle" x="42" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">sigma_vector</text>
+<polygon fill="none" stroke="black" points="84,-129 0,-129 0,-105 84,-105 84,-129"/>
+<text text-anchor="middle" x="42" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50">sigma_vector</text>
 </g>
 <!-- pic_gemm -->
 <g id="proc~~sigma_vector~~CallsGraph_node2" class="node">
 <title>pic_gemm</title>
-<polygon fill="#777777" stroke="#777777" points="223.5,-192 155.5,-192 155.5,-168 223.5,-168 223.5,-192"/>
-<text text-anchor="middle" x="189.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
+<polygon fill="#777777" stroke="#777777" points="223.5,-234 155.5,-234 155.5,-210 223.5,-210 223.5,-234"/>
+<text text-anchor="middle" x="189.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
 </g>
 <!-- proc~sigma_vector&#45;&gt;pic_gemm -->
 <g id="proc~~sigma_vector~~CallsGraph_edge1" class="edge">
 <title>proc~sigma_vector&#45;&gt;pic_gemm</title>
-<path fill="none" stroke="#ff0000" d="M54.97,-108.36C69.25,-122.45 94.42,-145.3 120,-159 127.97,-163.27 136.93,-166.8 145.68,-169.68"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="144.82,-173.08 155.41,-172.65 146.87,-166.38 144.82,-173.08"/>
+<path fill="none" stroke="#ff0000" d="M50.95,-129.18C63.48,-147.43 89.55,-181.78 120,-201 127.72,-205.87 136.64,-209.68 145.44,-212.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="144.67,-216.05 155.26,-215.6 146.7,-209.35 144.67,-216.05"/>
 </g>
-<!-- proc~apply_excitations -->
+<!-- proc~beta_strings_per_block -->
 <g id="proc~~sigma_vector~~CallsGraph_node3" class="node">
-<title>proc~apply_excitations</title>
-<g id="a_proc~~sigma_vector~~CallsGraph_node3"><a xlink:href="../proc/apply_excitations.html" xlink:title="apply_excitations">
-<polygon fill="#d9534f" stroke="#d9534f" points="241.5,-150 137.5,-150 137.5,-126 241.5,-126 241.5,-150"/>
-<text text-anchor="middle" x="189.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply_excitations</text>
+<title>proc~beta_strings_per_block</title>
+<g id="a_proc~~sigma_vector~~CallsGraph_node3"><a xlink:href="../proc/beta_strings_per_block.html" xlink:title="beta_strings_per_block">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="256.5,-192 122.5,-192 122.5,-168 256.5,-168 256.5,-192"/>
+<text text-anchor="middle" x="189.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">beta_strings_per_block</text>
 </a>
 </g>
 </g>
-<!-- proc~sigma_vector&#45;&gt;proc~apply_excitations -->
+<!-- proc~sigma_vector&#45;&gt;proc~beta_strings_per_block -->
 <g id="proc~~sigma_vector~~CallsGraph_edge2" class="edge">
-<title>proc~sigma_vector&#45;&gt;proc~apply_excitations</title>
-<path fill="none" stroke="#ff0000" d="M84.31,-107.92C100.67,-112.65 119.66,-118.13 136.91,-123.11"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="136.26,-126.56 146.84,-125.97 138.2,-119.84 136.26,-126.56"/>
+<title>proc~sigma_vector&#45;&gt;proc~beta_strings_per_block</title>
+<path fill="none" stroke="#ff0000" d="M62.4,-129.01C77.65,-138.1 99.65,-150.43 120,-159 124.75,-161 129.76,-162.9 134.81,-164.69"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="133.95,-168.09 144.54,-167.97 136.19,-161.46 133.95,-168.09"/>
 </g>
 <!-- proc~error_has_error -->
 <g id="proc~~sigma_vector~~CallsGraph_node4" class="node">
 <title>proc~error_has_error</title>
 <g id="a_proc~~sigma_vector~~CallsGraph_node4"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="259,-108 120,-108 120,-84 259,-84 259,-108"/>
-<text text-anchor="middle" x="189.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="259,-150 120,-150 120,-126 259,-126 259,-150"/>
+<text text-anchor="middle" x="189.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~sigma_vector&#45;&gt;proc~error_has_error -->
 <g id="proc~~sigma_vector~~CallsGraph_edge3" class="edge">
 <title>proc~sigma_vector&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff0000" d="M84.31,-96C92.28,-96 100.87,-96 109.58,-96"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="109.84,-99.5 119.84,-96 109.84,-92.5 109.84,-99.5"/>
+<path fill="none" stroke="#ff0000" d="M84.31,-122.96C92.36,-124.12 101.06,-125.38 109.87,-126.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="109.44,-130.13 119.84,-128.09 110.44,-123.2 109.44,-130.13"/>
 </g>
 <!-- proc~error_set -->
 <g id="proc~~sigma_vector~~CallsGraph_node5" class="node">
 <title>proc~error_set</title>
 <g id="a_proc~~sigma_vector~~CallsGraph_node5"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="242,-66 137,-66 137,-42 242,-42 242,-66"/>
-<text text-anchor="middle" x="189.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="242,-108 137,-108 137,-84 242,-84 242,-108"/>
+<text text-anchor="middle" x="189.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~sigma_vector&#45;&gt;proc~error_set -->
 <g id="proc~~sigma_vector~~CallsGraph_edge4" class="edge">
 <title>proc~sigma_vector&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#ff0000" d="M84.31,-84.08C100.67,-79.35 119.66,-73.87 136.91,-68.89"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="138.2,-72.16 146.84,-66.03 136.26,-65.44 138.2,-72.16"/>
+<path fill="none" stroke="#ff0000" d="M84.31,-111.04C97.49,-109.14 112.38,-106.99 126.69,-104.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="127.58,-108.33 136.97,-103.44 126.58,-101.4 127.58,-108.33"/>
+</g>
+<!-- proc~excitations_block -->
+<g id="proc~~sigma_vector~~CallsGraph_node6" class="node">
+<title>proc~excitations_block</title>
+<g id="a_proc~~sigma_vector~~CallsGraph_node6"><a xlink:href="../proc/excitations_block.html" xlink:title="excitations_block">
+<polygon fill="#d9534f" stroke="#d9534f" points="241,-66 138,-66 138,-42 241,-42 241,-66"/>
+<text text-anchor="middle" x="189.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">excitations_block</text>
+</a>
+</g>
+</g>
+<!-- proc~sigma_vector&#45;&gt;proc~excitations_block -->
+<g id="proc~~sigma_vector~~CallsGraph_edge5" class="edge">
+<title>proc~sigma_vector&#45;&gt;proc~excitations_block</title>
+<path fill="none" stroke="#ff0000" d="M62.4,-104.99C77.65,-95.9 99.65,-83.57 120,-75 124.75,-73 129.76,-71.1 134.81,-69.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="136.19,-72.54 144.54,-66.03 133.95,-65.91 136.19,-72.54"/>
 </g>
 <!-- to_char -->
-<g id="proc~~sigma_vector~~CallsGraph_node6" class="node">
+<g id="proc~~sigma_vector~~CallsGraph_node7" class="node">
 <title>to_char</title>
 <polygon fill="#777777" stroke="#777777" points="216.5,-24 162.5,-24 162.5,0 216.5,0 216.5,-24"/>
 <text text-anchor="middle" x="189.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~sigma_vector&#45;&gt;to_char -->
-<g id="proc~~sigma_vector~~CallsGraph_edge5" class="edge">
+<g id="proc~~sigma_vector~~CallsGraph_edge6" class="edge">
 <title>proc~sigma_vector&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M54.97,-83.64C69.25,-69.55 94.42,-46.7 120,-33 129.97,-27.66 141.5,-23.46 152.23,-20.27"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="153.48,-23.56 162.18,-17.52 151.61,-16.81 153.48,-23.56"/>
+<path fill="none" stroke="#ff0000" d="M50.95,-104.82C63.48,-86.57 89.55,-52.22 120,-33 129.82,-26.8 141.6,-22.33 152.59,-19.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="153.6,-22.5 162.39,-16.58 151.83,-15.73 153.6,-22.5"/>
 </g>
 </g>
 </svg>
@@ -681,7 +700,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gathered~6"></span>
+              <span class="anchor" id="variable-first~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>first</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gathered~7"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -698,7 +734,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~7"></span>
+              <span class="anchor" id="variable-ia~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -715,7 +751,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~7"></span>
+              <span class="anchor" id="variable-ib~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -732,7 +768,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~4"></span>
+              <span class="anchor" id="variable-last~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>last</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-na~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -749,7 +802,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~4"></span>
+              <span class="anchor" id="variable-nb~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -766,7 +819,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~4"></span>
+              <span class="anchor" id="variable-ndet~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -783,7 +836,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norb~11"></span>
+              <span class="anchor" id="variable-norb~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -800,7 +853,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-npair~5"></span>
+              <span class="anchor" id="variable-npair~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -817,7 +870,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair~4"></span>
+              <span class="anchor" id="variable-pair~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -834,7 +887,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~5"></span>
+              <span class="anchor" id="variable-per_block~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>per_block</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-row~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -851,7 +921,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~3"></span>
+              <span class="anchor" id="variable-source~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -868,7 +938,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-target_string~2"></span>
+              <span class="anchor" id="variable-target_string~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -894,6 +964,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>weight</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-width~5"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>width</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -940,6 +1027,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gathered</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">contracted</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">norb</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">target_string</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">pair</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">per_block</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">width</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">weight</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
@@ -970,36 +1058,60 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      call </span><span class="n">apply_excitations</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">gathered</span><span class="p">)</span>
-
-<span class="w">      </span><span class="c">! The whole two-electron contraction, as one matrix multiply.</span>
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">contracted</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">))</span>
-<span class="w">      </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">gathered</span><span class="p">,</span><span class="w"> </span><span class="n">contracted</span><span class="p">)</span>
+<span class="w">      </span><span class="c">! Blocked over beta strings. The contraction below is column-wise, so it</span>
+<span class="w">      </span><span class="c">! splits exactly; the scatters accumulate into `sigma`, which is the size</span>
+<span class="w">      </span><span class="c">! of the vector rather than of the intermediate and stays whole.</span>
+<span class="w">      </span><span class="n">per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta_strings_per_block</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">gathered</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="o">*</span><span class="n">per_block</span><span class="p">),</span><span class="w"> </span><span class="n">contracted</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="o">*</span><span class="n">per_block</span><span class="p">))</span>
 
 <span class="w">      </span><span class="n">sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
-<span class="w">      </span><span class="k">do </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span>
-<span class="w">         </span><span class="k">do </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">n_rows</span>
-<span class="w">            </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">alpha</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">norb</span>
-<span class="w">            </span><span class="n">target_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span>
-<span class="w">            </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">alpha</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">ib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span>
-<span class="w">               </span><span class="n">sigma</span><span class="p">(</span><span class="n">target_string</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sigma</span><span class="p">(</span><span class="n">target_string</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                          </span><span class="o">+</span><span class="w"> </span><span class="n">weight</span><span class="o">*</span><span class="n">contracted</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">ib</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">na</span><span class="p">)</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">         end do</span>
-<span class="k">      end do</span>
+<span class="w">      </span><span class="k">do </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">per_block</span>
+<span class="w">         </span><span class="n">last</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">first</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">per_block</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">)</span>
+<span class="w">         </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">na</span><span class="o">*</span><span class="p">(</span><span class="n">last</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 
-<span class="k">      do </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span>
-<span class="w">         </span><span class="k">do </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">n_rows</span>
-<span class="w">            </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">beta</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">norb</span>
-<span class="w">            </span><span class="n">target_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span>
-<span class="w">            </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">beta</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">ia</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span>
-<span class="w">               </span><span class="n">sigma</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">target_string</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sigma</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">target_string</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                          </span><span class="o">+</span><span class="w"> </span><span class="n">weight</span><span class="o">*</span><span class="n">contracted</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">source</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">na</span><span class="p">)</span>
-<span class="w">            </span><span class="k">end do</span>
+<span class="w">         </span><span class="k">call </span><span class="n">excitations_block</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">gathered</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">width</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">gathered</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">width</span><span class="p">),</span><span class="w"> </span><span class="n">contracted</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">width</span><span class="p">))</span>
+
+<span class="w">         </span><span class="c">! Alpha excitations leave the beta string alone, so the columns read</span>
+<span class="w">         </span><span class="c">! are those of this block and the range is simply narrowed. Split on</span>
+<span class="w">         </span><span class="c">! `ib`, which indexes a whole column of `sigma` that the iteration then</span>
+<span class="w">         </span><span class="c">! owns outright, so the accumulation cannot collide.</span>
+<span class="w">         </span><span class="c">!$omp parallel do default(shared) schedule(static) &amp;</span>
+<span class="w">         </span><span class="c">!$omp   private(ib, source, row, pair, target_string, weight)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">ib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">last</span>
+<span class="w">            </span><span class="k">do </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span>
+<span class="w">               </span><span class="k">do </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">n_rows</span>
+<span class="w">                  </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">alpha</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">norb</span>
+<span class="w">                  </span><span class="n">target_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alpha</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">alpha</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">sigma</span><span class="p">(</span><span class="n">target_string</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sigma</span><span class="p">(</span><span class="n">target_string</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                             </span><span class="o">+</span><span class="w"> </span><span class="n">weight</span><span class="o">*</span><span class="n">contracted</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">ib</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">first</span><span class="p">)</span><span class="o">*</span><span class="n">na</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end do</span>
+<span class="k">            end do</span>
 <span class="k">         end do</span>
-<span class="k">      end do</span>
+<span class="w">         </span><span class="c">!$omp end parallel do</span>
+
+<span class="w">         </span><span class="c">! A beta excitation reads the column of its *source* string and writes</span>
+<span class="w">         </span><span class="c">! wherever that string lands -- possibly outside the block, which is</span>
+<span class="w">         </span><span class="c">! why `sigma` accumulates across blocks rather than being filled one</span>
+<span class="w">         </span><span class="c">! block at a time. Splitting on the source would race, since several</span>
+<span class="w">         </span><span class="c">! sources can land on one target. Splitting on `ia` cannot: it fixes</span>
+<span class="w">         </span><span class="c">! the row of `sigma` written, and distinct rows are disjoint.</span>
+<span class="w">         </span><span class="c">!$omp parallel do default(shared) schedule(static) &amp;</span>
+<span class="w">         </span><span class="c">!$omp   private(ia, source, row, pair, target_string, weight)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">ia</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span>
+<span class="w">            </span><span class="k">do </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">last</span>
+<span class="w">               </span><span class="k">do </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">n_rows</span>
+<span class="w">                  </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">cre</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">beta</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">norb</span>
+<span class="w">                  </span><span class="n">target_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta</span><span class="p">%</span><span class="n">dest</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">beta</span><span class="p">%</span><span class="n">phase</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">sigma</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">target_string</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sigma</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span><span class="w"> </span><span class="n">target_string</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                             </span><span class="o">+</span><span class="w"> </span><span class="n">weight</span><span class="o">*</span><span class="n">contracted</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">source</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">first</span><span class="p">)</span><span class="o">*</span><span class="n">na</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end do</span>
+<span class="k">            end do</span>
+<span class="k">         end do</span>
+<span class="w">         </span><span class="c">!$omp end parallel do</span>
+<span class="w">      </span><span class="k">end do</span>
 
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">gathered</span><span class="p">,</span><span class="w"> </span><span class="n">contracted</span><span class="p">)</span>
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">sigma_vector</span>
@@ -1026,7 +1138,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 18:27 +0000             </p>
+ on 2026-08-21 19:25 +0000             </p>
           </div>
         </div>
         <br>

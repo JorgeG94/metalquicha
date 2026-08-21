@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.6% of total for procedures.">121 statements</a>
+                 title=" 0.7% of total for procedures.">141 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,28 +137,34 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-added">added</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-basis~3">basis</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-correction~2">correction</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-basis~5">basis</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-correction">correction</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-denominator">denominator</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-hritz">hritz</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-i~94">i</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-info~5">info</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-i~78">i</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-info">info</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-iroot~2">iroot</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-iteration">iteration</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-iterations~3">iterations</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-j~18">j</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-ndet~7">ndet</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-j~25">j</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-last~2">last</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-line~4">line</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-loud">loud</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-ndet~3">ndet</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-nmax">nmax</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-norm~3">norm</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-norm">norm</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-nsub">nsub</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-overlap~4">overlap</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-overlap">overlap</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-pass">pass</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-residual~2">residual</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-rate">rate</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-residual">residual</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-ritz">ritz</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-root_converged">root_converged</a>
-            <a class="list-group-item" href="../proc/davidson_flat.html#variable-sigma~9">sigma</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-shift~4">shift</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-sigma">sigma</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-small">small</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-small_values">small_values</a>
+            <a class="list-group-item" href="../proc/davidson_flat.html#variable-tick">tick</a>
             <a class="list-group-item" href="../proc/davidson_flat.html#variable-tol~2">tol</a>
         </div>
       </div>
@@ -195,7 +201,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine davidson_flat(operator, diagonal, n_roots, values, vectors, residuals, iterations_taken, sigma_products, converged, error, tolerance, max_iterations, max_subspace, guess)  
+    <h2>public  subroutine davidson_flat(operator, diagonal, n_roots, values, vectors, residuals, iterations_taken, sigma_products, converged, error, tolerance, max_iterations, max_subspace, guess, verbose, energy_offset)  
 </h2>
     
 
@@ -217,7 +223,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-operator~3"></span>
+              <span class="anchor" id="variable-operator~2"></span>
               class(<a href='../type/sigma_operator_t.html'>sigma_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -232,7 +238,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~5"></span>
+              <span class="anchor" id="variable-diagonal~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -247,7 +253,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~5"></span>
+              <span class="anchor" id="variable-n_roots~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -262,7 +268,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~6"></span>
+              <span class="anchor" id="variable-values~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -277,7 +283,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-vectors~4"></span>
+              <span class="anchor" id="variable-vectors~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -292,7 +298,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residuals~3"></span>
+              <span class="anchor" id="variable-residuals~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -307,7 +313,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterations_taken~2"></span>
+              <span class="anchor" id="variable-iterations_taken"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -322,7 +328,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma_products~3"></span>
+              <span class="anchor" id="variable-sigma_products~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -337,7 +343,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~5"></span>
+              <span class="anchor" id="variable-converged~3"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -352,7 +358,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~113"></span>
+              <span class="anchor" id="variable-error~56"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -367,7 +373,7 @@ determinant is lives in <code>operator</code> and in <code>diagonal</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~9"></span>
+              <span class="anchor" id="variable-tolerance~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -414,7 +420,7 @@ the determinant space.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~7"></span>
+              <span class="anchor" id="variable-guess~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -424,7 +430,47 @@ the determinant space.</p>
             <td>::</td>
             <td><strong>guess</strong>(:,:)</td>
             <td>
-                <p>(n_determinants, n_roots) starting vectors. Absent takes unit vectors
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-verbose~4"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>verbose</strong></td>
+            <td>
+                <p>Print a line per iteration. Off by default, and worth having at all
+because a large CI is silent for a long time: ethane&rsquo;s full valence
+CAS(14,14) is eleven million determinants and takes twenty minutes,
+during which a run that is converging and a run that is stuck look
+exactly alike.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_offset~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_offset</strong></td>
+            <td>
+                <p>Added to the eigenvalue before printing, and to nothing else. The
+Davidson solves the active-space problem, so its eigenvalue is the
+active energy alone &ndash; for ethane that is -40.87 against a total of
+-79.34, which in a column headed &ldquo;energy&rdquo; reads as the wrong
+molecule. The caller knows the inactive-plus-nuclear constant; this
+lets the table show the number the run is actually converging to.
+(n_determinants, n_roots) starting vectors. Absent takes unit vectors
 on the lowest diagonal elements, which for a CI is the reference
 determinant and its nearest neighbours in energy.</p>
             </td>
@@ -444,109 +490,169 @@ determinant and its nearest neighbours in energy.</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~davidson_flat~~CallsGraph Pages: 1 -->
-<svg id="procdavidson_flatCallsGraph" width="266pt" height="284pt"
- viewBox="0.00 0.00 266.00 284.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~davidson_flat~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 280)">
+<svg id="procdavidson_flatCallsGraph" width="356pt" height="395pt"
+ viewBox="0.00 0.00 356.00 394.86" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~davidson_flat~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 390.86)">
 <title>proc~~davidson_flat~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-280 262,-280 262,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-390.86 352,-390.86 352,4 -4,4"/>
 <!-- proc~davidson_flat -->
 <g id="proc~~davidson_flat~~CallsGraph_node1" class="node">
 <title>proc~davidson_flat</title>
-<polygon fill="none" stroke="black" points="83,-150 0,-150 0,-126 83,-126 83,-150"/>
-<text text-anchor="middle" x="41.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50">davidson_flat</text>
+<polygon fill="none" stroke="black" points="83,-201.86 0,-201.86 0,-177.86 83,-177.86 83,-201.86"/>
+<text text-anchor="middle" x="41.5" y="-187.46" font-family="Helvetica,sans-Serif" font-size="10.50">davidson_flat</text>
 </g>
 <!-- apply -->
 <g id="proc~~davidson_flat~~CallsGraph_node2" class="node">
 <title>apply</title>
-<polygon fill="#777777" stroke="#777777" points="215.5,-276 161.5,-276 161.5,-252 215.5,-252 215.5,-276"/>
-<text text-anchor="middle" x="188.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply</text>
+<polygon fill="#777777" stroke="#777777" points="215.5,-386.86 161.5,-386.86 161.5,-362.86 215.5,-362.86 215.5,-386.86"/>
+<text text-anchor="middle" x="188.5" y="-372.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply</text>
 </g>
 <!-- proc~davidson_flat&#45;&gt;apply -->
 <g id="proc~~davidson_flat~~CallsGraph_edge1" class="edge">
 <title>proc~davidson_flat&#45;&gt;apply</title>
-<path fill="none" stroke="#ff0000" d="M48.01,-150.03C58.6,-171.85 83.92,-217.99 119,-243 128.54,-249.8 140.33,-254.44 151.42,-257.59"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="150.78,-261.03 161.33,-260.08 152.49,-254.24 150.78,-261.03"/>
+<path fill="none" stroke="#ff0000" d="M45.09,-202.08C51.93,-231.47 73.19,-306.81 119,-348.86 128.06,-357.18 140.05,-362.92 151.46,-366.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="150.66,-370.27 161.25,-369.85 152.71,-363.57 150.66,-370.27"/>
+</g>
+<!-- info -->
+<g id="proc~~davidson_flat~~CallsGraph_node3" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="348,-222.86 294,-222.86 294,-198.86 348,-198.86 348,-222.86"/>
+<text text-anchor="middle" x="321" y="-208.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~davidson_flat&#45;&gt;info -->
+<g id="proc~~davidson_flat~~CallsGraph_edge2" class="edge">
+<title>proc~davidson_flat&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M45.59,-202.11C53.01,-228.6 74.62,-290.89 119,-315.86 172.84,-346.16 204.35,-346.49 258,-315.86 289.05,-298.14 306.11,-258.11 314.13,-232.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="317.55,-233.71 317.03,-223.13 310.83,-231.72 317.55,-233.71"/>
 </g>
 <!-- pic_gemm -->
-<g id="proc~~davidson_flat~~CallsGraph_node3" class="node">
+<g id="proc~~davidson_flat~~CallsGraph_node4" class="node">
 <title>pic_gemm</title>
-<polygon fill="#777777" stroke="#777777" points="222.5,-234 154.5,-234 154.5,-210 222.5,-210 222.5,-234"/>
-<text text-anchor="middle" x="188.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
+<polygon fill="#777777" stroke="#777777" points="222.5,-306.86 154.5,-306.86 154.5,-282.86 222.5,-282.86 222.5,-306.86"/>
+<text text-anchor="middle" x="188.5" y="-292.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gemm</text>
 </g>
 <!-- proc~davidson_flat&#45;&gt;pic_gemm -->
-<g id="proc~~davidson_flat~~CallsGraph_edge2" class="edge">
+<g id="proc~~davidson_flat~~CallsGraph_edge3" class="edge">
 <title>proc~davidson_flat&#45;&gt;pic_gemm</title>
-<path fill="none" stroke="#ff0000" d="M54.38,-150.36C68.55,-164.46 93.54,-187.32 119,-201 126.96,-205.28 135.92,-208.82 144.67,-211.7"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="143.81,-215.1 154.4,-214.67 145.86,-208.4 143.81,-215.1"/>
+<path fill="none" stroke="#ff0000" d="M50.38,-202.04C62.8,-220.3 88.68,-254.65 119,-273.86 126.71,-278.75 135.63,-282.56 144.43,-285.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="143.66,-288.93 154.24,-288.48 145.69,-282.23 143.66,-288.93"/>
 </g>
 <!-- pic_syev -->
-<g id="proc~~davidson_flat~~CallsGraph_node4" class="node">
+<g id="proc~~davidson_flat~~CallsGraph_node5" class="node">
 <title>pic_syev</title>
-<polygon fill="#777777" stroke="#777777" points="217.5,-192 159.5,-192 159.5,-168 217.5,-168 217.5,-192"/>
-<text text-anchor="middle" x="188.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
+<polygon fill="#777777" stroke="#777777" points="217.5,-264.86 159.5,-264.86 159.5,-240.86 217.5,-240.86 217.5,-264.86"/>
+<text text-anchor="middle" x="188.5" y="-250.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
 </g>
 <!-- proc~davidson_flat&#45;&gt;pic_syev -->
-<g id="proc~~davidson_flat~~CallsGraph_edge3" class="edge">
+<g id="proc~~davidson_flat~~CallsGraph_edge4" class="edge">
 <title>proc~davidson_flat&#45;&gt;pic_syev</title>
-<path fill="none" stroke="#ff0000" d="M83.28,-149.81C104.06,-155.83 129.17,-163.1 149.54,-169"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="148.83,-172.44 159.41,-171.86 150.78,-165.72 148.83,-172.44"/>
+<path fill="none" stroke="#ff0000" d="M61.76,-201.88C76.91,-210.97 98.76,-223.31 119,-231.86 128.71,-235.97 139.5,-239.65 149.59,-242.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="148.79,-246.17 159.38,-245.65 150.78,-239.45 148.79,-246.17"/>
+</g>
+<!-- proc~convergence_footer -->
+<g id="proc~~davidson_flat~~CallsGraph_node6" class="node">
+<title>proc~convergence_footer</title>
+<g id="a_proc~~davidson_flat~~CallsGraph_node6"><a xlink:href="../proc/convergence_footer.html" xlink:title="convergence_footer">
+<polygon fill="#d9534f" stroke="#d9534f" points="248.5,-180.86 128.5,-180.86 128.5,-156.86 248.5,-156.86 248.5,-180.86"/>
+<text text-anchor="middle" x="188.5" y="-166.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">convergence_footer</text>
+</a>
+</g>
+</g>
+<!-- proc~davidson_flat&#45;&gt;proc~convergence_footer -->
+<g id="proc~~davidson_flat~~CallsGraph_edge5" class="edge">
+<title>proc~davidson_flat&#45;&gt;proc~convergence_footer</title>
+<path fill="none" stroke="#ff0000" d="M83.28,-183.96C94.21,-182.37 106.33,-180.62 118.34,-178.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="118.97,-182.32 128.36,-177.43 117.96,-175.4 118.97,-182.32"/>
+</g>
+<!-- proc~convergence_header -->
+<g id="proc~~davidson_flat~~CallsGraph_node7" class="node">
+<title>proc~convergence_header</title>
+<g id="a_proc~~davidson_flat~~CallsGraph_node7"><a xlink:href="../proc/convergence_header.html" xlink:title="convergence_header">
+<polygon fill="#d9534f" stroke="#d9534f" points="251.5,-222.86 125.5,-222.86 125.5,-198.86 251.5,-198.86 251.5,-222.86"/>
+<text text-anchor="middle" x="188.5" y="-208.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">convergence_header</text>
+</a>
+</g>
+</g>
+<!-- proc~davidson_flat&#45;&gt;proc~convergence_header -->
+<g id="proc~~davidson_flat~~CallsGraph_edge6" class="edge">
+<title>proc~davidson_flat&#45;&gt;proc~convergence_header</title>
+<path fill="none" stroke="#ff0000" d="M83.28,-195.77C93.28,-197.22 104.29,-198.81 115.29,-200.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="114.96,-203.89 125.36,-201.86 115.96,-196.97 114.96,-203.89"/>
 </g>
 <!-- proc~error_has_error -->
-<g id="proc~~davidson_flat~~CallsGraph_node5" class="node">
+<g id="proc~~davidson_flat~~CallsGraph_node8" class="node">
 <title>proc~error_has_error</title>
-<g id="a_proc~~davidson_flat~~CallsGraph_node5"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="258,-150 119,-150 119,-126 258,-126 258,-150"/>
-<text text-anchor="middle" x="188.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<g id="a_proc~~davidson_flat~~CallsGraph_node8"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="258,-138.86 119,-138.86 119,-114.86 258,-114.86 258,-138.86"/>
+<text text-anchor="middle" x="188.5" y="-124.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~davidson_flat&#45;&gt;proc~error_has_error -->
-<g id="proc~~davidson_flat~~CallsGraph_edge4" class="edge">
+<g id="proc~~davidson_flat~~CallsGraph_edge7" class="edge">
 <title>proc~davidson_flat&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff0000" d="M83.28,-138C91.22,-138 99.8,-138 108.51,-138"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="108.76,-141.5 118.76,-138 108.76,-134.5 108.76,-141.5"/>
+<path fill="none" stroke="#ff0000" d="M61.76,-177.84C76.91,-168.75 98.76,-156.41 119,-147.86 123.75,-145.86 128.75,-143.95 133.81,-142.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="135.18,-145.39 143.54,-138.88 132.94,-138.76 135.18,-145.39"/>
 </g>
 <!-- proc~error_set -->
-<g id="proc~~davidson_flat~~CallsGraph_node6" class="node">
+<g id="proc~~davidson_flat~~CallsGraph_node9" class="node">
 <title>proc~error_set</title>
-<g id="a_proc~~davidson_flat~~CallsGraph_node6"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="241,-108 136,-108 136,-84 241,-84 241,-108"/>
-<text text-anchor="middle" x="188.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<g id="a_proc~~davidson_flat~~CallsGraph_node9"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="241,-96.86 136,-96.86 136,-72.86 241,-72.86 241,-96.86"/>
+<text text-anchor="middle" x="188.5" y="-82.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~davidson_flat&#45;&gt;proc~error_set -->
-<g id="proc~~davidson_flat~~CallsGraph_edge5" class="edge">
+<g id="proc~~davidson_flat~~CallsGraph_edge8" class="edge">
 <title>proc~davidson_flat&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#ff0000" d="M83.28,-126.19C99.66,-121.44 118.74,-115.92 136.06,-110.9"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="137.39,-114.16 146.02,-108.01 135.44,-107.43 137.39,-114.16"/>
+<path fill="none" stroke="#ff0000" d="M50.38,-177.68C62.8,-159.43 88.68,-125.08 119,-105.86 121.78,-104.1 124.73,-102.47 127.76,-100.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="129.35,-104.11 137.1,-96.88 126.53,-97.7 129.35,-104.11"/>
 </g>
 <!-- proc~initial_basis -->
-<g id="proc~~davidson_flat~~CallsGraph_node7" class="node">
+<g id="proc~~davidson_flat~~CallsGraph_node10" class="node">
 <title>proc~initial_basis</title>
-<g id="a_proc~~davidson_flat~~CallsGraph_node7"><a xlink:href="../proc/initial_basis.html" xlink:title="initial_basis">
-<polygon fill="#d9534f" stroke="#d9534f" points="225.5,-66 151.5,-66 151.5,-42 225.5,-42 225.5,-66"/>
-<text text-anchor="middle" x="188.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initial_basis</text>
+<g id="a_proc~~davidson_flat~~CallsGraph_node10"><a xlink:href="../proc/initial_basis.html" xlink:title="initial_basis">
+<polygon fill="#d9534f" stroke="#d9534f" points="225.5,-54.86 151.5,-54.86 151.5,-30.86 225.5,-30.86 225.5,-54.86"/>
+<text text-anchor="middle" x="188.5" y="-40.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initial_basis</text>
 </a>
 </g>
 </g>
 <!-- proc~davidson_flat&#45;&gt;proc~initial_basis -->
-<g id="proc~~davidson_flat~~CallsGraph_edge6" class="edge">
+<g id="proc~~davidson_flat~~CallsGraph_edge9" class="edge">
 <title>proc~davidson_flat&#45;&gt;proc~initial_basis</title>
-<path fill="none" stroke="#ff0000" d="M54.38,-125.64C68.55,-111.54 93.54,-88.68 119,-75 126.01,-71.23 133.8,-68.04 141.53,-65.36"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="142.79,-68.63 151.24,-62.25 140.65,-61.97 142.79,-68.63"/>
+<path fill="none" stroke="#ff0000" d="M46.48,-177.8C55.36,-152.75 79.21,-94.82 119,-63.86 125.7,-58.65 133.7,-54.72 141.83,-51.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="142.9,-55.1 151.36,-48.72 140.77,-48.43 142.9,-55.1"/>
 </g>
 <!-- to_char -->
-<g id="proc~~davidson_flat~~CallsGraph_node8" class="node">
+<g id="proc~~davidson_flat~~CallsGraph_node11" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="215.5,-24 161.5,-24 161.5,0 215.5,0 215.5,-24"/>
-<text text-anchor="middle" x="188.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="348,-97.86 294,-97.86 294,-73.86 348,-73.86 348,-97.86"/>
+<text text-anchor="middle" x="321" y="-83.46" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~davidson_flat&#45;&gt;to_char -->
-<g id="proc~~davidson_flat~~CallsGraph_edge7" class="edge">
+<g id="proc~~davidson_flat~~CallsGraph_edge10" class="edge">
 <title>proc~davidson_flat&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M48.01,-125.97C58.6,-104.15 83.92,-58.01 119,-33 128.54,-26.2 140.33,-21.56 151.42,-18.41"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="152.49,-21.76 161.33,-15.92 150.78,-14.97 152.49,-21.76"/>
+<path fill="none" stroke="#ff0000" d="M43.7,-177.7C47.63,-145.45 63.21,-57.76 119,-21.86 170.95,11.57 201.11,2.23 258,-21.86 278.72,-30.64 295.91,-50.1 306.89,-65.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="304.07,-67.35 312.62,-73.6 309.84,-63.38 304.07,-67.35"/>
+</g>
+<!-- proc~convergence_footer&#45;&gt;info -->
+<g id="proc~~davidson_flat~~CallsGraph_edge11" class="edge">
+<title>proc~convergence_footer&#45;&gt;info</title>
+<path fill="none" stroke="#00ff66" d="M229.41,-180.88C238.8,-183.77 248.77,-186.88 258,-189.86 266.47,-192.6 275.57,-195.62 284.11,-198.51"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="283.22,-201.9 293.81,-201.8 285.47,-195.27 283.22,-201.9"/>
+</g>
+<!-- proc~convergence_footer&#45;&gt;to_char -->
+<g id="proc~~davidson_flat~~CallsGraph_edge12" class="edge">
+<title>proc~convergence_footer&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff66" d="M239.39,-156.74C245.87,-154.26 252.24,-151.32 258,-147.86 276.15,-136.95 292.88,-119.58 304.38,-106.01"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="307.2,-108.09 310.83,-98.13 301.78,-103.65 307.2,-108.09"/>
+</g>
+<!-- proc~convergence_header&#45;&gt;info -->
+<g id="proc~~davidson_flat~~CallsGraph_edge13" class="edge">
+<title>proc~convergence_header&#45;&gt;info</title>
+<path fill="none" stroke="#00ffff" d="M251.69,-210.86C262.59,-210.86 273.6,-210.86 283.5,-210.86"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="283.76,-214.36 293.76,-210.86 283.76,-207.36 283.76,-214.36"/>
 </g>
 </g>
 </svg>
@@ -800,7 +906,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~3"></span>
+              <span class="anchor" id="variable-basis~5"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -817,7 +923,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-correction~2"></span>
+              <span class="anchor" id="variable-correction"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -868,7 +974,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~94"></span>
+              <span class="anchor" id="variable-i~78"></span>
               integer,
             </td>
               <td>private</td>
@@ -885,7 +991,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-info~5"></span>
+              <span class="anchor" id="variable-info"></span>
               integer,
             </td>
               <td>private</td>
@@ -953,7 +1059,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~18"></span>
+              <span class="anchor" id="variable-j~25"></span>
               integer,
             </td>
               <td>private</td>
@@ -970,7 +1076,58 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~7"></span>
+              <span class="anchor" id="variable-last~2"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>last</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-line~4"></span>
+              character(len=128),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>line</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-loud"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>loud</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ndet~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1004,7 +1161,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norm~3"></span>
+              <span class="anchor" id="variable-norm"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1038,7 +1195,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~4"></span>
+              <span class="anchor" id="variable-overlap"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1072,7 +1229,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residual~2"></span>
+              <span class="anchor" id="variable-rate"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rate</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-residual"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1123,7 +1297,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~9"></span>
+              <span class="anchor" id="variable-shift~4"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shift</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sigma"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1174,6 +1365,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-tick"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tick</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-tol~2"></span>
               real(kind=dp),
             </td>
@@ -1207,7 +1415,7 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">davidson_flat</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span><span class="w"> </span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">,</span><span class="w"> </span><span class="n">vectors</span><span class="p">,</span><span class="w"> </span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                            </span><span class="n">iterations_taken</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_products</span><span class="p">,</span><span class="w"> </span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                            </span><span class="n">tolerance</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="p">,</span><span class="w"> </span><span class="n">max_subspace</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
+<span class="w">                            </span><span class="n">tolerance</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="p">,</span><span class="w"> </span><span class="n">max_subspace</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">,</span><span class="w"> </span><span class="n">energy_offset</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The `n_roots` lowest eigenpairs of anything that can multiply a vector</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The method itself, over a flat vector. Everything that knows what a</span>
@@ -1226,11 +1434,28 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! vectors. Defaults to `max(2*n_roots + 8, 16)`, bounded by the size of</span>
 <span class="w">         </span><span class="c">!! the determinant space.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
+<span class="w">         </span><span class="c">!! Print a line per iteration. Off by default, and worth having at all</span>
+<span class="w">         </span><span class="c">!! because a large CI is silent for a long time: ethane's full valence</span>
+<span class="w">         </span><span class="c">!! CAS(14,14) is eleven million determinants and takes twenty minutes,</span>
+<span class="w">         </span><span class="c">!! during which a run that is converging and a run that is stuck look</span>
+<span class="w">         </span><span class="c">!! exactly alike.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_offset</span>
+<span class="w">         </span><span class="c">!! Added to the eigenvalue before printing, and to nothing else. The</span>
+<span class="w">         </span><span class="c">!! Davidson solves the active-space problem, so its eigenvalue is the</span>
+<span class="w">         </span><span class="c">!! active energy alone -- for ethane that is -40.87 against a total of</span>
+<span class="w">         </span><span class="c">!! -79.34, which in a column headed "energy" reads as the wrong</span>
+<span class="w">         </span><span class="c">!! molecule. The caller knows the inactive-plus-nuclear constant; this</span>
+<span class="w">         </span><span class="c">!! lets the table show the number the run is actually converging to.</span>
 <span class="w">         </span><span class="c">!! (n_determinants, n_roots) starting vectors. Absent takes unit vectors</span>
 <span class="w">         </span><span class="c">!! on the lowest diagonal elements, which for a CI is the reference</span>
 <span class="w">         </span><span class="c">!! determinant and its nearest neighbours in energy.</span>
 
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">small</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">small_values</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tick</span><span class="p">,</span><span class="w"> </span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">rate</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">shift</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">loud</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ritz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">hritz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">residual</span><span class="p">(:),</span><span class="w"> </span><span class="n">correction</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">norm</span><span class="p">,</span><span class="w"> </span><span class="n">denominator</span><span class="p">,</span><span class="w"> </span><span class="n">overlap</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">nsub</span><span class="p">,</span><span class="w"> </span><span class="n">nmax</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="p">,</span><span class="w"> </span><span class="n">added</span>
@@ -1271,6 +1496,15 @@ large graphs.</div>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">values</span><span class="p">(</span><span class="n">n_roots</span><span class="p">),</span><span class="w"> </span><span class="n">residuals</span><span class="p">(</span><span class="n">n_roots</span><span class="p">))</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">vectors</span><span class="p">(</span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">))</span>
 
+<span class="w">      </span><span class="n">loud</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">verbose</span><span class="p">))</span><span class="w"> </span><span class="n">loud</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">verbose</span>
+<span class="w">      </span><span class="n">shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">energy_offset</span><span class="p">))</span><span class="w"> </span><span class="n">shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">energy_offset</span>
+<span class="w">      </span><span class="k">call </span><span class="n">convergence_header</span><span class="p">(</span><span class="n">loud</span><span class="p">,</span><span class="w"> </span><span class="s2">"CI iterations"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"    iter                 energy    residual   subspace"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"     sigma       time"</span><span class="p">,</span><span class="w"> </span><span class="mi">74</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="nb">system_clock</span><span class="p">(</span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">rate</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
 <span class="w">      </span><span class="n">nsub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_roots</span>
 
@@ -1308,6 +1542,26 @@ large graphs.</div>
 <span class="w">            </span><span class="n">residuals</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">))</span>
 <span class="w">            </span><span class="n">root_converged</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">residuals</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tol</span>
 <span class="w">         </span><span class="k">end do</span>
+
+<span class="w">         </span><span class="c">! Per iteration rather than a total, for the same reason the SCF does</span>
+<span class="w">         </span><span class="c">! it: what a long CI is doing is only visible from whether the residual</span>
+<span class="w">         </span><span class="c">! is still falling, and the time per iteration says whether the cost is</span>
+<span class="w">         </span><span class="c">! in the sigma products or somewhere else.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">loud</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="nb">system_clock</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(i8,f23.12,es12.3,i11,i10,f10.2,a)"</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="n">iteration</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shift</span><span class="p">,</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="n">residuals</span><span class="p">),</span><span class="w"> </span><span class="n">nsub</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_products</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="kt">real</span><span class="p">(</span><span class="n">tick</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">/</span><span class="kt">real</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="s2">" s"</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+<span class="w">            </span><span class="c">! Flushed, or the table is pointless. Redirected output is block</span>
+<span class="w">            </span><span class="c">! buffered, so without this the rows sit in a 4 kB buffer and</span>
+<span class="w">            </span><span class="c">! arrive in lumps -- which for a twenty-minute CI means the log</span>
+<span class="w">            </span><span class="c">! still shows nothing for minutes at a time, which is the whole</span>
+<span class="w">            </span><span class="c">! complaint this table exists to answer. One syscall against a</span>
+<span class="w">            </span><span class="c">! sigma product costing tens of seconds is not a cost.</span>
+<span class="w">            </span><span class="nb">flush</span><span class="w"> </span><span class="p">(</span><span class="n">output_unit</span><span class="p">)</span>
+<span class="w">            </span><span class="n">last</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tick</span>
+<span class="w">         </span><span class="k">end if</span>
 
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="k">all</span><span class="p">(</span><span class="n">root_converged</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
@@ -1376,7 +1630,8 @@ large graphs.</div>
 <span class="k">         </span><span class="n">nsub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nsub</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span>
 <span class="w">      </span><span class="k">end do</span>
 
-<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">converged</span><span class="p">)</span><span class="w"> </span><span class="n">vectors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ritz</span>
+<span class="k">      call </span><span class="n">convergence_footer</span><span class="p">(</span><span class="n">loud</span><span class="p">,</span><span class="w"> </span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">iterations_taken</span><span class="p">,</span><span class="w"> </span><span class="s2">"iterations"</span><span class="p">,</span><span class="w"> </span><span class="mi">74</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">converged</span><span class="p">)</span><span class="w"> </span><span class="n">vectors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ritz</span>
 
 <span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">sigma</span><span class="p">,</span><span class="w"> </span><span class="n">ritz</span><span class="p">,</span><span class="w"> </span><span class="n">hritz</span><span class="p">,</span><span class="w"> </span><span class="n">residual</span><span class="p">,</span><span class="w"> </span><span class="n">correction</span><span class="p">)</span>
 <span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">root_converged</span><span class="p">)</span>
@@ -1404,7 +1659,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 18:27 +0000             </p>
+ on 2026-08-21 19:25 +0000             </p>
           </div>
         </div>
         <br>

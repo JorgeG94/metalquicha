@@ -1,0 +1,569 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>beta_strings_per_block &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>beta_strings_per_block
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for procedures.">7 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ci.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ci.f90.html'>mqc_ci.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ci.html'>mqc_ci</a></li>
+            <li class="breadcrumb-item active" aria-current="page">beta_strings_per_block</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/beta_strings_per_block.html#variable-per_string">per_string</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/beta_strings_per_block.html#src">beta_strings_per_block</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public pure function beta_strings_per_block(npair, na, nb) result(width)  
+</h2>
+    
+
+    <p>How many beta strings one working block may cover</p>
+<p>The intermediate is <code>(n_orbitals^2, n_determinants)</code> and the
+determinant count is the product of the two string counts, so building
+it whole costs <code>norb^2 * na * nb * 8</code> bytes &ndash; which is nothing for a
+small active space and ruinous for a large one. Ethane&rsquo;s full valence
+CAS(14,14) is 196 by 11,778,624, or <strong>18.5 GB</strong>, and the sigma build
+needs two of them. Water&rsquo;s CAS(8,6) is 350 kB.</p>
+<p>So the determinant axis is blocked, and this says how finely.
+Determinants are laid out alpha-major within a beta string, which makes
+a range of beta strings a contiguous range of columns and the beta
+string the natural unit to block on.</p>
+<p>Deliberately a memory budget rather than a fixed count: a fixed count
+would be far too small for a tiny space &ndash; where the whole intermediate
+is cheaper than the bookkeeping &ndash; and still too large for a big one,
+since the cost per beta string grows with both the orbital count and
+the alpha string count. Below the budget nothing blocks at all, so
+small spaces are untouched and take the same path they always did.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-npair~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>npair</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-na~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>na</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nb~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nb</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-width~4"></span>
+          integer
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~beta_strings_per_block~~CalledByGraph Pages: 1 -->
+<svg id="procbeta_strings_per_blockCalledByGraph" width="603pt" height="116pt"
+ viewBox="0.00 0.00 603.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~beta_strings_per_block~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+<title>proc~~beta_strings_per_block~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 599,-112 599,4 -4,4"/>
+<!-- proc~beta_strings_per_block -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node1" class="node">
+<title>proc~beta_strings_per_block</title>
+<polygon fill="none" stroke="black" points="595,-87 461,-87 461,-63 595,-63 595,-87"/>
+<text text-anchor="middle" x="528" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">beta_strings_per_block</text>
+</g>
+<!-- proc~active_space_rdms -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node2" class="node">
+<title>proc~active_space_rdms</title>
+<g id="a_proc~~beta_strings_per_block~~CalledByGraph_node2"><a xlink:href="../proc/active_space_rdms.html" xlink:title="active_space_rdms">
+<polygon fill="#d9534f" stroke="#d9534f" points="425,-108 311,-108 311,-84 425,-84 425,-108"/>
+<text text-anchor="middle" x="368" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">active_space_rdms</text>
+</a>
+</g>
+</g>
+<!-- proc~active_space_rdms&#45;&gt;proc~beta_strings_per_block -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_edge1" class="edge">
+<title>proc~active_space_rdms&#45;&gt;proc~beta_strings_per_block</title>
+<path fill="none" stroke="#ff0000" d="M425.15,-88.54C433.44,-87.44 442.09,-86.29 450.7,-85.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="451.32,-88.59 460.77,-83.8 450.4,-81.65 451.32,-88.59"/>
+</g>
+<!-- proc~sigma_vector -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node3" class="node">
+<title>proc~sigma_vector</title>
+<g id="a_proc~~beta_strings_per_block~~CalledByGraph_node3"><a xlink:href="../proc/sigma_vector.html" xlink:title="sigma_vector">
+<polygon fill="#d9534f" stroke="#d9534f" points="410,-66 326,-66 326,-42 410,-42 410,-66"/>
+<text text-anchor="middle" x="368" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sigma_vector</text>
+</a>
+</g>
+</g>
+<!-- proc~sigma_vector&#45;&gt;proc~beta_strings_per_block -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_edge2" class="edge">
+<title>proc~sigma_vector&#45;&gt;proc~beta_strings_per_block</title>
+<path fill="none" stroke="#ff0000" d="M410.1,-59.46C422.53,-61.12 436.61,-62.99 450.58,-64.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="450.33,-68.34 460.71,-66.19 451.25,-61.4 450.33,-68.34"/>
+</g>
+<!-- proc~cas_apply -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node4" class="node">
+<title>proc~cas_apply</title>
+<g id="a_proc~~beta_strings_per_block~~CalledByGraph_node4"><a xlink:href="../proc/cas_apply.html" xlink:title="cas_operator_t%cas_apply">
+<polygon fill="#d9534f" stroke="#d9534f" points="275,-108 121,-108 121,-84 275,-84 275,-108"/>
+<text text-anchor="middle" x="198" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cas_operator_t%cas_apply</text>
+</a>
+</g>
+</g>
+<!-- proc~cas_apply&#45;&gt;proc~sigma_vector -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_edge3" class="edge">
+<title>proc~cas_apply&#45;&gt;proc~sigma_vector</title>
+<path fill="none" stroke="#00ffff" d="M247.14,-83.96C268.75,-78.56 294.26,-72.19 316.18,-66.71"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="317.11,-70.08 325.97,-64.26 315.42,-63.29 317.11,-70.08"/>
+</g>
+<!-- proc~ci_hamiltonian -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node5" class="node">
+<title>proc~ci_hamiltonian</title>
+<g id="a_proc~~beta_strings_per_block~~CalledByGraph_node5"><a xlink:href="../proc/ci_hamiltonian.html" xlink:title="ci_hamiltonian">
+<polygon fill="#d9534f" stroke="#d9534f" points="243.5,-66 152.5,-66 152.5,-42 243.5,-42 243.5,-66"/>
+<text text-anchor="middle" x="198" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ci_hamiltonian</text>
+</a>
+</g>
+</g>
+<!-- proc~ci_hamiltonian&#45;&gt;proc~sigma_vector -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_edge4" class="edge">
+<title>proc~ci_hamiltonian&#45;&gt;proc~sigma_vector</title>
+<path fill="none" stroke="#00ffff" d="M243.58,-54C265.75,-54 292.66,-54 315.69,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="315.96,-57.5 325.96,-54 315.96,-50.5 315.96,-57.5"/>
+</g>
+<!-- proc~ormas_sigma -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node6" class="node">
+<title>proc~ormas_sigma</title>
+<g id="a_proc~~beta_strings_per_block~~CalledByGraph_node6"><a xlink:href="../proc/ormas_sigma.html" xlink:title="ormas_sigma">
+<polygon fill="#d9534f" stroke="#d9534f" points="240,-24 156,-24 156,0 240,0 240,-24"/>
+<text text-anchor="middle" x="198" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_sigma</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_sigma&#45;&gt;proc~sigma_vector -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_edge5" class="edge">
+<title>proc~ormas_sigma&#45;&gt;proc~sigma_vector</title>
+<path fill="none" stroke="#00ffff" d="M240.1,-22.27C262.98,-27.99 291.67,-35.17 315.97,-41.24"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="315.19,-44.66 325.74,-43.69 316.89,-37.87 315.19,-44.66"/>
+</g>
+<!-- proc~ormas_lowest -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_node7" class="node">
+<title>proc~ormas_lowest</title>
+<g id="a_proc~~beta_strings_per_block~~CalledByGraph_node7"><a xlink:href="../proc/ormas_lowest.html" xlink:title="ormas_lowest">
+<polygon fill="#d9534f" stroke="#d9534f" points="85,-24 0,-24 0,0 85,0 85,-24"/>
+<text text-anchor="middle" x="42.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_lowest</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_lowest&#45;&gt;proc~ormas_sigma -->
+<g id="proc~~beta_strings_per_block~~CalledByGraph_edge6" class="edge">
+<title>proc~ormas_lowest&#45;&gt;proc~ormas_sigma</title>
+<path fill="none" stroke="#0000ff" d="M85.04,-12C103.79,-12 126.12,-12 145.89,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="145.96,-15.5 155.96,-12 145.96,-8.5 145.96,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-per_string"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>per_string</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">beta_strings_per_block</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! How many beta strings one working block may cover</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The intermediate is `(n_orbitals^2, n_determinants)` and the</span>
+<span class="w">      </span><span class="c">!! determinant count is the product of the two string counts, so building</span>
+<span class="w">      </span><span class="c">!! it whole costs `norb^2 * na * nb * 8` bytes -- which is nothing for a</span>
+<span class="w">      </span><span class="c">!! small active space and ruinous for a large one. Ethane's full valence</span>
+<span class="w">      </span><span class="c">!! CAS(14,14) is 196 by 11,778,624, or **18.5 GB**, and the sigma build</span>
+<span class="w">      </span><span class="c">!! needs two of them. Water's CAS(8,6) is 350 kB.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! So the determinant axis is blocked, and this says how finely.</span>
+<span class="w">      </span><span class="c">!! Determinants are laid out alpha-major within a beta string, which makes</span>
+<span class="w">      </span><span class="c">!! a range of beta strings a contiguous range of columns and the beta</span>
+<span class="w">      </span><span class="c">!! string the natural unit to block on.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Deliberately a memory budget rather than a fixed count: a fixed count</span>
+<span class="w">      </span><span class="c">!! would be far too small for a tiny space -- where the whole intermediate</span>
+<span class="w">      </span><span class="c">!! is cheaper than the bookkeeping -- and still too large for a big one,</span>
+<span class="w">      </span><span class="c">!! since the cost per beta string grows with both the orbital count and</span>
+<span class="w">      </span><span class="c">!! the alpha string count. Below the budget nothing blocks at all, so</span>
+<span class="w">      </span><span class="c">!! small spaces are untouched and take the same path they always did.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">width</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">per_string</span>
+
+<span class="w">      </span><span class="c">! Two buffers of `npair * na` doubles for each beta string covered: the</span>
+<span class="w">      </span><span class="c">! gathered intermediate and the contracted one.</span>
+<span class="w">      </span><span class="n">per_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2_int64</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span><span class="o">*</span><span class="mi">8_int64</span>
+<span class="w">      </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_BYTES</span><span class="o">/</span><span class="n">per_string</span><span class="p">)))</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">beta_strings_per_block</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-21 19:25 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
