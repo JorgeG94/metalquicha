@@ -51,6 +51,15 @@ module mqc_libcint_fukui
       real(dp), allocatable :: f_plus(:)    !! Nucleophilic attack: where charge arrives
       real(dp), allocatable :: f_minus(:)   !! Electrophilic attack: where charge leaves
       real(dp), allocatable :: f_zero(:)    !! Radical attack, the average of the two
+         !! **A NEGATIVE ENTRY IN ANY OF THESE IS SPURIOUS.** The exact Fukui
+         !! function is a derivative of the density with respect to electron
+         !! count and cannot be negative -- no site gives up charge because the
+         !! molecule gained an electron. Negative condensed values come from
+         !! partitioning a continuous density onto atoms, where two states are
+         !! fitted independently and disagree by more than the one electron
+         !! that moved between them. Rank sites by these; do not quote the
+         !! numbers, and treat a small negative as "not reactive in this
+         !! channel" rather than as anything about repulsion.
       real(dp), allocatable :: dual(:)
          !! `f+ - f-`. Positive where a site prefers to accept and negative
          !! where it prefers to donate, so one column separates electrophilic
@@ -366,13 +375,44 @@ contains
       ! diffuse functions -- a function centred on one atom reaching over
       ! another gets charged to the wrong one.
       if (any_negative) then
-         call logger%warning("  some indices came out negative, which is the "// &
-                             "population analysis struggling rather than a site that "// &
-                             "repels charge")
+         call logger%warning("")
+         call logger%warning("  NEGATIVE INDICES ABOVE ARE SPURIOUS -- take them with a "// &
+                             "grain of salt.")
+         call logger%warning("")
+         call logger%warning("  f+ and f- are derivatives of a density with respect to "// &
+                             "electron count, so")
+         call logger%warning("  the exact quantities cannot be negative: no site "// &
+                             "releases charge when the")
+         call logger%warning("  molecule gains an electron. A negative value is an "// &
+                             "artefact of dividing a")
+         call logger%warning("  continuous density among atoms, not a chemical "// &
+                             "finding, and it appears")
+         call logger%warning("  where two states' charges are fitted independently and "// &
+                             "disagree by more")
+         call logger%warning("  than the electron being moved.")
+         call logger%warning("")
+         call logger%warning("  Read the RANKING, not the number: a site with a small "// &
+                             "negative index is")
+         call logger%warning("  unreactive in that channel, not anti-reactive. Do not "// &
+                             "quote the value,")
+         call logger%warning("  and do not build a further descriptor on it -- f0 and "// &
+                             "dual inherit the")
+         call logger%warning("  artefact from whichever index carried it.")
          if (trim(res%scheme) == "mulliken") then
-            call logger%warning("  Mulliken is especially prone to this; chelpg is "// &
-                                "the default for that reason")
+            call logger%warning("")
+            call logger%warning("  Mulliken is especially prone to this, being basis-set "// &
+                                "dependent; chelpg")
+            call logger%warning("  is the default for that reason and is worth rerunning "// &
+                                "with before")
+            call logger%warning("  concluding anything from this table.")
+         else
+            call logger%warning("")
+            call logger%warning("  A larger basis, or a finer CHELPG grid, usually "// &
+                                "shrinks it. If it")
+            call logger%warning("  survives both, the atom simply carries little of "// &
+                                "this channel.")
          end if
+         call logger%warning("")
       end if
 
       ! The direct test rather than a guess from the basis-set name: if the

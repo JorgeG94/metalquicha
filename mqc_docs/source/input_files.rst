@@ -820,7 +820,7 @@ The driver stays ``"energy"``.
   .. code-block:: json
 
      "properties": {
-       "fukui": {"population": "chelpg"}
+       "fukui": {}
      }
 
   Condensed Fukui indices, by difference in the electron count: the molecule is
@@ -837,8 +837,15 @@ The driver stays ``"energy"``.
   the relaxation of every other orbital in response to the added charge -- which
   on a polar molecule is most of the answer.
 
-  ``population`` is required and chooses how the density difference is
-  condensed onto atoms:
+  Works with ``hf`` and with ``dft``. Under DFT the two ions are run as
+  unrestricted Kohn-Sham with the same functional as the neutral, so the three
+  energies are comparable and the ionisation potential and electron affinity
+  mean what they say. Double hybrids are refused: their perturbative term needs
+  an unrestricted MP2 the CPU path does not have, and running anyway would
+  return converged ions that are short by exactly that term.
+
+  ``population`` is optional and defaults to ``chelpg``. It chooses how the
+  density difference is condensed onto atoms:
 
   - ``chelpg`` -- charges fitted to the molecule's own electrostatic potential.
     The default choice, and the better behaved one.
@@ -846,9 +853,31 @@ The driver stays ``"energy"``.
     the literature used.** It divides the overlap between two atoms straight
     down the middle regardless of what the atoms are, so it is sensitive to the
     basis set in a way that has nothing to do with chemistry, and it produces
-    negative indices more readily. Negative values are reported rather than
-    hidden: they are the population analysis failing to divide the density
-    sensibly, not a site that repels electrons.
+    negative indices more readily. On formaldehyde it spreads ``f+`` as
+    0.27/0.28/0.23/0.23 over the four atoms, ranking nothing, where CHELPG puts
+    0.59 on the carbonyl carbon.
+
+  .. warning::
+
+     **Negative indices are spurious. Take them with a grain of salt.**
+
+     The exact Fukui function is a derivative of the density with respect to
+     electron count, so ``f+`` and ``f-`` cannot be negative: no site gives up
+     charge because the molecule gained an electron. A negative condensed value
+     is an artefact of dividing a continuous density among atoms -- the two
+     states are fitted independently, and they can disagree by more than the
+     one electron that moved between them.
+
+     They are printed rather than hidden, with a warning, because silently
+     clamping them would hide the fact that the partitioning struggled. Read
+     the *ranking* and not the number: a small negative index means the site is
+     unreactive in that channel, not that it repels charge. Do not quote the
+     value, and do not build anything further on it -- ``f0`` and the dual
+     descriptor inherit the artefact from whichever index carried it.
+
+     A larger basis or a finer CHELPG grid usually shrinks it. If it survives
+     both, that atom simply carries very little of that channel. If you saw it
+     under ``mulliken``, rerun with ``chelpg`` before concluding anything.
 
   Two limits. Only a closed-shell neutral is accepted, so that both ions are
   doublets; anything else is refused rather than having its multiplicities
