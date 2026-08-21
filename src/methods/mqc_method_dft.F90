@@ -181,6 +181,12 @@ contains
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
       settings%pcm = this%options%pcm
+      ! Where the molecule reacts. Absent here until now, so a DFT deck asking
+      ! for `properties.fukui` got a normal DFT run and no analysis, with no
+      ! error to say why: the bridge gates on this being allocated.
+      if (allocated(this%options%properties%fukui_population)) then
+         settings%fukui_population = this%options%properties%fukui_population
+      end if
       settings%bonding_analysis = this%options%properties%bonding_analysis
       settings%bonding_threshold = this%options%properties%bonding_threshold
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST

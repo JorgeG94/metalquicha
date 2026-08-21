@@ -150,7 +150,7 @@ contains
 
       character(len=:), allocatable :: text
       integer :: n_mol, imol
-      logical :: found, settings
+      logical :: found, settings, found_fukui
       logical :: backend_named
 
       ! The two defaults that are not declared on the type itself.
@@ -197,8 +197,17 @@ contains
       call optional_string(json, "model.functional", config%functional)
 
       ! ---- properties ------------------------------------------------------
-      call optional_string(json, "properties.fukui.population", &
-                           config%fukui_population)
+      ! The `fukui` OBJECT is what asks for the analysis; `population` only
+      ! says which charges. Default it here rather than downstream, so that the
+      ! scheme the run used is a value in the config -- and therefore in the
+      ! report and the JSON -- rather than a default buried in whichever
+      ! routine happened to look last.
+      call json%info("properties.fukui", found=found_fukui)
+      if (found_fukui) then
+         config%fukui_population = "chelpg"
+         call optional_string(json, "properties.fukui.population", &
+                              config%fukui_population)
+      end if
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &
