@@ -63,6 +63,7 @@ module mqc_libcint_cphf
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_calculation_defaults, only: DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
+                                       DEFAULT_RESPONSE_BATCH, &
                                        EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE
    implicit none
@@ -739,7 +740,7 @@ contains
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
                                      response, perturbations, in_core, hessian, &
-                                     progress, aux, route)
+                                     progress, aux, route, allow_unconverged, batch)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -809,6 +810,8 @@ contains
          !! for what the approximation costs in accuracy. Absent, the build is
          !! exact. Nothing downstream of the build changes either way.
       integer, intent(in), optional :: route
+      logical, intent(in), optional :: allow_unconverged
+      integer, intent(in), optional :: batch
          !! `EFP_RESPONSE_AUTO`, `_DENSE` or `_MATRIX_FREE`, which is what
          !! `keywords.efp.response` carries. Absent means `auto`, and `auto` is the
          !! size rule below and nothing besides -- so a caller that says nothing
@@ -977,7 +980,9 @@ contains
          call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
                                          c_vir, gaps, h, frequencies, alpha, error, &
                                          max_iter=max_iter, tol=tol, &
-                                         response=response, progress=talk)
+                                         response=response, progress=talk, &
+                                         allow_unconverged=allow_unconverged, &
+                                         batch=batch)
          return
       end if
       if (reuse) then
@@ -1584,7 +1589,8 @@ contains
 
    subroutine dynamic_response_iterative(mol, direct, eri, bounds, zero_h, c_occ, &
                                          c_vir, gaps, h, frequencies, alpha, error, &
-                                         max_iter, tol, response, progress)
+                                         max_iter, tol, response, progress, &
+                                         allow_unconverged, batch)
       !! The frequency-dependent response without ever forming its operator
       !!
       !! **Why this exists beside the dense build.** Materialising `(A+B)` and
@@ -1643,6 +1649,13 @@ contains
       real(dp), intent(in), optional :: tol
       real(dp), allocatable, intent(out), optional :: response(:, :, :, :)
       logical, intent(in), optional :: progress
+      logical, intent(in), optional :: allow_unconverged
+         !! Return whatever was reached instead of raising. See
+         !! `efp_config_t%allow_crap_response` -- the answer is wrong.
+      integer, intent(in), optional :: batch
+         !! Densities per integral pass. The right value is a property of the
+         !! machine and the basis, not of the physics -- see
+         !! `efp_config_t%response_batch`.
 
       real(dp), allocatable :: x(:, :, :), r(:, :, :), r0(:, :, :), p(:, :, :)
       real(dp), allocatable :: v(:, :, :), s(:, :, :), t(:, :, :), rhs(:, :, :)
@@ -1651,7 +1664,7 @@ contains
       real(dp), allocatable :: nu2(:), rnorm(:), bnorm(:)
       integer, allocatable :: pert_of(:), freq_of(:), live(:), nonzero(:)
       logical, allocatable :: done(:)
-      integer :: n_vir, n_occ, n_pert, n_freq, n_sys, m, k, l, it, cycles
+      integer :: n_vir, n_occ, n_pert, n_freq, n_sys, m, k, l, it, cycles, eff_batch
       integer :: nlive, nnz
       real(dp) :: threshold, worst
       logical :: talk
@@ -1690,6 +1703,13 @@ contains
          end do
       end do
 
+      ! The width actually in force, resolved once so the banner reports the
+      ! same number the passes use.
+      eff_batch = DEFAULT_RESPONSE_BATCH
+      if (present(batch)) then
+         if (batch > 0) eff_batch = batch
+      end if
+
       ! The right-hand side. `-2 (A-B) h` at every nonzero frequency, `-2 h` at
       ! zero -- one batched application of `(A-B)` covers all of them, because
       ! the zero-frequency systems simply are not in the mask.
@@ -1713,7 +1733,7 @@ contains
             " pairs, matrix free"
          call logger%info(trim(line))
          write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
-            " systems in flight, ", 4*((n_sys + 11)/12), &
+            " systems in flight, ", 4*((n_sys + eff_batch - 1)/eff_batch), &
             " integral passes per iteration, ", &
             11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
          call logger%info(trim(line))
@@ -1731,7 +1751,7 @@ contains
       ! single line, which reads exactly like a hang.
       if (nnz > 0) then
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                rhs, nonzero, nnz, .true., t, error)
+                                rhs, nonzero, nnz, .true., t, error, batch)
          if (error%has_error()) return
          do m = 1, nnz
             rhs(:, :, nonzero(m)) = t(:, :, nonzero(m))
@@ -1800,7 +1820,7 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            ph, live, nlive, nu2, v, error)
+                            ph, live, nlive, nu2, v, error, batch)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1816,7 +1836,7 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            sh, live, nlive, nu2, t, error)
+                            sh, live, nlive, nu2, t, error, batch)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1854,12 +1874,27 @@ contains
       end do
 
       if (any(.not. done)) then
+         ! **Loud even when it is allowed.** A caller that asked for this wants a
+         ! run that reaches every stage, not a run that pretends it converged --
+         ! and the difference matters because nothing downstream of here can
+         ! tell an unconverged polarizability from a converged one by looking.
+         if (present(allow_unconverged)) then
+            if (allow_unconverged) then
+               write (line, "(A,I0,A,ES9.2,A)") "          WARNING: ", &
+                  count(.not. done), " systems did not converge, worst residual ", &
+                  maxval(rnorm, mask=.not. done), " -- the potential is wrong"
+               call logger%warning(trim(line))
+               flush (output_unit)
+               goto 100
+            end if
+         end if
          call error%set(ERROR_VALIDATION, "the frequency-dependent response did not "// &
                         "converge. The operator is positive definite when the "// &
                         "reference is a minimum, so a reference that is not one is "// &
                         "the first thing to check.")
          return
       end if
+100   continue
 
       if (talk) then
          write (line, "(A,I0,A)") "          where the passes went (", prof_calls, &
@@ -1885,7 +1920,7 @@ contains
    end subroutine dynamic_response_iterative
 
    subroutine apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            u, live, nlive, nu2, au, error)
+                            u, live, nlive, nu2, au, error, width)
       !! `[(A-B)(A+B) + nu^2] u`, or `(A+B) u` where the frequency is zero
       !!
       !! Two passes over the integrals for the whole batch, which is the point.
@@ -1903,6 +1938,7 @@ contains
       real(dp), intent(in) :: nu2(:)
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: width
 
       real(dp), allocatable :: q1(:, :, :)
       integer, allocatable :: shifted(:)
@@ -1913,7 +1949,7 @@ contains
       q1 = 0.0_dp
 
       call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, live, nlive, .false., q1, error)
+                             u, live, nlive, .false., q1, error, width)
       if (error%has_error()) return
 
       allocate (shifted(nlive))
@@ -1930,7 +1966,7 @@ contains
 
       if (nshift > 0) then
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                q1, shifted, nshift, .true., au, error)
+                                q1, shifted, nshift, .true., au, error, width)
          if (error%has_error()) return
          do m = 1, nshift
             k = shifted(m)
@@ -1940,7 +1976,7 @@ contains
    end subroutine apply_dynamic
 
    subroutine batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                u, idx, nact, minus, au, error)
+                                u, idx, nact, minus, au, error, width)
       !! `response_batch`, a dozen densities at a time rather than all of them
       !!
       !! **More is not better past about twelve, and it is worse.** The batched
@@ -1967,14 +2003,21 @@ contains
       logical, intent(in) :: minus
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: width
+         !! Densities per integral pass. Absent or non-positive takes the
+         !! built-in default; `keywords.efp.response_batch` overrides it.
 
-      integer, parameter :: MAX_BATCH = 12
+      integer :: max_batch
 
       integer :: first, last
 
+      max_batch = DEFAULT_RESPONSE_BATCH
+      if (present(width)) then
+         if (width > 0) max_batch = width
+      end if
       first = 1
       do while (first <= nact)
-         last = min(first + MAX_BATCH - 1, nact)
+         last = min(first + max_batch - 1, nact)
          call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, idx(first:last), last - first + 1, minus, au, error)
          if (error%has_error()) return
@@ -2068,7 +2111,7 @@ contains
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
                                         centroids, error, n_core, max_iter, tol, hessian, &
-                                        progress, aux, route)
+                                        progress, aux, route, allow_unconverged, batch)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -2121,8 +2164,11 @@ contains
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Passed straight through: fit the Hessian rather than build it exactly.
       integer, intent(in), optional :: route
+      logical, intent(in), optional :: allow_unconverged
+         !! Take an unconverged response rather than refusing it.
          !! Passed straight through as well: whether the response operator is built
          !! at all. `keywords.efp.response`.
+      integer, intent(in), optional :: batch
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
@@ -2148,7 +2194,7 @@ contains
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, perturbations=respond, &
                                   hessian=hessian, progress=progress, aux=aux, &
-                                  route=route)
+                                  route=route, allow_unconverged=allow_unconverged, batch=batch)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))

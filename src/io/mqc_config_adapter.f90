@@ -230,6 +230,8 @@ contains
       ! silent deck carries the solver's own number back to it.
       driver_config%method_config%efp%dynamic_tolerance = mqc_config%efp_dynamic_tolerance
       driver_config%method_config%efp%dynamic_maxiter = mqc_config%efp_dynamic_maxiter
+      driver_config%method_config%efp%allow_crap_response = mqc_config%efp_allow_crap_response
+      driver_config%method_config%efp%response_batch = mqc_config%efp_response_batch
       driver_config%method_config%efp%response = mqc_config%efp_response
       driver_config%method_config%efp%vdw_scale = mqc_config%efp_vdw_scale
       if (allocated(mqc_config%checkpoint_file)) then
