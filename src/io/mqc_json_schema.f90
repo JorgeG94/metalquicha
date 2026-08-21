@@ -350,6 +350,7 @@ contains
       !! Separate from `xtb`, which configures tblite's own CPCM. Two continuum
       !! implementations with different cavities should not share one keyword.
       type(key_set_t) :: keys
+      call allow(keys, "method")
       call allow(keys, "dielectric")
       call allow(keys, "angular_points")
       call allow(keys, "radii_scale")

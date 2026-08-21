@@ -1018,6 +1018,18 @@ contains
          call error%set(ERROR_VALIDATION, "keywords.pcm.angular_points must be positive")
          return
       end if
+      ! The model is cuEST's own: the plan takes a cavity and a dielectric and
+      ! solves its fixed formulation. "cpcm" -- the default -- is the only value
+      ! accepted here; "iefpcm" exists for the CPU backend, which solves either,
+      ! and substituting one model's charges for the other's would change the
+      ! energy without saying so.
+      if (trim(pcm%method) /= "cpcm") then
+         call error%set(ERROR_VALIDATION, "keywords.pcm.method = '"//trim(pcm%method)// &
+                        "' is not available on the cuEST backend, whose continuum "// &
+                        "solver is fixed. Run this model on the CPU backend, or drop "// &
+                        "the method keyword.")
+         return
+      end if
 
       natm = size(atomic_numbers)
       allocate (angular_per_atom(natm), radii(natm), zetas(natm), charges(natm))
