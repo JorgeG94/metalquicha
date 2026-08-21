@@ -265,6 +265,9 @@ contains
       call optional_real(json, "keywords.efp.dynamic_tolerance", &
                          config%efp_dynamic_tolerance)
       call optional_int(json, "keywords.efp.dynamic_maxiter", config%efp_dynamic_maxiter)
+      call optional_logical(json, "keywords.efp.allow_crap_response", &
+                            config%efp_allow_crap_response)
+      call optional_int(json, "keywords.efp.response_batch", config%efp_response_batch)
       call optional_real(json, "keywords.efp.vdw_scale", config%efp_vdw_scale)
       call read_efp_response(json, config, error)
       if (error%has_error()) return

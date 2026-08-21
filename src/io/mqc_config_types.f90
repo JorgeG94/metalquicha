@@ -24,6 +24,7 @@ module mqc_config_types
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
+                                       DEFAULT_RESPONSE_BATCH, &
                                        EFP_RESPONSE_AUTO, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
@@ -343,6 +344,8 @@ module mqc_config_types
       ! where the wall clock of a MAKEFP run actually goes.
       real(dp) :: efp_dynamic_tolerance = DEFAULT_DYNAMIC_TOL
       integer :: efp_dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
+      logical :: efp_allow_crap_response = .false.
+      integer :: efp_response_batch = DEFAULT_RESPONSE_BATCH
       integer :: efp_response = EFP_RESPONSE_AUTO
          !! Held as a code rather than as the spelling, the same as `calc_type`:
          !! the reader is the only place that has to know the three words, and it

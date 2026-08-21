@@ -333,6 +333,8 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "dynamic_tolerance")
       call allow(keys, "dynamic_maxiter")
+      call allow(keys, "allow_crap_response")
+      call allow(keys, "response_batch")
       call allow(keys, "response")
       call allow(keys, "vdw_scale")
    end function efp_keys

@@ -8,7 +8,8 @@ module mqc_method_config
    use mqc_config_types, only: guess_step_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
-                                       DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO
+                                       DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
+                                       DEFAULT_RESPONSE_BATCH
    implicit none
    private
 
@@ -104,6 +105,21 @@ module mqc_method_config
          !! whatever this says and no further.
       integer :: dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
          !! Iterations that solve gets per system before it declines to converge.
+      integer :: response_batch = DEFAULT_RESPONSE_BATCH
+         !! Densities per integral pass in the matrix-free response. A tuning
+         !! knob, not physics -- the answer does not change, only how long it
+         !! takes. See `DEFAULT_RESPONSE_BATCH`.
+      logical :: allow_crap_response = .false.
+         !! Take whatever the response solve reached when it runs out of
+         !! iterations, instead of refusing.
+         !!
+         !! Named after `allow_crap_scf` and meant as literally: the potential
+         !! that comes out is wrong, and how wrong is not bounded by anything.
+         !! It exists because profiling wants a run that reaches every stage
+         !! without converging any of them -- `dynamic_maxiter: 1` with this on
+         !! is one pass through the whole pipeline -- and because a solve that
+         !! stalls on the last few systems is worth seeing the rest of rather
+         !! than losing entirely.
       integer :: response = EFP_RESPONSE_AUTO
          !! Build the response operator, never build it, or decide on size.
       real(dp) :: vdw_scale = DEFAULT_VDW_SCALE

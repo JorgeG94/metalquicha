@@ -1290,7 +1290,9 @@ contains
                                  vdwscl=config%method_config%efp%vdw_scale, &
                                  dynamic_tol=config%method_config%efp%dynamic_tolerance, &
                                  dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
-                                 response=config%method_config%efp%response)
+                                 response=config%method_config%efp%response, &
+                                 allow_crap_response=config%method_config%efp%allow_crap_response, &
+                                 response_batch=config%method_config%efp%response_batch)
       else
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
@@ -1301,7 +1303,9 @@ contains
                                  vdwscl=config%method_config%efp%vdw_scale, &
                                  dynamic_tol=config%method_config%efp%dynamic_tolerance, &
                                  dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
-                                 response=config%method_config%efp%response)
+                                 response=config%method_config%efp%response, &
+                                 allow_crap_response=config%method_config%efp%allow_crap_response, &
+                                 response_batch=config%method_config%efp%response_batch)
       end if
       if (err%has_error()) then
          call refuse(result_out, "MAKEFP failed: "//err%get_message())

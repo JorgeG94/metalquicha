@@ -215,7 +215,8 @@ contains
                                  basis_name, name, pot, error, charge, n_core, &
                                  vdwscl, verbose, aux_basis, guess, &
                                  energy_tol, density_tol, dynamic_tol, &
-                                 dynamic_maxiter, response)
+                                 dynamic_maxiter, response, allow_crap_response, &
+                                 response_batch)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what. The SCF gives the density
@@ -274,6 +275,11 @@ contains
          !! the numbers in the file rather than the route to them: the dynamic
          !! polarizabilities, and every dispersion energy taken from them, are only
          !! as converged as this says.
+      logical, intent(in), optional :: allow_crap_response
+         !! `keywords.efp.allow_crap_response`. Accept whatever the response
+         !! solve reached. The potential is wrong; see `efp_config_t`.
+      integer, intent(in), optional :: response_batch
+         !! `keywords.efp.response_batch`. Tuning only; the answer is unchanged.
       integer, intent(in), optional :: dynamic_maxiter
          !! `keywords.efp.dynamic_maxiter`. Iterations that solve gets before it
          !! reports a failure to converge.
@@ -520,12 +526,16 @@ contains
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, aux=aux, &
                                       max_iter=dynamic_maxiter, tol=dynamic_tol, &
-                                      route=response)
+                                      route=response, &
+                                      allow_unconverged=allow_crap_response, &
+                                      batch=response_batch)
       else
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, &
                                       max_iter=dynamic_maxiter, tol=dynamic_tol, &
-                                      route=response)
+                                      route=response, &
+                                      allow_unconverged=allow_crap_response, &
+                                      batch=response_batch)
       end if
       if (error%has_error()) then
          call mol%destroy()
@@ -636,7 +646,7 @@ contains
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
                                       pot, hessian, error, progress, aux, &
-                                      max_iter, tol, route)
+                                      max_iter, tol, route, allow_unconverged, batch)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -672,6 +682,8 @@ contains
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
       integer, intent(in), optional :: route
+      logical, intent(in), optional :: allow_unconverged
+      integer, intent(in), optional :: batch
          !! The three `keywords.efp` settings the response solve reads, passed
          !! straight through. Absent here means absent there, which leaves the
          !! solver on its own defaults -- so a deck with no `efp` block reaches it
@@ -744,7 +756,8 @@ contains
                                      pot%n_occ, pot%frequencies, both, both, &
                                      all_blocks, centroids, error, n_core=core, &
                                      hessian=hessian, progress=progress, aux=aux, &
-                                     max_iter=max_iter, tol=tol, route=route)
+                                     max_iter=max_iter, tol=tol, route=route, &
+                                     allow_unconverged=allow_unconverged, batch=batch)
       if (error%has_error()) return
       deallocate (both)
 

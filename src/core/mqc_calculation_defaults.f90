@@ -23,6 +23,19 @@ module mqc_calculation_defaults
    !> `method_config_t` already defaulted to, so naming the key changes nothing
    !> for a deck that leaves it alone.
    real(dp), parameter, public :: DEFAULT_SCF_DENSITY_CONV = 1.0e-6_dp
+   !> Densities contracted against one pass over the integrals in the
+   !> frequency-dependent response.
+   !>
+   !> A machine number, not a physical one: a pass evaluates the same
+   !> quartets whatever it contracts against them, so wide batches
+   !> amortise the integrals -- while each thread scatters into an
+   !> accumulator that grows with the batch and with the square of the
+   !> basis. Measured on a water 20-mer in 6-31G, 260 functions on 16
+   !> Broadwell cores, widening 4 to 8 cut the work 1.67 times, so the
+   !> integrals dominate at that size. Where the accumulator starts to
+   !> win back depends on the cache, which is why
+   !> `keywords.efp.response_batch` exists rather than a second guess.
+   integer, parameter, public :: DEFAULT_RESPONSE_BATCH = 12
    logical, parameter, public :: DEFAULT_USE_DIIS = .true.
 
    ! =========================================================================

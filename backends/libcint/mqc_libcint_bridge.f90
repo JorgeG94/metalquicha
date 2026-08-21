@@ -358,7 +358,8 @@ contains
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
                                  aux_basis, guess, energy_tol, density_tol, &
-                                 vdwscl, dynamic_tol, dynamic_maxiter, response)
+                                 vdwscl, dynamic_tol, dynamic_maxiter, response, &
+                                 allow_crap_response, response_batch)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of whether
@@ -389,6 +390,13 @@ contains
       real(dp), intent(in), optional :: dynamic_tol
       integer, intent(in), optional :: dynamic_maxiter
       integer, intent(in), optional :: response
+      logical, intent(in), optional :: allow_crap_response
+         !! Accept an unconverged response instead of refusing. The potential
+         !! is wrong; see `efp_config_t`.
+      integer, intent(in), optional :: response_batch
+         !! Densities per integral pass. Tuning only; the answer is unchanged.
+         !! Accept an unconverged response instead of refusing. See
+         !! `efp_config_t`; the potential is wrong when this is on.
          !! The `keywords.efp` group: the screening grid's van der Waals scale, and
          !! the tolerance, iteration cap and route of the dynamic response solve.
          !! Forwarded and not read here, the same as everything else in this list.
@@ -405,7 +413,8 @@ contains
                               verbose=verbose, aux_basis=aux_basis, guess=guess, &
                               energy_tol=energy_tol, density_tol=density_tol, &
                               vdwscl=vdwscl, dynamic_tol=dynamic_tol, &
-                              dynamic_maxiter=dynamic_maxiter, response=response)
+                            dynamic_maxiter=dynamic_maxiter, response=response, allow_crap_response=allow_crap_response, &
+                              response_batch=response_batch)
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
       call pot%destroy()
