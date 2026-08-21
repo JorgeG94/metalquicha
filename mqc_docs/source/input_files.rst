@@ -837,12 +837,23 @@ The driver stays ``"energy"``.
   the relaxation of every other orbital in response to the added charge -- which
   on a polar molecule is most of the answer.
 
-  Works with ``hf`` and with ``dft``. Under DFT the two ions are run as
-  unrestricted Kohn-Sham with the same functional as the neutral, so the three
-  energies are comparable and the ionisation potential and electron affinity
-  mean what they say. Double hybrids are refused: their perturbative term needs
-  an unrestricted MP2 the CPU path does not have, and running anyway would
-  return converged ions that are short by exactly that term.
+  Works with ``hf`` and with ``dft``, **double hybrids included**. Under DFT
+  the two ions are run as unrestricted Kohn-Sham with the same functional as
+  the neutral, so the three energies are comparable and the ionisation
+  potential and electron affinity mean what they say.
+
+  For a double hybrid the perturbative term is evaluated for all three states,
+  the neutral's recomputed here rather than taken from the energy above it.
+  That is deliberate: IP and EA are differences of total energies, so the term
+  has to be present in all three or in none, and sourcing one of them
+  elsewhere would make the result depend on two code paths agreeing about
+  frozen cores and auxiliary bases. It costs one restricted MP2 beside the two
+  unrestricted ones the ions already need.
+
+  Naming an ``aux_basis`` fits that correlation, exactly as it does for the
+  energy's own perturbative term -- the two follow the same choice, so the IP
+  printed in the report and the total energy printed above it are never
+  computed different ways.
 
   ``population`` is optional and defaults to ``chelpg``. It chooses how the
   density difference is condensed onto atoms:
