@@ -90,17 +90,27 @@ module mqc_libcint_screening
 
 contains
 
-   subroutine screening_grid(dma, atomic_numbers, grid, error)
+   subroutine screening_grid(dma, atomic_numbers, grid, error, vdw_scale)
       !! Points on fused scaled spheres about every expansion centre
       type(dma_result_t), intent(in) :: dma
       integer, intent(in) :: atomic_numbers(:)
       real(dp), allocatable, intent(out) :: grid(:, :)   !! (3, n_points), Bohr
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: vdw_scale
+         !! Where the innermost layer sits, as a fraction of a van der Waals
+         !! radius. Absent is `DEFAULT_VDW_SCALE`, which is what every caller got
+         !! before `keywords.efp.vdw_scale` existed. It reaches the layer spacing
+         !! and the point count as well as the radius, since both are written
+         !! relative to it -- moving it thins or thickens the whole shell, which is
+         !! the point of moving it.
 
       real(dp), allocatable :: radii(:), unit(:, :), kept(:, :)
-      real(dp) :: scale, distance
+      real(dp) :: scale, distance, inner
       integer :: n_centre, i, j, k, layer, n_point, total, n_unit
       logical :: inside
+
+      inner = VDW_SCALE
+      if (present(vdw_scale)) inner = vdw_scale
 
       n_centre = size(dma%points, 2)
       allocate (radii(n_centre))
@@ -119,16 +129,16 @@ contains
       ! Two passes: count, then fill, so the grid is exactly sized.
       total = 0
       do layer = 1, N_LAYER
-         scale = VDW_SCALE + VDW_STEP*real(layer - 1, dp)
-         n_unit = int((scale/VDW_SCALE)**2*real(N_ANGULAR, dp))
+         scale = inner + VDW_STEP*real(layer - 1, dp)
+         n_unit = int((scale/inner)**2*real(N_ANGULAR, dp))
          total = total + n_centre*n_unit
       end do
       allocate (kept(3, total))
 
       n_point = 0
       do layer = 1, N_LAYER
-         scale = VDW_SCALE + VDW_STEP*real(layer - 1, dp)
-         n_unit = int((scale/VDW_SCALE)**2*real(N_ANGULAR, dp))
+         scale = inner + VDW_STEP*real(layer - 1, dp)
+         n_unit = int((scale/inner)**2*real(N_ANGULAR, dp))
          call fibonacci_sphere(n_unit, unit)
          do i = 1, n_centre
             do j = 1, n_unit
@@ -319,7 +329,7 @@ contains
    end subroutine screening_target_destroy
 
    subroutine fit_screening(mol, density, dma, atomic_numbers, kind, alpha, error, &
-                            residual, grid_size, target)
+                            residual, grid_size, target, vdw_scale)
       !! Fit one damping exponent per expansion centre
       !!
       !! Minimized by repeated bracketed line searches over one exponent at a time,
@@ -341,6 +351,12 @@ contains
          !! for the next fit. Both damping forms are fitted to the same target, so
          !! passing this across the pair halves the stage. Absent means build it,
          !! use it and drop it, which is what a lone fit wants.
+      real(dp), intent(in), optional :: vdw_scale
+         !! Passed to `screening_grid`. Note that a shared `target` is built once
+         !! and then reused, so the scale that reaches the grid is the one the
+         !! *first* fit of a pair asked for -- both fits of a potential pass the
+         !! same value, and a caller that varied it between them would be fitting
+         !! two damping forms to one grid and calling it two grids.
 
       real(dp), allocatable :: grid(:, :), potential(:, :, :), quantum(:)
       real(dp), allocatable :: base(:), monopole(:, :), argument(:, :), rest(:)
@@ -360,7 +376,7 @@ contains
          grid = target%grid
          quantum = target%quantum
       else
-         call screening_grid(dma, atomic_numbers, grid, error)
+         call screening_grid(dma, atomic_numbers, grid, error, vdw_scale=vdw_scale)
          if (error%has_error()) return
 
          ! The quantum target: the electronic potential, nuclei excluded, because the
