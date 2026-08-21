@@ -649,7 +649,14 @@ endif()
 
 # Manual check that a session splits rank 0 from the workers. Not a ctest case:
 # it is only meaningful under mpirun with more than one rank, and ctest here has
-# no MPI harness.
+# no MPI harness. Two ranks, no topology: the shard helper's own contract, which
+# the multi-group path that broke it cannot be reached to test on one node.
+add_executable(check_group_shard
+               ${PROJECT_SOURCE_DIR}/validation/check_group_shard.f90)
+target_include_directories(check_group_shard
+                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_group_shard PRIVATE ${main_lib})
+
 add_executable(check_run ${PROJECT_SOURCE_DIR}/validation/check_run.f90)
 target_include_directories(check_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_run PRIVATE ${main_lib})
