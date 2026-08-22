@@ -26,6 +26,7 @@ module mqc_libcint_rhf
                                  direct_stats_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
    use mqc_libcint_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
+   use mqc_libcint_pcm, only: pcm_context_t
    implicit none
    private
 
@@ -131,6 +132,11 @@ module mqc_libcint_rhf
       real(dp), allocatable :: density_beta(:, :)
       integer :: n_occupied_beta = 0
       real(dp) :: spin_squared = 0.0_dp        !! <S^2>, unrestricted only
+      ! Continuum solvation. Zero when the SCF ran in the gas phase; when a
+      ! context was passed, `energy` and `electronic` above already include
+      ! `pcm_energy` -- this is the breakdown, not an addend.
+      real(dp) :: pcm_energy = 0.0_dp          !! Dielectric energy, halved already
+      real(dp) :: pcm_charge = 0.0_dp          !! Total apparent surface charge
    end type rhf_result_t
 
    !> Iterations between full rebuilds of the accumulated G.
@@ -156,6 +162,7 @@ module mqc_libcint_rhf
    character(len=*), parameter :: STAGE_DIAG = "diagonalisation"
    character(len=*), parameter :: STAGE_DIIS = "DIIS"
    character(len=*), parameter :: STAGE_XC = "XC quadrature"
+   character(len=*), parameter :: STAGE_PCM = "continuum operator"
 
 contains
 
@@ -312,7 +319,7 @@ contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
-                              guess, guess_density, xc, h_extra)
+                              guess, guess_density, xc, h_extra, pcm)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -382,6 +389,12 @@ contains
          !! and not the energy: the dipole is unambiguous, one derivative
          !! better conditioned, and needs no bookkeeping about what the total
          !! is supposed to contain.
+      type(pcm_context_t), intent(inout), optional :: pcm
+         !! Continuum solvation. Present and built means every iteration solves
+         !! the surface charges against its density and folds their operator
+         !! into the Fock matrix; `result%energy` then includes the dielectric
+         !! energy. Present-but-disabled is the same as absent, so a caller can
+         !! pass its context unconditionally.
 
       integer :: diis_size, guess_kind
       logical :: use_in_core
@@ -393,6 +406,9 @@ contains
       real(dp), allocatable :: x(:, :), fock(:, :), density(:, :), density_old(:, :)
       real(dp), allocatable :: coeff(:, :), eigenvalues(:)
       real(dp), allocatable :: err(:, :), fock_flat(:)
+      real(dp), allocatable :: v_pcm(:, :)
+      logical :: use_pcm
+      real(dp) :: e_pcm
       type(diis_state_t) :: diis
       logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
@@ -414,6 +430,8 @@ contains
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
+      use_pcm = .false.
+      if (present(pcm)) use_pcm = pcm%enabled
 
       n_ao = mol%nao
       n_occ = nelec/2
@@ -481,6 +499,7 @@ contains
 
       allocate (fock(n_ao, n_ao), density(n_ao, n_ao), density_old(n_ao, n_ao))
       allocate (err(n_mo, n_mo), fock_flat(n_ao*n_ao))
+      if (use_pcm) allocate (v_pcm(n_ao, n_ao))
 
       ! The error vector lives in the orthogonal basis, where it is n_mo
       ! square rather than n_ao -- that is the same shape the cuEST path uses
@@ -543,6 +562,25 @@ contains
                             fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
                             bmat_lr=bmat_lr)
          if (error%has_error()) return
+         ! The continuum, after the gas-phase pieces and before the commutator:
+         ! its operator belongs to the Fock matrix DIIS extrapolates and the
+         ! eigenproblem diagonalises, or the converged orbitals would not feel
+         ! the solvent. The energy carries its own half already.
+         !
+         ! Charged to its OWN stage, not folded into the Fock bucket. `lap`
+         ! adds to a stage's seconds and increments its call count, and
+         ! `assemble_fock` already closes STAGE_FOCK itself -- so lapping it
+         ! again here would report two Fock builds per iteration, which is the
+         ! reporting bug the Fock/quadrature split was fixed for. A separate row
+         ! also says what the continuum actually costs, which turns out to be
+         ! almost nothing beside the quadrature.
+         if (use_pcm) then
+            call pcm%operator_matrix(mol, density, v_pcm, e_pcm, error)
+            if (error%has_error()) return
+            fock = fock + v_pcm
+            e_elec = e_elec + e_pcm
+            call clk%lap(STAGE_PCM)
+         end if
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
 
          ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
@@ -587,6 +625,18 @@ contains
       call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                          fock, result%electronic, error, clk=clk, bmat_lr=bmat_lr)
       if (error%has_error()) return
+      if (use_pcm) then
+         call pcm%operator_matrix(mol, density, v_pcm, e_pcm, error)
+         if (error%has_error()) return
+         result%electronic = result%electronic + e_pcm
+         result%pcm_energy = e_pcm
+         result%pcm_charge = pcm%q_total
+         ! Lapped like the iterations' operators, so the stage counts one per
+         ! Fock build rather than one fewer. The final rebuild is a solvated
+         ! build like any other -- it has to be, or the energy reported would
+         ! be the gas-phase one.
+         call clk%lap(STAGE_PCM)
+      end if
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
       result%n_occupied = n_occ
@@ -610,7 +660,7 @@ contains
 
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
-                              guess, guess_density_alpha, guess_density_beta, xc)
+                              guess, guess_density_alpha, guess_density_beta, xc, pcm)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -655,6 +705,11 @@ contains
          !! ordering right. SAD hands over half the spherically averaged total
          !! twice, and relies on the occupations to break the symmetry -- the
          !! same position the core guess is in, but from a far better density.
+      type(pcm_context_t), intent(inout), optional :: pcm
+         !! Continuum solvation, exactly as on the restricted path. The surface
+         !! charges see the total density and their operator lands in both spin
+         !! Fock matrices, because the potential of a classical charge does not
+         !! know spin.
 
       integer :: diis_size, start_cycle, guess_kind
       logical :: use_in_core
@@ -666,6 +721,9 @@ contains
       real(dp), allocatable :: d_a(:, :), d_b(:, :), d_a_old(:, :), d_b_old(:, :)
       real(dp), allocatable :: coeff_a(:, :), coeff_b(:, :), eig_a(:), eig_b(:)
       real(dp), allocatable :: err_a(:, :), err_b(:, :), fock_flat(:), err_flat(:)
+      real(dp), allocatable :: v_pcm(:, :)
+      logical :: use_pcm
+      real(dp) :: e_pcm
       type(diis_state_t) :: diis
       logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
@@ -682,6 +740,8 @@ contains
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
+      use_pcm = .false.
+      if (present(pcm)) use_pcm = pcm%enabled
 
       ! 2S+1 = n_alpha - n_beta + 1, so the unpaired count is multiplicity - 1.
       ! Both have to come out whole and non-negative, and a deck can ask for a
@@ -742,6 +802,7 @@ contains
       allocate (d_a(n_ao, n_ao), d_b(n_ao, n_ao), d_a_old(n_ao, n_ao), d_b_old(n_ao, n_ao))
       allocate (err_a(n_mo, n_mo), err_b(n_mo, n_mo))
       allocate (fock_flat(2*nsq), err_flat(2*msq))
+      if (use_pcm) allocate (v_pcm(n_ao, n_ao))
 
       ! One subspace over both spins, so an extrapolation step moves them
       ! together. The vectors are the two Fock matrices laid end to end and the
@@ -803,6 +864,15 @@ contains
          call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                 e_elec, error)
          if (error%has_error()) return
+         ! The continuum sees one density -- the total -- and both spins feel
+         ! one potential, as they would from any classical charge.
+         if (use_pcm) then
+            call pcm%operator_matrix(mol, d_a + d_b, v_pcm, e_pcm, error)
+            if (error%has_error()) return
+            fock_a = fock_a + v_pcm
+            fock_b = fock_b + v_pcm
+            e_elec = e_elec + e_pcm
+         end if
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          call clk%lap(STAGE_FOCK)
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
@@ -852,6 +922,13 @@ contains
       call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                              result%electronic, error)
       if (error%has_error()) return
+      if (use_pcm) then
+         call pcm%operator_matrix(mol, d_a + d_b, v_pcm, e_pcm, error)
+         if (error%has_error()) return
+         result%electronic = result%electronic + e_pcm
+         result%pcm_energy = e_pcm
+         result%pcm_charge = pcm%q_total
+      end if
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
       result%n_occupied = n_alpha

@@ -328,6 +328,16 @@ contains
       if (error%has_error()) return
       call json%info("keywords.pcm", found=found)
       config%pcm_enabled = found
+      block
+         ! Read into a deferred-length local, since the config field is fixed
+         ! width and `optional_string` takes an allocatable.
+         character(len=:), allocatable :: pcm_method_text
+         logical :: pcm_method_named
+         call json%get("keywords.pcm.method", pcm_method_text, pcm_method_named)
+         if (pcm_method_named .and. allocated(pcm_method_text)) then
+            config%pcm_method = pcm_method_text
+         end if
+      end block
       call optional_real(json, "keywords.pcm.dielectric", config%pcm_dielectric)
       call optional_int(json, "keywords.pcm.angular_points", config%pcm_angular_points)
       call optional_real(json, "keywords.pcm.radii_scale", config%pcm_radii_scale)

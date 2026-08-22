@@ -144,10 +144,20 @@ module mqc_method_config
    type :: pcm_config_t
       !! A polarizable continuum: the cavity, the solvent, and the charge solve
       !!
-      !! Backend-neutral in shape, but only the cuEST path implements it. tblite's
-      !! CPCM is configured through `xtb_config_t` and builds its own cavity; the
-      !! two are separate models and share no settings.
+      !! Backend-neutral in shape. The cuEST path hands the cavity and the charge
+      !! solve to the library; the CPU path builds both itself in
+      !! `mqc_libcint_pcm`. tblite's CPCM is configured through `xtb_config_t`
+      !! and builds its own cavity; the two are separate models and share no
+      !! settings.
       logical :: enabled = .false.
+      character(len=16) :: method = "cpcm"
+         !! Which continuum model the surface charges solve: "cpcm"
+         !! (conductor-like, scale factor (eps-1)/eps) or "iefpcm" (the integral
+         !! equation formalism, scale (eps-1)/(eps+1) with the D-matrix terms).
+         !! The two are different models with different energies -- water differs
+         !! by ~1% of the solvation energy -- so the choice is named, not
+         !! defaulted per backend. Only the CPU path reads it; cuEST's solver is
+         !! fixed and refuses "iefpcm" rather than substituting.
       real(dp) :: dielectric = -1.0_dp
          !! Solvent dielectric. No solvent-name table on this path, on purpose:
          !! see `mqc_config_types`.

@@ -338,6 +338,24 @@ HAND_MAINTAINED = {
     "cpu/mqc/fmo/eembe_water3.json",
     "cpu/mqc/fmo/fmo3_water3.json",
     "cpu/mqc/fmo/eembe3_water3.json",
+    # Continuum solvation. PySCF *can* produce these references -- they were --
+    # but this script has no PCM support, so a regeneration would sweep the
+    # decks while their manifest entries stayed behind. The recipe, should they
+    # ever need regenerating: pyscf.solvent.pcm with the deck's method and
+    # dielectric, lebedev_order 29 (302 points), and radii_table = 1.2 * Bondi
+    # (pyscf.data.radii.VDW) -- NOT PySCF's default modified-Bondi cavity, whose
+    # hydrogen is 1.1 Angstrom against Bondi's 1.20 -- with the basis read
+    # through bse_to_pyscf like every reference here.
+    "cpu/mqc/pcm/cpu_water_sto-3g_cpcm.json",
+    "cpu/mqc/pcm/cpu_hydroxide_6-31g_iefpcm.json",
+    # The unrestricted and Kohn-Sham continuum. The two restricted cases above
+    # do not cover them, and both are combinations rather than features: the
+    # solvent operator is built from the total density and added to BOTH spin
+    # Fock matrices, and it sits in the Fock matrix beside the
+    # exchange-correlation potential. Either could be wired wrong and still
+    # converge to a plausible number.
+    "cpu/mqc/pcm/cpu_water_cation_6-31g_uhf_iefpcm.json",
+    "cpu/mqc/pcm/cpu_water_6-31g_pbe0_cpcm.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
