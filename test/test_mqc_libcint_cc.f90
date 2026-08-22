@@ -28,7 +28,7 @@ module test_mqc_libcint_cc
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd, spin_orbital_integrals, &
-                             so_map_t, build_so_map
+                             so_map_t, build_so_map, so_source_t
    implicit none
    private
    public :: collect_mqc_libcint_cc_tests
@@ -87,6 +87,7 @@ contains
       real(dp), allocatable :: eri(:, :), mo(:, :, :, :), w(:, :, :, :), c_act(:, :)
       integer :: n_so, p, q, r, s
       type(so_map_t) :: map
+      type(so_source_t) :: src
       real(dp) :: worst_bra, worst_ket, worst_both
 
       call converged_water(mol, scf, err, "sto-3g")
@@ -97,7 +98,11 @@ contains
       n_so = 2*size(scf%orbitals, 2)
       ! Restricted, so this is the interleaving the module used to compute.
       call build_so_map(size(scf%orbitals, 2), size(scf%orbitals, 2), 0, 0, map)
-      call spin_orbital_integrals(mo, map, n_so, w)
+      ! Restricted: one tensor, read for every spin case.
+      src%restricted = .true.
+      call move_alloc(mo, src%aa)
+      call spin_orbital_integrals(src, map, n_so, w)
+      call move_alloc(src%aa, mo)
 
       worst_bra = 0.0_dp
       worst_ket = 0.0_dp
@@ -137,6 +142,7 @@ contains
       real(dp), allocatable :: mo(:, :, :, :), w(:, :, :, :)
       integer :: n_so, p, q, r, s
       type(so_map_t) :: map
+      type(so_source_t) :: src
       logical :: found
       real(dp) :: worst
 
@@ -148,7 +154,11 @@ contains
       n_so = 2*size(scf%orbitals, 2)
       ! Restricted, so this is the interleaving the module used to compute.
       call build_so_map(size(scf%orbitals, 2), size(scf%orbitals, 2), 0, 0, map)
-      call spin_orbital_integrals(mo, map, n_so, w)
+      ! Restricted: one tensor, read for every spin case.
+      src%restricted = .true.
+      call move_alloc(mo, src%aa)
+      call spin_orbital_integrals(src, map, n_so, w)
+      call move_alloc(src%aa, mo)
 
       worst = 0.0_dp
       found = .false.

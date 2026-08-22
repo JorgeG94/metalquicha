@@ -63,6 +63,7 @@ module mqc_libcint_cc
    public :: run_libcint_ccsd
    public :: spin_orbital_integrals   !! Exported so a test can check antisymmetry
    public :: so_map_t                 !! ... which needs the ordering it was built with
+   public :: so_source_t              !! ... and the tensors it reads
    public :: build_so_map
 
    !> Columns of the compound (ef) index assembled per pass of the
@@ -104,6 +105,25 @@ module mqc_libcint_cc
       logical, allocatable :: is_a(:)   !! spin orbital -> alpha?
       integer :: n_so = 0
    end type so_map_t
+
+   type :: so_source_t
+      !! The spatial MO tensors the spin-orbital integrals are read out of
+      !!
+      !! One tensor for a restricted reference, three for an unrestricted one:
+      !! `(aa|aa)`, `(bb|bb)` and the mixed `(aa|bb)`. There is no fourth --
+      !! `(bb|aa)` is `(aa|bb)` with the electron pairs swapped, which is what
+      !! `chem` does rather than storing it twice.
+      !!
+      !! `restricted` is not a convenience. The conventional path's memory
+      !! ceiling *is* this tensor at `n_act^4`, so allocating three copies of the
+      !! same numbers to avoid a branch would triple the largest array in the
+      !! calculation. When restricted, only `aa` is allocated and every spin case
+      !! reads it.
+      logical :: restricted = .true.
+      real(dp), allocatable :: aa(:, :, :, :)
+      real(dp), allocatable :: bb(:, :, :, :)
+      real(dp), allocatable :: ab(:, :, :, :)
+   end type so_source_t
 
    type :: cc_eris_t
       !! Antisymmetrised integrals, by block
@@ -239,33 +259,60 @@ contains
       same = map%is_a(s) .eqv. map%is_a(t)
    end function same_spin
 
-   pure function asym(mo, map, p, q, r, s) result(v)
-      !! <pq||rs> from the spatial MO tensor, in spin orbitals
+   pure function chem(src, map, a, b, c, d) result(v)
+      !! The spatial integral `(ab|cd)`, for spin orbitals whose spins already agree
       !!
-      !! The one place chemists' notation becomes physicists'. `mo` is
-      !! (pq|rs) as the transform produced it, so
+      !! Callers guarantee `spin(a) == spin(b)` and `spin(c) == spin(d)`, so this
+      !! only has to decide which of the three tensors holds that combination. The
+      !! last branch is the one worth reading: a beta-alpha pairing is stored as
+      !! alpha-beta with the electron pairs swapped, and `(ab|cd) = (cd|ab)` is
+      !! what makes that legitimate.
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
+      integer, intent(in) :: a, b, c, d
+      real(dp) :: v
+
+      if (src%restricted) then
+         v = src%aa(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else if (map%is_a(a) .and. map%is_a(c)) then
+         v = src%aa(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else if (.not. map%is_a(a) .and. .not. map%is_a(c)) then
+         v = src%bb(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else if (map%is_a(a)) then
+         v = src%ab(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else
+         v = src%ab(map%spat(c), map%spat(d), map%spat(a), map%spat(b))
+      end if
+   end function chem
+
+   pure function asym(src, map, p, q, r, s) result(v)
+      !! <pq||rs> from the spatial MO tensors, in spin orbitals
+      !!
+      !! The one place chemists' notation becomes physicists'. `chem` returns
+      !! (ab|cd) as the transform produced it, so
       !!
       !!     <pq||rs> = (pr|qs) - (ps|qr)
       !!
       !! and a spatial integral contributes only when both index pairs it
       !! couples share a spin -- (pr|qs) needs spin(p) == spin(r) and
       !! spin(q) == spin(s), which is the Kronecker delta the spin integration
-      !! leaves behind.
+      !! leaves behind. Those two guards are also what lets `chem` assume the
+      !! spins within each pair already agree.
+      type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
-      real(dp), intent(in) :: mo(:, :, :, :)
       integer, intent(in) :: p, q, r, s
       real(dp) :: v
 
       v = 0.0_dp
       if (same_spin(map, p, r) .and. same_spin(map, q, s)) then
-         v = v + mo(spatial(map, p), spatial(map, r), spatial(map, q), spatial(map, s))
+         v = v + chem(src, map, p, r, q, s)
       end if
       if (same_spin(map, p, s) .and. same_spin(map, q, r)) then
-         v = v - mo(spatial(map, p), spatial(map, s), spatial(map, q), spatial(map, r))
+         v = v - chem(src, map, p, s, q, r)
       end if
    end function asym
 
-   subroutine build_cc_eris(mo, map, no, nv, eris)
+   subroutine build_cc_eris(src, map, no, nv, eris)
       !! The antisymmetrised blocks the amplitude equations actually read
       !!
       !! Replaces the single (2 n_act)^4 tensor. Every block below is a slice of
@@ -279,8 +326,8 @@ contains
       !!
       !! `spin_orbital_integrals` is kept for the tests, which check antisymmetry
       !! over the whole tensor. Nothing in the calculation builds it any more.
+      type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
-      real(dp), intent(in) :: mo(:, :, :, :)
       integer, intent(in) :: no, nv
       type(cc_eris_t), intent(out) :: eris
 
@@ -291,104 +338,104 @@ contains
       allocate (eris%ovvo(no, nv, nv, no), eris%ovoo(no, nv, no, no))
       allocate (eris%ovvv(no, nv, nv, nv), eris%vvvo(nv, nv, nv, no))
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do l = 1, no
          do k = 1, no
             do j = 1, no
                do i = 1, no
-                  eris%oooo(i, j, k, l) = asym(mo, map, i, j, k, l)
+                  eris%oooo(i, j, k, l) = asym(src, map, i, j, k, l)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do e = 1, nv
          do i = 1, no
             do n = 1, no
                do m = 1, no
-                  eris%ooov(m, n, i, e) = asym(mo, map, m, n, i, no + e)
+                  eris%ooov(m, n, i, e) = asym(src, map, m, n, i, no + e)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
                do i = 1, no
-                  eris%oovv(i, j, a, b) = asym(mo, map, i, j, no + a, no + b)
+                  eris%oovv(i, j, a, b) = asym(src, map, i, j, no + a, no + b)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do b = 1, nv
          do j = 1, no
             do a = 1, nv
                do i = 1, no
-                  eris%ovov(i, a, j, b) = asym(mo, map, i, no + a, j, no + b)
+                  eris%ovov(i, a, j, b) = asym(src, map, i, no + a, j, no + b)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do j = 1, no
          do e = 1, nv
             do b = 1, nv
                do m = 1, no
-                  eris%ovvo(m, b, e, j) = asym(mo, map, m, no + b, no + e, j)
+                  eris%ovvo(m, b, e, j) = asym(src, map, m, no + b, no + e, j)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
             do b = 1, nv
                do m = 1, no
-                  eris%ovoo(m, b, i, j) = asym(mo, map, m, no + b, i, j)
+                  eris%ovoo(m, b, i, j) = asym(src, map, m, no + b, i, j)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do f = 1, nv
          do e = 1, nv
             do a = 1, nv
                do m = 1, no
-                  eris%ovvv(m, a, e, f) = asym(mo, map, m, no + a, no + e, no + f)
+                  eris%ovvv(m, a, e, f) = asym(src, map, m, no + a, no + e, no + f)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, map, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do j = 1, no
          do e = 1, nv
             do b = 1, nv
                do a = 1, nv
-                  eris%vvvo(a, b, e, j) = asym(mo, map, no + a, no + b, no + e, j)
+                  eris%vvvo(a, b, e, j) = asym(src, map, no + a, no + b, no + e, j)
                end do
             end do
          end do
@@ -588,27 +635,27 @@ contains
       !$omp end parallel do
    end subroutine build_cc_eris_fitted
 
-   subroutine spin_orbital_integrals(mo, map, n_so, w)
+   subroutine spin_orbital_integrals(src, map, n_so, w)
       !! The full antisymmetrised spin-orbital tensor <pq||rs>
       !!
       !! Built whole rather than as blocks. The blocks below are slices of it, and
       !! carving them out of one tensor cannot disagree about a sign the way six
       !! separate constructions could.
+      type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
-      real(dp), intent(in) :: mo(:, :, :, :)
       integer, intent(in) :: n_so
       real(dp), allocatable, intent(out) :: w(:, :, :, :)
 
       integer :: p, q, r, s
 
       allocate (w(n_so, n_so, n_so, n_so))
-      !$omp parallel do default(none) shared(w, mo, map, n_so) private(p, q, r, s) &
+      !$omp parallel do default(none) shared(w, src, map, n_so) private(p, q, r, s) &
       !$omp    schedule(static) collapse(2)
       do s = 1, n_so
          do r = 1, n_so
             do q = 1, n_so
                do p = 1, n_so
-                  w(p, q, r, s) = asym(mo, map, p, q, r, s)
+                  w(p, q, r, s) = asym(src, map, p, q, r, s)
                end do
             end do
          end do
@@ -672,6 +719,7 @@ contains
 
       type(timing_report_t) :: clk
       type(so_map_t) :: map
+      type(so_source_t) :: src
 
       n_ao = size(coeff, 1)
       n_mo = size(coeff, 2)
@@ -747,6 +795,11 @@ contains
          call mol%eris_packed(eri)
          call transform_block(eri, c_act, c_act, c_act, c_act, mo)
          deallocate (eri)
+         ! Moved, not copied: this tensor is the conventional path's memory
+         ! ceiling and duplicating it to fill a container would double it. `mo`
+         ! is unallocated afterwards and the ladder reads `src%aa` instead.
+         src%restricted = .true.
+         call move_alloc(mo, src%aa)
       end if
       deallocate (c_act)
 
@@ -759,7 +812,7 @@ contains
          call build_cc_eris_fitted(chem, map, no, nv, eris)
          deallocate (chem%oooo, chem%ooov, chem%oovv, chem%ovov, chem%ovvv)
       else
-         call build_cc_eris(mo, map, no, nv, eris)
+         call build_cc_eris(src, map, no, nv, eris)
       end if
       call clk%lap("CC integral blocks")
 
@@ -797,7 +850,7 @@ contains
                               "    iter                 E_corr          dE   diis       time", 60)
       do iter = 1, max_iter
          t_iter = clk%seconds_of(STAGE_ITER)
-         call ccsd_iteration(mo, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+         call ccsd_iteration(src, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
          call clk%lap(STAGE_ITER)
          t_iter = clk%seconds_of(STAGE_ITER) - t_iter
 
@@ -996,9 +1049,9 @@ contains
       !$omp end parallel do
    end subroutine ccsd_energy
 
-   subroutine ccsd_iteration(mo, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+   subroutine ccsd_iteration(src, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
       !! One CCSD amplitude update, through the Stanton et al. intermediates
-      real(dp), allocatable, intent(in) :: mo(:, :, :, :)
+      type(so_source_t), intent(in) :: src
          !! The spatial tensor, on the conventional path. Read only by the
          !! particle-particle ladder, which assembles <ab||ef> in batches rather
          !! than holding it -- see `particle_ladder`.
@@ -1147,7 +1200,7 @@ contains
       ! one does not.
       allocate (lad(nv*nv, no*no))
       call pic_gemm(tau2, wmnij, lad, alpha=0.5_dp, beta=0.0_dp)
-      call particle_ladder(mo, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
+      call particle_ladder(src, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
 
       ! ---- the ring intermediate (Stanton 8) ---------------------------------
       !
@@ -1420,7 +1473,7 @@ contains
       deallocate (oovv2, lad, ring2)
    end subroutine ccsd_iteration
 
-   subroutine particle_ladder(mo, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
+   subroutine particle_ladder(src, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
       !! The particle-particle ladder, never holding <ab||ef>
       !!
       !!     lad(ab,ij) += 1/2 sum_ef Wabef(ab,ef) tau(ef,ij)
@@ -1451,7 +1504,7 @@ contains
       !! spatial tensor at all. Those gemms cost naux n_vir^4 an iteration
       !! against the n_occ^2 n_vir^4 of the contraction they feed, so a few per
       !! cent of the ladder buys the whole n_act^4 array.
-      real(dp), allocatable, intent(in) :: mo(:, :, :, :)
+      type(so_source_t), intent(in) :: src
       real(dp), allocatable, intent(in) :: b_vv(:, :)   !! (P, ab), spatial virtuals
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: t1(:, :), tau2(:, :), oovv2(:, :)
@@ -1578,7 +1631,7 @@ contains
             !$omp end parallel
          else
             !$omp parallel do default(none) &
-            !$omp    shared(mo, tblk, wblk, nv, nb, ef0, nocc2) &
+            !$omp    shared(src, tblk, wblk, nv, nb, ef0, nocc2) &
             !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
             !$omp    schedule(static)
             do col = 1, nb
@@ -1599,8 +1652,8 @@ contains
                      ! same two terms, the same signs.
                      pa = nocc2 + (a + 1)/2
                      acc = 0.0_dp
-                     if (mod(a, 2) == se .and. sb == sf) acc = acc + mo(pa, pe, pb, pf)
-                     if (mod(a, 2) == sf .and. sb == se) acc = acc - mo(pa, pf, pb, pe)
+                     if (mod(a, 2) == se .and. sb == sf) acc = acc + src%aa(pa, pe, pb, pf)
+                     if (mod(a, 2) == sf .and. sb == se) acc = acc - src%aa(pa, pf, pb, pe)
                      ! <am||ef> = -<ma||ef>, and likewise for b.
                      acc = acc + tblk(b, (col - 1)*nv + a) - tblk(a, (col - 1)*nv + b)
                      wblk((b - 1)*nv + a, col) = wblk((b - 1)*nv + a, col) + acc
