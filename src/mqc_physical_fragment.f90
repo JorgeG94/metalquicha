@@ -59,6 +59,14 @@ module mqc_physical_fragment
       ! Hydrogen capping for broken bonds
       integer :: n_caps = 0  !! Number of hydrogen caps added (always at end of atom list)
       integer, allocatable :: cap_replaces_atom(:)  !! Original atom index that each cap replaces (size: n_caps)
+      integer, allocatable :: cap_bonded_to(:)
+         !! The in-fragment atom at the other end of each cut bond (size: n_caps),
+         !! 0-based like `cap_replaces_atom`. Needed only to differentiate: the
+         !! cap sits on the line between the two, so both ends move it.
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where each cap sits along its cut bond, `R_H = R_kept + s (R_gone - R_kept)`.
+         !! One value for the fragment rather than per cap: it is a convention,
+         !! not a property of a particular bond.
 
       ! Gradient redistribution support
       integer, allocatable :: local_to_global(:)  !! Map fragment atom index to system atom index (size: n_atoms - n_caps)
@@ -108,6 +116,12 @@ module mqc_physical_fragment
 
       ! Connectivity information for hydrogen capping
       type(bond_t), allocatable :: bonds(:)  !! Bond connectivity (for H-capping broken bonds)
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a cap sits along the bond it closes, carried here for the same
+         !! reason `bonds` is: every fragment built from this geometry has to cap
+         !! the same way, and the builders already take the geometry. Threading
+         !! it as an argument instead would touch every call site to say the same
+         !! thing.
 
       ! 256 characters a path, matching `driver_config_t%fragment_potentials`,
       ! which is where these are copied to.
@@ -236,8 +250,16 @@ contains
 
       integer :: ibond, cap_idx
       logical :: atom_i_in_frag, atom_j_in_frag
+      integer :: kept, gone
+      real(dp) :: s
 
       if (fragment%n_caps == 0) return
+
+      ! `R_H = R_kept + s (R_gone - R_kept)`. At s = 1 the cap lands exactly on
+      ! the removed atom, which is what this did before the scale existed and is
+      ! still the default; the redistribution below then puts the whole cap
+      ! gradient on that atom, as it always has.
+      s = fragment%cap_scale
 
       cap_idx = 0
       do ibond = 1, size(bonds)
@@ -246,23 +268,23 @@ contains
          atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
          atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
 
-         if (atom_i_in_frag .and. .not. atom_j_in_frag) then
-            ! atom_i is in fragment, atom_j is not → cap at position of atom_j
-            cap_idx = cap_idx + 1
-            fragment%element_numbers(base_atom_count + cap_idx) = 1  ! Hydrogen
-            ! Place H at position of atom_j (1-indexed for coordinates array)
-            fragment%coordinates(:, base_atom_count + cap_idx) = &
-               sys_geom%coordinates(:, bonds(ibond)%atom_j + 1)
-            fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_j
+         if (atom_i_in_frag .neqv. atom_j_in_frag) then
+            if (atom_i_in_frag) then
+               kept = bonds(ibond)%atom_i
+               gone = bonds(ibond)%atom_j
+            else
+               kept = bonds(ibond)%atom_j
+               gone = bonds(ibond)%atom_i
+            end if
 
-         else if (atom_j_in_frag .and. .not. atom_i_in_frag) then
-            ! atom_j is in fragment, atom_i is not → cap at position of atom_i
             cap_idx = cap_idx + 1
             fragment%element_numbers(base_atom_count + cap_idx) = 1  ! Hydrogen
-            ! Place H at position of atom_i (1-indexed for coordinates array)
+            ! 1-indexed for the coordinates array; the stored indices stay 0-based
             fragment%coordinates(:, base_atom_count + cap_idx) = &
-               sys_geom%coordinates(:, bonds(ibond)%atom_i + 1)
-            fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_i
+               sys_geom%coordinates(:, kept + 1) + &
+               s*(sys_geom%coordinates(:, gone + 1) - sys_geom%coordinates(:, kept + 1))
+            fragment%cap_replaces_atom(cap_idx) = gone
+            fragment%cap_bonded_to(cap_idx) = kept
          end if
       end do
 
@@ -337,9 +359,11 @@ contains
       ! Allocate arrays with space for original atoms + caps
       fragment%n_atoms = n_atoms_no_caps + n_caps
       fragment%n_caps = n_caps
+      fragment%cap_scale = sys_geom%cap_scale
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
       if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
+      if (n_caps > 0) allocate (fragment%cap_bonded_to(n_caps))
       allocate (fragment%local_to_global(n_atoms_no_caps))  ! Only non-cap atoms
 
       ! Copy original atoms and build local→global mapping
@@ -538,9 +562,11 @@ contains
       ! Allocate arrays with space for original atoms + caps
       fragment%n_atoms = n_atoms + n_caps
       fragment%n_caps = n_caps
+      fragment%cap_scale = sys_geom%cap_scale
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
       if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
+      if (n_caps > 0) allocate (fragment%cap_bonded_to(n_caps))
       allocate (fragment%local_to_global(n_atoms))  ! Only non-cap atoms
 
       ! Copy original atoms and build local→global mapping (atom_indices are 0-indexed, add 1 for Fortran arrays)
@@ -572,6 +598,35 @@ contains
 
    end subroutine build_fragment_from_atom_list
 
+   pure subroutine cap_targets(fragment, i_cap, idx, wgt)
+      !! Which atoms a cap's derivative belongs to, and in what proportion
+      !!
+      !! The cap is a function of two real atoms and nothing else,
+      !!
+      !!     R_H = R_kept + s (R_gone - R_kept)
+      !!
+      !! so `dR_H/dR_gone = s` and `dR_H/dR_kept = 1 - s`. Redistributing by
+      !! those two weights is the chain rule exactly, not an approximation to it,
+      !! and the same two weights serve the gradient and the Hessian.
+      !!
+      !! At `s = 1` this returns weight 1 on the removed atom and 0 on the other,
+      !! which is the rule this program used before the scale existed -- so the
+      !! default reproduces the old numbers rather than merely resembling them.
+      type(physical_fragment_t), intent(in) :: fragment
+      integer, intent(in) :: i_cap
+      integer, intent(out) :: idx(2)   !! 1-based system atom indices
+      real(dp), intent(out) :: wgt(2)
+
+      idx(1) = fragment%cap_replaces_atom(i_cap) + 1
+      wgt(1) = fragment%cap_scale
+      if (allocated(fragment%cap_bonded_to)) then
+         idx(2) = fragment%cap_bonded_to(i_cap) + 1
+      else
+         idx(2) = idx(1)      ! a fragment built before this existed: s is 1 and
+      end if                  ! the second weight is zero, so the index is unused
+      wgt(2) = 1.0_dp - fragment%cap_scale
+   end subroutine cap_targets
+
    subroutine redistribute_cap_gradients(fragment, fragment_gradient, system_gradient, scale)
       !! Redistribute hydrogen cap gradients to original atoms
       !!
@@ -599,6 +654,9 @@ contains
       integer :: i_cap, local_cap_idx, global_original_idx
       integer :: n_real_atoms
       real(dp) :: w
+      integer :: tgt(2)
+      integer :: t
+      real(dp) :: tw(2)
 
       w = 1.0_dp
       if (present(scale)) w = scale
@@ -615,12 +673,14 @@ contains
       if (fragment%n_caps > 0) then
          do i_cap = 1, fragment%n_caps
             local_cap_idx = n_real_atoms + i_cap
-            ! cap_replaces_atom is 0-indexed, add 1 for Fortran arrays
-            global_original_idx = fragment%cap_replaces_atom(i_cap) + 1
+            call cap_targets(fragment, i_cap, tgt, tw)
 
-            ! Add cap gradient to the atom it replaces
-            system_gradient(:, global_original_idx) = system_gradient(:, global_original_idx) + &
-                                                      w*fragment_gradient(:, local_cap_idx)
+            ! Split the cap's gradient between the two atoms that move it
+            do t = 1, 2
+               if (tw(t) == 0.0_dp) cycle
+               system_gradient(:, tgt(t)) = system_gradient(:, tgt(t)) + &
+                                            w*tw(t)*fragment_gradient(:, local_cap_idx)
+            end do
          end do
       end if
 
@@ -653,6 +713,11 @@ contains
       integer :: n_real_atoms
       integer :: i_cap_2, local_cap_idx_2, global_original_idx_2
       real(dp) :: w
+      integer :: tgt(2)
+      integer :: tgt2(2)
+      integer :: t, t2
+      real(dp) :: tw(2)
+      real(dp) :: tw2(2)
 
       w = 1.0_dp
       if (present(scale)) w = scale
@@ -681,42 +746,60 @@ contains
       if (fragment%n_caps > 0) then
          do i_cap = 1, fragment%n_caps
             local_cap_idx = n_real_atoms + i_cap
-            global_original_idx = fragment%cap_replaces_atom(i_cap) + 1
+            call cap_targets(fragment, i_cap, tgt, tw)
 
-            ! Cap rows: redistribute to original atom (cap derivatives w.r.t. all other atoms)
-            do j = 1, n_real_atoms
-               global_j = fragment%local_to_global(j)
-               do icart = 0, 2
-                  do jcart = 0, 2
-                     system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) = &
-                        system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) + &
-                        w*fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(j - 1) + jcart + 1)
+            ! Cap rows: one row of second derivatives, shared by the two atoms
+            ! that move the cap, in the same proportion the gradient used
+            do t = 1, 2
+               if (tw(t) == 0.0_dp) cycle
+               global_original_idx = tgt(t)
+               do j = 1, n_real_atoms
+                  global_j = fragment%local_to_global(j)
+                  do icart = 0, 2
+                     do jcart = 0, 2
+                        system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) = &
+                           system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) + &
+                           w*tw(t)*fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(j - 1) + jcart + 1)
+                     end do
                   end do
                end do
             end do
 
-            ! Cap columns: redistribute to original atom (all other atoms' derivatives w.r.t. cap)
-            do i = 1, n_real_atoms
-               global_i = fragment%local_to_global(i)
-               do icart = 0, 2
-                  do jcart = 0, 2
-                     system_hessian(3*(global_i - 1) + icart + 1, 3*(global_original_idx - 1) + jcart + 1) = &
-                        system_hessian(3*(global_i - 1) + icart + 1, 3*(global_original_idx - 1) + jcart + 1) + &
-                        w*fragment_hessian(3*(i - 1) + icart + 1, 3*(local_cap_idx - 1) + jcart + 1)
+            ! Cap columns: the mirror of the rows, same two weights
+            do t = 1, 2
+               if (tw(t) == 0.0_dp) cycle
+               do i = 1, n_real_atoms
+                  global_i = fragment%local_to_global(i)
+                  do icart = 0, 2
+                     do jcart = 0, 2
+                        system_hessian(3*(global_i - 1) + icart + 1, 3*(tgt(t) - 1) + jcart + 1) = &
+                           system_hessian(3*(global_i - 1) + icart + 1, 3*(tgt(t) - 1) + jcart + 1) + &
+                           w*tw(t)*fragment_hessian(3*(i - 1) + icart + 1, 3*(local_cap_idx - 1) + jcart + 1)
+                     end do
                   end do
                end do
             end do
 
-            ! Cap-cap blocks: redistribute to original atom diagonal block
+            ! Cap-cap blocks: both indices are caps, so the chain rule applies
+            ! twice and the block spreads over four atom pairs with the outer
+            ! product of the weights. At s = 1 three of the four weigh nothing
+            ! and this is the single block it always was.
             do i_cap_2 = 1, fragment%n_caps
                local_cap_idx_2 = n_real_atoms + i_cap_2
-               global_original_idx_2 = fragment%cap_replaces_atom(i_cap_2) + 1
+               call cap_targets(fragment, i_cap_2, tgt2, tw2)
 
-               do icart = 0, 2
-                  do jcart = 0, 2
-                    system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_original_idx_2 - 1) + jcart + 1) = &
-                    system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_original_idx_2 - 1) + jcart + 1) + &
-                        w*fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(local_cap_idx_2 - 1) + jcart + 1)
+               do t = 1, 2
+                  if (tw(t) == 0.0_dp) cycle
+                  do t2 = 1, 2
+                     if (tw2(t2) == 0.0_dp) cycle
+                     do icart = 0, 2
+                        do jcart = 0, 2
+                           system_hessian(3*(tgt(t) - 1) + icart + 1, 3*(tgt2(t2) - 1) + jcart + 1) = &
+                              system_hessian(3*(tgt(t) - 1) + icart + 1, 3*(tgt2(t2) - 1) + jcart + 1) + &
+                              w*tw(t)*tw2(t2)* &
+                              fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(local_cap_idx_2 - 1) + jcart + 1)
+                        end do
+                     end do
                   end do
                end do
             end do
@@ -839,6 +922,7 @@ contains
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
       if (allocated(this%cap_replaces_atom)) deallocate (this%cap_replaces_atom)
+      if (allocated(this%cap_bonded_to)) deallocate (this%cap_bonded_to)
       if (allocated(this%local_to_global)) deallocate (this%local_to_global)
       if (allocated(this%is_ghost)) deallocate (this%is_ghost)
       if (allocated(this%basis)) then

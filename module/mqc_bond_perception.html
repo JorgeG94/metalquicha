@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for modules and submodules.">212 statements</a>
+                 title=" 1.2% of total for modules and submodules.">284 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -148,7 +148,18 @@
   
   
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_bond_perception.html#type-severed_bond_t">severed_bond_t</a>
+        </div>
+      </div>
+    </div>
+
       <div class="card mb-4">
       <a data-bs-toggle="collapse" href="#funcs-0"
          aria-expanded="false" aria-controls="funcs-0">
@@ -160,6 +171,7 @@
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-bonded">bonded</a>
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-find_root">find_root</a>
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-is_declared">is_declared</a>
+            <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-still_connected">still_connected</a>
         </div>
       </div>
     </div>
@@ -173,6 +185,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-auto_monomers">auto_monomers</a>
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-connected_components">connected_components</a>
+            <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-find_severed_bonds">find_severed_bonds</a>
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-missing_broken_bonds">missing_broken_bonds</a>
             <a class="list-group-item" href="../module/mqc_bond_perception.html#proc-perceive_bonds">perceive_bonds</a>
         </div>
@@ -216,16 +229,17 @@ Connectivity implied by the geometry
 Cut bonds a caller&rsquo;s list does not mention
 Partition into covalently connected molecules
 Which covalently connected group each atom is in
-Which monomer holds a 0-based atom</p>
+Which monomer holds a 0-based atom
+Every bond a given partition cuts</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
@@ -985,6 +999,132 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
 
 
 
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-severed_bond_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/severed_bond_t.html'>severed_bond_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>One bond that a partition cuts, and enough about it to decide what to do
+Atom indices are 1-based here, unlike <code>bond_t</code>, because the callers
+that want this &ndash; fragment assembly and the frozen-orbital schemes &ndash;
+index the system directly rather than through a deck.</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_a"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_a</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_b"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_b</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_a"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_a</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_b"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_b</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-in_ring"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>in_ring</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+<p>The two atoms are still connected with this bond removed, so the
+partition cuts the same ring at least twice. Recorded rather than
+refused here: whether that is fatal belongs to whoever asked.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
 
         <section>
           <h2>Functions</h2>
@@ -1008,7 +1148,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~61"></span>
+              <span class="anchor" id="variable-sys_geom~28"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1023,7 +1163,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~4"></span>
+              <span class="anchor" id="variable-atom"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1068,7 +1208,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~56"></span>
+              <span class="anchor" id="variable-sys_geom~21"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1083,7 +1223,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~19"></span>
+              <span class="anchor" id="variable-iatom~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1098,7 +1238,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-jatom~2"></span>
+              <span class="anchor" id="variable-jatom"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1113,7 +1253,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~9"></span>
+              <span class="anchor" id="variable-tolerance~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1158,7 +1298,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-component~5"></span>
+              <span class="anchor" id="variable-component~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1248,7 +1388,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-candidate~5"></span>
+              <span class="anchor" id="variable-candidate~3"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1257,6 +1397,96 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
             </td>
             <td>::</td>
             <td><strong>candidate</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-still_connected"></span> <h3>private  function <a href='../proc/still_connected.html'>still_connected</a>(sys_geom, tol, a, b) result(reachable)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Is there a path from <code>a</code> to <code>b</code> that does not use the bond <code>a</code>-<code>b</code>?</p><a href="../proc/still_connected.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~25"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tol~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tol</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-b~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>b</strong></td>
             <td>
 
             </td>
@@ -1298,7 +1528,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~60"></span>
+              <span class="anchor" id="variable-sys_geom~27"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1313,7 +1543,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~85"></span>
+              <span class="anchor" id="variable-error~66"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1328,7 +1558,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~13"></span>
+              <span class="anchor" id="variable-tolerance~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1368,7 +1598,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~59"></span>
+              <span class="anchor" id="variable-sys_geom~26"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1383,7 +1613,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-component~3"></span>
+              <span class="anchor" id="variable-component~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1398,7 +1628,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_components~3"></span>
+              <span class="anchor" id="variable-n_components~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1413,7 +1643,107 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~12"></span>
+              <span class="anchor" id="variable-tolerance~11"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tolerance</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-find_severed_bonds"></span> <h3>public  subroutine <a href='../proc/find_severed_bonds.html'>find_severed_bonds</a>(sys_geom, owner, cuts, n_cuts, tolerance)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Every bond whose two atoms were put in different fragments</p><a href="../proc/find_severed_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~24"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-owner~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>owner</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cuts"></span>
+              type(<a href='../type/severed_bond_t.html'>severed_bond_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>cuts</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_cuts"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_cuts</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tolerance~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1453,7 +1783,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~58"></span>
+              <span class="anchor" id="variable-sys_geom~23"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1543,7 +1873,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~11"></span>
+              <span class="anchor" id="variable-tolerance~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1583,7 +1913,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~57"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1598,7 +1928,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~7"></span>
+              <span class="anchor" id="variable-bonds~5"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1628,7 +1958,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~10"></span>
+              <span class="anchor" id="variable-tolerance~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1671,7 +2001,7 @@ bond at 1.8 Angstrom is not mistaken for a covalent one.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-22 07:09 +0000             </p>
+ on 2026-08-22 08:16 +0000             </p>
           </div>
         </div>
         <br>

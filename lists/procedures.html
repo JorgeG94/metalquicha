@@ -232,7 +232,7 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><a href='../proc/allow.html'>allow</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
-                 <td><p>Record a key an object may contain</p></td>
+                 <td><p>Record a key an object may contain</p><a href="../proc/allow.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/allowed_list.html'>allowed_list</a></td>
@@ -245,6 +245,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><a href='../module/mqc_group_batching.html'>mqc_group_batching</a></td>
                  <td>Subroutine</td>
                  <td><p>Append a completed fragment result to the current outbound batch.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/apply.html'>apply</a></td>
+                 <td><a href='../module/mqc_fock_projector.html'>mqc_fock_projector</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Force <code>fock</code> block diagonal in the frozen partition</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/apply_distance_screening.html'>apply_distance_screening</a></td>
@@ -536,6 +542,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Build a fragment from monomer indices, ghosting any that are negative</p><a href="../proc/build_fragment_from_indices.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/build_frozen_basis.html'>build_frozen_basis</a></td>
+                 <td><a href='../module/mqc_fock_projector.html'>mqc_fock_projector</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Turn a set of chosen orbitals into a basis <code>init</code> will accept</p><a href="../proc/build_frozen_basis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/build_gmbe_task_table.html'>build_gmbe_task_table</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
@@ -655,6 +667,12 @@ Result is in Angstrom</p></td>
                  <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
                  <td>Function</td>
                  <td><p>The identity of a calculation: what it computes, and on what</p><a href="../proc/calculation_fingerprint.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/cap_targets.html'>cap_targets</a></td>
+                 <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Which atoms a cap&rsquo;s derivative belongs to, and in what proportion</p><a href="../proc/cap_targets.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/cas_apply.html'>cas_apply</a></td>
@@ -1625,6 +1643,12 @@ Resets the stack trace</p></td>
                  <td><p>Representative of a node&rsquo;s component</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/find_severed_bonds.html'>find_severed_bonds</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every bond whose two atoms were put in different fragments</p><a href="../proc/find_severed_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/finite_diff_dipole_derivatives.html'>finite_diff_dipole_derivatives</a></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
@@ -2305,6 +2329,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><a href='../module/mqc_atomic_guess_common.html'>mqc_atomic_guess_common</a></td>
                  <td>Function</td>
                  <td><p>Ground-state spin multiplicity of a neutral free atom</p><a href="../proc/hund_multiplicity.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/init.html'>init</a></td>
+                 <td><a href='../module/mqc_fock_projector.html'>mqc_fock_projector</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Take the basis and partition, and form the back transform</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/initial_basis.html'>initial_basis</a></td>
@@ -3242,6 +3272,13 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
                  <td><p>The largest element of <code>T^T T - I</code>, or <code>huge</code> if <code>T</code> is not square</p><a href="../proc/orthogonality_defect.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/orthonormalize_against.html'>orthonormalize_against</a></td>
+                 <td><a href='../module/mqc_fock_projector.html'>mqc_fock_projector</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Project <code>vecs</code> off the first <code>n_prior</code> columns of <code>prior</code>, then
+orthonormalise what is left among itself in the metric <code>overlap</code></p><a href="../proc/orthonormalize_against.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/pad_name.html'>pad_name</a></td>
                  <td><a href='../module/mqc_timing.html'>mqc_timing</a></td>
                  <td>Function</td>
@@ -4137,6 +4174,12 @@ Trailing newlines do not create empty lines</p></td>
                  <td><p>How to name the evaluation that just failed</p><a href="../proc/step_label.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/still_connected.html'>still_connected</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Function</td>
+                 <td><p>Is there a path from <code>a</code> to <code>b</code> that does not use the bond <code>a</code>-<code>b</code>?</p><a href="../proc/still_connected.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/stop_workers.html'>stop_workers</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
@@ -4168,15 +4211,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -4531,7 +4574,7 @@ whatever libxc itself was configured to do.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-22 07:09 +0000             </p>
+ on 2026-08-22 08:16 +0000             </p>
           </div>
         </div>
         <br>

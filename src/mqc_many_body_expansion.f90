@@ -168,6 +168,12 @@ module mqc_many_body_expansion
       character(len=64) :: basis = "6-31g"
       character(len=16) :: esp = "exact"
       character(len=16) :: expansion = "fmo"
+      character(len=16) :: bond_breaking = "none"
+         !! How a cut covalent bond is represented on this expansion; "none"
+         !! refuses a partition that cuts one, which is the default and was the
+         !! only behaviour before caps existed.
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a cap sits along the bond it closes.
       character(len=16) :: far_field = "mulliken"
       real(dp) :: resppc = 2.0_dp
          !! Separation past which a neighbour becomes point charges. Negative
@@ -316,7 +322,8 @@ contains
                            trim(this%basis), trim(this%esp), trim(this%expansion), &
                            trim(this%far_field), this%resppc, this%level, &
                            this%max_outer, this%outer_tol, this%scf_max_iter, &
-                           this%scf_energy_tol, this%scf_density_tol, this%energy, error)
+                           this%scf_energy_tol, this%scf_density_tol, &
+                           trim(this%bond_breaking), this%cap_scale, this%energy, error)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -388,7 +395,8 @@ contains
                            trim(this%basis), trim(this%esp), trim(this%expansion), &
                            trim(this%far_field), this%resppc, this%level, &
                            this%max_outer, this%outer_tol, this%scf_max_iter, &
-                           this%scf_energy_tol, this%scf_density_tol, this%energy, error, &
+                           this%scf_energy_tol, this%scf_density_tol, &
+                           trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                            comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())

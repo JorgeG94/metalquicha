@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">27 statements</a>
+                 title=" 0.2% of total for procedures.">33 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,7 +139,10 @@
             <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-atom_i_in_frag~2">atom_i_in_frag</a>
             <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-atom_j_in_frag~2">atom_j_in_frag</a>
             <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-cap_idx">cap_idx</a>
-            <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-ibond~9">ibond</a>
+            <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-gone">gone</a>
+            <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-ibond~8">ibond</a>
+            <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-kept~4">kept</a>
+            <a class="list-group-item" href="../proc/add_hydrogen_caps.html#variable-s~12">s</a>
         </div>
       </div>
     </div>
@@ -211,7 +214,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~18"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in)</td>
@@ -226,7 +229,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~75"></span>
+              <span class="anchor" id="variable-sys_geom~50"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -241,7 +244,7 @@ Caps are placed at the position of the atom outside the fragment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~29"></span>
+              <span class="anchor" id="variable-fragment~24"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -888,7 +891,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ibond~9"></span>
+              <span class="anchor" id="variable-gone"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gone</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ibond~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -897,6 +917,40 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>ibond</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kept~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kept</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s~12"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>s</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -930,33 +984,41 @@ large graphs.</div>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ibond</span><span class="p">,</span><span class="w"> </span><span class="n">cap_idx</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_i_in_frag</span><span class="p">,</span><span class="w"> </span><span class="n">atom_j_in_frag</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">kept</span><span class="p">,</span><span class="w"> </span><span class="n">gone</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">s</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_caps</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
-<span class="k">      </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="c">! `R_H = R_kept + s (R_gone - R_kept)`. At s = 1 the cap lands exactly on</span>
+<span class="w">      </span><span class="c">! the removed atom, which is what this did before the scale existed and is</span>
+<span class="w">      </span><span class="c">! still the default; the redistribution below then puts the whole cap</span>
+<span class="w">      </span><span class="c">! gradient on that atom, as it always has.</span>
+<span class="w">      </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_scale</span>
+
+<span class="w">      </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="k">do </span><span class="n">ibond</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">is_broken</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
 <span class="k">         </span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span><span class="p">)</span>
 <span class="w">         </span><span class="n">atom_j_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">atom_j_in_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">            </span><span class="c">! atom_i is in fragment, atom_j is not → cap at position of atom_j</span>
-<span class="w">            </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">base_atom_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c">! Hydrogen</span>
-<span class="w">            </span><span class="c">! Place H at position of atom_j (1-indexed for coordinates array)</span>
-<span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">base_atom_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">               </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-<span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="p">.</span><span class="n">neqv</span><span class="p">.</span><span class="w"> </span><span class="n">atom_j_in_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_i_in_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span>
+<span class="w">               </span><span class="n">gone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="k">               </span><span class="n">kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span>
+<span class="w">               </span><span class="n">gone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span>
+<span class="w">            </span><span class="k">end if</span>
 
-<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_j_in_frag</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">atom_i_in_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">            </span><span class="c">! atom_j is in fragment, atom_i is not → cap at position of atom_i</span>
-<span class="w">            </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">            </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">base_atom_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c">! Hydrogen</span>
-<span class="w">            </span><span class="c">! Place H at position of atom_i (1-indexed for coordinates array)</span>
+<span class="w">            </span><span class="c">! 1-indexed for the coordinates array; the stored indices stay 0-based</span>
 <span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">base_atom_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">               </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-<span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span>
+<span class="w">               </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">kept</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="n">s</span><span class="o">*</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">gone</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">kept</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span>
+<span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gone</span>
+<span class="w">            </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_bonded_to</span><span class="p">(</span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kept</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end do</span>
 
@@ -984,7 +1046,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-22 07:09 +0000             </p>
+ on 2026-08-22 08:16 +0000             </p>
           </div>
         </div>
         <br>

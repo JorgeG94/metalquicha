@@ -37,6 +37,14 @@ module mqc_config_adapter
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       character(len=16) :: expansion_kind = "mbe"  !! "mbe", "fmo" or "ee-mbe"
+      character(len=16) :: embedding = ""
+         !! What field the fragments sit in: "none" turns the embedding off and
+         !! leaves a plain many-body expansion. Empty means the deck said nothing
+         !! and the expansion picks its own default.
+      character(len=16) :: bond_breaking = "none"
+         !! How a cut covalent bond is represented; "none" refuses one
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a cap sits along the bond it closes
       character(len=16) :: counterpoise = "none"   !! "none" or "vmfc"
       character(len=16) :: fmo_far_field = "mulliken"  !! mulliken, chelpg or ignore
       real(dp) :: fmo_resppc = 2.0_dp    !! Point-charge cutoff; negative disables it
@@ -161,6 +169,13 @@ contains
       if (allocated(mqc_config%counterpoise)) then
          driver_config%counterpoise = mqc_config%counterpoise
       end if
+      if (allocated(mqc_config%embedding)) then
+         driver_config%embedding = mqc_config%embedding
+      end if
+      if (allocated(mqc_config%bond_breaking)) then
+         driver_config%bond_breaking = mqc_config%bond_breaking
+      end if
+      driver_config%cap_scale = mqc_config%cap_scale
       if (allocated(mqc_config%expansion_kind)) then
          driver_config%expansion_kind = mqc_config%expansion_kind
       end if
@@ -537,6 +552,13 @@ contains
             end if
          end if
       end if
+
+      ! Set after both branches so it survives either path. A capping convention
+      ! belongs to the run rather than to a fragment, and every fragment built
+      ! from this geometry inherits it -- which is what keeps a cut bond capped
+      ! the same way in a monomer and in the dimer that contains it, and so keeps
+      ! the cap contributions cancelling through the expansion.
+      sys_geom%cap_scale = mqc_config%cap_scale
 
    end subroutine config_to_system_geometry
 

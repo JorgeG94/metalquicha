@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.5% of total for derived types.</p>Including implementation: 55 statements,  1.6% of total for derived types.">18 statements</a>
+                 title="<p> 1.7% of total for derived types.</p>Including implementation: 58 statements,  1.6% of total for derived types.">20 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,16 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-basis~7">basis</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-basis~8">basis</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_bonded_to">cap_bonded_to</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_replaces_atom">cap_replaces_atom</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_scale~5">cap_scale</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-charge~9">charge</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-coordinates~16">coordinates</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-coordinates~9">coordinates</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-distance~4">distance</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-element_numbers~10">element_numbers</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-element_numbers">element_numbers</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-is_ghost">is_ghost</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-local_to_global">local_to_global</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-multiplicity~8">multiplicity</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-n_atoms~44">n_atoms</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-multiplicity~7">multiplicity</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-n_atoms~22">n_atoms</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-n_caps">n_caps</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-nelec~2">nelec</a>
         </div>
@@ -175,7 +177,7 @@
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-compute_nelec">compute_nelec</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-destroy~27">destroy</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-destroy~16">destroy</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-set_basis">set_basis</a>
         </div>
       </div>
@@ -431,7 +433,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~7"></span>
+              <span class="anchor" id="variable-basis~8"></span>
               type(<a href='molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
               <td>public,</td>
@@ -444,6 +446,25 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>Gaussian basis functions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cap_bonded_to"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>cap_bonded_to</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>The in-fragment atom at the other end of each cut bond (size: n_caps),
+0-based like <code>cap_replaces_atom</code>. Needed only to differentiate: the
+cap sits on the line between the two, so both ends move it.</p>
             </td>
         </tr>
         <tr>
@@ -465,6 +486,25 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-cap_scale~5"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cap_scale</strong></td>
+<td> =</td>
+                <td>1.0_dp</td>
+            <td>
+                <p>Where each cap sits along its cut bond, <code>R_H = R_kept + s (R_gone - R_kept)</code>.
+One value for the fragment rather than per cap: it is a convention,
+not a property of a particular bond.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-charge~9"></span>
               integer,
             </td>
@@ -482,7 +522,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~16"></span>
+              <span class="anchor" id="variable-coordinates~9"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -516,7 +556,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~10"></span>
+              <span class="anchor" id="variable-element_numbers"></span>
               integer,
             </td>
               <td>public,</td>
@@ -575,7 +615,7 @@ only they know which atoms they meant.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~8"></span>
+              <span class="anchor" id="variable-multiplicity~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -592,7 +632,7 @@ only they know which atoms they meant.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~44"></span>
+              <span class="anchor" id="variable-n_atoms~22"></span>
               integer,
             </td>
               <td>public</td>
@@ -712,7 +752,7 @@ only they know which atoms they meant.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~27"></span>
+      <span class="anchor" id="boundprocedure-destroy~16"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a>
@@ -861,6 +901,14 @@ only they know which atoms they meant.</p>
 <span class="w">      </span><span class="c">! Hydrogen capping for broken bonds</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="c">!! Number of hydrogen caps added (always at end of atom list)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cap_replaces_atom</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Original atom index that each cap replaces (size: n_caps)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cap_bonded_to</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! The in-fragment atom at the other end of each cut bond (size: n_caps),</span>
+<span class="w">         </span><span class="c">!! 0-based like `cap_replaces_atom`. Needed only to differentiate: the</span>
+<span class="w">         </span><span class="c">!! cap sits on the line between the two, so both ends move it.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cap_scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">         </span><span class="c">!! Where each cap sits along its cut bond, `R_H = R_kept + s (R_gone - R_kept)`.</span>
+<span class="w">         </span><span class="c">!! One value for the fragment rather than per cap: it is a convention,</span>
+<span class="w">         </span><span class="c">!! not a property of a particular bond.</span>
 
 <span class="w">      </span><span class="c">! Gradient redistribution support</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_to_global</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Map fragment atom index to system atom index (size: n_atoms - n_caps)</span>
@@ -908,7 +956,7 @@ only they know which atoms they meant.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-22 07:09 +0000             </p>
+ on 2026-08-22 08:16 +0000             </p>
           </div>
         </div>
         <br>

@@ -1,0 +1,1031 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_fock_projector &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_fock_projector
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.8% of total for modules and submodules.">179 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_fock_projector.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_fock_projector.f90.html'>mqc_fock_projector.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_fock_projector</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_fock_projector.html#type-fock_projector_t">fock_projector_t</a>
+        </div>
+      </div>
+    </div>
+
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_fock_projector.html#proc-build_frozen_basis">build_frozen_basis</a>
+            <a class="list-group-item" href="../module/mqc_fock_projector.html#proc-apply">apply</a>
+            <a class="list-group-item" href="../module/mqc_fock_projector.html#proc-init">init</a>
+            <a class="list-group-item" href="../module/mqc_fock_projector.html#proc-orthonormalize_against">orthonormalize_against</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>A fixed orbital basis, a partition of it into frozen and unfrozen blocks,
+and one operation: force the Fock matrix block diagonal in that partition.</p>
+<p>This is GAFO &ndash; the generalized adjusted frozen orbital scheme &ndash; reduced
+to the part that has nothing to do with why the orbitals were frozen. What
+makes an orbital frozen, and where the frozen orbitals came from, is the
+caller&rsquo;s business; what is here is the constraint itself, which is dense
+linear algebra over <code>F</code>, <code>C</code> and <code>S</code> and knows nothing about fragments,
+bonds or integrals.</p>
+<p><strong>Why zeroing rather than a level shift.</strong> The obvious way to keep an
+orbital out of the occupied space is to add a penalty, <code>F + B S v v^T S</code>
+with <code>B</code> large. That raises the orbital&rsquo;s energy and does not decouple it:
+the off-diagonal Fock elements between the frozen and variational
+subspaces survive untouched, the two mix, and the matrix is not block
+diagonal in the partition the method assumes it is. Raising <code>B</code> makes the
+diagonal larger and leaves the coupling exactly where it was. Zeroing the
+couplings is the fix, and it is why this scheme exists at all.</p>
+<p><strong>The transform.</strong> With <code>C</code> an orthonormal basis in the metric <code>S</code> &ndash;
+<code>C^T S C = I</code>, frozen orbitals in the leading columns &ndash;</p>
+<div class="codehilite"><pre><span></span><code><span class="n">F_mo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">C</span><span class="o">^</span><span class="n">T</span><span class="w"> </span><span class="n">F</span><span class="w"> </span><span class="n">C</span><span class="w">          </span><span class="n">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">frozen</span><span class="o">-</span><span class="n">orbital</span><span class="w"> </span><span class="n">basis</span>
+<span class="n">F_mo</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="n">diagonal</span><span class="w">  </span><span class="n">the</span><span class="w"> </span><span class="n">constraint</span>
+<span class="n">F</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">SC</span><span class="p">)</span><span class="w"> </span><span class="n">F_mo</span><span class="w"> </span><span class="p">(</span><span class="n">SC</span><span class="p">)</span><span class="o">^</span><span class="n">T</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="n">again</span>
+</code></pre></div>
+
+<p>The back transform is the inverse of the forward one because <code>C^T S C = I</code>
+makes <code>C^-1 = C^T S</code>, so <code>(C^T)^-1 = S C</code>. Not an approximation and not a
+symmetrisation: with nothing frozen and <code>C</code> spanning the whole AO space
+the round trip returns <code>F</code> to roundoff, which is what the test asserts.</p>
+<p><code>S C</code> is formed once in <code>init</code> rather than each application, since neither
+factor moves once the frozen orbitals are chosen.</p>
+<p><strong>Choosing the shift.</strong> Smaller than instinct suggests. The back
+transform <code>(SC) F_mo (SC)^T</code> spreads the shifted block over every element,
+so the <em>unfrozen</em> block &ndash; the one carrying the physics &ndash; is clean only
+to about <code>shift * epsilon</code>. At the 1e6 the reference implementations use,
+that is around 1e-10 Hartree, against a validation suite that works at
+1e-9.</p>
+<p>Nothing here needs a shift that large. A penalty scheme does, because it
+is trying to overwhelm a coupling it never removed; here the coupling is
+gone, and the shift has only to lift the frozen virtuals clear of the
+occupied manifold so that filling by aufbau does not reach them. A few
+hundred Hartree is decisive for that and costs three or four digits less.
+<code>projector_shift_sets_the_precision_floor</code> measures it.</p>
+<p><strong>Where to apply it.</strong> Immediately after the Fock build and <em>before</em> the
+DIIS error and extrapolation. The constraint is a linear map and DIIS
+extrapolation is a linear combination whose coefficients sum to one, so a
+combination of matrices sharing this block structure has it too &ndash; the
+zeros stay zero and the shifted diagonal comes through unchanged. Applied
+there, every consumer downstream sees the same constrained object; applied
+after DIIS, the error vector measures a matrix nobody diagonalizes.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_scf_common.html'>mqc_scf_common</a></li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_fock_projector~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_fock_projectorUsesGraph" width="433pt" height="158pt"
+ viewBox="0.00 0.00 433.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_fock_projector~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<title>module~~mqc_fock_projector~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 429,-154 429,4 -4,4"/>
+<!-- module~mqc_fock_projector -->
+<g id="module~~mqc_fock_projector~~UsesGraph_node1" class="node">
+<title>module~mqc_fock_projector</title>
+<polygon fill="none" stroke="black" points="425,-107 308,-107 308,-83 425,-83 425,-107"/>
+<text text-anchor="middle" x="366.5" y="-92.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_fock_projector</text>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_fock_projector~~UsesGraph_node2" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_fock_projector~~UsesGraph_node2"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="97,-150 30,-150 30,-126 97,-126 97,-150"/>
+<text text-anchor="middle" x="63.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fock_projector&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge1" class="edge">
+<title>module~mqc_fock_projector&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M216.5,-136C179.77,-138.68 137.92,-139.03 107.44,-138.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="107.2,-135.3 97.16,-138.7 107.13,-142.3 107.2,-135.3"/>
+</g>
+<!-- module~mqc_scf_common -->
+<g id="module~~mqc_fock_projector~~UsesGraph_node3" class="node">
+<title>module~mqc_scf_common</title>
+<g id="a_module~~mqc_fock_projector~~UsesGraph_node3"><a xlink:href="../module/mqc_scf_common.html" xlink:title="mqc_scf_common">
+<polygon fill="#337ab7" stroke="#337ab7" points="272,-107 163,-107 163,-83 272,-83 272,-107"/>
+<text text-anchor="middle" x="217.5" y="-92.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_scf_common</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fock_projector&#45;&gt;module~mqc_scf_common -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge2" class="edge">
+<title>module~mqc_fock_projector&#45;&gt;module~mqc_scf_common</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M307.82,-95C299.47,-95 290.84,-95 282.38,-95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="282.17,-91.5 272.17,-95 282.17,-98.5 282.17,-91.5"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="module~~mqc_fock_projector~~UsesGraph_node4" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="120.5,-108 6.5,-108 6.5,-84 120.5,-84 120.5,-108"/>
+<text text-anchor="middle" x="63.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_fock_projector&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge3" class="edge">
+<title>module~mqc_fock_projector&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M335.72,-107.08C306.46,-118.05 260.25,-132.95 218.5,-136"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M216.5,-136C195.83,-137.51 146.16,-123.14 109.19,-111.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="110.21,-107.86 99.61,-108.08 108.03,-114.51 110.21,-107.86"/>
+</g>
+<!-- pic_lapack_interfaces -->
+<g id="module~~mqc_fock_projector~~UsesGraph_node5" class="node">
+<title>pic_lapack_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="127,-66 0,-66 0,-42 127,-42 127,-66"/>
+<text text-anchor="middle" x="63.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+</g>
+<!-- module~mqc_fock_projector&#45;&gt;pic_lapack_interfaces -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge4" class="edge">
+<title>module~mqc_fock_projector&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M216.5,-54C191.05,-48.79 162.7,-47.58 137.44,-48.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="137.09,-44.59 127.19,-48.37 137.29,-51.58 137.09,-44.59"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_fock_projector~~UsesGraph_node6" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="94.5,-24 32.5,-24 32.5,0 94.5,0 94.5,-24"/>
+<text text-anchor="middle" x="63.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_fock_projector&#45;&gt;pic_types -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge5" class="edge">
+<title>module~mqc_fock_projector&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M327.78,-82.91C298.3,-73.84 256.14,-61.71 218.5,-54"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M216.5,-54C178.07,-46.13 135.03,-33.91 104.59,-24.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="105.36,-21.25 94.78,-21.67 103.31,-27.94 105.36,-21.25"/>
+</g>
+<!-- module~mqc_scf_common&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge6" class="edge">
+<title>module~mqc_scf_common&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M173.76,-107.09C152.93,-112.98 127.95,-120.05 107.14,-125.94"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="105.96,-122.63 97.29,-128.72 107.87,-129.37 105.96,-122.63"/>
+</g>
+<!-- module~mqc_scf_common&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge7" class="edge">
+<title>module~mqc_scf_common&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M162.91,-95.35C152.55,-95.42 141.57,-95.49 130.86,-95.56"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="130.67,-92.06 120.69,-95.63 130.72,-99.06 130.67,-92.06"/>
+</g>
+<!-- module~mqc_scf_common&#45;&gt;pic_lapack_interfaces -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge8" class="edge">
+<title>module~mqc_scf_common&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M171.72,-82.92C155.25,-78.48 136.41,-73.4 119.16,-68.74"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="119.79,-65.29 109.23,-66.06 117.97,-72.05 119.79,-65.29"/>
+</g>
+<!-- module~mqc_scf_common&#45;&gt;pic_types -->
+<g id="module~~mqc_fock_projector~~UsesGraph_edge9" class="edge">
+<title>module~mqc_scf_common&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M188.63,-82.93C180.09,-78.72 170.88,-73.62 163,-68 144.83,-55.05 146.05,-44.62 127,-33 120.06,-28.77 112.16,-25.27 104.37,-22.42"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="105.23,-19.01 94.64,-19.15 103,-25.65 105.23,-19.01"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+
+
+
+
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-fock_projector_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/fock_projector_t.html'>fock_projector_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>A frozen-orbital partition, and the constraint it implies</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis~3"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>basis</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p><code>C</code>, <code>n_ao</code> by <code>n_mo</code>, orthonormal in the metric <code>S</code>, with the
+frozen orbitals in the leading columns. Their being leading is what
+lets a block be named by an index range.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_frozen"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+<p>Columns <code>n_frozen_occ + 1 : n_frozen</code> are frozen and virtual: made
+degenerate at <code>shift</code> so nothing occupies them. Zero here means the
+projector is inactive and <code>apply</code> returns at once.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_frozen_occ"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen_occ</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+<p>Columns <code>1 : n_frozen_occ</code> &ndash; frozen and occupied. Their block is
+left alone; only its couplings to everything else are cut.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sc"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>sc</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p><code>S C</code>, the back transform, formed once</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shift"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shift</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+<p>The energy the frozen virtual block is held at</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+        <h4>Type-Bound Procedures</h4>
+        <table class="table table-striped varlist">
+          <tbody>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/fock_projector_t.html#boundprocedure-apply~2'>apply</a></strong></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/fock_projector_t.html#boundprocedure-init'>init</a></strong></td>
+                  <td></td>
+              </tr>
+          </tbody>
+        </table>
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-build_frozen_basis"></span> <h3>public  subroutine <a href='../proc/build_frozen_basis.html'>build_frozen_basis</a>(frozen, n_frozen_occ, overlap, basis, n_mo, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Turn a set of chosen orbitals into a basis <code>init</code> will accept</p><a href="../proc/build_frozen_basis.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frozen"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frozen</strong>(:,:)</td>
+            <td>
+<p><code>n_ao</code> by <code>n_frozen</code>, occupied first, in the order the blocks want</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_frozen_occ~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen_occ</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-overlap"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>overlap</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>basis</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_mo"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_mo</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~34"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-apply"></span> <h3>private  subroutine <a href='../proc/apply.html'>apply</a>(this, fock, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Force <code>fock</code> block diagonal in the frozen partition</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~43"></span>
+              class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fock"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fock</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~37"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-init"></span> <h3>private  subroutine <a href='../proc/init.html'>init</a>(this, basis, overlap, n_frozen_occ, n_frozen, shift, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Take the basis and partition, and form the back transform</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~42"></span>
+              class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basis</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-overlap~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>overlap</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_frozen_occ~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen_occ</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_frozen~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shift~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shift</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~36"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-orthonormalize_against"></span> <h3>private  subroutine <a href='../proc/orthonormalize_against.html'>orthonormalize_against</a>(overlap, prior, n_prior, vecs, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Project <code>vecs</code> off the first <code>n_prior</code> columns of <code>prior</code>, then
+orthonormalise what is left among itself in the metric <code>overlap</code></p><a href="../proc/orthonormalize_against.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-overlap~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>overlap</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-prior"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>prior</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_prior"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_prior</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-vecs"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>vecs</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~35"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-22 08:16 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
