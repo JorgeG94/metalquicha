@@ -73,7 +73,8 @@ contains
       !! its energy less every proper subset's delta, so keeping a trimer whose
       !! dimers were screened away fails the lookup rather than approximating
       !! anything. `fraglist_t%close_subsets` exists for this.
-      use mqc_method_types, only: METHOD_TYPE_EFP2, METHOD_TYPE_SAPT0
+      use mqc_method_types, only: METHOD_TYPE_EFP2, METHOD_TYPE_SAPT0, &
+                                  METHOD_TYPE_SAPT2
       type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
@@ -166,7 +167,8 @@ contains
       ! SAPT takes neither path either: it returns the interaction between two
       ! monomers rather than the energy of one system, so there is nothing for a
       ! many-body expansion to expand and no single wavefunction to fragment.
-      if (config%method_config%method_type == METHOD_TYPE_SAPT0) then
+      if (config%method_config%method_type == METHOD_TYPE_SAPT0 .or. &
+          config%method_config%method_type == METHOD_TYPE_SAPT2) then
          call run_sapt(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
                        wants_output, result_out)
          return
@@ -984,7 +986,7 @@ contains
    end subroutine run_multi_molecule_calculations
 
    subroutine run_sapt(config, sys_geom, rank, write_output, result_out)
-      !! SAPT0 between the deck's two fragments
+      !! SAPT0 or SAPT2 between the deck's two fragments
       !!
       !! The monomers are the deck's own `fragments`, so no new keyword is needed
       !! -- a SAPT deck is a geometry, a basis, and the partition that says which
@@ -1001,8 +1003,9 @@ contains
       !!
       !! Rank zero only. The pairs of a cluster are the obvious thing to
       !! distribute, and a single pair is not.
-      use mqc_libcint_bridge, only: run_libcint_sapt0
-      use mqc_program_limits, only: N_SAPT_TERMS
+      use mqc_libcint_bridge, only: run_libcint_sapt0, run_libcint_sapt2
+      use mqc_method_types, only: METHOD_TYPE_SAPT2
+      use mqc_program_limits, only: N_SAPT_TERMS, N_SAPT2_TERMS
       use mqc_elements, only: element_number_to_symbol
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       type(driver_config_t), intent(in) :: config
@@ -1013,7 +1016,8 @@ contains
 
       type(error_t) :: err
       type(json_output_data_t) :: json_data
-      real(dp) :: terms(N_SAPT_TERMS)
+      real(dp), allocatable :: terms(:)
+      logical :: is_sapt2
       integer, allocatable :: z_a(:), z_b(:)
       real(dp), allocatable :: xyz_a(:, :), xyz_b(:, :)
       character(len=8), allocatable :: sym_a(:), sym_b(:)
@@ -1046,8 +1050,16 @@ contains
          sym_b(i) = element_number_to_symbol(z_b(i))
       end do
 
-      call run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
-                             config%method_config%basis_set, terms, err)
+      is_sapt2 = config%method_config%method_type == METHOD_TYPE_SAPT2
+      if (is_sapt2) then
+         allocate (terms(N_SAPT2_TERMS))
+         call run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                                config%method_config%basis_set, terms, err)
+      else
+         allocate (terms(N_SAPT_TERMS))
+         call run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                                config%method_config%basis_set, terms, err)
+      end if
       if (err%has_error()) then
          call refuse(result_out, "SAPT: "//err%get_message())
          return
@@ -1058,7 +1070,11 @@ contains
       ! code's output is quoted in, and a term can only be checked against the
       ! same term.
       call logger%info("============================================")
-      call logger%info("  SAPT0 interaction energy, Hartree")
+      if (is_sapt2) then
+         call logger%info("  SAPT2 interaction energy, Hartree")
+      else
+         call logger%info("  SAPT0 interaction energy, Hartree")
+      end if
       call logger%info("    electrostatics        "//to_char(terms(1)))
       call logger%info("    exchange              "//to_char(terms(3)))
       call logger%info("      (S^2 approximation) "//to_char(terms(2)))
@@ -1071,19 +1087,31 @@ contains
       call logger%info("    delta HF              "//to_char(terms(10)))
       call logger%info("    --")
       call logger%info("    supermolecular HF     "//to_char(terms(11)))
-      call logger%info("    total                 "//to_char(terms(12)))
+      if (is_sapt2) then
+         call logger%info("    total SAPT0           "//to_char(terms(12)))
+         call logger%info("    --")
+         call logger%info("    elst12                "//to_char(terms(13)))
+         call logger%info("    exch11                "//to_char(terms(14)))
+         call logger%info("    exch12                "//to_char(terms(15)))
+         call logger%info("    ind22                 "//to_char(terms(16)))
+         call logger%info("    exch-ind22 (scaled)   "//to_char(terms(17)))
+         call logger%info("    --")
+         call logger%info("    total                 "//to_char(terms(18)))
+      else
+         call logger%info("    total                 "//to_char(terms(12)))
+      end if
       call logger%info("============================================")
 
       if (present(result_out)) then
          ! The `scf` slot, being the reference `energy_t%total()` sums. This is an
          ! interaction energy and not an SCF energy; nothing here pretends otherwise.
-         result_out%energy%scf = terms(N_SAPT_TERMS)
+         result_out%energy%scf = terms(size(terms))
          result_out%has_energy = .true.
       end if
 
       if (write_output .and. .not. config%skip_json_output) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
-         json_data%total_energy = terms(N_SAPT_TERMS)
+         json_data%total_energy = terms(size(terms))
          json_data%has_energy = .true.
          json_data%sapt_terms = terms
          json_data%has_sapt = .true.

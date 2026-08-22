@@ -609,7 +609,7 @@ contains
 
       character(len=*), parameter :: known = &
                                      "gfn1, gfn2, hf, dft, mp2 (also scs-, sos-, ri-, df-), ccsd, ccsd(t) "// &
-                                     "(also ri-, df-), casscf, casci, mcscf, sapt0, efp2"
+                                     "(also ri-, df-), casscf, casci, mcscf, sapt0, sapt2, efp2"
 
       if (method_type == METHOD_TYPE_UNKNOWN) then
          call error%set(ERROR_VALIDATION, "unknown model.method '"//trim(spelling)// &

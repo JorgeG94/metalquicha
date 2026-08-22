@@ -3,7 +3,8 @@ module test_mqc_method_types
    use mqc_method_types, only: method_type_from_string, method_type_to_string, &
                                METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, METHOD_TYPE_DFT, &
                                METHOD_TYPE_MCSCF, METHOD_TYPE_MP2, METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD, &
-                               METHOD_TYPE_CCSD_T, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12, METHOD_TYPE_UNKNOWN
+                               METHOD_TYPE_CCSD_T, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12, METHOD_TYPE_UNKNOWN, &
+                               METHOD_TYPE_SAPT0, METHOD_TYPE_SAPT2
    use pic_types, only: int32
    implicit none
    private
@@ -22,6 +23,7 @@ contains
                   new_unittest("mcscf_from_string", test_mcscf_from_string), &
                   new_unittest("mp2_from_string", test_mp2_from_string), &
                   new_unittest("ccsd_from_string", test_ccsd_from_string), &
+                  new_unittest("sapt_from_string", test_sapt_from_string), &
                   new_unittest("unknown_from_string", test_unknown_from_string), &
                   new_unittest("case_insensitive", test_case_insensitive), &
                   new_unittest("to_string_roundtrip", test_to_string_roundtrip) &
@@ -132,6 +134,24 @@ contains
       call check(error, method_type_from_string("ccsd(t)-f12") == METHOD_TYPE_CCSD_T_F12, &
                  "ccsd(t)-f12 should map to METHOD_TYPE_CCSD_T_F12")
    end subroutine test_ccsd_from_string
+
+   subroutine test_sapt_from_string(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      ! "sapt" alone has always meant the base order; SAPT2 must be asked
+      ! for by name, so an old deck keeps computing what it computed.
+      call check(error, method_type_from_string("sapt") == METHOD_TYPE_SAPT0, &
+                 "sapt should map to METHOD_TYPE_SAPT0")
+      if (allocated(error)) return
+      call check(error, method_type_from_string("sapt0") == METHOD_TYPE_SAPT0, &
+                 "sapt0 should map to METHOD_TYPE_SAPT0")
+      if (allocated(error)) return
+      call check(error, method_type_from_string("sapt2") == METHOD_TYPE_SAPT2, &
+                 "sapt2 should map to METHOD_TYPE_SAPT2")
+      if (allocated(error)) return
+      call check(error, method_type_to_string(METHOD_TYPE_SAPT2) == "sapt2", &
+                 "METHOD_TYPE_SAPT2 should map back to sapt2")
+   end subroutine test_sapt_from_string
 
    subroutine test_unknown_from_string(error)
       type(error_type), allocatable, intent(out) :: error
