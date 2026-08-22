@@ -114,7 +114,8 @@ contains
    subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
                               basis_name, esp, expansion, far_field, resppc, &
                               level, max_outer, outer_tol, scf_max_iter, &
-                              scf_energy_tol, scf_density_tol, energy, error, comm)
+                              scf_energy_tol, scf_density_tol, bond_breaking, &
+                              cap_scale, energy, error, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -135,6 +136,8 @@ contains
       real(dp), intent(in) :: outer_tol
       integer, intent(in) :: scf_max_iter
       real(dp), intent(in) :: scf_energy_tol, scf_density_tol
+      character(len=*), intent(in) :: bond_breaking
+      real(dp), intent(in) :: cap_scale
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm

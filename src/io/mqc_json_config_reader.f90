@@ -474,6 +474,8 @@ contains
       call optional_real(json, "keywords.fragmentation.scf_energy_tolerance", config%fmo_scf_energy_tol)
       call optional_real(json, "keywords.fragmentation.scf_density_tolerance", config%fmo_scf_density_tol)
       call optional_string(json, "keywords.fragmentation.embedding", config%embedding)
+      call optional_string(json, "keywords.fragmentation.bond_breaking", config%bond_breaking)
+      call optional_real(json, "keywords.fragmentation.cap_scale", config%cap_scale)
       call optional_string(json, "keywords.fragmentation.cutoff_method", config%cutoff_method)
       call optional_string(json, "keywords.fragmentation.distance_metric", config%distance_metric)
       call optional_int(json, "keywords.fragmentation.global_groups", config%global_groups)

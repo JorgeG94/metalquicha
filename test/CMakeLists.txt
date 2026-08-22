@@ -286,6 +286,15 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_projection)
   target_link_libraries(test_mqc_libcint_projection
                         PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Adjusted frozen orbitals. Here rather than beside the constraint they feed
+  # because a hybrid is taken off a model system that has to be solved and
+  # localized, so all three need the integrals backend. `mqc_fock_projector`'s
+  # own test does not -- the constraint is dense linear algebra over F, C and S
+  # and knows nothing about integrals -- which is why it sits outside.
+  addtest(mqc_afo_model)
+  addtest(mqc_afo_orbital)
+  addtest(mqc_afo_fmo)
 endif()
 
 # Only meaningful with the cuEST backend compiled in.
@@ -321,6 +330,7 @@ addtest(mqc_split_lines)
 addtest(mqc_result_types)
 addtest(mqc_finite_differences)
 addtest(mqc_diis)
+addtest(mqc_fock_projector)
 addtest(mqc_aambs)
 addtest(mqc_determinants)
 addtest(mqc_ci)

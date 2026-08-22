@@ -1,4 +1,4 @@
-!! The fragment molecular orbital method, to any order, for non-covalent fragments
+!! The fragment molecular orbital method, to any order
 module mqc_libcint_fmo
    !! FMO_n: two nested self-consistencies, then a pass over every n-mer.
    !!
@@ -71,18 +71,27 @@ module mqc_libcint_fmo
    !! wrong one still looks plausible at level two and cannot survive being
    !! asked to cancel exactly.
    !!
-   !! **Non-covalent fragments only, and this is enforced.** Every fragment must
-   !! be a whole molecule. None of the machinery for cutting a bond -- adjusted
-   !! fragment orbitals, hybrid orbital projection, hydrogen caps -- is present,
-   !! so a partition that severs one is refused rather than answered.
+   !! **Whole molecules by default, and a covalent cut has to be asked for.**
+   !! `bond_breaking = "none"` refuses a partition that severs a bond rather
+   !! than answering it; `"afo"` detaches the bond with an adjusted frozen
+   !! orbital instead, and is restricted to `esp = "none"` for now.
    !!
-   !! The check is not a formality. Cutting a single bond leaves both fragments
-   !! with an odd electron count, which the closed-shell check would catch on
-   !! its own; but cut an even number per fragment -- a ring, a double bond --
-   !! and every count stays even. Cyclopropane split into three CH2 used to come
-   !! back 0.28 Hartree low, which is 176 kcal/mol in the shape of an answer.
-   !! Connectivity is therefore checked directly, with the criterion
-   !! [[mqc_bond_perception]] uses everywhere else.
+   !! The refusal is not a formality, which is why it stayed the default.
+   !! Cutting a single bond leaves both fragments with an odd electron count,
+   !! which the closed-shell check would catch on its own; but cut an even
+   !! number per fragment -- a ring, a double bond -- and every count stays
+   !! even. Cyclopropane split into three CH2 used to come back 0.28 Hartree
+   !! low, which is 176 kcal/mol in the shape of an answer. Connectivity is
+   !! therefore checked directly, with the criterion [[mqc_bond_perception]]
+   !! uses everywhere else.
+   !!
+   !! When a bond *is* detached, the orbital that stands in for it comes from
+   !! [[mqc_libcint_afo]] and is held by [[mqc_fock_projector]]. What belongs
+   !! here is only the assembly: `assemble_group` decides a group's boundaries
+   !! from its own members, every time, because a bond cut between two monomers
+   !! is whole again inside the dimer holding both ends. Inheriting that
+   !! decision from the members instead is what made an earlier capped version
+   !! 11 Hartree wrong.
    !!
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
    !! 1140 SCFs against 190 for level two. Nothing here refuses a high level --
@@ -97,8 +106,13 @@ module mqc_libcint_fmo
    use mqc_elements, only: element_vdw_radius
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_bond_perception, only: connected_components
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_bond_perception, only: connected_components, find_severed_bonds, severed_bond_t
+   use mqc_libcint_afo, only: afo_model_t, afo_options_t, afo_hybrid_t, build_afo_model, &
+                              bond_hybrid, cuts_outside_group, group_electron_shift, &
+                              build_group_frozen
+   use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
+                                    atom_ao_blocks
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
    use mqc_libcint_esp, only: esp_matrices
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
@@ -157,6 +171,35 @@ module mqc_libcint_fmo
          !! cancellation flatters it. That is luck, not accuracy -- and it is
          !! not something to rely on, because the two errors have no reason to
          !! stay matched for a different system.
+      character(len=16) :: bond_breaking = "none"
+         !! How a cut covalent bond is represented.
+         !!
+         !! `"none"` refuses a partition that cuts one, naming the two atoms
+         !! and the two fragments they were put in. That is the default and
+         !! it is not a formality: cutting an even number of bonds per
+         !! fragment leaves every electron count even, so nothing else
+         !! objects, and cyclopropane split into three CH2 used to come back
+         !! 0.28 Hartree low.
+         !!
+         !! `"afo"` detaches the bond with an adjusted frozen orbital. A model
+         !! system around the bond is solved and localized, the orbital on the
+         !! bond is reduced to the detached atom's own functions, and that
+         !! hybrid is then frozen -- empty in the fragment that gets nothing of
+         !! the bond, occupied in the one that gets all of it. See
+         !! [[mqc_libcint_afo]].
+         !!
+         !! Only sound without an embedding field so far, so `"afo"` requires
+         !! `esp = "none"` and says so. A frozen orbital and a field both
+         !! describe the bond region -- the field already supplies the
+         !! neighbour's nucleus and density where the orbital supplies the
+         !! bond -- so the detached atom's share has to come out of the field
+         !! first. That is clean for point charges and not defined for an
+         !! exact density.
+      real(dp) :: cap_scale = 1.0_dp
+         !! Where a hydrogen cap sits along the bond it closes, for the
+         !! many-body path; see [[mqc_physical_fragment]]. Not used by
+         !! `"afo"`, which caps only the model systems it builds and derives
+         !! their scale from covalent radii rather than from a deck.
       character(len=16) :: far_field = "mulliken"
          !! What a distant fragment contributes to the embedding: the level of
          !! theory the long-range part is evaluated at.
@@ -329,8 +372,53 @@ module mqc_libcint_fmo
       real(dp) :: energy = 0.0_dp                !! internal, E'
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
+      integer :: n_caps = 0
+         !! Hydrogen caps closing cut bonds, held at the end of `z`, `sym`
+         !! and `xyz` and deliberately absent from `atoms`. `atoms` maps a
+         !! fragment's entries back onto the system and a cap answers to no
+         !! system atom, so it must not appear there -- it is used as a
+         !! scatter index in several places and a zero would write outside
+         !! the array. The consequence is that `size(atoms)` counts real
+         !! atoms and `size(z)` counts what the SCF actually sees.
       integer, allocatable :: near(:)            !! fragments close enough for the exact term
    end type fragment_t
+
+   !> Everything the system's cut bonds imply, worked out once
+   type :: afo_context_t
+      !! Built before any fragment is solved, because a hybrid is a property of
+      !! the bond and its surroundings and not of whoever is being solved. One
+      !! model system per cut bond, whatever the fragment count.
+      logical :: active = .false.
+      integer :: n_cuts = 0
+      type(severed_bond_t), allocatable :: cuts(:)
+      type(afo_hybrid_t), allocatable :: hybrid(:)
+      character(len=2), allocatable :: sym(:)
+         !! System-wide symbols. A group holding the attached end of a bond has
+         !! to name the detached atom to ghost it, and that atom is one it does
+         !! not own, so its symbol cannot come from any fragment.
+   end type afo_context_t
+
+   !> One n-mer as it will be handed to an SCF, boundaries included
+   type :: group_t
+      integer :: n_real = 0    !! Atoms the group owns; ghosts follow them
+      integer :: nelec = 0     !! With the boundary shift already applied
+      integer, allocatable :: z(:)
+      character(len=2), allocatable :: sym(:)
+      real(dp), allocatable :: xyz(:, :)
+      logical, allocatable :: ghost(:)
+      integer :: n_bound = 0   !! Cut bonds this group is still cut across
+      integer, allocatable :: bda_slot(:)  !! Where each boundary's BDA sits here
+      logical, allocatable :: occupied(:)  !! True when this group gets the bond
+      integer, allocatable :: cut_of(:)    !! Which system cut each boundary is
+   end type group_t
+
+   !> Where a frozen virtual is held, in Hartree.
+   !>
+   !> Modest on purpose. The blocks are decoupled rather than penalised, so this
+   !> has only to lift the frozen virtuals clear of the occupied manifold, and a
+   !> larger one costs precision -- the back transform spreads it over every
+   !> element, leaving the unfrozen block clean only to about `shift * epsilon`.
+   real(dp), parameter :: AFO_SHIFT = 1.0e3_dp
 
 contains
 
@@ -357,6 +445,7 @@ contains
          !! the next pass genuinely needs, which are small.
 
       type(fragment_t), allocatable :: frag(:)
+      type(afo_context_t) :: afo
       integer :: n_atoms, n_frag, i
       logical :: all_converged
 
@@ -368,13 +457,13 @@ contains
       end if
 
       call build_fragments(atomic_numbers, symbols, coordinates, owner, opts, &
-                           frag, n_frag, error)
+                           frag, n_frag, afo, error, comm)
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
       all_converged = .true.
 
-      call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
+      call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, afo, res, &
                               all_converged, error, comm)
       if (error%has_error()) return
 
@@ -387,7 +476,7 @@ contains
       end do
       res%monomer_sum = sum(res%monomer_energy)
 
-      call calculate_polymers(frag, n_frag, atomic_numbers, coordinates, opts, res, &
+      call calculate_polymers(frag, n_frag, atomic_numbers, coordinates, opts, afo, res, &
                               all_converged, error, comm)
       if (error%has_error()) return
 
@@ -407,7 +496,7 @@ contains
       end if
    end subroutine run_fmo2
 
-   subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error)
+   subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error, ghost)
       !! A fragment's molecule and Schwarz bounds, built from its geometry
       !!
       !! Called wherever one is needed and discarded straight after. That is the
@@ -422,13 +511,23 @@ contains
       type(libcint_molecule_t), intent(out) :: mol
       real(dp), allocatable, intent(out) :: bounds(:, :)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: ghost(:)
+         !! Atoms whose basis functions are wanted without their nucleus. A
+         !! group holding the attached end of a detached bond carries the
+         !! detached atom this way: the functions describe the bond region, and
+         !! the nucleus and its electrons stay with the fragment that owns them.
 
-      call build_libcint_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, error)
+      if (present(ghost)) then
+         call build_libcint_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, &
+                                     error, ghost=ghost)
+      else
+         call build_libcint_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, error)
+      end if
       if (error%has_error()) return
       call schwarz_bounds(mol, bounds, error)
    end subroutine open_fragment
 
-   subroutine build_fragments(z, symbols, coords, owner, opts, frag, n_frag, error)
+   subroutine build_fragments(z, symbols, coords, owner, opts, frag, n_frag, afo, error, comm)
       !! Each fragment, and which of the others it needs the exact term for
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
@@ -437,7 +536,9 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(fragment_t), allocatable, intent(out) :: frag(:)
       integer, intent(out) :: n_frag
+      type(afo_context_t), intent(out) :: afo
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
       integer, allocatable :: count_per(:)
       integer :: n_atoms, i, f
@@ -464,8 +565,38 @@ contains
          return
       end if
 
-      call refuse_severed_bonds(z, coords, owner, n_atoms, error)
-      if (error%has_error()) return
+      if (opts%bond_breaking == "none") then
+         call refuse_severed_bonds(z, coords, owner, n_atoms, error)
+         if (error%has_error()) return
+      else if (opts%bond_breaking == "afo") then
+         ! Adjusted frozen orbitals. Restricted to the unembedded expansion for
+         ! now, and that ordering is deliberate rather than incidental: a frozen
+         ! orbital and an embedding field both describe the bond region, and the
+         ! detached atom's share has to come out of the field before the two can
+         ! be used together. Getting the fragmentation right first, where there
+         ! is no field to double count against, is what the caps attempt should
+         ! have done.
+         if (opts%esp /= "none") then
+            call error%set(ERROR_VALIDATION, "fmo: bond_breaking='afo' is implemented "// &
+                           "for esp='none' only. A frozen orbital and an embedding "// &
+                           "field both describe the detached bond, and removing the "// &
+                           "detached atom's share of the field is not built yet -- it "// &
+                           "is clean for point charges and not defined for an exact "// &
+                           "density. Set keywords.fragmentation.embedding to 'none'")
+            return
+         end if
+         call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
+         if (error%has_error()) return
+      else
+         call error%set(ERROR_VALIDATION, "fmo: bond_breaking='"// &
+                        trim(opts%bond_breaking)//"' is not implemented for this "// &
+                        "expansion. A cap has to be decided per n-mer rather than per "// &
+                        "fragment -- a dimer spanning a cut bond must not carry the "// &
+                        "caps its monomers needed. Use 'afo', which detaches a bond "// &
+                        "with a frozen orbital instead, or the many-body path, which "// &
+                        "caps covalent cuts already")
+         return
+      end if
 
       allocate (frag(n_frag))
       do f = 1, n_frag
@@ -474,6 +605,14 @@ contains
          frag(f)%sym = symbols(frag(f)%atoms)
          frag(f)%xyz = coords(:, frag(f)%atoms)
          frag(f)%nelec = sum(frag(f)%z)
+         ! A detached bond moves an electron between the two fragments it joins:
+         ! the end that gets nothing of it is one short, the end that gets all
+         ! of it is one over. Applied here so the closed-shell check below sees
+         ! the count the fragment will actually be solved with -- ethane split
+         ! into two methyls is 9 and 9 before this and 8 and 10 after it.
+         if (afo%active) then
+            frag(f)%nelec = frag(f)%nelec + group_electron_shift(afo%cuts, afo%n_cuts, [f])
+         end if
          if (mod(frag(f)%nelec, 2) /= 0) then
             call error%set(ERROR_VALIDATION, "fmo: fragment "//to_char(f)//" has an odd "// &
                            "electron count and this is a closed-shell method")
@@ -502,6 +641,341 @@ contains
       call logger%verbose("  fmo: fragment 1 treats "//to_char(size(frag(1)%near))// &
                           " of "//to_char(n_frag - 1)//" neighbours exactly")
    end subroutine build_fragments
+
+   subroutine build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
+      !! Every cut bond's frozen orbital, worked out once for the system
+      !!
+      !! A hybrid belongs to a bond and its surroundings, not to whoever is being
+      !! solved, so this runs before any fragment does and costs one small SCF
+      !! per cut bond however many fragments and n-mers there turn out to be.
+      !!
+      !! **Solved on one rank and shared, rather than everywhere.** The cost is
+      !! not the reason -- a model system is a dozen atoms and its SCF is
+      !! milliseconds, so recomputing it per rank wastes nothing anybody misses.
+      !! The reason is that every rank has to end up with *bit-identical*
+      !! hybrids. Each rank freezes orbitals in the fragments it owns and the
+      !! energies are summed by an allreduce, so ranks that froze subtly
+      !! different orbitals contribute from subtly different methods and the sum
+      !! is quietly wrong -- no crash, nothing in the log.
+      !!
+      !! Recomputing would very probably agree, and "very probably" is the
+      !! problem. Two things could separate ranks: unequal `OMP_NUM_THREADS`
+      !! reassociates the BLAS reductions under the SCF, and the localization is
+      !! a *discrete* choice on top of continuous data -- Jacobi sweeps take the
+      !! largest pair gain, and near-degenerate gains on the symmetric little
+      !! molecules model systems tend to be can flip on a rounding difference
+      !! and give a different localized set rather than a perturbed one.
+      !!
+      !! **The failure path has to go through the collectives, not around
+      !! them.** A leader that hits an error and returns leaves every other rank
+      !! blocked forever at a reduction nobody reaches. So the leader records
+      !! what went wrong as integers, every rank reduces them, and every rank
+      !! reconstructs the same message from the result.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: owner(:)
+      type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(out) :: afo
+      type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+
+      type(system_geometry_t) :: geom
+      type(afo_model_t) :: model
+      type(afo_options_t) :: afo_opts
+      type(error_t) :: local
+      real(dp), allocatable :: hyb(:), flat(:)
+      integer, allocatable :: lengths(:)
+      integer :: status(3)
+      integer :: i, n_on_bond, at, total
+
+      afo%active = .false.
+      if (error%has_error()) return
+
+      geom%total_atoms = size(z)
+      allocate (geom%element_numbers(size(z)), source=z)
+      allocate (geom%coordinates(3, size(z)), source=coords)
+      call find_severed_bonds(geom, owner, afo%cuts, afo%n_cuts)
+      if (afo%n_cuts == 0) return
+
+      do i = 1, afo%n_cuts
+         if (afo%cuts(i)%in_ring) then
+            call error%set(ERROR_VALIDATION, "fmo: the partition cuts a ring -- atoms "// &
+                           to_char(afo%cuts(i)%atom_a)//" and "// &
+                           to_char(afo%cuts(i)%atom_b)//" are still joined by another "// &
+                           "path -- so the two fragments meet in more than one place. "// &
+                           "A frozen orbital stands in for one detached bond and not "// &
+                           "for a ring; fragment so that each pair of fragments is "// &
+                           "joined at most once")
+            return
+         end if
+         if (z(afo%cuts(i)%atom_a) == 1 .or. z(afo%cuts(i)%atom_b) == 1) then
+            call error%set(ERROR_VALIDATION, "fmo: the partition detaches a bond at a "// &
+                           "hydrogen (atoms "//to_char(afo%cuts(i)%atom_a)//" and "// &
+                           to_char(afo%cuts(i)%atom_b)//"). A hydrogen has nothing left "// &
+                           "to hybridise once its one bond is taken away; cut at a "// &
+                           "heavy atom")
+            return
+         end if
+      end do
+
+      afo_opts%basis = opts%basis
+      allocate (afo%hybrid(afo%n_cuts))
+      allocate (afo%sym(size(symbols)), source=symbols)
+      allocate (lengths(afo%n_cuts), source=0)
+      status = 0
+
+      ! `status` is [what went wrong, which bond, how many orbitals were on it],
+      ! filled only by the rank that does the work and reduced below, so the
+      ! message every rank raises is the same one.
+      if (is_leader(comm)) then
+         do i = 1, afo%n_cuts
+            call build_afo_model(z, coords, afo%cuts(i), model, local)
+            if (local%has_error()) then
+               status = [1, i, 0]
+               exit
+            end if
+            call bond_hybrid(model, afo_opts, hyb, n_on_bond, local)
+            if (local%has_error()) then
+               status = [2, i, 0]
+               exit
+            end if
+            if (n_on_bond /= 1) then
+               status = [3, i, n_on_bond]
+               exit
+            end if
+            afo%hybrid(i)%coeff = hyb
+            lengths(i) = size(hyb)
+         end do
+      end if
+
+      if (spread_over(comm)) call allreduce(comm, status, 3, MPI_SUM)
+      if (status(1) /= 0) then
+         call afo_failure(afo%cuts(status(2)), status(1), status(3), local, error)
+         return
+      end if
+
+      if (spread_over(comm)) then
+         call allreduce(comm, lengths, afo%n_cuts, MPI_SUM)
+         total = sum(lengths)
+         allocate (flat(total), source=0.0_dp)
+         if (is_leader(comm)) then
+            at = 0
+            do i = 1, afo%n_cuts
+               flat(at + 1:at + lengths(i)) = afo%hybrid(i)%coeff
+               at = at + lengths(i)
+            end do
+         end if
+         call allreduce(comm, flat, total, MPI_SUM)
+         at = 0
+         do i = 1, afo%n_cuts
+            if (allocated(afo%hybrid(i)%coeff)) deallocate (afo%hybrid(i)%coeff)
+            allocate (afo%hybrid(i)%coeff(lengths(i)))
+            afo%hybrid(i)%coeff = flat(at + 1:at + lengths(i))
+            at = at + lengths(i)
+         end do
+         deallocate (flat)
+      end if
+
+      afo%active = .true.
+      call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s), one "// &
+                          "frozen orbital each")
+   end subroutine build_afo_context
+
+   subroutine afo_failure(cut, kind, n_on_bond, local, error)
+      !! The same message on every rank, rebuilt from the reduced status
+      !!
+      !! `local` carries the lead rank's own error text and is the better
+      !! message where it exists, but it exists only on that rank. So the text
+      !! is reconstructed from integers that every rank has, and the leader's
+      !! own message is appended where it has one -- identical failures
+      !! everywhere, with detail where detail is available.
+      type(severed_bond_t), intent(in) :: cut
+      integer, intent(in) :: kind, n_on_bond
+      type(error_t), intent(inout) :: local
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: bond
+
+      bond = "the bond between atoms "//to_char(cut%atom_a)//" and "// &
+             to_char(cut%atom_b)
+
+      select case (kind)
+      case (1)
+         call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
+                        " could not be built")
+      case (2)
+         call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
+                        " could not be solved, so there is no orbital to freeze")
+      case default
+         call error%set(ERROR_VALIDATION, "fmo: "//to_char(n_on_bond)//" localized "// &
+                        "orbitals sit on "//bond//", so it is not a single bond. One "// &
+                        "frozen orbital stands in for one electron pair; cut at a "// &
+                        "single bond")
+      end select
+      if (local%has_error()) then
+         call logger%verbose("  fmo: "//trim(local%get_message()))
+      end if
+   end subroutine afo_failure
+
+   subroutine assemble_group(frag, members, afo, z, coords, group, error)
+      !! One n-mer's geometry, electron count and boundaries
+      !!
+      !! The members end to end, then any ghosts they need. Ghosts go last on
+      !! purpose: every member keeps the contiguous run of basis functions the
+      !! block bookkeeping everywhere else assumes, and what is new sits past
+      !! the end of it.
+      !!
+      !! The boundary set comes from `cuts_outside_group`, computed from this
+      !! group's own members every time. A bond cut between two monomers is
+      !! whole inside the dimer that holds both, so that dimer has no boundary
+      !! there -- and inheriting one from its members is the mistake that cost
+      !! 11 Hartree when this was tried with caps.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: members(:)
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(group_t), intent(out) :: group
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: outside(:), slot_of(:)
+      logical, allocatable :: ghosted(:)
+      integer :: n_outside, n_ghost, n_atoms, m, at, n_here, i, c, bda, slot
+
+      if (error%has_error()) return
+
+      group%n_real = 0
+      do m = 1, size(members)
+         group%n_real = group%n_real + size(frag(members(m))%z)
+      end do
+
+      n_outside = 0
+      n_ghost = 0
+      allocate (ghosted(size(z)), source=.false.)
+      if (afo%active) then
+         call cuts_outside_group(afo%cuts, afo%n_cuts, members, outside, n_outside)
+         do i = 1, n_outside
+            c = outside(i)
+            ! Holding the attached end means the detached atom is somebody
+            ! else's, so its functions have to be brought in without its nucleus.
+            if (any(members == afo%cuts(c)%frag_a)) cycle
+            ! Counted once per *atom*, not once per boundary. One atom can be
+            ! the detached end of two bonds -- a middle carbon numbered below
+            ! both its neighbours -- and a group holding the far end of both
+            ! would otherwise bring it in twice. Two copies of one atom's
+            ! functions make the overlap exactly singular; the canonical
+            ! orthogonalisation absorbs that, so the answer survives, but it
+            ! survives by leaning on a linear-dependence threshold instead of
+            ! by being right.
+            if (ghosted(afo%cuts(c)%atom_a)) cycle
+            ghosted(afo%cuts(c)%atom_a) = .true.
+            n_ghost = n_ghost + 1
+         end do
+         ghosted = .false.
+      end if
+
+      n_atoms = group%n_real + n_ghost
+      allocate (group%z(n_atoms), group%sym(n_atoms), group%xyz(3, n_atoms))
+      allocate (group%ghost(n_atoms), source=.false.)
+      allocate (slot_of(size(z)), source=0)
+
+      at = 0
+      do m = 1, size(members)
+         n_here = size(frag(members(m))%z)
+         group%z(at + 1:at + n_here) = frag(members(m))%z
+         group%sym(at + 1:at + n_here) = frag(members(m))%sym
+         group%xyz(:, at + 1:at + n_here) = frag(members(m))%xyz
+         do i = 1, n_here
+            slot_of(frag(members(m))%atoms(i)) = at + i
+         end do
+         at = at + n_here
+      end do
+
+      group%nelec = sum(group%z(:group%n_real))
+      group%n_bound = n_outside
+      allocate (group%bda_slot(max(n_outside, 1)))
+      allocate (group%occupied(max(n_outside, 1)))
+      allocate (group%cut_of(max(n_outside, 1)))
+
+      do i = 1, n_outside
+         c = outside(i)
+         bda = afo%cuts(c)%atom_a
+         group%cut_of(i) = c
+         if (any(members == afo%cuts(c)%frag_a)) then
+            ! We own the detached atom and get nothing of the bond: its hybrid
+            ! is frozen empty.
+            group%occupied(i) = .false.
+            slot = slot_of(bda)
+            if (slot == 0) then
+               call error%set(ERROR_VALIDATION, "fmo: a detached atom is not among the "// &
+                              "atoms of the fragment that owns it")
+               return
+            end if
+         else
+            ! We own the attached end and get all of the bond: bring the
+            ! detached atom's functions in as a ghost and hold its hybrid full.
+            ! One copy per atom -- a second boundary on the same detached atom
+            ! puts its hybrid on the copy already there, where the two are
+            ! different orbitals of one atom and independent for that reason.
+            group%occupied(i) = .true.
+            if (ghosted(bda)) then
+               slot = slot_of(bda)
+            else
+               at = at + 1
+               slot = at
+               group%z(slot) = z(bda)
+               group%sym(slot) = afo%sym(bda)
+               group%xyz(:, slot) = coords(:, bda)
+               group%ghost(slot) = .true.
+               ghosted(bda) = .true.
+               slot_of(bda) = slot
+            end if
+         end if
+         group%bda_slot(i) = slot
+      end do
+
+      if (afo%active) then
+         group%nelec = group%nelec + group_electron_shift(afo%cuts, afo%n_cuts, members)
+      end if
+
+      deallocate (slot_of, ghosted)
+   end subroutine assemble_group
+
+   subroutine group_projector(group, mol, afo, proj, active, error)
+      !! The constraint this group's boundaries imply, if it has any
+      type(group_t), intent(in) :: group
+      type(libcint_molecule_t), intent(in) :: mol
+      type(afo_context_t), intent(in) :: afo
+      type(fock_projector_t), intent(out) :: proj
+      logical, intent(out) :: active
+      type(error_t), intent(inout) :: error
+
+      type(afo_hybrid_t), allocatable :: hybrids(:)
+      real(dp), allocatable :: frozen(:, :), basis(:, :), s(:, :)
+      integer :: i, n_frozen_occ, n_mo
+
+      active = .false.
+      if (error%has_error()) return
+      if (group%n_bound == 0) return
+
+      allocate (hybrids(group%n_bound))
+      do i = 1, group%n_bound
+         hybrids(i)%coeff = afo%hybrid(group%cut_of(i))%coeff
+      end do
+
+      call build_group_frozen(mol, group%bda_slot(:group%n_bound), &
+                              group%occupied(:group%n_bound), hybrids, frozen, &
+                              n_frozen_occ, error)
+      if (error%has_error()) return
+
+      call mol%overlap(s)
+      call build_frozen_basis(frozen, n_frozen_occ, s, basis, n_mo, error)
+      if (error%has_error()) return
+      call proj%init(basis, s, n_frozen_occ, group%n_bound, AFO_SHIFT, error)
+      if (error%has_error()) return
+      active = .true.
+   end subroutine group_projector
 
    subroutine refuse_severed_bonds(z, coords, owner, n_atoms, error)
       !! Refuse a partition that cuts a covalent bond
@@ -593,7 +1067,10 @@ contains
       ! already knows would undo the point of building on demand.
       do f = 1, n_frag
          if (.not. allocated(frag(f)%charges)) cycle
-         q_all(frag(f)%atoms) = frag(f)%charges
+         ! Only the real atoms map back. A cap's charge belongs to no atom
+         ! of the system, and `charges` is as long as the molecule the SCF
+         ! saw, which includes them.
+         q_all(frag(f)%atoms) = frag(f)%charges(1:size(frag(f)%atoms))
       end do
    end subroutine all_charges
 
@@ -682,7 +1159,7 @@ contains
       u = u + j_near
    end subroutine embedding_operator
 
-   subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, &
+   subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
                         e_internal, e_resp, all_converged, error)
       !! One n-mer, in the field of every fragment outside it
       !!
@@ -696,52 +1173,52 @@ contains
       real(dp), intent(in) :: coords(:, :)
       real(dp), allocatable, intent(in) :: q_all(:)
       type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
       real(dp), intent(out) :: e_internal, e_resp
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
+      type(group_t) :: group
+      type(fock_projector_t) :: proj
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :)
-      real(dp), allocatable :: xyz(:, :)
       logical, allocatable :: inside(:)
-      integer, allocatable :: near(:), zz(:)
-      character(len=2), allocatable :: sym(:)
-      integer :: m, at, nao_m, expect, nelec, n_atoms, n_here
+      integer, allocatable :: near(:), ao_off(:), ao_count(:)
+      integer :: m, at, nao_m, expect, nelec
+      logical :: held
 
-      ! The n-mer's geometry, its fragments end to end in the order given.
-      ! Sized first and filled once, rather than grown a fragment at a time.
-      n_atoms = 0
+      ! The n-mer's geometry, its fragments end to end in the order given, and
+      ! then whatever ghosts its own boundaries call for.
       expect = 0
-      nelec = 0
       do m = 1, size(members)
-         n_atoms = n_atoms + size(frag(members(m))%z)
          expect = expect + frag(members(m))%nao
-         nelec = nelec + frag(members(m))%nelec
-      end do
-      allocate (zz(n_atoms), sym(n_atoms), xyz(3, n_atoms))
-      at = 0
-      do m = 1, size(members)
-         n_here = size(frag(members(m))%z)
-         zz(at + 1:at + n_here) = frag(members(m))%z
-         sym(at + 1:at + n_here) = frag(members(m))%sym
-         xyz(:, at + 1:at + n_here) = frag(members(m))%xyz
-         at = at + n_here
       end do
 
-      call open_fragment(zz, sym, xyz, opts, mol, bounds, error)
+      call assemble_group(frag, members, afo, z, coords, group, error)
+      if (error%has_error()) return
+      nelec = group%nelec
+
+      call open_fragment(group%z, group%sym, group%xyz, opts, mol, bounds, error, &
+                         ghost=group%ghost)
       if (error%has_error()) return
 
       ! libcint orders functions by atom and the atoms went in fragment by
       ! fragment, so each member owns a contiguous run. Worth checking rather
       ! than assuming: a silent mismatch would be a plausible wrong answer
       ! rather than a failure.
-      if (mol%nao /= expect) then
+      ! The members' functions must still be the leading block, whatever ghosts
+      ! follow them. Counted over the real atoms rather than compared against
+      ! `mol%nao`, which now includes the ghosts.
+      allocate (ao_off(mol%natm), ao_count(mol%natm))
+      call atom_ao_blocks(mol, ao_off, ao_count)
+      if (sum(ao_count(:group%n_real)) /= expect) then
          call error%set(ERROR_VALIDATION, "fmo: the n-mer basis is not its fragments' "// &
                         "bases end to end ("//to_char(expect)//" /= "// &
-                        to_char(mol%nao)//")")
+                        to_char(sum(ao_count(:group%n_real)))//")")
          return
       end if
+      deallocate (ao_off, ao_count)
 
       ! The member densities side by side: what the n-mer's own Coulomb
       ! contribution is removed with, and what dD is measured against.
@@ -761,13 +1238,24 @@ contains
       call near_fragments(frag, n_frag, members, effective_resppc(opts), near, error)
       if (error%has_error()) return
 
-      call embedding_operator(mol, zz, sym, xyz, near, frag, n_frag, inside, z, &
-                              coords, q_all, opts, u, error)
+      call embedding_operator(mol, group%z, group%sym, group%xyz, near, frag, n_frag, &
+                              inside, z, coords, q_all, opts, u, error)
       if (error%has_error()) return
 
-      if (allocated(u)) then
+      call group_projector(group, mol, afo, proj, held, error)
+      if (error%has_error()) return
+
+      if (allocated(u) .and. held) then
+         call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              h_extra=u, projector=proj)
+      else if (allocated(u)) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, show_inner_scf(), scf, error, h_extra=u)
+      else if (held) then
+         call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              projector=proj)
       else
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, show_inner_scf(), scf, error)
@@ -917,7 +1405,7 @@ contains
       j_near = j_full(1:group_nao, 1:group_nao)
    end subroutine local_coulomb
 
-   subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, &
+   subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, afo, &
                              all_converged, error, bare)
       !! One monomer: build it, field it, solve it, read its charges, drop it
       !!
@@ -932,6 +1420,7 @@ contains
       real(dp), intent(in) :: coords(:, :)
       real(dp), allocatable, intent(in) :: q_all(:)
       type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: bare
@@ -940,15 +1429,25 @@ contains
          !! the field is what the passes after it are for.
 
       type(libcint_molecule_t) :: mol
+      type(group_t) :: group
+      type(fock_projector_t) :: proj
       real(dp), allocatable :: bounds(:, :), u(:, :), q(:)
       logical, allocatable :: inside(:)
-      logical :: isolated
+      logical :: isolated, held
 
       isolated = .false.
       if (present(bare)) isolated = bare
 
-      call open_fragment(frag(which)%z, frag(which)%sym, frag(which)%xyz, opts, &
-                         mol, bounds, error)
+      ! A monomer is a group of one, and goes through the same assembly as an
+      ! n-mer so that its boundaries are decided the same way.
+      call assemble_group(frag, [which], afo, z, coords, group, error)
+      if (error%has_error()) return
+
+      call open_fragment(group%z, group%sym, group%xyz, opts, mol, bounds, error, &
+                         ghost=group%ghost)
+      if (error%has_error()) return
+
+      call group_projector(group, mol, afo, proj, held, error)
       if (error%has_error()) return
 
       if (.not. isolated) then
@@ -960,8 +1459,20 @@ contains
          if (error%has_error()) return
       end if
 
-      call inner_scf(frag(which), mol, opts, error, u, all_converged)
+      call inner_scf(frag(which), mol, opts, error, u, all_converged, proj, held)
       if (error%has_error()) return
+
+      ! A fragment carrying ghosts was solved in a bigger basis than it owns,
+      ! and everything downstream indexes its density by `nao`, which counts
+      ! only its own atoms. Ghosts are appended last, so the block it owns is
+      ! the leading corner; keeping that keeps `d_split` and the block layout
+      ! valid. The ghost block is dropped rather than stored, which is sound
+      ! while this is restricted to `esp = "none"` -- nothing reads a monomer
+      ! density there. An embedded version will want the whole thing, and will
+      ! have to widen the layout rather than truncate here.
+      if (size(frag(which)%density, 1) /= frag(which)%nao) then
+         frag(which)%density = frag(which)%density(:frag(which)%nao, :frag(which)%nao)
+      end if
 
       if (opts%esp /= "none") then
          call fragment_charges(mol, frag(which)%density, opts%far_field, q, error)
@@ -970,7 +1481,7 @@ contains
       end if
    end subroutine solve_fragment
 
-   subroutine calculate_monomers(frag, n_frag, z, coords, opts, res, all_converged, error, comm)
+   subroutine calculate_monomers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
       !! The outer SCF: every monomer in the field of all the others, iterated
       !!
       !! One pass solves every fragment against the field the previous pass
@@ -987,6 +1498,7 @@ contains
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
       type(fmo_result_t), intent(inout) :: res
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
@@ -1002,7 +1514,7 @@ contains
       if (error%has_error()) return
       do i = 1, n_frag
          if (.not. mine(i, comm)) cycle
-         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, all_converged, &
+         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, all_converged, &
                              error, bare=.true.)
          if (error%has_error()) return
       end do
@@ -1027,7 +1539,7 @@ contains
          ! free. The exchange after is the barrier.
          do i = 1, n_frag
             if (.not. mine(i, comm)) cycle
-            call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, &
+            call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
                                 all_converged, error)
             if (error%has_error()) return
          end do
@@ -1051,7 +1563,7 @@ contains
                      "moving by "//to_char(res%outer_change)//" Hartree")
    end subroutine calculate_monomers
 
-   subroutine calculate_polymers(frag, n_frag, z, coords, opts, res, all_converged, error, comm)
+   subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
       !! Every n-mer from pairs up to the truncation level
       !!
       !! Independent of each other and of everything else once the monomers have
@@ -1080,6 +1592,7 @@ contains
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
       type(fmo_result_t), intent(inout) :: res
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
@@ -1136,7 +1649,7 @@ contains
          if (.not. mine(task, comm)) cycle
 
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
-                        opts, e_internal, e_resp, all_converged, error)
+                        opts, afo, e_internal, e_resp, all_converged, error)
          if (error%has_error()) return
          ! The response goes inside the correction, not alongside it. A larger
          ! n-mer subtracts its subsets' corrections whole, so a response left
@@ -1404,7 +1917,15 @@ contains
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
             if (allocated(frag(f)%charges)) then
-               buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = frag(f)%charges
+               ! Sliced, as `all_charges` slices. A fragment solved with ghosts
+               ! has a charge per atom of the molecule it saw, which is more
+               ! than the atoms it owns, and the buffer is laid out by the
+               ! latter. Unreachable while a detached bond forces `esp="none"`
+               ! and no charges are computed at all, and left defensive because
+               ! the assignment would otherwise be a shape mismatch the moment
+               ! that restriction lifts.
+               buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = &
+                  frag(f)%charges(1:size(frag(f)%atoms))
             end if
          end if
          at = at + n + 2 + size(frag(f)%atoms)
@@ -1420,12 +1941,13 @@ contains
          frag(f)%energy = buf(at + n + 1)
          frag(f)%energy_total = buf(at + n + 2)
          if (.not. allocated(frag(f)%charges)) allocate (frag(f)%charges(size(frag(f)%atoms)))
-         frag(f)%charges = buf(at + n + 3:at + n + 2 + size(frag(f)%atoms))
+         frag(f)%charges(1:size(frag(f)%atoms)) = &
+            buf(at + n + 3:at + n + 2 + size(frag(f)%atoms))
          at = at + n + 2 + size(frag(f)%atoms)
       end do
    end subroutine exchange_monomers
 
-   subroutine inner_scf(f, mol, opts, error, u, all_converged)
+   subroutine inner_scf(f, mol, opts, error, u, all_converged, proj, held)
       !! The inner SCF: this fragment's orbitals, against a fixed external field
       type(fragment_t), intent(inout) :: f
       type(libcint_molecule_t), intent(in) :: mol
@@ -1433,16 +1955,31 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(in), optional :: u(:, :)
       logical, intent(inout), optional :: all_converged
+      type(fock_projector_t), intent(in), optional :: proj
+         !! The boundary constraint, when this fragment has a detached bond
+      logical, intent(in), optional :: held
+         !! Whether `proj` carries anything. Separate from its presence because
+         !! a fragment with no boundary still has a projector object.
 
       type(rhf_result_t) :: scf
-      logical :: embedded
+      logical :: embedded, constrained
 
       embedded = .false.
       if (present(u)) embedded = allocated(u)
+      constrained = .false.
+      if (present(held)) constrained = held
 
-      if (embedded) then
+      if (embedded .and. constrained) then
+         call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              h_extra=u, projector=proj)
+      else if (embedded) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, show_inner_scf(), scf, error, h_extra=u)
+      else if (constrained) then
+         call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              projector=proj)
       else
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, show_inner_scf(), scf, error)
