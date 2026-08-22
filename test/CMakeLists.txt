@@ -111,6 +111,7 @@ if(MQC_ENABLE_LIBCINT)
   target_link_libraries(test_mqc_casci PRIVATE cint_fortran cint)
 
   addtest(mqc_mcscf)
+  addtest(mqc_mcscf_gradient)
   target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
 
   # Choosing an active space from atomic orbital labels.

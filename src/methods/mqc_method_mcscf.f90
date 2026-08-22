@@ -138,6 +138,16 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
+      call mcscf_run(this, fragment, result, want_gradient=.false.)
+   end subroutine mcscf_calc_energy
+
+   subroutine mcscf_run(this, fragment, result, want_gradient)
+      !! The settings the backend needs, built once for both drivers
+      class(mcscf_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+      logical, intent(in) :: want_gradient
+
       type(cuest_scf_settings_t) :: settings
 
       ! The reference SCF's settings, which is most of what this is: a CASSCF
@@ -178,25 +188,29 @@ contains
       settings%mcscf%max_macro_iter = this%options%max_macro_iter
       settings%mcscf%orbital_convergence = this%options%orbital_tol
 
-      call run_libcint_mcscf(settings, fragment, result)
-   end subroutine mcscf_calc_energy
+      call run_libcint_mcscf(settings, fragment, result, want_gradient=want_gradient)
+   end subroutine mcscf_run
 
    subroutine mcscf_calc_gradient(this, fragment, result)
-      !! Refused: a CASSCF gradient needs the Lagrangian, which does not exist
+      !! The analytic gradient of an optimised CASSCF
       !!
-      !! Not finite differences either, and that is a deliberate choice rather
-      !! than an omission. A numerical CASSCF gradient is 6N converged orbital
+      !! Analytic rather than by differences, and that remains a deliberate
+      !! choice: a numerical MCSCF gradient is 6N converged orbital
       !! optimisations, each of which can land on a *different* active space --
       !! the orbitals that make up a CAS are identified by their character, and
-      !! a displaced geometry can reorder them. The result is a gradient with
-      !! discontinuities that look like noise, and nothing in the output would
-      !! say which displacement had wandered. Better to refuse.
+      !! a displaced geometry can reorder them. The result has discontinuities
+      !! that look like noise and nothing in the output says which displacement
+      !! wandered.
+      !!
+      !! A CASCI is still refused, and the backend says so: its orbitals came
+      !! from the SCF and were never optimised for the active space, so the
+      !! energy is not stationary with respect to them and the response terms
+      !! this omits are not zero.
       class(mcscf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      call refuse_derivative(fragment, result, "gradient")
-      if (this%options%n_active_orbitals < 0) return
+      call mcscf_run(this, fragment, result, want_gradient=.true.)
    end subroutine mcscf_calc_gradient
 
    subroutine mcscf_calc_hessian(this, fragment, result)

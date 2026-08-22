@@ -65,6 +65,9 @@ module mqc_libcint_gradient
    ! alongside it -- so it needs the same derivative integrals rather than the
    ! same assembly.
    public :: one_electron_deriv
+   public :: two_electron_deriv
+      !! Exposed for the MCSCF gradient, whose inactive and active blocks are
+      !! separable and contract exactly as a closed-shell reference does.
    public :: iprinv_deriv_at
    public :: xc_potential_gradient
    public :: fitted_reference_gradient
