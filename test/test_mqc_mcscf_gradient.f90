@@ -48,7 +48,9 @@ contains
                   new_unittest("water 6-31g CAS(4,4) agrees with PySCF", &
                                water_631g_matches_pyscf), &
                   new_unittest("water 6-31g CAS(6,5) agrees with PySCF", &
-                               water_631g_65_matches_pyscf) &
+                               water_631g_65_matches_pyscf), &
+                  new_unittest("an ORMAS gradient differences its energy", &
+                               ormas_gradient_differences_the_energy) &
                   ]
    end subroutine collect_mcscf_gradient_tests
 
@@ -238,6 +240,81 @@ contains
 
       call compare_against(error, "6-31g", 2, 5, 3, 3, -76.039192258019_dp, REFERENCE)
    end subroutine water_631g_65_matches_pyscf
+
+   subroutine ormas_gradient_differences_the_energy(error)
+      !! The same expression, on a wave function with a restricted space
+      !!
+      !! Nothing here is specific to a complete active space: the gradient is
+      !! built from `dm1` and `dm2` and does not ask where they came from, and
+      !! `run_libcint_casscf` optimises a restricted space too -- its redundancy
+      !! rule already knows that rotating one active orbital into another stops
+      !! being redundant once the two fall in different subspaces. So this
+      !! ought to work, and "ought to" is why it is tested rather than assumed.
+      !!
+      !! Differenced against the energy rather than against a reference code,
+      !! because PySCF has no ORMAS to compare with.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: STEP = 2.0e-3_dp
+      real(dp) :: plus, minus, numerical, analytic
+      real(dp), allocatable :: gradient(:, :)
+      real(dp) :: moved(3, 3)
+
+      call ormas_at(error, WATER, gradient=gradient)
+      if (allocated(error)) return
+      analytic = gradient(3, 2)
+
+      moved = WATER
+      moved(3, 2) = WATER(3, 2) + STEP
+      call ormas_at(error, moved, energy=plus)
+      if (allocated(error)) return
+
+      moved(3, 2) = WATER(3, 2) - STEP
+      call ormas_at(error, moved, energy=minus)
+      if (allocated(error)) return
+
+      numerical = (plus - minus)/(2.0_dp*STEP)
+      call check(error, abs(numerical - analytic) < 1.0e-6_dp, &
+                 "the ORMAS gradient should difference the ORMAS energy")
+   end subroutine ormas_gradient_differences_the_energy
+
+   subroutine ormas_at(error, coordinates, energy, gradient)
+      !! A converged restricted-space optimisation at one geometry
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), intent(in) :: coordinates(3, 3)
+      real(dp), intent(out), optional :: energy
+      real(dp), allocatable, intent(out), optional :: gradient(:, :)
+
+      ! Active orbitals 4-7 in two subspaces, with at most one electron above
+      ! the first: a hard enough restriction that the inter-subspace rotations
+      ! carry a gradient worth differencing.
+      integer, parameter :: SUBSPACES(2) = [1, 3]
+      integer, parameter :: MIN_E(2) = [3, 0], MAX_E(2) = [4, 1]
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(casscf_result_t) :: cas
+      type(error_t) :: err
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coordinates, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error, scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+
+      call run_libcint_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
+                              max_iterations=400, gradient_tol=1.0e-9_dp, &
+                              verbose=.false., subspaces=SUBSPACES, &
+                              min_electrons=MIN_E, max_electrons=MAX_E)
+      call check(error,.not. err%has_error(), "the ORMAS-SCF should run")
+      if (allocated(error)) return
+      call check(error, cas%converged, "the ORMAS-SCF should converge")
+      if (allocated(error)) return
+
+      if (present(energy)) energy = cas%energy
+      if (present(gradient)) then
+         call libcint_mcscf_gradient(mol, cas%orbitals, 3, 4, cas%dm1, cas%dm2, &
+                                     gradient, err)
+         call check(error,.not. err%has_error(), "the gradient should build")
+      end if
+   end subroutine ormas_at
 
    subroutine compare_against(error, basis, n_inactive, n_active, n_alpha, n_beta, &
                               reference_energy, reference)
