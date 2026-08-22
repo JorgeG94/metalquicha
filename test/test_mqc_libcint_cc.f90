@@ -47,7 +47,9 @@ contains
                   new_unittest("ccsd_lies_below_mp2_and_triples_below_that", test_ordering), &
                   new_unittest("freezing_a_core_orbital_raises_correlation", test_frozen), &
                   new_unittest("uccsd_on_a_closed_shell_equals_ccsd", test_uccsd_closed_shell), &
-                  new_unittest("uccsd_open_shell_matches_pyscf", test_uccsd_open_shell) &
+                  new_unittest("uccsd_open_shell_matches_pyscf", test_uccsd_open_shell), &
+                  new_unittest("density_fitting_is_refused_when_unrestricted", &
+                               test_uccsd_refuses_fitting) &
                   ]
    end subroutine collect_mqc_libcint_cc_tests
 
@@ -436,6 +438,51 @@ contains
       call check(error, abs(ucc%e_triples - PYSCF_T) < 0.1_dp*abs(PYSCF_T), &
                  "UCCSD(T) on a doublet disagrees with PySCF G(T)")
    end subroutine test_uccsd_open_shell
+
+   subroutine test_uccsd_refuses_fitting(error)
+      !! RI over an unrestricted reference is refused, not silently run wrong
+      !!
+      !! The fitted blocks and the fitted ladder both still assume alpha and beta
+      !! share a spatial orbital. Handed unrestricted orbitals they would not
+      !! fail: they would converge, to the restricted answer built from the alpha
+      !! orbitals alone. That is the failure mode worth a test -- an error is
+      !! recoverable and a plausible wrong number is not.
+      !!
+      !! Delete this when URI-CCSD exists.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(cc_result_t) :: ucc
+      real(dp) :: c(3, 2)
+      integer, parameter :: Z(2) = [8, 1]
+      character(len=2), parameter :: SYM(2) = ["O ", "H "]
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9697_dp*ANG], [3, 2])
+      call build_libcint_molecule(Z, SYM, c, "sto-3g", mol, err)
+      call build_libcint_molecule(Z, SYM, c, "cc-pvdz-rifit", aux, err)
+      call check(error,.not. err%has_error(), "OH and its auxiliary basis must build")
+      if (allocated(error)) return
+
+      call run_libcint_uhf(mol, 9, 2, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                           in_core=.true.)
+      call check(error,.not. err%has_error() .and. scf%converged, "UHF must converge")
+      if (allocated(error)) return
+
+      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, 0, &
+                            60, 1.0e-10_dp, .false., .false., ucc, err, &
+                            coeff_b=scf%orbitals_beta, &
+                            orbital_energies_b=scf%orbital_energies_beta, n_occ_b=4, &
+                            aux=aux)
+      call mol%destroy()
+      call aux%destroy()
+
+      call check(error, err%has_error(), &
+                 "density fitting over an unrestricted reference was accepted; it "// &
+                 "would have returned the restricted answer for the alpha orbitals")
+   end subroutine test_uccsd_refuses_fitting
 
 end module test_mqc_libcint_cc
 
