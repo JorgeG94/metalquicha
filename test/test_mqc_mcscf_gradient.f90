@@ -157,30 +157,57 @@ contains
       !! the analytic expression really is the derivative of the energy this
       !! program computes, rather than of the one another program computes.
       !!
-      !! Central differences, so the error is `O(h^2)`; at `h = 2e-3` bohr that
-      !! is around 1e-7, which sets the tolerance rather than anything about the
-      !! contraction.
+      !! **The tolerance measures the difference formula, not the gradient.**
+      !! Central differences carry an `O(h^2)` truncation term, and a step study
+      !! on the largest component showed it behaving exactly as it should:
+      !!
+      !! ```
+      !!   h        error      ratio
+      !!   8e-3     9.75e-6      -
+      !!   4e-3     2.44e-6    4.00
+      !!   2e-3     6.09e-7    4.00
+      !!   1e-3     1.52e-7    4.00
+      !!   5e-4     3.82e-8    3.98
+      !! ```
+      !!
+      !! Four consecutive factors of four: the residual is the formula's, and
+      !! the analytic gradient is the limit it is converging to. So the bound
+      !! below is set by `h`, and tightening it without also shrinking `h` would
+      !! be testing arithmetic that is not in question. `h` is not shrunk
+      !! further because the noise floor grows as `1/h` once the energy's own
+      !! convergence starts to show.
+      !!
+      !! Every component is differenced rather than one, which costs eighteen
+      !! optimisations and catches a term that is wrong only off the symmetry
+      !! axis.
       type(error_type), allocatable, intent(out) :: error
       real(dp), parameter :: STEP = 2.0e-3_dp
       real(dp) :: plus, minus, numerical, analytic
       real(dp), allocatable :: gradient(:, :)
       real(dp) :: moved(3, 3)
 
+      integer :: iatom, comp
+      real(dp) :: worst
+
       call energy_at(error, WATER, gradient=gradient)
       if (allocated(error)) return
-      analytic = gradient(3, 2)
 
-      moved = WATER
-      moved(3, 2) = WATER(3, 2) + STEP
-      call energy_at(error, moved, energy=plus)
-      if (allocated(error)) return
-
-      moved(3, 2) = WATER(3, 2) - STEP
-      call energy_at(error, moved, energy=minus)
-      if (allocated(error)) return
-
-      numerical = (plus - minus)/(2.0_dp*STEP)
-      call check(error, abs(numerical - analytic) < 1.0e-6_dp, &
+      worst = 0.0_dp
+      do iatom = 1, 3
+         do comp = 1, 3
+            analytic = gradient(comp, iatom)
+            moved = WATER
+            moved(comp, iatom) = WATER(comp, iatom) + STEP
+            call energy_at(error, moved, energy=plus)
+            if (allocated(error)) return
+            moved(comp, iatom) = WATER(comp, iatom) - STEP
+            call energy_at(error, moved, energy=minus)
+            if (allocated(error)) return
+            numerical = (plus - minus)/(2.0_dp*STEP)
+            worst = max(worst, abs(numerical - analytic))
+         end do
+      end do
+      call check(error, worst < 1.0e-6_dp, &
                  "the analytic gradient should difference the energy")
    end subroutine gradient_differences_the_energy
 
