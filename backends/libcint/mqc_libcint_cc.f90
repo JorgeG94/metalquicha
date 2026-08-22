@@ -765,6 +765,17 @@ contains
       end if
       n_act = n_mo - frozen
       unrestricted = present(coeff_b)
+      if (unrestricted .and. present(aux)) then
+         ! Refused rather than run. The fitted path builds its blocks and its
+         ! ladder straight off `b_vv`, which has no spin blocks, and both still
+         ! assume alpha and beta share a spatial orbital. Run that way it would
+         ! not fail -- it would converge, to the restricted answer for the alpha
+         ! orbitals, which is a wrong number that looks like a right one.
+         call error%set(ERROR_VALIDATION, "UCCSD: density fitting is not available "// &
+                        "over an unrestricted reference. Run without an auxiliary "// &
+                        "basis, or use a restricted reference.")
+         return
+      end if
       if (unrestricted) then
          if (.not. present(orbital_energies_b) .or. .not. present(n_occ_b)) then
             call error%set(ERROR_VALIDATION, "UCCSD: beta coefficients given without "// &
