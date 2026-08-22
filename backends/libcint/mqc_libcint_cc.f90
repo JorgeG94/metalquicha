@@ -259,6 +259,31 @@ contains
       same = map%is_a(s) .eqv. map%is_a(t)
    end function same_spin
 
+   pure function tensor(src, s1, s2, a, b, c, d) result(v)
+      !! `(ab|cd)` from spatial indices whose spins the caller has already resolved
+      !!
+      !! `chem` below does the same choice from spin orbitals. This form exists
+      !! for the particle-particle ladder, which hoists the spin bookkeeping out
+      !! of its innermost loop and so arrives holding spins and spatial indices
+      !! rather than spin orbitals. `s1` is the spin of the first electron's pair,
+      !! `s2` the second's; 1 is alpha and 0 beta.
+      type(so_source_t), intent(in) :: src
+      integer, intent(in) :: s1, s2, a, b, c, d
+      real(dp) :: v
+
+      if (src%restricted) then
+         v = src%aa(a, b, c, d)
+      else if (s1 == 1 .and. s2 == 1) then
+         v = src%aa(a, b, c, d)
+      else if (s1 == 0 .and. s2 == 0) then
+         v = src%bb(a, b, c, d)
+      else if (s1 == 1) then
+         v = src%ab(a, b, c, d)
+      else
+         v = src%ab(c, d, a, b)
+      end if
+   end function tensor
+
    pure function chem(src, map, a, b, c, d) result(v)
       !! The spatial integral `(ab|cd)`, for spin orbitals whose spins already agree
       !!
@@ -850,7 +875,7 @@ contains
                               "    iter                 E_corr          dE   diis       time", 60)
       do iter = 1, max_iter
          t_iter = clk%seconds_of(STAGE_ITER)
-         call ccsd_iteration(src, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+         call ccsd_iteration(src, map, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
          call clk%lap(STAGE_ITER)
          t_iter = clk%seconds_of(STAGE_ITER) - t_iter
 
@@ -1049,9 +1074,10 @@ contains
       !$omp end parallel do
    end subroutine ccsd_energy
 
-   subroutine ccsd_iteration(src, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+   subroutine ccsd_iteration(src, map, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
       !! One CCSD amplitude update, through the Stanton et al. intermediates
       type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
          !! The spatial tensor, on the conventional path. Read only by the
          !! particle-particle ladder, which assembles <ab||ef> in batches rather
          !! than holding it -- see `particle_ladder`.
@@ -1200,7 +1226,7 @@ contains
       ! one does not.
       allocate (lad(nv*nv, no*no))
       call pic_gemm(tau2, wmnij, lad, alpha=0.5_dp, beta=0.0_dp)
-      call particle_ladder(src, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
+      call particle_ladder(src, map, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
 
       ! ---- the ring intermediate (Stanton 8) ---------------------------------
       !
@@ -1473,7 +1499,7 @@ contains
       deallocate (oovv2, lad, ring2)
    end subroutine ccsd_iteration
 
-   subroutine particle_ladder(src, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
+   subroutine particle_ladder(src, map, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
       !! The particle-particle ladder, never holding <ab||ef>
       !!
       !!     lad(ab,ij) += 1/2 sum_ef Wabef(ab,ef) tau(ef,ij)
@@ -1505,6 +1531,7 @@ contains
       !! against the n_occ^2 n_vir^4 of the contraction they feed, so a few per
       !! cent of the ladder buys the whole n_act^4 array.
       type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
       real(dp), allocatable, intent(in) :: b_vv(:, :)   !! (P, ab), spatial virtuals
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: t1(:, :), tau2(:, :), oovv2(:, :)
@@ -1520,7 +1547,7 @@ contains
       real(dp), allocatable :: wblk(:, :), tau2t(:, :), tblk(:, :)
       real(dp), allocatable :: gvv(:, :), gvt(:, :)
       integer :: nv2, no2, ef0, ef1, nb, col, ef, a, b, e, f
-      integer :: nocc2, nvs, pa, pb, pe, pf, se, sf, sb, e0, f0
+      integer :: nocc2, nvs, pa, pb, pe, pf, sa, se, sf, sb, e0, f0
       integer :: pe_have, pf_local, x, y
       logical :: fitted
       real(dp) :: acc
@@ -1568,7 +1595,7 @@ contains
          if (fitted) then
             !$omp parallel default(none) &
             !$omp    shared(b_vv, tblk, wblk, nv, nb, ef0, nvs) &
-            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
+            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, sa, se, sf, sb, acc) &
             !$omp    private(gvv, gvt, pe_have, pf_local, x, y)
             ! The fitted (x pe | y pf) for this column, built by the thread
             ! that needs it rather than by a serial pass before the loop:
@@ -1631,29 +1658,39 @@ contains
             !$omp end parallel
          else
             !$omp parallel do default(none) &
-            !$omp    shared(src, tblk, wblk, nv, nb, ef0, nocc2) &
-            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
+            !$omp    shared(src, map, tblk, wblk, nv, nb, ef0, no) &
+            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, sa, se, sf, sb, acc) &
             !$omp    schedule(static)
             do col = 1, nb
                ef = ef0 + col - 1
                e = mod(ef - 1, nv) + 1
                f = (ef - 1)/nv + 1
-               se = mod(e, 2)
-               sf = mod(f, 2)
-               pe = nocc2 + (e + 1)/2
-               pf = nocc2 + (f + 1)/2
+               ! Virtual `e` here is spin orbital `no + e`; the map carries both
+               ! its spin and its spatial index, the latter already offset past
+               ! that spin's occupied orbitals. For a restricted reference
+               ! `map%spat(no + e)` is `nocc2 + (e+1)/2` exactly, which is what
+               ! this used to compute.
+               se = merge(1, 0, map%is_a(no + e))
+               sf = merge(1, 0, map%is_a(no + f))
+               pe = map%spat(no + e)
+               pf = map%spat(no + f)
                do b = 1, nv
-                  sb = mod(b, 2)
-                  pb = nocc2 + (b + 1)/2
+                  sb = merge(1, 0, map%is_a(no + b))
+                  pb = map%spat(no + b)
                   do a = 1, nv
                      ! The one place <ab||ef> is needed, straight from the
                      ! spatial tensor. This is `asym` with the spin
                      ! bookkeeping lifted out of the innermost loop -- the
                      ! same two terms, the same signs.
-                     pa = nocc2 + (a + 1)/2
+                     pa = map%spat(no + a)
+                     sa = merge(1, 0, map%is_a(no + a))
                      acc = 0.0_dp
-                     if (mod(a, 2) == se .and. sb == sf) acc = acc + src%aa(pa, pe, pb, pf)
-                     if (mod(a, 2) == sf .and. sb == se) acc = acc - src%aa(pa, pf, pb, pe)
+                     if (sa == se .and. sb == sf) then
+                        acc = acc + tensor(src, sa, sb, pa, pe, pb, pf)
+                     end if
+                     if (sa == sf .and. sb == se) then
+                        acc = acc - tensor(src, sa, sb, pa, pf, pb, pe)
+                     end if
                      ! <am||ef> = -<ma||ef>, and likewise for b.
                      acc = acc + tblk(b, (col - 1)*nv + a) - tblk(a, (col - 1)*nv + b)
                      wblk((b - 1)*nv + a, col) = wblk((b - 1)*nv + a, col) + acc
