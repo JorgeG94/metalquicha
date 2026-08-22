@@ -612,16 +612,15 @@ contains
       end if
 
       ! Refused rather than quietly downgraded, on the same principle as the
-      ! unrestricted density fitting above. Coupled cluster here is written over a
-      ! restricted reference, and the fitted route does not exist yet at all -- a
-      ! deck asking for either would otherwise get a Hartree-Fock energy, or a
-      ! conventional CCSD reported as RI, and nothing in the output would say so.
-      if (settings%run_cc .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "coupled cluster on the CPU backend "// &
-                               "needs a restricted reference: it is written in spin "// &
-                               "orbitals over RHF orbitals, and an unrestricted "// &
-                               "reference needs its own alpha and beta transform. Run "// &
-                               "a closed-shell system, or use density functional theory.")
+      ! unrestricted density fitting above. An unrestricted reference reaches the
+      ! spin-orbital path, which carries its own alpha and beta transform; the
+      ! fitted route does not, because `b_vv` has no spin blocks and would return
+      ! the restricted answer built from the alpha orbitals alone.
+      if (settings%run_cc .and. unrestricted .and. settings%corr_density_fitting) then
+         call result%error%set(ERROR_VALIDATION, "density-fitted coupled cluster needs "// &
+                               "a restricted reference: the fitted three-index block has "// &
+                               "no spin blocks. Run unrestricted coupled cluster without "// &
+                               "an auxiliary basis, or use a closed-shell system.")
          result%has_error = .true.
          return
       end if
@@ -1341,6 +1340,7 @@ contains
             type(rcc_result_t) :: rcc
             integer :: frozen, cc_iterations
             logical :: cc_converged, spin_adapted
+            integer :: n_alpha, n_beta
             real(dp) :: cc_mp2, cc_singles, cc_doubles, cc_triples
 
             ! The same frozen-core rule the MP2 block applies, deliberately
@@ -1358,6 +1358,14 @@ contains
             ! smaller and faster; the spin-orbital path is what a doubtful
             ! result gets checked against.
             spin_adapted = settings%cc_spin_adapted
+            ! Not a preference when the reference is unrestricted. The
+            ! spin-adapted formulation is derived for a closed shell and has no
+            ! beta orbitals to be given; the spin-orbital one takes them.
+            if (unrestricted) spin_adapted = .false.
+            ! The same split the unrestricted SCF made: the excess spin is
+            ! alpha, so multiplicity 2S+1 puts S more electrons there.
+            n_alpha = (fragment%nelec + fragment%multiplicity - 1)/2
+            n_beta = fragment%nelec - n_alpha
 
             if (settings%corr_density_fitting) then
                call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
@@ -1388,6 +1396,15 @@ contains
                                          settings%cc_tolerance, settings%cc_triples, &
                                          settings%verbose, rcc, error, &
                                          diis_vectors=settings%cc_diis_size)
+               else if (unrestricted) then
+                  call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                        n_alpha, frozen, settings%cc_max_iter, &
+                                        settings%cc_tolerance, settings%cc_triples, &
+                                        settings%verbose, cc, error, &
+                                        diis_vectors=settings%cc_diis_size, &
+                                        coeff_b=scf%orbitals_beta, &
+                                        orbital_energies_b=scf%orbital_energies_beta, &
+                                        n_occ_b=n_beta)
                else
                   call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
                                         fragment%nelec/2, frozen, settings%cc_max_iter, &

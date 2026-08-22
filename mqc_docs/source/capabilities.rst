@@ -115,8 +115,15 @@ against PySCF on the same geometries and the same basis data.
   atomic densities or coefficients.
 - **MP2**: conventional and density-fitted (RI-MP2), with spin-component scaling
   reported from separately-kept same- and opposite-spin components.
-- **Coupled cluster**: CCSD and CCSD(T), conventional and density-fitted, in the
-  spin-orbital basis over a restricted reference.
+- **Coupled cluster**: CCSD and CCSD(T) over a restricted or an unrestricted
+  reference. Two formulations for the closed-shell case -- spin-adapted over
+  spatial orbitals by default, and spin orbitals for checking it against -- which
+  are exact for each other and agree to machine precision, so the choice is how a
+  number is computed and not which number. An open-shell reference takes the
+  spin-orbital path necessarily, since the spin-adapted equations are derived for
+  a closed shell. Density fitting is available for the restricted case only: the
+  fitted three-index block has no spin blocks, so an unrestricted deck asking for
+  it is refused rather than quietly given the restricted answer.
 - **Kohn-Sham DFT**: the whole ladder -- LDA, GGA, hybrid, meta-GGA,
   range-separated hybrid and double hybrid -- restricted and unrestricted, over
   `libxc <https://libxc.gitlab.io/>`_, so most of what libxc carries is available
@@ -648,10 +655,11 @@ Planned Features
 
 1. **Additional QC methods**:
 
-   - Unrestricted MP2 and unrestricted coupled cluster, which need separate
-     alpha and beta transforms and are refused rather than approximated today.
-     This is also what keeps the double hybrids closed-shell, since their
-     perturbative term is an MP2
+   - Density-fitted unrestricted coupled cluster. The conventional path takes an
+     unrestricted reference; the fitted one does not, because its three-index
+     block carries no spin blocks, and a deck asking for both is refused rather
+     than given the restricted answer built from the alpha orbitals
+   - Unrestricted double hybrids, whose perturbative term keeps them closed-shell
    - F12 variants, and MCSCF: these parse but have no implementation
 
 2. **Advanced dynamics**:

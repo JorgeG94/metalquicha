@@ -541,6 +541,18 @@ What only an iterative correlation method needs.
 - ``triples``: Override whether (T) runs. Ordinarily the method name settles it,
   since ``ccsd`` and ``ccsd(t)`` are separate methods rather than one method with
   a flag; set this only to contradict the name.
+- ``spin_adapted``: Which closed-shell formulation runs (default: true). Both are
+  exact for a closed shell and agree to machine precision, so this chooses how a
+  number is computed and not which number; spatial orbitals are roughly sixteen
+  times smaller and several times faster.
+
+**Open-shell systems** need no keyword. A multiplicity other than 1, an odd
+electron count, or ``keywords.scf.unrestricted`` puts the reference in an
+unrestricted SCF, and coupled cluster follows it there -- ``spin_adapted`` is
+ignored, since those equations are derived for a closed shell and have no beta
+orbitals to be given. Density fitting is the one combination refused: the fitted
+three-index block has no spin blocks, so ``ri-ccsd`` over an open shell errors
+rather than returning the alpha-only answer.
 
 Active Space Options
 ^^^^^^^^^^^^^^^^^^^^
