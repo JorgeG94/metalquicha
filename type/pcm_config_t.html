@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 0.8% of total for derived types.</p>Including implementation: 9 statements,  0.3% of total for derived types.">9 statements</a>
+                 title="<p> 0.8% of total for derived types.</p>Including implementation: 10 statements,  0.3% of total for derived types.">10 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,12 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-angular_points~2">angular_points</a>
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-dielectric~5">dielectric</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-angular_points~3">angular_points</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-dielectric~2">dielectric</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-enabled">enabled</a>
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-max_iter~4">max_iter</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-max_iter~5">max_iter</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-method">method</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-radii_scale">radii_scale</a>
-            <a class="list-group-item" href="../type/pcm_config_t.html#variable-tolerance~8">tolerance</a>
+            <a class="list-group-item" href="../type/pcm_config_t.html#variable-tolerance~3">tolerance</a>
             <a class="list-group-item" href="../type/pcm_config_t.html#variable-zeta">zeta</a>
         </div>
       </div>
@@ -181,9 +182,11 @@
       <h2 id="type-def-statement">
         type, public :: pcm_config_t</h2>
     <p>A polarizable continuum: the cavity, the solvent, and the charge solve</p>
-<p>Backend-neutral in shape, but only the cuEST path implements it. tblite&rsquo;s
-CPCM is configured through <code>xtb_config_t</code> and builds its own cavity; the
-two are separate models and share no settings.</p>
+<p>Backend-neutral in shape. The cuEST path hands the cavity and the charge
+solve to the library; the CPU path builds both itself in
+<code>mqc_libcint_pcm</code>. tblite&rsquo;s CPCM is configured through <code>xtb_config_t</code>
+and builds its own cavity; the two are separate models and share no
+settings.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherited by</h3>
@@ -216,7 +219,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~cuest_scf_settings_t&#45;&gt;type~pcm_config_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge5" class="edge">
 <title>type~cuest_scf_settings_t&#45;&gt;type~pcm_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M160.79,-232.99C153.77,-230.3 146.56,-227.27 140,-224 113.87,-210.99 86.1,-192.54 66.91,-178.97"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="68.9,-176.09 58.73,-173.11 64.83,-181.78 68.9,-176.09"/>
@@ -232,7 +235,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~dft_options_t&#45;&gt;type~pcm_config_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge4" class="edge">
 <title>type~dft_options_t&#45;&gt;type~pcm_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M158.39,-192.4C138.57,-187.03 114.27,-180.45 93.05,-174.7"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="93.79,-171.27 83.22,-172.04 91.96,-178.03 93.79,-171.27"/>
@@ -264,7 +267,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~mcscf_options_t&#45;&gt;type~pcm_config_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge1" class="edge">
 <title>type~mcscf_options_t&#45;&gt;type~pcm_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M153.08,-131.04C134.34,-136.11 112.43,-142.05 93.07,-147.3"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="91.95,-143.98 83.21,-149.97 93.78,-150.73 91.95,-143.98"/>
@@ -280,7 +283,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~method_config_t&#45;&gt;type~pcm_config_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge3" class="edge">
 <title>type~method_config_t&#45;&gt;type~pcm_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M160.79,-89.01C153.77,-91.7 146.56,-94.73 140,-98 113.87,-111.01 86.1,-129.46 66.91,-143.03"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="64.83,-140.22 58.73,-148.89 68.9,-145.91 64.83,-140.22"/>
@@ -383,7 +386,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge13" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge12" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M755.74,-83.84C750.59,-81.29 745.49,-78.33 741,-75 731.13,-67.67 735.29,-54 723,-54"/>
 </g>
@@ -397,7 +400,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge14" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge13" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M740.92,-54C734.89,-54 728.8,-54 723,-54"/>
 </g>
@@ -411,7 +414,7 @@ two are separate models and share no settings.</p>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~pcm_config_t~~InheritedByGraph_edge12" class="edge">
+<g id="type~~pcm_config_t~~InheritedByGraph_edge14" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M755.74,-24.16C750.59,-26.71 745.49,-29.67 741,-33 731.13,-40.33 735.29,-54 723,-54"/>
 <path fill="none" stroke="#0066ff" d="M722,-54C719.46,-54 716.88,-54 714.27,-54"/>
@@ -490,7 +493,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~2"></span>
+              <span class="anchor" id="variable-angular_points~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -507,7 +510,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~5"></span>
+              <span class="anchor" id="variable-dielectric~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -542,7 +545,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -555,6 +558,29 @@ see <code>mqc_config_types</code>.</p>
                 <td>100</td>
             <td>
                 <p>Iterations that solve is allowed.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method"></span>
+              character(len=16),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+<td> =</td>
+                <td>&#34;cpcm&#34;</td>
+            <td>
+                <p>Which continuum model the surface charges solve: &ldquo;cpcm&rdquo;
+(conductor-like, scale factor (eps-1)/eps) or &ldquo;iefpcm&rdquo; (the integral
+equation formalism, scale (eps-1)/(eps+1) with the D-matrix terms).
+The two are different models with different energies &ndash; water differs
+by ~1% of the solvation energy &ndash; so the choice is named, not
+defaulted per backend. Only the CPU path reads it; cuEST&rsquo;s solver is
+fixed and refuses &ldquo;iefpcm&rdquo; rather than substituting.</p>
             </td>
         </tr>
         <tr>
@@ -576,7 +602,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~8"></span>
+              <span class="anchor" id="variable-tolerance~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -623,10 +649,20 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pcm_config_t</span>
 <span class="w">      </span><span class="c">!! A polarizable continuum: the cavity, the solvent, and the charge solve</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Backend-neutral in shape, but only the cuEST path implements it. tblite's</span>
-<span class="w">      </span><span class="c">!! CPCM is configured through `xtb_config_t` and builds its own cavity; the</span>
-<span class="w">      </span><span class="c">!! two are separate models and share no settings.</span>
+<span class="w">      </span><span class="c">!! Backend-neutral in shape. The cuEST path hands the cavity and the charge</span>
+<span class="w">      </span><span class="c">!! solve to the library; the CPU path builds both itself in</span>
+<span class="w">      </span><span class="c">!! `mqc_libcint_pcm`. tblite's CPCM is configured through `xtb_config_t`</span>
+<span class="w">      </span><span class="c">!! and builds its own cavity; the two are separate models and share no</span>
+<span class="w">      </span><span class="c">!! settings.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"cpcm"</span>
+<span class="w">         </span><span class="c">!! Which continuum model the surface charges solve: "cpcm"</span>
+<span class="w">         </span><span class="c">!! (conductor-like, scale factor (eps-1)/eps) or "iefpcm" (the integral</span>
+<span class="w">         </span><span class="c">!! equation formalism, scale (eps-1)/(eps+1) with the D-matrix terms).</span>
+<span class="w">         </span><span class="c">!! The two are different models with different energies -- water differs</span>
+<span class="w">         </span><span class="c">!! by ~1% of the solvation energy -- so the choice is named, not</span>
+<span class="w">         </span><span class="c">!! defaulted per backend. Only the CPU path reads it; cuEST's solver is</span>
+<span class="w">         </span><span class="c">!! fixed and refuses "iefpcm" rather than substituting.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dielectric</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 <span class="w">         </span><span class="c">!! Solvent dielectric. No solvent-name table on this path, on purpose:</span>
 <span class="w">         </span><span class="c">!! see `mqc_config_types`.</span>
@@ -664,7 +700,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-21 20:43 +0000             </p>
+ on 2026-08-22 07:09 +0000             </p>
           </div>
         </div>
         <br>

@@ -188,6 +188,18 @@ contains
             call h%int(config%dft%radial_points)
             call h%int(config%dft%angular_points)
          end if
+         ! The continuum. A solvated fragment is a different number from a
+         ! gas-phase one -- by hundreds of kcal/mol for an ion -- and without
+         ! these a checkpoint written in the gas phase would satisfy a deck
+         ! that asked for solvent.
+         if (config%pcm%enabled) then
+            call h%text("pcm")
+            call h%text(trim(config%pcm%method))
+            call h%real(config%pcm%dielectric)
+            call h%int(config%pcm%angular_points)
+            call h%real(config%pcm%radii_scale)
+            call h%real(config%pcm%zeta)
+         end if
       end select
    end subroutine add_method
 

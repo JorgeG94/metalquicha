@@ -250,6 +250,7 @@ contains
       end if
 
       driver_config%method_config%pcm%enabled = mqc_config%pcm_enabled
+      driver_config%method_config%pcm%method = mqc_config%pcm_method
       driver_config%method_config%pcm%dielectric = mqc_config%pcm_dielectric
       driver_config%method_config%pcm%angular_points = mqc_config%pcm_angular_points
       driver_config%method_config%pcm%radii_scale = mqc_config%pcm_radii_scale

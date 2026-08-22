@@ -270,6 +270,8 @@ module mqc_config_types
          !! told apart: absent leaves `backend` alone, false pins it to the CPU.
 
       logical :: pcm_enabled = .false.
+      character(len=16) :: pcm_method = "cpcm"
+         !! Continuum model: "cpcm" or "iefpcm". See `pcm_config_t`.
       real(dp) :: pcm_dielectric = -1.0_dp
          !! Solvent dielectric constant. Required: there is no solvent-name
          !! table on this path, because inventing one that disagreed with
