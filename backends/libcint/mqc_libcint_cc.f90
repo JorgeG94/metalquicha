@@ -690,7 +690,8 @@ contains
 
    subroutine run_libcint_ccsd(mol, coeff, orbital_energies, n_occ, frozen, &
                                max_iter, energy_tol, want_triples, verbose, &
-                               result, error, diis_vectors, aux)
+                               result, error, diis_vectors, aux, &
+                               coeff_b, orbital_energies_b, n_occ_b)
       !! Drive CCSD, and optionally (T), to convergence
       !!
       !! **Memory.** The spin-orbital blocks are sixteen times their spatial
@@ -715,6 +716,11 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
       type(libcint_molecule_t), intent(in), optional :: aux
+      real(dp), intent(in), optional :: coeff_b(:, :)
+         !! Beta MO coefficients. Present means an unrestricted reference, and
+         !! the other two beta arguments must come with it.
+      real(dp), intent(in), optional :: orbital_energies_b(:)
+      integer, intent(in), optional :: n_occ_b
          !! Auxiliary basis. Present means every MO integral is density-fitted
          !! rather than transformed exactly -- RI-CCSD.
          !!
@@ -745,6 +751,9 @@ contains
       type(timing_report_t) :: clk
       type(so_map_t) :: map
       type(so_source_t) :: src
+      logical :: unrestricted
+      integer :: n_ob, n_vb
+      real(dp), allocatable :: cb_act(:, :)
 
       n_ao = size(coeff, 1)
       n_mo = size(coeff, 2)
@@ -755,22 +764,37 @@ contains
          return
       end if
       n_act = n_mo - frozen
+      unrestricted = present(coeff_b)
+      if (unrestricted) then
+         if (.not. present(orbital_energies_b) .or. .not. present(n_occ_b)) then
+            call error%set(ERROR_VALIDATION, "UCCSD: beta coefficients given without "// &
+                           "beta orbital energies or a beta occupation count")
+            return
+         end if
+         n_ob = n_occ_b - frozen
+         n_vb = n_mo - n_occ_b
+      else
+         n_ob = n_occ - frozen
+         n_vb = n_mo - n_occ
+      end if
       n_o = n_occ - frozen
       n_v = n_mo - n_occ
-      if (n_v < 1) then
+      if (n_v < 1 .or. n_vb < 1) then
          call error%set(ERROR_VALIDATION, "CCSD: no virtual orbitals -- the basis is "// &
                         "saturated by the occupied space and there is nothing to excite into")
          return
       end if
 
-      no = 2*n_o
-      nv = 2*n_v
+      no = n_o + n_ob
+      nv = n_v + n_vb
       n_so = no + nv
 
-      ! Restricted reference, so the two spins have the same orbitals and the
-      ! same counts: this reproduces the interleaving the module used to compute
-      ! arithmetically, and nothing below can tell the difference.
-      call build_so_map(n_o, n_o, n_v, n_v, map)
+      ! Restricted: the two spins have the same orbitals and the same counts, so
+      ! this reproduces the interleaving the module used to compute
+      ! arithmetically and nothing below can tell the difference. Unrestricted:
+      ! blocked, because interleaving stops keeping occupied contiguous the
+      ! moment the counts differ.
+      call build_so_map(n_o, n_ob, n_v, n_vb, map)
 
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
@@ -818,13 +842,28 @@ contains
          if (error%has_error()) return
       else
          call mol%eris_packed(eri)
-         call transform_block(eri, c_act, c_act, c_act, c_act, mo)
+         if (unrestricted) then
+            ! Three tensors, not one: `(aa|aa)`, `(bb|bb)` and the mixed
+            ! `(aa|bb)`. `(bb|aa)` is not built -- `tensor` and `chem` reach it
+            ! by swapping the electron pairs. This is three times the memory of
+            ! the restricted path, and that is inherent: the numbers genuinely
+            ! differ once the two spins have different orbitals.
+            allocate (cb_act(n_ao, n_act))
+            cb_act = coeff_b(:, frozen + 1:n_mo)
+            src%restricted = .false.
+            call transform_block(eri, c_act, c_act, c_act, c_act, src%aa)
+            call transform_block(eri, cb_act, cb_act, cb_act, cb_act, src%bb)
+            call transform_block(eri, c_act, c_act, cb_act, cb_act, src%ab)
+            deallocate (cb_act)
+         else
+            call transform_block(eri, c_act, c_act, c_act, c_act, mo)
+            ! Moved, not copied: this tensor is the conventional path's memory
+            ! ceiling and duplicating it to fill a container would double it.
+            ! `mo` is unallocated afterwards and the ladder reads `src%aa`.
+            src%restricted = .true.
+            call move_alloc(mo, src%aa)
+         end if
          deallocate (eri)
-         ! Moved, not copied: this tensor is the conventional path's memory
-         ! ceiling and duplicating it to fill a container would double it. `mo`
-         ! is unallocated afterwards and the ladder reads `src%aa` instead.
-         src%restricted = .true.
-         call move_alloc(mo, src%aa)
       end if
       deallocate (c_act)
 
@@ -846,7 +885,11 @@ contains
       ! four of these rather than a matrix element.
       allocate (eps(n_so))
       do s = 1, n_so
-         eps(s) = orbital_energies(frozen + spatial(map, s))
+         if (map%is_a(s) .or. .not. unrestricted) then
+            eps(s) = orbital_energies(frozen + spatial(map, s))
+         else
+            eps(s) = orbital_energies_b(frozen + spatial(map, s))
+         end if
       end do
 
       ! ---- MP2, as the checkpoint before any amplitude equation --------------
