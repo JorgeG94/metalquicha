@@ -18,6 +18,7 @@ module mqc_method_types
    public :: METHOD_TYPE_EFP2
    ! Public constants - Interaction energies, decomposed
    public :: METHOD_TYPE_SAPT0
+   public :: METHOD_TYPE_SAPT2
    ! Public constants - Correlation methods
    public :: METHOD_TYPE_MP2, METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T
    public :: METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12
@@ -67,6 +68,7 @@ module mqc_method_types
    !> 60 is EFP2 on `feat/efp-efp`; SAPT0 takes 61 so the two branches can merge
    !> without either constant moving.
    integer(int32), parameter :: METHOD_TYPE_SAPT0 = 61
+   integer(int32), parameter :: METHOD_TYPE_SAPT2 = 62
 
 contains
 
@@ -132,10 +134,13 @@ contains
          ! here, and spelling it out is what a deck written for another program does.
       case ("efp2", "efp")
          method_type = METHOD_TYPE_EFP2
-         ! Interaction energies. "sapt" alone means SAPT0: it is the only order
-         ! implemented, and higher ones need monomer correlation.
+         ! Interaction energies. "sapt" alone means SAPT0: the bare name has
+         ! always meant the base order here, and changing what an old deck
+         ! computes would be worse than asking for the 2.
       case ("sapt0", "sapt")
          method_type = METHOD_TYPE_SAPT0
+      case ("sapt2")
+         method_type = METHOD_TYPE_SAPT2
 
          ! Perturbation theory
       case ("mp2", "ri-mp2", "df-mp2", "scs-mp2", "sos-mp2")
@@ -189,6 +194,8 @@ contains
          ! Interaction energies
       case (METHOD_TYPE_SAPT0)
          method_str = "sapt0"
+      case (METHOD_TYPE_SAPT2)
+         method_str = "sapt2"
 
          ! Perturbation theory
       case (METHOD_TYPE_MP2)

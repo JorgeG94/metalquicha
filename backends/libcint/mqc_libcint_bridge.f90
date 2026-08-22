@@ -59,6 +59,7 @@ module mqc_libcint_bridge
    public :: run_libcint_charges
    public :: run_libcint_efp
    public :: run_libcint_sapt0
+   public :: run_libcint_sapt2
    public :: libcint_backend_available
    public :: xc_available
       !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
@@ -354,6 +355,44 @@ contains
                t%delta_hf, t%e_int_hf, t%total]
       call mols%destroy()
    end subroutine run_libcint_sapt0
+
+   subroutine run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
+                                terms, error)
+      !! SAPT2 between two monomers: every SAPT0 term in the same slots, plus
+      !! the four intramonomer-correlation corrections, the scaled
+      !! exchange-induction, and its own total
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_SAPT2_TERMS
+      use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
+                          run_sapt2
+      integer, intent(in) :: z_a(:), z_b(:)
+      character(len=*), intent(in) :: sym_a(:), sym_b(:)
+      real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
+      character(len=*), intent(in) :: basis_name
+      real(dp), intent(out) :: terms(N_SAPT2_TERMS)
+         !! Ordered by `SAPT2_TERM_NAMES`
+      type(error_t), intent(inout) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_terms_t) :: t
+
+      terms = 0.0_dp
+      call build_sapt_molecules(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                                basis_name, mols, error)
+      if (error%has_error()) return
+      call run_sapt2(mols, t, error)
+      if (error%has_error()) then
+         call mols%destroy()
+         return
+      end if
+
+      terms = [t%elst10, t%exch10_s2, t%exch10, t%ind20_u, t%ind20_r, &
+               t%exch_ind20_u, t%exch_ind20_r, t%disp20, t%exch_disp20, &
+               t%delta_hf, t%e_int_hf, t%total, &
+               t%elst12, t%exch11, t%exch12, t%ind22, t%exch_ind22, &
+               t%total_sapt2]
+      call mols%destroy()
+   end subroutine run_libcint_sapt2
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &

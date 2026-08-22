@@ -41,6 +41,16 @@ module mqc_program_limits
                                                                  "ind20_u", "ind20_r", "exch_ind20_u", "exch_ind20_r", &
                                                               "disp20", "exch_disp20", "delta_hf", "e_int_hf_cp", "total"]
 
+   !> SAPT2 reports every SAPT0 term in the same slots -- "total" stays the
+   !> SAPT0 total, so the two levels' outputs line up term for term -- and
+   !> appends the four intramonomer-correlation corrections, the scaled
+   !> exchange-induction, and its own total.
+   integer, parameter, public :: N_SAPT2_TERMS = 18
+
+   character(len=*), parameter, public :: SAPT2_TERM_NAMES(N_SAPT2_TERMS) = &
+                                          [SAPT_TERM_NAMES, "elst12      ", "exch11      ", "exch12      ", &
+                                           "ind22       ", "exch_ind22  ", "total_sapt2 "]
+
    !> Group-global result batching size for MPI MBE (multi-global coordinator)
    integer, parameter, public :: GROUP_RESULT_BATCH_SIZE = 256
 
