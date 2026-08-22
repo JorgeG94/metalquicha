@@ -934,6 +934,52 @@
             "type": "unfragmented"
         },
         {
+            "name": "CASSCF gradient CAS(6,5) H2O sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/mcscf/cpu_water_sto-3g_6e5o_grad.json",
+            "expected_energy": -75.010187220994,
+            "expected_gradient": [
+                [
+                    -5.791e-09,
+                    3.8462e-08,
+                    -0.115776195238
+                ],
+                [
+                    7.06e-10,
+                    -0.041182637921,
+                    0.057888104517
+                ],
+                [
+                    5.085e-09,
+                    0.041182599459,
+                    0.057888090722
+                ]
+            ],
+            "gradient_tolerance": 5e-06,
+            "check_translation": true,
+            "type": "unfragmented",
+            "reference_note": "reference is the lowest of 10 deterministic CASSCF starts (3 converged). The Hartree-Fock guess converges 1.67e-03 Hartree higher; a rotated start reaches this minimum."
+        },
+        {
+            "name": "CASSCF gradient CAS(6,6) N2 cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/mcscf/cpu_n2_cc-pvdz_6e6o_grad.json",
+            "expected_energy": -109.090025702278,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    0.049954615162
+                ],
+                [
+                    0.0,
+                    0.0,
+                    -0.049954615162
+                ]
+            ],
+            "gradient_tolerance": 5e-06,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "RHF with quasi-atomic bonding analysis H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/quao/cpu_water_6-31g_quao.json",
             "expected_energy": -75.984779843967,
