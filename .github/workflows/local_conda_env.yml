@@ -2,6 +2,17 @@ name: Build MQC using local conda env (MPI, OpenMP, BLAS)
 
 on: [push]
 
+# One build per branch. A push supersedes the one before it on the same branch,
+# and the superseded run is cancelled rather than left to finish work nobody
+# will read -- the matrix is eleven jobs, so a branch pushed three times in an
+# hour was occupying the runners three times over.
+#
+# `github.ref` and not the workflow name: the group has to be per-branch or
+# every branch cancels every other one, which is the way this goes wrong.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cmake-build:
     name: CMake build (${{ matrix.name }})

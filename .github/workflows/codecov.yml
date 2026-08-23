@@ -7,6 +7,22 @@ on:
     branches: ["*"]
   workflow_dispatch:
 
+# Supersede a branch's own earlier run, but never a run on `main`.
+#
+# The asymmetry is the whole point. A cancelled PR run costs nothing: the push
+# that cancelled it is about to measure the same branch again. A cancelled
+# `main` run costs every PR opened afterwards, because codecov compares a pull
+# request against the base commit's report and a commit whose run was killed
+# has none -- the comparison then walks back to an older ancestor, or reports
+# nothing at all. That failure surfaces on pull requests that were never
+# cancelled themselves, which is what makes it hard to attribute.
+#
+# `head_ref` is set for pull_request events and empty otherwise, so the group
+# is per-PR-branch there and per-branch for the push on `main`.
+concurrency:
+  group: codecov-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   codecov:
     runs-on: ubuntu-latest
