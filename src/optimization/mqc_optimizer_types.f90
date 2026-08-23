@@ -23,13 +23,23 @@ module mqc_optimizer_types
    private
 
    public :: optimizer_settings_t
+   public :: opt_constraint_t
    public :: energy_gradient_i
+   public :: hessian_i
    public :: step_callback_i
    public :: OPT_COORDS_UNKNOWN, OPT_COORDS_CARTESIAN, OPT_COORDS_HDLC, OPT_COORDS_DLC
    public :: OPT_COORDS_HDLC_TC, OPT_COORDS_DLC_TC
    public :: OPT_ALGO_UNKNOWN, OPT_ALGO_SD, OPT_ALGO_CG, OPT_ALGO_LBFGS, OPT_ALGO_PRFO
+   public :: OPT_ALGO_CG_AUTO, OPT_ALGO_NR, OPT_ALGO_DAMPED
+   public :: OPT_HESSIAN_UPDATE_ENGINE, OPT_HESSIAN_UPDATE_NONE
+   public :: OPT_HESSIAN_UPDATE_POWELL, OPT_HESSIAN_UPDATE_BOFILL
+   public :: OPT_CONSTRAIN_BOND, OPT_CONSTRAIN_ANGLE, OPT_CONSTRAIN_TORSION
+   public :: OPT_CONSTRAIN_CARTESIAN, OPT_CONSTRAIN_BOND_DIFFERENCE
    public :: coordinates_from_string, coordinates_to_string
    public :: algorithm_from_string, algorithm_to_string
+   public :: hessian_update_from_string, hessian_update_to_string
+   public :: constraint_from_string, constraint_atom_count
+   public :: algorithm_needs_hessian
 
    ! This program's own numbering rather than DL-FIND's, even though DL-FIND is
    ! the only engine today and two of these would have mapped to themselves.
@@ -63,6 +73,47 @@ module mqc_optimizer_types
    integer, parameter :: OPT_ALGO_CG = 2      !! Conjugate gradient
    integer, parameter :: OPT_ALGO_LBFGS = 3   !! Limited-memory BFGS
    integer, parameter :: OPT_ALGO_PRFO = 4    !! Partitioned rational function, for a saddle
+   integer, parameter :: OPT_ALGO_CG_AUTO = 5
+      !! Conjugate gradient restarting on the Powell-Beale test rather than
+      !! every ten steps. The other spelling of the same method: `cg` restarts
+      !! on a fixed schedule, this one when the search directions stop being
+      !! usefully conjugate.
+   integer, parameter :: OPT_ALGO_NR = 6
+      !! Newton-Raphson. Needs a Hessian, and descends to whatever stationary
+      !! point it starts nearest -- which is a minimum only if it began in that
+      !! basin.
+   integer, parameter :: OPT_ALGO_DAMPED = 7
+      !! Damped molecular dynamics. Not a minimiser in the line-search sense:
+      !! it integrates motion and bleeds energy out through a friction term, so
+      !! it crosses small barriers a downhill method would stop at.
+
+   ! How the engine carries curvature between steps once it has a Hessian.
+   ! Only the algorithms that hold one pay attention to this.
+   integer, parameter :: OPT_HESSIAN_UPDATE_ENGINE = -1  !! Leave DL-FIND's own choice
+   integer, parameter :: OPT_HESSIAN_UPDATE_NONE = 0
+   integer, parameter :: OPT_HESSIAN_UPDATE_POWELL = 1
+   integer, parameter :: OPT_HESSIAN_UPDATE_BOFILL = 2
+      !! The usual choice for a saddle point: Powell's update keeps the matrix
+      !! symmetric but not positive definite, which is what a transition state
+      !! needs, and Bofill mixes it with BFGS by how much the step looks like
+      !! either case.
+
+   ! DL-FIND's constraint numbering, which the bridge writes into `spec`.
+   integer, parameter :: OPT_CONSTRAIN_BOND = 1
+   integer, parameter :: OPT_CONSTRAIN_ANGLE = 2
+   integer, parameter :: OPT_CONSTRAIN_TORSION = 3
+   integer, parameter :: OPT_CONSTRAIN_CARTESIAN = 4
+   integer, parameter :: OPT_CONSTRAIN_BOND_DIFFERENCE = 5
+
+   type :: opt_constraint_t
+      !! One geometric quantity held fixed during the optimization
+      !!
+      !! `atoms` is 1-based here and 0-based in the deck, the same as every
+      !! other atom index this program reads. Only the first
+      !! `constraint_atom_count(kind)` entries mean anything.
+      integer :: kind = 0
+      integer :: atoms(4) = 0
+   end type opt_constraint_t
 
    type :: optimizer_settings_t
       !! One optimization's settings, as the deck asked for them
@@ -91,6 +142,27 @@ module mqc_optimizer_types
          !! Choose the MBE term list once, at the starting geometry, and keep
          !! it for every step. See `mqc_geometry_optimizer` for why an
          !! optimization on a re-screened list is optimizing a moving target.
+      integer :: hessian_update = OPT_HESSIAN_UPDATE_ENGINE
+         !! How curvature is carried between steps once a Hessian exists.
+         !! Ignored by the algorithms that never build one.
+      real(dp) :: timestep = -1.0_dp
+         !! Damped dynamics only. Negative: engine default
+      real(dp) :: friction = -1.0_dp
+         !! Damped dynamics only: the starting friction. Negative: engine default
+      real(dp) :: friction_factor = -1.0_dp
+         !! Damped dynamics only: what the friction is multiplied by while the
+         !! energy is falling, so the run coasts further the better it is
+         !! going. Negative: engine default
+      real(dp) :: friction_rising = -1.0_dp
+         !! Damped dynamics only: the friction used on a step where the energy
+         !! went up. Negative: engine default
+      integer, allocatable :: frozen_atoms(:)
+         !! Atoms held at their input position, 1-based. Frozen atoms are
+         !! removed from the optimization's variables rather than restrained,
+         !! so a frozen pair contributes no coordinates at all.
+      type(opt_constraint_t), allocatable :: constraints(:)
+         !! Internal coordinates held fixed. Needs an internal coordinate
+         !! system to hold them in -- see `mqc_dlfind_bridge`.
       logical :: hess_end = .false.
          !! Compute a Hessian at the converged geometry and say whether any
          !! frequency came back imaginary.
@@ -110,6 +182,28 @@ module mqc_optimizer_types
          !! the geometries are held until the run ends so they can be written
          !! as one document, which is 3N doubles per step of memory.
    end type optimizer_settings_t
+
+   abstract interface
+      subroutine hessian_i(n_atoms, coords, hessian, status)
+         !! Second derivatives at a geometry, Hartree/Bohr^2
+         !!
+         !! Cartesian, `(3N, 3N)`, in the system's own atom order. Cartesian
+         !! regardless of the coordinate system the optimization runs in: the
+         !! engine transforms it to whatever internals it is using, and cannot
+         !! do that if it is handed something already transformed.
+         !!
+         !! `status` is 0 for success. Anything else means no Hessian was
+         !! produced, which is not a failure -- an engine that asked for one is
+         !! expected to fall back to finite differences of gradients, which is
+         !! slower and correct. That is why this interface has no `error_t`:
+         !! there is nothing here a caller could not recover from.
+         import :: dp
+         integer, intent(in) :: n_atoms
+         real(dp), intent(in) :: coords(3, n_atoms)
+         real(dp), intent(out) :: hessian(3*n_atoms, 3*n_atoms)
+         integer, intent(out) :: status
+      end subroutine hessian_i
+   end interface
 
    abstract interface
       subroutine energy_gradient_i(n_atoms, coords, energy, gradient, status)
@@ -213,6 +307,12 @@ contains
          algorithm = OPT_ALGO_SD
       case ("prfo", "p-rfo")
          algorithm = OPT_ALGO_PRFO
+      case ("cg-auto", "conjugate-gradient-auto")
+         algorithm = OPT_ALGO_CG_AUTO
+      case ("nr", "newton-raphson")
+         algorithm = OPT_ALGO_NR
+      case ("damped", "damped-dynamics")
+         algorithm = OPT_ALGO_DAMPED
       case default
          algorithm = OPT_ALGO_UNKNOWN
       end select
@@ -232,10 +332,112 @@ contains
          text = "lbfgs"
       case (OPT_ALGO_PRFO)
          text = "prfo"
+      case (OPT_ALGO_CG_AUTO)
+         text = "cg-auto"
+      case (OPT_ALGO_NR)
+         text = "newton-raphson"
+      case (OPT_ALGO_DAMPED)
+         text = "damped-dynamics"
       case default
          text = "unknown"
       end select
    end function algorithm_to_string
+
+   pure function algorithm_needs_hessian(algorithm) result(needs)
+      !! Whether this algorithm holds a Hessian at all
+      !!
+      !! What it decides is whether the driver bothers to offer one. An
+      !! algorithm that never builds one would be handed a callback it never
+      !! calls, and the Hessian settings beside it -- the update scheme above
+      !! all -- would read as though they were doing something.
+      integer, intent(in) :: algorithm
+      logical :: needs
+
+      needs = algorithm == OPT_ALGO_PRFO .or. algorithm == OPT_ALGO_NR
+   end function algorithm_needs_hessian
+
+   pure function hessian_update_from_string(text) result(update)
+      !! Parse the Hessian update scheme a deck asked for
+      character(len=*), intent(in) :: text
+      integer :: update
+
+      select case (lowercase(text))
+      case ("none")
+         update = OPT_HESSIAN_UPDATE_NONE
+      case ("powell")
+         update = OPT_HESSIAN_UPDATE_POWELL
+      case ("bofill")
+         update = OPT_HESSIAN_UPDATE_BOFILL
+      case ("auto", "engine", "default")
+         update = OPT_HESSIAN_UPDATE_ENGINE
+      case default
+         update = -2   ! not a spelling anybody recognises
+      end select
+   end function hessian_update_from_string
+
+   pure function hessian_update_to_string(update) result(text)
+      !! Name a Hessian update scheme, for the log
+      integer, intent(in) :: update
+      character(len=:), allocatable :: text
+
+      select case (update)
+      case (OPT_HESSIAN_UPDATE_NONE)
+         text = "none"
+      case (OPT_HESSIAN_UPDATE_POWELL)
+         text = "powell"
+      case (OPT_HESSIAN_UPDATE_BOFILL)
+         text = "bofill"
+      case (OPT_HESSIAN_UPDATE_ENGINE)
+         text = "engine default"
+      case default
+         text = "unknown"
+      end select
+   end function hessian_update_to_string
+
+   pure function constraint_from_string(text) result(kind)
+      !! Parse a constrained coordinate's type
+      character(len=*), intent(in) :: text
+      integer :: kind
+
+      select case (lowercase(text))
+      case ("bond", "distance")
+         kind = OPT_CONSTRAIN_BOND
+      case ("angle")
+         kind = OPT_CONSTRAIN_ANGLE
+      case ("torsion", "dihedral")
+         kind = OPT_CONSTRAIN_TORSION
+      case ("cartesian", "position")
+         kind = OPT_CONSTRAIN_CARTESIAN
+      case ("bond-difference", "bond_difference")
+         kind = OPT_CONSTRAIN_BOND_DIFFERENCE
+      case default
+         kind = 0
+      end select
+   end function constraint_from_string
+
+   pure function constraint_atom_count(kind) result(n)
+      !! How many atoms a constraint of this type names
+      !!
+      !! Zero for a type nobody recognises, which is how a deck naming one is
+      !! caught: the count is what the reader validates the atom list against.
+      integer, intent(in) :: kind
+      integer :: n
+
+      select case (kind)
+      case (OPT_CONSTRAIN_BOND)
+         n = 2
+      case (OPT_CONSTRAIN_ANGLE)
+         n = 3
+      case (OPT_CONSTRAIN_TORSION)
+         n = 4
+      case (OPT_CONSTRAIN_CARTESIAN)
+         n = 1
+      case (OPT_CONSTRAIN_BOND_DIFFERENCE)
+         n = 3
+      case default
+         n = 0
+      end select
+   end function constraint_atom_count
 
    pure function lowercase(text) result(lowered)
       !! Case-insensitive comparison, the way mqc_calc_types does it

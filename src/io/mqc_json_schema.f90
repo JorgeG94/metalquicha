@@ -508,6 +508,13 @@ contains
       call allow(keys, "trajectory")
       call allow(keys, "freeze_terms")
       call allow(keys, "hess_end")
+      call allow(keys, "hessian_update")
+      call allow(keys, "frozen_atoms")
+      call allow(keys, "constraints")
+      call allow(keys, "timestep")
+      call allow(keys, "friction")
+      call allow(keys, "friction_factor")
+      call allow(keys, "friction_rising")
    end function optimization_keys
 
    function xtb_keys() result(keys)

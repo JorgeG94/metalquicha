@@ -417,6 +417,18 @@ contains
       call optional_logical(json, "keywords.optimization.trajectory", config%opt_trajectory)
       call optional_logical(json, "keywords.optimization.freeze_terms", config%opt_freeze_terms)
       call optional_logical(json, "keywords.optimization.hess_end", config%opt_hess_end)
+      call optional_string(json, "keywords.optimization.hessian_update", &
+                           config%opt_hessian_update)
+      call optional_real(json, "keywords.optimization.timestep", config%opt_timestep)
+      call optional_real(json, "keywords.optimization.friction", config%opt_friction)
+      call optional_real(json, "keywords.optimization.friction_factor", &
+                         config%opt_friction_factor)
+      call optional_real(json, "keywords.optimization.friction_rising", &
+                         config%opt_friction_rising)
+      call read_frozen_atoms(json, config, error)
+      if (error%has_error()) return
+      call read_constraints(json, config, error)
+      if (error%has_error()) return
 
       call optional_string(json, "keywords.xtb.solvent", config%solvent)
       call optional_string(json, "keywords.xtb.solvation_model", config%solvation_model)
@@ -690,6 +702,103 @@ contains
                         "'. Accepted: auto, dense, matrix_free")
       end select
    end subroutine read_efp_response
+
+   subroutine read_frozen_atoms(json, config, error)
+      !! `keywords.optimization.frozen_atoms`, a flat list of atom indices
+      !!
+      !! Zero-based in the deck, as every atom index in this format is, and
+      !! stored one-based because that is what Fortran indexes `spec` with. The
+      !! conversion happens once, here, rather than at the point of use where
+      !! it would have to be remembered.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      integer :: n_frozen, i, atom
+      logical :: found
+
+      call json%info("keywords.optimization.frozen_atoms", found=found, n_children=n_frozen)
+      if (.not. found .or. n_frozen < 1) return
+
+      allocate (config%opt_frozen_atoms(n_frozen))
+      do i = 1, n_frozen
+         atom = -1
+         call optional_int(json, "keywords.optimization.frozen_atoms("// &
+                           int_to_key(i)//")", atom)
+         if (atom < 0) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization.frozen_atoms entry "//trim(to_char(i))// &
+                           " is not an atom index. Indices are 0-based.")
+            return
+         end if
+         config%opt_frozen_atoms(i) = atom + 1
+      end do
+   end subroutine read_frozen_atoms
+
+   subroutine read_constraints(json, config, error)
+      !! `keywords.optimization.constraints`, one object per held coordinate
+      !!
+      !! Each names a `type` and the `atoms` it is measured over, and the two
+      !! have to agree: a bond takes two atoms and a torsion four. Checked here
+      !! rather than in the bridge, because the deck is where the mistake was
+      !! made and the count is the only thing that can catch it -- three atoms
+      !! under `"type": "torsion"` is a perfectly well-formed list of integers.
+      use mqc_optimizer_types, only: constraint_from_string, constraint_atom_count
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: prefix, kind_text
+      integer :: n_cons, n_atoms_here, expected, i, k, atom
+      logical :: found
+
+      call json%info("keywords.optimization.constraints", found=found, n_children=n_cons)
+      if (.not. found .or. n_cons < 1) return
+
+      allocate (config%opt_constraint_kinds(n_cons))
+      allocate (config%opt_constraint_atoms(4, n_cons))
+      config%opt_constraint_atoms = 0
+
+      do i = 1, n_cons
+         prefix = "keywords.optimization.constraints("//int_to_key(i)//")"
+
+         kind_text = ""
+         call optional_string(json, prefix//".type", kind_text)
+         config%opt_constraint_kinds(i) = constraint_from_string(kind_text)
+         expected = constraint_atom_count(config%opt_constraint_kinds(i))
+         if (expected == 0) then
+            call error%set(ERROR_VALIDATION, "constraint "//trim(to_char(i))// &
+                           ' has type "'//trim(kind_text)//'". Use bond, angle, '// &
+                           "torsion, cartesian or bond-difference.")
+            return
+         end if
+
+         call json%info(prefix//".atoms", found=found, n_children=n_atoms_here)
+         if (.not. found) then
+            call error%set(ERROR_VALIDATION, "constraint "//trim(to_char(i))// &
+                           " names no atoms")
+            return
+         end if
+         if (n_atoms_here /= expected) then
+            call error%set(ERROR_VALIDATION, "constraint "//trim(to_char(i))//' is a "'// &
+                           trim(kind_text)//'", which is measured over '// &
+                           trim(to_char(expected))//" atoms, but "// &
+                           trim(to_char(n_atoms_here))//" were given.")
+            return
+         end if
+
+         do k = 1, n_atoms_here
+            atom = -1
+            call optional_int(json, prefix//".atoms("//int_to_key(k)//")", atom)
+            if (atom < 0) then
+               call error%set(ERROR_VALIDATION, "constraint "//trim(to_char(i))// &
+                              " has an atom that is not an index. Indices are 0-based.")
+               return
+            end if
+            config%opt_constraint_atoms(k, i) = atom + 1
+         end do
+      end do
+   end subroutine read_constraints
 
    subroutine read_guess_steps(json, config, error)
       !! The basis-set-projection ladder, one entry per preliminary SCF

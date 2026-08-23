@@ -410,6 +410,15 @@ module mqc_config_types
       logical :: opt_trajectory = .true.               !! Record the path taken
       logical :: opt_freeze_terms = .true.             !! Fix the MBE term list for the run
       logical :: opt_hess_end = .false.                !! Hessian at the converged geometry
+      character(len=:), allocatable :: opt_hessian_update !! none, powell, bofill, auto
+      real(dp) :: opt_timestep = -1.0_dp               !! Damped dynamics step
+      real(dp) :: opt_friction = -1.0_dp               !! Damped dynamics start friction
+      real(dp) :: opt_friction_factor = -1.0_dp        !! Friction decay while descending
+      real(dp) :: opt_friction_rising = -1.0_dp        !! Friction on an uphill step
+      integer, allocatable :: opt_frozen_atoms(:)      !! 0-based in the deck, 1-based here
+      integer, allocatable :: opt_constraint_kinds(:)  !! One per constraint
+      integer, allocatable :: opt_constraint_atoms(:, :)
+         !! (4, n_constraints), 1-based, unused slots zero
 
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.

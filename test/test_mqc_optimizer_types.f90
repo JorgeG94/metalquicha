@@ -13,7 +13,13 @@ module test_mqc_optimizer_types
                                   OPT_COORDS_UNKNOWN, OPT_COORDS_CARTESIAN, &
                                   OPT_COORDS_HDLC, OPT_COORDS_DLC, &
                                   OPT_ALGO_UNKNOWN, OPT_ALGO_SD, OPT_ALGO_CG, &
-                                  OPT_ALGO_LBFGS, OPT_ALGO_PRFO
+                                  OPT_ALGO_LBFGS, OPT_ALGO_PRFO, &
+                                  OPT_ALGO_CG_AUTO, OPT_ALGO_NR, OPT_ALGO_DAMPED, &
+                                  algorithm_needs_hessian, &
+                                  hessian_update_from_string, &
+                                  OPT_HESSIAN_UPDATE_ENGINE, OPT_HESSIAN_UPDATE_NONE, &
+                                  OPT_HESSIAN_UPDATE_POWELL, OPT_HESSIAN_UPDATE_BOFILL, &
+                                  constraint_from_string, constraint_atom_count
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, CALC_TYPE_OPTIMIZE
    use pic_types, only: dp
    implicit none
@@ -34,7 +40,10 @@ contains
                   new_unittest("algorithm_roundtrip", test_algorithm_roundtrip), &
                   new_unittest("case_insensitive", test_case_insensitive), &
                   new_unittest("settings_defaults", test_settings_defaults), &
-                  new_unittest("optimize_driver_parses", test_optimize_driver_parses) &
+                  new_unittest("optimize_driver_parses", test_optimize_driver_parses), &
+                  new_unittest("new_algorithms_parse", test_new_algorithms), &
+                  new_unittest("hessian_update_parses", test_hessian_update), &
+                  new_unittest("constraint_atom_counts", test_constraint_atoms) &
                   ]
    end subroutine collect_mqc_optimizer_types_tests
 
@@ -194,6 +203,104 @@ contains
       call check(error,.not. settings%hess_end, &
                  "hess_end should be off until a deck asks for it")
    end subroutine test_settings_defaults
+
+   subroutine test_new_algorithms(error)
+      !! The algorithms that were mapped but unreachable, and which need curvature
+      !!
+      !! `cg` and `cg-auto` are different DL-FIND algorithms and must not
+      !! collapse onto one another -- they are the two restart policies for the
+      !! same method, and a deck asking for one should not silently get the
+      !! other.
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, algorithm_from_string("prfo") == OPT_ALGO_PRFO, &
+                 "prfo should parse")
+      if (allocated(error)) return
+      call check(error, algorithm_from_string("nr") == OPT_ALGO_NR, &
+                 "nr should parse")
+      if (allocated(error)) return
+      call check(error, algorithm_from_string("newton-raphson") == OPT_ALGO_NR, &
+                 "and its long spelling")
+      if (allocated(error)) return
+      call check(error, algorithm_from_string("damped") == OPT_ALGO_DAMPED, &
+                 "damped should parse")
+      if (allocated(error)) return
+
+      call check(error, algorithm_from_string("cg-auto") == OPT_ALGO_CG_AUTO, &
+                 "cg-auto should parse")
+      if (allocated(error)) return
+      call check(error, algorithm_from_string("cg") /= algorithm_from_string("cg-auto"), &
+                 "the two conjugate gradients are different algorithms")
+      if (allocated(error)) return
+
+      ! Only these two hold a Hessian, and that is what decides whether the
+      ! driver offers one at all.
+      call check(error, algorithm_needs_hessian(OPT_ALGO_PRFO), &
+                 "p-rfo needs curvature")
+      if (allocated(error)) return
+      call check(error, algorithm_needs_hessian(OPT_ALGO_NR), &
+                 "so does newton-raphson")
+      if (allocated(error)) return
+      call check(error,.not. algorithm_needs_hessian(OPT_ALGO_LBFGS), &
+                 "l-bfgs approximates its own and must not be handed one")
+      if (allocated(error)) return
+      call check(error,.not. algorithm_needs_hessian(OPT_ALGO_DAMPED), &
+                 "damped dynamics integrates motion and holds no Hessian")
+   end subroutine test_new_algorithms
+
+   subroutine test_hessian_update(error)
+      !! The update schemes, and that an unknown one is distinguishable
+      !!
+      !! "auto" and a misspelling must not both come back as the engine
+      !! default: the first is a request to leave DL-FIND alone and the second
+      !! is a mistake that should be reported.
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, hessian_update_from_string("bofill") == OPT_HESSIAN_UPDATE_BOFILL, &
+                 "bofill should parse")
+      if (allocated(error)) return
+      call check(error, hessian_update_from_string("powell") == OPT_HESSIAN_UPDATE_POWELL, &
+                 "powell should parse")
+      if (allocated(error)) return
+      call check(error, hessian_update_from_string("none") == OPT_HESSIAN_UPDATE_NONE, &
+                 "none should parse")
+      if (allocated(error)) return
+      call check(error, hessian_update_from_string("auto") == OPT_HESSIAN_UPDATE_ENGINE, &
+                 "auto should mean the engine's own choice")
+      if (allocated(error)) return
+      call check(error, hessian_update_from_string("bofil") < OPT_HESSIAN_UPDATE_ENGINE, &
+                 "a misspelling must be distinguishable from auto")
+   end subroutine test_hessian_update
+
+   subroutine test_constraint_atoms(error)
+      !! Each constraint type over the number of atoms it is measured on
+      !!
+      !! This count is the only check on a constraint that can catch a wrong
+      !! one: three atom indices under "torsion" is a well-formed list of
+      !! integers and a meaningless constraint, and DL-FIND would read the
+      !! fourth slot as atom zero.
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, constraint_atom_count(constraint_from_string("bond")) == 2, &
+                 "a bond is two atoms")
+      if (allocated(error)) return
+      call check(error, constraint_atom_count(constraint_from_string("angle")) == 3, &
+                 "an angle is three")
+      if (allocated(error)) return
+      call check(error, constraint_atom_count(constraint_from_string("torsion")) == 4, &
+                 "a torsion is four")
+      if (allocated(error)) return
+      call check(error, constraint_atom_count(constraint_from_string("cartesian")) == 1, &
+                 "a cartesian constraint is one atom")
+      if (allocated(error)) return
+      call check(error, constraint_atom_count(constraint_from_string("dihedral")) == 4, &
+                 "dihedral is a spelling of torsion")
+      if (allocated(error)) return
+
+      ! Zero is how an unknown type is caught, so it has to stay zero.
+      call check(error, constraint_atom_count(constraint_from_string("wiggle")) == 0, &
+                 "an unknown constraint type names no atoms")
+   end subroutine test_constraint_atoms
 
    subroutine test_optimize_driver_parses(error)
       !! `"driver": "Optimize"` has to reach the optimizer

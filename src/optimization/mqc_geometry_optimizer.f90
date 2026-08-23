@@ -27,7 +27,8 @@ module mqc_geometry_optimizer
    use mqc_convergence_report, only: convergence_header
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
-                                  coordinates_to_string, algorithm_to_string
+                                  coordinates_to_string, algorithm_to_string, &
+                                  algorithm_needs_hessian
    use mqc_physical_fragment, only: system_geometry_t, to_angstrom
    use mqc_bond_perception, only: connected_components
    use mqc_config_adapter, only: driver_config_t
@@ -154,7 +155,8 @@ contains
                            "hdlc, hdlc-tc, dlc or dlc-tc.")
          else if (config%optimization%algorithm == OPT_ALGO_UNKNOWN) then
             call error%set(ERROR_VALIDATION, &
-                           "Unknown keywords.optimization.algorithm. Use lbfgs, cg, sd or prfo.")
+                           "Unknown keywords.optimization.algorithm. Use lbfgs, cg, cg-auto, "// &
+                           "sd, prfo, nr or damped.")
          else if (n_atoms < 2) then
             call error%set(ERROR_VALIDATION, &
                            "Nothing to optimize: a single atom has no geometry.")
@@ -232,9 +234,21 @@ contains
          call ctx_wall%start()
          call convergence_header(.true., "optimization steps", &
                                  "    step                 energy        |g|max     qc_time    opt_time", 69)
-         call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
-                              coords, evaluate_energy_gradient, record_step, &
-                              final_energy, error)
+         ! The analytic Hessian is offered only where there is one. For any
+         ! other method DL-FIND builds its own from `6N` gradients, which is
+         ! the same matrix and slower -- so the argument is omitted rather than
+         ! passed and refused per geometry, which would spend a failed
+         ! calculation to learn what is already known here.
+         if (algorithm_needs_hessian(config%optimization%algorithm) .and. &
+             is_restricted_hf(config)) then
+            call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
+                                 coords, evaluate_energy_gradient, record_step, &
+                                 final_energy, error, hessian=evaluate_hessian)
+         else
+            call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
+                                 coords, evaluate_energy_gradient, record_step, &
+                                 final_energy, error)
+         end if
          call logger%info("  "//repeat("-", 69))
 
          ! Stop the workers whether or not that succeeded. A rank 0 that
@@ -383,6 +397,54 @@ contains
       end if
 
    end subroutine evaluate_energy_gradient
+
+   subroutine evaluate_hessian(n_atoms, coords, hessian, status)
+      !! Second derivatives at a geometry, for an engine that climbs
+      !!
+      !! The mirror of `evaluate_energy_gradient` for the algorithms that need
+      !! curvature rather than slope -- P-RFO and Newton-Raphson. Same MPI
+      !! shape: the command goes out, the geometry follows, and every rank runs
+      !! the same calculation type, which for a finite-difference Hessian is
+      !! what distributes the displacements across them.
+      !!
+      !! **A failure here is reported and not raised.** `status` non-zero sends
+      !! DL-FIND to its own two-point finite differences, which reaches the
+      !! same matrix by a slower route. Killing the optimization instead would
+      !! trade a correct answer for no answer.
+      integer, intent(in) :: n_atoms
+      real(dp), intent(in) :: coords(3, n_atoms)
+      real(dp), intent(out) :: hessian(3*n_atoms, 3*n_atoms)
+      integer, intent(out) :: status
+
+      type(calculation_result_t) :: result
+      type(driver_config_t) :: hess_config
+      integer(int32) :: command
+      integer :: saved_level
+
+      hessian = 0.0_dp
+      status = 1
+
+      command = OPT_CMD_HESSIAN
+      call bcast(ctx_resources%mpi_comms%world_comm, command, 1_int32, 0_int32)
+
+      ctx_sys_geom%coordinates = coords
+      call send_final_geometry(ctx_resources%mpi_comms%world_comm, ctx_sys_geom)
+
+      hess_config = ctx_config
+      hess_config%calc_type = CALC_TYPE_HESSIAN
+
+      saved_level = logger%log_level
+      if (saved_level < verbose_level) call logger%configure(level=warning_level)
+      call run_step(hess_config, result)
+      call logger%configure(level=saved_level)
+
+      if (result%has_error .or. .not. result%has_hessian) return
+      if (size(result%hessian, 1) /= 3*n_atoms) return
+
+      hessian = result%hessian
+      status = 0
+
+   end subroutine evaluate_hessian
 
    subroutine worker_loop(comm)
       !! A worker's half of an optimization: compute what rank 0 asks for
