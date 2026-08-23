@@ -11,6 +11,18 @@ dependencies:
   # was `int` before that), and every symbol the bindings name is still
   # exported by 2.0, so whatever conda-forge resolves to is in range.
   - hdf5
+  # Test-only, and it never enters the built program: mqc links the HDF5 C
+  # library and nothing else. What h5py buys is the one check the Fortran
+  # suite structurally cannot make -- that a block written from Fortran is
+  # readable *as the right tensor* by something that is not Fortran. A round
+  # trip through our own bindings is exact even when the declared shape is
+  # wrong, so only an outside reader can see it.
+  #
+  # Note it links the same conda `hdf5` above rather than bundling its own,
+  # which is what makes the check meaningful and also gives h5py's version
+  # bounds a vote on which HDF5 gets resolved. The CI step below prints what
+  # was chosen so a lagging h5py holding that back is visible, not silent.
+  - h5py
   #- gfortran=14.2.0
   - cmake
   - ninja

@@ -141,6 +141,17 @@ jobs:
           fi
           cmake --build build --parallel 2
 
+      # Printed rather than assumed. h5py links the same libhdf5 the Fortran
+      # writes with, so its version bounds get a vote on what conda resolves;
+      # if that ever pins HDF5 back, this is the line that says so.
+      - name: Report the HDF5 in use
+        if: matrix.hdf5
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          conda list -n mqc "hdf5|h5py"
+          python3 -c "import h5py; print('h5py', h5py.__version__, 'links HDF5', h5py.version.hdf5_version)"
+
       - name: Run unit tests
         shell: bash -el {0}
         run: |
