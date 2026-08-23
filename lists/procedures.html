@@ -2164,15 +2164,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -2182,27 +2182,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -2212,15 +2212,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -3941,6 +3941,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td><p>No-op stand-in: SAPT0 needs the CPU integral backend</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_libcint_sapt2.html'>run_libcint_sapt2</a></td>
+                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: SAPT2 needs the CPU integral backend</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_makefp.html'>run_makefp</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -3957,7 +3963,7 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../proc/run_sapt.html'>run_sapt</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
-                 <td><p>SAPT0 between the deck&rsquo;s two fragments</p><a href="../proc/run_sapt.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>SAPT0 or SAPT2 between the deck&rsquo;s two fragments</p><a href="../proc/run_sapt.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/run_step.html'>run_step</a></td>
@@ -4592,7 +4598,7 @@ whatever libxc itself was configured to do.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-23 13:33 +0000             </p>
+ on 2026-08-23 13:57 +0000             </p>
           </div>
         </div>
         <br>
