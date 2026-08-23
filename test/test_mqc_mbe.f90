@@ -370,10 +370,10 @@ contains
       status = SCF_UNKNOWN
 
       call collect_unconverged(status, polymers, 3_int64, ids, monomers)
-      call check(error, .not. allocated(ids), &
+      call check(error,.not. allocated(ids), &
                  "a silent method has not failed everywhere, and has not said so either")
       if (allocated(error)) return
-      call check(error, .not. allocated(monomers), &
+      call check(error,.not. allocated(monomers), &
                  "the composition list goes the same way as the identifiers")
    end subroutine test_unconverged_ignores_silent_methods
 
