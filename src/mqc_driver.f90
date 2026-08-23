@@ -1223,11 +1223,27 @@ contains
       character(len=8), allocatable :: symbols(:)
       character(len=:), allocatable :: path, name
       integer :: i
-      real(dp), allocatable :: e_tol, d_tol
-         !! Left unallocated when the deck did not name a tolerance, which makes
-         !! the corresponding argument absent at the call below and leaves MAKEFP
-         !! on its own tighter default. Allocating on assignment is the only way
-         !! to pass "nothing" without branching on each flag separately.
+      real(dp), allocatable :: named_energy_tol, named_density_tol
+         !! What the deck asked for, if it asked at all
+         !!
+         !! Unallocated means it did not, and that is the signal rather than an
+         !! oversight: an unallocated allocatable actual argument corresponding
+         !! to an optional dummy that is neither allocatable nor a pointer *is*
+         !! an absent argument (F2018 15.5.2.13). MAKEFP therefore sees nothing
+         !! and keeps its own tighter pair.
+         !!
+         !! Initialising these to those defaults instead would look safer and
+         !! would be worse twice over: a second copy of 1e-10/1e-8 to keep in
+         !! agreement with the one that owns them, and arguments that are always
+         !! present, which loses the difference between "the deck asked for 1e-6"
+         !! and "the deck said nothing" -- the difference `energy_convergence_set`
+         !! exists to carry. Assigning only when the flag is set is what allocates
+         !! them, so the branch above is the whole mechanism.
+         !!
+         !! Named for what they hold rather than for the dummy they feed, because
+         !! `make_efp_potential` has locals of its own called `e_tol` and `d_tol`
+         !! -- plain reals, set to the defaults and then overridden -- and the two
+         !! pairs have now been read as one by more than one reviewer.
 
       if (rank /= 0) return
 
@@ -1253,10 +1269,10 @@ contains
       ! shared 1e-6 default's to loosen. A deck that asks outright still wins: a
       ! user who set 1e-6 and watched this iterate past 37 steps was being ignored.
       if (config%method_config%scf%energy_convergence_set) then
-         e_tol = config%method_config%scf%energy_convergence
+         named_energy_tol = config%method_config%scf%energy_convergence
       end if
       if (config%method_config%scf%density_convergence_set) then
-         d_tol = config%method_config%scf%density_convergence
+         named_density_tol = config%method_config%scf%density_convergence
       end if
       if (config%method_config%scf%density_fitting) then
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
@@ -1264,13 +1280,15 @@ contains
                                  charge=sys_geom%charge, verbose=.true., &
                                  aux_basis=trim(config%method_config%scf%aux_basis_set), &
                                  guess=trim(config%method_config%scf%guess), &
-                                 energy_tol=e_tol, density_tol=d_tol)
+                                 energy_tol=named_energy_tol, &
+                                 density_tol=named_density_tol)
       else
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &
                                  guess=trim(config%method_config%scf%guess), &
-                                 energy_tol=e_tol, density_tol=d_tol)
+                                 energy_tol=named_energy_tol, &
+                                 density_tol=named_density_tol)
       end if
       if (err%has_error()) then
          call refuse(result_out, "MAKEFP failed: "//err%get_message())
