@@ -227,9 +227,15 @@ contains
       ok = .false.
       nelec = sum(Z_DIMER)
       call build_libcint_molecule(Z_DIMER, SYM_DIMER, GEO_DIMER, "sto-3g", mol, err)
-      if (err%has_error()) return
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
       call run_libcint_rhf(mol, nelec, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
-      if (err%has_error() .or. .not. scf%converged) return
+      if (err%has_error() .or. .not. scf%converged) then
+         call mol%destroy()
+         return
+      end if
       call distributed_multipoles(mol, scf%density, Z_DIMER, dma, err)
       ok = .not. err%has_error()
       call mol%destroy()

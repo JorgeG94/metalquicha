@@ -1990,10 +1990,11 @@ contains
          end if
       end do
 
+      call cpu_time(t1)
+      prof_dens = prof_dens + (t1 - t0)
+      t0 = t1
+
       if (direct) then
-         call cpu_time(t1)
-         prof_dens = prof_dens + (t1 - t0)
-         t0 = t1
          if (minus) then
             call build_fock_direct_nosym(mol, zero_h, dens, bounds, g, stats, error)
          else
