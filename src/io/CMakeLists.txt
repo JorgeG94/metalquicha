@@ -16,5 +16,6 @@ target_sources(
 # both here is a hard error there whatever CMake is told. Only one of the two is
 # ever compiled, the same arrangement as mqc_cuest_bridge_stub.
 if(NOT MQC_ENABLE_HDF5)
-  target_sources(${main_lib} PRIVATE mqc_hdf5_checkpoint_stub.f90)
+  target_sources(${main_lib} PRIVATE mqc_hdf5_checkpoint_stub.f90
+                                     mqc_hdf5_amplitudes_stub.f90)
 endif()

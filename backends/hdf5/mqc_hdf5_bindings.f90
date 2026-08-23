@@ -35,6 +35,7 @@ module mqc_hdf5_bindings
              H5Dclose, H5Dcreate2, H5Dget_space, H5Dopen2, H5Dread, H5Dset_extent, H5Dwrite, &
              H5Fclose, H5Fcreate, H5Fflush, H5Fopen, H5Lexists, H5Pclose, H5Pcreate, &
              H5Pset_chunk, H5Sclose, H5Screate, H5Screate_simple, H5Sselect_hyperslab, &
+             H5Sget_simple_extent_dims, H5Sget_simple_extent_ndims, &
              H5Tclose, H5Tcopy, H5Tset_size, H5open
 
    !> Assumed-size dummies below are allowed deliberately and individually.
@@ -161,6 +162,30 @@ module mqc_hdf5_bindings
          integer(hid_t), value :: space
          integer(herr_t) :: status
       end function H5Sclose
+
+      !> Shape of a stored dataset, so a reader can allocate before it reads.
+      !  `maxdims` is a real array rather than an optional C null: nothing here
+      !  needs the unlimited bounds, and a dummy array costs one stack slot
+      !  against a c_ptr dance at every call site.
+      function H5Sget_simple_extent_ndims(space) result(rank) &
+         bind(C, name="H5Sget_simple_extent_ndims")
+         import :: hid_t, c_int
+         implicit none
+         integer(hid_t), value :: space
+         integer(c_int) :: rank
+      end function H5Sget_simple_extent_ndims
+
+      function H5Sget_simple_extent_dims(space, dims, maxdims) result(rank) &
+         bind(C, name="H5Sget_simple_extent_dims")
+         import :: hid_t, hsize_t, c_int
+         implicit none
+         integer(hid_t), value :: space
+         ! allow(assumed-size)
+         integer(hsize_t), intent(out) :: dims(*)
+         ! allow(assumed-size)
+         integer(hsize_t), intent(out) :: maxdims(*)
+         integer(c_int) :: rank
+      end function H5Sget_simple_extent_dims
 
       function H5Sselect_hyperslab(space, op, start, stride, count, block) result(status) &
          bind(C, name="H5Sselect_hyperslab")
