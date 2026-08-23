@@ -35,6 +35,10 @@ jobs:
             # value is here only so the validation steps below gate correctly;
             # the build itself passes no flags at all.
             libfint: true
+            # HDF5 is off by default, and this is where that is asserted: if
+            # the default flips, this job stops matching what `cmake -B build`
+            # produces and the mismatch shows up here rather than nowhere.
+            hdf5: false
           # tblite built without libxc or the integrals backend -- a reduced
           # build, and only a build. The xTB validation is not run here: it
           # touches neither libxc nor the integrals, so on modern MPI it would
@@ -79,6 +83,19 @@ jobs:
             legacy_mpi: false
             libcint: true
             libxc: true
+          # HDF5, which until this job existed was built by nothing in CI: the
+          # hand-written C bindings and the checkpoint backend are ~1200 lines
+          # that no workflow had ever compiled, and the option defaults to off
+          # so no other job reaches them. Nothing else is turned on -- the
+          # checkpoint does not depend on a backend, and what is under test is
+          # that the bindings still link against whatever HDF5 conda resolves
+          # to. `addtest(mqc_hdf5_checkpoint)` is registered only under this
+          # option, so the unit-test step below picks it up without a step of
+          # its own.
+          - name: "with hdf5"
+            tblite: false
+            legacy_mpi: false
+            hdf5: true
           # The Python interface needs every backend in one library. backends.py
           # covers standalone and fragmented, xTB and Hartree-Fock -- three of
           # those four paths can break without the others noticing -- and
@@ -119,6 +136,7 @@ jobs:
                   -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
                   -DMQC_USE_LIBFINT=${{ matrix.backend == 'libcint' && 'OFF' || 'ON' }} \
+                  -DMQC_ENABLE_HDF5=${{ matrix.hdf5 && 'ON' || 'OFF' }} \
                   -B build
           fi
           cmake --build build --parallel 2

@@ -5,6 +5,12 @@ dependencies:
   - python=3.12
   - openblas
   - openmpi
+  # The C library only. mqc binds the HDF5 C entry points by hand rather than
+  # using hdf5.mod, so nothing here has to match the Fortran compiler.
+  # Unpinned deliberately: h5_start enforces a 1.10 floor at run time (hid_t
+  # was `int` before that), and every symbol the bindings name is still
+  # exported by 2.0, so whatever conda-forge resolves to is in range.
+  - hdf5
   #- gfortran=14.2.0
   - cmake
   - ninja
