@@ -123,6 +123,73 @@ electrophilicity -- unreliable in the same breath.
 Both indices sum to one over the molecule by construction, so a consumer can
 assert it as a cheap check that it read the right section.
 
+.. _unconverged-fragments:
+
+Fragments that did not converge
+===============================
+
+A fragmented run with ``allow_crap_scf`` finishes rather than stopping at the
+first failure, and the total it reports is built partly from fragments that
+never converged. Those fragments are listed::
+
+    "unconverged": {
+      "count": 2,
+      "energy_at_stake": -0.0031,
+      "largest_contribution": 0.0024,
+      "fragments": [
+        {"id": 12, "level": 2, "monomers": [3, 7], "delta_energy": -0.0024},
+        {"id": 45, "level": 1, "monomers": [9], "delta_energy": -0.0007}
+      ],
+      "monomers_involved": [
+        {"monomer": 9, "fragments": 2},
+        {"monomer": 3, "fragments": 1},
+        {"monomer": 7, "fragments": 1}
+      ]
+    }
+
+``monomers`` is what makes this actionable. An identifier on its own cannot be
+re-run: a dimer is only reconstructible if you know which two monomers it was.
+With them, a follow-up job that revisits exactly the misbehaving fragments --
+tighter thresholds, a different guess, a smaller trust radius -- writes itself
+from the output, which is what the Python interface is for.
+
+``energy_at_stake`` answers the question the count does not: whether to care.
+It is the net contribution of the failed fragments to the total, so a run that
+lost a hundred fragments which screening had already made negligible is a run to
+accept rather than repeat. It is signed, because the failures are a subset of a
+sum with cancellation in it; ``largest_contribution`` sits beside it because a
+net near zero can still be two large terms that happen to oppose.
+
+``monomers_involved`` answers the other one: why. A monomer with a wrecked
+geometry, a mis-assigned charge or an accidental radical drags down every
+fragment it belongs to, so failures cluster on their cause. Four hundred failed
+dimers sharing one monomer is one problem, not four hundred, and the list is
+ordered by how many failures each monomer appears in so that the culprit is the
+first row rather than one of four hundred that look alike.
+
+Three things about how it is written.
+
+**The section appears whenever the method reports convergence at all**, with a
+``count`` of zero when nothing failed. That is deliberate: an absent section
+means "this method never said", which is a different claim from "everything
+converged", and a consumer should be able to tell them apart. Methods that do
+not report convergence omit the section entirely rather than claiming success
+for every fragment.
+
+**Fragments whose status is unknown are not listed.** They are not failures, and
+including them would fill the list with the entire calculation in exactly the
+runs where it matters.
+
+**The list is not truncated.** Ten thousand unconverged fragments is a large
+list and also the situation this exists for; keeping the first hundred would
+produce a follow-up job that looked complete and was not. The log still names
+only the first ten, because that is the right length for something a person
+reads.
+
+Currently written for the many-body expansion. The overlapping-fragment path
+does not record per-fragment convergence, so the section is absent there rather
+than empty.
+
 
 Unfragmented Calculations
 =========================

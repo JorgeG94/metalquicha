@@ -30,6 +30,9 @@ module mqc_mbe
    ! Public interface
    public :: compute_mbe   !! MBE energy with optional gradient and hessian
    public :: compute_gmbe  !! GMBE energy with optional gradient and hessian
+   public :: collect_unconverged
+   public :: score_unconverged
+      !! The fragments that failed, with what they were built from
 
 contains
 
@@ -416,6 +419,150 @@ contains
       call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
                         ", entries: "//to_char(lookup%n_entries))
    end subroutine build_mbe_lookup_table
+
+   subroutine collect_unconverged(scf_status, polymers, fragment_count, ids, monomers)
+      !! The fragments that failed, and which monomers each was built from
+      !!
+      !! Both are already known -- convergence comes back on every result and
+      !! the composition is the row of `polymers` the fragment was built from --
+      !! so this gathers rather than computes. What it buys is that the pair
+      !! survives into the output together: an identifier on its own is not
+      !! enough to rebuild a dimer, and at a million fragments the table that
+      !! holds the composition is not something a follow-up script should have
+      !! to read back.
+      !!
+      !! **Only genuine failures are listed.** `SCF_UNKNOWN` means the method
+      !! never reported, which is every fragment of a method that does not, and
+      !! putting those here would make the list useless in exactly the runs it
+      !! exists for.
+      !!
+      !! **Three outcomes, and the caller tells them apart by allocation.** A
+      !! method that reported returns a list, empty when nothing failed -- a
+      !! `count` of zero is the statement that everything converged. A method
+      !! that never reported returns *nothing allocated*, and the writer omits
+      !! the section entirely, so a consumer reads its absence as "no
+      !! information" rather than as success. Returning an empty list for both
+      !! would collapse the two claims into one, which is the distinction
+      !! `report_unconverged` already makes in the log and the JSON section is
+      !! documented to make in the output.
+      !!
+      !! Not truncated. Ten thousand unconverged fragments is a large list and
+      !! also the situation this is for; silently keeping the first hundred
+      !! would produce a follow-up job that looked complete and was not.
+      integer, intent(in) :: scf_status(:)
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      integer(int64), allocatable, intent(out) :: ids(:)
+      integer, allocatable, intent(out) :: monomers(:, :)
+
+      integer(int64) :: i, n_bad, k
+
+      ! Nobody reported: leave both unallocated and say nothing, rather than
+      ! claim that none of a million silent fragments failed.
+      if (all(scf_status(1:fragment_count) == SCF_UNKNOWN)) return
+
+      n_bad = count(scf_status(1:fragment_count) == SCF_NOT_CONVERGED, kind=int64)
+      allocate (ids(n_bad), monomers(n_bad, size(polymers, 2)))
+      if (n_bad == 0_int64) return
+
+      k = 0_int64
+      do i = 1_int64, fragment_count
+         if (scf_status(i) /= SCF_NOT_CONVERGED) cycle
+         k = k + 1_int64
+         ids(k) = i
+         monomers(k, :) = polymers(i, :)
+      end do
+   end subroutine collect_unconverged
+
+   subroutine score_unconverged(ids, monomers, delta_energies, deltas, &
+                                culprits, counts)
+      !! What the failures cost, and which monomers keep turning up in them
+      !!
+      !! Two questions follow "which fragments failed", and neither is
+      !! answerable from a list of identifiers.
+      !!
+      !! **Does it matter.** Each fragment's contribution to the total is
+      !! already known, so gathering it for the failures turns a count into an
+      !! exposure. Screening and cancellation mean most fragments contribute
+      !! almost nothing, and a hundred failures among those is a run to accept
+      !! rather than repeat.
+      !!
+      !! **Why.** A monomer with a wrecked geometry, a mis-assigned charge or an
+      !! accidental radical drags down every fragment it belongs to, so failures
+      !! cluster on their cause. Counting how often each monomer appears turns
+      !! four hundred failures into a short list of suspects, and the ordering
+      !! is what makes it readable at all -- the culprit is otherwise one row
+      !! among four hundred that all look alike.
+      !!
+      !! Sorted by count, descending, by insertion: the list is as long as the
+      !! number of distinct monomers involved, which is small whenever this is
+      !! worth reading.
+      integer(int64), intent(in) :: ids(:)
+      integer, intent(in) :: monomers(:, :)
+      real(dp), intent(in) :: delta_energies(:)
+      real(dp), allocatable, intent(out) :: deltas(:)
+      integer, allocatable, intent(out) :: culprits(:)
+      integer(int64), allocatable, intent(out) :: counts(:)
+
+      integer, allocatable :: seen(:)
+      integer(int64), allocatable :: tally(:)
+      integer :: n_seen, i, j, m, slot, pos
+      integer :: swap_m
+      integer(int64) :: swap_c
+
+      allocate (deltas(size(ids)))
+      do i = 1, size(ids)
+         deltas(i) = delta_energies(ids(i))
+      end do
+
+      ! At most every slot of every failed fragment names a distinct monomer.
+      allocate (seen(size(monomers, 1)*size(monomers, 2)))
+      allocate (tally(size(seen)))
+      n_seen = 0
+      do i = 1, size(ids)
+         do j = 1, size(monomers, 2)
+            m = monomers(i, j)
+            if (m <= 0) cycle
+            slot = 0
+            do pos = 1, n_seen
+               if (seen(pos) == m) then
+                  slot = pos
+                  exit
+               end if
+            end do
+            if (slot == 0) then
+               n_seen = n_seen + 1
+               seen(n_seen) = m
+               tally(n_seen) = 0_int64
+               slot = n_seen
+            end if
+            tally(slot) = tally(slot) + 1_int64
+         end do
+      end do
+
+      allocate (culprits(n_seen), counts(n_seen))
+      culprits = seen(1:n_seen)
+      counts = tally(1:n_seen)
+      deallocate (seen, tally)
+
+      ! Descending by count. Selection sort: `n_seen` is the number of distinct
+      ! monomers caught up in failures, and a run where that is large enough for
+      ! the sort to matter has a problem this report cannot help with.
+      do i = 1, n_seen - 1
+         slot = i
+         do j = i + 1, n_seen
+            if (counts(j) > counts(slot)) slot = j
+         end do
+         if (slot /= i) then
+            swap_c = counts(i)
+            counts(i) = counts(slot)
+            counts(slot) = swap_c
+            swap_m = culprits(i)
+            culprits(i) = culprits(slot)
+            culprits(slot) = swap_m
+         end if
+      end do
+   end subroutine score_unconverged
 
    subroutine report_unconverged(scf_status, fragment_count)
       !! Say how many fragments did not converge, and name the first few
@@ -947,6 +1094,24 @@ contains
          ! per fragment is invisible in a run with a million of them, and a
          ! total assembled from unconverged pieces is otherwise indistinguishable
          ! from a good one.
+         ! The same fragments, in a form something other than a human can act
+         ! on. `report_unconverged` names the first ten in the log, which is the
+         ! right thing for a reader and useless to a script; this is the list a
+         ! follow-up job is built from.
+         call collect_unconverged(json_data%fragment_scf_status, &
+                                  polymers(1:fragment_count, 1:max_level), &
+                                  fragment_count, json_data%unconverged_ids, &
+                                  json_data%unconverged_monomers)
+         ! Unallocated means the method never reported, and there is nothing
+         ! to score. The dummies are not allocatable, so passing them through
+         ! anyway is undefined rather than merely empty.
+         if (allocated(json_data%unconverged_ids)) then
+            call score_unconverged(json_data%unconverged_ids, &
+                                   json_data%unconverged_monomers, delta_energies, &
+                                   json_data%unconverged_deltas, &
+                                   json_data%culprit_monomers, json_data%culprit_counts)
+         end if
+
          call report_unconverged(json_data%fragment_scf_status, fragment_count)
 
          ! Copy dipole if available
