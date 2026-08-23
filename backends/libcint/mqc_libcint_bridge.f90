@@ -21,7 +21,9 @@ module mqc_libcint_bridge
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
-   use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
+   use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_LINE_LENGTH, &
+                                 ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
+                                 ERI_CORE_BUDGET_BLIND, SAPT_CORE_BUDGET_SHARE
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
                                     angular_form_name
@@ -48,7 +50,6 @@ module mqc_libcint_bridge
    use mqc_libcint_avas, only: avas_select, avas_result_t, valence_select
    use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf, &
                                 natural_orbitals
-   use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
 
@@ -59,6 +60,7 @@ module mqc_libcint_bridge
    public :: run_libcint_charges
    public :: run_libcint_efp
    public :: run_libcint_sapt0
+   public :: run_libcint_sapt2
    public :: libcint_backend_available
    public :: xc_available
       !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
@@ -76,47 +78,63 @@ module mqc_libcint_bridge
       !! a hundred-hartree total is inside what a threaded Fock build
       !! reproduces.
 
-   real(dp), parameter :: ERI_CORE_BUDGET_CAP = 2.0e9_dp
-      !! Ceiling on what one rank may spend on stored two-electron integrals.
-      !!
-      !! The tensor is the full n^4, not the eightfold-unique set, so this is
-      !! reached at 128 functions. Packing it would push that to 215, which is
-      !! worth doing when something needs it -- `eris_packed` already exists for
-      !! the correlated methods -- but the contraction in `build_fock` addresses
-      !! the tensor as four indices and would have to be rewritten with it.
-
-   real(dp), parameter :: ERI_CORE_BUDGET_SHARE = 0.25_dp
-      !! Fraction of *currently available* memory a rank will claim.
-      !!
-      !! This used to be a flat two gigabytes, on the reasoning that a
-      !! fragmented run puts one MPI rank per fragment on a node and sizing
-      !! from total memory would have every rank conclude it could have all of
-      !! it. That is right for a cluster node and wrong for the machine this
-      !! project also aims at: four ranks on a sixteen-gigabyte laptop, each
-      !! helping itself to two gigabytes of integrals, is most of the machine
-      !! before anything else is counted -- and the laptop is running a browser.
-      !!
-      !! Reading what is *available* rather than what is installed handles the
-      !! several-ranks-per-node case without needing to know how many there
-      !! are, which is not discoverable here: there is no node-local
-      !! communicator to ask. Ranks that decide earlier have already allocated,
-      !! so the ones deciding later see less and claim less. That degrades
-      !! rather than resolving -- ranks deciding at the same instant see the
-      !! same number -- which is why the share is a quarter and not a half.
-      !!
-      !! The asymmetry is what sets the direction. Claiming too much is fatal;
-      !! claiming too little falls back to a direct build, which is slower and
-      !! correct. So this errs low on purpose.
-
-   real(dp), parameter :: ERI_CORE_BUDGET_BLIND = 5.0e8_dp
-      !! What to allow when available memory cannot be read at all.
-      !!
-      !! /proc/meminfo is Linux; macOS and anything else land here. Half a
-      !! gigabyte is 94 functions, which keeps the small fragments a
-      !! fragmented run is made of while refusing to guess on a machine this
-      !! cannot measure.
-
 contains
+
+   function sapt_core_bytes(nao, want_sapt2) result(bytes)
+      !! Roughly what the SAPT caches will ask for at their peak
+      !!
+      !! The dimer `eri` is the full `nao**4` -- no eightfold folding, because
+      !! every SAPT term addresses it as four indices -- and `eri_packed` is
+      !! another `n_pair**2` beside it, where `n_pair = nao(nao+1)/2`. That is
+      !! about `1.25 nao**4` before a term is evaluated.
+      !!
+      !! SAPT2 adds one more `n_pair**2`: `build_sapt2_cache` copies the packed
+      !! matrix to diagonalize it, and the copy is live while the original
+      !! still is. The three-index factors that come out of it are smaller and
+      !! not counted, so this errs low -- it is a floor on the requirement, not
+      !! an estimate of it.
+      !!
+      !! `real` throughout: `nao**4` at four hundred functions overflows a
+      !! 32-bit integer, and the symptom would be a large basis quietly
+      !! deciding it fitted.
+      integer, intent(in) :: nao
+      logical, intent(in) :: want_sapt2
+      real(dp) :: bytes
+      real(dp) :: n, n_pair
+
+      n = real(nao, dp)
+      n_pair = n*(n + 1.0_dp)/2.0_dp
+      bytes = 8.0_dp*(n**4 + n_pair**2)
+      if (want_sapt2) bytes = bytes + 8.0_dp*n_pair**2
+   end function sapt_core_bytes
+
+   subroutine check_sapt_fits_in_core(nao, want_sapt2, error)
+      !! Refuse a SAPT run whose stored integrals cannot fit in memory
+      !!
+      !! Where memory cannot be read -- anything that is not Linux -- this says
+      !! nothing rather than guessing. A wrong refusal here is worse than no
+      !! refusal: the calculation is possible on the machine and the message
+      !! would claim otherwise.
+      integer, intent(in) :: nao
+      logical, intent(in) :: want_sapt2
+      type(error_t), intent(inout) :: error
+      real(dp) :: needed, available
+
+      available = available_memory_bytes()
+      if (available <= 0.0_dp) return
+
+      needed = sapt_core_bytes(nao, want_sapt2)
+      if (needed <= SAPT_CORE_BUDGET_SHARE*available) return
+
+      call error%set(ERROR_VALIDATION, &
+                     "sapt: the dimer basis has "//int_to_text(nao)// &
+                     " functions, whose stored integrals need at least "// &
+                     int_to_text(nint(needed/1.0e6_dp))//" MB, and this "// &
+                     "machine has "//int_to_text(nint(available/1.0e6_dp))// &
+                     " MB available. Every SAPT term contracts over the full "// &
+                     "dimer tensor, so there is no direct fallback to drop to "// &
+                     "-- use a smaller basis.")
+   end subroutine check_sapt_fits_in_core
 
    function eri_fits_in_core(nao) result(fits)
       !! Whether n^4 stored integrals fit in this rank's share of memory
@@ -313,7 +331,7 @@ contains
       deallocate (frags, shifts)
    end subroutine run_libcint_efp
    subroutine run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
-                                terms, error)
+                                charge_a, charge_b, terms, error)
       !! SAPT0 between two monomers, as named physical terms
       !!
       !! Here rather than in the driver for the reason `run_libcint_makefp` is:
@@ -332,6 +350,10 @@ contains
       character(len=*), intent(in) :: sym_a(:), sym_b(:)
       real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
       character(len=*), intent(in) :: basis_name
+      integer, intent(in) :: charge_a, charge_b
+         !! The monomers' own charges. Required rather than optional: a caller
+         !! that forgets them gets a neutral monomer and a wrong number, which
+         !! is the one failure mode worth making impossible to write.
       real(dp), intent(out) :: terms(N_SAPT_TERMS)
          !! Ordered by `SAPT_TERM_NAMES`
       type(error_t), intent(inout) :: error
@@ -341,8 +363,14 @@ contains
 
       terms = 0.0_dp
       call build_sapt_molecules(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
-                                basis_name, mols, error)
+                                basis_name, mols, error, &
+                                charge_a=charge_a, charge_b=charge_b)
       if (error%has_error()) return
+      call check_sapt_fits_in_core(mols%dimer%nao, .false., error)
+      if (error%has_error()) then
+         call mols%destroy()
+         return
+      end if
       call run_sapt0(mols, t, error)
       if (error%has_error()) then
          call mols%destroy()
@@ -354,6 +382,51 @@ contains
                t%delta_hf, t%e_int_hf, t%total]
       call mols%destroy()
    end subroutine run_libcint_sapt0
+
+   subroutine run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
+                                charge_a, charge_b, terms, error)
+      !! SAPT2 between two monomers: every SAPT0 term in the same slots, plus
+      !! the four intramonomer-correlation corrections, the scaled
+      !! exchange-induction, and its own total
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_SAPT2_TERMS
+      use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
+                          run_sapt2
+      integer, intent(in) :: z_a(:), z_b(:)
+      character(len=*), intent(in) :: sym_a(:), sym_b(:)
+      real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
+      character(len=*), intent(in) :: basis_name
+      integer, intent(in) :: charge_a, charge_b   !! The monomers' own charges
+      real(dp), intent(out) :: terms(N_SAPT2_TERMS)
+         !! Ordered by `SAPT2_TERM_NAMES`
+      type(error_t), intent(inout) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(sapt_terms_t) :: t
+
+      terms = 0.0_dp
+      call build_sapt_molecules(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                                basis_name, mols, error, &
+                                charge_a=charge_a, charge_b=charge_b)
+      if (error%has_error()) return
+      call check_sapt_fits_in_core(mols%dimer%nao, .true., error)
+      if (error%has_error()) then
+         call mols%destroy()
+         return
+      end if
+      call run_sapt2(mols, t, error)
+      if (error%has_error()) then
+         call mols%destroy()
+         return
+      end if
+
+      terms = [t%elst10, t%exch10_s2, t%exch10, t%ind20_u, t%ind20_r, &
+               t%exch_ind20_u, t%exch_ind20_r, t%disp20, t%exch_disp20, &
+               t%delta_hf, t%e_int_hf, t%total, &
+               t%elst12, t%exch11, t%exch12, t%ind22, t%exch_ind22, &
+               t%total_sapt2]
+      call mols%destroy()
+   end subroutine run_libcint_sapt2
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &

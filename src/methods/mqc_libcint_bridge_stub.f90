@@ -20,6 +20,7 @@ module mqc_libcint_bridge
    public :: run_libcint_charges
    public :: run_libcint_efp
    public :: run_libcint_sapt0
+   public :: run_libcint_sapt2
    public :: libcint_backend_available
    public :: xc_available
 
@@ -39,7 +40,7 @@ contains
    end function libcint_backend_available
 
    subroutine run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
-                                terms, error)
+                                charge_a, charge_b, terms, error)
       !! No-op stand-in: SAPT0 needs the CPU integral backend
       use pic_types, only: dp
       use mqc_program_limits, only: N_SAPT_TERMS
@@ -48,6 +49,7 @@ contains
       character(len=*), intent(in) :: sym_a(:), sym_b(:)
       real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)
       character(len=*), intent(in) :: basis_name
+      integer, intent(in) :: charge_a, charge_b
       real(dp), intent(out) :: terms(N_SAPT_TERMS)
       type(error_t), intent(inout) :: error
 
@@ -58,7 +60,32 @@ contains
       if (size(z_a) < 0 .or. size(z_b) < 0) return
       if (len_trim(sym_a(1))*len_trim(sym_b(1))*len_trim(basis_name) < 0) return
       if (size(xyz_a) < 0 .or. size(xyz_b) < 0) return
+      if (charge_a == huge(charge_a) .and. charge_b == huge(charge_b)) return
    end subroutine run_libcint_sapt0
+
+   subroutine run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
+                                charge_a, charge_b, terms, error)
+      !! No-op stand-in: SAPT2 needs the CPU integral backend
+      use pic_types, only: dp
+      use mqc_program_limits, only: N_SAPT2_TERMS
+      use mqc_error, only: error_t
+      integer, intent(in) :: z_a(:), z_b(:)
+      character(len=*), intent(in) :: sym_a(:), sym_b(:)
+      real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)
+      character(len=*), intent(in) :: basis_name
+      integer, intent(in) :: charge_a, charge_b
+      real(dp), intent(out) :: terms(N_SAPT2_TERMS)
+      type(error_t), intent(inout) :: error
+
+      terms = 0.0_dp
+      call error%set(ERROR_VALIDATION, &
+                     "SAPT needs the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_LIBCINT=ON")
+      if (size(z_a) < 0 .or. size(z_b) < 0) return
+      if (len_trim(sym_a(1))*len_trim(sym_b(1))*len_trim(basis_name) < 0) return
+      if (size(xyz_a) < 0 .or. size(xyz_b) < 0) return
+      if (charge_a == huge(charge_a) .and. charge_b == huge(charge_b)) return
+   end subroutine run_libcint_sapt2
 
    subroutine run_libcint_charges(atomic_numbers, element_symbols, coordinates, &
                                   basis_name, scheme, total_charge, charges, error)

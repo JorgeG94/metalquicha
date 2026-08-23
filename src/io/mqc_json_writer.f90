@@ -732,7 +732,8 @@ contains
       !!
       !! Named rather than a bare array: the order is fixed in
       !! `SAPT_TERM_NAMES` and nothing downstream should have to know it.
-      use mqc_program_limits, only: N_SAPT_TERMS, SAPT_TERM_NAMES
+      use mqc_program_limits, only: N_SAPT_TERMS, SAPT_TERM_NAMES, &
+                                    N_SAPT2_TERMS, SAPT2_TERM_NAMES
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
@@ -742,12 +743,16 @@ contains
 
       if (.not. data%has_sapt) return
       if (.not. allocated(data%sapt_terms)) return
-      if (size(data%sapt_terms) /= N_SAPT_TERMS) return
+      ! The term count says which level ran: SAPT2 reports every SAPT0 term
+      ! in the same slots and appends its own, so the first twelve names are
+      ! shared and a SAPT0 consumer can read a SAPT2 output unchanged.
+      if (size(data%sapt_terms) /= N_SAPT_TERMS .and. &
+          size(data%sapt_terms) /= N_SAPT2_TERMS) return
 
       call json%create_object(sapt_obj, "sapt")
       call json%add(parent, sapt_obj)
-      do i = 1, N_SAPT_TERMS
-         call json%add(sapt_obj, trim(SAPT_TERM_NAMES(i)), data%sapt_terms(i))
+      do i = 1, size(data%sapt_terms)
+         call json%add(sapt_obj, trim(SAPT2_TERM_NAMES(i)), data%sapt_terms(i))
       end do
    end subroutine write_sapt_section
 

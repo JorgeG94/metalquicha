@@ -1,5 +1,5 @@
-Symmetry-Adapted Perturbation Theory (SAPT0)
-============================================
+Symmetry-Adapted Perturbation Theory (SAPT0, SAPT2)
+===================================================
 
 SAPT computes the interaction energy between two molecules **and what it is made
 of**. That second part is the point. A supermolecular calculation subtracts two
@@ -11,7 +11,8 @@ intermolecular operator from the start, so every contribution arrives named.
 ``SAPT0`` is the first rung: monomers at Hartree-Fock, the interaction through
 second order. It is the level that scales well enough to run on things you care
 about, and the level whose terms map onto the physics an EFP potential also
-carries.
+carries. ``SAPT2`` is the next rung that exists -- there is no SAPT1 -- and
+described below after the terms it builds on.
 
 Running one
 -----------
@@ -39,8 +40,9 @@ There is no ``sapt`` keyword block. The monomers are the deck's own
 partition that says which atoms are which monomer. Atom indices are 0-based, as
 everywhere else.
 
-``"sapt"`` on its own is accepted as a spelling of ``"sapt0"``. SAPT0 is the only
-order implemented, so the bare name is not ambiguous.
+``"sapt"`` on its own is accepted as a spelling of ``"sapt0"``: the bare name
+has always meant the base order here, and changing what an old deck computes
+would be worse than asking for the ``2``. ``"sapt2"`` selects SAPT2.
 
 Exactly two fragments
 ---------------------
@@ -55,6 +57,24 @@ pairs contains it.
 
 ``validation/check_sapt.f90`` walks the fifteen pairs of a six-water prism if you
 want to see what that looks like.
+
+Charged monomers, closed shells
+-------------------------------
+
+A monomer's charge is its ``fragment_charges`` entry, and it is used: the SCF for
+that monomer is run with the electrons the charge leaves it, not with its nuclear
+charge. Give an ion its charge -- an unstated one is a neutral molecule, which is
+a different calculation that will not announce itself.
+
+Both monomer references are RHF, so both monomers must be closed shell. A deck
+asking for a multiplicity other than ``1`` on either fragment is refused before
+any integral is computed, and an odd electron count -- usually a charge that was
+meant to be there and was not -- is refused when the monomer SCFs are set up.
+
+The dimer's two-electron integrals are stored whole, so the basis is bounded by
+memory rather than by time: every SAPT term contracts over that tensor and there
+is no direct-build fallback to drop to. A deck whose dimer basis cannot fit is
+refused with the size it asked for, rather than being left to the kernel.
 
 Only rank zero does the work. The pairs of a cluster are the obvious thing to
 distribute; a single pair is not.
@@ -132,6 +152,34 @@ terms in it are wrong.
 
 The total is the sum of everything above the rule.
 
+SAPT2
+-----
+
+.. code-block:: json
+
+   "model": {"method": "sapt2", "basis": "6-31g"}
+
+SAPT2 is exactly SAPT0 plus four terms. Each monomer is now described at MP2
+rather than Hartree-Fock, so every term above acquires an
+intramonomer-correlation correction: ``elst12`` for electrostatics, ``exch11``
+and ``exch12`` for exchange, ``ind22`` for induction -- and ``exch_ind22``,
+which is not computed but scaled, ``ind22`` times the ratio
+``exch_ind20_r / ind20_r``, following psi4. Nothing intermolecular changes:
+the series is still through second order in the interaction, and dispersion,
+being an intermonomer correlation from the start, gets no new term at this
+level.
+
+The console block prints every SAPT0 number first, in the same places, then the
+five corrections and the SAPT2 total below a second rule. The correction
+matters most where the monomers' charge distributions respond to correlation --
+``elst12`` on a hydrogen bond is a few percent of ``elst10``, and ``exch12``
+routinely outweighs ``exch11``.
+
+The cost is the monomer MP2 machinery in the dimer basis. Each monomer's
+virtual space is the *dimer's*, so a monomer MP2 here costs roughly sixteen
+times what it costs in its own basis, and the second-order amplitudes on top of
+that -- SAPT2 on a case where SAPT0 was comfortable may not be.
+
 In the JSON output
 ------------------
 
@@ -161,14 +209,22 @@ approximation against the full :math:`S^\infty`. The total also appears as
 ``total_energy`` like any other method's, but on its own it is the one number a
 supermolecular calculation would have given you too.
 
+A SAPT2 run writes the same twelve keys in the same order -- ``total`` stays
+the SAPT0 total, so anything reading a SAPT0 output reads a SAPT2 output
+unchanged -- and appends ``elst12``, ``exch11``, ``exch12``, ``ind22``,
+``exch_ind22`` and ``total_sapt2``.
+
 How it is checked
 -----------------
 
 Two ways, because they fail differently.
 
 **Against a reference implementation.** ``validation/check_sapt0.py`` is a
-conventional four-index SAPT0 in PySCF, term by term. The decks in
-``validation/inputs/cpu/mqc/sapt/`` carry its totals. Note the provenance
+conventional four-index SAPT0 in PySCF, term by term, and
+``validation/check_sapt2.py`` extends it to the SAPT2 terms by transcribing
+psi4's own contractions over an exact factorization of the conventional
+integrals. The decks in ``validation/inputs/cpu/mqc/sapt/`` carry the SAPT0
+totals. Note the provenance
 honestly: psi4 is the obvious reference and cannot serve as one here, because
 its closed-shell SAPT is density-fitted by construction and cannot produce
 conventional numbers at all. Every apparent disagreement with psi4 was chased
@@ -209,11 +265,13 @@ though they meant something.
 What is not here
 ----------------
 
-Only SAPT0. The higher levels -- SAPT2, SAPT2+, SAPT2+(3), SAPT2+3 -- add
-intramonomer electron correlation, which SAPT0 has none of. There is no SAPT1:
-the numbering jumps because first-order intramonomer correlation alone is
-unbalanced, correcting electrostatics before exchange, and would be worse than
-SAPT0 rather than better.
+SAPT0 and SAPT2 only. The levels above -- SAPT2+, SAPT2+(3), SAPT2+3 -- add
+higher intramonomer corrections to *dispersion* (and, at ``+3``, third-order
+intermolecular terms), which is where the hierarchy goes next. There is no
+SAPT1: the numbering jumps because first-order intramonomer correlation alone
+is unbalanced, correcting electrostatics before exchange, and would be worse
+than SAPT0 rather than better. No frozen core: every occupied orbital is
+correlated, which is what the reference implementation pins.
 
 Closed-shell only, and no density fitting, so cost grows quickly with basis. The
 counterpoise-corrected supermolecular Hartree-Fock reference is computed as part
