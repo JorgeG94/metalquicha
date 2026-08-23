@@ -376,8 +376,8 @@ addtest(mqc_capi_run)
 if(MQC_ENABLE_HDF5)
   addtest(mqc_hdf5_checkpoint)
   # The amplitude store is guarded the same way, and for a sharper reason: the
-  # stub's every procedure declines, so a suite run against it would assert
-  # only that refusals refuse.
+  # stub's every procedure declines, so a suite run against it would assert only
+  # that refusals refuse.
   addtest(mqc_hdf5_amplitudes)
 endif()
 
