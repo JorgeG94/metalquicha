@@ -100,6 +100,70 @@ response.
 
 Fitting is an approximation and is therefore requested rather than inferred.
 
+Tuning the response
+-------------------
+
+``keywords.efp`` holds what the stages after the SCF read. The SCF itself is
+configured by ``keywords.scf`` and reads it here exactly as on any other driver;
+there is deliberately no second spelling of a tolerance in this group.
+
+.. code-block:: json
+
+   "keywords": {
+     "efp": {
+       "dynamic_tolerance": 1.0e-7,
+       "dynamic_maxiter": 200,
+       "response": "auto",
+       "vdw_scale": 0.7
+     }
+   }
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 16 60
+
+   * - Key
+     - Default
+     - Meaning
+   * - ``dynamic_tolerance``
+     - ``1.0e-7``
+     - Residual the frequency-dependent response solve converges to, relative to
+       its right-hand side
+   * - ``dynamic_maxiter``
+     - ``200``
+     - Iterations that solve gets per system before it declines to converge
+   * - ``response``
+     - ``"auto"``
+     - ``"auto"``, ``"dense"`` or ``"matrix_free"``; how that solve is carried out
+   * - ``vdw_scale``
+     - ``0.7``
+     - Innermost layer of the charge-penetration screening grid, as a fraction of a
+       van der Waals radius. GAMESS's ``VDWSCL``
+
+**Only the first of these changes the answer.** The dynamic polarizabilities, and
+every dispersion coefficient taken from them, are converged to
+``dynamic_tolerance`` and no further, so loosening it moves the numbers in the
+file. The EFMO literature runs the equivalent solves at ``5e-5`` and reports about
+``3e-6`` Hartree of error in a total interaction energy for it -- Sattasathuchana
+et al., JCTC **20**, 2445 (2024) -- but that measurement is of their accumulation,
+not this one, which is the reason the default here is still ``1e-7``. The other
+three change only how the answer is reached.
+
+``response`` picks between two routes to the same equations. The dense one builds
+the ``(A+B)`` and ``(A-B)`` operators and factorises them, which costs one Fock
+build per occupied-virtual pair and then makes every frequency and perturbation
+free; the matrix-free one never forms them, and its cost is the iteration count
+instead. ``"auto"`` decides on size alone: dense unless three ``n_ov^2`` matrices
+would be too large to hold. That threshold is a judgement about memory rather than
+about wall clock, so the two forcing values exist to let a molecule be run both
+ways and timed. On water in ``6-31g`` the two routes agree to ``1.8e-07`` on every
+dynamic block and leave every other section of the file bit-identical, which is
+what a comparison of the two should look like.
+
+A forced ``"matrix_free"`` declines the auxiliary basis along with the operator:
+there is no Hessian for it to fit. The run says so rather than fitting nothing
+quietly.
+
 Agreement with GAMESS
 ---------------------
 

@@ -22,7 +22,10 @@ module mqc_config_types
                                        DEFAULT_PRESSURE, DEFAULT_AIMD_DT, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
-                                       DEFAULT_SCF_DENSITY_CONV, &
+                                       DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
+                                       DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
+                                       DEFAULT_RESPONSE_BATCH, &
+                                       EFP_RESPONSE_AUTO, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
                                        DEFAULT_OPT_LBFGS_MEMORY, DEFAULT_OPT_PRINT_LEVEL, &
@@ -331,6 +334,23 @@ module mqc_config_types
          !! doing so unless a deck says otherwise.
       real(dp) :: scf_density_tolerance = DEFAULT_SCF_DENSITY_CONV
       logical :: scf_density_tolerance_set = .false.
+
+      ! EFP settings, read from `keywords.efp` and used only by the MAKEFP driver
+      !
+      ! Apart from `scf` on purpose. The SCF a potential runs is configured by
+      ! `keywords.scf` and reads those keys already; adding a second spelling of a
+      ! tolerance here would let one deck set the same thing twice and then have to
+      ! decide which copy wins. These four are the stages after the SCF, which is
+      ! where the wall clock of a MAKEFP run actually goes.
+      real(dp) :: efp_dynamic_tolerance = DEFAULT_DYNAMIC_TOL
+      integer :: efp_dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
+      logical :: efp_allow_crap_response = .false.
+      integer :: efp_response_batch = DEFAULT_RESPONSE_BATCH
+      integer :: efp_response = EFP_RESPONSE_AUTO
+         !! Held as a code rather than as the spelling, the same as `calc_type`:
+         !! the reader is the only place that has to know the three words, and it
+         !! refuses a fourth there rather than somewhere an SCF has already run.
+      real(dp) :: efp_vdw_scale = DEFAULT_VDW_SCALE
 
       ! Hessian settings
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)

@@ -62,6 +62,10 @@ module mqc_libcint_cphf
                                  schwarz_bounds, direct_stats_t
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
+   use mqc_calculation_defaults, only: DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
+                                       DEFAULT_RESPONSE_BATCH, &
+                                       EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
+                                       EFP_RESPONSE_MATRIX_FREE
    implicit none
    private
 
@@ -160,24 +164,12 @@ module mqc_libcint_cphf
    !> Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
 
-   !> The same, for the matrix-free frequency-dependent solve.
-   !>
-   !> **Named because it is the largest cheap lever on that solve and it was a
-   !> literal.** Every iteration is four passes over the integrals, so the
-   !> iteration count is the cost, and the count is set by this. The EFMO
-   !> literature runs the equivalent CPHF and TDHF solves at `5e-5` and reports
-   !> the resulting error in the total interaction energy at about `3e-6`
-   !> Hartree -- Sattasathuchana et al., JCTC 20, 2445 (2024), Tables 2 and 3,
-   !> where loosening from `1e-7` to `5e-5` cut their adenine wall time from
-   !> 39.1 to 17.2 minutes.
-   !>
-   !> Left at `1e-7` all the same. That measurement is of their code and their
-   !> accumulation, and what a potential built here does to an interaction
-   !> energy has not been measured. Moving it is a one-line change and wants a
-   !> comparison against a dense reference first -- `dynamic_polarizability`
-   !> still builds one for any system small enough, which is exactly what such
-   !> a comparison needs.
-   real(dp), parameter :: DEFAULT_DYNAMIC_TOL = 1.0e-7_dp
+   !> The same for the matrix-free frequency-dependent solve, and the iteration
+   !> cap on it, are `DEFAULT_DYNAMIC_TOL` and `DEFAULT_DYNAMIC_MAXITER` in
+   !> `mqc_calculation_defaults`. They sit there rather than here because
+   !> `keywords.efp.dynamic_tolerance` and `keywords.efp.dynamic_maxiter` name
+   !> them from a deck, and a deck's default and a solver's default that are the
+   !> same number written in two files stay equal only until one of them moves.
 
    !> Where a matrix-free pass actually spends itself, accumulated across a
    !> whole solve and reported once at the end.
@@ -748,7 +740,7 @@ contains
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
                                      response, perturbations, in_core, hessian, &
-                                     progress, aux)
+                                     progress, aux, route, allow_unconverged, batch)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -817,6 +809,13 @@ contains
          !! potential -- see `build_hessian_df`, and `validation/check_df_hessian`
          !! for what the approximation costs in accuracy. Absent, the build is
          !! exact. Nothing downstream of the build changes either way.
+      integer, intent(in), optional :: route
+      logical, intent(in), optional :: allow_unconverged
+      integer, intent(in), optional :: batch
+         !! `EFP_RESPONSE_AUTO`, `_DENSE` or `_MATRIX_FREE`, which is what
+         !! `keywords.efp.response` carries. Absent means `auto`, and `auto` is the
+         !! size rule below and nothing besides -- so a caller that says nothing
+         !! gets the choice this routine has always made for it.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
@@ -824,7 +823,8 @@ contains
       logical :: direct
       ! Every system's vectors carry a batch index: all frequencies and all
       ! perturbations are in flight together.
-      logical :: reuse
+      logical :: reuse, iterate
+      integer :: take
       real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
       real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
       integer, allocatable :: ipiv(:), infos(:)
@@ -922,28 +922,75 @@ contains
       n_ov = n_vir*n_occ
       reuse = .false.
       if (present(hessian)) reuse = hessian%ready
+      take = EFP_RESPONSE_AUTO
+      if (present(route)) take = route
+
+      ! **Too big to build, so it is never built.** Three `n_ov^2` matrices and a
+      ! factorisation per frequency is the fast route right up until it is no route
+      ! at all, and the crossover is not gentle: the matrices grow as the fourth
+      ! power of the basis while the matrix-free cost grows as the number of
+      ! iterations, which does not grow at all.
+      !
+      ! Fitted responses are excluded because `build_hessian_df` is already cheap in
+      ! exactly this regime -- the auxiliary basis is what bounds it, not `n_ov` --
+      ! so there is nothing here for them to escape. A Hessian already built is
+      ! excluded for a plainer reason: the expensive part of the dense route is
+      ! behind it.
+      !
+      ! All of that is `auto`, and `auto` is what it was. What is new is that a deck
+      ! can overrule it, because it is a judgement about memory and the question
+      ! anyone actually has -- which route is faster on this molecule -- could not be
+      ! asked without a recompile. `dense` builds the operator whatever the size rule
+      ! makes of it; `matrix_free` declines to build it even where it would fit, and
+      ! declines the auxiliary basis and any Hessian on hand along with it, neither
+      ! of which means anything to a solve that forms no matrix.
+      iterate = .false.
+      if (.not. reuse) then
+         iterate = .not. present(aux) .and. &
+                   3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT
+      end if
+      select case (take)
+      case (EFP_RESPONSE_AUTO)
+      case (EFP_RESPONSE_DENSE)
+         iterate = .false.
+      case (EFP_RESPONSE_MATRIX_FREE)
+         iterate = .true.
+      case default
+         call error%set(ERROR_VALIDATION, "dynamic response: unknown response route. "// &
+                        "Accepted: auto, dense, matrix_free")
+         return
+      end select
+
+      ! Said out loud only where a deck overruled the size rule. Which route ran is
+      ! visible either way -- one prints a Hessian build and the other prints its
+      ! iterations -- but that a keyword is the reason, and what the keyword turned
+      ! down, is not visible anywhere else.
+      if (talk .and. take /= EFP_RESPONSE_AUTO) then
+         if (iterate) then
+            call logger%info("        response route: matrix free, by keywords.efp.response")
+            if (present(aux)) call logger%info("          the auxiliary basis fits a Hessian "// &
+                                               "this route never builds, so it goes unused")
+            if (reuse) call logger%info("          a built Hessian was on hand and goes unused too")
+         else
+            call logger%info("        response route: dense, by keywords.efp.response")
+         end if
+      end if
+
+      if (iterate) then
+         call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
+                                         c_vir, gaps, h, frequencies, alpha, error, &
+                                         max_iter=max_iter, tol=tol, &
+                                         response=response, progress=talk, &
+                                         allow_unconverged=allow_unconverged, &
+                                         batch=batch)
+         return
+      end if
       if (reuse) then
          if (size(hessian%product, 1) /= n_ov) then
             call error%set(ERROR_VALIDATION, "dynamic response: the supplied Hessian "// &
                            "is the wrong size for this reference")
             return
          end if
-      else if (.not. present(aux) .and. &
-               3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT) then
-         ! **Too big to build, so it is never built.** Three `n_ov^2` matrices
-         ! and a factorisation per frequency is the fast route right up until it
-         ! is no route at all, and the crossover is not gentle: the matrices grow
-         ! as the fourth power of the basis while the matrix-free cost grows as
-         ! the number of iterations, which does not grow at all.
-         !
-         ! Fitted responses are excluded because `build_hessian_df` is already
-         ! cheap in exactly this regime -- the auxiliary basis is what bounds it,
-         ! not `n_ov` -- so there is nothing here for them to escape.
-         call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
-                                         c_vir, gaps, h, frequencies, alpha, error, &
-                                         max_iter=max_iter, tol=tol, &
-                                         response=response, progress=talk)
-         return
       end if
 
       if (present(aux)) then
@@ -1542,7 +1589,8 @@ contains
 
    subroutine dynamic_response_iterative(mol, direct, eri, bounds, zero_h, c_occ, &
                                          c_vir, gaps, h, frequencies, alpha, error, &
-                                         max_iter, tol, response, progress)
+                                         max_iter, tol, response, progress, &
+                                         allow_unconverged, batch)
       !! The frequency-dependent response without ever forming its operator
       !!
       !! **Why this exists beside the dense build.** Materialising `(A+B)` and
@@ -1559,6 +1607,22 @@ contains
       !! Matrix-free the cost stops depending on `n_ov` squared at all. Each
       !! iteration is two passes over the integrals no matter how many pairs
       !! there are, and the storage is a handful of vectors per system.
+      !!
+      !! **Density screening was tried here and it loses.** The literature this
+      !! method follows calls effective screening the difference between `N^4`
+      !! and `N^3` for an AO-driven response -- Sattasathuchana et al., JCTC 20,
+      !! 2445 (2024), section III. Weighting the Schwarz bound by the largest
+      !! density element a quartet can multiply, batched so no set is screened
+      !! on another's magnitude, was measured at 12 percent *slower* on a water
+      !! 20-mer in 6-31G and 4 percent slower on adenine: identical pass counts
+      !! and iteration counts, more cost per pass.
+      !!
+      !! The reason it does not transfer is what the sets are. An SCF density is
+      !! local and screens well; a trial vector here is `C_vir U C_occ^T`, an
+      !! outer product over the virtual and occupied spaces, and it is
+      !! delocalised even when the density that generated it is not. There is
+      !! nothing negligible to find, so the test only costs. The claim in that
+      !! paper is about their algorithm in general and not about this operator.
       !!
       !! **Every system iterates together, which is the whole economy.** The
       !! integrals a direct build recomputes do not depend on which density is
@@ -1601,6 +1665,13 @@ contains
       real(dp), intent(in), optional :: tol
       real(dp), allocatable, intent(out), optional :: response(:, :, :, :)
       logical, intent(in), optional :: progress
+      logical, intent(in), optional :: allow_unconverged
+         !! Return whatever was reached instead of raising. See
+         !! `efp_config_t%allow_crap_response` -- the answer is wrong.
+      integer, intent(in), optional :: batch
+         !! Densities per integral pass. The right value is a property of the
+         !! machine and the basis, not of the physics -- see
+         !! `efp_config_t%response_batch`.
 
       real(dp), allocatable :: x(:, :, :), r(:, :, :), r0(:, :, :), p(:, :, :)
       real(dp), allocatable :: v(:, :, :), s(:, :, :), t(:, :, :), rhs(:, :, :)
@@ -1609,7 +1680,7 @@ contains
       real(dp), allocatable :: nu2(:), rnorm(:), bnorm(:)
       integer, allocatable :: pert_of(:), freq_of(:), live(:), nonzero(:)
       logical, allocatable :: done(:)
-      integer :: n_vir, n_occ, n_pert, n_freq, n_sys, m, k, l, it, cycles
+      integer :: n_vir, n_occ, n_pert, n_freq, n_sys, m, k, l, it, cycles, eff_batch
       integer :: nlive, nnz
       real(dp) :: threshold, worst
       logical :: talk
@@ -1623,7 +1694,7 @@ contains
       n_pert = size(h, 3)
       n_freq = size(frequencies)
       n_sys = n_freq*n_pert
-      cycles = 200
+      cycles = DEFAULT_DYNAMIC_MAXITER
       if (present(max_iter)) cycles = max_iter
       threshold = DEFAULT_DYNAMIC_TOL
       if (present(tol)) threshold = tol
@@ -1648,6 +1719,13 @@ contains
          end do
       end do
 
+      ! The width actually in force, resolved once so the banner reports the
+      ! same number the passes use.
+      eff_batch = DEFAULT_RESPONSE_BATCH
+      if (present(batch)) then
+         if (batch > 0) eff_batch = batch
+      end if
+
       ! The right-hand side. `-2 (A-B) h` at every nonzero frequency, `-2 h` at
       ! zero -- one batched application of `(A-B)` covers all of them, because
       ! the zero-frequency systems simply are not in the mask.
@@ -1671,7 +1749,7 @@ contains
             " pairs, matrix free"
          call logger%info(trim(line))
          write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
-            " systems in flight, ", 4*((n_sys + 11)/12), &
+            " systems in flight, ", 4*((n_sys + eff_batch - 1)/eff_batch), &
             " integral passes per iteration, ", &
             11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
          call logger%info(trim(line))
@@ -1689,7 +1767,7 @@ contains
       ! single line, which reads exactly like a hang.
       if (nnz > 0) then
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                rhs, nonzero, nnz, .true., t, error)
+                                rhs, nonzero, nnz, .true., t, error, batch)
          if (error%has_error()) return
          do m = 1, nnz
             rhs(:, :, nonzero(m)) = t(:, :, nonzero(m))
@@ -1758,7 +1836,7 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            ph, live, nlive, nu2, v, error)
+                            ph, live, nlive, nu2, v, error, batch)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1774,7 +1852,7 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            sh, live, nlive, nu2, t, error)
+                            sh, live, nlive, nu2, t, error, batch)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1812,12 +1890,27 @@ contains
       end do
 
       if (any(.not. done)) then
+         ! **Loud even when it is allowed.** A caller that asked for this wants a
+         ! run that reaches every stage, not a run that pretends it converged --
+         ! and the difference matters because nothing downstream of here can
+         ! tell an unconverged polarizability from a converged one by looking.
+         if (present(allow_unconverged)) then
+            if (allow_unconverged) then
+               write (line, "(A,I0,A,ES9.2,A)") "          WARNING: ", &
+                  count(.not. done), " systems did not converge, worst residual ", &
+                  maxval(rnorm, mask=.not. done), " -- the potential is wrong"
+               call logger%warning(trim(line))
+               flush (output_unit)
+               goto 100
+            end if
+         end if
          call error%set(ERROR_VALIDATION, "the frequency-dependent response did not "// &
                         "converge. The operator is positive definite when the "// &
                         "reference is a minimum, so a reference that is not one is "// &
                         "the first thing to check.")
          return
       end if
+100   continue
 
       if (talk) then
          write (line, "(A,I0,A)") "          where the passes went (", prof_calls, &
@@ -1843,7 +1936,7 @@ contains
    end subroutine dynamic_response_iterative
 
    subroutine apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            u, live, nlive, nu2, au, error)
+                            u, live, nlive, nu2, au, error, width)
       !! `[(A-B)(A+B) + nu^2] u`, or `(A+B) u` where the frequency is zero
       !!
       !! Two passes over the integrals for the whole batch, which is the point.
@@ -1861,6 +1954,7 @@ contains
       real(dp), intent(in) :: nu2(:)
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: width
 
       real(dp), allocatable :: q1(:, :, :)
       integer, allocatable :: shifted(:)
@@ -1871,7 +1965,7 @@ contains
       q1 = 0.0_dp
 
       call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, live, nlive, .false., q1, error)
+                             u, live, nlive, .false., q1, error, width)
       if (error%has_error()) return
 
       allocate (shifted(nlive))
@@ -1888,7 +1982,7 @@ contains
 
       if (nshift > 0) then
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                q1, shifted, nshift, .true., au, error)
+                                q1, shifted, nshift, .true., au, error, width)
          if (error%has_error()) return
          do m = 1, nshift
             k = shifted(m)
@@ -1898,7 +1992,7 @@ contains
    end subroutine apply_dynamic
 
    subroutine batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                u, idx, nact, minus, au, error)
+                                u, idx, nact, minus, au, error, width)
       !! `response_batch`, a dozen densities at a time rather than all of them
       !!
       !! **More is not better past about twelve, and it is worse.** The batched
@@ -1925,14 +2019,21 @@ contains
       logical, intent(in) :: minus
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: width
+         !! Densities per integral pass. Absent or non-positive takes the
+         !! built-in default; `keywords.efp.response_batch` overrides it.
 
-      integer, parameter :: MAX_BATCH = 12
+      integer :: max_batch
 
       integer :: first, last
 
+      max_batch = DEFAULT_RESPONSE_BATCH
+      if (present(width)) then
+         if (width > 0) max_batch = width
+      end if
       first = 1
       do while (first <= nact)
-         last = min(first + MAX_BATCH - 1, nact)
+         last = min(first + max_batch - 1, nact)
          call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, idx(first:last), last - first + 1, minus, au, error)
          if (error%has_error()) return
@@ -2027,7 +2128,7 @@ contains
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
                                         centroids, error, n_core, max_iter, tol, hessian, &
-                                        progress, aux)
+                                        progress, aux, route, allow_unconverged, batch)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -2079,6 +2180,12 @@ contains
          !! Passed straight through as well: the solver is where the time goes.
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Passed straight through: fit the Hessian rather than build it exactly.
+      integer, intent(in), optional :: route
+      logical, intent(in), optional :: allow_unconverged
+         !! Take an unconverged response rather than refusing it.
+         !! Passed straight through as well: whether the response operator is built
+         !! at all. `keywords.efp.response`.
+      integer, intent(in), optional :: batch
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
@@ -2103,7 +2210,8 @@ contains
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, perturbations=respond, &
-                                  hessian=hessian, progress=progress, aux=aux)
+                                  hessian=hessian, progress=progress, aux=aux, &
+                                  route=route, allow_unconverged=allow_unconverged, batch=batch)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
