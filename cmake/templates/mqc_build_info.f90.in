@@ -1,0 +1,41 @@
+!! How this binary was built, recorded at configure time
+module mqc_build_info
+   !! CMake knows things at configure time that nothing can recover from the
+   !! binary afterwards, and some of them decide performance outright. The one
+   !! that prompted this module: whether the BLAS is the sequential MKL or a
+   !! threaded one changes a density functional run by a factor of five, is
+   !! chosen by a single cache variable, and is invisible from inside the
+   !! program. A timing that does not say which was linked is not reproducible.
+   !!
+   !! Filled by `configure_file`, so these are the values that were actually
+   !! used rather than the ones a build was asked for.
+   implicit none
+   private
+
+   public :: MQC_BUILD_TYPE, MQC_BLAS_VENDOR, MQC_ARCH_FLAGS
+   public :: MQC_FORTRAN_COMPILER, MQC_FORTRAN_FLAGS, MQC_OPENMP
+   public :: build_info_line
+
+   character(len=*), parameter :: MQC_BUILD_TYPE = "@CMAKE_BUILD_TYPE@"
+   character(len=*), parameter :: MQC_BLAS_VENDOR = "@MQC_BUILD_INFO_BLAS@"
+   character(len=*), parameter :: MQC_ARCH_FLAGS = "@MQC_ARCH_FLAGS@"
+   character(len=*), parameter :: MQC_FORTRAN_COMPILER = &
+      "@CMAKE_Fortran_COMPILER_ID@ @CMAKE_Fortran_COMPILER_VERSION@"
+   character(len=*), parameter :: MQC_FORTRAN_FLAGS = "@MQC_BUILD_INFO_FFLAGS@"
+   character(len=*), parameter :: MQC_OPENMP = "@MQC_BUILD_INFO_OPENMP@"
+
+contains
+
+   pure function build_info_line() result(line)
+      !! One line, in the same `key=value` shape `--version` already uses for
+      !! features, so whatever parses that can parse this.
+      character(len=:), allocatable :: line
+
+      line = "build: type="//trim(MQC_BUILD_TYPE)// &
+             " compiler="//trim(MQC_FORTRAN_COMPILER)// &
+             " blas="//trim(MQC_BLAS_VENDOR)// &
+             " openmp="//trim(MQC_OPENMP)// &
+             " arch="//trim(MQC_ARCH_FLAGS)
+   end function build_info_line
+
+end module mqc_build_info
