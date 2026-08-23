@@ -62,6 +62,18 @@ jobs:
             tblite: true
             legacy_mpi: false
             build_only: true
+            # The one job that builds with Ninja, and it is not a formality.
+            # CMake's Ninja generator runs every Fortran source through
+            # `cpp -E` to scan module dependencies; the Makefile generator,
+            # which every other job here uses, does not. So a construct that is
+            # fine in a Fortran comment and not fine in C -- a literal
+            # slash-star, which `cpp` reads as opening a block comment that
+            # never closes -- breaks a Ninja build and nothing else. That is
+            # exactly what happened: `ninja` ships in environment.yml, nothing
+            # here used it, and the tree spent six days unbuildable that way
+            # with CI green throughout. A build-only job is the right home,
+            # since a generator fault is a build fault.
+            generator: Ninja
           - name: "no tblite"
             tblite: false
             legacy_mpi: false
@@ -164,11 +176,16 @@ jobs:
         run: |
           conda activate mqc
           export FC=gfortran
+          generator=""
+          if [ -n "${{ matrix.generator }}" ]; then
+            generator="-G ${{ matrix.generator }}"
+          fi
           if [ "${{ matrix.defaults }}" = "true" ]; then
             # Deliberately bare: passing any option here would defeat the job.
             cmake -B build
           else
-            cmake -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
+            cmake $generator \
+                  -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
                   -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
