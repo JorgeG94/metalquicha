@@ -30,8 +30,9 @@ Metalquicha implements a naive backend for unfragmented and fragmented quantum c
 calculations. Three chemistry engines are available:
 
 - [tblite](https://github.com/tblite/tblite) for semi-empirical xTB (GFN1, GFN2), on the CPU
-- [libcint](https://github.com/sunqm/libcint) for Gaussian-basis ab initio on the
-  CPU — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
+- [libfint](https://github.com/JorgeG94/libfint) for Gaussian-basis ab initio on
+  the CPU — an all-Fortran port of libcint, and what a default build uses;
+  `-DMQC_USE_LIBFINT=OFF` takes libcint itself instead — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
   MP2 and CCSD(T), each conventional or density-fitted. This one exists to be
   checked against as much as to be run: it gives the GPU path a second, independent implementation to
   disagree with, and every method in it is validated against PySCF.
@@ -99,6 +100,22 @@ copies, or turn them off and build the xTB path alone.
 | `-DMQC_ENABLE_LIBXC=` | `ON` | Exchange-correlation functionals, so DFT |
 | `-DMQC_ENABLE_HDF5=` | `OFF` | Binary checkpoints, to restart a gradient or Hessian |
 | `-DMQC_ENABLE_CUEST=` | `OFF` | GPU Hartree-Fock/DFT; also needs `-DCUEST_ROOT=` |
+| `-DMQC_ENABLE_MPI=` | `ON` | `OFF` builds against pic-mpi's single-rank backend, so no MPI install is needed |
+| `-DMQC_USE_LIBFINT=` | `ON` | The all-Fortran port of libcint. `OFF` takes libcint itself, which needs C |
+| `-DMQC_ENABLE_DLFIND=` | `OFF` | DL-FIND for geometry optimisation (LGPL-3, hence off) |
+
+### The smallest useful build
+
+```bash
+cmake -DMQC_ENABLE_MPI=OFF -B build
+cmake --build build -j
+```
+
+No MPI installation and no C compiler, and everything else is on by default:
+tblite, libfint and libxc. That is xTB, Hartree-Fock, DFT, MP2 and coupled
+cluster, with energies, gradients and Hessians — a complete shared-memory
+quantum chemistry program that fragments as well, just without spreading the
+fragments over ranks. Threads still work; it is one process.
 
 Turning `LIBXC` off while leaving `LIBCINT` on is a supported build, but note
 what it means: every deck naming a functional is refused, because there is
@@ -226,6 +243,20 @@ and uses exact integrals unless asked:
 The full keyword reference is in
 [the documentation](https://metalquicha.readthedocs.io/en/latest/).
 
+## Measuring your machine
+
+```bash
+python3 benchmarks/run_benchmarks.py --exe build/mqc --record
+```
+
+Times this build on this machine and records a baseline; run it again after a
+change and it reports what moved, judged against the spread it measured rather
+than a fixed percentage. It ends by telling you what to run things with — the
+thread count past which your machine stops improving, whether fragment work
+wants threads or ranks here, and which of MP2 and RI-MP2 is actually faster on
+your hardware. About twelve minutes, or three with `--quick`. See
+[benchmarks/README.md](benchmarks/README.md).
+
 The `.mqc` text format and its `mqc_prep.py` generator were removed in 0.2.0.
 See `mqc_docs/source/input_files.rst` for the migration table.
 
@@ -275,11 +306,12 @@ the CPU ab initio path — `hf`, `dft`, `mp2`, `ccsd`, `ccsd(t)`, and the `ri-`
 spellings of the correlated ones. `dft` additionally needs `MQC_ENABLE_LIBXC`,
 which is on by default too.
 
-Gradients come from xTB and cuEST; the CPU backend refuses them rather than
-returning something untested. Open shells run unrestricted for Hartree-Fock and
-DFT, and are refused for MP2 and coupled cluster on the same principle — both
-transforms want one set of orbitals, and an approximate answer is worse than
-none.
+Gradients come from all three engines — xTB, the CPU path and cuEST — and are
+validated case by case rather than assumed; MP2 gradients want
+`keywords.correlation.freeze_core: false`, which the program will tell you.
+Open shells run unrestricted for Hartree-Fock and DFT, and are refused for MP2
+and coupled cluster on principle: both transforms want one set of orbitals, and
+an approximate answer is worse than none.
 
 Details, including density fitting and the current limitations, are in
 [the Python interface documentation](https://metalquicha.readthedocs.io/en/latest/python_interface.html).
