@@ -1190,12 +1190,26 @@ contains
       de_local = 0.0_dp
       vhf_local = 0.0_dp
 
-      !$omp do schedule(dynamic)
+      ! **Collapsed, because the outer loop is a block and a block can be one
+      ! shell.** `first..last` is however much of the first index the caller
+      ! could afford to hold, and that is set by memory rather than by the
+      ! machine: at 500 MB the MP2 gradient gets three basis functions per block
+      ! by n_ao = 200 and one by n_ao = 300, so threading on `ish` alone leaves
+      ! every core but one idle exactly when the system is large enough to care.
+      ! Collapsing with `jsh` gives the schedule `nbas` times more to hand out,
+      ! which does not depend on the block at all. Measured on ethane/cc-pVTZ
+      ! through the MCSCF gradient: 39.7 s to 7.4 s, the same number a block big
+      ! enough to hold the whole basis reaches, and now reached without the
+      ! memory.
+      !
+      ! Both counters are per-iteration rather than hoisted, which is what
+      ! collapsing requires -- the loops have to nest perfectly.
+      !$omp do collapse(2) schedule(dynamic)
       do ish = first, last
-         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
-         io = mol%shell_offset(ish)
-         ia = shell_atom(ish)
          do jsh = 1, nbas
+            di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+            io = mol%shell_offset(ish)
+            ia = shell_atom(ish)
             dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
             jo = mol%shell_offset(jsh)
             do ksh = 1, nbas

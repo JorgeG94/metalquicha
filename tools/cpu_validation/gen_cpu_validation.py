@@ -542,6 +542,24 @@ MCSCF_CASES = [
 # in ten teaches people to ignore the suite. test_mqc_mcscf.f90 keeps that case
 # and says what it costs.
 
+# Gradients of an optimised MCSCF, on the two active spaces this suite already
+# knows PySCF converges. They differ in the way that matters here: water in
+# STO-3G has *no* virtual orbitals at all -- two inactive plus five active is
+# the whole basis -- so it exercises the inactive-active blocks alone, while
+# N2 carries eighteen virtuals. The gradient is taken at the multi-start
+# minimum for the reason `pyscf_mcscf_gradient` gives.
+#
+# Water in 6-31G was tried first and is not here: PySCF reports `converged =
+# False` on it from all ten starts at the 1e-7 orbital gradient this generator
+# asks for, and reaches only 1e-6. A reference taken from a run that did not
+# converge is not a reference. test/test_mqc_mcscf_gradient.f90 keeps that case
+# against a hand-made 1e-6 reference, where the looser bound is stated.
+MCSCF_GRADIENT_CASES = [
+    # molecule  basis      nelecas  ncas
+    ("water",   "sto-3g",  6,       5),
+    ("n2",      "cc-pvdz", 6,       6),
+]
+
 QUAO_CASES = [
     ("water", "6-31g"),
     ("h2s", "6-31g"),
@@ -706,6 +724,13 @@ GRADIENT_DFT_TOLERANCE = 1.0e-7
 # lives. It is still two hundred times tighter than a missing term, which is a
 # 1e-3 event. Measured: 1.02e-7 for wB97X, under 1e-7 for CAM-B3LYP.
 GRADIENT_DF_RSH_TOLERANCE = 5.0e-7
+# Looser than any of the above, and not because the contraction is less exact.
+# Both codes stop their orbital optimisation on a gradient threshold rather than
+# on machine precision -- PySCF at 1e-7 here -- so the wave functions being
+# differentiated differ by about that much before a single integral is touched.
+# Measured agreement on these cases is 2e-7; the bound keeps a little headroom
+# for a machine whose macro-iterations stop a step earlier or later.
+GRADIENT_MCSCF_TOLERANCE = 5.0e-6
 
 #: Functionals whose exchange is split by range. Named here because the
 #: generator has no libxc to ask, and only the tolerance above depends on it.
@@ -1682,6 +1707,68 @@ def _mcscf_starts(mf, mo0, count, seed, ncore, ncas):
         yield f"rotated-{i}", base @ expm(x - x.T)
 
 
+def _best_casscf(mf, mo, mol, nelecas, ncas, basis):
+    """The lowest converged CASSCF over a fixed set of deterministic starts.
+
+    Returns the converged solver as well as its energy, because a gradient has
+    to be taken at the *same* stationary point the energy was reported from --
+    which on these surfaces is not the one a Hartree-Fock guess reaches.
+    """
+    from pyscf import mcscf
+    import numpy as _np
+
+    results = []
+    default_outcome = None   # what the RHF/AVAS guess itself did
+    _nel = int(_np.sum(nelecas)) if _np.ndim(nelecas) else int(nelecas)
+    ncore = (mol.nelectron - _nel) // 2
+    for label, guess in _mcscf_starts(mf, mo, MCSCF_STARTS, MCSCF_SEED,
+                                      ncore, ncas):
+        mc = mcscf.CASSCF(mf, ncas, nelecas)
+        mc.conv_tol = 1e-11
+        mc.conv_tol_grad = 1e-7
+        mc.fcisolver.conv_tol = 1e-12
+        # More macro iterations than the default: a rotated start begins
+        # further from any stationary point than the Hartree-Fock guess,
+        # and running out of iterations is not the same as being trapped.
+        # Same convergence criteria, only more room to reach them.
+        mc.max_cycle_macro = 100
+        mc.verbose = 0
+        converged, energy = False, None
+        try:
+            mc.kernel(guess)
+            converged, energy = bool(mc.converged), float(mc.e_tot)
+        except Exception:
+            pass
+        if label in ("rhf", "avas"):
+            default_outcome = (converged, energy)
+        if converged:
+            results.append((energy, label, mc))
+    if not results:
+        raise SystemExit(
+            f"PySCF MCSCF did not converge for {basis} from any of "
+            f"{MCSCF_STARTS} starts")
+    results.sort(key=lambda r: r[0])
+    best, best_label, best_mc = results[0]
+    spread = results[-1][0] - best
+    print(f"    MCSCF multi-start {basis} CAS({nelecas},{ncas}): "
+          f"{len(results)}/{MCSCF_STARTS} converged, lowest from "
+          f"{best_label}, spread among converged {spread:.2e}")
+    note = None
+    if best_label not in ("rhf", "avas"):
+        # Say what the default guess actually did. Failing to converge and
+        # converging onto something higher are different failures, and the
+        # spread among the converged runs describes neither of them.
+        if default_outcome is None or not default_outcome[0]:
+            did = "does not converge"
+        else:
+            did = f"converges {default_outcome[1] - best:.2e} Hartree higher"
+        note = (
+            f"reference is the lowest of {MCSCF_STARTS} deterministic "
+            f"CASSCF starts ({len(results)} converged). The Hartree-Fock "
+            f"guess {did}; a rotated start reaches this minimum.")
+    return best_mc, best, note
+
+
 def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
     """CASSCF or CASCI, and the active space AVAS picked when labels are given.
 
@@ -1723,57 +1810,7 @@ def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
         # `sort_mo` with explicit indices would be cheaper and equally
         # deterministic, but it needs to know which orbitals the minimum wants,
         # per case and per basis, and that is a table somebody has to maintain.
-        results = []
-        default_outcome = None   # what the RHF/AVAS guess itself did
-        import numpy as _np
-        _nel = int(_np.sum(nelecas)) if _np.ndim(nelecas) else int(nelecas)
-        ncore = (mol.nelectron - _nel) // 2
-        for label, guess in _mcscf_starts(mf, mo, MCSCF_STARTS, MCSCF_SEED,
-                                          ncore, ncas):
-            mc = mcscf.CASSCF(mf, ncas, nelecas)
-            mc.conv_tol = 1e-11
-            mc.conv_tol_grad = 1e-7
-            mc.fcisolver.conv_tol = 1e-12
-            # More macro iterations than the default: a rotated start begins
-            # further from any stationary point than the Hartree-Fock guess,
-            # and running out of iterations is not the same as being trapped.
-            # Same convergence criteria, only more room to reach them.
-            mc.max_cycle_macro = 100
-            mc.verbose = 0
-            converged, energy = False, None
-            try:
-                mc.kernel(guess)
-                converged, energy = bool(mc.converged), float(mc.e_tot)
-            except Exception:
-                pass
-            if label in ("rhf", "avas"):
-                default_outcome = (converged, energy)
-            if converged:
-                results.append((energy, label))
-        if not results:
-            raise SystemExit(
-                f"PySCF MCSCF did not converge for {basis} from any of "
-                f"{MCSCF_STARTS} starts")
-        results.sort()
-        best, best_label = results[0]
-        spread = results[-1][0] - best
-        print(f"    MCSCF multi-start {basis} CAS({nelecas},{ncas}): "
-              f"{len(results)}/{MCSCF_STARTS} converged, lowest from "
-              f"{best_label}, spread among converged {spread:.2e}")
-        mc_energy = best
-        mcscf_note = None
-        if best_label not in ("rhf", "avas"):
-            # Say what the default guess actually did. Failing to converge and
-            # converging onto something higher are different failures, and the
-            # spread among the converged runs describes neither of them.
-            if default_outcome is None or not default_outcome[0]:
-                did = "does not converge"
-            else:
-                did = f"converges {default_outcome[1] - best:.2e} Hartree higher"
-            mcscf_note = (
-                f"reference is the lowest of {MCSCF_STARTS} deterministic "
-                f"CASSCF starts ({len(results)} converged). The Hartree-Fock "
-                f"guess {did}; a rotated start reaches this minimum.")
+        mc, mc_energy, mcscf_note = _best_casscf(mf, mo, mol, nelecas, ncas, basis)
     else:
         mc = mcscf.CASCI(mf, ncas, nelecas)
         mc.fcisolver.conv_tol = 1e-12
@@ -1792,6 +1829,33 @@ def pyscf_mcscf(atoms, basis, nelecas, ncas, optimize=True, avas_labels=None):
     else:
         total = int(sum(nelecas))
     return mc_energy, total, int(ncas), mcscf_note
+
+
+def pyscf_mcscf_gradient(atoms, basis, nelecas, ncas):
+    """CASSCF energy and analytic nuclear gradient, in Hartree/Bohr.
+
+    Taken at the same stationary point the energy is reported from, which is
+    why this goes through the multi-start rather than a Hartree-Fock guess: a
+    gradient compared across two different solutions disagrees for a reason
+    that has nothing to do with the gradient, and on these surfaces the guess
+    decides which solution you get.
+    """
+    from pyscf import gto, scf
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    mol.basis = {sym: bse_to_pyscf(basis, sym) for sym in {a[0] for a in atoms}}
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF RHF did not converge for {basis}")
+
+    mc, energy, note = _best_casscf(mf, None, mol, nelecas, ncas, basis)
+    gradient = mc.nuc_grad_method().kernel()
+    return energy, [list(map(float, row)) for row in gradient], note, mol.nao
 
 
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
@@ -2045,6 +2109,41 @@ def main():
         tests.append(entry)
         print(f"{mol.label:6s} {basis:12s} {theory:24s} "
               f"CAS({nelecas_used},{ncas_used}) E={energy:.12f}", flush=True)
+
+    for name, basis, nelecas, ncas in MCSCF_GRADIENT_CASES:
+        mol = multiref_molecule(name)
+        energy, gradient, note, nao = pyscf_mcscf_gradient(
+            mol.atoms, basis, nelecas, ncas)
+        tag = normalize_basis_name(basis) + f"_{nelecas}e{ncas}o"
+        deck = deck_for(f"{CPU_MQC}/mcscf", f"cpu_{name}_{tag}_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="casscf")
+            d["keywords"]["mcscf"] = {
+                "n_active_electrons": nelecas,
+                "n_active_orbitals": ncas,
+                "max_macro_iter": 300,
+            }
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entry = {
+            "name": f"CASSCF gradient CAS({nelecas},{ncas}) {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_MCSCF_TOLERANCE,
+            # Every term is translationally invariant, and this one is built by
+            # a different route from the SCF gradient -- a separable part plus a
+            # cumulant -- so a residual here says the two halves do not add up.
+            "check_translation": True,
+            "type": "unfragmented",
+        }
+        if note:
+            entry["reference_note"] = note
+        tests.append(entry)
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} CASSCF grad CAS({nelecas},{ncas}) "
+              f"|g|={norm:.10f} E={energy:.12f}", flush=True)
 
     # The quasi-atomic bonding analysis, through the real driver. The energy is
     # the ordinary RHF one and is what the harness checks; what the case is

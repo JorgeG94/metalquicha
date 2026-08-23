@@ -240,7 +240,7 @@ contains
       if (present(want_hessian)) return
    end subroutine run_libcint_hf
 
-   subroutine run_libcint_mcscf(settings, fragment, result)
+   subroutine run_libcint_mcscf(settings, fragment, result, want_gradient)
       !! No-op stand-in: CASSCF and CASCI need the CPU integral backend
       !!
       !! All of it does -- the reference SCF, the active-space transform, the
@@ -249,6 +249,7 @@ contains
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
+      logical, intent(in), optional :: want_gradient
 
       call result%error%set(ERROR_VALIDATION, &
                             "a multiconfigurational calculation needs the CPU integral "// &

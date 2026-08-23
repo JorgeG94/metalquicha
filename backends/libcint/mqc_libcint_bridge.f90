@@ -50,6 +50,7 @@ module mqc_libcint_bridge
    use mqc_libcint_avas, only: avas_select, avas_result_t, valence_select
    use mqc_libcint_mcscf, only: casscf_result_t, run_libcint_casscf, &
                                 natural_orbitals
+   use mqc_libcint_mcscf_gradient, only: libcint_mcscf_gradient
    implicit none
    private
 
@@ -1850,7 +1851,7 @@ contains
       space = [n_inactive, n_active, n_alpha, n_beta]
    end subroutine resolve_active_space
 
-   subroutine run_libcint_mcscf(settings, fragment, result)
+   subroutine run_libcint_mcscf(settings, fragment, result, want_gradient)
       !! CASSCF, or CASCI on the reference orbitals, for one fragment
       !!
       !! Three steps, and the middle one is the reason this is not just a call
@@ -1870,6 +1871,11 @@ contains
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
+      logical, intent(in), optional :: want_gradient
+         !! The nuclear gradient of the optimised wave function. Only a CASSCF
+         !! has one here: a CASCI leaves its orbitals where the SCF put them, so
+         !! it is not stationary with respect to them and the terms this omits
+         !! are not zero.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -2207,8 +2213,61 @@ contains
 
       result%scf_status = SCF_CONVERGED
       result%has_energy = .true.
+
+      if (present(want_gradient)) then
+         if (want_gradient) then
+            call mcscf_gradient_into(settings, mol, casscf, space, result)
+         end if
+      end if
+
       call mol%destroy()
    end subroutine run_libcint_mcscf
+
+   subroutine mcscf_gradient_into(settings, mol, casscf, space, result)
+      !! The nuclear gradient of a converged CASSCF, onto the result
+      !!
+      !! Refused rather than approximated when the optimisation did not
+      !! converge. The formula differentiates a *stationary* energy: away from a
+      !! stationary point the orbital-response terms it omits are not zero, and
+      !! what comes back is a plausible vector that is the derivative of
+      !! nothing. `casscf_result_t` says the same thing about its densities,
+      !! which on an unconverged run are one orbital step behind the orbitals
+      !! they are reported beside.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(libcint_molecule_t), intent(in) :: mol
+      type(casscf_result_t), intent(in) :: casscf
+      integer, intent(in) :: space(:)
+      type(calculation_result_t), intent(inout) :: result
+
+      type(error_t) :: error
+
+      if (.not. settings%mcscf%optimize_orbitals) then
+         call result%error%set(ERROR_VALIDATION, "a CASCI gradient needs the orbital "// &
+                               "response, which is not implemented: its orbitals came "// &
+                               "from the SCF and were never optimised for this active "// &
+                               "space, so the wave function is not stationary with "// &
+                               "respect to them. Ask for 'casscf' instead.")
+         result%has_error = .true.
+         return
+      end if
+      if (.not. casscf%converged) then
+         call result%error%set(ERROR_VALIDATION, "the orbital optimisation did not "// &
+                               "converge, so there is no stationary point to "// &
+                               "differentiate. The gradient of an unconverged MCSCF "// &
+                               "is not the gradient of anything.")
+         result%has_error = .true.
+         return
+      end if
+
+      call libcint_mcscf_gradient(mol, casscf%orbitals, space(1), space(2), &
+                                  casscf%dm1, casscf%dm2, result%gradient, error)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, "gradient: "//error%get_message())
+         result%has_error = .true.
+         return
+      end if
+      result%has_gradient = .true.
+   end subroutine mcscf_gradient_into
 
    subroutine store_decomposition(result, atom_energy, free_atom_energy, &
                                   pair_energy, pair_classical, formation_energy)

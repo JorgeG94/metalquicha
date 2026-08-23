@@ -339,11 +339,21 @@ contains
    end subroutine test_mcscf_with_active
 
    subroutine test_mcscf_gradient(error)
-      !! A CASSCF gradient is refused rather than faked
+      !! A CASCI gradient is refused rather than faked
       !!
-      !! This used to assert that a gradient came back and was allocated, which
+      !! This began as an assertion that a gradient came back allocated, which
       !! it was: a fully allocated array of zeros. That is the one thing a
-      !! derivative must never do, so the assertion is now the opposite one.
+      !! derivative must never do, so it became the opposite assertion -- and
+      !! for a while it held for every MCSCF, because none of them had one.
+      !!
+      !! A converged CASSCF has one now, so the case that still belongs here is
+      !! the one still refused. A CASCI's orbitals came from the SCF and were
+      !! never optimised for the active space, so its energy is not stationary
+      !! with respect to them and the response terms an analytic gradient omits
+      !! are not zero. `optimize_orbitals` is therefore set false explicitly:
+      !! it defaults true, and left alone this now measures the CASSCF path,
+      !! which is checked against PySCF and against finite differences in
+      !! test_mqc_mcscf_gradient.f90 instead of asserted about here.
       type(error_type), allocatable, intent(out) :: error
       type(mcscf_method_t) :: method
       type(physical_fragment_t) :: fragment
@@ -354,19 +364,20 @@ contains
       method%options%verbose = .true.
       method%options%n_active_electrons = 4
       method%options%n_active_orbitals = 4
+      method%options%optimize_orbitals = .false.
 
       call method%calc_gradient(fragment, result)
 
       call check(error, result%has_error, &
-                 "an MCSCF gradient must be refused, not returned as zeros")
+                 "a CASCI gradient must be refused, not returned as zeros")
       if (allocated(error)) return
 
       call check(error,.not. result%has_gradient, &
-                 "a refused MCSCF gradient must not claim to have one")
+                 "a refused CASCI gradient must not claim to have one")
       if (allocated(error)) return
 
       call check(error, len_trim(result%error%get_message()) > 0, &
-                 "a refused MCSCF gradient must say why")
+                 "a refused CASCI gradient must say why")
 
       call fragment%destroy()
    end subroutine test_mcscf_gradient
