@@ -409,6 +409,7 @@ module mqc_config_types
       character(len=:), allocatable :: opt_algorithm    !! lbfgs, cg, sd, prfo
       logical :: opt_trajectory = .true.               !! Record the path taken
       logical :: opt_freeze_terms = .true.             !! Fix the MBE term list for the run
+      logical :: opt_hess_end = .false.                !! Hessian at the converged geometry
 
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.

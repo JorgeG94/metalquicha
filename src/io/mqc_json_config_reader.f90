@@ -416,6 +416,7 @@ contains
       call optional_int(json, "keywords.optimization.print_level", config%opt_print_level)
       call optional_logical(json, "keywords.optimization.trajectory", config%opt_trajectory)
       call optional_logical(json, "keywords.optimization.freeze_terms", config%opt_freeze_terms)
+      call optional_logical(json, "keywords.optimization.hess_end", config%opt_hess_end)
 
       call optional_string(json, "keywords.xtb.solvent", config%solvent)
       call optional_string(json, "keywords.xtb.solvation_model", config%solvation_model)

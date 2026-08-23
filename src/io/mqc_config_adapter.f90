@@ -217,6 +217,7 @@ contains
       driver_config%optimization%print_level = mqc_config%opt_print_level
       driver_config%optimization%trajectory = mqc_config%opt_trajectory
       driver_config%optimization%freeze_terms = mqc_config%opt_freeze_terms
+      driver_config%optimization%hess_end = mqc_config%opt_hess_end
       call set_optimization_vocabulary(mqc_config, driver_config, error)
 
       driver_config%scf%max_iterations = mqc_config%scf_maxiter

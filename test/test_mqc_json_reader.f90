@@ -83,6 +83,7 @@ contains
                   new_unittest("avas_orbital_labels", test_avas_keywords), &
                   new_unittest("ormas_partition", test_ormas_keywords), &
                   new_unittest("full_valence_space", test_full_valence), &
+                  new_unittest("optimization_hess_end", test_hess_end), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1571,6 +1572,46 @@ contains
       call check(error, parse_error%has_error(), &
                  "a settings-only analysis block should be refused")
    end subroutine test_bonding_analysis
+
+   subroutine test_hess_end(error)
+      !! `keywords.optimization.hess_end`, read and defaulted off
+      !!
+      !! The keyword asks for a Hessian at the converged geometry, so a deck
+      !! that never mentions it must come back false -- defaulting the other
+      !! way would add a Hessian to every optimization ever run, which is the
+      !! expensive direction to be wrong in.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"optimization": {"hess_end": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%opt_hess_end, "the request should be read")
+      if (allocated(error)) return
+
+      ! Said explicitly, the other way.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"optimization": {"hess_end": false}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%opt_hess_end, "false should be read as false")
+      if (allocated(error)) return
+
+      ! Not mentioned at all. `optional_logical` leaves the default alone, so
+      ! this checks the default is the one in the type and not a second copy
+      ! written into the reader.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"optimization": {"max_steps": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%opt_hess_end, &
+                 "a deck that never asked should not get a Hessian")
+   end subroutine test_hess_end
 
    subroutine test_full_valence(error)
       !! `keywords.mcscf.full_valence`, and that it is the only space named

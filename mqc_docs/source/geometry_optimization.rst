@@ -266,6 +266,10 @@ All optional. Everything under ``keywords.optimization``:
    * - ``trajectory``
      - ``true``
      - Record every accepted geometry
+   * - ``hess_end``
+     - ``false``
+     - Hessian at the converged geometry, to say whether it is a minimum. See
+       :ref:`hess-end`
    * - ``print_level``
      - follows log
      - How much DL-FIND itself prints
@@ -275,6 +279,42 @@ overridden with a second number chosen here.
 
 ``prfo`` parses as an algorithm but is refused: it searches for a transition state
 rather than a minimum and needs a Hessian this interface does not yet supply.
+
+.. _hess-end:
+
+Checking that it is a minimum
+-----------------------------
+
+An optimization converges on the gradient, and a vanishing gradient is a
+*stationary point*: a saddle satisfies it exactly as well as a minimum does.
+Nothing in the run distinguishes them, so "converged" names the condition that
+was met rather than the thing that was found. The second derivatives are what
+settle it, and ``hess_end`` asks for them::
+
+    "keywords": {
+      "optimization": {"hess_end": true}
+    }
+
+A Hessian is computed at the converged geometry and the frequencies are printed
+as they are for a ``Hessian`` deck, followed by the one line that answers the
+question: no imaginary frequencies means a minimum, exactly one means a
+first-order saddle point, more than one means neither. A mode is called
+imaginary below ``-10`` cm-1, the same threshold the frequency summary uses to
+separate vibrations from translation and rotation.
+
+Restricted Hartree-Fock only for now, and refused at the start of the run rather
+than at the end -- the end is the one place where the news is expensive, because
+the optimization has already been paid for. For anything else, run the
+optimization and then a separate ``Hessian`` deck on the geometry it writes.
+
+It runs only on a converged optimization. Curvature at a geometry the optimizer
+was still moving away from describes that geometry and not the minimum, and
+printing it under a "did not converge" line invites it to be read as the
+minimum's.
+
+The cost is one Hessian on top of the optimization -- analytic for restricted
+Hartree-Fock in a libfint build, and central differences of gradients otherwise,
+which is ``6N`` gradients. That is why it is off by default.
 
 .. _optimizer-build:
 

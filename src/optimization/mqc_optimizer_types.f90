@@ -91,6 +91,19 @@ module mqc_optimizer_types
          !! Choose the MBE term list once, at the starting geometry, and keep
          !! it for every step. See `mqc_geometry_optimizer` for why an
          !! optimization on a re-screened list is optimizing a moving target.
+      logical :: hess_end = .false.
+         !! Compute a Hessian at the converged geometry and say whether any
+         !! frequency came back imaginary.
+         !!
+         !! A minimiser converges on the gradient alone, and a vanishing
+         !! gradient is a stationary point rather than a minimum -- a saddle
+         !! satisfies it exactly as well. Nothing in the optimization can tell
+         !! the two apart, so a run that ends "converged" has not established
+         !! what it converged *to*. This is what establishes it.
+         !!
+         !! Off by default because it is not free: one Hessian on top of the
+         !! optimization, analytic for restricted Hartree-Fock and central
+         !! differences of gradients otherwise.
       logical :: trajectory = .true.
          !! Record every accepted geometry, for analysing the path afterwards.
          !! Worth turning off for a large system optimized over many steps:

@@ -187,6 +187,12 @@ contains
 
       call check(error, settings%lbfgs_memory < 0, &
                  "lbfgs_memory should default to the engine's own choice")
+      if (allocated(error)) return
+
+      ! Off unless asked for. The check costs a whole Hessian, and a deck that
+      ! did not ask for one should not find it in the bill.
+      call check(error,.not. settings%hess_end, &
+                 "hess_end should be off until a deck asks for it")
    end subroutine test_settings_defaults
 
    subroutine test_optimize_driver_parses(error)

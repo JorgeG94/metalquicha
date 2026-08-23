@@ -507,6 +507,7 @@ contains
       call allow(keys, "print_level")
       call allow(keys, "trajectory")
       call allow(keys, "freeze_terms")
+      call allow(keys, "hess_end")
    end function optimization_keys
 
    function xtb_keys() result(keys)
