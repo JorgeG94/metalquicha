@@ -140,9 +140,9 @@
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-candidates">candidates</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-clique">clique</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-current_atoms~2">current_atoms</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-i~108">i</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-j~25">j</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_atoms~10">max_atoms</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-i~168">i</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-j~46">j</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_atoms~11">max_atoms</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_terms">max_terms</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_terms_i">max_terms_i</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-n_candidates">n_candidates</a>
@@ -555,7 +555,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~60"></span>
+              <span class="anchor" id="variable-sys_geom~74"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -585,7 +585,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_primaries"></span>
+              <span class="anchor" id="variable-n_primaries~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -630,7 +630,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              <span class="anchor" id="variable-pie_atom_sets~9"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -645,7 +645,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~6"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -660,7 +660,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~8"></span>
+              <span class="anchor" id="variable-n_pie_terms~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -675,7 +675,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~121"></span>
+              <span class="anchor" id="variable-error~160"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1187,31 +1187,31 @@ large graphs.</div>
 <g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node12" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node12"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-150 246,-150 246,-126 324,-126 324,-150"/>
-<text text-anchor="middle" x="285" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge11" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ff00" d="M324.28,-138C360.53,-138 414.7,-138 451.02,-138"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="451.22,-141.5 461.22,-138 451.22,-134.5 451.22,-141.5"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node13" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
 <text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge14" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#0000ff" d="M324.28,-14.07C358.12,-15.9 407.57,-18.57 443.55,-20.52"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="443.61,-24.02 453.78,-21.07 443.99,-17.03 443.61,-24.02"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node13" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-150 246,-150 246,-126 324,-126 324,-150"/>
+<text text-anchor="middle" x="285" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge11" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M324.28,-138C360.53,-138 414.7,-138 451.02,-138"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="451.22,-141.5 461.22,-138 451.22,-134.5 451.22,-141.5"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_node14" class="node">
@@ -1252,11 +1252,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge16" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ff66" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge17" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0066ff" d="M166.01,-125.39C189.62,-127.91 214.82,-130.61 235.84,-132.85"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="235.48,-136.33 245.79,-133.92 236.22,-129.37 235.48,-136.33"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge18" class="edge">
@@ -1273,11 +1273,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge17" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0066ff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CalledByGraph_edge16" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ff66" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
 </g>
 </g>
 </svg>
@@ -1451,7 +1451,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~108"></span>
+              <span class="anchor" id="variable-i~168"></span>
               integer,
             </td>
               <td>private</td>
@@ -1468,7 +1468,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~25"></span>
+              <span class="anchor" id="variable-j~46"></span>
               integer,
             </td>
               <td>private</td>
@@ -1485,7 +1485,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~10"></span>
+              <span class="anchor" id="variable-max_atoms~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -1782,7 +1782,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-22 08:16 +0000             </p>
+ on 2026-08-23 06:54 +0000             </p>
           </div>
         </div>
         <br>
