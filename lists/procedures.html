@@ -847,6 +847,12 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><p>Run a supplied term list past the validator without committing to it</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_system_geometry.html'>check_system_geometry</a></td>
+                 <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Refuse a geometry with two atoms in the same place, before anything runs</p><a href="../proc/check_system_geometry.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_valence_choice.html'>check_valence_choice</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
@@ -929,6 +935,12 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Function</td>
                  <td><p>Where a determinant sits in the widened space</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/collect_unconverged.html'>collect_unconverged</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The fragments that failed, and which monomers each was built from</p><a href="../proc/collect_unconverged.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/combine.html'>combine</a></td>
@@ -3990,6 +4002,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/scf_not_converged_message.html'>scf_not_converged_message</a></td>
+                 <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
+                 <td>Function</td>
+                 <td><p>What to say when an SCF runs out of cycles and the run must stop</p><a href="../proc/scf_not_converged_message.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/scf_status_label.html'>scf_status_label</a></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Function</td>
@@ -4000,6 +4018,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/score_unconverged.html'>score_unconverged</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>What the failures cost, and which monomers keep turning up in them</p><a href="../proc/score_unconverged.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/send_error_state.html'>send_error_state</a></td>
@@ -4235,15 +4259,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
                  <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
                  <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -4513,6 +4537,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><p>Write the path the optimization took, as a multi-frame .xyz</p><a href="../proc/write_trajectory_xyz.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/write_unconverged_section.html'>write_unconverged_section</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The fragments whose SCF failed, in a form a follow-up job can be built from</p><a href="../proc/write_unconverged_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/write_unfragmented_json_impl.html'>write_unfragmented_json_impl</a></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
@@ -4598,7 +4628,7 @@ whatever libxc itself was configured to do.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-23 14:49 +0000             </p>
+ on 2026-08-23 14:59 +0000             </p>
           </div>
         </div>
         <br>

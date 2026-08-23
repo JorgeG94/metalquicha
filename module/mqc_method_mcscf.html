@@ -204,14 +204,14 @@ has no CI at all, so there is nothing to choose between.</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1396,17 +1396,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1439,7 +1439,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_orbitals~2"></span>
+              <span class="anchor" id="variable-avas_orbitals"></span>
               character(len=MAX_ORBITAL_LABEL_LEN),
             </td>
               <td>public,</td>
@@ -1456,7 +1456,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_threshold~2"></span>
+              <span class="anchor" id="variable-avas_threshold"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1473,7 +1473,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~4"></span>
+              <span class="anchor" id="variable-basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1508,7 +1508,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-conv_tol~2"></span>
+              <span class="anchor" id="variable-conv_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1525,7 +1525,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~4"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1542,7 +1542,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~5"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1576,7 +1576,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_valence~2"></span>
+              <span class="anchor" id="variable-full_valence"></span>
               logical,
             </td>
               <td>public</td>
@@ -1593,7 +1593,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imaginary_shift~2"></span>
+              <span class="anchor" id="variable-imaginary_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1610,7 +1610,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ipea_shift~2"></span>
+              <span class="anchor" id="variable-ipea_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1627,7 +1627,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1644,7 +1644,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_macro_iter~2"></span>
+              <span class="anchor" id="variable-max_macro_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -1661,7 +1661,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_micro_iter~2"></span>
+              <span class="anchor" id="variable-max_micro_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -1679,7 +1679,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_electrons~2"></span>
+              <span class="anchor" id="variable-n_active_electrons"></span>
               integer,
             </td>
               <td>public</td>
@@ -1696,7 +1696,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~4"></span>
+              <span class="anchor" id="variable-n_active_orbitals"></span>
               integer,
             </td>
               <td>public</td>
@@ -1713,7 +1713,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_inactive_orbitals~2"></span>
+              <span class="anchor" id="variable-n_inactive_orbitals"></span>
               integer,
             </td>
               <td>public</td>
@@ -1731,7 +1731,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~2"></span>
+              <span class="anchor" id="variable-n_states"></span>
               integer,
             </td>
               <td>public</td>
@@ -1748,7 +1748,7 @@ the Davidson takes a residual threshold, not an iteration cap.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-optimize_orbitals~2"></span>
+              <span class="anchor" id="variable-optimize_orbitals"></span>
               logical,
             </td>
               <td>public</td>
@@ -1800,7 +1800,7 @@ exact orbital Hessian, and there is nothing to select between.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_max_electrons~2"></span>
+              <span class="anchor" id="variable-ormas_max_electrons"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1817,7 +1817,7 @@ exact orbital Hessian, and there is nothing to select between.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_min_electrons~2"></span>
+              <span class="anchor" id="variable-ormas_min_electrons"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1834,7 +1834,7 @@ exact orbital Hessian, and there is nothing to select between.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_subspaces~2"></span>
+              <span class="anchor" id="variable-ormas_subspaces"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1852,7 +1852,7 @@ active space.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~4"></span>
+              <span class="anchor" id="variable-pcm~3"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -1887,7 +1887,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pt2_type~2"></span>
+              <span class="anchor" id="variable-pt2_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1921,7 +1921,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-state_weights~2"></span>
+              <span class="anchor" id="variable-state_weights"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1933,12 +1933,12 @@ request arrives; the CPU path has no cavity.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>Weights for state averaging (must sum to 1)</p><a href="../type/mcscf_options_t.html#variable-state_weights~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Weights for state averaging (must sum to 1)</p><a href="../type/mcscf_options_t.html#variable-state_weights" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~6"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1955,7 +1955,7 @@ request arrives; the CPU path has no cavity.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_pt2~2"></span>
+              <span class="anchor" id="variable-use_pt2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1973,7 +1973,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~7"></span>
+              <span class="anchor" id="variable-verbose~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2023,7 +2023,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~81"></span>
+              <span class="anchor" id="variable-this~58"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2038,7 +2038,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~12"></span>
+              <span class="anchor" id="variable-fragment~11"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2053,7 +2053,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~33"></span>
+              <span class="anchor" id="variable-result~25"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2093,7 +2093,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~83"></span>
+              <span class="anchor" id="variable-this~60"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2108,7 +2108,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~14"></span>
+              <span class="anchor" id="variable-fragment~13"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2123,7 +2123,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~35"></span>
+              <span class="anchor" id="variable-result~27"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2163,7 +2163,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~84"></span>
+              <span class="anchor" id="variable-this~61"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2178,7 +2178,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~15"></span>
+              <span class="anchor" id="variable-fragment~14"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2193,7 +2193,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~36"></span>
+              <span class="anchor" id="variable-result~28"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2233,7 +2233,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~82"></span>
+              <span class="anchor" id="variable-this~59"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2248,7 +2248,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~13"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2263,7 +2263,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~34"></span>
+              <span class="anchor" id="variable-result~26"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2278,7 +2278,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~4"></span>
+              <span class="anchor" id="variable-want_gradient~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2318,7 +2318,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~16"></span>
+              <span class="anchor" id="variable-fragment~15"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2333,7 +2333,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~37"></span>
+              <span class="anchor" id="variable-result~29"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2391,7 +2391,7 @@ exists, so no keyword reaches it.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-23 14:49 +0000             </p>
+ on 2026-08-23 14:59 +0000             </p>
           </div>
         </div>
         <br>

@@ -68,6 +68,33 @@ module mqc_json_output_types
          !! Recorded because a non-converged fragment still yields a number of
          !! the right magnitude, so nothing downstream can tell -- and at
          !! millions of terms nobody is reading the log.
+      integer(int64), allocatable :: unconverged_ids(:)
+         !! Fragment indices whose SCF did not converge, in order. Written out
+         !! so a follow-up run can be built from them without reading back a
+         !! per-fragment table that may have millions of rows -- and because a
+         !! log line saying "and 4382 more" is not something a script can act
+         !! on. Empty when everything converged, unallocated when the method
+         !! does not report convergence at all, which is not the same thing.
+      integer, allocatable :: unconverged_monomers(:, :)
+         !! (n_unconverged, max_level) the monomers each of those fragments is
+         !! built from, zero-padded, exactly as `polymers` holds them. A dimer
+         !! that failed is only re-runnable if you know which two monomers it
+         !! was, and at that point the follow-up job writes itself.
+      real(dp), allocatable :: unconverged_deltas(:)
+         !! What each failed fragment contributes to the total, in the same
+         !! units and sign as `delta_energies`. The list of failures says which
+         !! fragments are suspect; this says whether it matters. Fragments that
+         !! screening or cancellation has already made negligible are the
+         !! common case, and a run that fails on a hundred of those is fine.
+      integer, allocatable :: culprit_monomers(:)
+         !! Monomers appearing in at least one failed fragment, most frequent
+         !! first, paired with `culprit_counts`.
+      integer(int64), allocatable :: culprit_counts(:)
+         !! How many failed fragments each of those monomers appears in. **This
+         !! is the number that collapses a failure list into a diagnosis**: one
+         !! monomer with a wrecked geometry or a mis-assigned charge drags every
+         !! dimer it belongs to down with it, and four hundred failures sharing
+         !! one monomer is one problem rather than four hundred.
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
       character(len=16) :: fragment_breakdown = "csv"

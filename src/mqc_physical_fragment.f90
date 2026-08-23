@@ -24,6 +24,7 @@ module mqc_physical_fragment
    public :: fragment_charge_multiplicity  !! Charge/multiplicity a set of monomers forms
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
+   public :: check_system_geometry      !! Validate the whole system before any work starts
    ! TODO: in theory there should be a nice way to redistribute for a general matrix of any shape, need to think about this!
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
@@ -862,6 +863,93 @@ contains
       end if
 
    end subroutine redistribute_cap_dipole_derivatives
+
+   subroutine check_system_geometry(sys_geom, error)
+      !! Refuse a geometry with two atoms in the same place, before anything runs
+      !!
+      !! The per-fragment check catches this eventually, and eventually is the
+      !! problem. In a fragmented run a duplicated atom surfaces only when some
+      !! fragment containing both copies is built -- which may be a long way
+      !! into a million-term expansion, on whichever rank happened to draw that
+      !! term. Worse, if the two copies land in different monomers and distance
+      !! screening drops the dimer that would have paired them, no fragment ever
+      !! sees them and the run completes on a geometry nobody meant.
+      !!
+      !! An atom pasted twice is the ordinary cause and it changes the electron
+      !! count, so every number afterwards is wrong rather than merely
+      !! unconverged. Cheap to find, expensive to discover late, and the first
+      !! thing worth doing.
+      !!
+      !! **Sorted and swept rather than compared pairwise.** A million-atom
+      !! system has 5e11 pairs, which is not a check anyone would leave switched
+      !! on. Sorting along the widest axis and comparing only atoms within the
+      !! threshold of each other on that axis is `O(N log N)`, and the axis is
+      !! chosen by extent rather than fixed so that a molecule lying flat in a
+      !! plane -- where a fixed axis would put every atom in one bucket and
+      !! recover the quadratic cost -- is spread out instead. That choice is
+      !! about cost and not about correctness: a degenerate axis makes the sweep
+      !! compare every pair, which is slow and still right.
+      use pic_sorting, only: sort_index
+      use pic_types, only: int_index
+      use pic_io, only: to_char
+
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(error_t), intent(out) :: error
+
+      real(dp), allocatable :: key(:)
+      ! Pre-allocated and of `int_index`: `sort_index` writes into it rather
+      ! than allocating, and handing it an unallocated array is a segmentation
+      ! fault rather than an error. The permutation comes back 1-indexed.
+      integer(int_index), allocatable :: order(:)
+      real(dp) :: extent(3)
+      real(dp) :: lo, hi, separation
+      integer :: n, axis, widest, i, j, a, b
+      real(dp), parameter :: MIN_SEPARATION = 0.01_dp   !! Bohr, as the fragment check uses
+
+      n = sys_geom%total_atoms
+      if (n < 2) return
+
+      do axis = 1, 3
+         lo = minval(sys_geom%coordinates(axis, 1:n))
+         hi = maxval(sys_geom%coordinates(axis, 1:n))
+         extent(axis) = hi - lo
+      end do
+      widest = maxloc(extent, dim=1)
+
+      allocate (key(n), order(n))
+      key = sys_geom%coordinates(widest, 1:n)
+      call sort_index(key, order)
+
+      do i = 1, n - 1
+         a = int(order(i))
+         do j = i + 1, n
+            b = int(order(j))
+            ! Sorted, so once the gap along this axis exceeds the threshold no
+            ! later atom can be within it either.
+            if (sys_geom%coordinates(widest, b) - sys_geom%coordinates(widest, a) &
+                > MIN_SEPARATION) exit
+            separation = norm2(sys_geom%coordinates(:, b) - sys_geom%coordinates(:, a))
+            if (separation < MIN_SEPARATION) then
+               ! Set and not logged. This runs on every rank, while the
+               ! caller prints the message on rank zero alone -- logging here
+               ! would put the same two lines in front of that one once per
+               ! rank, which on any real job buries the readable copy.
+               call error%set(ERROR_VALIDATION, "atoms "//to_char(min(a, b))//" and "// &
+                              to_char(max(a, b))//" are "//to_char(separation)// &
+                              " Bohr apart, which is closer than any two nuclei can "// &
+                              "be. The usual cause is an atom repeated in the input "// &
+                              "geometry, which also makes the electron count wrong, "// &
+                              "so this is refused before anything is computed rather "// &
+                              "than left to surface as a fragment that will not "// &
+                              "converge.")
+               deallocate (key, order)
+               return
+            end if
+         end do
+      end do
+
+      deallocate (key, order)
+   end subroutine check_system_geometry
 
    subroutine check_duplicate_atoms(fragment, error)
       !! Validate that fragment has no spatially overlapping atoms

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for modules and submodules.">119 statements</a>
+                 title=" 0.5% of total for modules and submodules.">124 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -198,8 +198,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1449,6 +1449,45 @@ parameter
     <tbody>
         <tr>
             <td>
+              <span class="anchor" id="variable-culprit_counts"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>culprit_counts</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>How many failed fragments each of those monomers appears in. <strong>This
+is the number that collapses a failure list into a diagnosis</strong>: one
+monomer with a wrecked geometry or a mis-assigned charge drags every
+dimer it belongs to down with it, and four hundred failures sharing
+one monomer is one problem rather than four hundred.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-culprit_monomers"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>culprit_monomers</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Monomers appearing in at least one failed fragment, most frequent
+first, paired with <code>culprit_counts</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-delta_energies"></span>
               real(kind=dp),
             </td>
@@ -1466,7 +1505,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole~3"></span>
+              <span class="anchor" id="variable-dipole"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1483,7 +1522,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint"></span>
+              <span class="anchor" id="variable-fingerprint~4"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1520,7 +1559,7 @@ Where the per-fragment table goes: &ldquo;csv&rdquo;, &ldquo;json&rdquo; or &ldq
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown~3"></span>
+              <span class="anchor" id="variable-fragment_breakdown~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1554,7 +1593,7 @@ Where the per-fragment table goes: &ldquo;csv&rdquo;, &ldquo;json&rdquo; or &ldq
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -1712,7 +1751,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_anion_bound~2"></span>
+              <span class="anchor" id="variable-fukui_anion_bound"></span>
               logical,
             </td>
               <td>public</td>
@@ -1729,7 +1768,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_dual~2"></span>
+              <span class="anchor" id="variable-fukui_dual"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1746,7 +1785,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_ea~2"></span>
+              <span class="anchor" id="variable-fukui_ea"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1763,7 +1802,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_electrophilicity~2"></span>
+              <span class="anchor" id="variable-fukui_electrophilicity"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1780,7 +1819,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_hardness~2"></span>
+              <span class="anchor" id="variable-fukui_hardness"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1797,7 +1836,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_ip~2"></span>
+              <span class="anchor" id="variable-fukui_ip"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1814,7 +1853,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_minus~2"></span>
+              <span class="anchor" id="variable-fukui_minus"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1831,7 +1870,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_plus~2"></span>
+              <span class="anchor" id="variable-fukui_plus"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1848,7 +1887,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_scheme~2"></span>
+              <span class="anchor" id="variable-fukui_scheme"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1865,7 +1904,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~8"></span>
+              <span class="anchor" id="variable-gradient~7"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1882,7 +1921,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_dipole~3"></span>
+              <span class="anchor" id="variable-has_dipole"></span>
               logical,
             </td>
               <td>public</td>
@@ -1899,7 +1938,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_energy~3"></span>
+              <span class="anchor" id="variable-has_energy"></span>
               logical,
             </td>
               <td>public</td>
@@ -1916,7 +1955,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_fukui~2"></span>
+              <span class="anchor" id="variable-has_fukui"></span>
               logical,
             </td>
               <td>public</td>
@@ -1933,7 +1972,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_gradient~3"></span>
+              <span class="anchor" id="variable-has_gradient"></span>
               logical,
             </td>
               <td>public</td>
@@ -1950,7 +1989,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_hessian~3"></span>
+              <span class="anchor" id="variable-has_hessian"></span>
               logical,
             </td>
               <td>public</td>
@@ -1967,7 +2006,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_ieda~2"></span>
+              <span class="anchor" id="variable-has_ieda"></span>
               logical,
             </td>
               <td>public</td>
@@ -2001,7 +2040,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals~2"></span>
+              <span class="anchor" id="variable-has_orbitals~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2071,7 +2110,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~3"></span>
+              <span class="anchor" id="variable-homo~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2088,7 +2127,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_atom~2"></span>
+              <span class="anchor" id="variable-ieda_atom"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2105,7 +2144,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_classical~2"></span>
+              <span class="anchor" id="variable-ieda_classical"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2122,7 +2161,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_formation~2"></span>
+              <span class="anchor" id="variable-ieda_formation"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2139,7 +2178,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_free_atom~2"></span>
+              <span class="anchor" id="variable-ieda_free_atom"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2156,7 +2195,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_pair~2"></span>
+              <span class="anchor" id="variable-ieda_pair"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2173,7 +2212,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~5"></span>
+              <span class="anchor" id="variable-ir_intensities~7"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2190,7 +2229,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~3"></span>
+              <span class="anchor" id="variable-lumo~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2207,7 +2246,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~14"></span>
+              <span class="anchor" id="variable-max_level~15"></span>
               integer,
             </td>
               <td>public</td>
@@ -2224,7 +2263,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~3"></span>
+              <span class="anchor" id="variable-n_pie_terms~9"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2262,7 +2301,7 @@ the decomposition is what the method was run for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~3"></span>
+              <span class="anchor" id="variable-pie_atom_sets~8"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2279,7 +2318,7 @@ the decomposition is what the method was run for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~3"></span>
+              <span class="anchor" id="variable-pie_coefficients~5"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2296,7 +2335,7 @@ the decomposition is what the method was run for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_energies"></span>
+              <span class="anchor" id="variable-pie_energies~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2313,7 +2352,7 @@ the decomposition is what the method was run for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers~7"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2413,6 +2452,69 @@ the decomposition is what the method was run for.</p>
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-unconverged_deltas"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>unconverged_deltas</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>What each failed fragment contributes to the total, in the same
+units and sign as <code>delta_energies</code>. The list of failures says which
+fragments are suspect; this says whether it matters. Fragments that
+screening or cancellation has already made negligible are the
+common case, and a run that fails on a hundred of those is fine.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-unconverged_ids"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>unconverged_ids</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Fragment indices whose SCF did not converge, in order. Written out
+so a follow-up run can be built from them without reading back a
+per-fragment table that may have millions of rows &ndash; and because a
+log line saying &ldquo;and 4382 more&rdquo; is not something a script can act
+on. Empty when everything converged, unallocated when the method
+does not report convergence at all, which is not the same thing.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-unconverged_monomers"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>unconverged_monomers</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>(n_unconverged, max_level) the monomers each of those fragments is
+built from, zero-padded, exactly as <code>polymers</code> holds them. A dimer
+that failed is only re-runnable if you know which two monomers it
+was, and at that point the follow-up job writes itself.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -2424,12 +2526,12 @@ the decomposition is what the method was run for.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/json_output_data_t.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
+  <strong><a href='../type/json_output_data_t.html#boundprocedure-destroy~19'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/json_output_data_t.html#boundprocedure-reset~7'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_reset.html'>json_output_data_reset</a></td>
+  <strong><a href='../type/json_output_data_t.html#boundprocedure-reset'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_reset.html'>json_output_data_reset</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2463,7 +2565,7 @@ the decomposition is what the method was run for.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~78"></span>
+              <span class="anchor" id="variable-this~81"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2503,7 +2605,7 @@ the decomposition is what the method was run for.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~79"></span>
+              <span class="anchor" id="variable-this~82"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2546,7 +2648,7 @@ the decomposition is what the method was run for.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-23 14:49 +0000             </p>
+ on 2026-08-23 14:59 +0000             </p>
           </div>
         </div>
         <br>
