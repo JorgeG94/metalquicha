@@ -663,6 +663,14 @@ if(MQC_ENABLE_HDF5)
   add_executable(check_hdf5 ${PROJECT_SOURCE_DIR}/validation/check_hdf5.f90)
   target_include_directories(check_hdf5 PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5 PRIVATE ${main_lib})
+  # Writes the file that validation/check_amplitude_layout.py reads. Split in
+  # two because the check cannot be made from Fortran: a block stored under the
+  # wrong declared shape round trips through our own bindings exactly.
+  add_executable(check_amplitude_layout
+                 ${PROJECT_SOURCE_DIR}/validation/check_amplitude_layout.f90)
+  target_include_directories(check_amplitude_layout
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_amplitude_layout PRIVATE ${main_lib})
 
 endif()
 
@@ -939,6 +947,7 @@ foreach(
         bench_mp2_gradient
         bench_ri_mp2_gradient
         bench_scf_gradient
+        check_amplitude_layout
         check_ao
         check_ao_deriv2
         check_bcast
