@@ -1,6 +1,7 @@
 !! Version information for metalquicha
 module mqc_version
    use pic_logger, only: logger => global_logger
+   use mqc_build_info, only: build_info_line
    implicit none
    private
 
@@ -40,6 +41,10 @@ contains
                        " tblite="//available(method_backend_built(METHOD_TYPE_GFN2))// &
                        " cuest="//available(cuest_backend_available())// &
                        " dlfind="//available(dlfind_available()))
+      ! How it was built, on the line after what it can do. A timing is only
+      ! reproducible alongside this: the BLAS choice alone moves a density
+      ! functional run by a factor of five and cannot be seen from the outside.
+      call logger%info(build_info_line())
    end subroutine print_version
 
    pure function available(is_available) result(text)
