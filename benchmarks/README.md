@@ -43,6 +43,15 @@ exchange-correlation quadrature was serial for the whole life of the code, and
 this ladder is the report that would have shown it. Read the speedup column: a
 run that stops improving has a serial stage in it somewhere.
 
+**The correlated methods, each at its own size.** MP2 goes as the fifth power of
+the basis and coupled cluster as the sixth or seventh, so no single system
+serves them: one where MP2 is worth timing makes CCSD(T) take an hour, and one
+where CCSD(T) is quick leaves MP2 too small to measure. So MP2 and RI-MP2 run on
+ten waters in cc-pVDZ and the coupled-cluster pair on five in 6-31G, each placed
+where its own work rather than the reference SCF is what moves. RI-MP2 coming in
+below conventional MP2 is the expected result and worth a glance -- if it ever
+does not, density fitting has stopped paying for itself.
+
 **A fragmented case, serial and under MPI.** Fragment work pins itself to one
 OpenMP thread and parallelises with MPI instead, so a change that helps a single
 molecule can hurt the fragment path. One did: threaded BLAS is five times faster
@@ -61,6 +70,21 @@ Against the measured spread, never a fixed percentage. A case that repeats to
 0.3 per cent and moves by 3 has regressed; one that repeats to 16 per cent and
 moves by 3 has not moved at all. One threshold for both is how a suite becomes
 noise that people stop reading.
+
+The band is *twice* the measured spread and never under five per cent, because
+the spread understates the noise it stands in for: repeats inside one invocation
+run back to back on a warm cache at a settled clock, while a baseline recorded
+days earlier saw none of that. Measured here, cases repeating to under one per
+cent within a run still drift about three between runs. A tighter band reports
+the machine as a regression, which is how a suite teaches people to ignore it.
+Real regressions are not marginal -- everything this suite was built from was
+tens of per cent or a factor.
+
+Stages are compared as well as totals. A correlated method's own work is a
+minority of a run the reference SCF dominates, so a regression in the integral
+transform or the coupled-cluster iterations moves its stage plainly and the
+total barely at all. Stages under a second are skipped: they are noise wearing
+the shape of a measurement.
 
 So every case is run more than once and the spread is stored with the number.
 Where only one run was made, the suite says `1 run, no spread` rather than
