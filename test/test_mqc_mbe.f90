@@ -23,6 +23,7 @@ contains
                   new_unittest("mbe_random_order", test_mbe_random_order), &
                   new_unittest("unconverged_carry_their_monomers", test_unconverged_carry_their_monomers), &
                   new_unittest("unconverged_ignores_silent_methods", test_unconverged_ignores_silent_methods), &
+                  new_unittest("converged_run_says_so", test_converged_run_says_so), &
                   new_unittest("failures_name_their_culprit", test_failures_name_their_culprit) &
                   ]
    end subroutine collect_mqc_mbe_tests
@@ -353,9 +354,12 @@ contains
       !! `SCF_UNKNOWN` is what a method that does not report leaves on every
       !! fragment. Listing those would fill the follow-up job with the entire
       !! calculation, in exactly the runs this exists to help with, so only
-      !! genuine failures are collected. An empty list is still returned rather
-      !! than nothing, because "nothing failed" and "nobody said" are different
-      !! claims and the caller distinguishes them by allocation.
+      !! genuine failures are collected, and nothing is allocated at all --
+      !! because "nothing failed" and "nobody said" are different claims and
+      !! the caller distinguishes them by allocation. An empty list is what a
+      !! reporting method returns when everything converged, so returning one
+      !! here too would make the two indistinguishable and the JSON section
+      !! would assert success on a method that never said anything.
       type(error_type), allocatable, intent(out) :: error
 
       integer :: status(3), polymers(3, 1)
@@ -366,10 +370,38 @@ contains
       status = SCF_UNKNOWN
 
       call collect_unconverged(status, polymers, 3_int64, ids, monomers)
-      call check(error, allocated(ids), "a list should still come back")
+      call check(error, .not. allocated(ids), &
+                 "a silent method has not failed everywhere, and has not said so either")
       if (allocated(error)) return
-      call check(error, size(ids), 0, "a silent method has not failed everywhere")
+      call check(error, .not. allocated(monomers), &
+                 "the composition list goes the same way as the identifiers")
    end subroutine test_unconverged_ignores_silent_methods
+
+   subroutine test_converged_run_says_so(error)
+      !! A method that reported and lost nothing returns an empty list, not nothing
+      !!
+      !! The other half of the silent-method case, and the reason that one
+      !! cannot simply return an empty list too. Here the list is allocated and
+      !! zero-length, which the writer turns into `"count": 0` -- an assertion
+      !! that every fragment converged. Absence would say only that nobody
+      !! asked. Both are pinned because a change to either collapses the pair,
+      !! and the collapse is invisible until somebody reads the JSON.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: status(3), polymers(3, 1)
+      integer(int64), allocatable :: ids(:)
+      integer, allocatable :: monomers(:, :)
+
+      polymers(:, 1) = [1, 2, 3]
+      status = SCF_CONVERGED
+
+      call collect_unconverged(status, polymers, 3_int64, ids, monomers)
+      call check(error, allocated(ids), "a reporting method returns a list")
+      if (allocated(error)) return
+      call check(error, size(ids), 0, "and nothing is on it")
+      if (allocated(error)) return
+      call check(error, allocated(monomers), "the composition list comes back too")
+   end subroutine test_converged_run_says_so
 
    subroutine test_failures_name_their_culprit(error)
       !! The monomer that keeps turning up, and what the failures cost

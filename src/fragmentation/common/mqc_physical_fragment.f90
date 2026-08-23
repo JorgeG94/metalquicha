@@ -891,7 +891,6 @@ contains
       !! compare every pair, which is slow and still right.
       use pic_sorting, only: sort_index
       use pic_types, only: int_index
-      use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
 
       type(system_geometry_t), intent(in) :: sys_geom
@@ -931,10 +930,10 @@ contains
                 > MIN_SEPARATION) exit
             separation = norm2(sys_geom%coordinates(:, b) - sys_geom%coordinates(:, a))
             if (separation < MIN_SEPARATION) then
-               call logger%error("Two atoms occupy the same position.")
-               call logger%error("  atoms "//to_char(min(a, b))//" and "// &
-                                 to_char(max(a, b))//", separated by "// &
-                                 to_char(separation)//" Bohr")
+               ! Set and not logged. This runs on every rank, while the
+               ! caller prints the message on rank zero alone -- logging here
+               ! would put the same two lines in front of that one once per
+               ! rank, which on any real job buries the readable copy.
                call error%set(ERROR_VALIDATION, "atoms "//to_char(min(a, b))//" and "// &
                               to_char(max(a, b))//" are "//to_char(separation)// &
                               " Bohr apart, which is closer than any two nuclei can "// &

@@ -436,6 +436,16 @@ contains
       !! putting those here would make the list useless in exactly the runs it
       !! exists for.
       !!
+      !! **Three outcomes, and the caller tells them apart by allocation.** A
+      !! method that reported returns a list, empty when nothing failed -- a
+      !! `count` of zero is the statement that everything converged. A method
+      !! that never reported returns *nothing allocated*, and the writer omits
+      !! the section entirely, so a consumer reads its absence as "no
+      !! information" rather than as success. Returning an empty list for both
+      !! would collapse the two claims into one, which is the distinction
+      !! `report_unconverged` already makes in the log and the JSON section is
+      !! documented to make in the output.
+      !!
       !! Not truncated. Ten thousand unconverged fragments is a large list and
       !! also the situation this is for; silently keeping the first hundred
       !! would produce a follow-up job that looked complete and was not.
@@ -446,6 +456,10 @@ contains
       integer, allocatable, intent(out) :: monomers(:, :)
 
       integer(int64) :: i, n_bad, k
+
+      ! Nobody reported: leave both unallocated and say nothing, rather than
+      ! claim that none of a million silent fragments failed.
+      if (all(scf_status(1:fragment_count) == SCF_UNKNOWN)) return
 
       n_bad = count(scf_status(1:fragment_count) == SCF_NOT_CONVERGED, kind=int64)
       allocate (ids(n_bad), monomers(n_bad, size(polymers, 2)))
@@ -1088,10 +1102,15 @@ contains
                                   polymers(1:fragment_count, 1:max_level), &
                                   fragment_count, json_data%unconverged_ids, &
                                   json_data%unconverged_monomers)
-         call score_unconverged(json_data%unconverged_ids, &
-                                json_data%unconverged_monomers, delta_energies, &
-                                json_data%unconverged_deltas, &
-                                json_data%culprit_monomers, json_data%culprit_counts)
+         ! Unallocated means the method never reported, and there is nothing
+         ! to score. The dummies are not allocatable, so passing them through
+         ! anyway is undefined rather than merely empty.
+         if (allocated(json_data%unconverged_ids)) then
+            call score_unconverged(json_data%unconverged_ids, &
+                                   json_data%unconverged_monomers, delta_energies, &
+                                   json_data%unconverged_deltas, &
+                                   json_data%culprit_monomers, json_data%culprit_counts)
+         end if
 
          call report_unconverged(json_data%fragment_scf_status, fragment_count)
 
