@@ -59,18 +59,32 @@ BUILDINFO = re.compile(r"^build:\s*(.*)$", re.M)
 # One per rung, plus the reference. Hartree-Fock is not decoration: it shares
 # the Coulomb and exchange build with the hybrids and has no quadrature at all,
 # so it separates "the functional is expensive" from "this molecule is big".
+# (name, method, functional, geometry, basis, family)
+#
+# Geometry and basis are per case rather than global because the methods do not
+# share a cost scale. Second-order perturbation theory goes as the fifth power
+# of the basis and coupled cluster as the sixth or seventh, so a system where
+# MP2 is worth timing makes CCSD(T) take an hour, and one where CCSD(T) is
+# quick leaves MP2 too small to measure. Each is placed where it lands in a few
+# seconds and where its own work, not the reference SCF, is what moves.
 ENERGY_CASES = [
-    ("hf", "hf", None, "reference, no XC"),
-    ("svwn", "dft", "svwn", "LDA"),
-    ("pbe", "dft", "pbe", "GGA"),
-    ("tpss", "dft", "tpss", "meta-GGA"),
-    ("b3lyp", "dft", "b3lyp", "global hybrid"),
-    ("camb3lyp", "dft", "camb3lyp", "range-separated hybrid"),
+    ("hf", "hf", None, "w10", "6-31g", "reference, no XC"),
+    ("svwn", "dft", "svwn", "w10", "6-31g", "LDA"),
+    ("pbe", "dft", "pbe", "w10", "6-31g", "GGA"),
+    ("tpss", "dft", "tpss", "w10", "6-31g", "meta-GGA"),
+    ("b3lyp", "dft", "b3lyp", "w10", "6-31g", "global hybrid"),
+    ("camb3lyp", "dft", "camb3lyp", "w10", "6-31g", "range-separated hybrid"),
+]
+CORRELATED_CASES = [
+    ("mp2", "mp2", None, "w10", "cc-pvdz", "conventional MP2"),
+    ("ri-mp2", "ri-mp2", None, "w10", "cc-pvdz", "density-fitted MP2"),
+    ("ccsd", "ccsd", None, "w5", "6-31g", "coupled cluster, singles and doubles"),
+    ("ccsd(t)", "ccsd(t)", None, "w5", "6-31g", "and perturbative triples"),
 ]
 GRADIENT_CASES = [
-    ("hf", "hf", None, "reference, no XC"),
-    ("pbe", "dft", "pbe", "GGA"),
-    ("tpss", "dft", "tpss", "meta-GGA"),
+    ("hf", "hf", None, "w10", "6-31g", "reference, no XC"),
+    ("pbe", "dft", "pbe", "w10", "6-31g", "GGA"),
+    ("tpss", "dft", "tpss", "w10", "6-31g", "meta-GGA"),
 ]
 
 
@@ -199,8 +213,8 @@ def main():
 
     say("\nenergies, w10, one per rung")
     hf_time = None
-    for stem, method, func, family in ENERGY_CASES:
-        d = deck(work / f"e_{stem}.json", work / "w10.xyz", method, func, "Energy", args.basis)
+    for stem, method, func, geom, basis, family in ENERGY_CASES:
+        d = deck(work / f"e_{stem}.json", work / f"{geom}.xyz", method, func, "Energy", basis)
         out = repeat(exe, d, args.threads, args.repeats)
         note = f"[{family}]"
         if stem == "hf" and "median" in out:
@@ -209,9 +223,16 @@ def main():
             note += f"  {out['median']/hf_time:.1f}x HF"
         record(f"energy/{stem}", out, note)
 
+    say("\ncorrelated methods -- sized per method, see the table above")
+    for stem, method, func, geom, basis, family in CORRELATED_CASES:
+        safe = stem.replace("(", "_").replace(")", "")
+        d = deck(work / f"c_{safe}.json", work / f"{geom}.xyz", method, func, "Energy", basis)
+        record(f"correlated/{stem}", repeat(exe, d, args.threads, args.repeats),
+               f"[{family}, {geom}/{basis}]")
+
     say("\ngradients, w10")
-    for stem, method, func, family in GRADIENT_CASES:
-        d = deck(work / f"g_{stem}.json", work / "w10.xyz", method, func, "Gradient", args.basis)
+    for stem, method, func, geom, basis, family in GRADIENT_CASES:
+        d = deck(work / f"g_{stem}.json", work / f"{geom}.xyz", method, func, "Gradient", basis)
         record(f"gradient/{stem}", repeat(exe, d, args.threads, max(2, args.repeats - 1)), f"[{family}]")
 
     if not args.quick:
@@ -247,6 +268,23 @@ def main():
         shutil.rmtree(work, ignore_errors=True)
 
 
+def band_for(outcome, old):
+    """The width inside which nothing is claimed.
+
+    Twice the measured spread, and never under five per cent, because the
+    spread understates the noise it is standing in for. Repeats inside one
+    invocation run back to back on a warm cache at a settled clock; a baseline
+    recorded minutes or days earlier saw none of those conditions. Measured
+    here, cases that repeat to under one per cent within a run still drift
+    around three between runs -- enough to report a regression that is nothing
+    but the machine, which is how a suite teaches people to ignore it.
+
+    Real regressions are not marginal. Everything this suite was built from was
+    tens of per cent or a factor.
+    """
+    return max(5.0, 2.0 * (outcome.get("spread_pct", 0.0) + old.get("spread_pct", 0.0)))
+
+
 def compare(now, before):
     """Judge against the measured spread, never a fixed percentage.
 
@@ -269,7 +307,7 @@ def compare(now, before):
         change = (outcome["median"] - old["median"]) / old["median"] * 100
         # Two runs, two spreads: the noise on a difference is the sum, and
         # doubling that is the band inside which nothing is claimed.
-        band = max(2.0, outcome["spread_pct"] + old["spread_pct"])
+        band = band_for(outcome, old)
         if outcome.get("n_runs", 1) < 2 or old.get("n_runs", 1) < 2:
             # No spread was measured on one side, so there is nothing to judge
             # against. Ten per cent is a guess, and saying so beats reporting a
@@ -279,6 +317,21 @@ def compare(now, before):
             continue
         verdicts.append((name, old["median"], outcome["median"], change,
                          "SLOWER" if change > 0 else "faster"))
+
+    for name, outcome in now["cases"].items():
+        old = before.get("cases", {}).get(name)
+        if not old:
+            continue
+        for stage, seconds in outcome.get("stages", {}).items():
+            was = old.get("stages", {}).get(stage)
+            # Stages under a second are noise dressed as a measurement.
+            if not was or was < 1.0:
+                continue
+            change = (seconds - was) / was * 100
+            if abs(change) <= max(10.0, band_for(outcome, old)):
+                continue
+            verdicts.append((f"{name} :: {stage}", was, seconds, change,
+                             "SLOWER" if change > 0 else "faster"))
     if not verdicts:
         print("  nothing outside the measured spread")
     for name, was, now_s, change, word in sorted(verdicts, key=lambda v: -abs(v[3])):
