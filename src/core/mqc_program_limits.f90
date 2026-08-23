@@ -55,6 +55,73 @@ module mqc_program_limits
    integer, parameter, public :: GROUP_RESULT_BATCH_SIZE = 256
 
    !---------------------------------------------------------------------------
+   ! In-Core Integral Budgets
+   !---------------------------------------------------------------------------
+
+   !> How much memory a rank will spend on stored two-electron integrals.
+   !>
+   !> Here rather than beside the CPU backend that reads them because they are
+   !> what this module is for, and because that backend is not always compiled:
+   !> a number describing a policy should not disappear with whichever code
+   !> happens to enforce it today.
+
+   real(dp), parameter, public :: ERI_CORE_BUDGET_CAP = 2.0e9_dp
+      !! Ceiling on what one rank may spend on stored two-electron integrals.
+      !!
+      !! The tensor is the full n^4, not the eightfold-unique set, so this is
+      !! reached at 128 functions. Packing it would push that to 215, which is
+      !! worth doing when something needs it -- `eris_packed` already exists for
+      !! the correlated methods -- but the contraction in `build_fock` addresses
+      !! the tensor as four indices and would have to be rewritten with it.
+
+   real(dp), parameter, public :: ERI_CORE_BUDGET_SHARE = 0.25_dp
+      !! Fraction of *currently available* memory a rank will claim.
+      !!
+      !! This used to be a flat two gigabytes, on the reasoning that a
+      !! fragmented run puts one MPI rank per fragment on a node and sizing
+      !! from total memory would have every rank conclude it could have all of
+      !! it. That is right for a cluster node and wrong for the machine this
+      !! project also aims at: four ranks on a sixteen-gigabyte laptop, each
+      !! helping itself to two gigabytes of integrals, is most of the machine
+      !! before anything else is counted -- and the laptop is running a browser.
+      !!
+      !! Reading what is *available* rather than what is installed handles the
+      !! several-ranks-per-node case without needing to know how many there
+      !! are, which is not discoverable here: there is no node-local
+      !! communicator to ask. Ranks that decide earlier have already allocated,
+      !! so the ones deciding later see less and claim less. That degrades
+      !! rather than resolving -- ranks deciding at the same instant see the
+      !! same number -- which is why the share is a quarter and not a half.
+      !!
+      !! The asymmetry is what sets the direction. Claiming too much is fatal;
+      !! claiming too little falls back to a direct build, which is slower and
+      !! correct. So this errs low on purpose.
+
+   real(dp), parameter, public :: ERI_CORE_BUDGET_BLIND = 5.0e8_dp
+      !! What to allow when available memory cannot be read at all.
+      !!
+      !! /proc/meminfo is Linux; macOS and anything else land here. Half a
+      !! gigabyte is 94 functions, which keeps the small fragments a
+      !! fragmented run is made of while refusing to guess on a machine this
+      !! cannot measure.
+
+   real(dp), parameter, public :: SAPT_CORE_BUDGET_SHARE = 0.8_dp
+      !! Fraction of available memory a SAPT run may size itself against.
+      !!
+      !! Deliberately far above `ERI_CORE_BUDGET_SHARE`, and for a reason that
+      !! is about consequences rather than appetite. An SCF that decides the
+      !! integrals do not fit falls back to a direct build and returns the same
+      !! energy more slowly, so claiming too little there costs time. SAPT has
+      !! no direct path: every term is a contraction over the stored dimer
+      !! tensor, so refusing is refusing the calculation. A quarter-of-memory
+      !! rule would turn runs that complete today into errors.
+      !!
+      !! So this guard exists only to convert the failure that would happen
+      !! anyway -- an OOM kill, or an hour of swapping -- into a message that
+      !! names the basis as the thing to change. It should refuse only what
+      !! genuinely cannot run.
+
+   !---------------------------------------------------------------------------
    ! Numerical Differentiation Defaults
    !---------------------------------------------------------------------------
 

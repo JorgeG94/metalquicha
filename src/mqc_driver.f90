@@ -1022,6 +1022,7 @@ contains
       real(dp), allocatable :: xyz_a(:, :), xyz_b(:, :)
       character(len=8), allocatable :: sym_a(:), sym_b(:)
       integer :: na, nb, i, a
+      integer :: charge_a, charge_b, mult_a, mult_b
 
       if (rank /= 0) return
 
@@ -1030,6 +1031,38 @@ contains
                      "fragments; this one has "//to_char(sys_geom%n_monomers)// &
                      ". SAPT is a two-body theory, so a cluster is one "// &
                      "calculation per pair.")
+         return
+      end if
+
+      ! The monomers' own charges and multiplicities, which decide how many
+      ! electrons each SCF is run with. Absent them a charged monomer is solved
+      ! as the neutral species and the interaction energy is quietly wrong, so
+      ! they are read here and passed on rather than defaulted downstream. The
+      ! arrays are optional in `system_geometry_t`; a deck that omits them means
+      ! neutral singlets.
+      charge_a = 0
+      charge_b = 0
+      mult_a = 1
+      mult_b = 1
+      if (allocated(sys_geom%fragment_charges)) then
+         charge_a = sys_geom%fragment_charges(1)
+         charge_b = sys_geom%fragment_charges(2)
+      end if
+      if (allocated(sys_geom%fragment_multiplicities)) then
+         mult_a = sys_geom%fragment_multiplicities(1)
+         mult_b = sys_geom%fragment_multiplicities(2)
+      end if
+
+      ! Both monomer references are RHF. An open-shell monomer is refused here
+      ! rather than at the electron-count parity check further in, which only
+      ! catches the odd-electron half of the problem: a triplet has an even
+      ! count and would otherwise be solved as the singlet.
+      if (mult_a /= 1 .or. mult_b /= 1) then
+         call refuse(result_out, "SAPT: both monomers must be closed shell; "// &
+                     "this deck asks for multiplicities "//to_char(mult_a)// &
+                     " and "//to_char(mult_b)//". The monomer references here "// &
+                     "are RHF, so an open-shell monomer has no wavefunction to "// &
+                     "expand about.")
          return
       end if
 
@@ -1054,11 +1087,13 @@ contains
       if (is_sapt2) then
          allocate (terms(N_SAPT2_TERMS))
          call run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
-                                config%method_config%basis_set, terms, err)
+                                config%method_config%basis_set, &
+                                charge_a, charge_b, terms, err)
       else
          allocate (terms(N_SAPT_TERMS))
          call run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
-                                config%method_config%basis_set, terms, err)
+                                config%method_config%basis_set, &
+                                charge_a, charge_b, terms, err)
       end if
       if (err%has_error()) then
          call refuse(result_out, "SAPT: "//err%get_message())

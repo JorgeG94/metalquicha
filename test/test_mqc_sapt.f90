@@ -39,6 +39,7 @@ contains
 
       testsuite = [ &
                   new_unittest("sapt_dimer_basis_and_ghosts", test_ghosts), &
+                  new_unittest("sapt_monomer_charges", test_charges), &
                   new_unittest("sapt_monomer_ao_ordering", test_ordering), &
                   new_unittest("sapt_bsse_is_negative", test_bsse), &
                   new_unittest("sapt_elst10", test_elst10), &
@@ -74,6 +75,51 @@ contains
       b(1, :) = b(1, :) + 3.0_dp*ANG
       call build_sapt_molecules(z, sym, a, z, sym, b, "6-31g", mols, err)
    end subroutine water_dimer
+
+   subroutine test_charges(error)
+      !! A monomer's charge reaches its electron count
+      !!
+      !! The number the SCF is run with is the only place a stated charge can
+      !! show up, and it is a long way downstream of the deck. Left unpassed --
+      !! which is what happened until the driver was made to forward
+      !! `fragment_charges` -- an ion is solved as the neutral species and the
+      !! interaction energy is wrong by an amount nothing else flags.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(sapt_molecules_t) :: mols
+      type(error_t) :: err
+      integer :: z(3)
+      character(len=2) :: sym(3)
+      real(dp) :: a(3, 3), b(3, 3)
+
+      z = [8, 1, 1]
+      sym = ["O ", "H ", "H "]
+      a = reshape([0.0_dp, 0.0_dp, 0.10077199_dp, &
+                   0.0_dp, 0.77250895_dp, -0.46780200_dp, &
+                   0.0_dp, -0.77250895_dp, -0.46780200_dp], [3, 3])*ANG
+      b = a
+      b(1, :) = b(1, :) + 3.0_dp*ANG
+
+      ! Unstated, both monomers are neutral: ten electrons each.
+      call build_sapt_molecules(z, sym, a, z, sym, b, "6-31g", mols, err)
+      call check(error,.not. err%has_error(), "neutral dimer built")
+      if (allocated(error)) return
+      call check(error, mols%n_elec_a == 10 .and. mols%n_elec_b == 10, &
+                 "an unstated charge means a neutral monomer")
+      call mols%destroy()
+      if (allocated(error)) return
+
+      ! A charge subtracts electrons, and the two monomers are independent --
+      ! passing both is not the same as passing the dimer's total, which here
+      ! is zero and would look identical to the neutral case.
+      call build_sapt_molecules(z, sym, a, z, sym, b, "6-31g", mols, err, &
+                                charge_a=1, charge_b=-1)
+      call check(error,.not. err%has_error(), "charged dimer built")
+      if (allocated(error)) return
+      call check(error, mols%n_elec_a == 9, "+1 on A removes an electron")
+      call check(error, mols%n_elec_b == 11, "-1 on B adds one")
+      call mols%destroy()
+   end subroutine test_charges
 
    subroutine test_ghosts(error)
       !! Both monomers span the dimer basis, and only their own atoms are charged

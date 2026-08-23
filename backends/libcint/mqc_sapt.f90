@@ -299,8 +299,10 @@ contains
       nocc_a = mols%n_elec_a/2
       nocc_b = mols%n_elec_b/2
       if (2*nocc_a /= mols%n_elec_a .or. 2*nocc_b /= mols%n_elec_b) then
-         call error%set(ERROR_VALIDATION, "sapt: SAPT0 here is closed shell, and "// &
-                        "a monomer has an odd number of electrons")
+         call error%set(ERROR_VALIDATION, "sapt: the monomer references here are "// &
+                        "RHF, and a monomer has an odd number of electrons. If "// &
+                        "the monomer is an ion, give it its charge -- an "// &
+                        "unstated one is counted as neutral.")
          return
       end if
 

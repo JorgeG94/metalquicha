@@ -58,6 +58,24 @@ pairs contains it.
 ``validation/check_sapt.f90`` walks the fifteen pairs of a six-water prism if you
 want to see what that looks like.
 
+Charged monomers, closed shells
+-------------------------------
+
+A monomer's charge is its ``fragment_charges`` entry, and it is used: the SCF for
+that monomer is run with the electrons the charge leaves it, not with its nuclear
+charge. Give an ion its charge -- an unstated one is a neutral molecule, which is
+a different calculation that will not announce itself.
+
+Both monomer references are RHF, so both monomers must be closed shell. A deck
+asking for a multiplicity other than ``1`` on either fragment is refused before
+any integral is computed, and an odd electron count -- usually a charge that was
+meant to be there and was not -- is refused when the monomer SCFs are set up.
+
+The dimer's two-electron integrals are stored whole, so the basis is bounded by
+memory rather than by time: every SAPT term contracts over that tensor and there
+is no direct-build fallback to drop to. A deck whose dimer basis cannot fit is
+refused with the size it asked for, rather than being left to the kernel.
+
 Only rank zero does the work. The pairs of a cluster are the obvious thing to
 distribute; a single pair is not.
 
