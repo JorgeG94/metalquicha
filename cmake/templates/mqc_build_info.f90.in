@@ -9,6 +9,13 @@ module mqc_build_info
    !!
    !! Filled by `configure_file`, so these are the values that were actually
    !! used rather than the ones a build was asked for.
+   !!
+   !! **There is a second copy of this module at `src/core/mqc_build_info.f90`**,
+   !! carrying "unrecorded" for everything, and fpm compiles that one because it
+   !! has no configure step to fill anything in and finds sources by walking
+   !! `src/`. CMake never compiles it: `src/core/CMakeLists.txt` names its
+   !! sources by hand and leaves it out. Change the interface here and change it
+   !! there, or the fpm build stops compiling.
    implicit none
    private
 
