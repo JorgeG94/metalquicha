@@ -1268,6 +1268,11 @@ contains
       ! the multipoles and the response come off that density -- so it is not the
       ! shared 1e-6 default's to loosen. A deck that asks outright still wins: a
       ! user who set 1e-6 and watched this iterate past 37 steps was being ignored.
+      !
+      ! `keywords.efp` goes down by value instead, with no flags. Those four have a
+      ! single default each -- `mqc_calculation_defaults` holds it and the solver
+      ! reads the same constant -- so passing what a silent deck carries is passing
+      ! the solver its own number, and there is nothing for a flag to distinguish.
       if (config%method_config%scf%energy_convergence_set) then
          named_energy_tol = config%method_config%scf%energy_convergence
       end if
@@ -1281,14 +1286,26 @@ contains
                                  aux_basis=trim(config%method_config%scf%aux_basis_set), &
                                  guess=trim(config%method_config%scf%guess), &
                                  energy_tol=named_energy_tol, &
-                                 density_tol=named_density_tol)
+                                 density_tol=named_density_tol, &
+                                 vdwscl=config%method_config%efp%vdw_scale, &
+                                 dynamic_tol=config%method_config%efp%dynamic_tolerance, &
+                                 dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
+                                 response=config%method_config%efp%response, &
+                                 allow_crap_response=config%method_config%efp%allow_crap_response, &
+                                 response_batch=config%method_config%efp%response_batch)
       else
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &
                                  guess=trim(config%method_config%scf%guess), &
                                  energy_tol=named_energy_tol, &
-                                 density_tol=named_density_tol)
+                                 density_tol=named_density_tol, &
+                                 vdwscl=config%method_config%efp%vdw_scale, &
+                                 dynamic_tol=config%method_config%efp%dynamic_tolerance, &
+                                 dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
+                                 response=config%method_config%efp%response, &
+                                 allow_crap_response=config%method_config%efp%allow_crap_response, &
+                                 response_batch=config%method_config%efp%response_batch)
       end if
       if (err%has_error()) then
          call refuse(result_out, "MAKEFP failed: "//err%get_message())
