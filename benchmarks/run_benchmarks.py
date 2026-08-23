@@ -87,16 +87,39 @@ GRADIENT_CASES = [
     ("tpss", "dft", "tpss", "w10", "6-31g", "meta-GGA"),
 ]
 
+# The MP2 gradient refuses a frozen core -- the relaxed density would gain
+# blocks that are not built -- so the deck has to turn it off, which is what the
+# validation cases do and what the error message asks for.
+CORRELATED_GRADIENTS = [
+    ("mp2", "mp2", "w5", "6-31g", "conventional MP2 gradient"),
+    ("ri-mp2", "ri-mp2", "w5", "6-31g", "density-fitted MP2 gradient"),
+]
 
-def deck(path, geometry, method, functional, driver, basis, fragments=None, level=None):
+# A cation of the same cluster rather than a small radical: the open-shell path
+# costs about twice the closed-shell one and that ratio is only visible at a
+# size where the closed-shell number was worth measuring.
+OPEN_SHELL_CASES = [
+    ("uhf", "hf", None, "w5", "6-31g", "unrestricted HF"),
+    ("upbe", "dft", "pbe", "w5", "6-31g", "unrestricted GGA"),
+]
+
+
+def deck(path, geometry, method, functional, driver, basis, fragments=None, level=None,
+         charge=0, multiplicity=1, extra=None):
     model = {"method": method, "basis": basis}
     if functional:
         model["functional"] = functional
-    molecule = {"xyz": str(geometry), "molecular_charge": 0, "molecular_multiplicity": 1}
+    molecule = {"xyz": str(geometry), "molecular_charge": charge,
+                "molecular_multiplicity": multiplicity}
     keywords = {"scf": {"maxiter": 100, "tolerance": 1e-8}, "dft": {"grid_level": 3}}
+    if extra:
+        for key, block in extra.items():
+            keywords.setdefault(key, {}).update(block)
     if fragments:
         molecule["fragments"] = fragments
         keywords["fragmentation"] = {"method": "mbe", "level": level}
+    if multiplicity > 1:
+        keywords["scf"]["unrestricted"] = True
     path.write_text(json.dumps({
         "schema": {"name": "mqc-benchmark", "version": "1.0"},
         "molecules": [molecule],
@@ -230,10 +253,23 @@ def main():
         record(f"correlated/{stem}", repeat(exe, d, args.threads, args.repeats),
                f"[{family}, {geom}/{basis}]")
 
+    say("\nopen shell, w5 cation -- doublet, so the unrestricted path")
+    for stem, method, func, geom, basis, family in OPEN_SHELL_CASES:
+        d = deck(work / f"o_{stem}.json", work / f"{geom}.xyz", method, func, "Energy", basis,
+                 charge=1, multiplicity=2)
+        record(f"openshell/{stem}", repeat(exe, d, args.threads, args.repeats), f"[{family}]")
+
     say("\ngradients, w10")
     for stem, method, func, geom, basis, family in GRADIENT_CASES:
         d = deck(work / f"g_{stem}.json", work / f"{geom}.xyz", method, func, "Gradient", basis)
         record(f"gradient/{stem}", repeat(exe, d, args.threads, max(2, args.repeats - 1)), f"[{family}]")
+
+    say("\ncorrelated gradients, w5")
+    for stem, method, geom, basis, family in CORRELATED_GRADIENTS:
+        d = deck(work / f"cg_{stem}.json", work / f"{geom}.xyz", method, None, "Gradient", basis,
+                 extra={"correlation": {"freeze_core": False}})
+        record(f"correlated-gradient/{stem}",
+               repeat(exe, d, args.threads, max(2, args.repeats - 1)), f"[{family}]")
 
     if not args.quick:
         say("\nthread ladder, PBE energy -- a stage flat in the thread count is serial")
@@ -257,6 +293,8 @@ def main():
         else:
             print("  fragmented/mpi4              skipped, no mpirun")
 
+    advise(results)
+
     if baseline_path.exists():
         compare(results, json.loads(baseline_path.read_text()))
     else:
@@ -266,6 +304,86 @@ def main():
         print(f"\nbaseline written to {baseline_path}")
     if not args.keep:
         shutil.rmtree(work, ignore_errors=True)
+
+
+def advise(results):
+    """Turn the measurements into settings, each citing the number behind it.
+
+    The point of a suite nobody has to interpret. Every line here is derived
+    from a case that ran on this machine minutes ago, and prints the figure it
+    came from, because advice without its measurement is just an assertion that
+    happens to be in a program.
+    """
+    cases = results["cases"]
+    def median(name):
+        got = cases.get(name)
+        return got.get("median") if got and "median" in got else None
+
+    say = lambda *a: print(*a, flush=True)
+    say("\n" + "=" * 78)
+    say("  what to run this build with, on this machine")
+    say("=" * 78)
+    advice = []
+
+    ladder = {int(k.split("/")[1]): v["median"]
+              for k, v in cases.items() if k.startswith("ladder/") and "median" in v}
+    if len(ladder) >= 3:
+        counts = sorted(ladder)
+        best = min(ladder.values())
+        # The knee: the fewest threads that get within five per cent of the
+        # best time seen. Threads past it buy nothing and cost a core somebody
+        # else could have used -- which on a shared machine is the whole point.
+        knee = min(n for n in counts if ladder[n] <= best * 1.05)
+        top = counts[-1]
+        advice.append((f"OMP_NUM_THREADS={knee}",
+                       f"single-molecule work; {ladder[counts[0]]/ladder[knee]:.1f}x over one thread, "
+                       f"and {top} threads gives {ladder[counts[0]]/ladder[top]:.1f}x -- "
+                       f"{'no better' if ladder[top] >= ladder[knee] * 0.95 else 'a little better'}"))
+        efficiency = (ladder[counts[0]] / ladder[knee]) / knee * 100
+        if efficiency < 60:
+            advice.append(("(scaling is soft)",
+                           f"{efficiency:.0f}% parallel efficiency at {knee} threads -- "
+                           "a serial stage is likely; check the ladder above for one that stays flat"))
+
+    serial, mpi = median("fragmented/serial"), median("fragmented/mpi4")
+    if serial and mpi:
+        if mpi > serial:
+            advice.append(("threads, not ranks, at this size",
+                           f"{serial:.0f} s on one rank against {mpi:.0f} s on four; "
+                           "fragment workers pin to one thread each, so ranks only pay off "
+                           "once there are more fragments than cores"))
+        else:
+            advice.append((f"mpirun -np 4",
+                           f"{mpi:.0f} s against {serial:.0f} s threaded"))
+
+    conv, ri = median("correlated/mp2"), median("correlated/ri-mp2")
+    if conv and ri:
+        if ri < conv:
+            advice.append(("method: ri-mp2 over mp2",
+                           f"{ri:.1f} s against {conv:.1f} s, same system"))
+        else:
+            advice.append(("method: mp2 over ri-mp2",
+                           f"{conv:.1f} s against {ri:.1f} s -- density fitting is not paying "
+                           "for itself at this size"))
+
+    hf, pbe = median("energy/hf"), median("energy/pbe")
+    if hf and pbe and pbe / hf > 3.0:
+        advice.append(("(density functional cost is high)",
+                       f"a pure GGA is {pbe/hf:.1f}x Hartree-Fock here; carrying no exact "
+                       "exchange it should cost less, so the quadrature is worth a look"))
+
+    blas = results["info"].get("build", "")
+    if "seq" in blas and serial and mpi and mpi > serial:
+        advice.append(("(sequential BLAS is linked)",
+                       "right for fragment work over MPI, and it leaves single-molecule runs "
+                       "on one core inside every BLAS call -- worth measuring both ways if "
+                       "this machine mostly runs single molecules"))
+
+    if not advice:
+        say("  not enough phases ran to advise; try without --quick")
+    for setting, why in advice:
+        say(f"  {setting}")
+        say(f"      {why}")
 
 
 def band_for(outcome, old):
