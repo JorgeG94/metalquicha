@@ -141,6 +141,9 @@ module mqc_cuest_iface
       integer :: max_iter = 100
       real(dp) :: energy_tol = 1.0e-8_dp
       real(dp) :: density_tol = 1.0e-6_dp
+      real(dp) :: level_shift = 0.0_dp
+         !! Hartree added to the virtual block before each diagonalisation, and
+         !! tapered to zero before the SCF exits. See `scf_config_t`.
       logical :: use_diis = .true.
       integer :: diis_size = 8
 

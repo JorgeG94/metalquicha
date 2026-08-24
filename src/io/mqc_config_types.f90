@@ -348,6 +348,10 @@ module mqc_config_types
          !! doing so unless a deck says otherwise.
       real(dp) :: scf_density_tolerance = DEFAULT_SCF_DENSITY_CONV
       logical :: scf_density_tolerance_set = .false.
+      real(dp) :: scf_level_shift = 0.0_dp
+         !! Hartree added to the virtual orbitals before each diagonalisation.
+         !! Zero is off, which is the default: a shift costs iterations near the
+         !! solution and only earns them far from it.
 
       ! EFP settings, read from `keywords.efp` and used only by the MAKEFP driver
       !

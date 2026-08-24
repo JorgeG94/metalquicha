@@ -43,6 +43,9 @@ module mqc_method_dft
          !! Energy convergence threshold
       real(dp) :: density_tol = 1.0e-6_dp
          !! Density matrix convergence threshold
+      real(dp) :: level_shift = 0.0_dp
+         !! Hartree added to the virtual block before each diagonalisation.
+         !! Zero is off. See `scf_config_t`.
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
       logical :: verbose = .false.
@@ -179,6 +182,7 @@ contains
       settings%max_iter = this%options%max_iter
       settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol
+      settings%level_shift = this%options%level_shift
       settings%use_diis = this%options%use_diis
       settings%diis_size = this%options%diis_size
       settings%radial_points = this%options%radial_points

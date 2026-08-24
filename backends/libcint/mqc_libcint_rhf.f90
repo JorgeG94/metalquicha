@@ -330,13 +330,17 @@ contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
-                              guess, guess_density, xc, h_extra, pcm, projector)
+                              guess, guess_density, xc, h_extra, pcm, projector, &
+                              level_shift)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       logical, intent(in) :: verbose
+      real(dp), intent(in), optional :: level_shift
+         !! Hartree added to the virtual block of the Fock matrix before each
+         !! diagonalisation. Absent or zero is off.
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       type(libcint_molecule_t), intent(in), optional :: aux
@@ -438,6 +442,8 @@ contains
       type(diis_state_t) :: diis
       logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
+      real(dp) :: shift, shift_now, drms_prev, taper
+      real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_occ, iter
       type(timing_report_t) :: clk
       type(direct_stats_t) :: screening
@@ -573,6 +579,32 @@ contains
       call clk%lap(STAGE_SETUP)
       call scf_table_header(verbose)
 
+      shift = 0.0_dp
+      if (present(level_shift)) shift = level_shift
+      ! Refused rather than clamped. A negative shift lowers the virtuals into
+      ! the occupied set, which is the opposite of the point: it narrows the gap
+      ! the next density is built through and drives the oscillation it was
+      ! asked to damp. Someone typing one has misunderstood the sign, and
+      ! quietly using zero would hide that.
+      if (shift < 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is negative. A "// &
+                        "level shift raises the virtual orbitals to widen the gap; a "// &
+                        "negative one narrows it and makes convergence worse, not "// &
+                        "better. Give a positive value in Hartree, or leave it out.")
+         return
+      end if
+      ! Off well before the SCF is done. The shift buys nothing near the
+      ! solution -- it slows the last approach -- and, far more importantly,
+      ! every orbital energy this routine reports has to belong to the
+      ! *unshifted* operator: they are read back as MP2 and coupled-cluster
+      ! denominators, as the weights of the gradient's energy-weighted density,
+      ! and as `eps_occ` and the response poles of a fragment potential. A shift
+      ! left in would move all of those by an amount nothing downstream could
+      ! recognise as a shift.
+      taper = 100.0_dp*density_tol
+      drms_prev = huge(1.0_dp)
+      shift_now = 0.0_dp
+
       do iter = 1, max_iter
          density_old = density
          ! The energy belongs to the Fock built from this density, so both come
@@ -628,6 +660,27 @@ contains
          call clk%lap(STAGE_DIIS)
          t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
 
+         ! **After DIIS, never before it.** The error vector above is built from
+         ! the unshifted Fock, and it has to be: shift first and the vectors
+         ! DIIS stores stop being a subspace of Fock matrices, so what it
+         ! extrapolates is not the thing it is meant to extrapolate. It would
+         ! still converge to something, which is what makes that ordering
+         ! expensive to find. The energy is likewise already taken, from the
+         ! build above, for the reason stated there.
+         !
+         ! The virtual projector without the virtual orbitals: completeness
+         ! gives `C_o C_o^T + C_v C_v^T = S^-1`, so
+         ! `S C_v C_v^T S = S - S C_o C_o^T S = S - (1/2) S D S` for a closed
+         ! shell, which is two products against the density already in hand.
+         shift_now = 0.0_dp
+         if (shift > 0.0_dp .and. drms_prev > taper) shift_now = shift
+         if (shift_now > 0.0_dp) then
+            if (.not. allocated(sd)) allocate (sd(n_ao, n_ao), sds(n_ao, n_ao))
+            call pic_gemm(s, density, sd, beta=0.0_dp)
+            call pic_gemm(sd, s, sds, beta=0.0_dp)
+            fock = fock + shift_now*(s - 0.5_dp*sds)
+         end if
+
          call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
          if (error%has_error()) return
          call build_density_closed_shell(coeff, n_occ, density)
@@ -642,7 +695,16 @@ contains
 
          e_old = e_elec
          result%iterations = iter
-         if (iter > 1 .and. de < energy_tol .and. drms < density_tol) then
+         ! `shift_now` is part of the test rather than checked afterwards. The
+         ! orbitals and eigenvalues that leave here are the ones the last
+         ! diagonalisation produced, so convergence has to be declared on an
+         ! iteration that was not shifted -- otherwise every virtual energy is
+         ! high by `shift` and everything downstream quietly inherits it. The
+         ! taper makes this true on its own in every ordinary case; requiring it
+         ! costs an iteration in the case where it would not have been.
+         drms_prev = drms
+         if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
+             shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if
@@ -693,7 +755,8 @@ contains
 
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
-                              guess, guess_density_alpha, guess_density_beta, xc, pcm)
+                              guess, guess_density_alpha, guess_density_beta, xc, pcm, &
+                              level_shift)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -712,6 +775,10 @@ contains
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       logical, intent(in) :: verbose
+      real(dp), intent(in), optional :: level_shift
+         !! As `run_libcint_rhf`. Applied to each spin's Fock matrix against its
+         !! own virtual projector, and tapered off before convergence for the
+         !! same reason.
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
@@ -760,6 +827,8 @@ contains
       type(diis_state_t) :: diis
       logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
+      real(dp) :: shift, shift_now, drms_prev, taper
+      real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
@@ -890,6 +959,24 @@ contains
       call clk%lap(STAGE_SETUP)
       call scf_table_header(verbose)
 
+      shift = 0.0_dp
+      if (present(level_shift)) shift = level_shift
+      ! Refused rather than clamped. A negative shift lowers the virtuals into
+      ! the occupied set, which is the opposite of the point: it narrows the gap
+      ! the next density is built through and drives the oscillation it was
+      ! asked to damp. Someone typing one has misunderstood the sign, and
+      ! quietly using zero would hide that.
+      if (shift < 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is negative. A "// &
+                        "level shift raises the virtual orbitals to widen the gap; a "// &
+                        "negative one narrows it and makes convergence worse, not "// &
+                        "better. Give a positive value in Hartree, or leave it out.")
+         return
+      end if
+      taper = 100.0_dp*density_tol
+      drms_prev = huge(1.0_dp)
+      shift_now = 0.0_dp
+
       do iter = 1, max_iter
          d_a_old = d_a
          d_b_old = d_b
@@ -929,6 +1016,22 @@ contains
          call clk%lap(STAGE_DIIS)
          t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
 
+         ! After the extrapolation and after the two commutators, for the reason
+         ! `run_libcint_rhf` sets out. Each spin gets its own virtual projector:
+         ! `build_density_spin` gives an occupation of one, so the closed-shell
+         ! factor of a half is absent and it is `S - S D_sigma S`.
+         shift_now = 0.0_dp
+         if (shift > 0.0_dp .and. drms_prev > taper) shift_now = shift
+         if (shift_now > 0.0_dp) then
+            if (.not. allocated(sd)) allocate (sd(n_ao, n_ao), sds(n_ao, n_ao))
+            call pic_gemm(s, d_a, sd, beta=0.0_dp)
+            call pic_gemm(sd, s, sds, beta=0.0_dp)
+            fock_a = fock_a + shift_now*(s - sds)
+            call pic_gemm(s, d_b, sd, beta=0.0_dp)
+            call pic_gemm(sd, s, sds, beta=0.0_dp)
+            fock_b = fock_b + shift_now*(s - sds)
+         end if
+
          call diagonalize(fock_a, x, n_ao, n_mo, coeff_a, eig_a, error)
          if (error%has_error()) return
          call diagonalize(fock_b, x, n_ao, n_mo, coeff_b, eig_b, error)
@@ -946,7 +1049,9 @@ contains
 
          e_old = e_elec
          result%iterations = iter
-         if (iter > 1 .and. de < energy_tol .and. drms < density_tol) then
+         drms_prev = drms
+         if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
+             shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if
