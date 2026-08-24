@@ -246,8 +246,18 @@ contains
 
       ! The anion. One more electron, and a doublet because the neutral was
       ! closed shell.
+      !
+      ! Solved in the open, like the neutral before it. A Fukui run is three
+      ! SCFs and the ions are the two that misbehave: an anion in a basis with
+      ! no diffuse functions is where this fails, and it fails by converging
+      ! slowly or to something unbound rather than by stopping. Running it
+      ! silently meant the report could say the affinity was negative while
+      ! the evidence for why -- the iterations it took, the energy it settled
+      ! on, <S^2> for the doublet -- was never printed.
+      call logger%info("")
+      call logger%info("  Fukui: anion SCF, N+1 electrons")
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
-                           .false., anion, error, xc=xc_arg)
+                           .true., anion, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -274,8 +284,10 @@ contains
       deallocate (total)
 
       ! The cation.
+      call logger%info("")
+      call logger%info("  Fukui: cation SCF, N-1 electrons")
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
-                           .false., cation, error, xc=xc_arg)
+                           .true., cation, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
