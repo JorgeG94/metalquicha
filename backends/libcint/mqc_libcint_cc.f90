@@ -1,6 +1,7 @@
 !! Coupled cluster on the CPU, in the spin-orbital basis
 module mqc_libcint_cc
-   !! CCSD and CCSD(T) over an RHF reference, written in spin orbitals.
+   !! CCSD and CCSD(T) over a restricted or an unrestricted reference,
+   !! written in spin orbitals.
    !!
    !! Spin orbitals rather than a spin-adapted closed-shell formulation, and the
    !! arithmetic argument loses on purpose. This is the reference path -- the same
@@ -10,12 +11,20 @@ module mqc_libcint_cc
    !! of cases that are closed shell. Revisit if CCSD becomes something people
    !! run rather than something people check against.
    !!
-   !! The consequence is that everything here is indexed by spin orbital. Active
-   !! spatial orbital `p` becomes spin orbitals `2p-1` (alpha) and `2p` (beta), so
-   !! `spatial(s) = (s+1)/2` and `is_alpha(s) = mod(s,2) == 1`. Interleaving
-   !! rather than blocking the spins is what keeps occupied and virtual
-   !! contiguous: the first `2*n_occ` spin orbitals are occupied, whatever the
-   !! spin pattern.
+   !! The consequence is that everything here is indexed by spin orbital, and
+   !! which spatial orbital each one belongs to is a table -- `so_map_t` -- rather
+   !! than the arithmetic it used to be. Where the two spins have the same
+   !! occupied and virtual counts that table is exactly the old interleaving,
+   !! alpha at `2p-1` and beta at `2p`, so nothing closed shell changed --
+   !! including an unrestricted reference on a closed-shell system, which lands
+   !! there too. Where the counts differ it blocks instead,
+   !! `[occ_a, occ_b, vir_a, vir_b]`, because interleaving keeps occupied
+   !! contiguous only while the counts agree.
+   !!
+   !! The branch is on the counts and not on the reference, which is worth
+   !! stating because "unrestricted" and "blocked" are not the same condition
+   !! and the difference is invisible until a closed-shell UHF deck is being
+   !! debugged. See `build_so_map`.
    !!
    !! The antisymmetrised integrals are
    !!
@@ -60,6 +69,9 @@ module mqc_libcint_cc
    public :: cc_result_t
    public :: run_libcint_ccsd
    public :: spin_orbital_integrals   !! Exported so a test can check antisymmetry
+   public :: so_map_t                 !! ... which needs the ordering it was built with
+   public :: so_source_t              !! ... and the tensors it reads
+   public :: build_so_map
 
    !> Columns of the compound (ef) index assembled per pass of the
    !> particle-particle ladder. The array held is n_vir^2 by this, so the memory
@@ -77,6 +89,48 @@ module mqc_libcint_cc
    !> per-iteration row reads it back with `seconds_of` to print one iteration's
    !> time, and a typo between the two would silently print zero.
    character(len=*), parameter :: STAGE_ITER = "CCSD iterations"
+
+   type :: so_map_t
+      !! Which spatial orbital, and which spin, each spin orbital is
+      !!
+      !! Was two arithmetic functions -- `spatial(s) = (s+1)/2` and
+      !! `is_alpha(s) = mod(s,2) == 1` -- which encode the assumption that spin
+      !! orbitals `2p-1` and `2p` share spatial orbital `p`. That is true of a
+      !! restricted reference and false of an unrestricted one, where the two
+      !! spins have different orbitals and, worse, different *counts*.
+      !!
+      !! The count is what breaks the interleaving. It kept occupied contiguous
+      !! only because `n_alpha == n_beta` made the first `2*n_occ` spin orbitals
+      !! occupied; with `n_alpha > n_beta` interleaving puts beta virtuals in
+      !! among alpha occupieds, and every `do i = 1, no` in the amplitude
+      !! equations walks into the virtual space. It converges, to a wrong number.
+      !!
+      !! So the ordering is a table rather than a formula. For a restricted
+      !! reference it reproduces the interleaving exactly, which is why the
+      !! closed-shell results are unchanged to the last bit.
+      integer, allocatable :: spat(:)   !! spin orbital -> spatial index, within its spin
+      logical, allocatable :: is_a(:)   !! spin orbital -> alpha?
+      integer :: n_so = 0
+   end type so_map_t
+
+   type :: so_source_t
+      !! The spatial MO tensors the spin-orbital integrals are read out of
+      !!
+      !! One tensor for a restricted reference, three for an unrestricted one:
+      !! `(aa|aa)`, `(bb|bb)` and the mixed `(aa|bb)`. There is no fourth --
+      !! `(bb|aa)` is `(aa|bb)` with the electron pairs swapped, which is what
+      !! `chem` does rather than storing it twice.
+      !!
+      !! `restricted` is not a convenience. The conventional path's memory
+      !! ceiling *is* this tensor at `n_act^4`, so allocating three copies of the
+      !! same numbers to avoid a branch would triple the largest array in the
+      !! calculation. When restricted, only `aa` is allocated and every spin case
+      !! reads it.
+      logical :: restricted = .true.
+      real(dp), allocatable :: aa(:, :, :, :)
+      real(dp), allocatable :: bb(:, :, :, :)
+      real(dp), allocatable :: ab(:, :, :, :)
+   end type so_source_t
 
    type :: cc_eris_t
       !! Antisymmetrised integrals, by block
@@ -146,46 +200,151 @@ contains
       mb = elements*8.0_dp/1.0e6_dp
    end function integral_megabytes
 
-   pure function spatial(s) result(p)
+   subroutine build_so_map(n_occ_a, n_occ_b, n_vir_a, n_vir_b, map)
+      !! The spin orbital ordering, occupied first
+      !!
+      !! Restricted (`n_occ_a == n_occ_b` and `n_vir_a == n_vir_b`) reproduces the
+      !! interleaving this module used to compute: spin orbital `2p-1` is alpha
+      !! spatial `p`, `2p` is beta spatial `p`, occupied before virtual. Bit for
+      !! bit the same ordering, so nothing closed shell moves.
+      !!
+      !! Unrestricted blocks instead -- `[occ_a, occ_b, vir_a, vir_b]` -- which is
+      !! the only ordering that keeps occupied contiguous when the two spins have
+      !! different occupation counts.
+      integer, intent(in) :: n_occ_a, n_occ_b, n_vir_a, n_vir_b
+      type(so_map_t), intent(out) :: map
+
+      integer :: s, p
+
+      map%n_so = n_occ_a + n_occ_b + n_vir_a + n_vir_b
+      allocate (map%spat(map%n_so), map%is_a(map%n_so))
+
+      if (n_occ_a == n_occ_b .and. n_vir_a == n_vir_b) then
+         do s = 1, map%n_so
+            map%spat(s) = (s + 1)/2
+            map%is_a(s) = mod(s, 2) == 1
+         end do
+         return
+      end if
+
+      s = 0
+      do p = 1, n_occ_a
+         s = s + 1
+         map%spat(s) = p
+         map%is_a(s) = .true.
+      end do
+      do p = 1, n_occ_b
+         s = s + 1
+         map%spat(s) = p
+         map%is_a(s) = .false.
+      end do
+      do p = 1, n_vir_a
+         s = s + 1
+         map%spat(s) = n_occ_a + p
+         map%is_a(s) = .true.
+      end do
+      do p = 1, n_vir_b
+         s = s + 1
+         map%spat(s) = n_occ_b + p
+         map%is_a(s) = .false.
+      end do
+   end subroutine build_so_map
+
+   pure function spatial(map, s) result(p)
       !! Which spatial orbital a spin orbital belongs to
+      type(so_map_t), intent(in) :: map
       integer, intent(in) :: s
       integer :: p
-      p = (s + 1)/2
+      p = map%spat(s)
    end function spatial
 
-   pure function same_spin(s, t) result(same)
+   pure function same_spin(map, s, t) result(same)
       !! Whether two spin orbitals carry the same spin
+      type(so_map_t), intent(in) :: map
       integer, intent(in) :: s, t
       logical :: same
-      same = mod(s, 2) == mod(t, 2)
+      same = map%is_a(s) .eqv. map%is_a(t)
    end function same_spin
 
-   pure function asym(mo, p, q, r, s) result(v)
-      !! <pq||rs> from the spatial MO tensor, in spin orbitals
+   pure function tensor(src, s1, s2, a, b, c, d) result(v)
+      !! `(ab|cd)` from spatial indices whose spins the caller has already resolved
       !!
-      !! The one place chemists' notation becomes physicists'. `mo` is
-      !! (pq|rs) as the transform produced it, so
+      !! `chem` below does the same choice from spin orbitals. This form exists
+      !! for the particle-particle ladder, which hoists the spin bookkeeping out
+      !! of its innermost loop and so arrives holding spins and spatial indices
+      !! rather than spin orbitals. `s1` is the spin of the first electron's pair,
+      !! `s2` the second's; 1 is alpha and 0 beta.
+      type(so_source_t), intent(in) :: src
+      integer, intent(in) :: s1, s2, a, b, c, d
+      real(dp) :: v
+
+      if (src%restricted) then
+         v = src%aa(a, b, c, d)
+      else if (s1 == 1 .and. s2 == 1) then
+         v = src%aa(a, b, c, d)
+      else if (s1 == 0 .and. s2 == 0) then
+         v = src%bb(a, b, c, d)
+      else if (s1 == 1) then
+         v = src%ab(a, b, c, d)
+      else
+         v = src%ab(c, d, a, b)
+      end if
+   end function tensor
+
+   pure function chem(src, map, a, b, c, d) result(v)
+      !! The spatial integral `(ab|cd)`, for spin orbitals whose spins already agree
+      !!
+      !! Callers guarantee `spin(a) == spin(b)` and `spin(c) == spin(d)`, so this
+      !! only has to decide which of the three tensors holds that combination. The
+      !! last branch is the one worth reading: a beta-alpha pairing is stored as
+      !! alpha-beta with the electron pairs swapped, and `(ab|cd) = (cd|ab)` is
+      !! what makes that legitimate.
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
+      integer, intent(in) :: a, b, c, d
+      real(dp) :: v
+
+      if (src%restricted) then
+         v = src%aa(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else if (map%is_a(a) .and. map%is_a(c)) then
+         v = src%aa(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else if (.not. map%is_a(a) .and. .not. map%is_a(c)) then
+         v = src%bb(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else if (map%is_a(a)) then
+         v = src%ab(map%spat(a), map%spat(b), map%spat(c), map%spat(d))
+      else
+         v = src%ab(map%spat(c), map%spat(d), map%spat(a), map%spat(b))
+      end if
+   end function chem
+
+   pure function asym(src, map, p, q, r, s) result(v)
+      !! <pq||rs> from the spatial MO tensors, in spin orbitals
+      !!
+      !! The one place chemists' notation becomes physicists'. `chem` returns
+      !! (ab|cd) as the transform produced it, so
       !!
       !!     <pq||rs> = (pr|qs) - (ps|qr)
       !!
       !! and a spatial integral contributes only when both index pairs it
       !! couples share a spin -- (pr|qs) needs spin(p) == spin(r) and
       !! spin(q) == spin(s), which is the Kronecker delta the spin integration
-      !! leaves behind.
-      real(dp), intent(in) :: mo(:, :, :, :)
+      !! leaves behind. Those two guards are also what lets `chem` assume the
+      !! spins within each pair already agree.
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
       integer, intent(in) :: p, q, r, s
       real(dp) :: v
 
       v = 0.0_dp
-      if (same_spin(p, r) .and. same_spin(q, s)) then
-         v = v + mo(spatial(p), spatial(r), spatial(q), spatial(s))
+      if (same_spin(map, p, r) .and. same_spin(map, q, s)) then
+         v = v + chem(src, map, p, r, q, s)
       end if
-      if (same_spin(p, s) .and. same_spin(q, r)) then
-         v = v - mo(spatial(p), spatial(s), spatial(q), spatial(r))
+      if (same_spin(map, p, s) .and. same_spin(map, q, r)) then
+         v = v - chem(src, map, p, s, q, r)
       end if
    end function asym
 
-   subroutine build_cc_eris(mo, no, nv, eris)
+   subroutine build_cc_eris(src, map, no, nv, eris)
       !! The antisymmetrised blocks the amplitude equations actually read
       !!
       !! Replaces the single (2 n_act)^4 tensor. Every block below is a slice of
@@ -199,7 +358,8 @@ contains
       !!
       !! `spin_orbital_integrals` is kept for the tests, which check antisymmetry
       !! over the whole tensor. Nothing in the calculation builds it any more.
-      real(dp), intent(in) :: mo(:, :, :, :)
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
       integer, intent(in) :: no, nv
       type(cc_eris_t), intent(out) :: eris
 
@@ -210,104 +370,104 @@ contains
       allocate (eris%ovvo(no, nv, nv, no), eris%ovoo(no, nv, no, no))
       allocate (eris%ovvv(no, nv, nv, nv), eris%vvvo(nv, nv, nv, no))
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do l = 1, no
          do k = 1, no
             do j = 1, no
                do i = 1, no
-                  eris%oooo(i, j, k, l) = asym(mo, i, j, k, l)
+                  eris%oooo(i, j, k, l) = asym(src, map, i, j, k, l)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do e = 1, nv
          do i = 1, no
             do n = 1, no
                do m = 1, no
-                  eris%ooov(m, n, i, e) = asym(mo, m, n, i, no + e)
+                  eris%ooov(m, n, i, e) = asym(src, map, m, n, i, no + e)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
                do i = 1, no
-                  eris%oovv(i, j, a, b) = asym(mo, i, j, no + a, no + b)
+                  eris%oovv(i, j, a, b) = asym(src, map, i, j, no + a, no + b)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do b = 1, nv
          do j = 1, no
             do a = 1, nv
                do i = 1, no
-                  eris%ovov(i, a, j, b) = asym(mo, i, no + a, j, no + b)
+                  eris%ovov(i, a, j, b) = asym(src, map, i, no + a, j, no + b)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do j = 1, no
          do e = 1, nv
             do b = 1, nv
                do m = 1, no
-                  eris%ovvo(m, b, e, j) = asym(mo, m, no + b, no + e, j)
+                  eris%ovvo(m, b, e, j) = asym(src, map, m, no + b, no + e, j)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
             do b = 1, nv
                do m = 1, no
-                  eris%ovoo(m, b, i, j) = asym(mo, m, no + b, i, j)
+                  eris%ovoo(m, b, i, j) = asym(src, map, m, no + b, i, j)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do f = 1, nv
          do e = 1, nv
             do a = 1, nv
                do m = 1, no
-                  eris%ovvv(m, a, e, f) = asym(mo, m, no + a, no + e, no + f)
+                  eris%ovvv(m, a, e, f) = asym(src, map, m, no + a, no + e, no + f)
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(mo, eris, no, nv) &
+      !$omp parallel do default(none) shared(src, map, eris, no, nv) &
       !$omp    private(i, j, k, l, a, b, e, f, m, n) schedule(static) collapse(2)
       do j = 1, no
          do e = 1, nv
             do b = 1, nv
                do a = 1, nv
-                  eris%vvvo(a, b, e, j) = asym(mo, no + a, no + b, no + e, j)
+                  eris%vvvo(a, b, e, j) = asym(src, map, no + a, no + b, no + e, j)
                end do
             end do
          end do
@@ -335,7 +495,7 @@ contains
       if (keep_exchange) v = v - exchange
    end function asym2
 
-   subroutine build_cc_eris_fitted(chem, no, nv, eris)
+   subroutine build_cc_eris_fitted(chem, map, no, nv, eris)
       !! The antisymmetrised blocks, from the fitted spatial ones
       !!
       !! Block for block the same result as `build_cc_eris`, reached without a
@@ -345,11 +505,23 @@ contains
       !! indices where the stored block has them; the mapping is stated above
       !! each one because it is the only place it can be checked by reading.
       !!
-      !! Occupied spin orbital `i` sits in spatial occupied orbital `(i+1)/2`
-      !! and virtual spin orbital `a` in spatial virtual orbital `(a+1)/2`, both
-      !! with spin `mod(index,2)` -- `no` is even, so a virtual's spin is the
-      !! same whether it is counted from one or from `no+1`, which is what lets
-      !! `same_spin` be used on the within-space indices directly.
+      !! **This routine indexes `map` with within-space indices, and only the
+      !! interleaved ordering makes that legal.** `same_spin(map, n, e)` below
+      !! passes a virtual's index `e` in `1..nv` where `map` is indexed by spin
+      !! orbital in `1..n_so`, so the lookup lands in the occupied block. Under
+      !! the interleaving that is harmless: spins alternate and `no` is even, so
+      !! `is_a(e)` and `is_a(no+e)` agree. `build_cc_eris` next door does the
+      !! same contractions and offsets properly, `no + e`, because it also has
+      !! to work blocked.
+      !!
+      !! What keeps this safe is not local. A blocked map reaches here only if
+      !! an unrestricted reference reaches the fitted path, and that is refused
+      !! in `run_libcint_ccsd` -- `b_vv` has no spin blocks, so the refusal
+      !! exists for its own reason and this depends on it. **Enabling fitted
+      !! UCCSD means offsetting every index in this routine first**, and the
+      !! symptom of forgetting would be spin logic read out of the occupied
+      !! block: a converged, plausible, wrong number.
+      type(so_map_t), intent(in) :: map
       type(cc_chem_t), intent(in) :: chem
       integer, intent(in) :: no, nv
       type(cc_eris_t), intent(out) :: eris
@@ -362,17 +534,17 @@ contains
       allocate (eris%ovvv(no, nv, nv, nv), eris%vvvo(nv, nv, nv, no))
 
       ! <ij||kl> = (ik|jl) - (il|jk)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(i, j, k, l) schedule(static) collapse(2)
       do l = 1, no
          do k = 1, no
             do j = 1, no
                do i = 1, no
                   eris%oooo(i, j, k, l) = asym2( &
-                                          chem%oooo(spatial(i), spatial(k), spatial(j), spatial(l)), &
-                                          same_spin(i, k) .and. same_spin(j, l), &
-                                          chem%oooo(spatial(i), spatial(l), spatial(j), spatial(k)), &
-                                          same_spin(i, l) .and. same_spin(j, k))
+                                          chem%oooo(spatial(map, i), spatial(map, k), spatial(map, j), spatial(map, l)), &
+                                          same_spin(map, i, k) .and. same_spin(map, j, l), &
+                                          chem%oooo(spatial(map, i), spatial(map, l), spatial(map, j), spatial(map, k)), &
+                                          same_spin(map, i, l) .and. same_spin(map, j, k))
                end do
             end do
          end do
@@ -380,17 +552,17 @@ contains
       !$omp end parallel do
 
       ! <mn||ie> = (mi|ne) - (me|ni), and (me|ni) = (ni|me)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(m, n, i, e) schedule(static) collapse(2)
       do e = 1, nv
          do i = 1, no
             do n = 1, no
                do m = 1, no
                   eris%ooov(m, n, i, e) = asym2( &
-                                          chem%ooov(spatial(m), spatial(i), spatial(n), spatial(e)), &
-                                          same_spin(m, i) .and. same_spin(n, e), &
-                                          chem%ooov(spatial(n), spatial(i), spatial(m), spatial(e)), &
-                                          same_spin(m, e) .and. same_spin(n, i))
+                                          chem%ooov(spatial(map, m), spatial(map, i), spatial(map, n), spatial(map, e)), &
+                                          same_spin(map, m, i) .and. same_spin(map, n, e), &
+                                          chem%ooov(spatial(map, n), spatial(map, i), spatial(map, m), spatial(map, e)), &
+                                          same_spin(map, m, e) .and. same_spin(map, n, i))
                end do
             end do
          end do
@@ -398,17 +570,17 @@ contains
       !$omp end parallel do
 
       ! <ij||ab> = (ia|jb) - (ib|ja)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(i, j, a, b) schedule(static) collapse(2)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
                do i = 1, no
                   eris%oovv(i, j, a, b) = asym2( &
-                                          chem%ovov(spatial(i), spatial(a), spatial(j), spatial(b)), &
-                                          same_spin(i, a) .and. same_spin(j, b), &
-                                          chem%ovov(spatial(i), spatial(b), spatial(j), spatial(a)), &
-                                          same_spin(i, b) .and. same_spin(j, a))
+                                          chem%ovov(spatial(map, i), spatial(map, a), spatial(map, j), spatial(map, b)), &
+                                          same_spin(map, i, a) .and. same_spin(map, j, b), &
+                                          chem%ovov(spatial(map, i), spatial(map, b), spatial(map, j), spatial(map, a)), &
+                                          same_spin(map, i, b) .and. same_spin(map, j, a))
                end do
             end do
          end do
@@ -416,17 +588,17 @@ contains
       !$omp end parallel do
 
       ! <ia||jb> = (ij|ab) - (ib|aj), and (ib|aj) = (ib|ja)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(i, j, a, b) schedule(static) collapse(2)
       do b = 1, nv
          do j = 1, no
             do a = 1, nv
                do i = 1, no
                   eris%ovov(i, a, j, b) = asym2( &
-                                          chem%oovv(spatial(i), spatial(j), spatial(a), spatial(b)), &
-                                          same_spin(i, j) .and. same_spin(a, b), &
-                                          chem%ovov(spatial(i), spatial(b), spatial(j), spatial(a)), &
-                                          same_spin(i, b) .and. same_spin(a, j))
+                                          chem%oovv(spatial(map, i), spatial(map, j), spatial(map, a), spatial(map, b)), &
+                                          same_spin(map, i, j) .and. same_spin(map, a, b), &
+                                          chem%ovov(spatial(map, i), spatial(map, b), spatial(map, j), spatial(map, a)), &
+                                          same_spin(map, i, b) .and. same_spin(map, a, j))
                end do
             end do
          end do
@@ -434,17 +606,17 @@ contains
       !$omp end parallel do
 
       ! <mb||ej> = (me|bj) - (mj|be), and (me|bj) = (me|jb)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(m, b, e, j) schedule(static) collapse(2)
       do j = 1, no
          do e = 1, nv
             do b = 1, nv
                do m = 1, no
                   eris%ovvo(m, b, e, j) = asym2( &
-                                          chem%ovov(spatial(m), spatial(e), spatial(j), spatial(b)), &
-                                          same_spin(m, e) .and. same_spin(b, j), &
-                                          chem%oovv(spatial(m), spatial(j), spatial(b), spatial(e)), &
-                                          same_spin(m, j) .and. same_spin(b, e))
+                                          chem%ovov(spatial(map, m), spatial(map, e), spatial(map, j), spatial(map, b)), &
+                                          same_spin(map, m, e) .and. same_spin(map, b, j), &
+                                          chem%oovv(spatial(map, m), spatial(map, j), spatial(map, b), spatial(map, e)), &
+                                          same_spin(map, m, j) .and. same_spin(map, b, e))
                end do
             end do
          end do
@@ -452,17 +624,17 @@ contains
       !$omp end parallel do
 
       ! <mb||ij> = (mi|bj) - (mj|bi), and (mi|bj) = (mi|jb)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(m, b, i, j) schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
             do b = 1, nv
                do m = 1, no
                   eris%ovoo(m, b, i, j) = asym2( &
-                                          chem%ooov(spatial(m), spatial(i), spatial(j), spatial(b)), &
-                                          same_spin(m, i) .and. same_spin(b, j), &
-                                          chem%ooov(spatial(m), spatial(j), spatial(i), spatial(b)), &
-                                          same_spin(m, j) .and. same_spin(b, i))
+                                          chem%ooov(spatial(map, m), spatial(map, i), spatial(map, j), spatial(map, b)), &
+                                          same_spin(map, m, i) .and. same_spin(map, b, j), &
+                                          chem%ooov(spatial(map, m), spatial(map, j), spatial(map, i), spatial(map, b)), &
+                                          same_spin(map, m, j) .and. same_spin(map, b, i))
                end do
             end do
          end do
@@ -470,17 +642,17 @@ contains
       !$omp end parallel do
 
       ! <ma||ef> = (me|af) - (mf|ae)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(m, a, e, f) schedule(static) collapse(2)
       do f = 1, nv
          do e = 1, nv
             do a = 1, nv
                do m = 1, no
                   eris%ovvv(m, a, e, f) = asym2( &
-                                          chem%ovvv(spatial(m), spatial(e), spatial(a), spatial(f)), &
-                                          same_spin(m, e) .and. same_spin(a, f), &
-                                          chem%ovvv(spatial(m), spatial(f), spatial(a), spatial(e)), &
-                                          same_spin(m, f) .and. same_spin(a, e))
+                                          chem%ovvv(spatial(map, m), spatial(map, e), spatial(map, a), spatial(map, f)), &
+                                          same_spin(map, m, e) .and. same_spin(map, a, f), &
+                                          chem%ovvv(spatial(map, m), spatial(map, f), spatial(map, a), spatial(map, e)), &
+                                          same_spin(map, m, f) .and. same_spin(map, a, e))
                end do
             end do
          end do
@@ -488,17 +660,17 @@ contains
       !$omp end parallel do
 
       ! <ab||ej> = (ae|bj) - (aj|be), and (ae|bj) = (jb|ae), (aj|be) = (ja|be)
-      !$omp parallel do default(none) shared(chem, eris, no, nv) &
+      !$omp parallel do default(none) shared(chem, map, eris, no, nv) &
       !$omp    private(a, b, e, j) schedule(static) collapse(2)
       do j = 1, no
          do e = 1, nv
             do b = 1, nv
                do a = 1, nv
                   eris%vvvo(a, b, e, j) = asym2( &
-                                          chem%ovvv(spatial(j), spatial(b), spatial(a), spatial(e)), &
-                                          same_spin(a, e) .and. same_spin(b, j), &
-                                          chem%ovvv(spatial(j), spatial(a), spatial(b), spatial(e)), &
-                                          same_spin(a, j) .and. same_spin(b, e))
+                                          chem%ovvv(spatial(map, j), spatial(map, b), spatial(map, a), spatial(map, e)), &
+                                          same_spin(map, a, e) .and. same_spin(map, b, j), &
+                                          chem%ovvv(spatial(map, j), spatial(map, a), spatial(map, b), spatial(map, e)), &
+                                          same_spin(map, a, j) .and. same_spin(map, b, e))
                end do
             end do
          end do
@@ -506,26 +678,27 @@ contains
       !$omp end parallel do
    end subroutine build_cc_eris_fitted
 
-   subroutine spin_orbital_integrals(mo, n_so, w)
+   subroutine spin_orbital_integrals(src, map, n_so, w)
       !! The full antisymmetrised spin-orbital tensor <pq||rs>
       !!
       !! Built whole rather than as blocks. The blocks below are slices of it, and
       !! carving them out of one tensor cannot disagree about a sign the way six
       !! separate constructions could.
-      real(dp), intent(in) :: mo(:, :, :, :)
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
       integer, intent(in) :: n_so
       real(dp), allocatable, intent(out) :: w(:, :, :, :)
 
       integer :: p, q, r, s
 
       allocate (w(n_so, n_so, n_so, n_so))
-      !$omp parallel do default(none) shared(w, mo, n_so) private(p, q, r, s) &
+      !$omp parallel do default(none) shared(w, src, map, n_so) private(p, q, r, s) &
       !$omp    schedule(static) collapse(2)
       do s = 1, n_so
          do r = 1, n_so
             do q = 1, n_so
                do p = 1, n_so
-                  w(p, q, r, s) = asym(mo, p, q, r, s)
+                  w(p, q, r, s) = asym(src, map, p, q, r, s)
                end do
             end do
          end do
@@ -535,7 +708,8 @@ contains
 
    subroutine run_libcint_ccsd(mol, coeff, orbital_energies, n_occ, frozen, &
                                max_iter, energy_tol, want_triples, verbose, &
-                               result, error, diis_vectors, aux)
+                               result, error, diis_vectors, aux, &
+                               coeff_b, orbital_energies_b, n_occ_b)
       !! Drive CCSD, and optionally (T), to convergence
       !!
       !! **Memory.** The spin-orbital blocks are sixteen times their spatial
@@ -560,6 +734,11 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
       type(libcint_molecule_t), intent(in), optional :: aux
+      real(dp), intent(in), optional :: coeff_b(:, :)
+         !! Beta MO coefficients. Present means an unrestricted reference, and
+         !! the other two beta arguments must come with it.
+      real(dp), intent(in), optional :: orbital_energies_b(:)
+      integer, intent(in), optional :: n_occ_b
          !! Auxiliary basis. Present means every MO integral is density-fitted
          !! rather than transformed exactly -- RI-CCSD.
          !!
@@ -588,6 +767,11 @@ contains
       character(len=MAX_LINE_LENGTH) :: line
 
       type(timing_report_t) :: clk
+      type(so_map_t) :: map
+      type(so_source_t) :: src
+      logical :: unrestricted
+      integer :: n_ob, n_vb
+      real(dp), allocatable :: cb_act(:, :)
 
       n_ao = size(coeff, 1)
       n_mo = size(coeff, 2)
@@ -598,17 +782,92 @@ contains
          return
       end if
       n_act = n_mo - frozen
+      unrestricted = present(coeff_b)
+      if (unrestricted .and. present(aux)) then
+         ! Refused rather than run. The fitted path builds its blocks and its
+         ! ladder straight off `b_vv`, which has no spin blocks, and both still
+         ! assume alpha and beta share a spatial orbital. Run that way it would
+         ! not fail -- it would converge, to the restricted answer for the alpha
+         ! orbitals, which is a wrong number that looks like a right one.
+         call error%set(ERROR_VALIDATION, "UCCSD: density fitting is not available "// &
+                        "over an unrestricted reference. Run without an auxiliary "// &
+                        "basis, or use a restricted reference.")
+         return
+      end if
+      if (unrestricted) then
+         if (.not. present(orbital_energies_b) .or. .not. present(n_occ_b)) then
+            call error%set(ERROR_VALIDATION, "UCCSD: beta coefficients given without "// &
+                           "beta orbital energies or a beta occupation count")
+            return
+         end if
+
+         ! The beta arrays are sized from the alpha ones below -- `n_mo` comes
+         ! from `coeff` and slices `coeff_b` -- so a beta block of a different
+         ! width is read past its end rather than reported. The two spins span
+         ! the same basis, so this is a mismatch and not a case to support.
+         if (size(coeff_b, 1) /= n_ao .or. size(coeff_b, 2) /= n_mo) then
+            call error%set(ERROR_VALIDATION, "UCCSD: the beta coefficients are not the "// &
+                           "same shape as the alpha ones. Both spins span the same "// &
+                           "basis, so this is a bookkeeping error upstream.")
+            return
+         end if
+         if (size(orbital_energies_b) /= n_mo) then
+            call error%set(ERROR_VALIDATION, "UCCSD: there is one beta orbital energy "// &
+                           "per beta orbital, and the count does not match the "// &
+                           "coefficients.")
+            return
+         end if
+         if (n_occ_b < 0 .or. n_occ_b > n_mo) then
+            call error%set(ERROR_VALIDATION, "UCCSD: the beta occupation count is "// &
+                           "outside the orbital space.")
+            return
+         end if
+
+         ! **Zero active beta orbitals is legitimate and negative is not.** A
+         ! frozen core removes the same *spatial* orbitals from both spins, and
+         ! a high-spin system can have no beta electrons left outside it --
+         ! frozen-core lithium is one valence electron and it is alpha. So the
+         ! bound is `>`, not `>=`.
+         !
+         ! Past it the failure is not a wrong number. `build_so_map` sizes
+         ! itself `n_o + n_ob + n_v + n_vb` and then fills `n_o + n_v + n_vb`
+         ! entries, because the beta occupied loop does not run at a negative
+         ! count -- so it writes past the end of its own arrays. The alpha
+         ! guard above does not catch it: Li+ at multiplicity 3 has two alpha
+         ! and no beta electrons, and one frozen core orbital.
+         if (frozen > n_occ_b) then
+            call error%set(ERROR_VALIDATION, "UCCSD: the frozen core takes more "// &
+                           "orbitals than the beta space has occupied. A frozen core "// &
+                           "removes the same spatial orbitals from both spins, so it "// &
+                           "cannot exceed the smaller occupation. Reduce "// &
+                           "keywords.correlation.n_frozen_core, or turn freeze_core off.")
+            return
+         end if
+
+         n_ob = n_occ_b - frozen
+         n_vb = n_mo - n_occ_b
+      else
+         n_ob = n_occ - frozen
+         n_vb = n_mo - n_occ
+      end if
       n_o = n_occ - frozen
       n_v = n_mo - n_occ
-      if (n_v < 1) then
+      if (n_v < 1 .or. n_vb < 1) then
          call error%set(ERROR_VALIDATION, "CCSD: no virtual orbitals -- the basis is "// &
                         "saturated by the occupied space and there is nothing to excite into")
          return
       end if
 
-      no = 2*n_o
-      nv = 2*n_v
+      no = n_o + n_ob
+      nv = n_v + n_vb
       n_so = no + nv
+
+      ! Restricted: the two spins have the same orbitals and the same counts, so
+      ! this reproduces the interleaving the module used to compute
+      ! arithmetically and nothing below can tell the difference. Unrestricted:
+      ! blocked, because interleaving stops keeping occupied contiguous the
+      ! moment the counts differ.
+      call build_so_map(n_o, n_ob, n_v, n_vb, map)
 
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
@@ -656,7 +915,27 @@ contains
          if (error%has_error()) return
       else
          call mol%eris_packed(eri)
-         call transform_block(eri, c_act, c_act, c_act, c_act, mo)
+         if (unrestricted) then
+            ! Three tensors, not one: `(aa|aa)`, `(bb|bb)` and the mixed
+            ! `(aa|bb)`. `(bb|aa)` is not built -- `tensor` and `chem` reach it
+            ! by swapping the electron pairs. This is three times the memory of
+            ! the restricted path, and that is inherent: the numbers genuinely
+            ! differ once the two spins have different orbitals.
+            allocate (cb_act(n_ao, n_act))
+            cb_act = coeff_b(:, frozen + 1:n_mo)
+            src%restricted = .false.
+            call transform_block(eri, c_act, c_act, c_act, c_act, src%aa)
+            call transform_block(eri, cb_act, cb_act, cb_act, cb_act, src%bb)
+            call transform_block(eri, c_act, c_act, cb_act, cb_act, src%ab)
+            deallocate (cb_act)
+         else
+            call transform_block(eri, c_act, c_act, c_act, c_act, mo)
+            ! Moved, not copied: this tensor is the conventional path's memory
+            ! ceiling and duplicating it to fill a container would double it.
+            ! `mo` is unallocated afterwards and the ladder reads `src%aa`.
+            src%restricted = .true.
+            call move_alloc(mo, src%aa)
+         end if
          deallocate (eri)
       end if
       deallocate (c_act)
@@ -667,10 +946,10 @@ contains
       ! only `b_vv` outlives them.
       call clk%lap("AO->MO integrals")
       if (present(aux)) then
-         call build_cc_eris_fitted(chem, no, nv, eris)
+         call build_cc_eris_fitted(chem, map, no, nv, eris)
          deallocate (chem%oooo, chem%ooov, chem%oovv, chem%ovov, chem%ovvv)
       else
-         call build_cc_eris(mo, no, nv, eris)
+         call build_cc_eris(src, map, no, nv, eris)
       end if
       call clk%lap("CC integral blocks")
 
@@ -679,7 +958,11 @@ contains
       ! four of these rather than a matrix element.
       allocate (eps(n_so))
       do s = 1, n_so
-         eps(s) = orbital_energies(frozen + spatial(s))
+         if (map%is_a(s) .or. .not. unrestricted) then
+            eps(s) = orbital_energies(frozen + spatial(map, s))
+         else
+            eps(s) = orbital_energies_b(frozen + spatial(map, s))
+         end if
       end do
 
       ! ---- MP2, as the checkpoint before any amplitude equation --------------
@@ -708,7 +991,7 @@ contains
                               "    iter                 E_corr          dE   diis       time", 60)
       do iter = 1, max_iter
          t_iter = clk%seconds_of(STAGE_ITER)
-         call ccsd_iteration(mo, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+         call ccsd_iteration(src, map, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
          call clk%lap(STAGE_ITER)
          t_iter = clk%seconds_of(STAGE_ITER) - t_iter
 
@@ -907,9 +1190,10 @@ contains
       !$omp end parallel do
    end subroutine ccsd_energy
 
-   subroutine ccsd_iteration(mo, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
+   subroutine ccsd_iteration(src, map, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
       !! One CCSD amplitude update, through the Stanton et al. intermediates
-      real(dp), allocatable, intent(in) :: mo(:, :, :, :)
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
          !! The spatial tensor, on the conventional path. Read only by the
          !! particle-particle ladder, which assembles <ab||ef> in batches rather
          !! than holding it -- see `particle_ladder`.
@@ -1058,7 +1342,7 @@ contains
       ! one does not.
       allocate (lad(nv*nv, no*no))
       call pic_gemm(tau2, wmnij, lad, alpha=0.5_dp, beta=0.0_dp)
-      call particle_ladder(mo, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
+      call particle_ladder(src, map, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
 
       ! ---- the ring intermediate (Stanton 8) ---------------------------------
       !
@@ -1331,7 +1615,7 @@ contains
       deallocate (oovv2, lad, ring2)
    end subroutine ccsd_iteration
 
-   subroutine particle_ladder(mo, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
+   subroutine particle_ladder(src, map, b_vv, eris, t1, tau2, oovv2, no, nv, lad)
       !! The particle-particle ladder, never holding <ab||ef>
       !!
       !!     lad(ab,ij) += 1/2 sum_ef Wabef(ab,ef) tau(ef,ij)
@@ -1362,7 +1646,8 @@ contains
       !! spatial tensor at all. Those gemms cost naux n_vir^4 an iteration
       !! against the n_occ^2 n_vir^4 of the contraction they feed, so a few per
       !! cent of the ladder buys the whole n_act^4 array.
-      real(dp), allocatable, intent(in) :: mo(:, :, :, :)
+      type(so_source_t), intent(in) :: src
+      type(so_map_t), intent(in) :: map
       real(dp), allocatable, intent(in) :: b_vv(:, :)   !! (P, ab), spatial virtuals
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: t1(:, :), tau2(:, :), oovv2(:, :)
@@ -1378,7 +1663,7 @@ contains
       real(dp), allocatable :: wblk(:, :), tau2t(:, :), tblk(:, :)
       real(dp), allocatable :: gvv(:, :), gvt(:, :)
       integer :: nv2, no2, ef0, ef1, nb, col, ef, a, b, e, f
-      integer :: nocc2, nvs, pa, pb, pe, pf, se, sf, sb, e0, f0
+      integer :: nocc2, nvs, pa, pb, pe, pf, sa, se, sf, sb, e0, f0
       integer :: pe_have, pf_local, x, y
       logical :: fitted
       real(dp) :: acc
@@ -1426,7 +1711,7 @@ contains
          if (fitted) then
             !$omp parallel default(none) &
             !$omp    shared(b_vv, tblk, wblk, nv, nb, ef0, nvs) &
-            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
+            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, sa, se, sf, sb, acc) &
             !$omp    private(gvv, gvt, pe_have, pf_local, x, y)
             ! The fitted (x pe | y pf) for this column, built by the thread
             ! that needs it rather than by a serial pass before the loop:
@@ -1489,29 +1774,39 @@ contains
             !$omp end parallel
          else
             !$omp parallel do default(none) &
-            !$omp    shared(mo, tblk, wblk, nv, nb, ef0, nocc2) &
-            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, se, sf, sb, acc) &
+            !$omp    shared(src, map, tblk, wblk, nv, nb, ef0, no) &
+            !$omp    private(col, ef, a, b, e, f, pa, pb, pe, pf, sa, se, sf, sb, acc) &
             !$omp    schedule(static)
             do col = 1, nb
                ef = ef0 + col - 1
                e = mod(ef - 1, nv) + 1
                f = (ef - 1)/nv + 1
-               se = mod(e, 2)
-               sf = mod(f, 2)
-               pe = nocc2 + (e + 1)/2
-               pf = nocc2 + (f + 1)/2
+               ! Virtual `e` here is spin orbital `no + e`; the map carries both
+               ! its spin and its spatial index, the latter already offset past
+               ! that spin's occupied orbitals. For a restricted reference
+               ! `map%spat(no + e)` is `nocc2 + (e+1)/2` exactly, which is what
+               ! this used to compute.
+               se = merge(1, 0, map%is_a(no + e))
+               sf = merge(1, 0, map%is_a(no + f))
+               pe = map%spat(no + e)
+               pf = map%spat(no + f)
                do b = 1, nv
-                  sb = mod(b, 2)
-                  pb = nocc2 + (b + 1)/2
+                  sb = merge(1, 0, map%is_a(no + b))
+                  pb = map%spat(no + b)
                   do a = 1, nv
                      ! The one place <ab||ef> is needed, straight from the
                      ! spatial tensor. This is `asym` with the spin
                      ! bookkeeping lifted out of the innermost loop -- the
                      ! same two terms, the same signs.
-                     pa = nocc2 + (a + 1)/2
+                     pa = map%spat(no + a)
+                     sa = merge(1, 0, map%is_a(no + a))
                      acc = 0.0_dp
-                     if (mod(a, 2) == se .and. sb == sf) acc = acc + mo(pa, pe, pb, pf)
-                     if (mod(a, 2) == sf .and. sb == se) acc = acc - mo(pa, pf, pb, pe)
+                     if (sa == se .and. sb == sf) then
+                        acc = acc + tensor(src, sa, sb, pa, pe, pb, pf)
+                     end if
+                     if (sa == sf .and. sb == se) then
+                        acc = acc - tensor(src, sa, sb, pa, pf, pb, pe)
+                     end if
                      ! <am||ef> = -<ma||ef>, and likewise for b.
                      acc = acc + tblk(b, (col - 1)*nv + a) - tblk(a, (col - 1)*nv + b)
                      wblk((b - 1)*nv + a, col) = wblk((b - 1)*nv + a, col) + acc
