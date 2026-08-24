@@ -958,7 +958,7 @@ contains
       call clk%lap(STAGE_FOCK)
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
-      call clk%report("RHF", verbose)
+      call clk%report("UHF", verbose)
       if (verbose) then
          write (line, "(a,f12.8,a,f12.8)") "  <S^2> = ", result%spin_squared, &
             "   exact = ", 0.25_dp*real(n_alpha - n_beta, dp)*real(n_alpha - n_beta + 2, dp)
