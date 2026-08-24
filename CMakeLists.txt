@@ -176,6 +176,13 @@ set(MQC_CODATA_YEAR
 set_property(CACHE MQC_CODATA_YEAR PROPERTY STRINGS 2018 2010)
 
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
+option(MQC_ENABLE_CREST "Link to CREST for conformer and ensemble sampling" OFF)
+set(MQC_CREST_REPOSITORY
+    "https://github.com/JorgeG94/crest.git"
+    CACHE STRING "Where to fetch CREST from")
+set(MQC_CREST_TAG
+    "feat/engrad-callback"
+    CACHE STRING "CREST revision to build against")
 set(CUEST_ROOT
     ""
     CACHE PATH "Root of the unpacked libcuest-<ver>-archive (needs lib/)")
@@ -601,6 +608,48 @@ if(MQC_ENABLE_HDF5)
   message(STATUS "HDF5 checkpoints enabled: ${HDF5_C_LIBRARIES}")
 endif()
 
+# CREST, for conformer and ensemble sampling.
+#
+# Declared here rather than earlier because it must come after BLA_VENDOR is set
+# above: CREST calls find_package(LAPACK/BLAS) unguarded -- the only two of its
+# dependencies not behind an `if(NOT TARGET ...)` -- and picking a different
+# BLAS than the rest of this build links fine and computes wrong.
+#
+# Nothing here declares toml-f, gfnff, gfn0, libpvol or lwoniom, and that is
+# deliberate: CREST's own config/modules/crest-utils.cmake resolves each of them
+# through "subproject, cmake, fetch, pkgconf" in order and, when it has to
+# fetch, creates the `pkg::pkg` alias itself. Those projects export their
+# namespaced target only from install(), so without that alias a FetchContent
+# build of them would not satisfy CREST's own `if(NOT TARGET ...)` guards.
+# Duplicating any of it here would fight the mechanism rather than help it.
+#
+# tblite is the exception worth naming: CREST guards it with `if(NOT TARGET
+# "tblite::tblite")`, and this project defines that target above, so CREST links
+# the same tblite rather than building a second one.
+if(MQC_ENABLE_CREST)
+  # CREST's suite would otherwise be added to this project's ctest, and it pulls
+  # test-drive in to do it.
+  set(WITH_TESTS
+      OFF
+      CACHE BOOL "Build CREST's own unit tests" FORCE)
+  FetchContent_Declare(
+    crest
+    GIT_REPOSITORY ${MQC_CREST_REPOSITORY}
+    GIT_TAG ${MQC_CREST_TAG})
+  FetchContent_MakeAvailable(crest)
+  target_link_libraries(${main_lib} PUBLIC lib-crest-static)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CREST)
+  message(STATUS "CREST enabled: ${MQC_CREST_REPOSITORY}@${MQC_CREST_TAG}")
+
+  # The seam the integration rests on, checked on its own because every way it
+  # can fail is quiet: an uncalled pointer returns zero rather than an error.
+  add_executable(check_crest_callback
+                 ${PROJECT_SOURCE_DIR}/validation/check_crest_callback.f90)
+  target_include_directories(check_crest_callback
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_crest_callback PRIVATE ${main_lib})
+endif()
+
 # DL-FIND, behind libdlfind, for geometry optimization.
 #
 # Off by default, and the reason is licensing rather than size: DL-FIND is
@@ -950,6 +999,7 @@ foreach(
         check_amplitude_layout
         check_ao
         check_ao_deriv2
+        check_crest_callback
         check_bcast
         check_bcast_system
         check_bond_orders
