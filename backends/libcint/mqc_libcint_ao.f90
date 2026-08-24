@@ -95,6 +95,13 @@ contains
       real(dp) :: a_min, c_max, lo, hi, mid, val
 
       allocate (radius(mol%nbas))
+      ! A non-positive threshold turns the screen off rather than being an
+      ! error: it is how a run checks what the screening is worth, and how a
+      ! disagreement gets bisected without rebuilding.
+      if (threshold <= 0.0_dp) then
+         radius = huge(1.0_dp)
+         return
+      end if
       do ish = 1, mol%nbas
          l = mol%bas(LIBCINT_ANG_OF, ish)
          nprim = mol%bas(LIBCINT_NPRIM_OF, ish)

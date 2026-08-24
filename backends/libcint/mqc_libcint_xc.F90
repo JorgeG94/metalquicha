@@ -113,6 +113,17 @@ module mqc_libcint_xc
          !! MP2 correlation fraction, for a double hybrid. Carried here so the
          !! caller can see it without re-parsing the name; nothing in this module
          !! acts on it, because perturbative correlation is not a grid quantity.
+      real(dp) :: screen_tol = AO_SCREEN_TOL
+         !! The AO value below which a shell is dropped from a grid block.
+         !! From `keywords.dft.screening_tolerance`; the default is the constant.
+      integer :: point_block = AO_POINT_BLOCK
+         !! Grid points per block. From `keywords.dft.block_size`.
+         !!
+         !! Two things at once, which is why it is worth exposing. A smaller
+         !! block is spatially tighter, so fewer shells reach it and the screen
+         !! keeps less; and the loop over blocks *is* the OpenMP loop, so the
+         !! block count is the thread granularity. Too large and threads idle;
+         !! too small and the per-block gather and scatter start to show.
       logical :: polarized = .false.
          !! Whether the functionals were initialised spin-polarised.
          !!
@@ -156,7 +167,8 @@ contains
 #endif
    end function xc_available
 
-   subroutine xc_context_create(mol, functional, ctx, error, level, polarized)
+   subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
+                                screen_tol, point_block)
       !! Resolve a functional name and build the grid it will be integrated on
       type(libcint_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
@@ -167,6 +179,11 @@ contains
          !! Initialise the functionals spin-polarised, for an unrestricted
          !! calculation. Default restricted. Fixed here because libxc fixes it at
          !! initialisation, so it cannot be decided later by whoever evaluates.
+      real(dp), intent(in), optional :: screen_tol
+         !! AO screening threshold; zero or negative disables the screen and
+         !! evaluates the whole basis, which is the way to check what it costs.
+      integer, intent(in), optional :: point_block
+         !! Grid points per block. Non-positive keeps the default.
 
       type(xc_spec_t) :: spec
       integer :: grid_level, i, id, family
@@ -299,6 +316,10 @@ contains
       end do
 #endif
 
+      if (present(screen_tol)) ctx%screen_tol = screen_tol
+      if (present(point_block)) then
+         if (point_block > 0) ctx%point_block = point_block
+      end if
       ctx%active = .true.
    end subroutine xc_context_create
 
@@ -900,7 +921,7 @@ contains
       ! and a shell dropped beyond its radius contributes less than that at
       ! every point of the block -- so this is a truncation with a stated
       ! bound, not a heuristic.
-      call shell_extents(mol, AO_SCREEN_TOL, extents)
+      call shell_extents(mol, ctx%screen_tol, extents)
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents) &
@@ -921,13 +942,13 @@ contains
       n_local = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do g0 = 1, ctx%grid%n_points, AO_POINT_BLOCK
+      do g0 = 1, ctx%grid%n_points, ctx%point_block
          ! A thread that has seen a failure stops doing work, but the loop still
          ! has to be run out: leaving an OpenMP region early is not allowed, and
          ! the barrier at its end has to be reached by everybody.
          if (failed) cycle
 
-         g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
+         g1 = min(g0 + ctx%point_block - 1, ctx%grid%n_points)
          nb = g1 - g0 + 1
 
          ! Which shells reach this block at all. Everything downstream -- the

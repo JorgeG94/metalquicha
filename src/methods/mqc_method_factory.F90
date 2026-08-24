@@ -264,6 +264,8 @@ contains
       m%options%functional = config%dft%functional
       m%options%grid_type = config%dft%grid_type
       m%options%grid_level = config%dft%grid_level
+      m%options%screening_tolerance = config%dft%screening_tolerance
+      m%options%block_size = config%dft%block_size
       m%options%pcm = config%pcm
       m%options%properties = config%properties
       m%options%backend = config%backend

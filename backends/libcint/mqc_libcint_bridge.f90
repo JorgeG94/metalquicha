@@ -791,7 +791,9 @@ contains
          ! whoever evaluates the potential -- and the two evaluators refuse the
          ! wrong kind of context rather than reading it with the wrong stride.
          call xc_context_create(mol, trim(settings%functional), xc, error, &
-                                level=settings%grid_level, polarized=unrestricted)
+                                level=settings%grid_level, polarized=unrestricted, &
+                                screen_tol=settings%screening_tolerance, &
+                                point_block=settings%block_size)
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, error%get_message())
             result%has_error = .true.
