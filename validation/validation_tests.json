@@ -222,6 +222,23 @@
                 3.784614
             ],
             "distance_tolerance": 0.02
+        },
+        {
+            "name": "Optimize water HF/STO-3G (DL-FIND)",
+            "input": "inputs/cpu/mqc/optimize/cpu_water_sto-3g_opt.json",
+            "expected_energy": -74.965901217296,
+            "type": "unfragmented",
+            "requires": [
+                "libcint",
+                "dlfind"
+            ],
+            "tolerance": 1e-08,
+            "expected_distances": [
+                0.98941,
+                0.98941,
+                1.516159
+            ],
+            "distance_tolerance": 0.001
         }
     ]
 }

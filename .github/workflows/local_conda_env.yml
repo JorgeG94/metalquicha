@@ -50,6 +50,8 @@ jobs:
             # the default flips, this job stops matching what `cmake -B build`
             # produces and the mismatch shows up here rather than nowhere.
             hdf5: false
+            # DL-FIND likewise, and for the same reason.
+            dlfind: false
           # tblite built without libxc or the integrals backend -- a reduced
           # build, and only a build. The xTB validation is not run here: it
           # touches neither libxc nor the integrals, so on modern MPI it would
@@ -107,6 +109,30 @@ jobs:
             tblite: false
             legacy_mpi: false
             hdf5: true
+          # `MQC_ENABLE_DLFIND` appeared in no job, and it defaults to OFF, so
+          # `backends/dlfind/` had never been compiled here at all -- the
+          # bridge, its seven callbacks, and the `spec` array it hands DL-FIND.
+          # What CI did cover was `mqc_optimizer_types`, which is the
+          # optimizer's vocabulary and is built either way, so the tests read as
+          # though the optimizer were covered while the half that talks to
+          # DL-FIND was not compiled.
+          #
+          # The failure that says so: a `dlfind_optimize` argument added to the
+          # real bridge and not to `mqc_dlfind_bridge_stub` builds clean for
+          # anyone developing with the option on, and breaks every job here.
+          # Only a job with it ON compiles both halves against the same call.
+          #
+          # libcint comes with it so there is something to optimize *with*. A
+          # build-only job would prove the bridge links and nothing about
+          # whether it steps: the callbacks, the `spec` array and the geometry
+          # coming back all sit behind `api_dl_find`, which a compiler never
+          # calls. The validation step below runs a short Hartree-Fock
+          # optimization, which is the cheapest thing that exercises them.
+          - name: "with dlfind"
+            tblite: false
+            legacy_mpi: false
+            libcint: true
+            dlfind: true
           # The Python interface needs every backend in one library. backends.py
           # covers standalone and fragmented, xTB and Hartree-Fock -- three of
           # those four paths can break without the others noticing -- and
@@ -148,6 +174,7 @@ jobs:
                   -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
                   -DMQC_USE_LIBFINT=${{ matrix.backend == 'libcint' && 'OFF' || 'ON' }} \
                   -DMQC_ENABLE_HDF5=${{ matrix.hdf5 && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_DLFIND=${{ matrix.dlfind && 'ON' || 'OFF' }} \
                   -B build
           fi
           cmake --build build --parallel 2
@@ -190,6 +217,30 @@ jobs:
           # no longer reachable from Python, or is reachable and wrong.
           MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
             python3 python/examples/methods.py
+
+      # A geometry optimization, which is the only thing here that drives
+      # DL-FIND rather than merely linking it. Water in STO-3G from a distorted
+      # start: about fifty energy-and-gradient evaluations, a second or two, and
+      # it fails if the callbacks stop being called, if the geometry stops
+      # coming back through `dlf_put_coords`, or if the `spec` array stops
+      # describing the system.
+      #
+      # The manifest checks the structure as well as the energy. A wrong
+      # optimization can land inside an energy tolerance while sitting at a
+      # geometry nobody meant -- the potential is flat near the minimum, which
+      # is the whole difficulty -- so `expected_distances` is what actually
+      # constrains it.
+      #
+      # `--manifest validation_tests.json` also holds the two GFN2 cases; they
+      # require tblite, which this job does not build, so they skip rather than
+      # fail.
+      - name: Run the optimizer validation
+        if: matrix.dlfind
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cd validation
+          python3 run_validation.py --manifest validation_tests.json -v
 
       # Needs libxc as well as libcint: twelve of these cases name a functional
       # and are refused outright without it, which is how this step first went
