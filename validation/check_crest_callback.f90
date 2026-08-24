@@ -18,12 +18,29 @@
 !! nothing here could tell a wrong one from a right one.
 module crest_callback_probe
    use, intrinsic :: iso_fortran_env, only: wp => real64
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_config_adapter, only: driver_config_t
+   use mqc_resources, only: resources_t
+   use mqc_calculation_interface, only: compute_energy_and_forces
    implicit none
    private
 
    public :: harmonic_engrad, K_FORCE
+   public :: install_mqc_engrad, mqc_engrad
 
    real(wp), parameter :: K_FORCE = 0.25_wp
+
+   !> Context for the mqc-backed callback below.
+   !>
+   !> Held as module state for the same reason mqc_geometry_optimizer holds
+   !> ctx_config and ctx_resources that way: CREST's hook takes a geometry and
+   !> nothing else, so everything a calculation needs besides the geometry has
+   !> to be waiting for it. A driver installs this once and CREST then calls
+   !> the hook as many times as its sampling wants.
+   type(system_geometry_t), save :: ctx_geom
+   type(driver_config_t), save :: ctx_config
+   type(resources_t), save :: ctx_resources
+   logical, save :: ctx_ready = .false.
 
 contains
 
@@ -55,23 +72,88 @@ contains
       grad = K_FORCE*xyz
    end subroutine harmonic_engrad
 
+   subroutine install_mqc_engrad(geom, config, res)
+      type(system_geometry_t), intent(in) :: geom
+      type(driver_config_t), intent(in) :: config
+      type(resources_t), intent(in) :: res
+
+      ctx_geom = geom
+      ctx_config = config
+      ctx_resources = res
+      ctx_ready = .true.
+   end subroutine install_mqc_engrad
+
+   subroutine mqc_engrad(nat, at, xyz, energy, grad, iostatus)
+      !! CREST's engrad_callback, answered by mqc's own SCF
+      !!
+      !! Only the coordinates move. Everything else -- the method, the basis,
+      !! the charge, the communicator -- was fixed when the driver installed
+      !! this, which is exactly the contract a sampling loop wants: it varies a
+      !! geometry and nothing else.
+      integer, intent(in) :: nat
+      integer, intent(in) :: at(nat)
+      real(wp), intent(in) :: xyz(3, nat)
+      real(wp), intent(out) :: energy
+      real(wp), intent(out) :: grad(3, nat)
+      integer, intent(out) :: iostatus
+
+      iostatus = 0
+      energy = 0.0_wp
+      grad = 0.0_wp
+
+      if (.not. ctx_ready) then
+         iostatus = 1
+         return
+      end if
+      if (nat /= ctx_geom%total_atoms) then
+         !> CREST may not change the atom count under a sampling run, and if it
+         !> ever does the installed context is the wrong one rather than a
+         !> resizable one. Refuse instead of reallocating into a mismatch.
+         iostatus = 2
+         return
+      end if
+      if (any(at /= ctx_geom%element_numbers)) then
+         iostatus = 3
+         return
+      end if
+
+      ctx_geom%coordinates = xyz
+      call compute_energy_and_forces(ctx_geom, ctx_config, ctx_resources, &
+                                     energy, gradient=grad)
+   end subroutine mqc_engrad
+
 end module crest_callback_probe
 
 program check_crest_callback
    use, intrinsic :: iso_fortran_env, only: wp => real64
    use crest_calculator, only: calcdata, calculation_settings, jobtype, engrad
    use strucrd, only: coord
-   use crest_callback_probe, only: harmonic_engrad, K_FORCE
+   use crest_callback_probe, only: harmonic_engrad, K_FORCE, &
+                                   install_mqc_engrad, mqc_engrad
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_config_adapter, only: driver_config_t
+   use mqc_resources, only: resources_t
+   use mqc_calculation_interface, only: compute_energy_and_forces
+   use mqc_calc_types, only: CALC_TYPE_GRADIENT
+   use mqc_method_types, only: METHOD_TYPE_HF
+   use pic_mpi_lib, only: pic_mpi_init, pic_mpi_finalize, comm_world
    implicit none
 
    integer, parameter :: NAT = 3
 
-   type(calcdata) :: calc
-   type(calculation_settings) :: sett
+   type(calcdata) :: calc, calc2
+   type(calculation_settings) :: sett, sett2
    type(coord) :: mol
    real(wp) :: energy, e_ref, gmax
    real(wp), allocatable :: grad(:, :), g_ref(:, :)
    integer :: io, failures
+
+   type(system_geometry_t) :: geom
+   type(driver_config_t) :: config
+   type(resources_t) :: res
+   real(wp) :: e_direct, e_crest
+   real(wp), allocatable :: g_direct(:, :), g_crest(:, :)
+   integer :: nranks
 
    failures = 0
 
@@ -125,7 +207,87 @@ program check_crest_callback
       failures = failures + 1
    end if
 
+   !> ------------------------------------------------------------------
+   !> and now the same path with mqc's own SCF behind the pointer
+   !> ------------------------------------------------------------------
+
+   !> The communicator has to be built the way app/main.f90 builds it.
+   !> resources_init only sets thread and GPU defaults -- it does not touch
+   !> MPI -- and compute_energy_and_forces returns its results only under
+   !> `world_comm%rank() == 0`, so an uninitialised comm makes the whole
+   !> calculation run and hand back nothing. It ran, printed a converged SCF,
+   !> and returned zero. Whatever drives CREST has to own this.
+   call pic_mpi_init()
+   res%mpi_comms%world_comm = comm_world()
+   res%mpi_comms%node_comm = res%mpi_comms%world_comm%split()
+   call res%init()
+   nranks = res%mpi_comms%world_comm%size()
+   write (*, "(a)") ""
+   write (*, "(a,i0)") "  ranks in this run     ", nranks
+
+   !> Conformer sampling runs on one rank: CREST loops on the master with
+   !> OpenMP underneath, while compute_energy_and_forces expects every rank to
+   !> call it. Refusing here is the guard the scoping settled on -- at run time
+   !> rather than at build time, so one binary serves both and `mpirun -n 1`
+   !> is still allowed.
+   if (nranks > 1) then
+      write (*, "(a)") "  SKIP: CREST sampling runs on a single rank; re-run without mpirun"
+   else
+      geom%n_monomers = 1
+      geom%atoms_per_monomer = NAT
+      geom%total_atoms = NAT
+      geom%charge = 0
+      geom%multiplicity = 1
+      allocate (geom%element_numbers(NAT), geom%coordinates(3, NAT))
+      geom%element_numbers = mol%at
+      geom%coordinates = mol%xyz
+
+      config%calc_type = CALC_TYPE_GRADIENT
+      config%nlevel = 0
+      config%method_config%method_type = METHOD_TYPE_HF
+      config%method_config%basis_set = "sto-3g"
+
+      allocate (g_direct(3, NAT), g_crest(3, NAT))
+
+      !> mqc on its own
+      call compute_energy_and_forces(geom, config, res, e_direct, gradient=g_direct)
+
+      !> the same calculation, reached through CREST's pointer
+      call install_mqc_engrad(geom, config, res)
+      sett2%id = jobtype%callback
+      sett2%external_engrad => mqc_engrad
+      call calc2%add(sett2)
+      call engrad(mol, calc2, e_crest, g_crest, io)
+
+      write (*, "(a,f20.12)") "    E, mqc direct       ", e_direct
+      write (*, "(a,f20.12)") "    E, through CREST    ", e_crest
+      write (*, "(a,es20.8)") "    max gradient error  ", maxval(abs(g_crest - g_direct))
+
+      if (io /= 0) then
+         write (*, "(a,i0)") "  FAIL: CREST reported status ", io
+         failures = failures + 1
+      end if
+      !> Exact again: this compares mqc against mqc, so the callback is the
+      !> only thing in between. It says nothing about whether the gradient is
+      !> right -- only that it arrives unaltered, which is what this checks.
+      if (e_crest /= e_direct) then
+         write (*, "(a)") "  FAIL: the SCF energy changed crossing the callback"
+         failures = failures + 1
+      end if
+      if (any(g_crest /= g_direct)) then
+         write (*, "(a)") "  FAIL: the gradient changed crossing the callback"
+         failures = failures + 1
+      end if
+      if (e_direct == 0.0_wp) then
+         write (*, "(a)") "  FAIL: mqc returned zero; the comparison is vacuous"
+         failures = failures + 1
+      end if
+   end if
+
+   call pic_mpi_finalize()
+
    if (failures == 0) then
+      write (*, "(a)") ""
       write (*, "(a)") "  OK: CREST called into this program and took its numbers"
    else
       write (*, "(a,i0,a)") "  ", failures, " failure(s)"
