@@ -1,6 +1,7 @@
 !! Coupled cluster on the CPU, in the spin-orbital basis
 module mqc_libcint_cc
-   !! CCSD and CCSD(T) over an RHF reference, written in spin orbitals.
+   !! CCSD and CCSD(T) over a restricted or an unrestricted reference,
+   !! written in spin orbitals.
    !!
    !! Spin orbitals rather than a spin-adapted closed-shell formulation, and the
    !! arithmetic argument loses on purpose. This is the reference path -- the same
@@ -12,12 +13,18 @@ module mqc_libcint_cc
    !!
    !! The consequence is that everything here is indexed by spin orbital, and
    !! which spatial orbital each one belongs to is a table -- `so_map_t` -- rather
-   !! than the arithmetic it used to be. For a restricted reference that table is
-   !! exactly the old interleaving, alpha at `2p-1` and beta at `2p`, so nothing
-   !! closed shell changed. For an unrestricted one it blocks instead,
+   !! than the arithmetic it used to be. Where the two spins have the same
+   !! occupied and virtual counts that table is exactly the old interleaving,
+   !! alpha at `2p-1` and beta at `2p`, so nothing closed shell changed --
+   !! including an unrestricted reference on a closed-shell system, which lands
+   !! there too. Where the counts differ it blocks instead,
    !! `[occ_a, occ_b, vir_a, vir_b]`, because interleaving keeps occupied
-   !! contiguous only while the two spins have the same occupation count. See
-   !! `so_map_t` for what goes wrong when they do not.
+   !! contiguous only while the counts agree.
+   !!
+   !! The branch is on the counts and not on the reference, which is worth
+   !! stating because "unrestricted" and "blocked" are not the same condition
+   !! and the difference is invisible until a closed-shell UHF deck is being
+   !! debugged. See `build_so_map`.
    !!
    !! The antisymmetrised integrals are
    !!
@@ -498,11 +505,22 @@ contains
       !! indices where the stored block has them; the mapping is stated above
       !! each one because it is the only place it can be checked by reading.
       !!
-      !! Occupied spin orbital `i` sits in spatial occupied orbital `(i+1)/2`
-      !! and virtual spin orbital `a` in spatial virtual orbital `(a+1)/2`, both
-      !! with spin `mod(index,2)` -- `no` is even, so a virtual's spin is the
-      !! same whether it is counted from one or from `no+1`, which is what lets
-      !! `same_spin` be used on the within-space indices directly.
+      !! **This routine indexes `map` with within-space indices, and only the
+      !! interleaved ordering makes that legal.** `same_spin(map, n, e)` below
+      !! passes a virtual's index `e` in `1..nv` where `map` is indexed by spin
+      !! orbital in `1..n_so`, so the lookup lands in the occupied block. Under
+      !! the interleaving that is harmless: spins alternate and `no` is even, so
+      !! `is_a(e)` and `is_a(no+e)` agree. `build_cc_eris` next door does the
+      !! same contractions and offsets properly, `no + e`, because it also has
+      !! to work blocked.
+      !!
+      !! What keeps this safe is not local. A blocked map reaches here only if
+      !! an unrestricted reference reaches the fitted path, and that is refused
+      !! in `run_libcint_ccsd` -- `b_vv` has no spin blocks, so the refusal
+      !! exists for its own reason and this depends on it. **Enabling fitted
+      !! UCCSD means offsetting every index in this routine first**, and the
+      !! symptom of forgetting would be spin logic read out of the occupied
+      !! block: a converged, plausible, wrong number.
       type(so_map_t), intent(in) :: map
       type(cc_chem_t), intent(in) :: chem
       integer, intent(in) :: no, nv
@@ -782,6 +800,50 @@ contains
                            "beta orbital energies or a beta occupation count")
             return
          end if
+
+         ! The beta arrays are sized from the alpha ones below -- `n_mo` comes
+         ! from `coeff` and slices `coeff_b` -- so a beta block of a different
+         ! width is read past its end rather than reported. The two spins span
+         ! the same basis, so this is a mismatch and not a case to support.
+         if (size(coeff_b, 1) /= n_ao .or. size(coeff_b, 2) /= n_mo) then
+            call error%set(ERROR_VALIDATION, "UCCSD: the beta coefficients are not the "// &
+                           "same shape as the alpha ones. Both spins span the same "// &
+                           "basis, so this is a bookkeeping error upstream.")
+            return
+         end if
+         if (size(orbital_energies_b) /= n_mo) then
+            call error%set(ERROR_VALIDATION, "UCCSD: there is one beta orbital energy "// &
+                           "per beta orbital, and the count does not match the "// &
+                           "coefficients.")
+            return
+         end if
+         if (n_occ_b < 0 .or. n_occ_b > n_mo) then
+            call error%set(ERROR_VALIDATION, "UCCSD: the beta occupation count is "// &
+                           "outside the orbital space.")
+            return
+         end if
+
+         ! **Zero active beta orbitals is legitimate and negative is not.** A
+         ! frozen core removes the same *spatial* orbitals from both spins, and
+         ! a high-spin system can have no beta electrons left outside it --
+         ! frozen-core lithium is one valence electron and it is alpha. So the
+         ! bound is `>`, not `>=`.
+         !
+         ! Past it the failure is not a wrong number. `build_so_map` sizes
+         ! itself `n_o + n_ob + n_v + n_vb` and then fills `n_o + n_v + n_vb`
+         ! entries, because the beta occupied loop does not run at a negative
+         ! count -- so it writes past the end of its own arrays. The alpha
+         ! guard above does not catch it: Li+ at multiplicity 3 has two alpha
+         ! and no beta electrons, and one frozen core orbital.
+         if (frozen > n_occ_b) then
+            call error%set(ERROR_VALIDATION, "UCCSD: the frozen core takes more "// &
+                           "orbitals than the beta space has occupied. A frozen core "// &
+                           "removes the same spatial orbitals from both spins, so it "// &
+                           "cannot exceed the smaller occupation. Reduce "// &
+                           "keywords.correlation.n_frozen_core, or turn freeze_core off.")
+            return
+         end if
+
          n_ob = n_occ_b - frozen
          n_vb = n_mo - n_occ_b
       else

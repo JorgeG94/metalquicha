@@ -49,7 +49,11 @@ contains
                   new_unittest("uccsd_on_a_closed_shell_equals_ccsd", test_uccsd_closed_shell), &
                   new_unittest("uccsd_open_shell_matches_pyscf", test_uccsd_open_shell), &
                   new_unittest("density_fitting_is_refused_when_unrestricted", &
-                               test_uccsd_refuses_fitting) &
+                               test_uccsd_refuses_fitting), &
+                  new_unittest("frozen_core_beyond_the_beta_space_is_refused", &
+                               test_uccsd_frozen_beta), &
+                  new_unittest("an_empty_active_beta_space_still_runs", &
+                               test_uccsd_empty_beta) &
                   ]
    end subroutine collect_mqc_libcint_cc_tests
 
@@ -316,12 +320,16 @@ contains
       !! This is the identity the whole unrestricted path rests on. UHF on a
       !! closed-shell singlet converges to the RHF solution, so the two spins end
       !! up with the same orbitals and the same energies -- but they arrive at the
-      !! amplitude equations through completely different machinery: a blocked
-      !! spin-orbital ordering instead of an interleaved one, three spatial
-      !! tensors instead of one, and orbital energies drawn per spin. Any wrong
-      !! spin case in `chem`, any transposition in the mixed `(aa|bb)` tensor, and
-      !! any confusion about which spin's occupied count a virtual index sits
-      !! past, all land here.
+      !! amplitude equations through different machinery: three spatial tensors
+      !! instead of one, and orbital energies drawn per spin. Any wrong spin case
+      !! in `chem` and any transposition in the mixed `(aa|bb)` tensor land here.
+      !!
+      !! The *ordering* is not what this case exercises, and saying otherwise
+      !! would be a comfortable mistake. `build_so_map` branches on the counts
+      !! rather than on the reference, and a closed-shell UHF has the counts
+      !! matching, so this takes the interleaving -- the same one the restricted
+      !! path takes. The blocked ordering is covered by the open-shell case
+      !! below, which is the only one where the counts differ.
       !!
       !! Not asked bit for bit. UHF and RHF are separate SCFs and converge to the
       !! same solution only to their own tolerance, so the reference orbitals
@@ -483,6 +491,100 @@ contains
                  "density fitting over an unrestricted reference was accepted; it "// &
                  "would have returned the restricted answer for the alpha orbitals")
    end subroutine test_uccsd_refuses_fitting
+
+   subroutine test_uccsd_frozen_beta(error)
+      !! A frozen core deeper than the beta occupation is refused
+      !!
+      !! The alpha guard alone does not catch it. OH here has five alpha and
+      !! four beta electrons, so a frozen count of five clears `frozen < n_occ`
+      !! on the alpha side and leaves the beta active space at `-1`.
+      !!
+      !! What that costs is not a wrong number. `build_so_map` sizes its arrays
+      !! `n_o + n_ob + n_v + n_vb`, which a negative `n_ob` shrinks, and then
+      !! fills `n_o + n_v + n_vb` of them -- the beta occupied loop does not run
+      !! at a negative count. It writes past the end of its own allocation, so
+      !! without this guard the symptom is whatever that memory happened to be.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(cc_result_t) :: ucc
+      real(dp) :: c(3, 2)
+      integer, parameter :: Z(2) = [8, 1]
+      character(len=2), parameter :: SYM(2) = ["O ", "H "]
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9697_dp*ANG], [3, 2])
+      call build_libcint_molecule(Z, SYM, c, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "OH must build")
+      if (allocated(error)) return
+
+      call run_libcint_uhf(mol, 9, 2, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                           in_core=.true.)
+      call check(error,.not. err%has_error() .and. scf%converged, "UHF must converge")
+      if (allocated(error)) return
+
+      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, 5, &
+                            60, 1.0e-10_dp, .false., .false., ucc, err, &
+                            coeff_b=scf%orbitals_beta, &
+                            orbital_energies_b=scf%orbital_energies_beta, n_occ_b=4)
+      call mol%destroy()
+
+      call check(error, err%has_error(), &
+                 "a frozen core deeper than the beta occupation was accepted; the "// &
+                 "spin-orbital map would have been written past its end")
+   end subroutine test_uccsd_frozen_beta
+
+   subroutine test_uccsd_empty_beta(error)
+      !! No *active* beta orbitals is a calculation, not an error
+      !!
+      !! The boundary the obvious guard gets wrong. Refusing at
+      !! `frozen >= n_occ_b` would reject frozen-core lithium, whose one valence
+      !! electron is alpha and whose beta electron is entirely core -- a real
+      !! calculation with an empty active beta space. Only `frozen > n_occ_b` is
+      !! out of bounds.
+      !!
+      !! Lithium at sto-3g: two alpha, one beta, one frozen core orbital. So the
+      !! active space is one alpha occupied and none beta, and what is asserted
+      !! is that it runs and produces a correlation energy at all -- with a
+      !! single active electron there are no double excitations, so the number
+      !! itself is small and the point is the shape.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(cc_result_t) :: ucc
+      real(dp) :: c(3, 1)
+      integer, parameter :: Z(1) = [3]
+      character(len=2), parameter :: SYM(1) = ["Li"]
+
+      c = 0.0_dp
+      call build_libcint_molecule(Z, SYM, c, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "lithium must build")
+      if (allocated(error)) return
+
+      call run_libcint_uhf(mol, 3, 2, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                           in_core=.true.)
+      call check(error,.not. err%has_error() .and. scf%converged, "UHF must converge")
+      if (allocated(error)) return
+
+      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 2, 1, &
+                            60, 1.0e-10_dp, .false., .false., ucc, err, &
+                            coeff_b=scf%orbitals_beta, &
+                            orbital_energies_b=scf%orbital_energies_beta, n_occ_b=1)
+      call mol%destroy()
+
+      call check(error,.not. err%has_error(), &
+                 "an empty active beta space was refused, but frozen-core lithium "// &
+                 "is a calculation: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, ucc%converged, "it should converge")
+      if (allocated(error)) return
+      call check(error, ucc%e_correlation <= 0.0_dp, &
+                 "a correlation energy should come back, and not be positive")
+   end subroutine test_uccsd_empty_beta
 
 end module test_mqc_libcint_cc
 
