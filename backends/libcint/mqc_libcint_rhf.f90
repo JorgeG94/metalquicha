@@ -219,11 +219,21 @@ contains
       logical, intent(in) :: verbose
 
       call convergence_header(verbose, "SCF iterations", &
-                              "    iter                 energy          dE          dD   diis       Fock       rest", 84)
+                    "    iter                 energy          dE          dD   diis       Fock         XC       rest", 93)
    end subroutine scf_table_header
 
-   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_rest)
+   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_xc, t_rest)
       !! One iteration's line, with the time that iteration took
+      !!
+      !! **The quadrature has a column of its own, and needs one.** `STAGE_FOCK`
+      !! and `STAGE_XC` are separate buckets -- correctly, since the commit that
+      !! stopped the two-electron build being billed to the quadrature -- but the
+      !! row only ever read the first of them. On a Kohn-Sham run that is the
+      !! smaller half by a wide margin: 0.92 s of Fock printed beside an
+      !! iteration that took thirty, because the thirty were in the quadrature
+      !! and the quadrature was not on the line. The totals at the end were right
+      !! the whole time, which is what made it hard to see; a table nobody can
+      !! reconcile against a wall clock is worse than no table.
       !!
       !! Per-iteration rather than only a total because the first iterations of a
       !! direct SCF are not the same price as the last: screening tightens as the
@@ -232,13 +242,13 @@ contains
       !! missing, which is exactly the case here.
       logical, intent(in) :: verbose
       integer, intent(in) :: iter, ndiis
-      real(dp), intent(in) :: energy, de, drms, t_fock, t_rest
+      real(dp), intent(in) :: energy, de, drms, t_fock, t_xc, t_rest
 
       character(len=LINE_LEN) :: line
 
       if (.not. verbose) return
-      write (line, "(i8,f23.12,2es12.3,i7,2(f9.2,a))") &
-         iter, energy, de, drms, ndiis, t_fock, " s", t_rest, " s"
+      write (line, "(i8,f23.12,2es12.3,i7,3(f9.2,a))") &
+         iter, energy, de, drms, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
       call logger%info(trim(line))
    end subroutine scf_table_row
 
@@ -432,7 +442,7 @@ contains
       type(timing_report_t) :: clk
       type(direct_stats_t) :: screening
       type(incremental_state_t) :: incr
-      real(dp) :: t_fock_iter, t_rest_iter
+      real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
 
       if (mod(nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "RHF needs an even electron count; this "// &
@@ -574,6 +584,7 @@ contains
          ! per-iteration Fock column was doing when it printed 0.00 s beside a
          ! Kohn-Sham run that plainly took seconds.
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
+         t_xc_iter = clk%seconds_of(STAGE_XC)
          call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                             fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
                             bmat_lr=bmat_lr)
@@ -598,6 +609,7 @@ contains
             call clk%lap(STAGE_PCM)
          end if
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
+         t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
 
          if (present(projector)) then
             call projector%apply(fock, error)
@@ -626,7 +638,7 @@ contains
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
          call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
-                            diis%count(), t_fock_iter, t_rest_iter)
+                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter)
 
          e_old = e_elec
          result%iterations = iter
@@ -750,7 +762,7 @@ contains
       real(dp) :: e_elec, e_old, de, drms
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
-      real(dp) :: t_fock_iter, t_rest_iter
+      real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
       character(len=LINE_LEN) :: line
 
       diis_size = 8
@@ -895,8 +907,10 @@ contains
             e_elec = e_elec + e_pcm
          end if
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
+         t_xc_iter = clk%seconds_of(STAGE_XC)
          call clk%lap(STAGE_FOCK)
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
+         t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
 
          call commutator(fock_a, d_a, s, x, err_a)
          call commutator(fock_b, d_b, s, x, err_b)
@@ -928,7 +942,7 @@ contains
          de = abs(e_elec - e_old)
          drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
          call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
-                            diis%count(), t_fock_iter, t_rest_iter)
+                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter)
 
          e_old = e_elec
          result%iterations = iter
