@@ -296,7 +296,9 @@ overridden with a second number chosen here.
 Choosing an algorithm
 ---------------------
 
-Five descend to a minimum and one climbs to a saddle:
+Seven, of which six go downhill and one climbs. ``nr`` is the awkward one: it
+goes to whichever stationary point it starts nearest, which is a minimum only if
+it began in that basin.
 
 .. list-table::
    :header-rows: 1
@@ -423,6 +425,15 @@ question: no imaginary frequencies means a minimum, exactly one means a
 first-order saddle point, more than one means neither. A mode is called
 imaginary below ``-10`` cm-1, the same threshold the frequency summary uses to
 separate vibrations from translation and rotation.
+
+One thing to expect in the output. The thermochemistry block a few lines above
+the verdict prints its own ``Imaginary freqs`` count, and the two can disagree:
+thermochemistry treats any frequency below zero as imaginary, so the projected
+rotational modes -- which land at around ``-1e-5`` cm-1 rather than exactly zero
+-- are counted there and not here. On a genuine minimum you will see something
+like ``Imaginary freqs: 3 (skipped)`` directly above ``no imaginary
+frequencies``. The verdict uses the ``-10`` cm-1 window and is the one answering
+the question; the frequency table above both settles any doubt.
 
 Restricted Hartree-Fock only for now, and refused at the start of the run rather
 than at the end -- the end is the one place where the news is expensive, because
