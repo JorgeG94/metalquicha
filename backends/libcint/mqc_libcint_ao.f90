@@ -72,12 +72,22 @@ contains
       !! Per shell, the distance past which every one of its functions is below
       !! `threshold`
       !!
-      !! A contracted shell's largest value at distance r is bounded by
+      !! A contracted shell's value at distance r is a *sum* over primitives,
       !!
-      !!     max_p |c_p| r^l exp(-a_p r^2)
+      !!     sum_p c_p r^l exp(-a_p r^2)
       !!
-      !! and the *smallest* exponent is the one that survives longest, so the
-      !! bound that matters uses `a_min` with the largest coefficient on it.
+      !! so the envelope has to sum the coefficients, not take the largest of
+      !! them. Every term is at most |c_p| r^l exp(-a_min r^2) since a_min is
+      !! the exponent that survives longest, and summing those gives
+      !!
+      !!     (sum_p |c_p|) r^l exp(-a_min r^2)
+      !!
+      !! which is above the shell at every r. Taking `max_p |c_p|` instead --
+      !! which this did first -- bounds one primitive rather than their sum and
+      !! can be under the true value by up to a factor of `nprim`, worst on a
+      !! heavily contracted s shell whose tightest primitives have not yet died
+      !! at the cutoff. That made the stated threshold optimistic rather than
+      !! the answer wrong, but "a bound" has to mean a bound.
       !! Solved by bisection rather than by the closed form: the closed form
       !! needs the Lambert W function for l > 0, and this is computed once per
       !! molecule and then reused for every block of every iteration, so a
@@ -92,7 +102,7 @@ contains
       real(dp), allocatable, intent(out) :: radius(:)
 
       integer :: ish, l, nprim, nctr, ip, ic, exp_ptr, coef_ptr
-      real(dp) :: a_min, c_max, lo, hi, mid, val
+      real(dp) :: a_min, c_max, c_sum, lo, hi, mid, val
 
       allocate (radius(mol%nbas))
       ! A non-positive threshold turns the screen off rather than being an
@@ -113,11 +123,15 @@ contains
          do ip = 1, nprim
             a_min = min(a_min, mol%env(exp_ptr + ip))
          end do
+         ! The largest contraction's total, since a general contraction's
+         ! columns are separate functions and each has to be under the envelope.
          c_max = 0.0_dp
          do ic = 1, nctr
+            c_sum = 0.0_dp
             do ip = 1, nprim
-               c_max = max(c_max, abs(mol%env(coef_ptr + (ic - 1)*nprim + ip)))
+               c_sum = c_sum + abs(mol%env(coef_ptr + (ic - 1)*nprim + ip))
             end do
+            c_max = max(c_max, c_sum)
          end do
          if (c_max <= 0.0_dp .or. a_min >= huge(1.0_dp)) then
             radius(ish) = 0.0_dp
