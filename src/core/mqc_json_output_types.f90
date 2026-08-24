@@ -125,6 +125,10 @@ module mqc_json_output_types
       real(dp), allocatable :: ieda_classical(:, :)
       real(dp) :: ieda_formation = 0.0_dp
       logical :: has_ieda = .false.
+      real(dp), allocatable :: atomic_charges(:)
+      real(dp), allocatable :: spin_populations(:)
+      character(len=16) :: charge_scheme = ""
+      logical :: has_charges = .false.
       real(dp), allocatable :: fukui_plus(:), fukui_minus(:), fukui_dual(:)
       real(dp) :: fukui_ip = 0.0_dp
       real(dp) :: fukui_ea = 0.0_dp
@@ -174,6 +178,8 @@ contains
       if (allocated(this%pie_energies)) deallocate (this%pie_energies)
       if (allocated(this%sapt_terms)) deallocate (this%sapt_terms)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
+      if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
+      if (allocated(this%spin_populations)) deallocate (this%spin_populations)
       if (allocated(this%fukui_plus)) deallocate (this%fukui_plus)
       if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
       if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)

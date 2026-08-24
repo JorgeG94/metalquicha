@@ -24,8 +24,9 @@ module test_mqc_libcint_charges
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
+   use mqc_libcint_rhf, only: run_libcint_rhf, run_libcint_uhf, rhf_result_t
    use mqc_libcint_charges, only: ao_to_atom, mulliken_charges, chelpg_charges, &
+                                  mulliken_spin_populations, &
                                   chelpg_grid
    use mqc_error, only: error_t
    implicit none
@@ -44,7 +45,9 @@ contains
                   new_unittest("ao_to_atom_is_a_partition", test_ao_map), &
                   new_unittest("mulliken_sums_to_the_molecular_charge", test_mulliken_sum), &
                   new_unittest("chelpg_sums_to_the_molecular_charge", test_chelpg_sum), &
-                  new_unittest("chelpg_grid_avoids_the_molecule", test_grid_excludes) &
+                  new_unittest("chelpg_grid_avoids_the_molecule", test_grid_excludes), &
+                  new_unittest("spin_populations_sum_to_the_spin", test_spin_populations), &
+                  new_unittest("closed_shell_spin_populations_vanish", test_spin_closed_shell) &
                   ]
    end subroutine collect_mqc_libcint_charges_tests
 
@@ -169,6 +172,69 @@ contains
       call check(error, abs(charges(2) - charges(3)) < 5.0e-2_dp, &
                  "the two hydrogens of water disagree by more than the grid explains")
    end subroutine test_chelpg_sum
+
+   subroutine test_spin_populations(error)
+      !! The spin partition sums to n_alpha - n_beta, not to the charge
+      !!
+      !! The two sum rules are what tell the routines apart, and getting them
+      !! crossed is the plausible bug: a spin population built by subtracting
+      !! from the nuclear charge would look reasonable per atom and sum to
+      !! something with no meaning.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :), populations(:), spin_density(:, :)
+
+      call water(mol, err)
+      call check(error,.not. err%has_error(), "building the molecule")
+      if (allocated(error)) return
+
+      ! The cation as a doublet: nine electrons, five alpha and four beta.
+      call run_libcint_uhf(mol, 9, 2, 60, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
+      call check(error,.not. err%has_error(), "the reference UHF")
+      if (allocated(error)) return
+      call check(error, scf%converged, "the reference UHF did not converge")
+      if (allocated(error)) return
+
+      call mol%overlap(overlap)
+      spin_density = scf%density - scf%density_beta
+      call mulliken_spin_populations(mol, spin_density, overlap, populations, err)
+      call check(error,.not. err%has_error(), "computing spin populations")
+      if (allocated(error)) return
+
+      call check(error, size(populations) == mol%natm, "one population per atom")
+      if (allocated(error)) return
+      call check(error, abs(sum(populations) - 1.0_dp) < 1.0e-10_dp, &
+                 "spin populations must sum to n_alpha - n_beta, here one")
+   end subroutine test_spin_populations
+
+   subroutine test_spin_closed_shell(error)
+      !! A closed shell has no spin density, so every population is zero
+      !!
+      !! Worth its own test because it is the case where a sign error or a
+      !! stray nuclear charge cannot hide behind a plausible-looking number:
+      !! the answer is exactly zero on every atom.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :), populations(:), spin_density(:, :)
+
+      call converged_water(mol, scf, err)
+      call check(error,.not. err%has_error(), "the reference SCF")
+      if (allocated(error)) return
+
+      call mol%overlap(overlap)
+      allocate (spin_density(size(scf%density, 1), size(scf%density, 2)), source=0.0_dp)
+      call mulliken_spin_populations(mol, spin_density, overlap, populations, err)
+      call check(error,.not. err%has_error(), "computing spin populations")
+      if (allocated(error)) return
+      call check(error, maxval(abs(populations)) < 1.0e-12_dp, &
+                 "a closed shell must carry no spin population anywhere")
+   end subroutine test_spin_closed_shell
 
    subroutine test_grid_excludes(error)
       type(error_type), allocatable, intent(out) :: error

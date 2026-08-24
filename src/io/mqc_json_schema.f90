@@ -99,6 +99,8 @@ contains
       call check_child_object(core, root, "properties", properties_keys(), error)
       call check_grandchild_object(core, root, "properties", "fukui", &
                                    fukui_keys(), error)
+      call check_grandchild_object(core, root, "properties", "charges", &
+                                   charges_keys(), error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
@@ -240,6 +242,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "bonding_analysis")
       call allow(keys, "fukui")
+      call allow(keys, "charges")
    end function properties_keys
 
    function fukui_keys() result(keys)
@@ -257,6 +260,21 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "population")
    end function fukui_keys
+
+   function charges_keys() result(keys)
+      !! Settings for the atomic partial charges
+      !!
+      !! `scheme` defaults to Mulliken, which is the opposite of the Fukui
+      !! default and for a reason. A condensed Fukui index is a difference of
+      !! two charges, where Mulliken's basis-set sensitivity does not cancel
+      !! and can change which site ranks first; asked for on its own, a charge
+      !! is usually wanted as the cheap population number, and Mulliken costs
+      !! one trace against an overlap that already exists. CHELPG costs an ESP
+      !! evaluation on a few thousand points. Naming the cheap one and
+      !! documenting the better one is the honest default here.
+      type(key_set_t) :: keys
+      call allow(keys, "scheme")
+   end function charges_keys
 
    function bonding_analysis_keys() result(keys)
       !! Settings for the quasi-atomic bonding analysis

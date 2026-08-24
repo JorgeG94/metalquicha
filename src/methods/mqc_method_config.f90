@@ -230,6 +230,11 @@ module mqc_method_config
       !! Analyses to run once the wave function exists
       character(len=32) :: bonding_analysis = "none"
       character(len=:), allocatable :: fukui_population
+      character(len=:), allocatable :: charges_scheme
+         !! Allocated when `properties.charges` asked for partial charges;
+         !! "mulliken" or "chelpg". Unallocated means no charges, which is why
+         !! this is allocatable rather than a "none" sentinel like
+         !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
       logical :: bonding_restrict_localization = .false.

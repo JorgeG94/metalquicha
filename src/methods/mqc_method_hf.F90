@@ -140,6 +140,9 @@ contains
       if (allocated(this%options%properties%fukui_population)) then
          settings%fukui_population = this%options%properties%fukui_population
       end if
+      if (allocated(this%options%properties%charges_scheme)) then
+         settings%charges_scheme = this%options%properties%charges_scheme
+      end if
       settings%bonding_no_sharing = this%options%properties%bonding_no_sharing
       settings%bonding_restrict_localization = &
          this%options%properties%bonding_restrict_localization

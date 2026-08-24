@@ -472,7 +472,8 @@ Properties
 ==========
 
 Asked for under ``properties``, beside ``keywords`` rather than inside it: these
-change nothing about the energy, so ``driver`` stays ``"energy"``. There are two.
+change nothing about the energy, so ``driver`` stays ``"energy"``. There are
+three.
 
 - **Bonding analysis** -- bond orders and valences over **QUAO**, the
   quasi-atomic orbitals, a basis in which every orbital belongs to one atom. Its
@@ -487,13 +488,21 @@ change nothing about the energy, so ``driver`` stays ``"energy"``. There are two
   questions. Computed over Hartree-Fock or any Kohn-Sham functional, with the
   two ions unrestricted, and condensed onto atoms by a population scheme
   (``population``, default ``chelpg``). ``properties.fukui``.
+- **Atomic charges**, Mulliken or CHELPG, partitioning the density the
+  calculation already converged -- Hartree-Fock or any Kohn-Sham functional,
+  restricted or unrestricted, at no cost beyond the SCF that was going to run
+  anyway. The object is the request and ``scheme`` only says how, so
+  ``"charges": {}`` is a valid ask. An unrestricted reference also gets Mulliken
+  spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
+  because that scheme fits the electrostatic potential and the total density
+  alone determines it. ``properties.charges``.
 
-Atomic charges are **not** here. Mulliken and CHELPG are reached through the
-Python interface instead, and from a closed-shell RHF density only -- see
-:doc:`charges_and_bond_orders` for why that surface is a loop rather than a JSON
-key, and for the Wiberg-Mayer bond orders that sit beside them. The partition
-routines themselves take a density matrix and do not care where it came from;
-it is the entry point that fixes the reference.
+Charges have a second surface as well: the Python interface reaches them
+directly, from a closed-shell Hartree-Fock density only, for the trial-partition
+loop that :doc:`charges_and_bond_orders` describes -- along with the
+Wiberg-Mayer bond orders beside them, which have no deck surface at all. The
+restriction there is the entry point rather than the schemes, which take a
+density matrix and do not care what produced it.
 
 Two more exist as machinery without a user-facing surface: distributed multipole
 analysis, which builds the EFP fragment potentials, and orbital localization

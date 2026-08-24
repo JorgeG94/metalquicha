@@ -263,6 +263,10 @@ contains
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
       driver_config%method_config%dft%grid_level = mqc_config%dft_grid_level
       driver_config%method_config%backend = mqc_config%backend
+      if (allocated(mqc_config%charges_scheme)) then
+         driver_config%method_config%properties%charges_scheme = &
+            mqc_config%charges_scheme
+      end if
       if (allocated(mqc_config%bonding_analysis)) then
          driver_config%method_config%properties%bonding_analysis = &
             mqc_config%bonding_analysis
