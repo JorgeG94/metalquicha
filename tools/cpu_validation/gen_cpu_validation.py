@@ -287,6 +287,14 @@ MP2_CASES = [
 # sweep below and vanish on the next regeneration.
 HAND_MAINTAINED = {
     "cpu/mqc/rhf/cpu_peptide46_sto-3g.json",
+    # A geometry optimization, which this script does not generate: every case
+    # it writes is a single point with a PySCF energy beside it, and there is no
+    # optimize category to put this in. It is here because it belongs with the
+    # other CPU decks and would be swept from anywhere under cpu/mqc otherwise.
+    # Its manifest entry is in validation_tests.json rather than the generated
+    # one, beside the two GFN2 optimizations it is the Hartree-Fock counterpart
+    # to.
+    "cpu/mqc/optimize/cpu_water_sto-3g_opt.json",
     # MAKEFP writes a fragment potential rather than returning an energy, so there
     # is no reference number for this script to generate or compare against. These
     # are examples of the deck shape, kept here so they are found where every other
