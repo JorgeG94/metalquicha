@@ -1,13 +1,21 @@
 Atomic charges and bond orders
 ==============================
 
-Two properties exposed through the **Python interface** rather than through a
-deck. That is deliberate: neither is the output of a calculation somebody asked
-for, they are inputs to deciding what calculation to run. Working out where to
-cut a molecule means asking about the same system many times over many trial
-partitions, which is a loop, not a JSON key.
+Two properties exposed through the **Python interface**, and charges also
+through a deck. The Python surface is deliberate for both: neither is the output
+of a calculation somebody asked for, they are inputs to deciding what
+calculation to run. Working out where to cut a molecule means asking about the
+same system many times over many trial partitions, which is a loop, not a JSON
+key.
 
-Both follow the same shape -- compute once onto a system handle, read many times.
+Both follow the same shape there -- compute once onto a system handle, read many
+times.
+
+Charges have a second surface because they answer a second question. Once the
+calculation you wanted has run, its charges are a property *of that
+calculation*, and partitioning the density it already converged costs no second
+SCF. That is ``properties.charges``, below, and it is the one to reach for
+unless you are in the trial-partition loop.
 
 Bond orders
 -----------
@@ -45,7 +53,11 @@ Treat them as a veto on unsafe cuts rather than a ranking of good ones.
 Atomic charges
 --------------
 
-Mulliken and CHELPG partial charges, from an RHF density.
+Mulliken and CHELPG partial charges. Through the Python interface, from an RHF
+density; through a deck, from whatever reference the deck converged.
+
+From the Python interface
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -63,7 +75,67 @@ twenty seconds, nearly all of it the SCF. So the basis is the knob that matters
 and the choice of scheme is not; CHELPG adds about ten percent to a calculation
 that has to run anyway.
 
-Closed shell only. An odd electron count raises rather than being quietly paired.
+Closed shell only, and Hartree-Fock only. An odd electron count raises rather
+than being quietly paired. This entry point builds its own molecule and runs its
+own SCF from a geometry and a basis name, so there is nowhere for a functional
+or a spin multiplicity to come from; a deck has both, which is why the deck
+surface below does not share the restriction.
+
+From a deck
+~~~~~~~~~~~
+
+``properties.charges`` partitions the density the calculation already converged.
+
+.. code-block:: json
+
+   {
+     "model": {"method": "dft", "basis": "6-31g", "functional": "b3lyp"},
+     "driver": "Energy",
+     "molecules": [{"xyz": "water.xyz",
+                    "molecular_charge": 0, "molecular_multiplicity": 1}],
+     "properties": {"charges": {"scheme": "mulliken"}}
+   }
+
+The **object** is the request and ``scheme`` only says how, so
+``"charges": {}`` is a valid ask and takes Mulliken. Both partition routines
+take a density matrix and neither knows what produced it, so Hartree-Fock and
+Kohn-Sham, restricted and unrestricted, all work and all cost nothing beyond the
+SCF that was going to run anyway.
+
+Note the default differs from ``properties.fukui``, which takes CHELPG. A
+condensed Fukui index is a difference of two charges, where Mulliken's
+basis-set sensitivity does not cancel; asked for on its own a charge is usually
+wanted as the cheap population number, and Mulliken is one trace against an
+overlap that already exists.
+
+For an unrestricted reference the charges come from ``P_alpha + P_beta``, and
+Mulliken additionally reports **spin populations** from ``P_alpha - P_beta``:
+
+.. code-block:: json
+
+   "atomic_charges": {
+     "scheme": "mulliken",
+     "sum": 1.0,
+     "atoms": [
+       {"atom": 1, "charge": -0.123936, "spin_population": 1.104060},
+       {"atom": 2, "charge": 0.561968, "spin_population": -0.052030},
+       {"atom": 3, "charge": 0.561968, "spin_population": -0.052030}
+     ]
+   }
+
+``sum`` is written out so a consumer can check rather than trust: charges sum to
+the molecular charge, and spin populations to ``n_alpha - n_beta``. There is no
+CHELPG spin analogue, and its absence is meaningful rather than a gap -- that
+scheme fits the electrostatic potential, which the total density alone
+determines.
+
+Two things it will not do. A **multiconfigurational** wave function is refused
+rather than skipped, because the 1-RDM there is in the MO basis over orbitals
+with fractional occupation and the AO density both schemes want is not formed.
+And on a **fragmented** run the charges are the fragment's own, hydrogen caps
+included -- which is what makes them checkable, since the column then sums to
+the charge of the molecule the SCF actually saw. Dropping the caps would leave
+a column summing to nothing in particular.
 
 Which scheme
 ~~~~~~~~~~~~

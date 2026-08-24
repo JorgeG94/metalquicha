@@ -114,6 +114,26 @@ module mqc_result_types
          !! Atom indices are the fragment's own, so a fragment's matrix is
          !! fragment-local and includes its caps.
 
+      ! Atomic partial charges, when `properties.charges` asked for them.
+      real(dp), allocatable :: atomic_charges(:)
+         !! (natoms) nuclear charge minus the electrons assigned to the atom, so
+         !! positive is electron-poor. **Fragment-local, and caps are in it** --
+         !! the same convention `bond_orders` uses, and here it is what makes
+         !! the numbers checkable: the array sums to the charge of the molecule
+         !! the SCF actually saw. Dropping the caps would leave a column that
+         !! sums to nothing in particular.
+      real(dp), allocatable :: spin_populations(:)
+         !! (natoms) the same partition applied to `P_alpha - P_beta`, so it
+         !! sums to `n_alpha - n_beta`. Allocated only for an unrestricted
+         !! reference under Mulliken: CHELPG fits the electrostatic potential,
+         !! which the total density alone determines, so there is no spin
+         !! analogue of it to report.
+      character(len=16) :: charge_scheme = ""
+         !! Which partition produced them. Travels with the numbers because two
+         !! schemes disagree by design, so a charge without its scheme is not
+         !! interpretable.
+      logical :: has_charges = .false.
+
       ! Intrinsic energy decomposition, when `properties.bonding_analysis`
       ! asked for one. Hartree throughout, as everything here is; the printed
       ! tables convert.
@@ -332,6 +352,8 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
+      if (allocated(this%spin_populations)) deallocate (this%spin_populations)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%ieda_free_atom)) deallocate (this%ieda_free_atom)
       if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)

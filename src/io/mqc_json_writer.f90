@@ -118,6 +118,7 @@ contains
 
       call write_sapt_section(json, main_obj, data)
       call write_ieda_section(json, main_obj, data)
+      call write_charges_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
@@ -283,6 +284,56 @@ contains
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine write_mbe_breakdown_json_impl
+
+   subroutine write_charges_section(json, parent, data)
+      !! Atomic partial charges, per atom, with the scheme that produced them
+      !!
+      !! The scheme travels with the numbers rather than being left for the
+      !! reader to remember. Two schemes disagree by design -- that is the
+      !! point of having two -- so a charge without its scheme is not a
+      !! quantity anyone can compare against anything.
+      !!
+      !! `spin_populations` appears only for an unrestricted reference under
+      !! Mulliken. Its absence is meaningful and not a gap: a closed shell has
+      !! no spin density, and CHELPG fits a potential the spin density does not
+      !! produce.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, entry
+      integer :: i, natm
+      logical :: with_spin
+
+      if (.not. data%has_charges) return
+      if (.not. allocated(data%atomic_charges)) return
+      natm = size(data%atomic_charges)
+      with_spin = allocated(data%spin_populations)
+      if (with_spin) with_spin = size(data%spin_populations) == natm
+
+      call json%create_object(section, "atomic_charges")
+      call json%add(parent, section)
+      call json%add(section, "scheme", trim(data%charge_scheme))
+      ! What the column has to add up to, written out so a consumer can check
+      ! rather than trust. Mulliken satisfies it as a trace identity and CHELPG
+      ! as the constraint its fit is solved under, so a mismatch here is a bug
+      ! in the bookkeeping and never a property of the molecule.
+      call json%add(section, "sum", sum(data%atomic_charges))
+
+      call json%create_array(arr, "atoms")
+      call json%add(section, arr)
+      do i = 1, natm
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         ! Numbered rather than named, as everywhere else here: the payload
+         ! carries no element symbols and the order is the input order.
+         call json%add(entry, "atom", i)
+         call json%add(entry, "charge", data%atomic_charges(i))
+         if (with_spin) then
+            call json%add(entry, "spin_population", data%spin_populations(i))
+         end if
+      end do
+   end subroutine write_charges_section
 
    subroutine write_fukui_section(json, parent, data)
       !! Where the molecule reacts, per atom, for something other than a reader

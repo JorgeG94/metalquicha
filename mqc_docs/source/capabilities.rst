@@ -117,13 +117,15 @@ against PySCF on the same geometries and the same basis data.
   reported from separately-kept same- and opposite-spin components.
 - **Coupled cluster**: CCSD and CCSD(T) over a restricted or an unrestricted
   reference. Two formulations for the closed-shell case -- spin-adapted over
-  spatial orbitals by default, and spin orbitals for checking it against -- which
-  are exact for each other and agree to machine precision, so the choice is how a
-  number is computed and not which number. An open-shell reference takes the
-  spin-orbital path necessarily, since the spin-adapted equations are derived for
-  a closed shell. Density fitting is available for the restricted case only: the
-  fitted three-index block has no spin blocks, so an unrestricted deck asking for
-  it is refused rather than quietly given the restricted answer.
+  spatial orbitals by default, and spin orbitals for checking it against
+  (``keywords.cc.spin_adapted: false``) -- which are exact for each other and
+  agree to machine precision, so the choice is how a number is computed and not
+  which number; spatial is the default because it is roughly sixteen times
+  smaller. An open-shell reference takes the spin-orbital path necessarily,
+  since the spin-adapted equations are derived for a closed shell. Density
+  fitting is available for the restricted case only: the fitted three-index
+  block has no spin blocks, so an unrestricted deck asking for it is refused
+  rather than quietly given the restricted answer.
 - **Kohn-Sham DFT**: the whole ladder -- LDA, GGA, hybrid, meta-GGA,
   range-separated hybrid and double hybrid -- restricted and unrestricted, over
   `libxc <https://libxc.gitlab.io/>`_, so most of what libxc carries is available
@@ -141,10 +143,13 @@ against PySCF on the same geometries and the same basis data.
   count down where a complete space would be hopeless. Orbital optimisation is
   complete-space only; a restricted space runs its CI on the reference orbitals.
   See :doc:`input_files`.
-- **SAPT0**: the interaction energy of two monomers, decomposed into
-  electrostatics, exchange, induction, dispersion and their exchange
-  counterparts, in the dimer-centred basis. Two fragments exactly -- see
-  :doc:`sapt`.
+- **SAPT**: the interaction energy of two monomers as a sum of named physical
+  terms -- electrostatics, exchange, induction, dispersion and their exchange
+  counterparts -- rather than as a difference of two totals. ``sapt0`` is the
+  first rung, monomers at Hartree-Fock and the interaction through second order;
+  ``sapt2`` is the next one that exists, there being no SAPT1. Everything is in
+  the dimer-centred basis, which is what makes the terms counterpoise-corrected
+  by construction. Two fragments exactly -- see :doc:`sapt`.
 
 Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
 whether a set is Cartesian or spherical is taken from the file rather than assumed.
@@ -156,9 +161,15 @@ Implicit solvation models account for solvent effects without explicit solvent m
 
 **Supported models:**
 
-- **PCM**: a polarizable continuum on the cuEST (GPU) backend, for Hartree-Fock
-  and Kohn-Sham, restricted and unrestricted. Validated against PySCF's C-PCM;
-  configured through ``keywords.pcm``.
+- **PCM**: a polarizable continuum on **both** backends, for Hartree-Fock and
+  Kohn-Sham, restricted and unrestricted, configured through ``keywords.pcm``.
+  The CPU implementation is the smooth switching/Gaussian (SWIG) discretization
+  of Lange and Herbert, solved as either C-PCM or IEF-PCM
+  (``keywords.pcm.method``: ``cpcm`` or ``iefpcm``), and follows
+  ``pyscf.solvent.pcm`` term for term -- the same Lebedev points per sphere, the
+  same switching function, the same fitted per-point Gaussian exponents -- so the
+  two can be compared directly. The cuEST (GPU) path is validated against
+  PySCF's C-PCM.
 - **ALPB**: Analytical Linearized Poisson-Boltzmann (recommended for GFN2-xTB)
 - **GBSA**: Generalized Born with Solvent-Accessible Surface Area
 - **CPCM**: Conductor-like Polarizable Continuum Model
@@ -256,6 +267,10 @@ What has a gradient on the CPU backend, at a glance:
    * - Double hybrids (``b2plyp``, ``b2gp-plyp``, ``mpw2plyp``)
      - yes
      - Restricted, all-electron, GGA-based; exact or fitted reference
+   * - CASSCF and ORMAS-SCF
+     - yes
+     - No Z-vector: a converged MCSCF is stationary with respect to both the
+       orbital rotations and the CI coefficients, so the response terms vanish
    * - Coupled cluster
      - no
      - Needs the Lambda amplitudes
@@ -423,11 +438,75 @@ Geometry Optimization
 Hessian Calculations
 --------------------
 
-- **Numerical Hessians**: Second derivatives via finite differences
-- **Configurable displacement**: User-specified step size (default: 0.001 Bohr)
+There are two, and the backend picks -- a request that cannot be honoured
+analytically is not refused, it falls back.
+
+- **Analytic**, for a restricted Hartree-Fock reference: second derivatives
+  without displacing anything, built in the pieces the standard decomposition
+  uses (nuclear repulsion, the per-atom perturbation, the coupled-perturbed
+  solve, the explicit second-derivative assembly) so it can be compared with
+  PySCF's ``hessian.rhf`` stage by stage rather than only at the end. Taken
+  whenever the calculation is restricted, not Kohn-Sham, not density fitted, has
+  no MP2 or coupled-cluster correlation, no continuum solvent and no hydrogen
+  caps.
+- **Semi-numerical** otherwise: central differences of *analytic gradients*,
+  ``H[i,j] = (g_j(x_i + h) - g_j(x_i - h)) / 2h``. Only one derivative is taken
+  numerically, which keeps most of the digits that differencing energies twice
+  would lose.
+
+Why the analytic one is worth having: the finite-difference Hessian costs
+``6N+1`` gradient evaluations and inherits each one's convergence noise amplified
+by ``1/h``. That amplification lands hardest on the low-frequency modes, which is
+where the rigid-rotor harmonic-oscillator partition function is most sensitive,
+so the noise ends up in the thermochemistry numbers people quote -- and it makes
+a transition-state search unreliable, since that needs one negative eigenvalue
+whose sign a noisy near-zero mode can flip.
+
+- **Configurable displacement**: step size for the semi-numerical path
+  (default: 0.001 Bohr)
 - **Hydrogen cap redistribution**: Proper Hessian transformation for capped atoms
 - **Units**: Hartree/Bohr²
 - **Applications**: Vibrational frequencies, reaction path analysis
+
+Properties
+==========
+
+Asked for under ``properties``, beside ``keywords`` rather than inside it: these
+change nothing about the energy, so ``driver`` stays ``"energy"``. There are
+three.
+
+- **Bonding analysis** -- bond orders and valences over **QUAO**, the
+  quasi-atomic orbitals, a basis in which every orbital belongs to one atom. Its
+  ``energy_decomposition`` option adds **IEDA**, the intrinsic energy
+  decomposition analysis of Del Angel Cruz, Gordon and Ruedenberg: summed over
+  that same basis, it reports what each atom contributes on its own and what
+  exists only because the atoms are bonded.
+  ``properties.bonding_analysis``.
+- **Fukui functions**, the derivative of the density with respect to the electron
+  count at fixed nuclei. Three values rather than one, because that derivative
+  has a kink at every integer: adding an electron and removing one are different
+  questions. Computed over Hartree-Fock or any Kohn-Sham functional, with the
+  two ions unrestricted, and condensed onto atoms by a population scheme
+  (``population``, default ``chelpg``). ``properties.fukui``.
+- **Atomic charges**, Mulliken or CHELPG, partitioning the density the
+  calculation already converged -- Hartree-Fock or any Kohn-Sham functional,
+  restricted or unrestricted, at no cost beyond the SCF that was going to run
+  anyway. The object is the request and ``scheme`` only says how, so
+  ``"charges": {}`` is a valid ask. An unrestricted reference also gets Mulliken
+  spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
+  because that scheme fits the electrostatic potential and the total density
+  alone determines it. ``properties.charges``.
+
+Charges have a second surface as well: the Python interface reaches them
+directly, from a closed-shell Hartree-Fock density only, for the trial-partition
+loop that :doc:`charges_and_bond_orders` describes -- along with the
+Wiberg-Mayer bond orders beside them, which have no deck surface at all. The
+restriction there is the entry point rather than the schemes, which take a
+density matrix and do not care what produced it.
+
+Two more exist as machinery without a user-facing surface: distributed multipole
+analysis, which builds the EFP fragment potentials, and orbital localization
+(Boys/Foster and Edmiston-Ruedenberg), used by AFO and the EFP potentials.
 
 Hydrogen Capping
 ================
@@ -450,7 +529,14 @@ Automatic treatment of broken covalent bonds:
 **Supported bond types:**
 
 - C-C, C-N, C-O single bonds
-- Configurable cap distance (typically 1.09 Å for C-H)
+- Configurable cap distance (typically 1.09 Å for C-H), ``cap_scale``
+
+**Or don't cap: adjusted frozen orbitals (AFO).** ``bond_breaking: "afo"`` takes
+the other route FMO offers. Rather than terminating the fragment with a hydrogen,
+a small model system around the cut bond is built, closed off with hydrogens,
+solved and localized, and the orbital sitting on the bond is lifted out of it and
+frozen -- so the bond is represented to both sides by the same orbital. The
+default remains ``"caps"``.
 
 Input/Output
 ============
@@ -552,65 +638,75 @@ Fragment Distribution
 Configuration Options
 =====================
 
-Hessian Keywords
-----------------
+Everything below is JSON, and everything that configures a method lives under
+``keywords``. The full reference is :doc:`input_files`; this is the shape.
 
-.. code-block:: text
+.. code-block:: json
 
-   %hessian
-   finite_difference_displacement = 0.001  ! Bohr
-   end
-
-AIMD Keywords (Future)
-----------------------
-
-.. code-block:: text
-
-   %aimd
-   dt = 1.0                      ! Femtoseconds
-   nsteps = 1000                 ! MD steps
-   initial_temperature = 300.0   ! Kelvin
-   output_frequency = 10         ! Write every N steps
-   end
-
-SCF Keywords
-------------
-
-.. code-block:: text
-
-   %scf
-   max_iterations = 100
-   convergence_threshold = 1.0e-6
-   use_diis = true
-   end
+   {
+     "keywords": {
+       "scf":      {"maxiter": 100, "tolerance": 1e-8, "guess": "sad"},
+       "dft":      {"grid_level": 3},
+       "cc":       {"maxiter": 50, "spin_adapted": true},
+       "hessian":  {"finite_difference_displacement": 0.001},
+       "pcm":      {"method": "cpcm", "dielectric": 78.4},
+       "fragmentation": {
+         "method": "MBE",
+         "level": 3,
+         "cutoffs": {"dimer": 5.0, "trimer": 4.0}
+       }
+     }
+   }
 
 Fragmentation Cutoffs
 ---------------------
 
-.. code-block:: text
+Per-level distance cutoffs in Angstrom, under
+``keywords.fragmentation.cutoffs``. Keys are either the n-mer name or the level
+as a decimal string -- ``"dimer"`` and ``"2"`` mean the same level, and one
+object may mix the two spellings:
 
-   %cutoffs
-   2 = 5.0   ! Dimer cutoff (Angstrom)
-   3 = 4.0   ! Trimer cutoff
-   4 = 3.5   ! Tetramer cutoff
-   5 = 3.0   ! Pentamer cutoff
-   end
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 50
 
-**Supported n-mers:**
-
-- 2: Dimers
-- 3: Trimers
-- 4: Tetramers
-- 5: Pentamers
-- 6: Hexamers
-- 7: Heptamers
-- 8: Octamers
+   * - Level
+     - Name
+     - Note
+   * - 2
+     - ``dimer``
+     -
+   * - 3
+     - ``trimer``
+     -
+   * - 4
+     - ``tetramer``
+     -
+   * - 5
+     - ``pentamer``
+     -
+   * - 6
+     - ``hexamer``
+     -
+   * - 7
+     - ``heptamer``
+     -
+   * - 8
+     - ``octamer``
+     - The highest level distance screening covers
 
 **Behavior:**
 
 - Negative or zero cutoff = no screening for that level
 - Missing cutoff = no screening for that level
 - Monomers (1-body) always included regardless of cutoffs
+
+.. note::
+
+   The ``%block ... end`` keyword format these options were once written in went
+   away with the ``.mqc`` reader in 0.2.0. A deck written that way is refused by
+   the schema validator before the reader sees it;
+   ``mqc_docs/source/input_files.rst`` carries the migration table.
 
 System Requirements
 ===================
@@ -646,9 +742,26 @@ Limitations and Future Work
 Current Limitations
 -------------------
 
-1. **QC methods**: Only XTB currently integrated (HF, DFT planned)
-2. **Periodic boundaries**: Not yet implemented
-3. **AIMD**: Keywords defined but implementation pending
+1. **Excited states**: none. No TD-DFT, no CIS, no linear-response excitation
+   energies. The coupled-perturbed solver in ``mqc_libcint_response`` already
+   handles an electric-field perturbation, which is the piece such a method
+   would build on, but nothing consumes it yet
+2. **Relativistic Hamiltonians**: none -- no ZORA, DKH or X2C, and no spin-orbit
+   coupling operator
+3. **Dispersion corrections**: no D3, D4 or VV10 for the ab initio path. The xTB
+   methods carry their own through tblite; a Kohn-Sham number here does not
+   include a dispersion term. VV10 is refused rather than approximated
+4. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
+   reference, and there is no NEVPT2, CASPT2 or MRCI on top of it
+5. **Local correlation**: no DLPNO or equivalent, so coupled cluster is
+   canonical and scales like it
+6. **Periodic boundaries**: not implemented
+7. **AIMD**: keywords are defined and reach the driver config, but there is no
+   propagator behind them
+8. **Analytic second derivatives**: restricted Hartree-Fock only. Everything else
+   takes the semi-numerical path
+9. **SCF convergence aids**: DIIS, and no level shifting, damping or
+   second-order fallback
 
 Planned Features
 ----------------
@@ -660,23 +773,24 @@ Planned Features
      block carries no spin blocks, and a deck asking for both is refused rather
      than given the restricted answer built from the alpha orbitals
    - Unrestricted double hybrids, whose perturbative term keeps them closed-shell
-   - F12 variants, and MCSCF: these parse but have no implementation
+   - F12 variants: these parse but have no implementation
 
-2. **Advanced dynamics**:
+2. **Second derivatives beyond restricted Hartree-Fock**: Kohn-Sham,
+   unrestricted, density-fitted and MP2 Hessians. The exchange-correlation
+   kernel this needs at the GGA rung already exists, built and validated for the
+   double-hybrid gradient
+
+3. **Advanced dynamics**:
 
    - AIMD implementation
    - Thermostats/barostats
    - Trajectory analysis
 
-3. **Property calculations**:
+4. **Property calculations**:
 
-   - Dipole moments
-   - Polarizabilities
+   - Polarizabilities -- the coupled-perturbed solve exists and is used to
+     validate the kernel, but no deck can ask for one
    - NMR chemical shifts
-
-4. **Analysis tools**:
-
-   - Fragment interaction energies
 
 Performance Notes
 =================

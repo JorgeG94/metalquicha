@@ -79,6 +79,7 @@ contains
                   new_unittest("uniform_system_broadcast", test_uniform_system), &
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
                   new_unittest("bonding_analysis_property", test_bonding_analysis), &
+                  new_unittest("charges_property", test_charges_property), &
                   new_unittest("avas_orbital_labels", test_avas_keywords), &
                   new_unittest("ormas_partition", test_ormas_keywords), &
                   new_unittest("full_valence_space", test_full_valence), &
@@ -1342,6 +1343,60 @@ contains
       call check(error, parse_error%has_error(), &
                  "fragments of different sizes cannot be a uniform system")
    end subroutine test_uniform_rejected
+
+   subroutine test_charges_property(error)
+      !! `properties.charges`, and that the object is the request
+      !!
+      !! The shape matters more than the value read. `scheme` is not what asks
+      !! for charges -- the object is -- so a deck naming no scheme still gets
+      !! them, and a deck with no `charges` object gets none however else it is
+      !! configured. Defaulting the scheme downstream instead would leave the
+      !! config unable to say which partition a run used, and the report and
+      !! the JSON both quote it.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Absent object: no charges, and nothing to echo.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), "")
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%charges_scheme), &
+                 "no charges object means no charges")
+      if (allocated(error)) return
+
+      ! Empty object: charges, at the documented default.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%charges_scheme), &
+                 "the object alone should ask for charges")
+      if (allocated(error)) return
+      call check(error, trim(config%charges_scheme), "mulliken", &
+                 "and should default to the scheme the schema documents")
+      if (allocated(error)) return
+
+      ! Named scheme: taken as written.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"charges": {"scheme": "chelpg"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%charges_scheme), "chelpg", &
+                 "a named scheme should be what the deck asked for")
+      if (allocated(error)) return
+
+      ! An unknown key inside the object is refused, like every other object.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"charges": {"schema": "chelpg"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled key inside properties.charges should be refused")
+   end subroutine test_charges_property
 
    subroutine test_bonding_analysis(error)
       !! `properties.bonding_analysis`, and that an unknown one is refused

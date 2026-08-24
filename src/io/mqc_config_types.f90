@@ -129,6 +129,12 @@ module mqc_config_types
          !! rather than defaulted, so that asking for the analysis and choosing
          !! how it is condensed are one decision -- the choice changes the
          !! numbers enough that it should not be made by omission.
+      character(len=:), allocatable :: charges_scheme
+         !! From `properties.charges.scheme`. Allocated means the deck asked for
+         !! atomic partial charges; "mulliken" or "chelpg" chooses how the
+         !! converged density is partitioned. Unlike `fukui_population` this
+         !! carries a default, because here the scheme is the whole request
+         !! rather than one half of it -- see `charges_keys` in the schema.
       logical :: bonding_energy = .false.
          !! From `properties.bonding_analysis.energy_decomposition`. Off by
          !! default because the two-electron term needs the dense `n_ao^4`
@@ -508,6 +514,7 @@ contains
       if (allocated(this%basis)) deallocate (this%basis)
       if (allocated(this%aux_basis)) deallocate (this%aux_basis)
       if (allocated(this%functional)) deallocate (this%functional)
+      if (allocated(this%charges_scheme)) deallocate (this%charges_scheme)
       if (allocated(this%log_level)) deallocate (this%log_level)
       if (allocated(this%fragment_breakdown)) deallocate (this%fragment_breakdown)
       if (allocated(this%frag_method)) deallocate (this%frag_method)

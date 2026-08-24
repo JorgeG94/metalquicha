@@ -37,6 +37,7 @@ module mqc_libcint_charges
 
    public :: ao_to_atom
    public :: mulliken_charges
+   public :: mulliken_spin_populations
    public :: chelpg_charges
    public :: chelpg_grid
 
@@ -109,6 +110,46 @@ contains
          charges(owner(mu)) = charges(owner(mu)) - population
       end do
    end subroutine mulliken_charges
+
+   subroutine mulliken_spin_populations(mol, spin_density, overlap, populations, error)
+      !! The Mulliken partition applied to P_alpha - P_beta
+      !!
+      !! Same trace, different matrix: where `mulliken_charges` asks how many
+      !! electrons sit on an atom, this asks how many *unpaired* ones do. The
+      !! nuclear charge does not enter and nothing is subtracted from it -- a
+      !! nucleus carries no spin -- so this is a population rather than a
+      !! charge, and it sums to `n_alpha - n_beta` and not to the molecular
+      !! charge.
+      !!
+      !! There is deliberately no CHELPG counterpart. That scheme fits the
+      !! electrostatic potential, which the total density alone determines, so
+      !! a "spin CHELPG" would be fitting a potential no spin density produces.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: spin_density(:, :), overlap(:, :)
+      real(dp), allocatable, intent(out) :: populations(:)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: owner(:)
+      real(dp) :: population
+      integer :: mu, nu
+
+      if (size(spin_density, 1) /= mol%nao .or. size(overlap, 1) /= mol%nao) then
+         call error%set(ERROR_VALIDATION, "mulliken spin populations: density and "// &
+                        "overlap must be the size of the basis")
+         return
+      end if
+
+      call ao_to_atom(mol, owner)
+      allocate (populations(mol%natm), source=0.0_dp)
+
+      do mu = 1, mol%nao
+         population = 0.0_dp
+         do nu = 1, mol%nao
+            population = population + spin_density(mu, nu)*overlap(nu, mu)
+         end do
+         populations(owner(mu)) = populations(owner(mu)) + population
+      end do
+   end subroutine mulliken_spin_populations
 
    subroutine chelpg_grid(mol, points, error, spacing, head_space)
       !! The shell of points a CHELPG fit is made on

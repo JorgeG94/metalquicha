@@ -312,6 +312,19 @@ contains
                json_data%has_ieda = .true.
             end if
 
+            ! Partial charges, when `properties.charges` asked. Fragment-local
+            ! and caps included, exactly as the backend produced them -- for an
+            ! unfragmented run there are no caps, which is the only case that
+            ! reaches this writer.
+            if (result%has_charges) then
+               json_data%atomic_charges = result%atomic_charges
+               if (allocated(result%spin_populations)) then
+                  json_data%spin_populations = result%spin_populations
+               end if
+               json_data%charge_scheme = result%charge_scheme
+               json_data%has_charges = .true.
+            end if
+
             ! Where the molecule reacts, when `properties.fukui` asked. Carried
             ! per atom rather than reduced to "the most reactive site": ranking
             ! sites is what the caller is doing, and which index to rank on
