@@ -97,7 +97,7 @@ contains
    subroutine fukui_indices(mol, nelec, multiplicity, neutral_density, neutral_energy, &
                             scheme, max_iter, energy_tol, density_tol, res, error, &
                             functional, grid_level, pt2_fraction, neutral_orbitals, &
-                            neutral_orbital_energies, aux, n_frozen)
+                            neutral_orbital_energies, aux, n_frozen, verbose)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
@@ -149,10 +149,16 @@ contains
       real(dp), intent(in), optional :: neutral_orbitals(:, :)
       real(dp), intent(in), optional :: neutral_orbital_energies(:)
       type(libcint_molecule_t), intent(in), optional :: aux
+      logical, intent(in), optional :: verbose
+         !! Print the two ion SCFs the way the neutral is printed. Absent is
+         !! quiet: a caller that did not ask for iterations should not get two
+         !! tables it cannot switch off, which matters most where this is called
+         !! most -- once per fragment of a fragmented run.
       integer, intent(in), optional :: n_frozen
 
       type(rhf_result_t) :: anion, cation
       real(dp), allocatable :: overlap(:, :), total(:, :)
+      logical :: loud
       integer :: natm
       type(xc_context_t), target :: xc_ions
       type(xc_context_t), pointer :: xc_arg
@@ -161,6 +167,9 @@ contains
       integer :: frozen
 
       if (error%has_error()) return
+
+      loud = .false.
+      if (present(verbose)) loud = verbose
 
       if (multiplicity /= 1) then
          call error%set(ERROR_VALIDATION, "Fukui indices are computed here for a "// &
@@ -254,10 +263,12 @@ contains
       ! silently meant the report could say the affinity was negative while
       ! the evidence for why -- the iterations it took, the energy it settled
       ! on, <S^2> for the doublet -- was never printed.
-      call logger%info("")
-      call logger%info("  Fukui: anion SCF, N+1 electrons")
+      if (loud) then
+         call logger%info("")
+         call logger%info("  Fukui: anion SCF, N+1 electrons")
+      end if
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
-                           .true., anion, error, xc=xc_arg)
+                           loud, anion, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -284,10 +295,12 @@ contains
       deallocate (total)
 
       ! The cation.
-      call logger%info("")
-      call logger%info("  Fukui: cation SCF, N-1 electrons")
+      if (loud) then
+         call logger%info("")
+         call logger%info("  Fukui: cation SCF, N-1 electrons")
+      end if
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
-                           .true., cation, error, xc=xc_arg)
+                           loud, cation, error, xc=xc_arg)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
