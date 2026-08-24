@@ -29,6 +29,7 @@ contains
                   new_unittest("scf_orthogonalizer_refuses_a_singular_overlap", test_orth_singular), &
                   new_unittest("scf_orthogonalizer_reports_a_healthy_overlap", test_orth_reports_healthy), &
                   new_unittest("scf_orthogonalizer_separates_dropped_from_kept", test_orth_reports_dropped), &
+                  new_unittest("scf_orthogonalizer_honours_a_deck_threshold", test_orth_threshold), &
                   new_unittest("scf_closed_shell_density_is_idempotent", test_density_idempotent), &
                   new_unittest("scf_closed_shell_density_traces_to_the_electron_count", test_density_trace), &
                   new_unittest("scf_spin_density_is_half_the_closed_shell_one", test_density_spin), &
@@ -207,6 +208,48 @@ contains
       if (allocated(error)) return
       call check(error, s_kept > LINEAR_DEPENDENCE_TOL, "the kept one is above it")
    end subroutine test_orth_reports_dropped
+
+   subroutine test_orth_threshold(error)
+      !! `keywords.scf.linear_dependence_threshold` moves the cutoff
+      !!
+      !! The same overlap, three cutoffs. A mode at 1e-6 survives the default
+      !! 1e-7 and does not survive a deck asking for 1e-5, which is the whole
+      !! point of exposing it: a diffuse basis that merely warns can be made
+      !! to shed the offending combination instead.
+      !!
+      !! Zero is checked too, because it is the "not set" sentinel the config
+      !! layer sends when a deck says nothing. It must behave as the default
+      !! and not as a cutoff of zero, which would keep every mode including
+      !! the exactly null ones.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), allocatable :: overlap(:, :), x(:, :)
+      type(error_t) :: err
+      integer :: n_mo
+
+      allocate (overlap(3, 3))
+      overlap = 0.0_dp
+      overlap(1, 1) = 1.0e-6_dp
+      overlap(2, 2) = 0.5_dp
+      overlap(3, 3) = 1.0_dp
+
+      call build_orthogonalizer(overlap, x, n_mo, err)
+      call check(error,.not. err%has_error(), "default: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_mo, 3)
+      if (allocated(error)) return
+
+      call build_orthogonalizer(overlap, x, n_mo, err, threshold=1.0e-5_dp)
+      call check(error,.not. err%has_error(), "raised: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_mo, 2)
+      if (allocated(error)) return
+
+      call build_orthogonalizer(overlap, x, n_mo, err, threshold=0.0_dp)
+      call check(error,.not. err%has_error(), "sentinel: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_mo, 3)
+   end subroutine test_orth_threshold
 
    subroutine test_density_idempotent(error)
       !! D S D = 2 D for the closed-shell density, the standard identity

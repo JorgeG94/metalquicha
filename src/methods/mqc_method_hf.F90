@@ -90,6 +90,8 @@ module mqc_method_hf
       real(dp) :: conv_tol = 1.0e-8_dp
          !! Energy convergence threshold
       real(dp) :: density_tol = 1.0e-6_dp
+      real(dp) :: linear_dependence = 0.0_dp
+         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
          !! Density matrix convergence threshold
       real(dp) :: level_shift = 0.0_dp
          !! Hartree added to the virtual block before each diagonalisation.
@@ -186,6 +188,7 @@ contains
       settings%energy_tol = this%options%conv_tol
       settings%density_tol = this%options%density_tol
       settings%level_shift = this%options%level_shift
+      settings%linear_dependence = this%options%linear_dependence
       settings%use_diis = this%options%use_diis
       settings%diis_size = this%options%diis_size
 

@@ -57,7 +57,7 @@ module mqc_scf_common
 contains
 
    subroutine build_orthogonalizer(overlap, transform, n_mo, error, &
-                                   smallest_overlap, smallest_kept)
+                                   smallest_overlap, smallest_kept, threshold)
       !! Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped
       !!
       !! Canonical rather than symmetric so a basis with near-linear dependence
@@ -73,6 +73,12 @@ contains
       real(dp), intent(out), optional :: smallest_kept
          !! The smallest eigenvalue that survived, which is what X actually
          !! divides by and therefore what the SCF has to live with.
+      real(dp), intent(in), optional :: threshold
+         !! Overlap eigenvalues at or below this are dropped. Defaults to
+         !! `LINEAR_DEPENDENCE_TOL`, and `keywords.scf.linear_dependence_threshold`
+         !! is how a deck overrides it. A non-positive value is ignored rather
+         !! than obeyed: zero would keep every mode including the numerically
+         !! null ones, which is not a basis anyone means to ask for.
          !!
          !! Optional, all of them, so the call sites that only want X are
          !! unchanged -- there are five across two backends and only the ones
@@ -80,6 +86,12 @@ contains
 
       real(dp), allocatable :: eigenvectors(:, :), eigenvalues(:)
       integer :: n_ao, i, kept, info
+      real(dp) :: tol
+
+      tol = LINEAR_DEPENDENCE_TOL
+      if (present(threshold)) then
+         if (threshold > 0.0_dp) tol = threshold
+      end if
 
       if (present(smallest_overlap)) smallest_overlap = 0.0_dp
       if (present(smallest_kept)) smallest_kept = 0.0_dp
@@ -96,7 +108,7 @@ contains
 
       ! pic_syev returns eigenvalues ascending, so the discarded ones lead.
       if (present(smallest_overlap)) smallest_overlap = eigenvalues(1)
-      n_mo = count(eigenvalues > LINEAR_DEPENDENCE_TOL)
+      n_mo = count(eigenvalues > tol)
       if (present(smallest_kept) .and. n_mo > 0) then
          smallest_kept = eigenvalues(n_ao - n_mo + 1)
       end if
@@ -108,13 +120,14 @@ contains
       allocate (transform(n_ao, n_mo))
       kept = 0
       do i = 1, n_ao
-         if (eigenvalues(i) <= LINEAR_DEPENDENCE_TOL) cycle
+         if (eigenvalues(i) <= tol) cycle
          kept = kept + 1
          transform(:, kept) = eigenvectors(:, i)/sqrt(eigenvalues(i))
       end do
    end subroutine build_orthogonalizer
 
-   subroutine report_linear_dependence(n_ao, n_mo, smallest_overlap, smallest_kept, verbose)
+   subroutine report_linear_dependence(n_ao, n_mo, smallest_overlap, smallest_kept, verbose, &
+                                       threshold)
       !! Say what the orthogonaliser did to the basis, and whether to worry
       !!
       !! **The warnings are not gated on `verbose`, deliberately.** Dropping a
@@ -129,9 +142,20 @@ contains
       real(dp), intent(in) :: smallest_overlap
       real(dp), intent(in) :: smallest_kept
       logical, intent(in) :: verbose
+      real(dp), intent(in), optional :: threshold
+         !! The cutoff actually applied, which the message quotes. Passed
+         !! rather than read from the parameter because a deck can move it,
+         !! and a warning naming a cutoff the run did not use is worse than
+         !! one that names none.
 
       character(len=160) :: line
       integer :: n_dropped
+      real(dp) :: tol
+
+      tol = LINEAR_DEPENDENCE_TOL
+      if (present(threshold)) then
+         if (threshold > 0.0_dp) tol = threshold
+      end if
 
       n_dropped = n_ao - n_mo
 
@@ -141,7 +165,7 @@ contains
             " basis functions were dropped."
          call logger%warning(trim(line))
          write (line, "(a,es9.2,a,es9.2,a)") "     the overlap's smallest eigenvalue is ", &
-            smallest_overlap, ", below the ", LINEAR_DEPENDENCE_TOL, " cutoff."
+            smallest_overlap, ", below the ", tol, " cutoff."
          call logger%warning(trim(line))
          write (line, "(a,i0,a)") "     the SCF and everything after it run in ", n_mo, &
             " orbitals, not "//trim(adjustl(int_text(n_ao)))//"."
@@ -155,7 +179,8 @@ contains
          call logger%warning("     them all. A smaller or less diffuse basis is the fix "// &
                              "if that matters.")
          call logger%warning("")
-      else if (smallest_kept > 0.0_dp .and. smallest_kept < LINEAR_DEPENDENCE_WARN_TOL) then
+      else if (smallest_kept > 0.0_dp .and. &
+               smallest_kept < max(LINEAR_DEPENDENCE_WARN_TOL, 100.0_dp*tol)) then
          ! Kept, and worth saying so. See LINEAR_DEPENDENCE_WARN_TOL.
          call logger%warning("")
          write (line, "(a,es9.2,a)") "  NEARLY LINEARLY DEPENDENT: the overlap's "// &
