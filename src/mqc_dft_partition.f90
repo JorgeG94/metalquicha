@@ -235,8 +235,6 @@ contains
       if (n_atoms == 1) return
 
       allocate (shift(n_atoms, n_atoms), inv_distance(n_atoms, n_atoms))
-      allocate (atom_r(n_atoms), unit_vec(3, n_atoms))
-      allocate (cell(n_atoms), dcell(3, n_atoms, n_atoms))
 
       call size_adjustment(atomic_numbers, adjust, shift)
 
@@ -249,6 +247,32 @@ contains
          end do
       end do
 
+      ! One thread per grid point.
+      !
+      ! Every iteration reads the geometry and writes its own `dweights(:, :, k)`,
+      ! so the points are independent and nothing is reduced. What is not
+      ! independent is the scratch -- `cell` and `dcell` are rebuilt per point --
+      ! so those move inside the region for each thread to allocate its own.
+      ! `shift` and `inv_distance` depend only on the nuclei and stay shared.
+      !
+      ! This is the grid-response term of a density functional gradient, and it
+      ! was 100 s of CPU on twenty waters while this file had no OpenMP in it at
+      ! all. `dcell` is the only sizeable copy, three by the atom count squared:
+      ! 86 kB for twenty waters, so sixteen threads cost under two megabytes.
+      !
+      ! `schedule(static)`, unlike the quadrature loops: every point costs the
+      ! same `n_atoms` squared wherever it sits, so there is nothing for dynamic
+      ! scheduling to balance and its bookkeeping would be pure overhead.
+      !$omp parallel default(none) &
+      !$omp    shared(points, atom_coords, owner, scheme, dweights, shift, &
+      !$omp           inv_distance, n_points, n_atoms) &
+      !$omp    private(k, i, j, a, atom_r, unit_vec, cell, dcell, dtotal, rij, &
+      !$omp            ds_i, ds_j, dmu_i, dmu_j, mu, nu, s, total, dnu_dmu, &
+      !$omp            ds_dnu, invd)
+      allocate (atom_r(n_atoms), unit_vec(3, n_atoms))
+      allocate (cell(n_atoms), dcell(3, n_atoms, n_atoms))
+
+      !$omp do schedule(static)
       do k = 1, n_points
          do i = 1, n_atoms
             atom_r(i) = norm2(points(:, k) - atom_coords(:, i))
@@ -319,6 +343,8 @@ contains
                                  - cell(owner(k))*dtotal)/(total*total)
          end do
       end do
+      !$omp end do
+      !$omp end parallel
    end subroutine becke_partition_derivatives
 
    pure subroutine size_adjustment(atomic_numbers, adjust, shift)

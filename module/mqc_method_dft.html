@@ -197,17 +197,17 @@ cannot end up with mismatched Coulomb and XC definitions.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1343,18 +1343,18 @@ large graphs.</div>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M924.14,-362.51C878.48,-355.27 788.25,-340.97 733.36,-332.27"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="733.63,-328.77 723.2,-330.66 732.53,-335.68 733.63,-328.77"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_method_dft~~UsedByGraph_node23" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_method_dft~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_method_dft~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="992.5,-337 914.5,-337 914.5,-313 992.5,-313 992.5,-337"/>
 <text text-anchor="middle" x="953.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_dft~~UsedByGraph_edge23" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M914.25,-325C866.38,-325 784.47,-325 733.31,-325"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="733.19,-321.5 723.19,-325 733.19,-328.5 733.19,-321.5"/>
 </g>
@@ -1505,7 +1505,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~2"></span>
+              <span class="anchor" id="variable-options~3"></span>
               type(<a href='../type/dft_options_t.html'>dft_options_t</a>),
             </td>
               <td>public</td>
@@ -1531,17 +1531,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_energy.html'>dft_calc_energy</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_energy.html'>dft_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1574,7 +1574,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~4"></span>
+              <span class="anchor" id="variable-angular_points~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1591,7 +1591,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~4"></span>
+              <span class="anchor" id="variable-aux_basis_named~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1608,7 +1608,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~5"></span>
+              <span class="anchor" id="variable-aux_basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1625,7 +1625,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~7"></span>
+              <span class="anchor" id="variable-backend~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1659,7 +1659,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~4"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1676,7 +1676,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~4"></span>
+              <span class="anchor" id="variable-device_rank~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1727,7 +1727,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1744,7 +1744,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~4"></span>
+              <span class="anchor" id="variable-freeze_core~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1761,7 +1761,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~4"></span>
+              <span class="anchor" id="variable-functional~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1778,7 +1778,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~3"></span>
+              <span class="anchor" id="variable-grid_level~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1814,7 +1814,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~6"></span>
+              <span class="anchor" id="variable-guess~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1832,7 +1832,7 @@ or &lsquo;auto&rsquo;</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~5"></span>
+              <span class="anchor" id="variable-guess_steps~3"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1845,12 +1845,12 @@ or &lsquo;auto&rsquo;</p>
                 <td></td>
             <td>
 <p>The basis ladder for &lsquo;basis_set_projection&rsquo;, one entry per
-preliminary SCF in order.</p><a href="../type/dft_options_t.html#variable-guess_steps~5" class="pull-right"><emph>Read more&hellip;</emph></a>
+preliminary SCF in order.</p><a href="../type/dft_options_t.html#variable-guess_steps~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~7"></span>
+              <span class="anchor" id="variable-max_iter~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -1867,7 +1867,7 @@ preliminary SCF in order.</p><a href="../type/dft_options_t.html#variable-guess_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~4"></span>
+              <span class="anchor" id="variable-n_frozen_core~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1902,7 +1902,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~3"></span>
+              <span class="anchor" id="variable-properties~5"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -1919,7 +1919,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~3"></span>
+              <span class="anchor" id="variable-radial_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1953,7 +1953,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~4"></span>
+              <span class="anchor" id="variable-unrestricted~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2021,7 +2021,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~10"></span>
+              <span class="anchor" id="variable-verbose~7"></span>
               logical,
             </td>
               <td>public</td>
@@ -2071,77 +2071,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~107"></span>
-              class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>this</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment~27"></span>
-              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-result~31"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>result</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-dft_calc_gradient"></span> <h3>private  subroutine <a href='../proc/dft_calc_gradient.html'>dft_calc_gradient</a>(this, fragment, result)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Calculate energy gradient using Kohn-Sham DFT</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-this~109"></span>
+              <span class="anchor" id="variable-this~100"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2192,6 +2122,76 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dft_calc_gradient"></span> <h3>private  subroutine <a href='../proc/dft_calc_gradient.html'>dft_calc_gradient</a>(this, fragment, result)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Calculate energy gradient using Kohn-Sham DFT</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~102"></span>
+              class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~31"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~35"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-dft_calc_hessian"></span> <h3>private  subroutine <a href='../proc/dft_calc_hessian.html'>dft_calc_hessian</a>(this, fragment, result)  
 </h3></div>
     <div class="card-body">
@@ -2211,7 +2211,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~110"></span>
+              <span class="anchor" id="variable-this~103"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2226,7 +2226,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~30"></span>
+              <span class="anchor" id="variable-fragment~32"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2241,7 +2241,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~34"></span>
+              <span class="anchor" id="variable-result~36"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2281,7 +2281,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~108"></span>
+              <span class="anchor" id="variable-this~101"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2296,7 +2296,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~28"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2311,7 +2311,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~32"></span>
+              <span class="anchor" id="variable-result~34"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2326,7 +2326,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~5"></span>
+              <span class="anchor" id="variable-want_gradient~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2369,7 +2369,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-24 15:26 +0000             </p>
+ on 2026-08-24 16:25 +0000             </p>
           </div>
         </div>
         <br>

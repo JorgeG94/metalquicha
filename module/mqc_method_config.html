@@ -209,11 +209,11 @@ for each method family. The factory reads from the appropriate nested type.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1575,18 +1575,18 @@ large graphs.</div>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1485.22,-1362.39C1462.82,-1358.48 1430.78,-1352.55 1403,-1346.14 1366.13,-1337.64 1324.79,-1326.31 1294.16,-1317.56"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1294.78,-1314.09 1284.2,-1314.69 1292.85,-1320.82 1294.78,-1314.09"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_method_config~~UsedByGraph_node50" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_method_config~~UsedByGraph_node50"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_method_config~~UsedByGraph_node50"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1553.5,-1337.14 1475.5,-1337.14 1475.5,-1313.14 1553.5,-1313.14 1553.5,-1337.14"/>
 <text text-anchor="middle" x="1514.5" y="-1322.74" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_config~~UsedByGraph_edge34" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1475.25,-1322.11C1427.38,-1318.32 1345.47,-1311.83 1294.31,-1307.77"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1294.44,-1304.27 1284.19,-1306.97 1293.88,-1311.25 1294.44,-1304.27"/>
 </g>
@@ -3110,7 +3110,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3144,7 +3144,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc~2"></span>
+              <span class="anchor" id="variable-cc"></span>
               type(<a href='../type/cc_config_t.html'>cc_config_t</a>),
             </td>
               <td>public</td>
@@ -3265,7 +3265,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~7"></span>
+              <span class="anchor" id="variable-method_type~5"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3398,7 +3398,7 @@ the real value or every rank binds to device 0.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/method_config_t.html#boundprocedure-reset~6'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_reset.html'>config_reset</a></td>
+  <strong><a href='../type/method_config_t.html#boundprocedure-reset'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_reset.html'>config_reset</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -3540,7 +3540,7 @@ fixed and refuses &ldquo;iefpcm&rdquo; rather than substituting.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~4"></span>
+              <span class="anchor" id="variable-tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4261,7 +4261,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~27"></span>
+              <span class="anchor" id="variable-this~14"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4311,7 +4311,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~31"></span>
+              <span class="anchor" id="variable-this~18"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4351,7 +4351,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~30"></span>
+              <span class="anchor" id="variable-this~17"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4391,7 +4391,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~28"></span>
+              <span class="anchor" id="variable-this~15"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4536,7 +4536,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~29"></span>
+              <span class="anchor" id="variable-this~16"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4609,7 +4609,7 @@ the unrestricted code reduces to the restricted result.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-24 15:26 +0000             </p>
+ on 2026-08-24 16:25 +0000             </p>
           </div>
         </div>
         <br>

@@ -3120,18 +3120,18 @@
 <path fill="none" stroke="#2dff00" stroke-dasharray="5,2" d="M2433.14,-2168.25C2387.48,-2171.87 2297.25,-2179.02 2242.36,-2183.37"/>
 <polygon fill="#2dff00" stroke="#2dff00" points="2241.9,-2179.89 2232.2,-2184.17 2242.45,-2186.87 2241.9,-2179.89"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_error~~UsedByGraph_node116" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_error~~UsedByGraph_node116"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_error~~UsedByGraph_node116"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="2501.5,-2136 2423.5,-2136 2423.5,-2112 2501.5,-2112 2501.5,-2136"/>
 <text text-anchor="middle" x="2462.5" y="-2121.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_error~~UsedByGraph_edge132" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#2dff00" stroke-dasharray="5,2" d="M2423.25,-2130.51C2401.9,-2134.34 2374.88,-2139.49 2351,-2145 2314.13,-2153.5 2272.79,-2164.84 2242.16,-2173.59"/>
 <polygon fill="#2dff00" stroke="#2dff00" points="2240.85,-2170.32 2232.2,-2176.45 2242.78,-2177.05 2240.85,-2170.32"/>
 </g>
@@ -3856,7 +3856,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~5"></span>
+              <span class="anchor" id="variable-code~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -3873,7 +3873,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~4"></span>
+              <span class="anchor" id="variable-message~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3885,7 +3885,7 @@ parameter
                 <td></td>
                 <td></td>
             <td>
-<p>Error message</p><a href="../type/error_t.html#variable-message~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Error message</p><a href="../type/error_t.html#variable-message~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -3984,7 +3984,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~139"></span>
+              <span class="anchor" id="variable-this~94"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4030,7 +4030,7 @@ Returns a multi-line string with error and call stack</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~142"></span>
+              <span class="anchor" id="variable-this~97"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4075,7 +4075,7 @@ Returns a multi-line string with error and call stack</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~140"></span>
+              <span class="anchor" id="variable-this~95"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4120,7 +4120,7 @@ Returns a multi-line string with error and call stack</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~136"></span>
+              <span class="anchor" id="variable-this~91"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4171,7 +4171,7 @@ Typically called when propagating errors upward</p><a href="../proc/error_add_co
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~141"></span>
+              <span class="anchor" id="variable-this~96"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4226,7 +4226,7 @@ Typically called when propagating errors upward</p><a href="../proc/error_add_co
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~138"></span>
+              <span class="anchor" id="variable-this~93"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4267,7 +4267,7 @@ If unit not specified, prints to stdout (unit 6)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~143"></span>
+              <span class="anchor" id="variable-this~98"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4282,7 +4282,7 @@ If unit not specified, prints to stdout (unit 6)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~9"></span>
+              <span class="anchor" id="variable-unit~7"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -4323,7 +4323,7 @@ Resets the stack trace</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~137"></span>
+              <span class="anchor" id="variable-this~92"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4338,7 +4338,7 @@ Resets the stack trace</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~6"></span>
+              <span class="anchor" id="variable-code~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4353,7 +4353,7 @@ Resets the stack trace</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~5"></span>
+              <span class="anchor" id="variable-message~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4396,7 +4396,7 @@ Resets the stack trace</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-24 15:26 +0000             </p>
+ on 2026-08-24 16:25 +0000             </p>
           </div>
         </div>
         <br>
