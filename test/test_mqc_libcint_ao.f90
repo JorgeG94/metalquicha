@@ -23,7 +23,8 @@ module test_mqc_libcint_ao
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_ao, only: eval_ao_block, eval_rho, max_ao_l
+   use mqc_libcint_ao, only: eval_ao_block, eval_rho, max_ao_l, &
+                             shell_extents, block_significant_aos
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
@@ -44,7 +45,10 @@ contains
                   new_unittest("value_on_a_nucleus_is_finite", test_on_nucleus), &
                   new_unittest("high_angular_momentum_is_refused", test_l_limit), &
                   new_unittest("integrated_density_is_the_electron_count", test_rho), &
-                  new_unittest("ao_gradients_match_finite_differences", test_ao_grad) &
+                  new_unittest("ao_gradients_match_finite_differences", test_ao_grad), &
+                  new_unittest("shell_extent_really_bounds_the_shell", test_extent_bound), &
+                  new_unittest("screening_off_keeps_every_function", test_screen_off), &
+                  new_unittest("screened_block_matches_the_full_one", test_screen_matches) &
                   ]
    end subroutine collect_mqc_libcint_ao_tests
 
@@ -97,6 +101,141 @@ contains
       call grid%destroy()
       call mol%destroy()
    end subroutine overlap_error
+
+   subroutine test_extent_bound(error)
+      !! Past every shell's radius, every basis function is below threshold
+      !!
+      !! The point of the test rather than of the radius: `shell_extents`
+      !! returns something a truncation argument rests on, so it has to be
+      !! checked against the functions themselves and not against the formula
+      !! that produced it. An envelope that bounds one primitive instead of the
+      !! contracted sum passes every energy comparison and is still not a bound.
+      !!
+      !! Tested against the largest radius in the molecule rather than shell by
+      !! shell, since the shell-to-atom map lives behind libcint and this suite
+      !! does not link it. Weaker, and still fails on a broken envelope: the
+      !! bound has to hold for whichever shell reaches furthest.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: radius(:), ao(:, :), pts(:, :)
+      real(dp), parameter :: TOL = 1.0e-10_dp
+      integer :: iatom, k
+      real(dp) :: far, worst, dir(3)
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "building the molecule")
+      if (allocated(error)) return
+
+      call shell_extents(mol, TOL, radius)
+      call check(error, size(radius) == mol%nbas, "one radius per shell")
+      if (allocated(error)) return
+      call check(error, all(radius > 0.0_dp), "every radius should be positive")
+      if (allocated(error)) return
+
+      ! Far enough that every atom is past its furthest-reaching shell.
+      far = maxval(radius)*1.001_dp
+      do iatom = 1, mol%natm
+         far = max(far, maxval(radius) + norm2(mol%coords(:, iatom)))
+      end do
+
+      allocate (pts(3, 6))
+      do k = 1, 6
+         dir = 0.0_dp
+         dir(1 + mod(k - 1, 3)) = merge(1.0_dp, -1.0_dp, k <= 3)
+         pts(:, k) = dir*far
+      end do
+
+      call eval_ao_block(mol, pts, ao, err)
+      call check(error,.not. err%has_error(), "evaluating past every radius")
+      if (allocated(error)) return
+
+      worst = maxval(abs(ao))
+      call check(error, worst <= TOL, &
+                 "a basis function is above the threshold beyond every shell "// &
+                 "radius, so the extent is not a bound")
+   end subroutine test_extent_bound
+
+   subroutine test_screen_off(error)
+      !! A non-positive threshold keeps the whole basis
+      !!
+      !! The escape hatch a deck uses to measure what the screening is worth,
+      !! so it has to genuinely disable it rather than merely widen it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: radius(:), pts(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: n_sig
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "building the molecule")
+      if (allocated(error)) return
+
+      call shell_extents(mol, -1.0_dp, radius)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      allocate (pts(3, 1))
+      ! Far enough away that any real screen would drop everything.
+      pts(:, 1) = mol%coords(:, 1) + [50.0_dp, 0.0_dp, 0.0_dp]
+      call block_significant_aos(mol, pts, radius, shell_mask, ao_list, &
+                                 ao_offset, n_sig)
+      call check(error, n_sig == mol%nao, &
+                 "screening off should keep every basis function")
+   end subroutine test_screen_off
+
+   subroutine test_screen_matches(error)
+      !! The compressed block holds the same numbers as the full one
+      !!
+      !! Checks the plumbing rather than the physics: `ao_list` has to map the
+      !! compressed columns back to the ones they came from. A transposed or
+      !! off-by-one map still produces a plausible density and a wrong energy.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: radius(:), pts(:, :), full(:, :), part(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: n_sig, i, k
+      real(dp) :: worst
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "building the molecule")
+      if (allocated(error)) return
+
+      call shell_extents(mol, 1.0e-10_dp, radius)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      allocate (pts(3, 4))
+      do k = 1, 4
+         pts(:, k) = mol%coords(:, 1) + [0.3_dp*k, 0.1_dp, -0.2_dp]
+      end do
+
+      call block_significant_aos(mol, pts, radius, shell_mask, ao_list, &
+                                 ao_offset, n_sig)
+      call check(error, n_sig > 0 .and. n_sig <= mol%nao, "a sane kept count")
+      if (allocated(error)) return
+
+      call eval_ao_block(mol, pts, full, err)
+      call check(error,.not. err%has_error(), "the full evaluation")
+      if (allocated(error)) return
+      call eval_ao_block(mol, pts, part, err, shell_mask=shell_mask, &
+                         ao_offset=ao_offset, n_ao_out=n_sig)
+      call check(error,.not. err%has_error(), "the compressed evaluation")
+      if (allocated(error)) return
+
+      call check(error, size(part, 2) == n_sig, "the compressed width")
+      if (allocated(error)) return
+      worst = 0.0_dp
+      do i = 1, n_sig
+         worst = max(worst, maxval(abs(part(:, i) - full(:, ao_list(i)))))
+      end do
+      call check(error, worst < 1.0e-14_dp, &
+                 "a compressed column does not match the function ao_list "// &
+                 "says it came from")
+   end subroutine test_screen_matches
 
    subroutine test_overlap_spherical(error)
       !! Spherical basis with d functions: cc-pVDZ
