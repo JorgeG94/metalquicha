@@ -40,11 +40,13 @@ module mqc_libcint_ao
    private
 
    public :: eval_ao_block
+   public :: shell_extents
+   public :: block_significant_aos
    public :: eval_rho
    public :: max_ao_l
 
    !> Points per pass when a caller asks for a whole grid at once.
-   integer, parameter, public :: AO_POINT_BLOCK = 4096
+   integer, parameter, public :: AO_POINT_BLOCK = 512
 
    !> Unique components of a symmetric second-derivative tensor: xx, xy, xz,
    !> yy, yz, zz. Public because a caller indexing `hess` has to agree with the
@@ -66,7 +68,147 @@ contains
       end do
    end function max_ao_l
 
-   subroutine eval_ao_block(mol, coords, ao, error, grad, hess)
+   subroutine shell_extents(mol, threshold, radius)
+      !! Per shell, the distance past which every one of its functions is below
+      !! `threshold`
+      !!
+      !! A contracted shell's largest value at distance r is bounded by
+      !!
+      !!     max_p |c_p| r^l exp(-a_p r^2)
+      !!
+      !! and the *smallest* exponent is the one that survives longest, so the
+      !! bound that matters uses `a_min` with the largest coefficient on it.
+      !! Solved by bisection rather than by the closed form: the closed form
+      !! needs the Lambert W function for l > 0, and this is computed once per
+      !! molecule and then reused for every block of every iteration, so a
+      !! hundred bisection steps cost nothing worth avoiding.
+      !!
+      !! **A bound, not an estimate.** Every function of a shell is below the
+      !! threshold beyond this radius, so dropping the shell outside it changes
+      !! the quadrature by less than the threshold per point rather than by an
+      !! amount nobody has characterised.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: threshold
+      real(dp), allocatable, intent(out) :: radius(:)
+
+      integer :: ish, l, nprim, nctr, ip, ic, exp_ptr, coef_ptr
+      real(dp) :: a_min, c_max, lo, hi, mid, val
+
+      allocate (radius(mol%nbas))
+      do ish = 1, mol%nbas
+         l = mol%bas(LIBCINT_ANG_OF, ish)
+         nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
+         nctr = mol%bas(LIBCINT_NCTR_OF, ish)
+         exp_ptr = mol%bas(LIBCINT_PTR_EXP, ish)
+         coef_ptr = mol%bas(LIBCINT_PTR_COEFF, ish)
+
+         a_min = huge(1.0_dp)
+         do ip = 1, nprim
+            a_min = min(a_min, mol%env(exp_ptr + ip))
+         end do
+         c_max = 0.0_dp
+         do ic = 1, nctr
+            do ip = 1, nprim
+               c_max = max(c_max, abs(mol%env(coef_ptr + (ic - 1)*nprim + ip)))
+            end do
+         end do
+         if (c_max <= 0.0_dp .or. a_min >= huge(1.0_dp)) then
+            radius(ish) = 0.0_dp
+            cycle
+         end if
+
+         ! Bracket first: r^l exp(-a r^2) is not monotone at small r for l > 0,
+         ! so start past its maximum at r = sqrt(l/(2a)) and only then bisect.
+         lo = sqrt(real(max(l, 1), dp)/(2.0_dp*a_min))
+         hi = max(lo, 1.0_dp)
+         do while (shell_bound(c_max, a_min, l, hi) > threshold .and. hi < 1.0e4_dp)
+            hi = hi*2.0_dp
+         end do
+         do ip = 1, 80
+            mid = 0.5_dp*(lo + hi)
+            val = shell_bound(c_max, a_min, l, mid)
+            if (val > threshold) then
+               lo = mid
+            else
+               hi = mid
+            end if
+         end do
+         radius(ish) = hi
+      end do
+   end subroutine shell_extents
+
+   pure function shell_bound(c_max, a_min, l, r) result(v)
+      !! |c| r^l exp(-a r^2), the envelope `shell_extents` inverts
+      real(dp), intent(in) :: c_max, a_min, r
+      integer, intent(in) :: l
+      real(dp) :: v
+      v = c_max*r**l*exp(-a_min*r*r)
+   end function shell_bound
+
+   subroutine block_significant_aos(mol, coords, radius, shell_mask, ao_list, &
+                                    ao_offset, n_sig)
+      !! Which shells reach a block of points, and the AO indices they own
+      !!
+      !! The test is against the block's bounding sphere rather than each point:
+      !! one distance per shell instead of `n_points`, and the bound stays a
+      !! bound because a shell that fails it fails at every point in the block.
+      !!
+      !! Blocks that are spatially compact screen far harder than blocks that
+      !! are not, which is the whole argument for keeping them small -- a block
+      !! spanning the molecule reaches everything and screens nothing.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)     !! (3, n_points), Bohr
+      real(dp), intent(in) :: radius(:)        !! from `shell_extents`
+      logical, intent(out) :: shell_mask(:)    !! (nbas)
+      integer, intent(out) :: ao_list(:)       !! (nao), first `n_sig` entries used
+      integer, intent(out) :: ao_offset(:)
+         !! (nbas) where each kept shell's functions start in the *compressed*
+         !! numbering. Meaningless where `shell_mask` is false, and the reason
+         !! `eval_ao_block` can write a compressed block without knowing which
+         !! shells were dropped.
+      integer, intent(out) :: n_sig
+
+      integer :: ish, ig, npts, iatom, off_ao, ndim, i
+      real(dp) :: centre(3)
+      real(dp) :: span, d, dx, dy, dz
+
+      npts = size(coords, 2)
+      centre = 0.0_dp
+      do ig = 1, npts
+         centre = centre + coords(:, ig)
+      end do
+      centre = centre/real(max(npts, 1), dp)
+      span = 0.0_dp
+      do ig = 1, npts
+         dx = coords(1, ig) - centre(1)
+         dy = coords(2, ig) - centre(2)
+         dz = coords(3, ig) - centre(3)
+         span = max(span, sqrt(dx*dx + dy*dy + dz*dz))
+      end do
+
+      n_sig = 0
+      off_ao = 0
+      do ish = 1, mol%nbas
+         ndim = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         iatom = mol%bas(LIBCINT_ATOM_OF, ish) + 1
+         dx = mol%coords(1, iatom) - centre(1)
+         dy = mol%coords(2, iatom) - centre(2)
+         dz = mol%coords(3, iatom) - centre(3)
+         d = sqrt(dx*dx + dy*dy + dz*dz)
+         shell_mask(ish) = (d - span <= radius(ish))
+         ao_offset(ish) = n_sig
+         if (shell_mask(ish)) then
+            do i = 1, ndim
+               n_sig = n_sig + 1
+               ao_list(n_sig) = off_ao + i
+            end do
+         end if
+         off_ao = off_ao + ndim
+      end do
+   end subroutine block_significant_aos
+
+   subroutine eval_ao_block(mol, coords, ao, error, grad, hess, shell_mask, &
+                            ao_offset, n_ao_out)
       !! chi_mu(r) for every basis function at every supplied point
       !!
       !! `ao` comes back as (n_points, n_ao), which is the orientation the density
@@ -83,6 +225,14 @@ contains
          !! everything expensive: the same exponentials, the same angular
          !! components, the same spherical transform. A separate `eval_ao_deriv1`
          !! would duplicate all three and have to be kept in step with them.
+      logical, intent(in), optional :: shell_mask(:)
+         !! (nbas) which shells reach these points, from `block_significant_aos`.
+         !! Absent means all of them, which is the unscreened path every other
+         !! caller still takes.
+      integer, intent(in), optional :: ao_offset(:)
+         !! (nbas) compressed offsets, required with `shell_mask`
+      integer, intent(in), optional :: n_ao_out
+         !! Leading dimension of the compressed block, required with `shell_mask`
       real(dp), allocatable, intent(out), optional :: hess(:, :, :)
          !! d2 chi / d r_j d r_k, as (n_points, n_ao, 6), packed xx, xy, xz, yy,
          !! yz, zz -- the six unique components of a symmetric tensor, in the
@@ -95,6 +245,8 @@ contains
          !! differentiating that with respect to a nuclear position differentiates
          !! the basis functions a second time.
 
+      logical :: screened
+      integer :: n_ao_here, shell_base
       integer :: n_points, ish, l, nprim, nctr, ic, ip, ig, off_ao
       integer :: n_cart, n_sph, n_here, comp, i, j, iatom
       integer :: exp_ptr, coef_ptr
@@ -128,20 +280,35 @@ contains
       ! implies the other. Computing grad silently and discarding it would be
       ! the alternative, and it is the same work.
       want_grad = present(grad) .or. want_hess
-      allocate (ao(n_points, mol%nao))
+      screened = present(shell_mask)
+      if (screened) then
+         if (.not. (present(ao_offset) .and. present(n_ao_out))) then
+            call error%set(ERROR_VALIDATION, "AO evaluation: a shell mask needs the "// &
+                           "compressed offsets and width alongside it; passing one "// &
+                           "without the others would silently write the wrong columns.")
+            return
+         end if
+         n_ao_here = n_ao_out
+      else
+         n_ao_here = mol%nao
+      end if
+
+      allocate (ao(n_points, n_ao_here))
       ao = 0.0_dp
       if (present(grad)) then
-         allocate (grad(n_points, mol%nao, 3))
+         allocate (grad(n_points, n_ao_here, 3))
          grad = 0.0_dp
       end if
       if (want_hess) then
-         allocate (hess(n_points, mol%nao, AO_HESS_COMP))
+         allocate (hess(n_points, n_ao_here, AO_HESS_COMP))
          hess = 0.0_dp
       end if
 
       !$omp parallel default(none) &
       !$omp    shared(mol, coords, ao, grad, hess, n_points, want_grad, want_hess) &
-      !$omp    private(ish, l, nprim, nctr, ic, ip, ig, off_ao, n_cart, n_sph, &
+      !$omp    shared(screened, shell_mask, ao_offset) &
+      !$omp    private(ish, l, nprim, nctr, ic, ip, ig, off_ao, shell_base, &
+      !$omp            n_cart, n_sph, &
       !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, id, ih, &
       !$omp            px, py, pz, dr, ex, &
       !$omp            dx, dy, dz, r2, radial, dradial, d2radial, fac, cart, sph, trans, &
@@ -153,6 +320,12 @@ contains
                 d2sph(2*C2S_LMAX + 1, AO_HESS_COMP))
 
       do ish = 1, mol%nbas
+         if (screened) then
+            if (.not. shell_mask(ish)) cycle
+            shell_base = ao_offset(ish)
+         else
+            shell_base = mol%shell_offset(ish)
+         end if
          l = mol%bas(LIBCINT_ANG_OF, ish)
          nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
          nctr = mol%bas(LIBCINT_NCTR_OF, ish)
@@ -266,7 +439,7 @@ contains
                                 *mol%env(exp_ptr + ip)*ex
                   end if
                end do
-               off_ao = mol%shell_offset(ish) + (ic - 1)*n_here
+               off_ao = shell_base + (ic - 1)*n_here
                if (mol%cartesian) then
                   do comp = 1, n_cart
                      ao(ig, off_ao + comp) = fac*radial*cart(comp)

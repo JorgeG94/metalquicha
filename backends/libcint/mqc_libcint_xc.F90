@@ -35,7 +35,8 @@ module mqc_libcint_xc
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, DEFAULT_GRID_LEVEL
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, MAX_XC_COMPONENTS
    use mqc_libcint_integrals, only: libcint_molecule_t
-   use mqc_libcint_ao, only: eval_ao_block, eval_rho, AO_POINT_BLOCK
+   use mqc_libcint_ao, only: eval_ao_block, eval_rho, AO_POINT_BLOCK, &
+                             shell_extents, block_significant_aos
 #ifdef MQC_WITH_LIBXC
    use xc_f03_lib_m, only: xc_f03_func_t, xc_f03_func_init, xc_f03_func_end, &
                            xc_f03_lda_exc_vxc, xc_f03_func_get_info, &
@@ -52,6 +53,16 @@ module mqc_libcint_xc
 #endif
    implicit none
    private
+
+   real(dp), parameter :: AO_SCREEN_TOL = 1.0e-12_dp
+      !! The AO value below which a shell is dropped from a block.
+      !!
+      !! Tighter than the 1e-10 that is often quoted, and deliberately: the
+      !! quantity being converged here is a total energy at the microhartree
+      !! level over ~10^6 points, and the cost of the extra digit is a couple
+      !! of bohr of radius on the most diffuse shells. Loosening it is the
+      !! first thing to try if the screen is not paying for itself, and the
+      !! gly10 total energy is the thing to watch while doing so.
 
    public :: xc_context_t
    public :: xc_context_create
@@ -821,7 +832,11 @@ contains
       real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
       real(dp), allocatable :: vsigma(:), vsigma_i(:)
       real(dp), allocatable :: tau(:), vtau(:), vtau_i(:), lapl(:), vlapl(:)
-      real(dp), allocatable :: v_local(:, :)
+      real(dp), allocatable :: v_local(:, :), v_sig(:, :), d_sig(:, :)
+      real(dp), allocatable :: extents(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: n_sig, ia, ja
       real(dp) :: e_local, n_local
       type(error_t) :: local_error
       logical :: failed
@@ -880,15 +895,28 @@ contains
       ! default-initialised, gives every thread a clean one to start from.
       failed = .false.
 
+      ! One bound per shell for the whole molecule, computed once and read by
+      ! every block of every iteration. `AO_SCREEN_TOL` is on the AO *value*,
+      ! and a shell dropped beyond its radius contributes less than that at
+      ! every point of the block -- so this is a truncation with a stated
+      ! bound, not a heuristic.
+      call shell_extents(mol, AO_SCREEN_TOL, extents)
+
       !$omp parallel default(none) &
-      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed) &
+      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
       !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
-      !$omp    private(v_local, e_local, n_local) &
+      !$omp    private(v_local, e_local, n_local, v_sig, d_sig, shell_mask, &
+      !$omp            ao_list, ao_offset, n_sig, ia, ja) &
       !$omp    firstprivate(local_error)
       allocate (v_local(size(v_xc, 1), size(v_xc, 2)))
       v_local = 0.0_dp
+      ! Sized to the whole basis once rather than to `n_sig` per block: the
+      ! leading sub-block is what gets used, and re-allocating inside the loop
+      ! is the allocator traffic this change exists to remove.
+      allocate (v_sig(mol%nao, mol%nao), d_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
       e_local = 0.0_dp
       n_local = 0.0_dp
 
@@ -902,15 +930,39 @@ contains
          g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
          nb = g1 - g0 + 1
 
+         ! Which shells reach this block at all. Everything downstream -- the
+         ! basis evaluation, the density contraction, the potential gemm --
+         ! runs on that subset and nothing else, which is where the time goes:
+         ! both gemms are n_points * n_ao^2, so halving n_ao quarters them.
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+
+         ! The density restricted to the same subset. Gathered per block, which
+         ! is n_sig^2 of copying against n_points * n_sig^2 of arithmetic.
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+            end do
+         end do
+
          if (ctx%any_mgga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
-            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
+                          rho_grad=rho_grad, tau=tau)
          else if (ctx%any_gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
-            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
+                          rho_grad=rho_grad)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error)
-            call eval_rho(ao, density, rho)
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
          end if
          if (local_error%has_error()) then
             !$omp critical (xc_failure)
@@ -982,10 +1034,21 @@ contains
             end do
          end if
 
-         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho, v_local, &
+         v_sig(1:n_sig, 1:n_sig) = 0.0_dp
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho, &
+                                   v_sig(1:n_sig, 1:n_sig), &
                                    ao_grad=ao_grad, grad_coeff=grad_coeff, &
                                    vtau=vtau, any_gga=ctx%any_gga, &
                                    any_mgga=ctx%any_mgga)
+         ! Back into the full matrix. The scatter is n_sig^2 per block against
+         ! the gemm's n_points * n_sig^2, so it disappears against what it
+         ! bought.
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               v_local(ao_list(ia), ao_list(ja)) = &
+                  v_local(ao_list(ia), ao_list(ja)) + v_sig(ia, ja)
+            end do
+         end do
       end do
       !$omp end do
 
