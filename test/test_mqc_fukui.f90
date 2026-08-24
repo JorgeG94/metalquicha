@@ -15,6 +15,8 @@ module test_mqc_fukui
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_pcm, only: pcm_context_t
+   use mqc_method_config, only: pcm_config_t
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_fukui, only: fukui_result_t, fukui_indices
    implicit none
@@ -39,30 +41,107 @@ contains
                   new_unittest("indices_sum_to_one_electron", indices_sum_to_one_electron), &
                   new_unittest("water_is_nucleophilic_at_oxygen", water_is_nucleophilic_at_oxygen), &
                   new_unittest("refuses_an_open_shell_neutral", refuses_an_open_shell_neutral), &
-                  new_unittest("values_have_not_drifted", values_have_not_drifted) &
+                  new_unittest("values_have_not_drifted", values_have_not_drifted), &
+                  new_unittest("the_ions_feel_the_solvent", the_ions_feel_the_solvent) &
                   ]
    end subroutine collect_mqc_fukui_tests
 
-   subroutine water_fukui(scheme, res, err, ok)
+   subroutine the_ions_feel_the_solvent(error)
+      !! A continuum reaches all three states, not only the neutral
+      !!
+      !! The ions used to be refused alongside a solvated neutral, and the
+      !! refusal was right: solving them in the gas phase and differencing
+      !! against a solvated neutral is an ionisation potential across two
+      !! different physics, wrong by the solvation energy of a charged species.
+      !! That is not a correction-sized error -- on this molecule it is 3.6 eV
+      !! on the potential and 3.1 eV on the affinity, which is the size of the
+      !! answers themselves.
+      !!
+      !! So the check is not that the solvated numbers are *right* -- there is
+      !! no reference for a Fukui index -- but that they are *different*, and
+      !! different in the direction a dielectric must push them. A continuum
+      !! that quietly failed to reach the ions would reproduce the gas-phase
+      !! numbers exactly, and nothing else in this file would notice.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(fukui_result_t) :: gas, solvated
+      type(error_t) :: err
+      logical :: ok
+
+      call water_fukui("chelpg", gas, err, ok)
+      call check(error, ok, "the gas-phase analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      call water_fukui("chelpg", solvated, err, ok, solvate=.true.)
+      call check(error, ok, "the solvated analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      ! Far more than any tolerance: an unsolvated ion differs from a solvated
+      ! one by electronvolts, so a hundredth of a Hartree is a floor and not a
+      ! threshold anyone has to tune.
+      call check(error, abs(solvated%ionisation_potential - gas%ionisation_potential) > 1.0e-2_dp, &
+                 "the continuum did not reach the cation -- the ionisation "// &
+                 "potential is the gas-phase one")
+      if (allocated(error)) return
+      call check(error, abs(solvated%electron_affinity - gas%electron_affinity) > 1.0e-2_dp, &
+                 "the continuum did not reach the anion -- the electron "// &
+                 "affinity is the gas-phase one")
+      if (allocated(error)) return
+
+      ! Both ions are stabilised by the dielectric, so removing an electron
+      ! costs less and adding one pays better. Either moving the wrong way
+      ! would mean the solvent operator reached the ions with the wrong sign.
+      call check(error, solvated%ionisation_potential < gas%ionisation_potential, &
+                 "a solvated cation should make ionisation cheaper")
+      if (allocated(error)) return
+      call check(error, solvated%electron_affinity > gas%electron_affinity, &
+                 "a solvated anion should make the electron affinity less negative")
+   end subroutine the_ions_feel_the_solvent
+
+   subroutine water_fukui(scheme, res, err, ok, solvate)
       !! Converge water and run the analysis on it
       character(len=*), intent(in) :: scheme
       type(fukui_result_t), intent(out) :: res
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
+      logical, intent(in), optional :: solvate
+         !! Build a C-PCM water continuum and hand it to all three states.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
+      type(pcm_context_t) :: pcm_ctx
+      type(pcm_config_t) :: pcm_cfg
+      logical :: wet
 
       ok = .false.
+      wet = .false.
+      if (present(solvate)) wet = solvate
+
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
+
+      if (wet) then
+         pcm_cfg%enabled = .true.
+         pcm_cfg%method = "cpcm"
+         pcm_cfg%dielectric = 78.3553_dp
+         pcm_cfg%angular_points = 110
+         call pcm_ctx%build(mol, WATER_Z, pcm_cfg, err)
+         if (err%has_error()) then
+            call mol%destroy()
+            return
+         end if
+      end if
+
+      ! The neutral is solved in the same continuum the ions will be, which is
+      ! the whole point: the three energies have to come from one Hamiltonian.
+      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                           pcm=pcm_ctx)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
       call fukui_indices(mol, 10, 1, scf%density, scf%energy, scheme, 100, &
-                         1.0e-10_dp, 1.0e-8_dp, res, err)
+                         1.0e-10_dp, 1.0e-8_dp, res, err, pcm=pcm_ctx)
       call mol%destroy()
       ok = .not. err%has_error()
    end subroutine water_fukui

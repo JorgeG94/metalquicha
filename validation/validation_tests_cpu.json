@@ -2202,6 +2202,13 @@
             "requires": "libxc"
         },
         {
+            "name": "RHF with Fukui indices in C-PCM water H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_cpcm.json",
+            "expected_energy": -75.997887460269,
+            "type": "unfragmented",
+            "reference_note": "The checked number is the ordinary solvated RHF energy, as for the gas-phase Fukui cases -- PySCF has no Fukui indices. What this case covers is that the two ion SCFs run in the SAME continuum the neutral did. They used to be refused outright rather than run, because solving the ions in the gas phase and differencing them against a solvated neutral is an ionisation potential across two different physics, wrong by the solvation energy of a charged species -- which here is 3.6 eV on the IP and 3.1 eV on the EA, the size of the answer rather than a correction to it. Reference by the recipe the PCM decks use: pyscf.solvent.pcm, C-PCM at 78.3553, lebedev_order 29, radii_table = 1.2 * Bondi. Equilibrium solvation in all three states, so the IP and EA are the adiabatic ones."
+        },
+        {
             "name": "RHF C-PCM water sto-3g (CPU)",
             "input": "inputs/cpu/mqc/pcm/cpu_water_sto-3g_cpcm.json",
             "expected_energy": -74.967441478848,

@@ -203,6 +203,49 @@ contributes nothing when it should contribute nothing. And the surface
 resolution matters more than it looks: at 110 angular points the dielectric
 energy was 21% short, which is why ``angular_points`` defaults to 302.
 
+Fukui indices in solution
+-------------------------
+
+A Fukui analysis is three SCFs -- the neutral and the two ions -- and all three
+are solved in the same continuum. Ask for ``keywords.pcm`` and
+``properties.fukui`` together and the ions inherit the neutral's cavity; there
+is nothing further to switch on.
+
+.. code-block:: json
+
+   {
+     "model": {"method": "hf", "basis": "6-31g"},
+     "keywords": {
+       "scf": {"maxiter": 100, "tolerance": 1e-12},
+       "pcm": {"method": "cpcm", "dielectric": 78.3553, "angular_points": 302}
+     },
+     "driver": "Energy",
+     "properties": {"fukui": {"population": "chelpg"}}
+   }
+
+**This used to be refused, and the reason it was is worth keeping in mind.**
+The ions were solved in the gas phase while the neutral carried the continuum,
+which makes the ionisation potential a difference across two different physics.
+That is not a small error: on water in 6-31G the solvent moves the IP by
+0.131 Hartree and the electron affinity by 0.114 Hartree -- 3.6 and 3.1
+electronvolts, the size of the quantities themselves rather than a correction
+to them. Both move the way they should, the cation and the anion each being
+stabilised by the dielectric.
+
+**The result is the adiabatic quantity, not the vertical one.** All three states
+are solved with equilibrium solvation, so the solvent is allowed to relax around
+each charge state. A vertical ionisation potential -- what a photoelectron
+experiment measures, and what Fukui indices are conventionally taken to be --
+would freeze the slow orientational polarisation at the neutral's value and let
+only the fast electronic part respond, through an optical dielectric that
+``pcm_config_t`` does not carry. For a redox potential or a solution-phase
+reactivity index the adiabatic number is the one wanted; for a vertical
+spectroscopic quantity it is not, and the difference in a polar solvent is a
+few tenths of an electronvolt.
+
+The cavity is built once from the geometry and reused by all three states,
+since the nuclei do not move between them.
+
 What is refused, and why
 ------------------------
 
@@ -220,9 +263,6 @@ the output to say so.
   orbitals would carry the continuum while the correlation treatment ignored
   it; whether that is the PTE scheme or an inconsistency should be a decision,
   not an accident.
-- **Fukui indices.** The analysis runs two further SCFs on the ions, and those
-  would run in the gas phase against a solvated neutral -- an ionisation
-  potential computed across two different physics.
 - **The bonding energy decomposition**, which rebuilds atom energies from
   gas-phase operators and would drop the dielectric term without saying so.
 - **The analytic Hessian** quietly stands down rather than refusing: a solvated
