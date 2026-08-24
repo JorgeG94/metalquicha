@@ -821,6 +821,10 @@ contains
       real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
       real(dp), allocatable :: vsigma(:), vsigma_i(:)
       real(dp), allocatable :: tau(:), vtau(:), vtau_i(:), lapl(:), vlapl(:)
+      real(dp), allocatable :: v_local(:, :)
+      real(dp) :: e_local, n_local
+      type(error_t) :: local_error
+      logical :: failed
       integer :: g0, g1, nb, i, ig, id
 
       v_xc = 0.0_dp
@@ -840,22 +844,82 @@ contains
       end if
 
 #ifdef MQC_WITH_LIBXC
+      ! One thread per block of grid points.
+      !
+      ! This loop is where a density functional run spends nearly all of its
+      ! time -- 89 per cent of an LDA run on twenty waters and 98 per cent of a
+      ! meta-GGA one, against a Fock build that is under two per cent -- and the
+      ! blocks are independent. Each one evaluates the basis on its own points,
+      ! calls libxc on its own densities, and contributes to `v_xc`, `e_xc` and
+      ! `n_elec` only by accumulation.
+      !
+      ! **Threaded here rather than by the BLAS underneath.** The dominant cost
+      ! inside a block is the gemm in `accumulate_xc_matrix`, so a threaded BLAS
+      ! also speeds this up -- measurably, by five times on an unfragmented run.
+      ! But this program's fragment paths pin themselves to one OpenMP thread
+      ! and parallelise over fragments with MPI instead, and a threaded BLAS
+      ! underneath *that* competes with the ranks: measured on a twenty-water
+      ! MBE(2), four ranks went from 129 s to 169 s. Our own OpenMP is the level
+      ! that respects `omp_set_num_threads`, so the same code threads on an
+      ! unfragmented run and stays serial inside a pinned fragment worker.
+      !
+      ! The regions inside `eval_ao_block` are nested within this one and so run
+      ! serially, nesting being off by default. The parallelism moves up a level
+      ! rather than doubling: points within a block become blocks across threads.
+      !
+      ! `schedule(dynamic)` because a block's cost depends on how many basis
+      ! functions reach its points, which varies across the molecule.
+      !
+      ! `local_error` is **firstprivate and not private**. A private copy of a
+      ! derived type is not required to pick up its default initialisation, and
+      ! here it did not: every thread started with a nonzero error code, the
+      ! first block reported failure and the potential came back zero. Clearing
+      ! it inside the region is not the fix either -- `clear` deallocates the
+      ! message, and doing that to an uninitialised copy frees a pointer that
+      ! was never allocated. Copying in the routine-scope variable, which *is*
+      ! default-initialised, gives every thread a clean one to start from.
+      failed = .false.
+
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed) &
+      !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
+      !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
+      !$omp            tau, vtau, vtau_i, lapl, vlapl) &
+      !$omp    private(v_local, e_local, n_local) &
+      !$omp    firstprivate(local_error)
+      allocate (v_local(size(v_xc, 1), size(v_xc, 2)))
+      v_local = 0.0_dp
+      e_local = 0.0_dp
+      n_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, AO_POINT_BLOCK
+         ! A thread that has seen a failure stops doing work, but the loop still
+         ! has to be run out: leaving an OpenMP region early is not allowed, and
+         ! the barrier at its end has to be reached by everybody.
+         if (failed) cycle
+
          g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
          nb = g1 - g0 + 1
 
          if (ctx%any_mgga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-            if (error%has_error()) return
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
             call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
          else if (ctx%any_gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-            if (error%has_error()) return
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
             call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
-            if (error%has_error()) return
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error)
             call eval_rho(ao, density, rho)
+         end if
+         if (local_error%has_error()) then
+            !$omp critical (xc_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_failure)
+            cycle
          end if
 
          if (allocated(exc)) deallocate (exc, vrho, exc_i, vrho_i)
@@ -901,8 +965,8 @@ contains
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
 
-         n_elec = n_elec + sum(ctx%grid%weights(g0:g1)*rho)
-         e_xc = e_xc + sum(ctx%grid%weights(g0:g1)*rho*exc)
+         n_local = n_local + sum(ctx%grid%weights(g0:g1)*rho)
+         e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
          ! The gradient coefficient is dE/d(grad rho). Differentiating
          ! sigma = |grad rho|^2 gives 2 vsigma grad rho; the unrestricted case has
@@ -918,11 +982,22 @@ contains
             end do
          end if
 
-         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho, v_xc, &
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho, v_local, &
                                    ao_grad=ao_grad, grad_coeff=grad_coeff, &
                                    vtau=vtau, any_gga=ctx%any_gga, &
                                    any_mgga=ctx%any_mgga)
       end do
+      !$omp end do
+
+      ! One reduction per thread rather than per block. The matrix is n_ao
+      ! square -- half a megabyte here -- so the copies cost far less than
+      ! contending for the shared one a hundred times each.
+      !$omp critical (xc_reduce)
+      v_xc = v_xc + v_local
+      e_xc = e_xc + e_local
+      n_elec = n_elec + n_local
+      !$omp end critical (xc_reduce)
+      !$omp end parallel
 #endif
    end subroutine xc_add_potential
 
