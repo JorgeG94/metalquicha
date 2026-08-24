@@ -11,6 +11,7 @@ module mqc_scf_common
    !! What is *not* here is anything that touches integrals, DIIS or the
    !! iteration itself -- those differ between the backends for real reasons.
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -18,6 +19,7 @@ module mqc_scf_common
    private
 
    public :: build_orthogonalizer
+   public :: report_linear_dependence
    public :: build_density_closed_shell
    public :: build_density_spin
    public :: spin_contamination
@@ -31,6 +33,21 @@ module mqc_scf_common
    !> which meant the two paths agreed only by coincidence.
    real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
 
+   !> Overlap eigenvalues above the drop threshold but below this one are kept
+   !> and said out loud.
+   !>
+   !> The zone between the two is the one that hurts. A mode below
+   !> `LINEAR_DEPENDENCE_TOL` is discarded and the basis is smaller, which is
+   !> a decision with a number attached; a mode just above it is *retained*,
+   !> and X carries a 1/sqrt(s) of ten thousand or more into every iteration.
+   !> Nothing fails. DIIS extrapolates along a direction that is mostly noise,
+   !> convergence slows or stalls, and two runs of the same molecule in
+   !> slightly different orientations can settle on different solutions.
+   !> Diffuse functions on a large or compact system are how a basis gets
+   !> here, which is precisely when nobody is watching for it.
+   real(dp), parameter :: LINEAR_DEPENDENCE_WARN_TOL = 1.0e-5_dp
+   public :: LINEAR_DEPENDENCE_WARN_TOL
+
    !> The empirical scale on the GWH off-diagonal. 1.75 is the value in
    !> universal use, and both backends have to start from the same matrix or
    !> comparing their iteration counts means nothing -- which is exactly why it
@@ -39,7 +56,8 @@ module mqc_scf_common
 
 contains
 
-   subroutine build_orthogonalizer(overlap, transform, n_mo, error)
+   subroutine build_orthogonalizer(overlap, transform, n_mo, error, &
+                                   smallest_overlap, smallest_kept)
       !! Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped
       !!
       !! Canonical rather than symmetric so a basis with near-linear dependence
@@ -49,9 +67,22 @@ contains
       real(dp), allocatable, intent(out) :: transform(:, :)  !! X, (n_ao, n_mo)
       integer, intent(out) :: n_mo                           !! Surviving orbitals
       type(error_t), intent(inout) :: error
+      real(dp), intent(out), optional :: smallest_overlap
+         !! The smallest eigenvalue of S, dropped or not -- the conditioning of
+         !! the basis as given, before this routine does anything about it.
+      real(dp), intent(out), optional :: smallest_kept
+         !! The smallest eigenvalue that survived, which is what X actually
+         !! divides by and therefore what the SCF has to live with.
+         !!
+         !! Optional, all of them, so the call sites that only want X are
+         !! unchanged -- there are five across two backends and only the ones
+         !! that report need the numbers.
 
       real(dp), allocatable :: eigenvectors(:, :), eigenvalues(:)
       integer :: n_ao, i, kept, info
+
+      if (present(smallest_overlap)) smallest_overlap = 0.0_dp
+      if (present(smallest_kept)) smallest_kept = 0.0_dp
 
       n_ao = size(overlap, 1)
       allocate (eigenvectors(n_ao, n_ao), eigenvalues(n_ao))
@@ -64,7 +95,11 @@ contains
       end if
 
       ! pic_syev returns eigenvalues ascending, so the discarded ones lead.
+      if (present(smallest_overlap)) smallest_overlap = eigenvalues(1)
       n_mo = count(eigenvalues > LINEAR_DEPENDENCE_TOL)
+      if (present(smallest_kept) .and. n_mo > 0) then
+         smallest_kept = eigenvalues(n_ao - n_mo + 1)
+      end if
       if (n_mo == 0) then
          call error%set(ERROR_VALIDATION, "SCF: overlap matrix is singular")
          return
@@ -78,6 +113,77 @@ contains
          transform(:, kept) = eigenvectors(:, i)/sqrt(eigenvalues(i))
       end do
    end subroutine build_orthogonalizer
+
+   subroutine report_linear_dependence(n_ao, n_mo, smallest_overlap, smallest_kept, verbose)
+      !! Say what the orthogonaliser did to the basis, and whether to worry
+      !!
+      !! **The warnings are not gated on `verbose`, deliberately.** Dropping a
+      !! basis function changes the space every method downstream works in:
+      !! the SCF, the virtuals an MP2 or CC run correlates, the count in the
+      !! output file. A quiet run that silently solves a different problem
+      !! than the one asked for is the failure this exists to prevent, and
+      !! `logger%info` on its own would hide it at exactly the verbosity most
+      !! production runs use. Only the healthy-basis line is verbose-only.
+      integer, intent(in) :: n_ao      !! Basis functions the basis set defines
+      integer, intent(in) :: n_mo      !! Orbitals that survived orthogonalisation
+      real(dp), intent(in) :: smallest_overlap
+      real(dp), intent(in) :: smallest_kept
+      logical, intent(in) :: verbose
+
+      character(len=160) :: line
+      integer :: n_dropped
+
+      n_dropped = n_ao - n_mo
+
+      if (n_dropped > 0) then
+         call logger%warning("")
+         write (line, "(a,i0,a,i0,a)") "  LINEAR DEPENDENCE: ", n_dropped, " of ", n_ao, &
+            " basis functions were dropped."
+         call logger%warning(trim(line))
+         write (line, "(a,es9.2,a,es9.2,a)") "     the overlap's smallest eigenvalue is ", &
+            smallest_overlap, ", below the ", LINEAR_DEPENDENCE_TOL, " cutoff."
+         call logger%warning(trim(line))
+         write (line, "(a,i0,a)") "     the SCF and everything after it run in ", n_mo, &
+            " orbitals, not "//trim(adjustl(int_text(n_ao)))//"."
+         call logger%warning(trim(line))
+         call logger%warning("     This is usually diffuse functions overlapping too "// &
+                             "well to tell apart, and")
+         call logger%warning("     dropping them is the right repair -- but the basis "// &
+                             "is no longer the one")
+         call logger%warning("     named in the input, so energies are not comparable "// &
+                             "with a run that kept")
+         call logger%warning("     them all. A smaller or less diffuse basis is the fix "// &
+                             "if that matters.")
+         call logger%warning("")
+      else if (smallest_kept > 0.0_dp .and. smallest_kept < LINEAR_DEPENDENCE_WARN_TOL) then
+         ! Kept, and worth saying so. See LINEAR_DEPENDENCE_WARN_TOL.
+         call logger%warning("")
+         write (line, "(a,es9.2,a)") "  NEARLY LINEARLY DEPENDENT: the overlap's "// &
+            "smallest eigenvalue is ", smallest_kept, "."
+         call logger%warning(trim(line))
+         call logger%warning("     Nothing was dropped, so the basis is intact, but X "// &
+                             "carries a large")
+         call logger%warning("     1/sqrt(s) into every iteration. Expect slow or "// &
+                             "stalled convergence, and")
+         call logger%warning("     treat a converged energy with care: an SCF this "// &
+                             "ill-conditioned can settle")
+         call logger%warning("     on different solutions from different guesses.")
+         call logger%warning("")
+      else if (verbose) then
+         write (line, "(a,es9.2)") "  overlap: smallest eigenvalue ", smallest_overlap
+         call logger%info(trim(line))
+      end if
+   end subroutine report_linear_dependence
+
+   pure function int_text(value) result(text)
+      !! An integer as a trimmed string, for the messages above
+      integer, intent(in) :: value
+      character(len=:), allocatable :: text
+      character(len=12) :: buffer
+
+      write (buffer, "(i0)") value
+      text = trim(buffer)
+   end function int_text
 
    subroutine build_density_closed_shell(coeff, n_occ, density)
       !! D = 2 C_occ C_occ^T, the closed-shell density

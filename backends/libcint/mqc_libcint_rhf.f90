@@ -19,7 +19,8 @@ module mqc_libcint_rhf
    use mqc_convergence_report, only: convergence_header, convergence_footer
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
+   use mqc_scf_common, only: build_orthogonalizer, report_linear_dependence, &
+                             build_density_closed_shell, &
                              build_density_spin, spin_contamination, GWH_K
    use mqc_diis, only: diis_state_t
    use mqc_fock_projector, only: fock_projector_t
@@ -449,6 +450,7 @@ contains
       type(direct_stats_t) :: screening
       type(incremental_state_t) :: incr
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
+      real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
 
       if (mod(nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "RHF needs an even electron count; this "// &
@@ -521,8 +523,10 @@ contains
          if (error%has_error()) return
       end if
 
-      call build_orthogonalizer(s, x, n_mo, error)
+      call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
+                                smallest_kept=s_kept)
       if (error%has_error()) return
+      call report_linear_dependence(n_ao, n_mo, s_min, s_kept, verbose)
       if (n_occ > n_mo) then
          call error%set(ERROR_VALIDATION, "RHF: more occupied orbitals than the basis "// &
                         "supports after near-null modes were dropped")
@@ -832,6 +836,7 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
+      real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       character(len=LINE_LEN) :: line
 
       diis_size = 8
@@ -890,8 +895,10 @@ contains
          if (error%has_error()) return
       end if
 
-      call build_orthogonalizer(s, x, n_mo, error)
+      call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
+                                smallest_kept=s_kept)
       if (error%has_error()) return
+      call report_linear_dependence(n_ao, n_mo, s_min, s_kept, verbose)
       if (n_alpha > n_mo) then
          call error%set(ERROR_VALIDATION, "UHF: more alpha electrons than the basis "// &
                         "supports after near-null modes were dropped")

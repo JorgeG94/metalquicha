@@ -9,7 +9,7 @@ module test_mqc_scf_common
    use mqc_error, only: error_t
    use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
                              build_density_spin, spin_contamination, &
-                             LINEAR_DEPENDENCE_TOL
+                             LINEAR_DEPENDENCE_TOL, LINEAR_DEPENDENCE_WARN_TOL
    implicit none
    private
 
@@ -27,6 +27,8 @@ contains
                   new_unittest("scf_orthogonalizer_keeps_every_mode_when_well_conditioned", test_orth_full_rank), &
                   new_unittest("scf_orthogonalizer_drops_a_null_mode", test_orth_drops_null), &
                   new_unittest("scf_orthogonalizer_refuses_a_singular_overlap", test_orth_singular), &
+                  new_unittest("scf_orthogonalizer_reports_a_healthy_overlap", test_orth_reports_healthy), &
+                  new_unittest("scf_orthogonalizer_separates_dropped_from_kept", test_orth_reports_dropped), &
                   new_unittest("scf_closed_shell_density_is_idempotent", test_density_idempotent), &
                   new_unittest("scf_closed_shell_density_traces_to_the_electron_count", test_density_trace), &
                   new_unittest("scf_spin_density_is_half_the_closed_shell_one", test_density_spin), &
@@ -133,6 +135,78 @@ contains
       call build_orthogonalizer(overlap, x, n_mo, err)
       call check(error, err%has_error(), "a singular overlap must be refused, not returned")
    end subroutine test_orth_singular
+
+   subroutine test_orth_reports_healthy(error)
+      !! On a well-conditioned overlap the two diagnostics agree
+      !!
+      !! Nothing is dropped, so the smallest eigenvalue of S and the smallest
+      !! one X divides by are the same number. A report that separated them
+      !! here would be describing a truncation that did not happen.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), allocatable :: overlap(:, :), x(:, :)
+      type(error_t) :: err
+      integer :: n_mo
+      real(dp) :: s_min, s_kept
+
+      allocate (overlap(3, 3))
+      overlap = reshape([1.0_dp, 0.2_dp, 0.0_dp, &
+                         0.2_dp, 1.0_dp, 0.0_dp, &
+                         0.0_dp, 0.0_dp, 1.0_dp], [3, 3])
+      call build_orthogonalizer(overlap, x, n_mo, err, smallest_overlap=s_min, &
+                                smallest_kept=s_kept)
+      call check(error,.not. err%has_error(), "a well-conditioned overlap: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_mo, 3)
+      if (allocated(error)) return
+      ! Eigenvalues are 0.8, 1.0, 1.2.
+      call check(error, s_min, 0.8_dp, thr=TOL)
+      if (allocated(error)) return
+      call check(error, s_kept, 0.8_dp, thr=TOL)
+      if (allocated(error)) return
+      call check(error, s_kept > LINEAR_DEPENDENCE_WARN_TOL, &
+                 "0.8 is nowhere near dependent and must not warn")
+   end subroutine test_orth_reports_healthy
+
+   subroutine test_orth_reports_dropped(error)
+      !! The dropped eigenvalue and the smallest surviving one are different
+      !!
+      !! This is the distinction the warning rests on. `smallest_overlap`
+      !! describes the basis as handed over -- it is below the cutoff, which is
+      !! *why* something was dropped -- while `smallest_kept` is what X
+      !! actually divides by afterwards. Reporting the first as though it were
+      !! the second would tell a user their SCF is running on a mode that was
+      !! thrown away.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), allocatable :: overlap(:, :), x(:, :)
+      type(error_t) :: err
+      integer :: n_mo
+      real(dp) :: s_min, s_kept
+      real(dp), parameter :: TINY_MODE = 1.0e-9_dp
+
+      ! Diagonal, so the eigenvalues are the entries: one below the cutoff and
+      ! two comfortably above it.
+      allocate (overlap(3, 3))
+      overlap = 0.0_dp
+      overlap(1, 1) = TINY_MODE
+      overlap(2, 2) = 0.5_dp
+      overlap(3, 3) = 1.0_dp
+
+      call build_orthogonalizer(overlap, x, n_mo, err, smallest_overlap=s_min, &
+                                smallest_kept=s_kept)
+      call check(error,.not. err%has_error(), "one null mode is survivable: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_mo, 2)
+      if (allocated(error)) return
+      call check(error, s_min, TINY_MODE, thr=TOL)
+      if (allocated(error)) return
+      call check(error, s_kept, 0.5_dp, thr=TOL)
+      if (allocated(error)) return
+      call check(error, s_min < LINEAR_DEPENDENCE_TOL, "the dropped mode is below the cutoff")
+      if (allocated(error)) return
+      call check(error, s_kept > LINEAR_DEPENDENCE_TOL, "the kept one is above it")
+   end subroutine test_orth_reports_dropped
 
    subroutine test_density_idempotent(error)
       !! D S D = 2 D for the closed-shell density, the standard identity
