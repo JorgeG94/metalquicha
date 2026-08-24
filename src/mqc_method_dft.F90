@@ -187,6 +187,9 @@ contains
       if (allocated(this%options%properties%fukui_population)) then
          settings%fukui_population = this%options%properties%fukui_population
       end if
+      if (allocated(this%options%properties%charges_scheme)) then
+         settings%charges_scheme = this%options%properties%charges_scheme
+      end if
       settings%bonding_analysis = this%options%properties%bonding_analysis
       settings%bonding_threshold = this%options%properties%bonding_threshold
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST

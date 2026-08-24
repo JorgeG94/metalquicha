@@ -74,6 +74,11 @@ module mqc_cuest_iface
       ! together, and a backend either builds a continuum or does not.
       character(len=32) :: bonding_analysis = "none"
       character(len=:), allocatable :: fukui_population
+      character(len=:), allocatable :: charges_scheme
+         !! Atomic partial charges from `properties.charges`, unallocated when
+         !! none were asked for. Travels here for the same reason the bonding
+         !! analysis does: partitioning a density needs the molecule and the
+         !! converged density, which only the backend holds.
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
       logical :: bonding_restrict_localization = .false.

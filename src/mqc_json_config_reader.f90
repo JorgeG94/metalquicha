@@ -152,7 +152,7 @@ contains
 
       character(len=:), allocatable :: text
       integer :: n_mol, imol
-      logical :: found, settings, found_fukui
+      logical :: found, settings, found_fukui, found_charges
       logical :: backend_named
 
       ! The two defaults that are not declared on the type itself.
@@ -209,6 +209,16 @@ contains
          config%fukui_population = "chelpg"
          call optional_string(json, "properties.fukui.population", &
                               config%fukui_population)
+      end if
+      ! Same shape as `fukui`: the OBJECT is the request, `scheme` only says
+      ! how. Defaulted here for the same reason -- the scheme a run used should
+      ! be a value in the config, and so in the report and the JSON, rather
+      ! than a default resolved wherever the partition happens to be done.
+      call json%info("properties.charges", found=found_charges)
+      if (found_charges) then
+         config%charges_scheme = "mulliken"
+         call optional_string(json, "properties.charges.scheme", &
+                              config%charges_scheme)
       end if
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)

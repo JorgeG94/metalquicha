@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.4% of total for modules and submodules.">578 statements</a>
+                 title=" 2.5% of total for modules and submodules.">607 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -148,6 +148,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_json_output">write_json_output</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-add_gradient">add_gradient</a>
+            <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_charges_section">write_charges_section</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_fukui_section">write_fukui_section</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_gmbe_pie_json_impl">write_gmbe_pie_json_impl</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_ieda_section">write_ieda_section</a>
@@ -181,15 +182,15 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></li>
                   <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item">json_module</li>
+                  <li class="list-inline-item"><a href='mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1234,7 +1235,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~28"></span>
+              <span class="anchor" id="variable-json~22"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1264,7 +1265,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~4"></span>
+              <span class="anchor" id="variable-gradient~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1275,6 +1276,76 @@ large graphs.</div>
             <td><strong>gradient</strong>(:,:)</td>
             <td>
 <p>(3, natoms)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-write_charges_section"></span> <h3>private  subroutine <a href='../proc/write_charges_section.html'>write_charges_section</a>(json, parent, data)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Atomic partial charges, per atom, with the scheme that produced them</p><a href="../proc/write_charges_section.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~25"></span>
+              type(json_core),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-parent~2"></span>
+              type(json_value),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>parent</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-data~6"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>data</strong></td>
+            <td>
+
             </td>
         </tr>
     </tbody>
@@ -1304,7 +1375,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~31"></span>
+              <span class="anchor" id="variable-json~26"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1319,7 +1390,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~2"></span>
+              <span class="anchor" id="variable-parent~3"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1414,7 +1485,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~35"></span>
+              <span class="anchor" id="variable-json~30"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1429,7 +1500,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~4"></span>
+              <span class="anchor" id="variable-parent~5"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1484,7 +1555,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~6"></span>
+              <span class="anchor" id="variable-data~5"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1524,7 +1595,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~36"></span>
+              <span class="anchor" id="variable-json~31"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1539,7 +1610,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~5"></span>
+              <span class="anchor" id="variable-parent~6"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1594,7 +1665,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~32"></span>
+              <span class="anchor" id="variable-json~27"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1609,7 +1680,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~3"></span>
+              <span class="anchor" id="variable-parent~4"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1664,7 +1735,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~5"></span>
+              <span class="anchor" id="variable-data~4"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1747,7 +1818,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-24 14:29 +0000             </p>
+ on 2026-08-24 15:01 +0000             </p>
           </div>
         </div>
         <br>

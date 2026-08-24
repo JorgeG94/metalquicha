@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for procedures.">187 statements</a>
+                 title=" 0.9% of total for procedures.">192 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,6 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/populate_config.html#variable-backend_named">backend_named</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found">found</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-found_charges">found_charges</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_fukui">found_fukui</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-imol">imol</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-n_mol">n_mol</a>
@@ -228,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~4"></span>
+              <span class="anchor" id="variable-config~3"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -243,7 +244,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~6"></span>
+              <span class="anchor" id="variable-error~13"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1729,6 +1730,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-found_charges"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>found_charges</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-found_fukui"></span>
               logical,
             </td>
@@ -1838,7 +1856,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">text</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_mol</span><span class="p">,</span><span class="w"> </span><span class="n">imol</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">found_fukui</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">found_fukui</span><span class="p">,</span><span class="w"> </span><span class="n">found_charges</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend_named</span>
 
 <span class="w">      </span><span class="c">! The two defaults that are not declared on the type itself.</span>
@@ -1895,6 +1913,16 @@ large graphs.</div>
 <span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"chelpg"</span>
 <span class="w">         </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.population"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_population</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="w">      </span><span class="c">! Same shape as `fukui`: the OBJECT is the request, `scheme` only says</span>
+<span class="w">      </span><span class="c">! how. Defaulted here for the same reason -- the scheme a run used should</span>
+<span class="w">      </span><span class="c">! be a value in the config, and so in the report and the JSON, rather</span>
+<span class="w">      </span><span class="c">! than a default resolved wherever the partition happens to be done.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"properties.charges"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found_charges</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found_charges</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">charges_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mulliken"</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.charges.scheme"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">config</span><span class="p">%</span><span class="n">charges_scheme</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.bonding_analysis.type"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">config</span><span class="p">%</span><span class="n">bonding_analysis</span><span class="p">)</span>
@@ -2169,7 +2197,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-24 14:29 +0000             </p>
+ on 2026-08-24 15:01 +0000             </p>
           </div>
         </div>
         <br>
