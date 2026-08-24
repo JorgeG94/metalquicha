@@ -418,12 +418,14 @@ What each backend supports, refuses, and how each was validated is on
 DFT Options
 ^^^^^^^^^^^
 
-The integration grid, which is all DFT adds to an SCF:
+The integration grid, and how the quadrature walks it:
 
 .. code-block:: json
 
    "dft": {
-     "grid_level": 3
+     "grid_level": 3,
+     "screening_tolerance": 1e-12,
+     "block_size": 512
    }
 
 - ``grid_level``: 0 to 9, from the standard per-element tables -- the same tables
@@ -432,6 +434,34 @@ The integration grid, which is all DFT adds to an SCF:
 - ``radial_points`` / ``angular_points``: override the level for every atom, which
   is what a convergence study wants. Supplying these takes the level out of
   charge; supplying one without the other is refused rather than half-applied.
+- ``screening_tolerance``: the value below which a basis function is treated as
+  absent from a block of grid points, so that the block's work skips it. Default
+  ``1e-12``.
+
+  **Zero or negative evaluates the whole basis.** That is a supported setting
+  rather than an error: it is how a run measures what the screening is worth, and
+  how a disagreement gets bisected without rebuilding. The two paths should agree
+  to a few times the threshold -- on glycine tripeptide in 6-31G* they give
+  ``-700.413700086596`` and ``-700.413700086592``.
+- ``block_size``: grid points per block. Default 512; a non-positive value keeps
+  it.
+
+  This is two decisions wearing one name, which is worth knowing before turning
+  it. A smaller block covers less space, so fewer shells reach it and the screen
+  keeps less of the basis -- on a 638-function peptide, 4096-point blocks keep
+  141 functions and 256-point blocks keep 116. But the loop over blocks *is* the
+  OpenMP loop, so the block count is also the thread granularity: at 4096 points
+  a level-1 grid is only 72 blocks, which on a 104-thread node leaves a third of
+  the threads with nothing to do at all. Too small and the per-block bookkeeping
+  starts to show instead. The useful value depends on the grid and the machine
+  together, which is why it is a keyword rather than a constant.
+
+.. note::
+
+   Both apply to the Kohn-Sham potential built during the SCF. The exchange-
+   correlation *gradient* is not screened yet and evaluates the whole basis, so a
+   ``Gradient`` or ``Optimize`` run sees the benefit in its SCF iterations and not
+   in the derivative that follows them.
 
 Driver Section
 --------------
