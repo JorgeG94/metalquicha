@@ -73,8 +73,8 @@ Written when ``properties.fukui`` asked for them::
       "ionisation_potential": 0.402050,
       "electron_affinity": -0.194424,
       "chemical_potential": -0.103813,
-      "hardness": 0.596473,
-      "electrophilicity": 0.009034,
+      "hardness": 0.298237,
+      "electrophilicity": 0.018068,
       "anion_bound": false,
       "atoms": [
         {"atom": 1, "f_plus": -0.1617, "f_minus": 0.7804,
