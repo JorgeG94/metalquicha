@@ -171,6 +171,8 @@ module mqc_method_config
       character(len=16) :: grid_type = "medium"
          !! Grid quality: "coarse", "medium", "fine", "ultrafine"
       integer :: grid_level = 3
+      real(dp) :: screening_tolerance = 1.0e-12_dp
+      integer :: block_size = -1
          !! Standard grid tables, 0 to 9. Three is the usual production default.
       integer :: radial_points = 75
          !! Radial grid points per atom

@@ -130,6 +130,9 @@ against PySCF on the same geometries and the same basis data.
   range-separated hybrid and double hybrid -- restricted and unrestricted, over
   `libxc <https://libxc.gitlab.io/>`_, so most of what libxc carries is available
   by name, with friendly names and double-hybrid compositions layered on top.
+  The quadrature drops basis functions that do not reach a block of grid points,
+  which is what keeps its cost in proportion to the Fock build rather than
+  dominating it; the threshold and the block size are both ``keywords.dft``.
   Range separation uses libcint's erf-attenuated integrals, which puts ωB97X and
   CAM-B3LYP in reach. Non-local correlation (VV10) and Laplacian-dependent
   meta-GGAs are refused rather than approximated. Grids are Treutler-Ahlrichs
@@ -646,7 +649,7 @@ Everything below is JSON, and everything that configures a method lives under
    {
      "keywords": {
        "scf":      {"maxiter": 100, "tolerance": 1e-8, "guess": "sad"},
-       "dft":      {"grid_level": 3},
+       "dft":      {"grid_level": 3, "screening_tolerance": 1e-12, "block_size": 512},
        "cc":       {"maxiter": 50, "spin_adapted": true},
        "hessian":  {"finite_difference_displacement": 0.001},
        "pcm":      {"method": "cpcm", "dielectric": 78.4},

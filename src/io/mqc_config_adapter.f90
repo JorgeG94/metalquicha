@@ -262,6 +262,9 @@ contains
       driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
       driver_config%method_config%dft%grid_level = mqc_config%dft_grid_level
+      driver_config%method_config%dft%screening_tolerance = &
+         mqc_config%dft_screening_tolerance
+      driver_config%method_config%dft%block_size = mqc_config%dft_block_size
       driver_config%method_config%backend = mqc_config%backend
       if (allocated(mqc_config%charges_scheme)) then
          driver_config%method_config%properties%charges_scheme = &

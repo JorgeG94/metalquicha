@@ -387,6 +387,8 @@ contains
       call allow(keys, "grid_level")
       call allow(keys, "radial_points")
       call allow(keys, "angular_points")
+      call allow(keys, "screening_tolerance")
+      call allow(keys, "block_size")
    end function dft_keys
 
    function pcm_keys() result(keys)
