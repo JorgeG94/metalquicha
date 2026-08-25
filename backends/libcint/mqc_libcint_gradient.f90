@@ -680,8 +680,12 @@ contains
       real(dp), allocatable :: dpart(:, :, :)
       real(dp) :: wg_ref(3), wg_p(3)
       real(dp) :: gdotp, coef_rho, integrand, w
-      integer, allocatable :: offsets(:), counts(:)
+      real(dp), allocatable :: extents(:), d_sig(:, :), p_sig(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer, allocatable :: c_offsets(:), c_counts(:)
       integer :: npts, nao, natm, g0, g1, nb, ig, gg, id, ia, comp, own
+      integer :: n_sig, isig, jsig
       logical :: gga
 
       if (.not. ctx%active) return
@@ -695,88 +699,119 @@ contains
                                      vsigma, frr, frs, fss, error)
       if (error%has_error()) return
 
-      allocate (offsets(natm), counts(natm))
-      call atom_ao_blocks(mol, offsets, counts)
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (d_sig(nao, nao), p_sig(nao, nao))
+      call shell_extents(mol, ctx%screen_tol, extents)
 
-      do g0 = 1, npts, AO_POINT_BLOCK
-         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
-         ! Second derivatives of the basis functions, for the same reason the
-         ! GGA energy gradient needs them: differentiating `grad chi` with
-         ! respect to a nuclear coordinate is a second derivative.
-         if (gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
-                               grad=ao_grad, hess=ao_hess)
-         else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-         end if
-         if (error%has_error()) return
+         ! Which functions reach this block. This routine pays more for the
+         ! screen than the energy gradient does, because it asks `eval_ao_block`
+         ! for second derivatives as well: ten components per function per point
+         ! against the potential's one.
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
 
-         if (allocated(dchi)) deallocate (dchi, pchi)
-         allocate (dchi(nb, nao), pchi(nb, nao))
-         call density_times_ao(ao, density, nb, nao, dchi)
-         call density_times_ao(ao, pmat, nb, nao, pchi)
-
-         ! rho_P and its gradient, on the same footing as the reference's. Built
-         ! from `pchi` directly rather than through `eval_rho`, since the partner
-         ! matrices are wanted anyway and this saves a second pass.
+         ! Allocated and zeroed *outside* the screening guard, because the
+         ! partition-weight term further down reads them at every point of the
+         ! block. In a block no basis function reaches they are legitimately
+         ! zero, and what they must not be is whatever the previous block left
+         ! in them -- which would also be the wrong length.
          if (allocated(rho_p)) deallocate (rho_p, p_grad)
          allocate (rho_p(nb), p_grad(nb, 3))
          rho_p = 0.0_dp
          p_grad = 0.0_dp
-         do ig = 1, nb
-            rho_p(ig) = sum(pchi(ig, :)*ao(ig, :))
-         end do
-         if (gga) then
-            if (allocated(dgchi)) deallocate (dgchi, pgchi)
-            allocate (dgchi(nb, nao, 3), pgchi(nb, nao, 3))
-            call density_times_ao_grad(ao_grad, density, nb, nao, dgchi)
-            call density_times_ao_grad(ao_grad, pmat, nb, nao, pgchi)
-            ! grad rho_P = 2 sum_uv P_uv chi_v grad chi_u -- the two is the
-            ! symmetry of P, exactly as in `eval_rho`.
-            do id = 1, 3
-               do ig = 1, nb
-                  p_grad(ig, id) = 2.0_dp*sum(pchi(ig, :)*ao_grad(ig, :, id))
+
+         if (n_sig > 0) then
+            do jsig = 1, n_sig
+               do isig = 1, n_sig
+                  d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+                  p_sig(isig, jsig) = pmat(ao_list(isig), ao_list(jsig))
                end do
             end do
-         end if
 
-         do ig = 1, nb
-            gg = g0 + ig - 1
-            own = ctx%grid%atom(gg)
-            w = ctx%grid%weights(gg)
-
-            gdotp = 0.0_dp
-            if (gga) gdotp = sum(rho_grad(gg, :)*p_grad(ig, :))
-
-            ! The reference density's channel: what multiplies d rho / dR.
-            coef_rho = frr(gg)*rho_p(ig)
-            if (gga) coef_rho = coef_rho + 2.0_dp*frs(gg)*gdotp
-            call accumulate_channel(ao_grad, dchi, ig, nao, w*coef_rho, 2.0_dp, &
-                                    offsets, counts, natm, own, gradient)
-
-            ! `P`'s own channel, weighted by the ordinary potential. This is the
-            ! term that survives when the functional is a constant -- and the
-            ! only one an LDA-shaped first attempt would write.
-            call accumulate_channel(ao_grad, pchi, ig, nao, w*vrho(gg), 2.0_dp, &
-                                    offsets, counts, natm, own, gradient)
-
+            ! Second derivatives of the basis functions, for the same reason the
+            ! GGA energy gradient needs them: differentiating `grad chi` with
+            ! respect to a nuclear coordinate is a second derivative.
             if (gga) then
-               do id = 1, 3
-                  wg_ref(id) = w*(2.0_dp*frs(gg)*rho_p(ig)*rho_grad(gg, id) &
-                                  + 4.0_dp*fss(gg)*gdotp*rho_grad(gg, id) &
-                                  + 2.0_dp*vsigma(gg)*p_grad(ig, id))
-                  wg_p(id) = w*2.0_dp*vsigma(gg)*rho_grad(gg, id)
-               end do
-               call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, &
-                                           wg_ref, 2.0_dp, offsets, counts, natm, &
-                                           own, gradient)
-               call accumulate_gga_channel(ao_grad, ao_hess, pchi, pgchi, ig, nao, &
-                                           wg_p, 2.0_dp, offsets, counts, natm, &
-                                           own, gradient)
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                                  grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
+            else
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                                  grad=ao_grad, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
             end if
-         end do
+            if (error%has_error()) return
+
+            if (allocated(dchi)) deallocate (dchi, pchi)
+            allocate (dchi(nb, n_sig), pchi(nb, n_sig))
+            call density_times_ao(ao, d_sig(1:n_sig, 1:n_sig), nb, n_sig, dchi)
+            call density_times_ao(ao, p_sig(1:n_sig, 1:n_sig), nb, n_sig, pchi)
+
+            ! rho_P and its gradient, on the same footing as the reference's.
+            ! Built from `pchi` directly rather than through `eval_rho`, since
+            ! the partner matrices are wanted anyway and this saves a second
+            ! pass.
+            do ig = 1, nb
+               rho_p(ig) = sum(pchi(ig, :)*ao(ig, :))
+            end do
+            if (gga) then
+               if (allocated(dgchi)) deallocate (dgchi, pgchi)
+               allocate (dgchi(nb, n_sig, 3), pgchi(nb, n_sig, 3))
+               call density_times_ao_grad(ao_grad, d_sig(1:n_sig, 1:n_sig), nb, &
+                                          n_sig, dgchi)
+               call density_times_ao_grad(ao_grad, p_sig(1:n_sig, 1:n_sig), nb, &
+                                          n_sig, pgchi)
+               ! grad rho_P = 2 sum_uv P_uv chi_v grad chi_u -- the two is the
+               ! symmetry of P, exactly as in `eval_rho`.
+               do id = 1, 3
+                  do ig = 1, nb
+                     p_grad(ig, id) = 2.0_dp*sum(pchi(ig, :)*ao_grad(ig, :, id))
+                  end do
+               end do
+            end if
+
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               own = ctx%grid%atom(gg)
+               w = ctx%grid%weights(gg)
+
+               gdotp = 0.0_dp
+               if (gga) gdotp = sum(rho_grad(gg, :)*p_grad(ig, :))
+
+               ! The reference density's channel: what multiplies d rho / dR.
+               coef_rho = frr(gg)*rho_p(ig)
+               if (gga) coef_rho = coef_rho + 2.0_dp*frs(gg)*gdotp
+               call accumulate_channel(ao_grad, dchi, ig, n_sig, w*coef_rho, 2.0_dp, &
+                                       c_offsets, c_counts, natm, own, gradient)
+
+               ! `P`'s own channel, weighted by the ordinary potential. This is
+               ! the term that survives when the functional is a constant -- and
+               ! the only one an LDA-shaped first attempt would write.
+               call accumulate_channel(ao_grad, pchi, ig, n_sig, w*vrho(gg), 2.0_dp, &
+                                       c_offsets, c_counts, natm, own, gradient)
+
+               if (gga) then
+                  do id = 1, 3
+                     wg_ref(id) = w*(2.0_dp*frs(gg)*rho_p(ig)*rho_grad(gg, id) &
+                                     + 4.0_dp*fss(gg)*gdotp*rho_grad(gg, id) &
+                                     + 2.0_dp*vsigma(gg)*p_grad(ig, id))
+                     wg_p(id) = w*2.0_dp*vsigma(gg)*rho_grad(gg, id)
+                  end do
+                  call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, &
+                                              n_sig, wg_ref, 2.0_dp, c_offsets, &
+                                              c_counts, natm, own, gradient)
+                  call accumulate_gga_channel(ao_grad, ao_hess, pchi, pgchi, ig, &
+                                              n_sig, wg_p, 2.0_dp, c_offsets, &
+                                              c_counts, natm, own, gradient)
+               end if
+            end do
+         end if
 
          ! The partition weights, on the integrand of this linear form rather
          ! than on the energy density. Same two pieces as the energy gradient:
