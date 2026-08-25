@@ -343,6 +343,8 @@ contains
       call optional_logical(json, "keywords.mcscf.optimize_orbitals", &
                             config%mcscf_optimize_orbitals)
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
+      call optional_int(json, "keywords.dft.nlc_grid_level", &
+                        config%dft_nlc_grid_level)
       call optional_real(json, "keywords.dft.screening_tolerance", &
                          config%dft_screening_tolerance)
       call optional_int(json, "keywords.dft.block_size", config%dft_block_size)

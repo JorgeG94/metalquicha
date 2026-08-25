@@ -796,6 +796,7 @@ contains
          ! wrong kind of context rather than reading it with the wrong stride.
          call xc_context_create(mol, trim(settings%functional), xc, error, &
                                 level=settings%grid_level, polarized=unrestricted, &
+                                nlc_level=settings%nlc_grid_level, &
                                 screen_tol=settings%screening_tolerance, &
                                 point_block=settings%block_size)
          if (error%has_error()) then

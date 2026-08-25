@@ -387,6 +387,7 @@ contains
       !! as much as the basis does. These are the quadrature it is integrated on.
       type(key_set_t) :: keys
       call allow(keys, "grid_level")
+      call allow(keys, "nlc_grid_level")
       call allow(keys, "radial_points")
       call allow(keys, "angular_points")
       call allow(keys, "screening_tolerance")

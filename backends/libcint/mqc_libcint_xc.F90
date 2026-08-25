@@ -196,7 +196,7 @@ contains
    end function xc_available
 
    subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
-                                screen_tol, point_block)
+                                screen_tol, point_block, nlc_level)
       !! Resolve a functional name and build the grid it will be integrated on
       type(libcint_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
@@ -207,6 +207,10 @@ contains
          !! Initialise the functionals spin-polarised, for an unrestricted
          !! calculation. Default restricted. Fixed here because libxc fixes it at
          !! initialisation, so it cannot be decided later by whoever evaluates.
+      integer, intent(in), optional :: nlc_level
+         !! Level for VV10's own quadrature. Absent or negative keeps
+         !! `NLC_GRID_LEVEL`; a deck reaches this through
+         !! `keywords.dft.nlc_grid_level`.
       real(dp), intent(in), optional :: screen_tol
          !! AO screening threshold; zero or negative disables the screen and
          !! evaluates the whole basis, which is the way to check what it costs.
@@ -233,6 +237,11 @@ contains
 
       grid_level = DEFAULT_GRID_LEVEL
       if (present(level)) grid_level = level
+
+      ctx%nlc_grid_level = NLC_GRID_LEVEL
+      if (present(nlc_level)) then
+         if (nlc_level >= 0) ctx%nlc_grid_level = nlc_level
+      end if
 
       allocate (numbers(mol%natm))
       numbers = nint(mol%charges)

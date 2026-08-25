@@ -75,6 +75,8 @@ module mqc_method_dft
          !! Number of radial grid points per atom
       integer :: angular_points = 302
       integer :: grid_level = 3
+      integer :: nlc_grid_level = -1
+         !! VV10's quadrature level; negative means the backend default.
          !! 0 to 9, the standard tables. Three is the usual default and what a
          !! production calculation should start from.
       real(dp) :: screening_tolerance = 1.0e-12_dp
@@ -191,6 +193,7 @@ contains
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
+      settings%nlc_grid_level = this%options%nlc_grid_level
       settings%screening_tolerance = this%options%screening_tolerance
       settings%block_size = this%options%block_size
       settings%pcm = this%options%pcm

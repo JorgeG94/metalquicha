@@ -191,6 +191,12 @@ module mqc_method_config
       character(len=16) :: grid_type = "medium"
          !! Grid quality: "coarse", "medium", "fine", "ultrafine"
       integer :: grid_level = 3
+      integer :: nlc_grid_level = -1
+         !! `keywords.dft.nlc_grid_level`, the quadrature VV10's double integral
+         !! uses. Separate from `grid_level` because the non-local term costs
+         !! the *product* of two grid sizes while everything else costs one, so
+         !! the level that is right for exchange is an order of magnitude too
+         !! expensive here. Negative means the backend's own default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
       integer :: block_size = -1
          !! Standard grid tables, 0 to 9. Three is the usual production default.
