@@ -176,6 +176,13 @@ set(MQC_CODATA_YEAR
 set_property(CACHE MQC_CODATA_YEAR PROPERTY STRINGS 2018 2010)
 
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
+option(MQC_ENABLE_CREST "Link to CREST for conformer and ensemble sampling" OFF)
+set(MQC_CREST_REPOSITORY
+    "https://github.com/JorgeG94/crest.git"
+    CACHE STRING "Where to fetch CREST from")
+set(MQC_CREST_TAG
+    "feat/engrad-callback"
+    CACHE STRING "CREST revision to build against")
 set(CUEST_ROOT
     ""
     CACHE PATH "Root of the unpacked libcuest-<ver>-archive (needs lib/)")
@@ -601,6 +608,91 @@ if(MQC_ENABLE_HDF5)
   message(STATUS "HDF5 checkpoints enabled: ${HDF5_C_LIBRARIES}")
 endif()
 
+# CREST, for conformer and ensemble sampling.
+#
+# Declared here rather than earlier because it must come after BLA_VENDOR is set
+# above: CREST calls find_package(LAPACK/BLAS) unguarded -- the only two of its
+# dependencies not behind an `if(NOT TARGET ...)` -- and picking a different
+# BLAS than the rest of this build links fine and computes wrong.
+#
+# Nothing here declares toml-f, gfnff, gfn0, libpvol or lwoniom, and that is
+# deliberate: CREST's own config/modules/crest-utils.cmake resolves each of them
+# through "subproject, cmake, fetch, pkgconf" in order and, when it has to
+# fetch, creates the `pkg::pkg` alias itself. Those projects export their
+# namespaced target only from install(), so without that alias a FetchContent
+# build of them would not satisfy CREST's own `if(NOT TARGET ...)` guards.
+# Duplicating any of it here would fight the mechanism rather than help it.
+#
+# tblite is the exception worth naming: CREST guards it with `if(NOT TARGET
+# "tblite::tblite")`, and this project defines that target above, so CREST links
+# the same tblite rather than building a second one.
+if(MQC_ENABLE_CREST)
+  # CREST's suite would otherwise be added to this project's ctest, and it pulls
+  # test-drive in to do it.
+  set(WITH_TESTS
+      OFF
+      CACHE BOOL "Build CREST's own unit tests" FORCE)
+  # Features this integration does not use, off by default so they are neither
+  # built nor fetched at an unpinned HEAD. A deck that wants one can turn it
+  # back on, and will then be choosing to resolve its version too.
+  foreach(_crest_off WITH_GFNFF WITH_LIBPVOL WITH_LWONIOM)
+    if(NOT DEFINED ${_crest_off})
+      set(${_crest_off}
+          OFF
+          CACHE BOOL "CREST optional backend, off unless asked for" FORCE)
+    endif()
+  endforeach()
+  # GIT_SUBMODULES names gfn0 and nothing else, and both halves matter.
+  #
+  # CREST carries gfn0, gfnff, toml-f, lwoniom, pvol, tblite and test-drive as
+  # git submodules under subprojects/, and FetchContent updates every one of
+  # them unless told otherwise. CREST's resolver then prefers a populated
+  # subprojects/ directory over everything else, so it add_subdirectory()s its
+  # own toml-f -- which tblite has already fetched into _deps by the time we get
+  # here. Two directories defining `toml-f-lib` is a hard CMake error that names
+  # CMP0002 and nothing about CREST, so it does not read as a dependency
+  # conflict at all. Excluding toml-f and tblite lets CREST's own `if(NOT TARGET
+  # ...)` guards see the targets this project already made and skip both, which
+  # is the sharing the arrangement wanted.
+  #
+  # But the submodules are *version pins*, so excluding one is not free: with
+  # none checked out CREST fetched HEAD of gfnff and stopped on a `print=`
+  # keyword its own source still passes. gfn0 is the one dependency it needs
+  # that nothing here provides -- the MTD-length heuristic calls it for Wiberg
+  # bond orders -- so it keeps its pin. The rest are switched off below rather
+  # than fetched at whatever HEAD happens to be.
+  FetchContent_Declare(
+    crest
+    GIT_REPOSITORY ${MQC_CREST_REPOSITORY}
+    GIT_TAG ${MQC_CREST_TAG}
+    GIT_SUBMODULES "subprojects/gfn0")
+  FetchContent_MakeAvailable(crest)
+  target_link_libraries(${main_lib} PUBLIC lib-crest-static)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CREST)
+  add_subdirectory(backends/crest)
+  message(STATUS "CREST enabled: ${MQC_CREST_REPOSITORY}@${MQC_CREST_TAG}")
+
+  # The seam the integration rests on, checked on its own because every way it
+  # can fail is quiet: an uncalled pointer returns zero rather than an error.
+  add_executable(check_crest_callback
+                 ${PROJECT_SOURCE_DIR}/validation/check_crest_callback.f90)
+  target_include_directories(check_crest_callback
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_crest_callback PRIVATE ${main_lib})
+
+  add_executable(check_crest_search
+                 ${PROJECT_SOURCE_DIR}/validation/check_crest_search.f90)
+  target_include_directories(check_crest_search
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_crest_search PRIVATE ${main_lib})
+
+  add_executable(check_crest_refine
+                 ${PROJECT_SOURCE_DIR}/validation/check_crest_refine.f90)
+  target_include_directories(check_crest_refine
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_crest_refine PRIVATE ${main_lib})
+endif()
+
 # DL-FIND, behind libdlfind, for geometry optimization.
 #
 # Off by default, and the reason is licensing rather than size: DL-FIND is
@@ -950,6 +1042,9 @@ foreach(
         check_amplitude_layout
         check_ao
         check_ao_deriv2
+        check_crest_callback
+        check_crest_refine
+        check_crest_search
         check_bcast
         check_bcast_system
         check_bond_orders

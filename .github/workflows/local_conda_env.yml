@@ -52,6 +52,7 @@ jobs:
             hdf5: false
             # DL-FIND likewise, and for the same reason.
             dlfind: false
+            crest: false
           # tblite built without libxc or the integrals backend -- a reduced
           # build, and only a build. The xTB validation is not run here: it
           # touches neither libxc nor the integrals, so on modern MPI it would
@@ -140,6 +141,28 @@ jobs:
           # coming back all sit behind `api_dl_find`, which a compiler never
           # calls. The validation step below runs a short Hartree-Fock
           # optimization, which is the cheapest thing that exercises them.
+          # CREST, which is the heaviest job here and earns it. It is the only
+          # configuration where three separate things are exercised at once:
+          # that the fork the FetchContent default names is reachable and
+          # builds, that CREST reuses this project's tblite instead of
+          # fetching a second one, and that the gradient callback still
+          # carries numbers across unaltered.
+          #
+          # WITH_GFN0 is not decoration. crest_search_imtdgc derives its
+          # metadynamics length from a flexibility measure that calls GFN0-xTB
+          # for Wiberg bond orders and stops without it, whoever supplies the
+          # gradients.
+          #
+          # tblite on both sides deliberately: it is the shared dependency, and
+          # the one-line eeq_guess fix in the fork is what lets a released
+          # tblite satisfy CREST at all. If upstream tblite changes that call
+          # again, this job is where it surfaces.
+          - name: "with crest"
+            tblite: true
+            legacy_mpi: false
+            libcint: true
+            libfint: true
+            crest: true
           - name: "with dlfind"
             tblite: false
             legacy_mpi: false
@@ -192,6 +215,8 @@ jobs:
                   -DMQC_USE_LIBFINT=${{ matrix.backend == 'libcint' && 'OFF' || 'ON' }} \
                   -DMQC_ENABLE_HDF5=${{ matrix.hdf5 && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_DLFIND=${{ matrix.dlfind && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_CREST=${{ matrix.crest && 'ON' || 'OFF' }} \
+                  ${{ matrix.crest && '-DWITH_GFN0=ON -DWITH_TBLITE=ON' || '' }} \
                   -B build
           fi
           cmake --build build --parallel 2
@@ -222,6 +247,24 @@ jobs:
           cd validation
           ../build/check_amplitude_layout
           python3 check_amplitude_layout.py
+
+      # The seam the whole integration rests on, and every way it fails is
+      # quiet: a callback that is never reached returns zero rather than an
+      # error, and a gradient that crossed with the wrong units comes back as
+      # a correct energy beside a wrong derivative. So this compares an
+      # HF/STO-3G gradient computed directly against the same one routed
+      # through CREST, and demands they match exactly.
+      #
+      # check_crest_search and check_crest_refine run a whole sampling loop
+      # and are left as manual checks; they take tens of seconds and the
+      # build above is what is actually fragile here.
+      - name: Check the CREST gradient callback
+        if: matrix.crest
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cmake --build build --target check_crest_callback --parallel 2
+          ./build/check_crest_callback
 
       - name: Run unit tests
         shell: bash -el {0}
