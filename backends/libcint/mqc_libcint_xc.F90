@@ -1128,6 +1128,11 @@ contains
       real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:), vtau_i(:), vlapl(:)
       real(dp), allocatable :: vrho_s(:), vtau_s(:), grad_coeff(:, :)
       real(dp), allocatable :: va_local(:, :), vb_local(:, :)
+      real(dp), allocatable :: va_sig(:, :), vb_sig(:, :), da_sig(:, :), db_sig(:, :)
+      real(dp), allocatable :: extents(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: n_sig, ia, ja
       real(dp) :: e_local, n_local
       type(error_t) :: local_error
       logical :: failed
@@ -1158,31 +1163,58 @@ contains
       ! restricted side it did not, so every thread began holding an error.
       failed = .false.
 
+      ! One bound per shell for the whole molecule, computed once and read by
+      ! every block of every iteration.
+      call shell_extents(mol, ctx%screen_tol, extents)
+
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, e_xc, n_elec, &
-      !$omp           error, failed) &
+      !$omp           error, failed, extents) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho_a, rho_b, grad_a, &
       !$omp            grad_b, tau_a, tau_b, rho, sigma, tau, lapl, exc, vrho, &
       !$omp            vsigma, vtau, exc_i, vrho_i, vsigma_i, vtau_i, vlapl, &
       !$omp            vrho_s, vtau_s, grad_coeff) &
       !$omp    private(va_local, vb_local, e_local, n_local) &
+      !$omp    private(va_sig, vb_sig, da_sig, db_sig, shell_mask, ao_list, &
+      !$omp            ao_offset, n_sig, ia, ja) &
       !$omp    firstprivate(local_error)
       allocate (va_local(size(v_alpha, 1), size(v_alpha, 2)))
       allocate (vb_local(size(v_beta, 1), size(v_beta, 2)))
       va_local = 0.0_dp
       vb_local = 0.0_dp
+      ! Sized to the whole basis once rather than to `n_sig` per block: the
+      ! leading sub-block is what gets used, and re-allocating inside the loop is
+      ! the allocator traffic this exists to remove.
+      allocate (va_sig(mol%nao, mol%nao), vb_sig(mol%nao, mol%nao))
+      allocate (da_sig(mol%nao, mol%nao), db_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
       e_local = 0.0_dp
       n_local = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do g0 = 1, ctx%grid%n_points, AO_POINT_BLOCK
+      do g0 = 1, ctx%grid%n_points, ctx%point_block
          ! A thread that has seen a failure stops working, but the loop still has
          ! to run out: leaving an OpenMP region early is not allowed and the
          ! barrier at its end has to be reached by every thread.
          if (failed) cycle
 
-         g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
+         g1 = min(g0 + ctx%point_block - 1, ctx%grid%n_points)
          nb = g1 - g0 + 1
+
+         ! Which shells reach this block at all. Both spins share the answer --
+         ! the test is on the basis and the geometry, and knows nothing about
+         ! which density is being contracted -- so one screen serves both, and
+         ! the two spin matrices stay on the same index set as each other.
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               da_sig(ia, ja) = d_alpha(ao_list(ia), ao_list(ja))
+               db_sig(ia, ja) = d_beta(ao_list(ia), ao_list(ja))
+            end do
+         end do
 
          ! One AO evaluation for both spins -- the expensive part -- and then the
          ! density contraction once per spin. `eval_rho` takes a density matrix and
@@ -1194,9 +1226,12 @@ contains
          ! calling `eval_rho` first would hand it an unallocated array.
          if (ctx%any_gga .or. ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
-                               grad=ao_grad)
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error)
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
          end if
          if (local_error%has_error()) then
             !$omp critical (xc_uks_failure)
@@ -1209,14 +1244,18 @@ contains
          end if
 
          if (ctx%any_mgga) then
-            call eval_rho(ao, d_alpha, rho_a, ao_grad=ao_grad, rho_grad=grad_a, tau=tau_a)
-            call eval_rho(ao, d_beta, rho_b, ao_grad=ao_grad, rho_grad=grad_b, tau=tau_b)
+            call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), rho_a, ao_grad=ao_grad, &
+                          rho_grad=grad_a, tau=tau_a)
+            call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), rho_b, ao_grad=ao_grad, &
+                          rho_grad=grad_b, tau=tau_b)
          else if (ctx%any_gga) then
-            call eval_rho(ao, d_alpha, rho_a, ao_grad=ao_grad, rho_grad=grad_a)
-            call eval_rho(ao, d_beta, rho_b, ao_grad=ao_grad, rho_grad=grad_b)
+            call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), rho_a, ao_grad=ao_grad, &
+                          rho_grad=grad_a)
+            call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), rho_b, ao_grad=ao_grad, &
+                          rho_grad=grad_b)
          else
-            call eval_rho(ao, d_alpha, rho_a)
-            call eval_rho(ao, d_beta, rho_b)
+            call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), rho_a)
+            call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), rho_b)
          end if
 
          if (allocated(rho)) deallocate (rho, exc, vrho, exc_i, vrho_i, vrho_s)
@@ -1296,10 +1335,18 @@ contains
                vtau_s(ig) = vtau(2*ig - 1)
             end do
          end if
-         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho_s, va_local, &
+         va_sig(1:n_sig, 1:n_sig) = 0.0_dp
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho_s, &
+                                   va_sig(1:n_sig, 1:n_sig), &
                                    ao_grad=ao_grad, grad_coeff=grad_coeff, &
                                    vtau=vtau_s, any_gga=ctx%any_gga, &
                                    any_mgga=ctx%any_mgga)
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               va_local(ao_list(ia), ao_list(ja)) = &
+                  va_local(ao_list(ia), ao_list(ja)) + va_sig(ia, ja)
+            end do
+         end do
 
          do ig = 1, nb
             vrho_s(ig) = vrho(2*ig)
@@ -1317,10 +1364,18 @@ contains
                vtau_s(ig) = vtau(2*ig)
             end do
          end if
-         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho_s, vb_local, &
+         vb_sig(1:n_sig, 1:n_sig) = 0.0_dp
+         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, vrho_s, &
+                                   vb_sig(1:n_sig, 1:n_sig), &
                                    ao_grad=ao_grad, grad_coeff=grad_coeff, &
                                    vtau=vtau_s, any_gga=ctx%any_gga, &
                                    any_mgga=ctx%any_mgga)
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               vb_local(ao_list(ia), ao_list(ja)) = &
+                  vb_local(ao_list(ia), ao_list(ja)) + vb_sig(ia, ja)
+            end do
+         end do
       end do
       !$omp end do
 
