@@ -61,6 +61,7 @@ Shared Configuration Types
        integer :: max_iter = 100
        real(dp) :: energy_convergence = 1.0e-8_dp
        real(dp) :: density_convergence = 1.0e-6_dp
+       real(dp) :: level_shift = 0.0_dp   ! Hartree on the virtuals; 0 is off
        logical :: use_diis = .true.
        integer :: diis_size = 8
     end type

@@ -500,6 +500,7 @@ SCF Options
        "guess": "auto",
        "unrestricted": false,
        "density_fitting": false,
+       "level_shift": 0.0,
        "allow_crap_scf": false
      }
    }
@@ -524,6 +525,16 @@ SCF Options
   count or a multiplicity above one forces it regardless.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
+- ``level_shift``: Hartree added to the virtual orbitals before each
+  diagonalisation, to widen the gap the next density is built through (default:
+  0.0, meaning off). Use it on an SCF that oscillates rather than one that
+  crawls; 0.2 to 1.0 is the useful range. A negative value is refused, since it
+  narrows the gap and makes convergence worse.
+
+  The shift is tapered off before convergence, so the orbital energies reported
+  at exit belong to the unshifted operator and stay usable as correlation
+  denominators. See :ref:`level-shifting` for when it will not help, which is a
+  shorter list than it sounds.
 - ``allow_crap_scf``: Accept a non-converged SCF instead of stopping (default:
   false). Off because the energy of an SCF that ran out of iterations has the
   right magnitude and nothing downstream can tell.

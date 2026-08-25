@@ -763,8 +763,11 @@ Current Limitations
    propagator behind them
 8. **Analytic second derivatives**: restricted Hartree-Fock only. Everything else
    takes the semi-numerical path
-9. **SCF convergence aids**: DIIS, and no level shifting, damping or
-   second-order fallback
+9. **SCF convergence aids**: DIIS and level shifting, and no damping, Fermi
+   smearing or second-order fallback. The shift is tapered off before
+   convergence, so what it costs is iterations and not the orbital energies --
+   see :doc:`scf_convergence`. It is a CPU-path feature; the GPU backend accepts
+   the keyword without applying it
 
 Planned Features
 ----------------
