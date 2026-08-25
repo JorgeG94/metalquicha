@@ -339,6 +339,9 @@ contains
       call optional_logical(json, "keywords.mcscf.optimize_orbitals", &
                             config%mcscf_optimize_orbitals)
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
+      call optional_real(json, "keywords.dft.screening_tolerance", &
+                         config%dft_screening_tolerance)
+      call optional_int(json, "keywords.dft.block_size", config%dft_block_size)
       ! The continuum is switched on by the presence of the block rather than by a
       ! flag inside it: a deck that names a dielectric wants solvent, and a
       ! separate "enabled" would let the two disagree.

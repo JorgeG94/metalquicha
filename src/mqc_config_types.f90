@@ -247,6 +247,14 @@ module mqc_config_types
       integer :: mcscf_max_macro_iter = 100
       real(dp) :: mcscf_orbital_convergence = 1.0e-6_dp
       ! keywords.dft -- the quadrature, not the functional
+      real(dp) :: dft_screening_tolerance = 1.0e-12_dp
+         !! From `keywords.dft.screening_tolerance`. The AO value below which a
+         !! shell is dropped from a grid block. Zero or negative evaluates the
+         !! whole basis, which is how a run measures what the screen is worth.
+      integer :: dft_block_size = -1
+         !! From `keywords.dft.block_size`. Grid points per block; -1 keeps the
+         !! backend default. Sets both how tightly the screen bites and how many
+         !! blocks there are to spread over threads.
       integer :: dft_grid_level = 3
       integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge
       integer :: dft_angular_points = -1

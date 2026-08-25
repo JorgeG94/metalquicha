@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for modules and submodules.">91 statements</a>
+                 title=" 0.4% of total for modules and submodules.">93 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -215,9 +215,9 @@ the method files carry no preprocessor conditionals at all.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1347,18 +1347,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1328.14,-364.39C1282.48,-371.45 1192.25,-385.41 1137.36,-393.91"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.55,-390.49 1127.2,-395.48 1137.62,-397.41 1136.55,-390.49"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_node37" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node37"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node37"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1396.5,-330 1318.5,-330 1318.5,-306 1396.5,-306 1396.5,-330"/>
 <text text-anchor="middle" x="1357.5" y="-315.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_edge50" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1318.31,-319.13C1295.98,-321.23 1267.96,-326.46 1246,-339 1224.94,-351.03 1231.13,-368.1 1210,-380 1187.98,-392.4 1160.31,-397.77 1137.24,-399.99"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.7,-396.52 1127.01,-400.8 1137.25,-403.5 1136.7,-396.52"/>
 </g>
@@ -1655,7 +1655,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~2"></span>
+              <span class="anchor" id="variable-basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1668,6 +1668,23 @@ default exists because cuEST needs one, so its presence says nothing.</p>
                 <td>&#34;sto-3g&#34;</td>
             <td>
 <p>Orbital basis set name</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-block_size~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>block_size</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+
             </td>
         </tr>
         <tr>
@@ -1919,7 +1936,7 @@ converged density, which only the backend holds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1953,7 +1970,7 @@ converged density, which only the backend holds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~3"></span>
+              <span class="anchor" id="variable-diis_size~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1970,7 +1987,7 @@ converged density, which only the backend holds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol"></span>
+              <span class="anchor" id="variable-energy_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2055,7 +2072,7 @@ converged density, which only the backend holds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~6"></span>
+              <span class="anchor" id="variable-guess~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2092,7 +2109,7 @@ repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~5"></span>
+              <span class="anchor" id="variable-max_iter~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -2144,7 +2161,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~2"></span>
+              <span class="anchor" id="variable-pcm~3"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -2212,6 +2229,23 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-screening_tolerance~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>screening_tolerance</strong></td>
+<td> =</td>
+                <td>1.0e-12_dp</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-scs_os~2"></span>
               real(kind=dp),
             </td>
@@ -2246,7 +2280,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical"></span>
+              <span class="anchor" id="variable-spherical~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2280,7 +2314,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2297,7 +2331,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~7"></span>
+              <span class="anchor" id="variable-verbose~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -2346,7 +2380,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~8"></span>
+              <span class="anchor" id="variable-method_type~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2396,7 +2430,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~12"></span>
+              <span class="anchor" id="variable-name~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2426,7 +2460,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~78"></span>
+              <span class="anchor" id="variable-error~89"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2469,7 +2503,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-24 18:10 +0000             </p>
+ on 2026-08-25 01:29 +0000             </p>
           </div>
         </div>
         <br>

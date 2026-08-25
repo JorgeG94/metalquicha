@@ -72,6 +72,10 @@ module mqc_method_dft
       integer :: grid_level = 3
          !! 0 to 9, the standard tables. Three is the usual default and what a
          !! production calculation should start from.
+      real(dp) :: screening_tolerance = 1.0e-12_dp
+         !! AO value below which a shell is dropped from a grid block.
+      integer :: block_size = -1
+         !! Grid points per block; -1 keeps the backend default.
          !! Number of angular grid points (Lebedev)
 
       ! Density fitting
@@ -180,6 +184,8 @@ contains
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
+      settings%screening_tolerance = this%options%screening_tolerance
+      settings%block_size = this%options%block_size
       settings%pcm = this%options%pcm
       ! Where the molecule reacts. Absent here until now, so a DFT deck asking
       ! for `properties.fukui` got a normal DFT run and no analysis, with no
