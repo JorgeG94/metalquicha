@@ -198,6 +198,7 @@ module mqc_optimizer_types
          !! slower and correct. That is why this interface has no `error_t`:
          !! there is nothing here a caller could not recover from.
          import :: dp
+         implicit none
          integer, intent(in) :: n_atoms
          real(dp), intent(in) :: coords(3, n_atoms)
          real(dp), intent(out) :: hessian(3*n_atoms, 3*n_atoms)
