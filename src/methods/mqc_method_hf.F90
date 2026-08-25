@@ -91,6 +91,9 @@ module mqc_method_hf
          !! Energy convergence threshold
       real(dp) :: density_tol = 1.0e-6_dp
          !! Density matrix convergence threshold
+      real(dp) :: level_shift = 0.0_dp
+         !! Hartree added to the virtual block before each diagonalisation.
+         !! Zero is off. See `scf_config_t`.
       logical :: use_diis = .true.
          !! Use DIIS acceleration
       integer :: diis_size = 8
@@ -182,6 +185,7 @@ contains
       settings%allow_crap_scf = this%options%allow_crap_scf
       settings%energy_tol = this%options%conv_tol
       settings%density_tol = this%options%density_tol
+      settings%level_shift = this%options%level_shift
       settings%use_diis = this%options%use_diis
       settings%diis_size = this%options%diis_size
 

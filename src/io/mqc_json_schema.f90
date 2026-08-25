@@ -338,6 +338,7 @@ contains
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
+      call allow(keys, "level_shift")
    end function scf_keys
 
    function efp_keys() result(keys)
