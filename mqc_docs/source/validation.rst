@@ -600,6 +600,71 @@ Best Practices
 
 4. **Cross-validate** with external codes if possible (e.g., run XTB standalone)
 
+Density Functional Energies
+===========================
+
+Kohn-Sham energies are checked separately from the manifest suite, by
+``validation/check_dft``, because a single total energy confounds two questions
+that fail for different reasons. Run it as:
+
+.. code-block:: bash
+
+   ./build/check_dft && python3 validation/check_dft.py
+
+The Fortran half converges a reference, dumps our grid and our density, and
+writes its own exchange-correlation numbers. The Python half then asks three
+things of PySCF:
+
+1. **Is the functional called correctly?** PySCF evaluates the same two libxc
+   functionals on *our* density and *our* weights, and integrates them the same
+   way. Both codes are calling one library on identical numbers, so this must
+   agree to roundoff. It tests the quadrature and the factor of rho, nothing
+   else.
+2. **Is the density right?** PySCF builds its own converged density and
+   evaluates it on *our* grid points with *our* weights. The grid cancels, so
+   what is left is the density.
+3. **Do the self-consistent totals agree?** Both codes run their own SCF on
+   their own grid. This is the only comparison where the grids do *not* cancel,
+   which is what makes the first two worth having: when this one fails alone,
+   the grid is the difference.
+
+Measured agreement is **4e-12 to 4.7e-11** across twenty restricted and
+unrestricted cases -- LDA through meta-GGA, global hybrids, and the two
+range-separated functionals. ``KS_TOL`` is set at 1e-9, well above that, because
+the SCF convergence thresholds set the floor rather than the integration.
+
+.. warning::
+
+   **This comparison depends on the PySCF version, and the failure is silent.**
+
+   Use the interpreter from the project's virtual environment -- ``python3``
+   after sourcing ``mqc_env.sh``, which is Python 3.12 with PySCF 2.14. Do not
+   use ``python3.10``.
+
+   PySCF changed its default DFT grid. Versions from roughly 2.7 onward apply
+   the per-element :math:`\xi` scale factors of the Treutler-Ahlrichs radial
+   mesh (*J. Chem. Phys.* **102**, 346), gated on
+   ``pyscf.dft.radi.ATOM_SPECIFIC_TREUTLER_GRIDS``, which defaults to true.
+   Earlier versions, including 2.6.2, use :math:`\xi = 1` for every element.
+   mqc applies the scale factors -- see ``src/methods/mqc_dft_radial.f90`` and
+   the table in ``mqc_dft_radial_data.f90`` -- so against an older PySCF the two
+   codes are integrating on **different radial grids**.
+
+   What that looks like is not an obvious error. Every Kohn-Sham case fails by
+   1e-8 to 1e-6 while the first two checks above still pass, because those are
+   the ones where the grid cancels. The size ordering is the textbook
+   grid-sensitivity ordering rather than anything structural: M06-L and the
+   B97 series worst at ~5e-7, TPSS famously insensitive at ~1e-8, plain
+   GGA and global hybrids around 5e-8. It reads exactly like a regression in
+   the exchange-correlation code, and it is not one.
+
+   ``check_dft.py`` now refuses to run against a PySCF whose grid convention
+   does not match, rather than producing twenty plausible failures.
+
+   One trap behind the trap: packages in ``~/.local/lib/python3.10`` are visible
+   to *any* Python 3.10, virtual environment or not. The project venv is
+   protective only because it is a different minor version.
+
 Validation Test Manifest Schema
 ================================
 
