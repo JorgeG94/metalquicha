@@ -29,6 +29,7 @@ module mqc_libcint_fukui
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
@@ -97,7 +98,7 @@ contains
    subroutine fukui_indices(mol, nelec, multiplicity, neutral_density, neutral_energy, &
                             scheme, max_iter, energy_tol, density_tol, res, error, &
                             functional, grid_level, pt2_fraction, neutral_orbitals, &
-                            neutral_orbital_energies, aux, n_frozen, verbose)
+                            neutral_orbital_energies, aux, n_frozen, verbose, pcm)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
@@ -149,6 +150,23 @@ contains
       real(dp), intent(in), optional :: neutral_orbitals(:, :)
       real(dp), intent(in), optional :: neutral_orbital_energies(:)
       type(libcint_molecule_t), intent(in), optional :: aux
+      type(pcm_context_t), intent(inout), optional :: pcm
+         !! The continuum the neutral was converged in, handed on to both ions.
+         !!
+         !! **All three states or none.** An ion solved in vacuum and
+         !! differenced against a neutral solved in solvent is not an ionisation
+         !! potential of anything: the solvation energy of a charged species is
+         !! one to three electronvolts, which is the size of the quantity being
+         !! reported. The same context object is reused rather than rebuilt --
+         !! the cavity is a property of the geometry, and the geometry does not
+         !! move between the three states.
+         !!
+         !! Equilibrium solvation, therefore, for all three. That makes the
+         !! indices and the potentials here the *adiabatic* ones: the solvent is
+         !! allowed to relax around each charge state. A vertical quantity would
+         !! need the slow polarisation frozen at the neutral's value and only the
+         !! fast part responding, which needs an optical dielectric this
+         !! program does not carry.
       logical, intent(in), optional :: verbose
          !! Print the two ion SCFs the way the neutral is printed. Absent is
          !! quiet: a caller that did not ask for iterations should not get two
@@ -268,7 +286,7 @@ contains
          call logger%info("  Fukui: anion SCF, N+1 electrons")
       end if
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
-                           loud, anion, error, xc=xc_arg)
+                           loud, anion, error, xc=xc_arg, pcm=pcm)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -300,7 +318,7 @@ contains
          call logger%info("  Fukui: cation SCF, N-1 electrons")
       end if
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
-                           loud, cation, error, xc=xc_arg)
+                           loud, cation, error, xc=xc_arg, pcm=pcm)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return

@@ -336,6 +336,12 @@ HAND_MAINTAINED = {
     # completes with a Fukui table is the assertion. It also omits
     # `population`, which pins the CHELPG default.
     "cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
+    # The same analysis inside a continuum. Hand-maintained for the reason the
+    # PCM decks below are: this script has no PCM support, so a regeneration
+    # would sweep the deck and leave its manifest entry behind. Same recipe as
+    # those -- pyscf.solvent.pcm, C-PCM at the deck's dielectric, lebedev_order
+    # 29, radii_table = 1.2 * Bondi.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_cpcm.json",
     # FMO2/FMO3 and EE-MBE. This script generates single-determinant references
     # from PySCF, which has no FMO, so it cannot produce these and would sweep the
     # decks away while leaving their manifest entries pointing at nothing. The two

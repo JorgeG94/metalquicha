@@ -682,15 +682,19 @@ contains
             result%has_error = .true.
             return
          end if
-         if (allocated(settings%fukui_population)) then
-            call result%error%set(ERROR_VALIDATION, "the Fukui analysis runs two more "// &
-                                  "SCFs for the ions, and those would run in the gas "// &
-                                  "phase against a solvated neutral -- an IP computed "// &
-                                  "across two different physics. Not wired up; run the "// &
-                                  "analysis without keywords.pcm.")
-            result%has_error = .true.
-            return
-         end if
+         ! The Fukui ions used to be refused here, because they were solved in
+         ! the gas phase and differenced against a solvated neutral -- an IP
+         ! across two different physics, and wrong by roughly the solvation
+         ! energy of a charged species, which is the size of the answer. They
+         ! now take the same continuum the neutral did, so the refusal is gone
+         ! rather than the reasoning: it was right, and what changed is that
+         ! `fukui_indices` carries `pcm` through to both of them.
+         !
+         ! Equilibrium solvation in all three states, so what comes out is the
+         ! adiabatic quantity -- the solvent relaxes around each charge state.
+         ! A vertical IP would freeze the slow polarisation at the neutral's
+         ! value and let only the fast part respond, which needs an optical
+         ! dielectric `pcm_config_t` does not carry.
          if (settings%bonding_energy) then
             call result%error%set(ERROR_VALIDATION, "the bonding energy decomposition "// &
                                   "rebuilds its atom energies from gas-phase operators "// &
@@ -1095,7 +1099,7 @@ contains
                                neutral_orbitals=scf%orbitals, &
                                neutral_orbital_energies=scf%orbital_energies, &
                                n_frozen=fukui_frozen, aux=fukui_aux_arg, &
-                               verbose=settings%verbose)
+                               verbose=settings%verbose, pcm=pcm_ctx)
             if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &
