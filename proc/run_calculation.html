@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">104 statements</a>
+                 title=" 0.5% of total for procedures.">113 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_calculation.html#variable-geometry_error">geometry_error</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-i~19">i</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-json_data~5">json_data</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-max_level~2">max_level</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-i~161">i</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-json_data~26">json_data</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-max_level~26">max_level</a>
             <a class="list-group-item" href="../proc/run_calculation.html#variable-should_write_json">should_write_json</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-wants_output">wants_output</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-wants_output~2">wants_output</a>
         </div>
       </div>
     </div>
@@ -350,7 +350,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~3"></span>
+              <span class="anchor" id="variable-resources~13"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -365,7 +365,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~8"></span>
+              <span class="anchor" id="variable-config~38"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -380,7 +380,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~78"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -395,7 +395,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds"></span>
+              <span class="anchor" id="variable-bonds~17"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -410,7 +410,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out"></span>
+              <span class="anchor" id="variable-result_out~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out),</td>
@@ -470,7 +470,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output~3"></span>
+              <span class="anchor" id="variable-write_output~4"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -4220,7 +4220,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~19"></span>
+              <span class="anchor" id="variable-i~161"></span>
               integer,
             </td>
               <td>private</td>
@@ -4237,7 +4237,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~5"></span>
+              <span class="anchor" id="variable-json_data~26"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
               <td>private</td>
@@ -4254,7 +4254,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~2"></span>
+              <span class="anchor" id="variable-max_level~26"></span>
               integer,
             </td>
               <td>private</td>
@@ -4288,7 +4288,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-wants_output"></span>
+              <span class="anchor" id="variable-wants_output~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -4419,7 +4419,19 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! reaches the method layer as an unhandled value, and what that produced</span>
 <span class="w">      </span><span class="c">! was a backtrace out of `unfragmented_calculation` rather than anything</span>
 <span class="w">      </span><span class="c">! a user could act on.</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_OPTIMIZE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_CONFORMERS</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s1">'driver "conformers" is not available on this path.'</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  Sampling drives run_calculation rather than being "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"driven by it, so it"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  works for a single molecule from an input deck, and "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"not from a"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  multi-molecule deck, a session or the C API."</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_OPTIMIZE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s1">'driver "Optimize" is not available on this path.'</span><span class="p">)</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"  It is driven above run_calculation, so it works for a "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -4570,7 +4582,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 11:24 +0000             </p>
+ on 2026-08-25 12:45 +0000             </p>
           </div>
         </div>
         <br>

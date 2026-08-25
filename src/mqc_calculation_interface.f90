@@ -36,7 +36,7 @@ contains
    end subroutine sync_geometry_to_workers
 
    subroutine compute_energy_and_forces(sys_geom, driver_config, resources, &
-                                        energy, gradient, hessian, bonds)
+                                        energy, gradient, hessian, bonds, write_output)
       !! Compute energy and forces for current geometry
       !! This is the main interface for optimization/dynamics codes
       !!
@@ -58,6 +58,13 @@ contains
       real(dp), intent(out), optional :: gradient(:, :)  !! (3, total_atoms)
       real(dp), intent(out), optional :: hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)
+      logical, intent(in), optional :: write_output
+         !! Whether the driver writes its JSON output file. Defaults to what
+         !! `run_calculation` defaults to, which is yes.
+         !!
+         !! A caller that drives this in a loop wants no: a sampling run asking
+         !! for thousands of energies produced thousands of `results.json`
+         !! writes, one per call, each immediately overwritten by the next.
 
       type(calculation_result_t) :: result
       logical :: need_gradient, need_hessian
@@ -72,7 +79,8 @@ contains
 
       ! Call the main calculation driver
       ! This handles both fragmented and unfragmented cases
-      call run_calculation(resources, driver_config, sys_geom, bonds, result)
+      call run_calculation(resources, driver_config, sys_geom, bonds, result, &
+                           write_output=write_output)
 
       ! Extract results (only valid on master rank)
       if (resources%mpi_comms%world_comm%rank() == 0) then

@@ -12,7 +12,8 @@ program main
    use mqc_resources, only: resources_t
    use mqc_driver, only: run_calculation, run_multi_molecule_calculations
    use mqc_geometry_optimizer, only: run_geometry_optimization
-   use mqc_calc_types, only: CALC_TYPE_OPTIMIZE
+   use mqc_calc_types, only: CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS
+   use mqc_crest_driver, only: run_conformer_search
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
@@ -154,6 +155,18 @@ program main
             ! ran out of steps was exiting 1 having printed its diagnosis into
             ! a buffer nobody ever read, which from the outside is an exit code
             ! and silence.
+            flush (output_unit)
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      else if (config%calc_type == CALC_TYPE_CONFORMERS) then
+         ! A conformer search is a sampling run wrapped around tens of
+         ! thousands of calculations, so like an optimization it dispatches
+         ! here rather than inside `run_calculation`.
+         call run_conformer_search(resources, config, sys_geom, error)
+         if (error%has_error()) then
+            if (resources%mpi_comms%world_comm%rank() == 0) then
+               call logger%error("Conformer sampling failed: "//error%get_message())
+            end if
             flush (output_unit)
             call abort_comm(resources%mpi_comms%world_comm, 1)
          end if

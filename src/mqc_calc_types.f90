@@ -11,6 +11,7 @@ module mqc_calc_types
    public :: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    public :: CALC_TYPE_MAKEFP
    public :: CALC_TYPE_OPTIMIZE
+   public :: CALC_TYPE_CONFORMERS
    public :: CALC_TYPE_UNKNOWN
 
    ! Public functions
@@ -26,6 +27,11 @@ module mqc_calc_types
    !> Minimize the geometry, which is a loop over gradient calculations rather
    !> than a calculation. Handled above `run_calculation`, not inside it.
    integer(int32), parameter :: CALC_TYPE_OPTIMIZE = 5
+   !> Search for conformers, which is a sampling run wrapped around tens of
+   !> thousands of gradients rather than a calculation. Like OPTIMIZE it is
+   !> driven above `run_calculation` and therefore cannot be dispatched from
+   !> inside it.
+   integer(int32), parameter :: CALC_TYPE_CONFORMERS = 6
 
 contains
 
@@ -64,6 +70,10 @@ contains
          ! driver; the other two are what people type.
       case ("optimize", "optimization", "opt")
          calc_type = CALC_TYPE_OPTIMIZE
+         ! "crest" because that is what the sampling is, and people will reach
+         ! for the program's name before the word for what it produces.
+      case ("conformers", "conformer", "crest")
+         calc_type = CALC_TYPE_CONFORMERS
       case default
          calc_type = CALC_TYPE_UNKNOWN
       end select
@@ -88,6 +98,8 @@ contains
          calc_type_str = "makefp"
       case (CALC_TYPE_OPTIMIZE)
          calc_type_str = "optimize"
+      case (CALC_TYPE_CONFORMERS)
+         calc_type_str = "conformers"
       case default
          calc_type_str = "unknown"
       end select

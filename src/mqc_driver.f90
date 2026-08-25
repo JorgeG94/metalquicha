@@ -26,7 +26,7 @@ module mqc_driver
                                  check_counterpoise_support
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
-                             CALC_TYPE_OPTIMIZE, &
+                             CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
@@ -146,6 +146,18 @@ contains
       ! reaches the method layer as an unhandled value, and what that produced
       ! was a backtrace out of `unfragmented_calculation` rather than anything
       ! a user could act on.
+      if (config%calc_type == CALC_TYPE_CONFORMERS) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            call logger%error('driver "conformers" is not available on this path.')
+            call logger%error("  Sampling drives run_calculation rather than being "// &
+                              "driven by it, so it")
+            call logger%error("  works for a single molecule from an input deck, and "// &
+                              "not from a")
+            call logger%error("  multi-molecule deck, a session or the C API.")
+         end if
+         call abort_comm(resources%mpi_comms%world_comm, 1)
+      end if
+
       if (config%calc_type == CALC_TYPE_OPTIMIZE) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
             call logger%error('driver "Optimize" is not available on this path.')
