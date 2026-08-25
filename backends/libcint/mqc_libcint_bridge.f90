@@ -957,7 +957,8 @@ contains
                               settings%density_tol, settings%verbose, scf, error, &
                               aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
-                              level_shift=settings%level_shift)
+                              level_shift=settings%level_shift, &
+                              linear_dependence=settings%linear_dependence)
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
       else if (unrestricted) then
@@ -965,7 +966,8 @@ contains
                               settings%energy_tol, settings%density_tol, settings%verbose, &
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc, &
-                              pcm=pcm_ctx, level_shift=settings%level_shift)
+                              pcm=pcm_ctx, level_shift=settings%level_shift, &
+                              linear_dependence=settings%linear_dependence)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration.
@@ -994,7 +996,8 @@ contains
                               diis_vectors=diis_size, guess=guess_kind, &
                               guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                               in_core=eri_fits_in_core(mol%nao) .and. .not. xc%range_separated, &
-                              level_shift=settings%level_shift)
+                              level_shift=settings%level_shift, &
+                              linear_dependence=settings%linear_dependence)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -2068,7 +2071,8 @@ contains
 
       call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                            settings%density_tol, settings%verbose, scf, error, &
-                           diis_vectors=diis_size)
+                           diis_vectors=diis_size, &
+                           linear_dependence=settings%linear_dependence)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.

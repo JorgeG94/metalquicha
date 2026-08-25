@@ -31,6 +31,19 @@ module mqc_method_config
          !! Energy convergence threshold (Hartree)
       real(dp) :: density_convergence = 1.0e-6_dp
          !! Density matrix convergence threshold
+      real(dp) :: linear_dependence = 0.0_dp
+         !! `keywords.scf.linear_dependence_threshold`. Overlap eigenvalues at
+         !! or below this are dropped as linearly dependent. Raise it to shed
+         !! more of a diffuse basis, lower it to keep modes the default would
+         !! discard.
+         !!
+         !! Zero means "not set", and the orthogonaliser then uses
+         !! `LINEAR_DEPENDENCE_TOL`. A sentinel rather than spelling 1e-7
+         !! again here: this module would otherwise carry a second copy of a
+         !! constant that already exists in `mqc_scf_common`, which is the
+         !! arrangement that let the two backends drift apart the last time
+         !! -- see the note on `LINEAR_DEPENDENCE_TOL` itself. Zero is not a
+         !! meaningful cutoff on its own, so nothing is lost by spending it.
       logical :: energy_convergence_set = .false.
       logical :: density_convergence_set = .false.
          !! Whether the deck named these, as opposed to inheriting them. A

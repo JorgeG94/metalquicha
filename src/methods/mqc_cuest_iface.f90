@@ -144,6 +144,10 @@ module mqc_cuest_iface
       real(dp) :: level_shift = 0.0_dp
          !! Hartree added to the virtual block before each diagonalisation, and
          !! tapered to zero before the SCF exits. See `scf_config_t`.
+      real(dp) :: linear_dependence = 0.0_dp
+         !! Overlap eigenvalues at or below this are dropped as linearly
+         !! dependent. Zero means the orthogonaliser's own cutoff. See
+         !! `scf_config_t`.
       logical :: use_diis = .true.
       integer :: diis_size = 8
 

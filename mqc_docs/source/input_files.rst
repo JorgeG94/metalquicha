@@ -501,7 +501,8 @@ SCF Options
        "unrestricted": false,
        "density_fitting": false,
        "level_shift": 0.0,
-       "allow_crap_scf": false
+       "allow_crap_scf": false,
+       "linear_dependence_threshold": 1e-7
      }
    }
 
@@ -538,6 +539,29 @@ SCF Options
 - ``allow_crap_scf``: Accept a non-converged SCF instead of stopping (default:
   false). Off because the energy of an SCF that ran out of iterations has the
   right magnitude and nothing downstream can tell.
+- ``linear_dependence_threshold``: Overlap eigenvalues at or below this are
+  dropped when the orthogonaliser is built (default: 1e-7).
+
+  Every SCF here runs in the canonical orthogonal basis :math:`X = U s^{-1/2}`,
+  and a basis with diffuse functions on a compact or large system produces
+  eigenvalues of the overlap near zero. Those modes are combinations the basis
+  cannot really distinguish; dividing by their square root would put noise into
+  every iteration, so they are discarded and the SCF runs in fewer orbitals than
+  the basis set defines.
+
+  **A run says which of three things happened, and the middle one is why this is
+  worth setting.** Functions dropped: a warning naming the count, the eigenvalue
+  and the orbital count everything downstream will use -- the basis is no longer
+  the one named in the input, so energies do not compare with a run that kept
+  them all. Nothing dropped but the smallest eigenvalue below 1e-5: also a
+  warning, because :math:`X` then carries a large :math:`1/\sqrt{s}` into every
+  iteration and the SCF can converge to different solutions from different
+  guesses without ever failing. Otherwise a single line, at verbose level only.
+
+  Raise it to shed more of a diffuse basis when the second case appears; lower it
+  to keep modes the default discards. Both warnings are printed regardless of
+  logger level, since a run that silently solves a smaller problem than the one
+  asked for is the thing this exists to prevent.
 
   In a fragmented run this is often the only way to finish at all -- a few
   fragments out of millions will not converge, and stopping on the first one

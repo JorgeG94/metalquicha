@@ -19,7 +19,8 @@ module mqc_libcint_rhf
    use mqc_convergence_report, only: convergence_header, convergence_footer
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
+   use mqc_scf_common, only: build_orthogonalizer, report_linear_dependence, &
+                             build_density_closed_shell, &
                              build_density_spin, spin_contamination, GWH_K
    use mqc_diis, only: diis_state_t
    use mqc_fock_projector, only: fock_projector_t
@@ -331,7 +332,7 @@ contains
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
-                              level_shift)
+                              level_shift, linear_dependence)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -405,6 +406,9 @@ contains
          !! better conditioned, and needs no bookkeeping about what the total
          !! is supposed to contain.
       type(pcm_context_t), intent(inout), optional :: pcm
+      real(dp), intent(in), optional :: linear_dependence
+         !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
+         !! the orthogonaliser on its own cutoff.
          !! Continuum solvation. Present and built means every iteration solves
          !! the surface charges against its density and folds their operator
          !! into the Fock matrix; `result%energy` then includes the dielectric
@@ -449,6 +453,8 @@ contains
       type(direct_stats_t) :: screening
       type(incremental_state_t) :: incr
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
+      real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
+      real(dp) :: lindep
 
       if (mod(nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "RHF needs an even electron count; this "// &
@@ -521,8 +527,12 @@ contains
          if (error%has_error()) return
       end if
 
-      call build_orthogonalizer(s, x, n_mo, error)
+      lindep = 0.0_dp
+      if (present(linear_dependence)) lindep = linear_dependence
+      call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
+                                smallest_kept=s_kept, threshold=lindep)
       if (error%has_error()) return
+      call report_linear_dependence(n_ao, n_mo, s_min, s_kept, verbose, threshold=lindep)
       if (n_occ > n_mo) then
          call error%set(ERROR_VALIDATION, "RHF: more occupied orbitals than the basis "// &
                         "supports after near-null modes were dropped")
@@ -756,7 +766,7 @@ contains
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
-                              level_shift)
+                              level_shift, linear_dependence)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -806,6 +816,9 @@ contains
          !! twice, and relies on the occupations to break the symmetry -- the
          !! same position the core guess is in, but from a far better density.
       type(pcm_context_t), intent(inout), optional :: pcm
+      real(dp), intent(in), optional :: linear_dependence
+         !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
+         !! the orthogonaliser on its own cutoff.
          !! Continuum solvation, exactly as on the restricted path. The surface
          !! charges see the total density and their operator lands in both spin
          !! Fock matrices, because the potential of a classical charge does not
@@ -832,6 +845,8 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
+      real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
+      real(dp) :: lindep
       character(len=LINE_LEN) :: line
 
       diis_size = 8
@@ -890,8 +905,12 @@ contains
          if (error%has_error()) return
       end if
 
-      call build_orthogonalizer(s, x, n_mo, error)
+      lindep = 0.0_dp
+      if (present(linear_dependence)) lindep = linear_dependence
+      call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
+                                smallest_kept=s_kept, threshold=lindep)
       if (error%has_error()) return
+      call report_linear_dependence(n_ao, n_mo, s_min, s_kept, verbose, threshold=lindep)
       if (n_alpha > n_mo) then
          call error%set(ERROR_VALIDATION, "UHF: more alpha electrons than the basis "// &
                         "supports after near-null modes were dropped")

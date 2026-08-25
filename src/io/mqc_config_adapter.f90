@@ -231,6 +231,7 @@ contains
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
       driver_config%method_config%scf%density_convergence = mqc_config%scf_density_tolerance
       driver_config%method_config%scf%level_shift = mqc_config%scf_level_shift
+      driver_config%method_config%scf%linear_dependence = mqc_config%scf_linear_dependence
       ! Carry across whether the deck actually named them, not just what they
       ! came out as. A caller whose own default is stricter than the shared one
       ! -- MAKEFP -- cannot otherwise tell "the user wants 1e-6" from "nobody
