@@ -26,7 +26,7 @@ module mqc_crest_driver
    use mqc_config_adapter, only: driver_config_t
    use mqc_resources, only: resources_t
    use mqc_calculation_interface, only: compute_energy_and_forces
-   use mqc_calc_types, only: CALC_TYPE_GRADIENT
+   use mqc_calc_types, only: CALC_TYPE_ENERGY
    use mqc_physical_constants, only: BOHR_TO_ANGSTROM
    use mqc_elements, only: element_number_to_symbol
    use crest_data, only: systemdata, timer, refine
@@ -188,9 +188,16 @@ contains
 
       ctx_geom = sys_geom
       ctx_config = config
-      !> The sampling asks for gradients whatever the deck asked for, since a
-      !> refinement optimisation needs them and a single point does not care.
-      ctx_config%calc_type = CALC_TYPE_GRADIENT
+      !> **An energy, not a gradient.** The level this installs is registered
+      !> as `refine%singlepoint`, and CREST uses it to re-rank an ensemble --
+      !> it reads the energy and never looks at the gradient. Computing one
+      !> anyway is invisible at HF/STO-3G, where the arithmetic rounds to zero
+      !> against the per-call overhead, and is most of the cost at anything
+      !> worth refining with: an RI-MP2 gradient is several times its energy.
+      !>
+      !> If a level is ever registered as `refine%geoopt`, which does need
+      !> gradients, this has to become conditional on the stage.
+      ctx_config%calc_type = CALC_TYPE_ENERGY
       ctx_resources = resources
       ctx_ready = .true.
       ctx_calls = 0
@@ -232,8 +239,14 @@ contains
       ctx_calls = ctx_calls + 1
 
       ctx_geom%coordinates = xyz
+      !> `write_output` off: the driver writes results.json on every call
+      !> otherwise, so a search asking for a few thousand energies produced a
+      !> few thousand writes of a file each one immediately overwrote.
+      !>
+      !> No `gradient` argument, so none is computed. `grad` stays zero, which
+      !> is what CREST does with it at this refinement stage anyway.
       call compute_energy_and_forces(ctx_geom, ctx_config, ctx_resources, &
-                                     energy, gradient=grad)
+                                     energy, write_output=.false.)
    end subroutine crest_engrad
 
    pure function int_text(value) result(text)
