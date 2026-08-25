@@ -1455,7 +1455,11 @@ contains
          !! dependent functionals are refused at construction, so these are
          !! zeros in and discarded out -- the single largest simplification
          !! available on this rung, and the energy path already takes it.
-      real(dp), allocatable :: v_local(:, :)
+      real(dp), allocatable :: v_local(:, :), v_sig(:, :), d_sig(:, :), dt_sig(:, :)
+      real(dp), allocatable :: extents(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: n_sig, ia, ja
       type(error_t) :: local_error
       logical :: failed
       integer :: g0, g1, nb, i, ig, id, npts
@@ -1476,29 +1480,50 @@ contains
       npts = ctx%grid%n_points
       failed = .false.
 
+      call shell_extents(mol, ctx%screen_tol, extents)
+
       ! Threaded over blocks like the potential paths. This one is driven once
       ! per CPHF iteration rather than once per SCF iteration, so a response
       ! property or a Z-vector pays for it repeatedly.
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, dtilde, v_kernel, error, failed, &
-      !$omp           gga, mgga, npts) &
+      !$omp           gga, mgga, npts, extents) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho, rho_grad, drho, &
       !$omp            drho_grad, sigma, dsigma, frr, frs, fss, vsig, frr_i, &
       !$omp            frs_i, fss_i, exc_i, vrho_i, vsigma_i, c_rho, c_grad, &
       !$omp            c_tau, no_tau, tau, dtau, lapl, frt, fst, ftt, vtau, &
       !$omp            frt_i, fst_i, ftt_i, vtau_i, lapl_scratch, v_local) &
+      !$omp    private(v_sig, d_sig, dt_sig, shell_mask, ao_list, ao_offset, &
+      !$omp            n_sig, ia, ja) &
       !$omp    firstprivate(local_error)
       allocate (v_local(size(v_kernel, 1), size(v_kernel, 2)))
       v_local = 0.0_dp
+      allocate (v_sig(mol%nao, mol%nao), d_sig(mol%nao, mol%nao), &
+                dt_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
 
       !$omp do schedule(dynamic)
-      do g0 = 1, npts, AO_POINT_BLOCK
+      do g0 = 1, npts, ctx%point_block
          ! As in the potential: a thread that has failed stops working, but the
          ! loop still has to run out so every thread reaches the barrier.
          if (failed) cycle
 
-         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
+
+         ! One screen for both densities. The reference and the response density
+         ! are contracted against the same basis at the same points, so they
+         ! share the kept set and the result scatters back through one `ao_list`.
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+               dt_sig(ia, ja) = dtilde(ao_list(ia), ao_list(ja))
+            end do
+         end do
 
          ! The reference density is what `f_xc` is evaluated at; the response
          ! density is what it multiplies. Both are ordinary densities on the
@@ -1509,9 +1534,12 @@ contains
          ! on its error paths.
          if (gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
-                               grad=ao_grad)
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error)
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
          end if
          if (local_error%has_error()) then
             !$omp critical (xc_kernel_failure)
@@ -1530,14 +1558,18 @@ contains
             ! response density goes through the same routine with `dtilde` in
             ! place of `density`. Deriving the factor again would be inventing a
             ! second convention that has to agree with the first.
-            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
-            call eval_rho(ao, dtilde, drho, ao_grad=ao_grad, rho_grad=drho_grad, tau=dtau)
+            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
+                          rho_grad=rho_grad, tau=tau)
+            call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
+                          rho_grad=drho_grad, tau=dtau)
          else if (gga) then
-            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
-            call eval_rho(ao, dtilde, drho, ao_grad=ao_grad, rho_grad=drho_grad)
+            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
+                          rho_grad=rho_grad)
+            call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
+                          rho_grad=drho_grad)
          else
-            call eval_rho(ao, density, rho)
-            call eval_rho(ao, dtilde, drho)
+            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
+            call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho)
          end if
 
          if (allocated(frr)) deallocate (frr, frs, fss, vsig, frr_i, frs_i, fss_i, &
@@ -1670,15 +1702,24 @@ contains
          ! The same assembly the potential uses, with the kernel's coefficients
          ! in place of the potential's. Writing a second one would be two copies
          ! of the arithmetic that is hardest to get right here.
+         v_sig(1:n_sig, 1:n_sig) = 0.0_dp
          if (mgga) then
-            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_local, &
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                      v_sig(1:n_sig, 1:n_sig), &
                                       ao_grad=ao_grad, grad_coeff=c_grad, vtau=c_tau, &
                                       any_gga=gga, any_mgga=.true.)
          else
-            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_local, &
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                      v_sig(1:n_sig, 1:n_sig), &
                                       ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
                                       any_gga=gga, any_mgga=.false.)
          end if
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               v_local(ao_list(ia), ao_list(ja)) = &
+                  v_local(ao_list(ia), ao_list(ja)) + v_sig(ia, ja)
+            end do
+         end do
       end do
       !$omp end do
 
