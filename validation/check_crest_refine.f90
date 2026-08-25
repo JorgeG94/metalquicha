@@ -1,7 +1,8 @@
 !! Manual check of the configuration this integration is actually for:
 !! xTB samples, mqc refines
 !!
-!!     cmake -B build -DMQC_ENABLE_CREST=ON -DWITH_GFN0=ON
+!!     cmake -B build -DMQC_ENABLE_CREST=ON -DMQC_ENABLE_TBLITE=ON
+!!                    -DWITH_TBLITE=ON -DWITH_GFN0=ON
 !!     cmake --build build --target check_crest_refine
 !!     ./build/check_crest_refine
 !!
@@ -17,14 +18,11 @@
 !! level 1 is xTB, in process, tens of thousands of times; level 2 is mqc, on
 !! what survives.
 !!
-!! **The sampling level is GFN0, not the GFN2 CREST defaults to, and that is a
-!! constraint rather than a choice.** CREST wants tblite from the
-!! `xtb_solvation` branch; mqc pins release v0.6.0. `eeq_guess` does not have
-!! the same interface in the two, and one binary can only contain one tblite.
-!! gfn0 is a separate project and sidesteps it entirely -- xTB still drives
-!! the sampling at semiempirical cost -- but reconciling the tblite versions
-!! is the thing to settle before this configuration is more than a
-!! demonstration.
+!! Both projects share one tblite, which took reconciling: CREST pinned a
+!! dormant `xtb_solvation` branch and mqc pins release v0.6.0, and only one
+!! tblite can exist in one binary. The pin turned out to be stale rather than
+!! load-bearing -- one added argument to eeq_guess is the whole difference --
+!! so the sampling here runs GFN2-xTB through the same tblite mqc uses.
 !!
 !! What this checks is that the split holds: that the search runs, that the
 !! refinement is reached, and that mqc's energies are the ones that come back
@@ -163,18 +161,13 @@ program check_crest_refine
    nat = env%ref%nat
    write (*, "(a)") ""
    write (*, "(a,i0)") "  atoms                 ", nat
-   !> Sample on GFN0-xTB rather than the GFN2 parseflags defaults to, and the
-   !> reason is a version conflict rather than a preference. CREST wants
-   !> tblite from the `xtb_solvation` branch; mqc pins release v0.6.0, and
-   !> `eeq_guess` does not have the same interface in both. Since both link
-   !> into one binary only one tblite can exist, and it cannot satisfy both.
-   !>
-   !> gfn0 is a separate project, so it sidesteps the clash entirely: xTB
-   !> still drives the sampling, in process, at semiempirical cost. Sharing a
-   !> tblite is the thing to settle before this configuration ships.
-   env%calc%calcs(1)%id = jobtype%gfn0
+   !> Whatever parseflags chose stays: GFN2-xTB through tblite, in process.
+   !> That is the arrangement this is for, and it needs both projects to agree
+   !> on one tblite. They now can -- see the eeq_guess commit in the fork --
+   !> where before, CREST's pin to a dormant xtb_solvation branch and mqc's
+   !> release v0.6.0 could not coexist in one binary.
    write (*, "(a,i0)") "  sampling level id     ", env%calc%calcs(1)%id
-   write (*, "(a)") "  (7 = GFN0-xTB in process)"
+   write (*, "(a)") "  (6 = tblite, i.e. GFN2-xTB in process)"
 
    !> mqc's side of the arrangement
    geom%n_monomers = 1
