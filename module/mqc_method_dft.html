@@ -197,16 +197,16 @@ cannot end up with mismatched Coulomb and XC definitions.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
               </ul>
             </li>
@@ -1343,18 +1343,18 @@ large graphs.</div>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M924.14,-362.51C878.48,-355.27 788.25,-340.97 733.36,-332.27"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="733.63,-328.77 723.2,-330.66 732.53,-335.68 733.63,-328.77"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_method_dft~~UsedByGraph_node23" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_method_dft~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_method_dft~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="992.5,-337 914.5,-337 914.5,-313 992.5,-313 992.5,-337"/>
 <text text-anchor="middle" x="953.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_dft~~UsedByGraph_edge23" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M914.25,-325C866.38,-325 784.47,-325 733.31,-325"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="733.19,-321.5 723.19,-325 733.19,-328.5 733.19,-321.5"/>
 </g>
@@ -2091,7 +2091,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~14"></span>
+              <span class="anchor" id="variable-verbose~13"></span>
               logical,
             </td>
               <td>public</td>
@@ -2141,7 +2141,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~140"></span>
+              <span class="anchor" id="variable-this~116"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2171,7 +2171,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~47"></span>
+              <span class="anchor" id="variable-result~43"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2211,7 +2211,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~142"></span>
+              <span class="anchor" id="variable-this~118"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2241,7 +2241,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~49"></span>
+              <span class="anchor" id="variable-result~45"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2281,7 +2281,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~143"></span>
+              <span class="anchor" id="variable-this~119"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2311,7 +2311,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~50"></span>
+              <span class="anchor" id="variable-result~46"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2351,7 +2351,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~141"></span>
+              <span class="anchor" id="variable-this~117"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2381,7 +2381,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~48"></span>
+              <span class="anchor" id="variable-result~44"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2439,7 +2439,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 09:41 +0000             </p>
+ on 2026-08-25 10:09 +0000             </p>
           </div>
         </div>
         <br>
