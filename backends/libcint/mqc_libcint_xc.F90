@@ -1194,6 +1194,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp) :: e_nl_total, e_nl_dup
       real(dp), allocatable :: rho_a(:), rho_b(:), grad_a(:, :), grad_b(:, :)
       real(dp), allocatable :: tau_a(:), tau_b(:)
       real(dp), allocatable :: rho(:), sigma(:), tau(:), lapl(:)
@@ -1213,18 +1214,6 @@ contains
 
       v_alpha = 0.0_dp
       v_beta = 0.0_dp
-      !> The restricted assembler applies VV10; this one does not yet, and a
-      !> functional carrying it must not reach the Fock matrix meanwhile: the semilocal half alone converges and
-      !> prints a plausible number that is 43 mHa wrong on water. The
-      !> parameters are already on the context; what is missing is the double
-      !> integral, and `mqc_libcint_vv10` holds it.
-      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
-                        "correlation term (VV10) that is not yet applied on this path. "// &
-                        "Refused rather than evaluated without it.")
-         return
-      end if
-
       e_xc = 0.0_dp
       n_elec = 0.0_dp
 
@@ -1474,6 +1463,21 @@ contains
       n_elec = n_elec + n_local
       !$omp end critical (xc_uks_reduce)
       !$omp end parallel
+
+      !> VV10 sees only the total density, so one evaluation serves both spins
+      !> and its contribution is identical in each. That is not a
+      !> simplification: the kernel is built from rho and |grad rho| of the
+      !> total density, with no spin dependence anywhere in it, so
+      !> dE/drho_a = dE/drho_b and likewise for the gradient term.
+      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
+         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_alpha, e_nl_total, error)
+         if (error%has_error()) return
+         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_beta, e_nl_dup, error)
+         if (error%has_error()) return
+         !> Added once, not twice: `e_nl` is the energy of the whole density,
+         !> and the second call is only there to reach the beta matrix.
+         e_xc = e_xc + e_nl_total
+      end if
 #endif
    end subroutine xc_add_potential_uks
 
