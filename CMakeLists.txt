@@ -632,10 +632,40 @@ if(MQC_ENABLE_CREST)
   set(WITH_TESTS
       OFF
       CACHE BOOL "Build CREST's own unit tests" FORCE)
+  # Features this integration does not use, off by default so they are neither
+  # built nor fetched at an unpinned HEAD. A deck that wants one can turn it
+  # back on, and will then be choosing to resolve its version too.
+  foreach(_crest_off WITH_GFNFF WITH_LIBPVOL WITH_LWONIOM)
+    if(NOT DEFINED ${_crest_off})
+      set(${_crest_off}
+          OFF
+          CACHE BOOL "CREST optional backend, off unless asked for" FORCE)
+    endif()
+  endforeach()
+  # GIT_SUBMODULES names gfn0 and nothing else, and both halves matter.
+  #
+  # CREST carries gfn0, gfnff, toml-f, lwoniom, pvol, tblite and test-drive as
+  # git submodules under subprojects/, and FetchContent updates every one of
+  # them unless told otherwise. CREST's resolver then prefers a populated
+  # subprojects/ directory over everything else, so it add_subdirectory()s its
+  # own toml-f -- which tblite has already fetched into _deps by the time we get
+  # here. Two directories defining `toml-f-lib` is a hard CMake error that names
+  # CMP0002 and nothing about CREST, so it does not read as a dependency
+  # conflict at all. Excluding toml-f and tblite lets CREST's own `if(NOT TARGET
+  # ...)` guards see the targets this project already made and skip both, which
+  # is the sharing the arrangement wanted.
+  #
+  # But the submodules are *version pins*, so excluding one is not free: with
+  # none checked out CREST fetched HEAD of gfnff and stopped on a `print=`
+  # keyword its own source still passes. gfn0 is the one dependency it needs
+  # that nothing here provides -- the MTD-length heuristic calls it for Wiberg
+  # bond orders -- so it keeps its pin. The rest are switched off below rather
+  # than fetched at whatever HEAD happens to be.
   FetchContent_Declare(
     crest
     GIT_REPOSITORY ${MQC_CREST_REPOSITORY}
-    GIT_TAG ${MQC_CREST_TAG})
+    GIT_TAG ${MQC_CREST_TAG}
+    GIT_SUBMODULES "subprojects/gfn0")
   FetchContent_MakeAvailable(crest)
   target_link_libraries(${main_lib} PUBLIC lib-crest-static)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CREST)
