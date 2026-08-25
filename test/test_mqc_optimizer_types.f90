@@ -22,7 +22,10 @@ module test_mqc_optimizer_types
                                   constraint_from_string, constraint_atom_count, &
                                   target_from_string, target_to_string, &
                                   algorithm_finds_saddle, &
-                                  OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
+                                  OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE, &
+                                  neb_ends_from_string, neb_ends_to_string, &
+                                  NEB_ENDS_FROZEN, NEB_ENDS_PERPENDICULAR, &
+                                  NEB_ENDS_FREE, MIN_NEB_IMAGES
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, CALC_TYPE_OPTIMIZE
    use pic_types, only: dp
    implicit none
@@ -50,9 +53,59 @@ contains
                   new_unittest("target_parses", test_target_parses), &
                   new_unittest("target_roundtrip", test_target_roundtrip), &
                   new_unittest("target_defaults_to_minimum", test_target_default), &
-                  new_unittest("only_saddle_capable_algorithms", test_saddle_capable) &
+                  new_unittest("only_saddle_capable_algorithms", test_saddle_capable), &
+                  new_unittest("neb_endpoints_parse", test_neb_ends), &
+                  new_unittest("neb_defaults_are_off", test_neb_defaults) &
                   ]
    end subroutine collect_mqc_optimizer_types_tests
+
+   subroutine test_neb_ends(error)
+      !! How a deck spells the endpoint treatment
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, neb_ends_from_string("frozen") == NEB_ENDS_FROZEN)
+      if (allocated(error)) return
+      call check(error, neb_ends_from_string("fixed") == NEB_ENDS_FROZEN)
+      if (allocated(error)) return
+      call check(error, neb_ends_from_string("perpendicular") == NEB_ENDS_PERPENDICULAR)
+      if (allocated(error)) return
+      call check(error, neb_ends_from_string("free") == NEB_ENDS_FREE)
+      if (allocated(error)) return
+      call check(error, neb_ends_from_string("FROZEN") == NEB_ENDS_FROZEN, &
+                 "endpoint spellings should be case-insensitive like their siblings")
+      if (allocated(error)) return
+      call check(error, neb_ends_from_string("banana") < NEB_ENDS_FROZEN, &
+                 "an unrecognised endpoint treatment must not fall back to a valid one")
+      if (allocated(error)) return
+      call check(error, neb_ends_from_string(neb_ends_to_string(NEB_ENDS_PERPENDICULAR)) == &
+                 NEB_ENDS_PERPENDICULAR, "the endpoint treatment should round-trip")
+   end subroutine test_neb_ends
+
+   subroutine test_neb_defaults(error)
+      !! A path is opt-in, and its floor is real
+      !!
+      !! The default matters more than it looks: every optimization in every
+      !! existing deck runs through these settings, and a non-zero image count
+      !! or an allocated endpoint would turn one of them into a band.
+      type(error_type), allocatable, intent(out) :: error
+      type(optimizer_settings_t) :: settings
+
+      call check(error,.not. allocated(settings%endpoint), &
+                 "an optimization is a single structure unless a deck says otherwise")
+      if (allocated(error)) return
+      call check(error, settings%n_images == 0, &
+                 "zero images means the engine default, not a band")
+      if (allocated(error)) return
+      call check(error, settings%neb_spring < 0.0_dp, &
+                 "a negative spring constant means the engine default")
+      if (allocated(error)) return
+      call check(error, settings%neb_ends == NEB_ENDS_FROZEN, &
+                 "endpoints supplied by a user are usually already minima")
+      if (allocated(error)) return
+      ! Two images are the two endpoints. DL-FIND refuses fewer than three from
+      ! inside the engine; this is the same floor, named where a deck is read.
+      call check(error, MIN_NEB_IMAGES == 3)
+   end subroutine test_neb_defaults
 
    subroutine test_target_parses(error)
       !! Every spelling a deck is likely to use, and one it is not

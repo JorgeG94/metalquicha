@@ -422,6 +422,10 @@ contains
       call optional_string(json, "keywords.optimization.hessian_update", &
                            config%opt_hessian_update)
       call optional_string(json, "keywords.optimization.target", config%opt_target)
+      call optional_string(json, "keywords.optimization.endpoint", config%opt_endpoint)
+      call optional_string(json, "keywords.optimization.neb_endpoints", config%opt_neb_ends)
+      call optional_int(json, "keywords.optimization.images", config%opt_n_images)
+      call optional_real(json, "keywords.optimization.neb_spring", config%opt_neb_spring)
       call optional_real(json, "keywords.optimization.timestep", config%opt_timestep)
       call optional_real(json, "keywords.optimization.friction", config%opt_friction)
       call optional_real(json, "keywords.optimization.friction_factor", &
