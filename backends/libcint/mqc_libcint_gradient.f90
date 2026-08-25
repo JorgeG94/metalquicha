@@ -379,6 +379,23 @@ contains
       integer :: npts, nao, natm, g0, g1, nb, ig, gg, mu, comp, ia, own
       logical :: unrestricted
 
+!> **A VV10 gradient is not the semilocal gradient.** The non-local term
+      !> depends on the nuclear positions twice over -- through |r - r'| in the
+      !> kernel and through rho and grad rho at both points -- and none of that
+      !> is computed here.
+      !>
+      !> Refused rather than omitted, because omitting it survives every check
+      !> a user can make: the SCF converges, the energy is right, and the
+      !> forces are quietly wrong, so an optimisation walks confidently to the
+      !> wrong minimum.
+      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
+                        "correlation term (VV10), whose contribution to the nuclear "// &
+                        "gradient is not implemented. Refused rather than returning a "// &
+                        "gradient missing it.")
+         return
+      end if
+
       if (.not. ctx%active) return
 
       unrestricted = present(density_beta)
