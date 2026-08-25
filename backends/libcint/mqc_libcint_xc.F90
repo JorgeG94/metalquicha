@@ -113,6 +113,13 @@ module mqc_libcint_xc
          !! MP2 correlation fraction, for a double hybrid. Carried here so the
          !! caller can see it without re-parsing the name; nothing in this module
          !! acts on it, because perturbative correlation is not a grid quantity.
+      real(dp) :: nlc_b = 0.0_dp
+      real(dp) :: nlc_c = 0.0_dp
+         !! VV10's two parameters, as libxc reports them. Both zero means the
+         !! functional carries no non-local correlation, which is every
+         !! functional here except the `-V` family. Stored rather than only
+         !! tested, because the term has to be evaluated now rather than
+         !! refused -- see `mqc_libcint_vv10`.
       real(dp) :: screen_tol = AO_SCREEN_TOL
          !! The AO value below which a shell is dropped from a grid block.
          !! From `keywords.dft.screening_tolerance`; the default is the constant.
@@ -296,13 +303,25 @@ contains
          ! Non-local correlation likewise: VV10 is a double integral over the
          ! density, not a functional of it at a point, and a functional carrying it
          ! would silently lose that whole term.
+         ! Non-local correlation: VV10 is a double integral over the density,
+         ! not a functional of it at a point, so libxc supplies only the
+         ! semilocal half and hands back the two parameters. Kept here and
+         ! evaluated by `mqc_libcint_vv10` where the potential is assembled.
+         !
+         ! A composition mixing two VV10 functionals with different parameters
+         ! is refused rather than averaged: `b` and `c` are not linear in the
+         ! energy, so there is no meaningful blend of them.
          call xc_f03_nlc_coef(ctx%func(i), nlc_b, nlc_c)
          if (nlc_b /= 0.0_dp .or. nlc_c /= 0.0_dp) then
-            call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
-                           "' carries a non-local correlation term (VV10), which the "// &
-                           "CPU path does not implement. Refused rather than evaluated "// &
-                           "without it.")
-            return
+            if (ctx%nlc_b /= 0.0_dp .and. &
+                (ctx%nlc_b /= nlc_b .or. ctx%nlc_c /= nlc_c)) then
+               call error%set(ERROR_VALIDATION, "this composition mixes two non-local "// &
+                              "correlation functionals with different VV10 parameters, "// &
+                              "which cannot be combined into one kernel.")
+               return
+            end if
+            ctx%nlc_b = nlc_b
+            ctx%nlc_c = nlc_c
          end if
 
          ! libxc owns a global hybrid's fraction, so ask rather than assume. Only a
@@ -864,6 +883,18 @@ contains
       integer :: g0, g1, nb, i, ig, id
 
       v_xc = 0.0_dp
+      !> Until the non-local term is folded in below, a functional carrying it
+      !> must not reach the Fock matrix: the semilocal half alone converges and
+      !> prints a plausible number that is 43 mHa wrong on water. The
+      !> parameters are already on the context; what is missing is the double
+      !> integral, and `mqc_libcint_vv10` holds it.
+      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
+                        "correlation term (VV10) that is not yet applied on this path. "// &
+                        "Refused rather than evaluated without it.")
+         return
+      end if
+
       e_xc = 0.0_dp
       n_elec = 0.0_dp
 
@@ -1140,6 +1171,18 @@ contains
 
       v_alpha = 0.0_dp
       v_beta = 0.0_dp
+      !> Until the non-local term is folded in below, a functional carrying it
+      !> must not reach the Fock matrix: the semilocal half alone converges and
+      !> prints a plausible number that is 43 mHa wrong on water. The
+      !> parameters are already on the context; what is missing is the double
+      !> integral, and `mqc_libcint_vv10` holds it.
+      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
+                        "correlation term (VV10) that is not yet applied on this path. "// &
+                        "Refused rather than evaluated without it.")
+         return
+      end if
+
       e_xc = 0.0_dp
       n_elec = 0.0_dp
 
