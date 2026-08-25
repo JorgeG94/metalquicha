@@ -458,10 +458,14 @@ The integration grid, and how the quadrature walks it:
 
 .. note::
 
-   Both apply to the Kohn-Sham potential built during the SCF. The exchange-
-   correlation *gradient* is not screened yet and evaluates the whole basis, so a
-   ``Gradient`` or ``Optimize`` run sees the benefit in its SCF iterations and not
-   in the derivative that follows them.
+   Both apply to every Kohn-Sham potential built during the SCF -- restricted and
+   unrestricted alike -- and to the exchange-correlation kernel behind CPHF, the
+   response properties and the Z-vector a double hybrid or an RI-MP2 gradient
+   solves. All three are threaded over blocks of grid points as well.
+
+   The exchange-correlation *gradient* is not screened yet and evaluates the
+   whole basis, so a ``Gradient`` or ``Optimize`` run sees the benefit in its SCF
+   iterations and not in the derivative that follows them.
 
 Driver Section
 --------------
