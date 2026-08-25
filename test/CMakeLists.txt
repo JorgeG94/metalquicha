@@ -310,6 +310,7 @@ endif()
 addtest(mqc_pcm_radii)
 addtest(mqc_atomic_radii)
 addtest(mqc_scf_common)
+addtest(mqc_vv10)
 addtest(mqc_shared_helpers)
 
 # What a functional name means as a composition. Unconditional: the
