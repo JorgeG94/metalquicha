@@ -58,9 +58,26 @@ contains
                   new_unittest("only_saddle_capable_algorithms", test_saddle_capable), &
                   new_unittest("neb_endpoints_parse", test_neb_ends), &
                   new_unittest("neb_defaults_are_off", test_neb_defaults), &
-                  new_unittest("saddle_method_parses", test_saddle_method) &
+                  new_unittest("saddle_method_parses", test_saddle_method), &
+                  new_unittest("connect_defaults_off", test_connect_defaults) &
                   ]
    end subroutine collect_mqc_optimizer_types_tests
+
+   subroutine test_connect_defaults(error)
+      !! Following a saddle downhill is opt-in
+      !!
+      !! It has to be: a connect run does not stop at the saddle, it carries on
+      !! into two minimisations, so turning it on by accident changes both what
+      !! the run costs and which geometry it finishes on.
+      type(error_type), allocatable, intent(out) :: error
+      type(optimizer_settings_t) :: settings
+
+      call check(error,.not. settings%connect, &
+                 "an optimization must not follow anything downhill unless asked")
+      if (allocated(error)) return
+      call check(error, settings%connect_distort < 0.0_dp, &
+                 "a negative displacement means the engine default")
+   end subroutine test_connect_defaults
 
    subroutine test_saddle_method(error)
       !! How a deck spells the way a saddle is hunted

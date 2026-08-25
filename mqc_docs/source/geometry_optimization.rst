@@ -305,6 +305,13 @@ All optional. Everything under ``keywords.optimization``:
    * - ``dimer_rotation_tolerance``
      - engine
      - Stop rotating below this angle
+   * - ``connect``
+     - ``false``
+     - After the saddle, relax downhill both ways and report the two minima.
+       See :ref:`connect`
+   * - ``connect_distort``
+     - engine
+     - How far to displace along the imaginary mode before relaxing
    * - ``frozen_atoms``
      - none
      - 0-based indices held at their input position. See :ref:`opt-constraints`
@@ -383,6 +390,59 @@ around on anything but a small system.
 and an update thereafter, rather than a fresh one per step. ``bofill`` is the
 usual choice for a saddle point, because it does not assume the matrix is
 positive definite -- which at a transition state it is not.
+
+.. _connect:
+
+What does the saddle connect?
+------------------------------
+
+One imaginary frequency proves a first-order saddle. It does not prove the
+saddle joins the two minima anybody had in mind, and a transition state between
+the wrong pair is a barrier height that looks entirely reasonable and describes
+a different reaction.
+
+``connect`` settles it. After the saddle converges, the geometry is displaced
+along the imaginary mode in each direction and relaxed, and the two minima it
+falls into are reported::
+
+    "keywords": {
+      "optimization": {
+        "target": "saddle",
+        "saddle_method": "dimer",
+        "endpoint": "product.xyz",
+        "connect": true
+      }
+    }
+
+giving::
+
+    the saddle relaxes to two minima:
+       forward       -55.455419758873 Hartree
+       backward      -55.455419796039 Hartree
+       barrier from each side:      11.141081 and      11.141104 kcal/mol
+    written to connected_forward.xyz and connected_backward.xyz
+
+Open those two files. If they are the reactant and product you meant, the saddle
+is the right one; if either is something else, it is not, whatever its frequency
+said.
+
+This is not an intrinsic reaction coordinate. The path taken downhill is an
+ordinary minimisation path rather than the mass-weighted steepest-descent one,
+so the *route* is not the reaction coordinate -- but the endpoints are the same,
+and the endpoints are the question being asked. A true IRC is not available:
+DL-FIND does not implement one.
+
+``connect_distort`` is how far the geometry is displaced along the mode before
+relaxing. Too small and both sides fall back to the saddle; too large and they
+can skip past the adjacent minima entirely.
+
+.. note::
+
+   ``connect`` and ``hess_end`` are refused together. A connect run does not
+   finish at the saddle -- it finishes at the second of the two minima -- so a
+   final Hessian would describe that structure and report, correctly and
+   uselessly, that it has no imaginary frequencies. Run the saddle search with
+   ``hess_end`` first, then connect from the geometry it found.
 
 .. _dimer:
 

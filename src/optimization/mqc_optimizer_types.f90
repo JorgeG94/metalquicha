@@ -209,6 +209,16 @@ module mqc_optimizer_types
       real(dp) :: dimer_rotation_tolerance = -1.0_dp
          !! Stop rotating once the angle falls below this. Negative is the
          !! engine default.
+      logical :: connect = .false.
+         !! After the saddle is found, follow its imaginary mode downhill in
+         !! both directions and report the two minima it falls to. One
+         !! imaginary frequency proves a first-order saddle; it does not prove
+         !! the saddle joins the two structures anybody had in mind, and this
+         !! is the check that settles it.
+      real(dp) :: connect_distort = -1.0_dp
+         !! How far to displace along the imaginary mode before relaxing.
+         !! Negative is the engine default. Too small and both sides fall back
+         !! to the saddle; too large and they skip past the adjacent minima.
       integer :: hessian_update = OPT_HESSIAN_UPDATE_ENGINE
          !! How curvature is carried between steps once a Hessian exists.
          !! Ignored by the algorithms that never build one.

@@ -35,11 +35,12 @@ module mqc_json_schema
 
    public :: ensure_valid_json  !! Reject a deck the schema does not describe
 
-   integer, parameter :: MAX_KEYS = 32
+   integer, parameter :: MAX_KEYS = 40
       !! Widest allow-list below; raising it is the only cost of a new key.
       !! optimization_keys is now the widest: the transition-state work added
       !! `target`, and the chain-of-states work `endpoint`, `neb_endpoints`,
-      !! `images` and `neb_spring`, which took it past fragmentation_keys (21,
+      !! `images`, `neb_spring`, the dimer controls and `connect`, which took it
+      !! past fragmentation_keys (21,
       !! pushed there by its FMO inner-SCF controls and bond_breaking/cap_scale).
       !! This keeps headroom above that.
       !!
@@ -521,6 +522,8 @@ contains
       call allow(keys, "dimer_separation")
       call allow(keys, "dimer_max_rotations")
       call allow(keys, "dimer_rotation_tolerance")
+      call allow(keys, "connect")
+      call allow(keys, "connect_distort")
       call allow(keys, "frozen_atoms")
       call allow(keys, "constraints")
       call allow(keys, "timestep")
