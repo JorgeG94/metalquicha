@@ -347,6 +347,19 @@ module mqc_config_types
          !! because the multipoles are taken from that density, and must keep
          !! doing so unless a deck says otherwise.
       real(dp) :: scf_density_tolerance = DEFAULT_SCF_DENSITY_CONV
+      real(dp) :: scf_linear_dependence = 0.0_dp
+         !! `keywords.scf.linear_dependence_threshold`. Overlap eigenvalues at
+         !! or below this are dropped as linearly dependent. Raise it to shed
+         !! more of a diffuse basis, lower it to keep modes the default would
+         !! discard.
+         !!
+         !! Zero means "not set", and the orthogonaliser then uses
+         !! `LINEAR_DEPENDENCE_TOL`. A sentinel rather than spelling 1e-7
+         !! again here: this module would otherwise carry a second copy of a
+         !! constant that already exists in `mqc_scf_common`, which is the
+         !! arrangement that let the two backends drift apart the last time
+         !! -- see the note on `LINEAR_DEPENDENCE_TOL` itself. Zero is not a
+         !! meaningful cutoff on its own, so nothing is lost by spending it.
       logical :: scf_density_tolerance_set = .false.
       real(dp) :: scf_level_shift = 0.0_dp
          !! Hartree added to the virtual orbitals before each diagonalisation.

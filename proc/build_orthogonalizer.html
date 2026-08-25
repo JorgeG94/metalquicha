@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">28 statements</a>
+                 title=" 0.2% of total for procedures.">42 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,12 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvalues~4">eigenvalues</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvectors~6">eigenvectors</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-i~118">i</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-info~5">info</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvalues">eigenvalues</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvectors">eigenvectors</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-i~69">i</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-info~3">info</a>
             <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-kept~3">kept</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-n_ao">n_ao</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-n_ao~5">n_ao</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-tol">tol</a>
         </div>
       </div>
     </div>
@@ -177,7 +178,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine build_orthogonalizer(overlap, transform, n_mo, error)  
+    <h2>public  subroutine build_orthogonalizer(overlap, transform, n_mo, error, smallest_overlap, smallest_kept, threshold)  
 </h2>
     
 
@@ -200,7 +201,7 @@ offending combinations instead of amplifying them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~5"></span>
+              <span class="anchor" id="variable-overlap~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -230,7 +231,7 @@ offending combinations instead of amplifying them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo"></span>
+              <span class="anchor" id="variable-n_mo~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -245,7 +246,7 @@ offending combinations instead of amplifying them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~110"></span>
+              <span class="anchor" id="variable-error~57"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -256,6 +257,60 @@ offending combinations instead of amplifying them.</p>
             <td><strong>error</strong></td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-smallest_overlap"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>smallest_overlap</strong></td>
+            <td>
+                <p>The smallest eigenvalue of S, dropped or not &ndash; the conditioning of
+the basis as given, before this routine does anything about it.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-smallest_kept"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>smallest_kept</strong></td>
+            <td>
+                <p>The smallest eigenvalue that survived, which is what X actually
+divides by and therefore what the SCF has to live with.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-threshold"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>threshold</strong></td>
+            <td>
+                <p>Overlap eigenvalues at or below this are dropped. Defaults to
+<code>LINEAR_DEPENDENCE_TOL</code>, and <code>keywords.scf.linear_dependence_threshold</code>
+is how a deck overrides it. A non-positive value is ignored rather
+than obeyed: zero would keep every mode including the numerically
+null ones, which is not a basis anyone means to ask for.</p>
+<p>Optional, all of them, so the call sites that only want X are
+unchanged &ndash; there are five across two backends and only the ones
+that report need the numbers.</p>
             </td>
         </tr>
     </tbody>
@@ -531,7 +586,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-eigenvalues~4"></span>
+              <span class="anchor" id="variable-eigenvalues"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -548,7 +603,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-eigenvectors~6"></span>
+              <span class="anchor" id="variable-eigenvectors"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -565,7 +620,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~118"></span>
+              <span class="anchor" id="variable-i~69"></span>
               integer,
             </td>
               <td>private</td>
@@ -582,7 +637,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-info~5"></span>
+              <span class="anchor" id="variable-info~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -616,7 +671,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao"></span>
+              <span class="anchor" id="variable-n_ao~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -625,6 +680,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>n_ao</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tol"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tol</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -647,7 +719,8 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_orthogonalizer</span><span class="p">(</span><span class="n">overlap</span><span class="p">,</span><span class="w"> </span><span class="n">transform</span><span class="p">,</span><span class="w"> </span><span class="n">n_mo</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_orthogonalizer</span><span class="p">(</span><span class="n">overlap</span><span class="p">,</span><span class="w"> </span><span class="n">transform</span><span class="p">,</span><span class="w"> </span><span class="n">n_mo</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                   </span><span class="n">smallest_overlap</span><span class="p">,</span><span class="w"> </span><span class="n">smallest_kept</span><span class="p">,</span><span class="w"> </span><span class="n">threshold</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Canonical rather than symmetric so a basis with near-linear dependence</span>
@@ -657,9 +730,34 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">transform</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! X, (n_ao, n_mo)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_mo</span><span class="w">                           </span><span class="c">!! Surviving orbitals</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">smallest_overlap</span>
+<span class="w">         </span><span class="c">!! The smallest eigenvalue of S, dropped or not -- the conditioning of</span>
+<span class="w">         </span><span class="c">!! the basis as given, before this routine does anything about it.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">smallest_kept</span>
+<span class="w">         </span><span class="c">!! The smallest eigenvalue that survived, which is what X actually</span>
+<span class="w">         </span><span class="c">!! divides by and therefore what the SCF has to live with.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">threshold</span>
+<span class="w">         </span><span class="c">!! Overlap eigenvalues at or below this are dropped. Defaults to</span>
+<span class="w">         </span><span class="c">!! `LINEAR_DEPENDENCE_TOL`, and `keywords.scf.linear_dependence_threshold`</span>
+<span class="w">         </span><span class="c">!! is how a deck overrides it. A non-positive value is ignored rather</span>
+<span class="w">         </span><span class="c">!! than obeyed: zero would keep every mode including the numerically</span>
+<span class="w">         </span><span class="c">!! null ones, which is not a basis anyone means to ask for.</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! Optional, all of them, so the call sites that only want X are</span>
+<span class="w">         </span><span class="c">!! unchanged -- there are five across two backends and only the ones</span>
+<span class="w">         </span><span class="c">!! that report need the numbers.</span>
 
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">eigenvectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_ao</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">kept</span><span class="p">,</span><span class="w"> </span><span class="n">info</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tol</span>
+
+<span class="w">      </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LINEAR_DEPENDENCE_TOL</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">threshold</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">threshold</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threshold</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">smallest_overlap</span><span class="p">))</span><span class="w"> </span><span class="n">smallest_overlap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">smallest_kept</span><span class="p">))</span><span class="w"> </span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 
 <span class="w">      </span><span class="n">n_ao</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">overlap</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">eigenvectors</span><span class="p">(</span><span class="n">n_ao</span><span class="p">,</span><span class="w"> </span><span class="n">n_ao</span><span class="p">),</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">(</span><span class="n">n_ao</span><span class="p">))</span>
@@ -672,8 +770,12 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! pic_syev returns eigenvalues ascending, so the discarded ones lead.</span>
-<span class="w">      </span><span class="n">n_mo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">eigenvalues</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">LINEAR_DEPENDENCE_TOL</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_mo</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">smallest_overlap</span><span class="p">))</span><span class="w"> </span><span class="n">smallest_overlap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="n">n_mo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">eigenvalues</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">tol</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">smallest_kept</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_mo</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">(</span><span class="n">n_ao</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_mo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_mo</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"SCF: overlap matrix is singular"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -681,7 +783,7 @@ large graphs.</div>
 <span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">transform</span><span class="p">(</span><span class="n">n_ao</span><span class="p">,</span><span class="w"> </span><span class="n">n_mo</span><span class="p">))</span>
 <span class="w">      </span><span class="n">kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_ao</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">LINEAR_DEPENDENCE_TOL</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 <span class="k">         </span><span class="n">kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kept</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="n">transform</span><span class="p">(:,</span><span class="w"> </span><span class="n">kept</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eigenvectors</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="nb">sqrt</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end do</span>
@@ -709,7 +811,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 05:52 +0000             </p>
+ on 2026-08-25 06:36 +0000             </p>
           </div>
         </div>
         <br>

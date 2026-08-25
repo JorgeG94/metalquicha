@@ -230,6 +230,7 @@ contains
       m%options%conv_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence
       m%options%level_shift = config%scf%level_shift
+      m%options%linear_dependence = config%scf%linear_dependence
       m%options%use_diis = config%scf%use_diis
       m%options%diis_size = config%scf%diis_size
       ! Not from `config%dft`, and so easy to leave out: the continuum sits on
@@ -259,6 +260,7 @@ contains
       m%options%energy_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence
       m%options%level_shift = config%scf%level_shift
+      m%options%linear_dependence = config%scf%linear_dependence
       m%options%use_diis = config%scf%use_diis
       m%options%diis_size = config%scf%diis_size
 
@@ -353,6 +355,7 @@ contains
       m%options%conv_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence
       m%options%level_shift = config%scf%level_shift
+      m%options%linear_dependence = config%scf%linear_dependence
       m%options%use_diis = config%scf%use_diis
       m%options%diis_size = config%scf%diis_size
       m%options%pcm = config%pcm

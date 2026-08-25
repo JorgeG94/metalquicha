@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for modules and submodules.">332 statements</a>
+                 title=" 1.4% of total for modules and submodules.">333 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -209,11 +209,11 @@ for each method family. The factory reads from the appropriate nested type.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1575,18 +1575,18 @@ large graphs.</div>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1485.22,-1362.39C1462.82,-1358.48 1430.78,-1352.55 1403,-1346.14 1366.13,-1337.64 1324.79,-1326.31 1294.16,-1317.56"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1294.78,-1314.09 1284.2,-1314.69 1292.85,-1320.82 1294.78,-1314.09"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_method_config~~UsedByGraph_node50" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_method_config~~UsedByGraph_node50"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_method_config~~UsedByGraph_node50"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1553.5,-1337.14 1475.5,-1337.14 1475.5,-1313.14 1553.5,-1313.14 1553.5,-1337.14"/>
 <text text-anchor="middle" x="1514.5" y="-1322.74" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_config~~UsedByGraph_edge34" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1475.25,-1322.11C1427.38,-1318.32 1345.47,-1311.83 1294.31,-1307.77"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1294.44,-1304.27 1284.19,-1306.97 1293.88,-1311.25 1294.44,-1304.27"/>
 </g>
@@ -1975,7 +1975,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~6"></span>
+              <span class="anchor" id="variable-n_roots~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2229,7 +2229,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_scs"></span>
+              <span class="anchor" id="variable-use_scs~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3299,7 +3299,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~6"></span>
+              <span class="anchor" id="variable-method_type~10"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3384,7 +3384,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~13"></span>
+              <span class="anchor" id="variable-verbose~11"></span>
               logical,
             </td>
               <td>public</td>
@@ -3534,7 +3534,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3574,7 +3574,7 @@ fixed and refuses &ldquo;iefpcm&rdquo; rather than substituting.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~15"></span>
+              <span class="anchor" id="variable-tolerance~14"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3968,7 +3968,7 @@ default when they are false and honours the deck when they are true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~10"></span>
+              <span class="anchor" id="variable-guess~9"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3981,7 +3981,7 @@ default when they are false and honours the deck when they are true.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;,
-or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess~10" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess~9" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -4023,6 +4023,26 @@ Zero is off. Tapered to zero as the SCF converges, so that the
 orbitals and orbital energies reported at exit belong to the
 unshifted operator &ndash; see <code>mqc_libcint_rhf</code>, where that matters more
 than it looks.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-linear_dependence~5"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>linear_dependence</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+<p><code>keywords.scf.linear_dependence_threshold</code>. Overlap eigenvalues at
+or below this are dropped as linearly dependent. Raise it to shed
+more of a diffuse basis, lower it to keep modes the default would
+discard.</p><a href="../type/scf_config_t.html#variable-linear_dependence~5" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -4317,7 +4337,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~135"></span>
+              <span class="anchor" id="variable-this~132"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4367,7 +4387,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~139"></span>
+              <span class="anchor" id="variable-this~136"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4407,7 +4427,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~138"></span>
+              <span class="anchor" id="variable-this~135"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4447,7 +4467,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~136"></span>
+              <span class="anchor" id="variable-this~133"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4592,7 +4612,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~137"></span>
+              <span class="anchor" id="variable-this~134"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4665,7 +4685,7 @@ the unrestricted code reduces to the restricted result.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 05:52 +0000             </p>
+ on 2026-08-25 06:36 +0000             </p>
           </div>
         </div>
         <br>
