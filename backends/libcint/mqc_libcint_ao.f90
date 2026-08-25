@@ -167,7 +167,7 @@ contains
    end function shell_bound
 
    subroutine block_significant_aos(mol, coords, radius, shell_mask, ao_list, &
-                                    ao_offset, n_sig)
+                                    ao_offset, n_sig, atom_offsets, atom_counts)
       !! Which shells reach a block of points, and the AO indices they own
       !!
       !! The test is against the block's bounding sphere rather than each point:
@@ -188,6 +188,23 @@ contains
          !! `eval_ao_block` can write a compressed block without knowing which
          !! shells were dropped.
       integer, intent(out) :: n_sig
+      integer, intent(out), optional :: atom_offsets(:), atom_counts(:)
+         !! (natm) where each atom's kept functions begin in the compressed
+         !! numbering, and how many it kept. Zero count for an atom that reaches
+         !! this block with nothing.
+         !!
+         !! **These stay contiguous, and not by luck.** `molecule_build` packs
+         !! shells with the loop over atoms outermost, so shells are strictly
+         !! atom-ordered; the loop below walks them in that order handing out
+         !! compressed indices as it goes, so an atom's kept functions are
+         !! consecutive exactly as its full set was. `atom_ao_blocks` already
+         !! relies on the same ordering for the unscreened case.
+         !!
+         !! The gradient is what needs them. `accumulate_channel` sums one
+         !! atom's range onto that atom and every function onto the atom owning
+         !! the point, with opposite signs, and those two cancel when the
+         !! molecule translates. A range that straddled two atoms would put
+         !! force on the wrong nucleus and leave a net force behind.
 
       integer :: ish, ig, npts, iatom, off_ao, ndim, i
       real(dp) :: centre(3)
@@ -209,6 +226,8 @@ contains
 
       n_sig = 0
       off_ao = 0
+      if (present(atom_offsets)) atom_offsets = 0
+      if (present(atom_counts)) atom_counts = 0
       do ish = 1, mol%nbas
          ndim = shell_dim(mol%cartesian, ish - 1, mol%bas)
          iatom = mol%bas(LIBCINT_ATOM_OF, ish) + 1
@@ -219,6 +238,13 @@ contains
          shell_mask(ish) = (d - span <= radius(ish))
          ao_offset(ish) = n_sig
          if (shell_mask(ish)) then
+            if (present(atom_counts)) then
+               ! The first kept shell of an atom fixes where its range starts.
+               if (atom_counts(iatom) == 0 .and. present(atom_offsets)) then
+                  atom_offsets(iatom) = n_sig
+               end if
+               atom_counts(iatom) = atom_counts(iatom) + ndim
+            end if
             do i = 1, ndim
                n_sig = n_sig + 1
                ao_list(n_sig) = off_ao + i
